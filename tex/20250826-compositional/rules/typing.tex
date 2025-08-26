@@ -1,0 +1,516 @@
+% Expression Typing
+
+\newcommand*\RuleTConst{
+  \inferrule[T-Const]{
+    \HasCType
+      \C
+      \T
+  }{
+    \HasType[\pbot]
+      \CtxEmpty
+      \C
+      \T
+      \EffPure
+  }
+}
+
+\newcommand*\RuleTVar{
+  \inferrule[T-Var]{}{
+    \HasType[\pbot]
+      {\CtxVar \EVar\T}
+      \EVar
+      \T
+      \EffPure
+  }
+}
+
+\newcommand*\RuleTFork{
+  \inferrule[T-Fork]{
+    \Bounded \Ctx
+    \\
+    \HasType
+      {\Ctx}
+      {\E}
+      {\TArr{\MobMobile}{\Eff} {\BUnit} {\BUnit}}
+      \Eff[1]
+  }{
+    \HasType
+      \Ctx
+      {\EFork \E}
+      {\BUnit}
+      \EffPure
+  }
+}
+
+\newcommand*\RuleTAbsUnr{
+  \inferrule[T-AbsUnr]{
+    \Unr\Ctx \\
+    \HasType[\Q]
+      {\CtxExt\Ctx{\CtxVar\EVar{\T[1]}}}
+      {\E}
+      {\T[2]}
+      \Eff
+  }{
+    \HasType[\pbot]
+      \Ctx
+      {(\EAbs\EVar\E)}
+      {(\TArr{\MobMobile}{\DirNone,\Eff}{\T[1]}{\T[2]})}
+      \EffPure
+  }
+}
+
+\newcommand*\RuleTAbsLin{
+  \inferrule[T-AbsLin]{
+    \HasType[\Q]
+      {\CtxExtUnord\Ctx{\CtxVar\EVar{\T[1]}}}
+      {\E}
+      {\T[2]}
+      \Eff \\
+      \Mob (\Ctx)
+  }{
+    \HasType[\pbot]
+      \Ctx
+      {(\EAbs\EVar\E)}
+      {(\TArr{\Mob}{\DirUnord,\Eff}{\T[1]}{\T[2]})}
+      \EffPure
+  }
+}
+
+\newcommand*\RuleTAbsLeft{
+  \inferrule[T-AbsLeft]{
+    \HasType[\Q]
+      {\CtxExt{\CtxVar{\EVar}{\T[1]}}\Ctx}
+      {\E}
+      {\T[2]}
+      \Eff \\
+      \Mob (\Ctx)
+  }{
+    \HasType[\pbot]
+      \Ctx
+      {(\EAbs\EVar\E)}
+      {(\TArr{\Mob}{\DirLeft,\Eff}{\T[1]}{\T[2]})}
+      \EffPure
+  }
+}
+
+\newcommand*\RuleTAbsRight{
+  \inferrule[T-AbsRight]{
+    \HasType[\Q]
+      {\CtxExt\Ctx{\CtxVar{\EVar}{\T[1]}}}
+      {\E}
+      {\T[2]}
+      \Eff \\
+      \Mob (\Ctx)
+  }{
+    \HasType[\pbot]
+      \Ctx
+      {(\EAbs\EVar\E)}
+      {(\TArr{\Mob}{\DirRight,\Eff}{\T[1]}{\T[2]})}
+      \EffPure
+  }
+}
+
+\newcommand*\RuleTAppUnr{
+  \inferrule[T-AppUnr]{
+    \HasType[\Q[1]]
+      {\Ctx_1}
+      {\E[1]}
+      {(\TArr{\Mob}{\DirNone,{\Eff}[3]}{\T[1]}{\T[2]})}
+      {\Eff[1]} \\
+    \HasType[\Q[2]]
+      {\Ctx_2}
+      {\E[2]}
+      {\T[1]}
+      {\Eff[2]}
+  }{
+    \HasType[\P[1] \plub \P[2] \plub \Q[3]]
+      {\CtxSeq {\Ctx_1}{\Ctx_2}}
+      {(\EApp{\E[1]}{\E[2]})}
+      {\T[2]}
+      {(\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3])}
+  }
+}
+
+\newcommand*\RuleTAppLin{
+  \inferrule[T-AppLin]{
+    \HasType[{\Q[1]}]
+      {\Ctx_1}
+      {\E[1]}
+      {(\TArr{\Mob}{\DirUnord,{\Eff[3]}}{\T[1]}{\T[2]})}
+      {\Eff[1]} \\
+    \HasType[{\Q[2]}]
+      {\Ctx_2}
+      {\E[2]}
+      {\T[1]}
+      {\Eff[2]}
+  }{
+    \HasType[{\P[1] \plub \P[2] \plub \Q[3]}]
+      {\CtxPar {\Ctx_1}{\Ctx_2}}
+      {(\EApp{\E[1]}{\E[2]})}
+      {\T[2]}
+      {(\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3])}
+  }
+}
+
+\newcommand*\RuleTAppLeft{
+  \inferrule[T-AppLeft]{
+    % \Unr{\Ctx_1} \vee \Eff[1] = \EffPure
+    % \\
+    \HasType[{\Q[1]}]
+      {\Ctx_1}
+      {\E[1]}
+      {(\TArr{\Mob}{\DirLeft,{\Eff[3]}}{\T[1]}{\T[2]})}
+      {\EffPure} \\
+    \HasType[{\Q[2]}]
+      {\Ctx_2}
+      {\E[2]}
+      {\T[1]}
+      {\Eff[2]}
+  }{
+    \HasType[{\P[1] \plub \P[2] \plub \Q[3]}]
+      {\CtxSeq {\Ctx_2}{\Ctx_1}}
+      {(\EApp{\E[1]}{\E[2]})}
+      {\T[2]}
+      {(\Eff[2] \EffJoin \Eff[3])}
+  }
+}
+
+\newcommand*\RuleTAppRight{
+  \inferrule[T-AppRight]{
+    % \Unr{\Ctx_2} \vee \Eff[2] = \EffPure
+    % \\
+    \HasType[{\Q[1]}]
+      {\Ctx_1}
+      {\E[1]}
+      {(\TArr{\Mob}{\DirRight,{\Eff[3]}}{\T[1]}{\T[2]})}
+      {\Eff[1]} \\
+    \HasType[{\Q[2]}]
+      {\Ctx_2}
+      {\E[2]}
+      {\T[1]}
+      {\EffPure}
+  }{
+    \HasType[{\P[1] \plub \P[2] \plub \Q[3]}]
+      {\CtxSeq {\Ctx_1}{\Ctx_2}}
+      {(\EApp{\E[1]}{\E[2]})}
+      {\T[2]}
+      {(\Eff[1] \EffJoin \Eff[3])}
+  }
+}
+
+\newcommand*\RuleTPairUnord{
+  \inferrule[T-PairUnord]{
+    \HasType[{\Q[1]}]
+      {\Ctx_1}
+      {\E[1]}
+      {\T[1]}
+      {\Eff[1]} \\
+    \HasType[{\Q[2]}]
+      {\Ctx_2}
+      {\E[2]}
+      {\T[2]}
+      {\Eff[2]}
+  }{
+    \HasType[{\Q[1] \plub \Q[2]}]
+      {\CtxPar {\Ctx_1}{\Ctx_2}}
+      {\EPair{\E[1]}{\E[2]}}
+      {\TPairUnord{\T[1]}{\T[2]}}
+      {(\Eff[1] \EffJoin \Eff[2])}
+  }
+}
+
+\newcommand*\RuleTPairOrd{
+  \inferrule[T-PairOrd]{
+    % \Unr{\Ctx_1} \vee \Unr {\T[1]} \vee \Eff[2] = \EffPure \\
+    \HasType[{\Q[1]}]
+      {\Ctx_1}
+      {\E[1]}
+      {\T[1]}
+      {\Eff[1]} \\
+    \HasType[{\Q[2]}]
+      {\Ctx_2}
+      {\E[2]}
+      {\T[2]}
+      {\EffPure}
+  }{
+    \HasType[{\Q[1] \plub \Q[2]}]
+      {\CtxSeq {\Ctx_1}{\Ctx_2}}
+      {\EPair{\E[1]}{\E[2]}}
+      {\TPairOrd{\T[1]}{\T[2]}}
+      {\Eff[1]}
+  }
+}
+
+\newcommand*\RuleTLetUnit{
+  \inferrule[T-LetUnit]{
+    \HasType[{\Q[1]}]
+      {\Ctx}
+      {\E[1]}
+      {\BUnit}
+      {\Eff[1]} \\
+    \HasType[{\Q[2]}]
+      {\CtxPattern{\CtxEmpty}}
+      {\E[2]}
+      {\T[2]}
+      {\Eff[2]} \\
+      \Eff[1] = \EffImpure \implies \IsLeftPat~\CtxPatternRaw
+  }{
+    \HasType[{\Q[1] \plub \Q[2]}]
+      {\CtxPattern{\Ctx}}
+      {\ESeq{\E[1]}{\E[2]}}
+      {\T[2]}
+      {(\Eff[1] \EffJoin \Eff[2])}
+  }
+}
+
+\newcommand*\RuleTLet{
+  \inferrule[T-Let]{
+    \HasType[{\Q[1]}]
+      {\Ctx}
+      {\E[1]}
+      {\T[1]}
+      {\Eff[1]} \\
+    \HasType[{\Q[2]}]
+      {\CtxPattern{\CtxVar x{{\T[1]}}}}
+      {\E[2]}
+      {\T[2]}
+      {\Eff[2]} \\
+      \Eff[1] = \EffImpure \implies \IsLeftPat~\CtxPatternRaw
+  }{
+    \HasType[{\Q[1] \plub \Q[2]}]
+      {\CtxPattern{\Ctx}}
+      {\ELet x{\E[1]}{\E[2]}}
+      {\T[2]}
+      {(\Eff[1] \EffJoin \Eff[2])}
+  }
+}
+
+\newcommand*\RuleTLetUnord{
+  \inferrule[T-LetUnord]{
+    \HasType[{\Q[1]}]
+      {\Ctx}
+      {\E[1]}
+      {\TPairUnord {\T[1]}{\T[2]}}
+      {\Eff[1]} \\
+    \HasType[{\Q[2]}]
+      {\CtxPattern{\CtxExtUnord{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}}}}
+      {\E[2]}
+      {\T[3]}
+      {\Eff[2]} \\
+      \Eff[1] = \EffImpure \implies \IsLeftPat~\CtxPatternRaw
+  }{
+    \HasType[{\Q[1] \plub \Q[2]}]
+      {\CtxPattern{\Ctx}}
+      {\ELetPair xy{\E[1]}{\E[2]}}
+      {\T[3]}
+      {(\Eff[1] \EffJoin \Eff[2])}
+  }
+}
+
+\newcommand*\RuleTLetOrd{
+  \inferrule[T-LetOrd]{
+    \HasType[{\Q[1]}]
+      {\Ctx}
+      {\E[1]}
+      {\TPairOrd {\T[1]}{\T[2]}}
+      {\Eff[1]} \\
+    \HasType[{\Q[2]}]
+      {\CtxPattern{\CtxExt{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}}}}
+      {\E[2]}
+      {\T[3]}
+      {\Eff[2]} \\
+      \Eff[1] = \EffImpure \implies \IsLeftPat~\CtxPatternRaw
+  }{
+    \HasType[{\Q[1]\plub\Q[2]}]
+      {\CtxPattern{\Ctx}}
+      {\ELetPair xy{\E[1]}{\E[2]}}
+      {\T[3]}
+      {(\Eff[1] \EffJoin \Eff[2])}
+  }
+}
+
+\newcommand*\RuleTInLeft{
+  \inferrule[T-Inj]{
+    \HasType[\Q]
+    {\Ctx}
+    {\E}
+    {\T[i]}
+    {\Eff}
+  }{
+    \HasType[\Q]
+    {\Ctx}
+    {\EInj{i} \E}
+    {\TSum{\T[1]}{\T[2]}}
+    {\Eff}
+  }
+}
+
+\newcommand*\RuleTCaseSum{
+  \inferrule[T-CaseSum]{
+    \HasType[\Q]
+    {\Ctx}
+    {\E}
+    {\TSum{\T[1]}{\T[2]}}
+    {\Eff}
+    \\
+    \HasType[{\Q[1]}]
+    {\CtxPattern{\CtxVar{\EVar_1}{\T[1]}}}
+    {\E[1]}
+    {\T}
+    {\Eff[1]}
+    \\
+    \HasType[{\Q[2]}]
+    {\CtxPattern{\CtxVar{\EVar_2}{\T[2]}}}
+    {\E[2]}
+    {\T}
+    {\Eff[2]} \\
+    \Eff = \EffImpure \implies \IsLeftPat~\CtxPatternRaw
+  }{
+    \HasType[{\Q \plub \Q[1]}]
+    {\CtxPattern{\Ctx}}
+    {\ECase\E{x_1}{\E[1]}{x_2}{\E[2]}}
+    {\T}
+    {(\Eff \EffJoin \Eff[1] \EffJoin \Eff[2])}
+  }
+}
+
+\newcommand*\RuleTWeakC{
+  \inferrule[T-WeakC]{
+    \Unr\Ctx_2 \\
+    \HasType
+      {\CtxExt{\Ctx_1}{\Ctx_2}}
+      {\E}
+      {\T}
+      {\Eff} 
+  }{
+    \HasType
+      {\Ctx_1}
+      {\E}
+      {\T}
+      {\Eff}
+  }
+}
+
+\newcommand*\RuleTWeakE{
+  \inferrule[T-WeakE]{
+    \HasType
+      {\Ctx}
+      {\E}
+      {\T}
+      {\EffPure} 
+  }{
+    \HasType
+      {\Ctx}
+      {\E}
+      {\T}
+      {\EffImpure}
+  }
+}
+
+\newcommand*\RuleTWeakCE{
+  \inferrule[T-WeakCE]{
+    \Ctx[2] \preccurlyeq \Ctx[1]
+    \\
+    \Eff[1] \le \Eff[2]
+    \\
+    \HasType[\Q]
+      {\Ctx_1}
+      {\E}
+      {\T}
+      {\Eff[1]}
+  }{
+    \HasType[\Q]
+      {\Ctx_2}
+      {\E}
+      {\T}
+      {\Eff[2]}
+  }
+}
+
+\newcommand*\RuleTMatch{
+  \inferrule[T-MatchLeft]{
+    \HasType
+      {\Ctx_1}
+      {\E}
+      {\SBranch{\ell:\S_\ell}{\ell\in L}}
+      {\Eff}
+    \\
+    \HasType
+      {\Ctx_2}
+      {\E_\ell}
+      {\TArr{\Mob}{\Eff[\ell]}{\S_\ell}{\T}}
+      {\Eff[\ell]}
+  }{
+    \HasType
+      {\CtxSeq{\Ctx_1}{\Ctx_2}}
+      {\EMatch{\E}{\ell:\E_\ell}{\ell\in L}}
+      {\T}
+      {(\Eff \EffJoin \EffJoin\{ \Eff[\ell]\}_{\ell\in L})}
+  }
+}
+
+\newcommand*\RuleTMatchLin{
+  \inferrule[T-MatchLin]{
+    \HasType
+      {\Ctx_1}
+      {\E}
+      {\SBranch{\ell:\S_\ell}{\ell\in L}}
+      {\Eff}
+    \\
+    \HasType
+      {\Ctx_2}
+      {\E_\ell}
+      {\TArr{\Mob}{\Eff[\ell]}{\S_\ell}{\T}}
+      {\Eff[\ell]}
+  }{
+    \HasType
+      {\CtxPar{\Ctx_1}{\Ctx_2}}
+      {\EMatch{\E}{\ell:\E_\ell}{\ell\in L}}
+      {\T}
+      {(\Eff \EffJoin \EffJoin\{ \Eff[\ell]\}_{\ell\in L})}
+  }
+}
+
+%% EXISTENTIAL TARGET CALCULUS
+
+\newcommand*\RuleTPack{
+  \inferrule[T-Pack]{
+    \HasTargetType[\Q]
+    \Ctx
+    {\E}
+    {\T{[{\S}/\alpha]}}
+  }{
+    \HasTargetType[\Q]
+    \Ctx
+    {\EPack{\S}{\E}{\TExists[\pr{S}]\alpha\T}}
+    {\TExists[\pr{S}]\alpha\T}
+  }
+}
+
+\newcommand*\RuleTUnpack{
+  \inferrule[T-Unpack]{
+    \HasTargetType[{\Q[1]}]
+    {\Ctx}
+    {\E[1]}
+    {\TExists[\O]\alpha{\T[1]}}
+    \\
+    \HasTargetType[{\Q[2]}]
+    {\CtxExtTarget{\CtxExtTarget\Ctx\alpha}{\CtxVar x {\T[1]}}}
+    {\E[2]}
+    {\T[2]}
+    \\
+    \alpha \notin \T[2]
+  }{
+    \HasTargetType[{\Q[1] \plub \Q[2]}]
+    \Ctx
+    {\EOpen\alpha x {\E[1]} {\E[2]}}
+    {\T[2]}
+  }
+}
+
+%%% Local
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:

@@ -1,0 +1,79 @@
+% Session Type Formation
+
+\newcommand*\RuleSFWait{
+  \inferrule[SF-Wait]{}{
+    \HasSKind{\Ctx}{\SCtx}{\SWait}{\KSession\MulLin}
+  }
+}
+
+\newcommand*\RuleSFSend{
+  \inferrule[SF-Send]{
+    \HasTKind{\Ctx}{\M}{\KType\MulUnr}
+  }{
+    \HasSKind{\Ctx}{\SCtx}{\SSend\M}{\KSession\MulLin}
+  }
+}
+
+\newcommand*\RuleSFBranch{
+  \inferrule[SF-Branch]{
+    \forall i.\ \HasSKind{\Ctx}{\SCtx}{\S_i}{\KSession{\Mul_i}}
+  }{
+    \HasSKind{\Ctx}{\SCtx}{\SBranch{i:\S_i}}{\KSession\MulLin}
+  }
+}
+
+\newcommand*\RuleSFTerm{
+  \inferrule[SF-Term]{}{
+    \HasSKind{\Ctx}{\SCtx}{\STerm}{\KSession\MulLin}
+  }
+}
+
+\newcommand*\RuleSFRecv{
+  \inferrule[SF-Recv]{
+    \HasTKind{\Ctx}{\M}{\KType\MulUnr}
+  }{
+    \HasSKind{\Ctx}{\SCtx}{\SRecv\M}{\KSession\MulLin}
+  }
+}
+
+\newcommand*\RuleSFChoice{
+  \inferrule[SF-Choice]{
+    \forall i.\ \HasSKind{\Ctx}{\SCtx}{\S_i}{\KSession{\Mul_i}}
+  }{
+    \HasSKind{\Ctx}{\SCtx}{\SChoice{i:\S_i}}{\KSession\MulLin}
+  }
+}
+
+\newcommand*\RuleSFSkip{
+  \inferrule[SF-Skip]{}{
+    \HasSKind{\Ctx}{\SCtx}{\SSkip}{\KSession\MulUnr}
+  }
+}
+
+\newcommand*\RuleSFSeq{
+  \inferrule[SF-Seq]{
+    \HasSKind{\Ctx}{\SCtx}{\S_1}{\KSession{\Mul_1}} \\
+    \HasSKind{\Ctx}{\SCtx}{\S_2}{\KSession{\Mul_2}} \\
+    \Mul_1 \MulLeq \Mul \\
+    \Mul_2 \MulLeq \Mul
+  }{
+    \HasSKind{\Ctx}{\SCtx}{(\SSeq{\S_1}{\S_2})}{\KSession\Mul}
+  }
+}
+
+\newcommand*\RuleSFRec{
+  \inferrule[SF-Rec]{
+    \HasSKind{\Ctx}{\SCtxExt\SCtx\SVar{\KSession\Mul}}{\S}{\KSession\Mul}
+  }{
+    \HasSKind{\Ctx}{\SCtx}{(\SRec\SVar\S)}{\KSession\Mul}
+  }
+}
+
+\newcommand*\RuleSFVar{
+  \inferrule[SF-Var]{
+    (\SVar : \KSession\Mul) \in \SCtx
+  }{
+    \HasSKind{\Ctx}{\SCtx}{\SVar}{\KSession\Mul}
+  }
+}
+

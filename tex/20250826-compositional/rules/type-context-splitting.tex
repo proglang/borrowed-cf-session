@@ -1,0 +1,79 @@
+% Type Context Splitting
+
+
+\newcommand*\RuleCSEmpty{
+  \inferrule[CS-Empty]{}{
+    \CtxSplit\CtxEmpty\CtxEmpty\CtxEmpty\D
+  }
+}
+
+\newcommand*\RuleCSSplit{
+  \inferrule[CS-Split]{
+    \CtxSplit
+      {\Ctx}
+      {\Ctx_1}
+      {\Ctx_2}
+      {\D\cup\D'}
+    \\
+    \EVar \not\in \D
+  }{
+    \CtxSplit
+      {\CtxExt\Ctx\EVar{(\SSeq{\S_1}{\S_2})}{\D'}}
+      {\CtxExt{\Ctx_1}\EVar{\S_1}{\D'}}
+      {\CtxExt{\Ctx_2}\EVar{\S_2}{\D'}}
+      {\D}
+  }
+}
+
+\newcommand*\RuleCSLeft{
+  \inferrule[CS-Left]{
+    \CtxSplit
+      {\Ctx}
+      {\Ctx_1}
+      {\Ctx_2}
+      {\D}
+    \\
+    \EVar \not\in \D
+  }{
+    \CtxSplit
+      {\CtxExt\Ctx\EVar\T{\D'}}
+      {\CtxExt{\Ctx_1}\EVar\T{\D'}}
+      %{\CtxExtInactive{\Ctx_2}\EVar\T{\D'}}
+      {\Ctx_2}
+      {\D}
+  }
+}
+
+\newcommand*\RuleCSRight{
+  \inferrule[CS-Right]{
+    \CtxSplit
+      {\Ctx}
+      {\Ctx_1}
+      {\Ctx_2}
+      {\D\cup\D'}
+  }{
+    \CtxSplit
+      {\CtxExt\Ctx\EVar\T{\D'}}
+      {\CtxExtInactive{\Ctx_1}\EVar\T{\D'}}
+      {\CtxExt{\Ctx_2}\EVar\T{\D'}}
+      {\D}
+  }
+}
+
+\newcommand*\RuleCSBoth{
+  \inferrule[CS-Both]{
+    \CtxSplit
+      {\Ctx}
+      {\Ctx_1}
+      {\Ctx_2}
+      {\D}
+    \\
+    \Unr \T
+  }{
+    \CtxSplit
+      {\CtxExt\Ctx\EVar\T{\emptyset}}
+      {\CtxExt{\Ctx_1}\EVar\T{\emptyset}}
+      {\CtxExt{\Ctx_2}\EVar\T{\emptyset}}
+      {\D}
+  }
+}

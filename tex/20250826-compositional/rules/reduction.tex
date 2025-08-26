@@ -1,0 +1,230 @@
+% Reduction
+
+\newcommand*\RuleExpRedApp{
+  \inferrule[E-App]{}{
+    \EApp{(\EAbs \EVar\E)}\V \Reduces \Subs \E\V\EVar
+  }
+}
+
+\newcommand*\RuleExpRedSeq{
+  \inferrule[E-Seq]{}{
+    \ESeq \CUnit \E \Reduces  \E
+  }
+}
+
+\newcommand*\RuleExpRedLet{
+  \inferrule[E-PairElim]{}{
+    \ELet {\EPair xy} {\EPair uv} \E \Reduces \Subs {\Subs \E vx} uy
+  }
+}
+
+\newcommand*\RuleExpRedCaseLeft{
+  \inferrule[E-SumElim]{}{
+    \ECase{(\EInj i\V)}{x_1}{\E[1]}{x_2}{\E[2]} \Reduces \Subs {\E[i]} \V {x_i}
+  }
+}
+
+% \newcommand*\RuleExpRedCaseRight{
+%   \inferrule[E-SumElim]{}{
+%     \ECase{(\EInj2\U)}{x}{\E[1]}{y}{\E[2]} \Reduces \Subs {\E[2]} \U y
+%   }
+% }
+
+\newcommand*\RuleExpRedCtx{
+  \inferrule[E-Ctx]{
+    \E[1] \Reduces \E[2]
+  }{
+    \EC[\E[1]] \Reduces \EC[\E[2]]
+  }
+}
+
+\newcommand*\RuleProcRedExp{
+  \inferrule[R-Exp]{
+    \E[1] \Reduces \E[2]
+  }{
+    \FCapp {\E[1]} \Reduces \FCapp{\E[2]}
+  }
+}
+
+\newcommand*\RuleProcRedClose{
+  \inferrule[R-Close]{}{
+    \PNew xy {(\PPar { {\FCapp[1]{\EApp\CTerm x}}} { {\FCapp[2]{\EApp\CWait y}}})} 
+    \Reduces 
+    \PPar { {\FCapp[1]{\CUnit}}} { {\FCapp[2]{\CUnit}}}
+  }
+}
+
+\newcommand*\RuleProcRedSplit{
+  \inferrule[R-RSplit]{}{
+    \PNew {\BSeq{\BindGroup[1]}{\BSeq{\EVar} {\BindGroup[2]}}}{\BindGroup[3]}{ (\PPar{\FCapp{\EApp \CSSplit {x}}}\Proc)}
+    \Reduces 
+    \PNew {\BPar{\BSeq{\BindGroup[1]}{\EVar[1]}}{\BSeq{\EVar[2]}{\BindGroup[2]}}}{\BindGroup[3]} { ({ \PPar{\FCapp{\EPair{\EVar[1]}{\EVar[2]}}}\Proc})}
+  }
+}
+
+\newcommand*\RuleProcRedSplitLocal{
+  \inferrule[R-LSplit]{}{
+    \PNew {\BSeq{\BindGroup[1]}{\BSeq{\EVar} {\BindGroup[2]}}}{\BindGroup[3]}{ (\PPar{\FCapp{\EApp \CSplit {x}}}\Proc)}
+    \Reduces 
+    \PNew {\BSeq{\BindGroup[1]}{\BSeq{\BSeq{\EVar[1]}{\EVar[2]}} {\BindGroup[2]}}}{\BindGroup[3]} { ({ \PPar{\FCapp{\EPairOrd{\EVar[1]}{\EVar[2]}}}\Proc})}
+  }
+}
+
+\newcommand*\RuleProcRedDrop{
+  \inferrule[R-Drop]{}{
+    \PNew {\BSeq{\EVar}{\BindGroup[1]}}{\BindGroup[2]}{ (\PPar{\FCapp{\EApp \CDrop {\EVar}}}\Proc)}
+    \Reduces 
+    \PNew {\BindGroup[1]}{\BindGroup[2]} { ({ \PPar{\FCapp{\CUnit}}\Proc})}
+  }
+}
+
+\newcommand*\RuleProcRedAcquire{
+  \inferrule[R-Acquire]{}{
+    \PNew {\BSeq{\EVar}{\BindGroup[1]}}{\BindGroup[2]}{ (\PPar{\FCapp{\EApp \CAcq{\EVar}}}\Proc)}
+    \Reduces 
+    \PNew {\BSeq{\EVar}{\BindGroup[1]}}{\BindGroup[2]} { ({ \PPar{\FCapp{\EVar}}\Proc})}
+  }
+}
+
+
+\newcommand*\RuleProcRedCom{
+  % \inferrule[R-Com]{}{
+  %   \PNew xy (\PPar { {\FC_1[\EApp \CSend {\EPair\V x}]}} { {\FC_2[\EApp\CRecv y]}}) 
+  %   \Reduces 
+  %   \PPar { {\FC_1[\CUnit]}} { {\FC_2[\V]}}
+  % }
+  % \\
+  \inferrule[R-Com]{}{
+    \PNew {\BSeq x{\BindGroup[1]}}{\BSeq y {\BindGroup[2]}}{
+      (\PPar{\PPar { {\FCapp[1]{\EApp \CSend {(\EPair\V x)}}}} {
+          {\FCapp[2]{\EApp\CRecv y}}}} \Proc)} 
+    \Reduces
+    \PNew {\BindGroup[1]}{\BindGroup[2]}
+    {(\PPar{\PPar{ {\FCapp[1]{\CUnit}}} { {\FCapp[2]{\V}}}} \Proc)}
+  }
+}
+
+\newcommand*\RuleProcRedChoice{
+  \inferrule[R-Choice]{
+    k \in L
+  }{
+    \PNew xy ({\PPar {\PExp {E_1[\CSelect{k} x]}}{\PExp{\EMatch{\EVar}{\ell:\E[\ell]}{\ell\in L}}}})
+    \Reduces
+    \PNew xy (\PPar {\PExp {E_1[x]}} {\PExp {E_2[\EApp {\E[k]} y]}})
+  }
+}
+
+\newcommand*\RuleProcRedNew{
+  \inferrule[R-New]{}{
+    { {\FCapp{\EApp \CNew \CUnit}}}
+    \Reduces 
+    \PNew xy { {\FCapp{\EPair xy}}}
+  }
+}
+
+\newcommand*\RuleProcRedLink{
+  \inferrule[R-Link]{}{
+    \PNew xy {(\PPar{{\FCapp{\EApp\CLink{\EPair w x}}}}{\Proc})}
+    \Reduces 
+    \PPar{ {\FCapp{\CUnit}}}{\Subs \Proc wy}
+  }
+}
+
+\newcommand*\RuleProcRedFork{
+  \inferrule[R-Fork]{}{
+    { {\FCapp{\EApp \CFork \V}}}
+    \Reduces 
+    \PPar { {\FCapp{\CUnit}}} {\PExp {\EApp\V\CUnit}}
+  }
+}
+
+\newcommand*\RuleProcRedStruct{
+  \inferrule[R-Struct]{
+    \Proc[1] \equiv \Proc[1]' \\
+    \Proc[1]' \Reduces \Proc[2]' \\
+    \Proc[2]' \equiv \Proc[2]
+  }{
+    \Proc[1] \Reduces \Proc[2]
+  }
+}
+
+\newcommand*\RuleProcRedPar{
+  \inferrule[R-Par]{
+    \Proc[1] \Reduces \Proc[2]
+  }{
+    \PPar {\Proc[1]}{ \Proc[3]} \Reduces \PPar {\Proc[2]}{ \Proc[3]}
+  }
+}
+
+\newcommand*\RuleProcRedBind{
+  \inferrule[R-Bind]{
+    \Proc[1] \Reduces \Proc[2]
+  }{
+    \PNew{\BindGroup[1]}{\BindGroup[2]} {\Proc[1]} \Reduces \PNew {\BindGroup[1]}{\BindGroup[2]}{\Proc[2]}
+  }
+}
+
+%     \qquad
+%     \axiom{\rulenameexpredLet}{
+%       \lete \ell xL{\recorde \ell vL}{e} \reduces \subs
+%       {v_\ell}{x_\ell}e_{\ell\in L}}
+%     \\
+%     \axiom{\rulenameexpredUnitElim}{\unlete {\unite}{\unite}e \reduces e}
+%     \qquad
+%     \axiom{\rulenameexpredTApp}{(\tappe{\tabse a \_ v)}{T} \reduces \subs Tav}
+%     \\
+%     \infrule{\rulenameexpredCase}
+%     {k\in L}
+%     {\casee{\injecte k v}{\recordp \ell e L}  \reduces e_kv}
+%     \qquad
+%     \infrule{\rulenameexpredCtx}
+%     {e \reduces e'}
+%     {E[e] \reduces E[e']}
+%   \end{gather*}
+%   % 
+%   \declrel{Process reduction}{$\isRed pp$}
+%   \begin{gather*}
+%     \infrule{\rulenameprocredExp}
+%     {e \reduces e'} 
+%     {\PROC{e} \reduces \PROC{e'}}
+%     \quad
+%     \axiom{\rulenameprocredFork}{\PROC{E[\appe{\tappe\forkk\_} e]} \reduces
+%       \PROC{E[\unite[\un]]} \PAR \PROC e}
+%     \quad
+%     \axiom{\rulenameprocredNew}{\PROC{E[\newe \_]} \reduces\NU xy\PROC{E[(x,y)]}}
+%     \\
+%     \axiom{\rulenameprocredMsg}{
+%       \NU xy(\PROC{E_1[\sendk[\_]v[\_]x]}
+%       \PAR \PROC{E_2[\receivek[\_][\_]y})
+%       % \NU xy(\PROC{E_1[\appe{\tappe{\appe{\tappe\sendk\_}v}\_}x]}
+%       % \PAR  \PROC{E_2[\appe{\tappe{\tappe\receivek\_}\_} y]})
+%       \reduces\NU xy(\PROC{E_1[x]} \PAR \PROC{E_2[(v,y)]})}
+%     \\
+%     \infrule{\rulenameprocredCh}
+%     {k\in L}
+%     {\NU xy(\PROC{E_1[\selecte k x]} \PAR \PROC{E_2[\matche
+%         y{\recordp \ell e L}]}) \reduces
+%       \hspace{10em}\\\hspace{23em}
+%       \NU xy(\PROC{E_1[x]} \PAR \PROC{E_2[e_ky]})
+%     }
+%     \\
+%     \infrule{\rulenameprocredPar}{p \reduces p'}{p\PAR q \reduces p'\PAR q}
+%     \qquad
+%     \infrule{\rulenameprocredBind}{p \reduces p'}{\NU xyp \reduces \NU xyp'}
+%     \qquad
+%     \infrule{\rulenameprocredCong}{p \equiv q\\ q \reduces q'}{p \reduces q'}
+%   \end{gather*}
+%   % not needed because the evaluation contexts do not bind any variables
+%   % Context $E_1$ (resp.~$E_2$, resp.~$E$) does not bind~$x$ (resp.~$y$,
+%   % resp.~$x$ and~$y$). 
+%   % \\
+%   % Dual $\NU xy$-rules for $\sendk/\receivek$ and $\selectk/\casek$
+%   % omitted. % Use structural congruence
+%   \caption{Reduction}
+%   \label{fig:reduction}
+% \end{figure}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:

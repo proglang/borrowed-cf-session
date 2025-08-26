@@ -1,0 +1,124 @@
+% Constant Typing
+
+\newcommand*\RuleCTLink{
+  \inferrule[CT-Link]{}{
+    \HasCType{\CLink_{\S}}{\TArr{\MobMobile}{\DirUnord,\EffPure} {\TPairUnord{\S}{\Dual\S}}\BUnit}
+  }
+}
+
+\newcommand*\RuleCTUnit{
+  \inferrule[CT-Unit]{}{
+    \HasCType\CUnit\BUnit
+  }
+}
+
+\newcommand*\RuleCTFork{
+  \inferrule[CT-Fork]{}{
+    \HasCType\CFork{
+      \TArr{\MobMobile}{\DirUnord,\EffPure}{
+        (\TArr{\MobMobile}{\DirUnord,\EffImpure}\BUnit\BUnit)
+      }{\BUnit}
+    }
+  }
+}
+
+\newcommand*\RuleCTNew{
+  \inferrule[CT-New]{}{
+    \HasCType{\CNew_{\S}}{\TArr{\MobMobile}{\DirUnord,\EffPure}{\BUnit}{\TPairUnord{\S}{\Dual\S}}}
+  }
+}
+
+\newcommand*\RuleCTDrop{
+  \inferrule[CT-Drop]{}{
+    \HasCType
+    {\CDrop}{\TArr{\MobMobile}{\DirUnord,\EffPure}{\SRet}{\BUnit}}
+  }
+}
+
+\newcommand*\RuleCTAcquire{
+  \inferrule[CT-Acquire]{}{
+    \HasCType
+    {\CAcq}{\TArr{\MobMobile}{\DirUnord,\EffPure}{\SSeq\SAcq\S}{\S}}
+  }
+}
+
+\newcommand*\RuleCTSplit{
+  \inferrule[CT-LSplit]{}{
+    \HasCType{\CSplit_{\S[1],\S[2]}}{\TArr{\MobMobile}{\DirUnord,\EffPure}{\SSeq {\S_1}{\S_2}}{\TPairOrd{\S_1}{\S_2}}}
+  }
+}
+
+\newcommand*\RuleCTSSplit{
+  \inferrule[CT-RSplit]{}{
+    \HasCType
+    {\CSSplit_{\S[1],\S[2]}}
+    {\TArr{\MobMobile}{\DirUnord,
+      \EffPure}
+      {\SSeq {\S_1}{\S_2}}
+      {\TPairUnord{(\SSeq{\S_1}{\SRet})}{(\SSeq{\SAcq}{\S_2})}}}
+  }
+}
+
+\newcommand*\RuleCTWait{
+  \inferrule[CT-Wait]{}{
+    \HasCType\CWait{\TArr{\MobMobile}{\DirUnord,\EffImpure}{\SWait[\O]}\BUnit}
+  }
+}
+
+\newcommand*\RuleCTTerm{
+  \inferrule[CT-Term]{}{
+    \HasCType\CTerm{\TArr{\MobMobile}{\DirUnord,\EffImpure}{\STerm[\O]}\BUnit}
+  }
+}
+
+\newcommand*\RuleCTSend{
+  \inferrule[CT-Send]{
+    \Mobile \T
+  }{
+    \HasCType\CSend{\TArr{\MobMobile}{\DirUnord,\EffImpure}{{\T}\PairUnord{\SSend[\O]\T}}\BUnit}
+  }
+}
+
+\newcommand*\RuleCTRecv{
+  \inferrule[CT-Recv]{
+    \Mobile \T
+  }{
+    \HasCType\CRecv{\TArr{\MobMobile}{\DirUnord,\EffImpure}{\SRecv[\O]\T}\T}
+  }
+}
+
+\newcommand*\RuleCTSelect{
+  \inferrule[CT-Select]{}{
+    \HasCType{\CSelect{k}}{\TArr{\MobMobile}{\SChoice{\ell:\S_\ell}{\ell\in L}}\S_k}
+  }
+  \\
+  \inferrule[CT-Select']{}{
+    \HasCType{\CSelect{k}}{\TArr{\MobMobile}{\SChoice{k:\SSkip}{}}\BUnit}
+  }
+}
+
+\newcommand*\RuleCTBranch{
+  \inferrule[CT-Branch]{}{
+    \HasCType\CBranch{\TArr{\MobMobile}{\SBranch{\ell:\S_\ell}{\ell\in L}}{\Sigma_k \S_k}}
+  }
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\newcommand*\RuleCTNewAlt{
+  \inferrule[CT-New]{}{
+    \HasCType{\CNew_{\S}}{\TArr{\MobMobile}{\DirUnord,\EffPure}{\BUnit}{\TPairUnord{\S^\blacksquare}{{\SDual\S}^\blacksquare}}}
+  }
+}
+
+\newcommand*\RuleCTSplitAlt{
+  \inferrule[CT-Split]{}{
+    \HasCType{\CSplit_{\S[1],\S[2]}}{\TArr{\MobMobile}{\DirUnord,\EffPure}{{(\SSeq {\S[1]}{\S[2]})}^{\K}}{\TPairOrd{\S[1]^{\S[2]\fatsemi\K}}{\S[2]^{\K}}}}
+  }
+}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:

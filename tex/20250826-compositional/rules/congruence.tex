@@ -1,0 +1,68 @@
+% Congruence
+
+\newcommand*\RuleProcCongRefl{
+  \inferrule[C-Refl]{}{
+    \Proc \Congruent \Proc
+  }
+}
+
+\newcommand*\RuleProcCongParComm{
+  \inferrule[C-ParComm]{}{
+    \PPar{\Proc[1]}{\Proc[2]} \Congruent \PPar{\Proc[2]}{\Proc[1]}
+  }
+}
+
+\newcommand*\RuleProcCongParAssoc{
+  \inferrule[C-ParAssoc]{}{
+    \PPar{\Proc[1]}{(\PPar{\Proc[2]}{\Proc[3]})} \Congruent \PPar{(\PPar {\Proc[1]}{\Proc[2]})}{\Proc[3]}
+  }
+}
+
+\newcommand*\RuleProcCongTrans{
+  \inferrule[C-Trans]{
+    \Proc[1] \Congruent \Proc[2] \\
+    \Proc[2] \Congruent \Proc[3]
+  }{
+    \Proc[1] \Congruent \Proc[3]
+  }
+}
+
+\newcommand*\RuleProcCongParUnit{
+  \inferrule[C-ParUnit]{}{
+    \PPar{\PExp{\CUnit}}{\Proc} \Congruent \Proc
+  }
+}
+
+\newcommand*\RuleProcCongResSwap{
+  \inferrule[C-ResSwap]{}{
+    \PNew{\BindGroup[1]}{\BindGroup[2]}\Proc \Congruent \PNew{\BindGroup[2]}{\BindGroup[1]}\Proc
+  }
+}
+
+\newcommand*\RuleProcCongResComm{
+  \inferrule[C-ResComm]{
+    (\Fv(\BindGroup[1]) \cup \Fv(\BindGroup[2])) \cap (\Fv(\BindGroup[3]) \cup \Fv(\BindGroup[4])) = \emptyset
+  }{
+    \PNew{\BindGroup[1]}{\BindGroup[2]}{\PNew{\BindGroup[3]}{\BindGroup[4]}\Proc}
+    \Congruent
+    \PNew{\BindGroup[3]}{\BindGroup[4]}{\PNew{\BindGroup[1]}{\BindGroup[2]}\Proc} 
+  }
+}
+
+\newcommand*\RuleProcCongExtend{
+  \inferrule[C-Extend]{
+    \Fv(\Proc[1]) \cap (\Fv(\BindGroup[1]) \cup \Fv(\BindGroup[2])) = \emptyset
+  }{
+    \PPar{\Proc[1]}{\PNew{\BindGroup[1]}{\BindGroup[2]}{\Proc[2]}}
+    \Congruent
+    {\PNew{\BindGroup[1]}{\BindGroup[2]}{(\PPar{\Proc[1]}{\Proc[2]})}}
+  }
+}
+
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:

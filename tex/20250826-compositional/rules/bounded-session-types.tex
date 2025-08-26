@@ -1,0 +1,128 @@
+% Mobile and Bounded Session Types
+
+\newcommand*\RuleTeAcq{
+  \inferrule[Te-Acq]{\Bounded\S}{\Mobile{(\SSeq\SAcq\S)}}
+}
+
+\newcommand*\RuleTeTerm{
+  \inferrule[Te-Term]{}{
+    \Bounded\STerm
+  }
+}
+
+\newcommand*\RuleTeRet{
+  \inferrule[Te-Rel]{}{
+    \Bounded\SRet
+  }
+}
+
+\newcommand*\RuleTeSeqOne{
+  \inferrule[Te-Seq1]{
+    \Bounded{\S_1}
+  } {
+    \Bounded{(\SSeq{\S_1}{\S_2})}
+  }
+}
+
+\newcommand*\RuleTeSeqTwo{
+  \inferrule[Te-Seq2]{
+    \Bounded{\S_2}
+  } {
+    \Bounded{(\SSeq{\S_1}{\S_2})}
+  }
+}
+
+\newcommand*\RuleTeBranch{
+  \inferrule[Te-Branch]{
+    \forall \ell.\ \Bounded{\S_\ell}
+  } {
+    \Bounded{\SBranch{\ell:\S_\ell}{\ell\in L}}
+  }
+}
+
+\newcommand*\RuleTeChoice{
+  \inferrule[Te-Choice]{
+    \forall \ell.\ \Bounded{\S_\ell}
+  } {
+    \Bounded{\SChoice{\ell:\S_\ell}{\ell\in L}}
+  }
+}
+
+\newcommand*\RuleTeVar{
+  \inferrule[Te-Var]{}{
+  \Bounded\SVar 
+  }
+}
+
+\newcommand*\RuleTeRec{
+  \inferrule[Te-Rec]{
+  \Bounded\S
+  }{
+  \Bounded{\SRec\SVar\S}
+  }
+}
+
+\newcommand*\RuleTeBase{
+  \inferrule[Te-Base]{}{
+    \Mobile{\BUnit}
+  }
+}
+
+\newcommand*\RuleTeProd{
+  \inferrule[Te-Prod]{
+    \Mobile{\T[1]} \\
+    \Mobile{\T[2]}
+  }{
+    \Mobile{(\TPair{\T[1]}{\T[2]})}
+  }
+}
+
+\newcommand*\RuleTeVariant{
+  \inferrule[Te-Var]{
+    \forall\ell. \Mobile \T[\ell]
+  }{
+    \Mobile{(\TVariant{\T[\ell]}{\ell\in L})}}
+}
+
+\newcommand*\RuleTeArr{
+  \inferrule[Te-Arr]{}{
+    \Mobile{(\TArr{\MobMobile}{\Dir,\Eff}{\T_1}{\T_2})}
+  }
+}
+
+\newcommand*\RuleTeCtxEmpty{
+  \inferrule[Te-Ctx-Empty]{}{
+    \Mobile \CtxEmpty
+  }
+}
+
+\newcommand*\RuleTeCtxSeq{
+  \inferrule[Te-Ctx-Seq]{
+    \Mobile \Ctx[1] \\
+    \Mobile \Ctx[2]
+  }{
+    \Mobile (\CtxSeq{\Ctx[1]}{\Ctx[2]})
+  }
+}
+
+\newcommand*\RuleTeCtxPar{
+  \inferrule[Te-Ctx-Par]{
+    \Mobile \Ctx[1] \\
+    \Mobile \Ctx[2]
+  }{
+    \Mobile (\CtxPar{\Ctx[1]}{\Ctx[2]})
+  }
+}
+
+\newcommand*\RuleTeCtxVar{
+  \inferrule[Te-Ctx-Var]{
+    \Mobile \T
+  }{
+    \Mobile (\CtxVar \EVar \T)
+  }
+}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:

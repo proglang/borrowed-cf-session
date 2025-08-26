@@ -1,0 +1,400 @@
+\newcommand{\thecalculus}{\textsc{BGV}\xspace}
+
+\newcommand{\metacolor}{\textcolor{black}}
+\newcommand{\ctxcolor}{\textcolor{RoyalPurple}}
+\newcommand{\targetctxcolor}{\textcolor{blue}}
+\newcommand{\typecolor}{\textcolor{RoyalPurple}}
+\newcommand{\targettypecolor}{\textcolor{blue}}
+\newcommand{\termcolor}{\textcolor{Mahogany}}
+\newcommand{\priocolor}{\textcolor{Emerald}}  % LimeGreen -> too light
+\newcommand{\dircolor}{\textcolor{Melon}}
+\newcommand{\mobcolor}{\textcolor{LimeGreen}}
+\newcommand{\targettermcolor}{\textcolor{Sepia}}
+
+\newcommand*\Keyword[1]{\operatorname{\texttt{#1}}}
+\newcommand*\TermKeyword[1]{\termcolor{\Keyword{#1}}}
+\newcommand*\TypeKeyword[1]{\typecolor{\Keyword{#1}}}
+\newcommand*\TargetTypeKeyword[1]{\targettypecolor{\Keyword{#1}}}
+\newcommand*\TargetTermKeyword[1]{\targettermcolor{\Keyword{#1}}}
+
+% Grammars
+\newcommand{\grmeq}{\; \Coloneqq \;\;}
+\newcommand{\grmor}{\;\mid\;}
+
+% Mobilities
+\newcommand*\Mob{\mobcolor{m}}
+\newcommand*\MobMobile{\mobcolor{\textsc m}}
+\newcommand*\MobStationary{\mobcolor{\textsc s}}
+
+% Multiplicities
+\newcommand*\Mul{m}
+\newcommand*\MulLin{1}
+\newcommand*\MulUnr{\omega}
+
+% Directions
+\newcommand*\Dir{\dircolor{d}}
+\newcommand*\DirLeft{\dircolor{\textsc l}}
+\newcommand*\DirRight{\dircolor{\textsc r}}
+\newcommand*\DirNone{\dircolor{\omega}} % {\cdot} % This should be un
+\newcommand*\DirUnord{\dircolor{\mathbf 1}} % {\circ} %This should be lin
+
+% Pairs
+\newcommand*\Pair[1][{}]{\mathbin{\typecolor{\otimes}_{#1}}}
+\newcommand*\PairUnord{\typecolor{\otimes}}
+\newcommand*\PairOrd{\typecolor{\odot}}
+
+% Kinds
+\newcommand*\K{K}
+\newcommand*\KSession[1]{\mathcal{S}^{#1}}
+\newcommand*\KType[1]{\mathcal{T}^{#1}}
+
+% Base Types
+\newcommand*\B{\typecolor{B}}
+\newcommand*\BUnit{\TypeKeyword{Unit}}
+\newcommand*\BInt{\TypeKeyword{Int}}
+\newcommand*\BBool{\TypeKeyword{Bool}}
+\newcommand*\BString{\TypeKeyword{String}}
+
+% Types
+\newcommand*\T[1][{}]{\typecolor{T_{#1}}}
+\newcommand*\TProd[3]{\typecolor{{#2}\otimes_{#1}{#3}}}
+\newcommand*\TPair[3][{}]{\typecolor{{#2}\Pair[#1]{#3}}}
+\newcommand*\TPairUnord[2]{\TProd\DirUnord{#1}{#2}} % \typecolor{{#1}\PairUnord{#2}}}
+\newcommand*\TPairOrd[2]{\TProd\DirLeft{#1}{#2}} %{\typecolor{{#1}\PairOrd{#2}}}
+\newcommand*\TSum[2]{\typecolor{{#1}+{#2}}}
+\newcommand*\TVariant[2]{\typecolor{\langle{#1}\rangle_{#2}}}
+\newcommand*\TArr[4]{\typecolor{{#3}\to^{#1}_{#2}{#4}}}
+% \newcommand*\TArr[4]{{#3}\overset{{#1};{#2}}\to{#4}}
+\newcommand*\TExists[3][{}]{\typecolor{\exists #2^{#1}. #3}}
+
+% Unrestricted Types
+\newcommand*\M{M}
+
+% Priorities
+\renewcommand*\O{\priocolor{o}}
+\renewcommand*\P[1][{}]{\priocolor{p_{#1}}}
+\newcommand*\Q[1][{}]{\priocolor{q_{#1}}}
+\newcommand*\pr[1]{\metacolor{\operatorname{pr}(}#1\metacolor)}
+\newcommand*\ptop{\priocolor{\top}}
+\newcommand*\pbot{\priocolor{\bot}}
+\newcommand*\plub{\mathbin{\priocolor{\sqcup}}}
+\newcommand*\pglb{\mathbin{\priocolor{\sqcap}}}
+
+% Session Types
+\renewcommand*\S[1][{}]{\typecolor{S_{#1}}}
+\newcommand*\R[1][{}]{\typecolor{R_{#1}}}
+\newcommand*\SVar{\typecolor{X}}
+\newcommand*\SSkip{\TypeKeyword{Skip}}
+\newcommand*\SSeq[2]{\typecolor{{#1};{#2}}}
+\newcommand*\SWait[1][{}]{\TypeKeyword{Wait}}
+\newcommand*\STerm[1][{}]{\TypeKeyword{Close}} % Term}}
+\newcommand*\SDual[1]{\typecolor{#1}^{\metacolor\bot}} % {\typecolor{\Dual\,({#1})}}
+\newcommand*\STrans[2][{}]{\typecolor{\operatorname{\#}{#2}}}
+\newcommand*\SSend[2][{}]{\typecolor{\operatorname{!}{#2}}}
+\newcommand*\SRecv[2][{}]{\typecolor{\operatorname{?}{#2}}}
+\newcommand*\SRecord[2]{\typecolor{\{{#1}\}_{#2}}}
+\newcommand*\SVariant[2]{\typecolor{\langle{#1}\rangle_{#2}}}
+\newcommand*\SMulti[3][{}]{\typecolor{\odot\SRecord{#2}{#3}}}
+\newcommand*\SChoice[3][{}]{\typecolor{\oplus\SRecord{#2}{#3}}}
+\newcommand*\SBranch[3][{}]{\typecolor{\&\SRecord{#2}{#3}}}
+\newcommand*\SRec[2]{\typecolor{\mu{#1}.{#2}}}
+\newcommand*\SRet{\TypeKeyword{Ret}}
+\newcommand*\SAcq{\TypeKeyword{Acq}}
+
+\newcommand*\SComp[1]{{#1}\mathbin{\metacolor{\fatsemi}}}
+
+\newcommand\SSeen{\ctxcolor{\Theta}}
+\newcommand\SeenEmpty{\ctxcolor{\emptyset}}
+\newcommand\SeenSnoc[1]{\ctxcolor{;{}}({#1})}
+
+\newcommand*\Sbot[1][{}]{\typecolor{S^{?}_{#1}}}
+\newcommand\SNil{\typecolor{\bot}}
+\newcommand\Ssub[2]{[{#2}/{#1}]}
+
+\newcommand\SStrip[3][\SSeen]{{#1}\vdash{#2}\mathbin{\%}{#3}}
+\DeclareMathOperator\Smerge{merge}
+
+% Target
+\newcommand*\TT{\targettypecolor{T}}
+\newcommand*\ST{\targettypecolor{S}}
+\newcommand*\STSend[2][{}]{\targettypecolor{\operatorname{!}^{\priocolor{#1}}{#2}.}}
+\newcommand*\STRecv[2][{}]{\targettypecolor{\operatorname{?}^{\priocolor{#1}}{#2}.}}
+\newcommand*\STWait[1][{}]{\targettypecolor{\Keyword{Wait}}^{\priocolor{#1}}}
+\newcommand*\STTerm[1][{}]{\targettypecolor{\Keyword{Close}}^{\priocolor{#1}}} % Term}}
+\newcommand*\TTPair[3][{}]{\targettypecolor{{#2}\otimes^{#1}{#3}}}
+\newcommand*\STDual[1]{\targettypecolor{\Dual\,({#1})}}
+\newcommand*\TBUnit{\TargetTypeKeyword{Unit}}
+
+\newcommand*\TTVariant[2]{\targettypecolor{\langle{#1}\rangle_{#2}}}
+\newcommand*\TTArr[3]{\targettypecolor{{#2}\to^{#1}{#3}}}
+
+\newcommand*\TCtx{\targetctxcolor{\Gamma}}
+\newcommand*\TCtxEmpty{\targetctxcolor{\emptyset}}
+
+% Contexts
+\newcommand*\Ctx[1][{}]{\ctxcolor{\Gamma_{#1}}}
+\newcommand*\CtxEmpty{\ctxcolor{\emptyset}}
+% \newcommand*\CtxEmpty{\ctxcolor{\cdot}}
+\newcommand*\CtxVar[2]{\ctxcolor{{\termcolor{#1}}:{\typecolor{#2}}}}
+\newcommand*\CtxExt[2]{\ctxcolor{{#1},{#2}}}
+\newcommand*\CtxExtUnord[2]{\ctxcolor{{#1} \parallel {#2}}}
+\newcommand*\CtxPatternRaw{\ctxcolor{\mathcal{G}}}
+\newcommand*\CtxPattern[1]{\ctxcolor{\mathcal{G}[#1]}}
+\newcommand*\CtxLeftPattern[1]{\ctxcolor{\mathcal{L}[#1]}}
+\newcommand*\CtxExtInactive[4]{{#1},{#2}:^{#4}[{#3}]}
+\newcommand*\CtxSeq[2]{\ctxcolor{{#1},{#2}}}
+\newcommand*\CtxPar[2]{\ctxcolor{{#1}\parallel{#2}}}
+\newcommand*\CtxSplit[4]{{#1}=^{#4}{#2}\fatsemi{#3}}
+\newcommand*\CtxExtTarget[2]{{#1},{#2}}
+% \newcommand*\CtxExtTarget[2]{{#1}\rhd{#2}}
+\newcommand*\IsLeftPat{\operatorname{\textsf{LeftPat}}}
+\newcommand*\CtxRestrict[2]{{#1}\downarrow{#2}}
+\newcommand*\SubCtx{\preccurlyeq}
+\newcommand*\CtxBind[2]{\ctxcolor{{#1}:{#2}}}
+
+% Session Contexts
+\newcommand*\SCtx{\Xi}
+\newcommand*\SCtxEmpty{\cdot}
+\newcommand*\SCtxExt[3]{{#1},{#2}:{#3}}
+
+% binders
+\newcommand*\BindGroup[1][{}]{\termcolor{B_{#1}}}
+\newcommand*\Bind[1][{}]{\termcolor{b_{#1}}}
+\newcommand*\BSeq[2]{\termcolor{#1; #2}}
+\newcommand*\BPar[2]{\termcolor{#1\|#2}}
+\newcommand*\BEmp{\termcolor{\cdot}}
+
+% Expressions
+\newcommand*\E[1][{}]{\termcolor{e_{#1}}}
+\newcommand*\EVar[1][{}]{\termcolor{x_{#1}}}
+\newcommand*\EVary{\termcolor{y}}
+\newcommand*\EBorrow[1]{\termcolor{\&{#1}}}
+\newcommand*\EAbs[3][{}]{\termcolor{\lambda_{#1}{#2}.{#3}}}
+\newcommand*\EApp[2]{\termcolor{{#1}\,{#2}}}
+\newcommand*\EAppD[3][{}]{\termcolor{({#2}\,{#3})_{#1}}} % with direction
+\newcommand*\EInj[2]{\termcolor{\Keyword{inj$_{#1}$}{#2}}}
+\newcommand*\EPair[3][{}]{\termcolor{{#2} \otimes_{#1} {#3}}}
+\newcommand*\EPairOrd[2]{\EPair[\DirLeft]{#1}{#2}} % {\termcolor{{#1} \odot {#2}}}
+\newcommand*\ECase[5]{\termcolor{\Keyword{case} {#1} \mathop{\{} \Keyword{inj$_1$} {#2} \Rightarrow{#3}; \Keyword{inj$_2$} {#4} \Rightarrow{#5} \mathop{\}}}}
+\newcommand*\ELet[2]{\termcolor{\Keyword{let}\,{#1} \Keyword{=} {#2}\,\Keyword{in}\,}}
+\newcommand*\ESeq[1]{\termcolor{{#1}\!\Keyword{;}}}
+\newcommand*\ELetPair[4][{}]{\termcolor{\ELet{\EPair[#1]{#2}{#3}}{#4}}}
+\newcommand*\ELetPairOrd[3]{\ELetPair[\DirLeft]{#1}{#2}{#3}} % {\termcolor{\ELet{\EPairOrd{#1}{#2}}{#3}}}
+\newcommand*\EFork[1]{\termcolor{\CFork~{#1}}}
+\newcommand*\EMatch[3]{\termcolor{\Keyword{match}\, {#1}\, \Keyword{with}\, \ERecord{#2}{#3}}}
+\newcommand*\EMatchA[3]{\termcolor{\begin{array}[t]{@{}l@{}l}\Keyword{match}&\, {#1}\, \Keyword{with}\\&\ERecord{#2}{#3}\end{array}}}
+\newcommand*\EPacked[2]{\termcolor{\langle#1,#2\rangle}}
+\newcommand*\EPack[2]{\termcolor{\Keyword{pack}\,\langle#1,#2\rangle\,\Keyword{as}\,}}
+\newcommand*\EOpen[3]{\termcolor{\Keyword{open}\,\langle#1,#2\rangle = #3\,\Keyword{in}\,}}
+\newcommand*\ERecord[2]{\termcolor{\{{#1}\}_{#2}}}
+
+
+\newcommand*\CRead{\targettermcolor{\mathit{read}}}
+\newcommand*\CWrite{\targettermcolor{\mathit{write}}}
+\newcommand*\CWrap{\targettermcolor{\mathit{wrap}}}
+
+% Constants
+\newcommand*\C{\termcolor{c}}
+\newcommand*\CUnit{\TermKeyword{()}}
+\newcommand*\CBase{\TermKeyword{b}}
+\newcommand*\CFork{\TermKeyword{fork}}
+\newcommand*\CSplit{\TermKeyword{lsplit}}
+\newcommand*\CSSplit{\TermKeyword{rsplit}}
+\newcommand*\CDrop{\TermKeyword{drop}}
+\newcommand*\CAcq{\TermKeyword{acquire}}
+\newcommand*\CNew{\TermKeyword{new}}
+\newcommand*\CLink{\TermKeyword{link}}
+\newcommand*\CWait{\TermKeyword{wait}}
+\newcommand*\CTerm{\TermKeyword{close}} % term}}
+\newcommand*\CSend{\TermKeyword{send}}
+\newcommand*\CRecv{\TermKeyword{recv}} % recv}}
+\newcommand*\CSelect[1]{\EApp{\TermKeyword{select}}{#1}}
+\newcommand*\CBranch{\TermKeyword{branch}}
+\newcommand*\COffer{\TermKeyword{offer}}
+
+
+% target Expressions
+\newcommand*\TE[1][{}]{\targettermcolor{e_{#1}}}
+\newcommand*\TEVar[1][{}]{\targettermcolor{x_{#1}}}
+\newcommand*\TEVary{\targettermcolor{y}}
+\newcommand*\TEAbs[3][{}]{\targettermcolor{\lambda_{#1}{#2}.{#3}}}
+\newcommand*\TEApp[2]{\targettermcolor{{#1}\,{#2}}}
+\newcommand*\TEInj[2]{\targettermcolor{\Keyword{inj$_{#1}$}{#2}}}
+\newcommand*\TEPair[3][{}]{\targettermcolor{{#2} \otimes_{#1} {#3}}}
+\newcommand*\TECase[5]{\targettermcolor{\Keyword{case} {#1} \mathop{\{} \Keyword{inj$_1$} {#2} \Rightarrow{#3}; \Keyword{inj$_2$} {#4} \Rightarrow{#5} \mathop{\}}}}
+\newcommand*\TELet[2]{\targettermcolor{\Keyword{let}\,{#1} \Keyword{=} {#2}\,\Keyword{in}\,}}
+\newcommand*\TESeq[1]{\targettermcolor{{#1}\!\Keyword{;}}}
+\newcommand*\TELetPair[4][{}]{\targettermcolor{\TELet{\TEPair[#1]{#2}{#3}}{#4}}}
+\newcommand*\TEFork[1]{\targettermcolor{\TCFork~{#1}}}
+\newcommand*\TEMatch[3]{\targettermcolor{\Keyword{match}\, {#1}\, \Keyword{with}\, \TERecord{#2}{#3}}}
+\newcommand*\TEMatchA[3]{\targettermcolor{\begin{array}[t]{@{}l@{}l}\Keyword{match}&\, {#1}\, \Keyword{with}\\&\ERecord{#2}{#3}\end{array}}}
+\newcommand*\TERecord[2]{\targettermcolor{\{{#1}\}_{#2}}}
+
+% target constants
+\newcommand*\TC{\targettermcolor{c}}
+\newcommand*\TCUnit{\TargetTermKeyword{()}}
+\newcommand*\TCBase{\TargetTermKeyword{b}}
+\newcommand*\TCFork{\TargetTermKeyword{spawn}}
+\newcommand*\TCSplit{\TargetTermKeyword{split}}
+\newcommand*\TCNew{\TargetTermKeyword{new}}
+\newcommand*\TCLink{\TargetTermKeyword{link}}
+\newcommand*\TCWait{\TargetTermKeyword{wait}}
+\newcommand*\TCTerm{\TargetTermKeyword{close}} % term}}
+\newcommand*\TCSend{\TargetTermKeyword{send}}
+\newcommand*\TCRecv{\TargetTermKeyword{recv}} % recv}}
+\newcommand*\TCSelect[1]{\EApp{\TargetTermKeyword{select}}{#1}}
+\newcommand*\TCBranch{\TargetTermKeyword{branch}}
+\newcommand*\TCOffer{\TargetTermKeyword{offer}}
+\newcommand*\TCDrop{\TargetTermKeyword{drop}}
+
+% Values
+\newcommand*\V{\termcolor{v}}
+\newcommand*\U{\termcolor{u}}
+
+% Evaluation Contexts
+\newcommand*\EC{\termcolor{E}}
+\newcommand*\ECEmpty{\termcolor{\Box}}
+
+% Flagged Contexts
+\newcommand*\FC[1][{}]{\termcolor{\mathcal{F}_{#1}}}
+\newcommand*\FCapp[2][{}]{\termcolor{\mathcal{F}_{#1}[#2]}}
+
+% Configuration Contexts
+\newcommand*\CC[1][{}]{\termcolor{\mathcal{G}_{#1}}}
+\newcommand*\CCapp[2][{}]{\termcolor{\mathcal{G}_{#1}[#2]}}
+
+% Processes
+\newcommand*\Proc[1][{}]{\termcolor{{P}_{#1}}}
+\newcommand*\PExp[2][{}]{\termcolor{{}^{#1}\langle{#2}\rangle}}
+\newcommand*\PNew[3]{\termcolor{(\nu [{#1}][{#2}]){#3}}}
+\newcommand*\PPar[2]{\termcolor{{#1} \,\|\, {#2}}}
+
+% Variable Sets ("Dependencies")
+\newcommand*\D{\Delta}
+\newcommand*\DVar{\delta}
+\newcommand*\DSingle[1]{\{{#1}\}}
+\newcommand*\DEmpty{\emptyset}
+\newcommand*\DJoin{\cup}
+
+% Effects
+\newcommand*\Eff[1][{}]{\typecolor{\epsilon_{#1}}}
+\newcommand*\EffPure{\typecolor{\textsc{p}}}
+\newcommand*\EffImpure{\typecolor{\textsc{i}}}
+% \newcommand*\EffPure{\typecolor{\mathbf{0}}}
+% \newcommand*\EffImpure{\typecolor{\mathbf{1}}}
+
+% Effect Order
+\newcommand*\EffLeq{\sqsubseteq}
+\newcommand*\EffJoin{\metacolor\sqcup} 
+
+% Flags
+\newcommand*\Flag{\termcolor{\phi}}
+\newcommand*\FlagMain{\termcolor{\bullet}}
+\newcommand*\FlagAux{\termcolor{\circ}}
+
+% Graphs
+\newcommand*\Graph{G}
+\newcommand*\Node{n}
+
+% Session Type Equivalence
+\newcommand*\SEq{\approx}
+
+% Free Variables
+\newcommand*\Fv{\operatorname{\mathsf{fv}}}
+
+% Domain of a type context
+\newcommand*\CtxDom{\operatorname{\mathsf{dom}}}
+
+% Dual Session Type
+\newcommand*\Dual{{\operatorname{\mathsf{dual}}}}
+
+% Ordered Types
+\newcommand*\Ord{\operatorname{\mathsf{ord}}}
+
+% Unrestricted Types
+\newcommand*\Unr{\operatorname{\mathsf{unr}}}
+
+% Terminated Session Types
+\newcommand*\Bounded{\operatorname{\mathsf{bounded}}}
+\newcommand*\Mobile{\operatorname{\mathsf{mobile}}}
+
+% Session Type Formation
+\newcommand*\HasSKind[4]{{#1}\mid{#2}\vdash{#3}:{#4}}
+
+% Regular Type Formation
+\newcommand*\HasTKind[3]{{#1}\vdash{#2}:{#3}}
+
+% Expression Typing
+\newcommand*\HasType[5][{}]{{\ctxcolor{#2}}\vdash{\termcolor{#3}}:{\typecolor{#4}}\mid{\typecolor{#5}}}
+
+% Constant Typing
+\newcommand*\HasCType[2]{{#1}:{#2}}
+
+% Process Typing
+\newcommand*\ProcHasType[2]{\ctxcolor{#1} \vdash {\termcolor{#2}} }
+
+% Type Context Formation
+\newcommand*\CtxWf[1]{\vdash{#1}}
+
+% Multiplicity Order
+\newcommand*\MulLeq{\leq}
+
+% Subtyping for Sessions
+\newcommand*\IsSSubtypeOf{\operatorname{<:^s}}
+
+% Subtyping for Types
+\newcommand*\IsTSubtypeOf{\operatorname{<:^t}}
+
+% Algorithmic Expression Typing
+\newcommand*\TypeInfer[5]{{#1}\vdash{#2}\uparrow{#3}\mid{#4}\mid{#5}}
+\newcommand*\TypeCheck[5]{{#1}\vdash{#2}\downarrow{#3}\mid{#4}\mid{#5}}
+
+\newcommand*\TypeInferX[5][]{{#2}\vdash{#3}\uparrow^{#1}{#4}\dashv{#5}}
+\newcommand*\TypeCheckX[5][]{{#2}\vdash{#3}\downarrow^{#1}{#4}\dashv{#5}}
+
+\newcommand*\CtxDiff[2]{{#1} \operatorname{\backslash} {#2}}
+\newcommand*\IfThenElse[3]{\Keyword{if}{#1}\Keyword{then}{#2}\Keyword{else}{#3}}
+
+% Reduction 
+\newcommand{\Reduces}{\rightarrow}
+\newcommand{\IsRed}[2]{{#1}\;{\reduces}\;{#2}}
+
+% Operators 
+\newcommand{\Subs}[3]{\termcolor{{#1}[{#2}/{#3}]}}
+
+% Congruence
+\newcommand{\Congruent}{\equiv}
+
+% Translations
+\newcommand*\TA[2]{\metacolor{\llbracket #1;#2 \rrbracket_{\Gamma}}}
+% \newcommand*\TA[2]{\metacolor{\llbracket #2 \rrbracket_{\Gamma} ({#1})}}
+% {\metacolor{\mathcal{T}_{\Ctx}( #1 , #2 )}}
+\newcommand*\TTA[1]{\metacolor{\llbracket #1 \rrbracket_{\textsc t}}} % {\metacolor{\mathcal{T}_{\T} (#1)}}
+\newcommand*\TS[2]{\metacolor{\llbracket #1, #2 \rrbracket_{\textsc s}}} % {\metacolor{\mathcal{T}_{\S} (#1, #2)}}
+\newcommand*\TSA[1]{\metacolor{\llbracket #1 \rrbracket_{\textsc s}}}% {\metacolor{\mathcal{T}_{\S} (#1)}}
+\newcommand*\TCA[1]{\metacolor{\llbracket #1\rrbracket_{\textsc c}}}
+%{\metacolor{\mathcal{T}_{\C} (#1)}}
+\newcommand*\TEA[1]{\metacolor{\llbracket #1 \rrbracket_{\textsc e}}}% {\metacolor{\mathcal{T}_{\E} (#1)}}
+
+\newcommand*\Cell[2][{}]{\targettypecolor{\Keyword{Cell}^{\priocolor{#1}}} (#2)}
+
+% Predicates on types
+\newcommand*\IsBorrow[1]{\Keyword{Borrow}~#1}
+\newcommand*\IsOwning[1]{\Keyword{Owning}~#1}
+
+% General math
+\newcommand*\Nat{\mathbf{N}}
+
+% Target types
+\newcommand*\HasTargetType[4][{}]{#2 \vdash^{#1} {#3}:{#4} }
+
+% Notes
+\newcommand{\note}[2]{{\color{red}[#1:} #2{\color{red}]}}
+\newcommand{\vv}[1]{\note{vv}{#1}}
+\newcommand{\pt}[1]{\note{pt}{#1}}
+\newcommand{\hs}[1]{\note{hs}{#1}}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "main"
+%%% End:

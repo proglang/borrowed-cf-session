@@ -1,0 +1,68 @@
+% Session Subtyping
+
+\newcommand*\RuleSSTBranch{
+  \inferrule[SST-Branch]{}{
+    \SBranch{i:\S_i} \IsSSubtypeOf \SBranch{i:\S_i, j:\S_j}
+  }
+}
+
+\newcommand*\RuleSSTChoice{
+  \inferrule[SST-Choice]{}{
+    \SChoice{i:\S_i, j:\S_j} \IsSSubtypeOf \SChoice{i:\S_i}
+  }
+}
+
+\newcommand*\RuleSSTSeq{
+  \inferrule[SST-Seq]{
+    \S_1 \IsSSubtypeOf \S_1' \\
+    \S_2 \IsSSubtypeOf \S_2'
+  }{
+    \SSeq{\S_1}{\S_2} \IsSSubtypeOf \SSeq{\S_1'}{\S_2'}
+  }
+}
+
+\newcommand*\RuleSSTTerm{
+  \inferrule[SST-Term]{}{
+    \STerm \IsSSubtypeOf \STerm
+  }
+}
+
+\newcommand*\RuleSSTWait{
+  \inferrule[SST-Wait]{}{
+    \SWait \IsSSubtypeOf \SWait
+  }
+}
+
+\newcommand*\RuleSSTSend{
+  \inferrule[SST-Send]{}{
+    \SSend\M \IsSSubtypeOf \SSend\M
+  }
+}
+
+\newcommand*\RuleSSTRecv{
+  \inferrule[SST-Recv]{}{
+    \SRecv\M \IsSSubtypeOf \SRecv\M
+  }
+}
+
+\newcommand*\RuleSSTRecL{
+  \inferrule[SST-RecL]{
+    \S_1[\SVar := \SRec\SVar{\S_1}] \IsSSubtypeOf \S_2
+  }{
+    \SRec\SVar{\S_1} \IsSSubtypeOf \S_2
+  }
+}
+
+\newcommand*\RuleSSTRecR{
+  \inferrule[SST-RecR]{
+    \S_1 \IsSSubtypeOf \S_2[\SVar := \SRec\SVar{\S_2}]
+  }{
+    \S_1 \IsSSubtypeOf \SRec\SVar{\S_2}
+  }
+}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:

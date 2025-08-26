@@ -1,0 +1,65 @@
+% Unrestricted Types
+
+\newcommand*\RuleUBase{
+  \inferrule[U-Base]{}{
+    \Unr\B
+  }
+}
+
+\newcommand*\RuleUProd{
+  \inferrule[U-Prod]{
+    \Unr{\T_1} \\
+    \Unr{\T_2}
+  } {
+    \Unr{(\TPair{\T_1}{\T_2})}
+  }
+}
+
+% \newcommand*\RuleUSum{
+%   \inferrule[U-Sum]{
+%     \Unr{\T_1} \\
+%     \Unr{\T_2}
+%   } {
+%     \Unr{(\TSum{\T_1}{\T_2})}
+%   }
+% }
+
+\newcommand*\RuleUArr{
+  \inferrule[U-Arr]{}{
+    \Unr{(\TArr\DirNone\Eff{\T_1}{\T_2})}
+  }
+}
+
+\newcommand*\RuleUSkip{
+  \inferrule[U-Skip]{}{
+    \Unr{\SSkip}
+  }
+}
+
+\newcommand*\RuleUSeq{
+  \inferrule[U-Seq]{
+    \Unr{\S_1} \\
+    \Unr{\S_2}
+  } {
+    \Unr{(\SSeq{\S_1}{\S_2})}
+  }
+}
+
+\newcommand*\RuleUVar{
+  \inferrule[U-Var]{}{
+    \Unr{\SVar}
+  }
+}
+
+\newcommand*\RuleURec{
+  \inferrule[U-Rec]{
+    \Unr{\S}
+  } {
+    \Unr{(\SRec\SVar\S)}
+  }
+}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:

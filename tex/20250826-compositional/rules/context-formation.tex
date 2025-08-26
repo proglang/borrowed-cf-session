@@ -1,0 +1,37 @@
+% Context Formation
+
+\newcommand*\RuleCFEmpty{
+  \inferrule[CF-Empty]{}{
+    \CtxWf{\CtxEmpty}
+  }
+}
+
+\newcommand*\RuleCFExt{
+  \inferrule[CF-Ext]{
+    \CtxWf{\Ctx} \\
+    \EVar \not\in \CtxDom\Ctx \\
+    \D \subseteq \CtxDom\Ctx
+  }{
+    \CtxWf{\CtxExt\Ctx\EVar\T\D}
+  }
+}
+
+\newcommand*\RuleCFExtInactive{
+  \inferrule[CF-ExtInactive]{
+    \CtxWf{\Ctx} \\
+    \EVar \not\in \CtxDom\Ctx \\
+    \D \subseteq \CtxDom\Ctx
+  }{
+    \CtxWf{\CtxExtInactive\Ctx\EVar\T\D}
+  }
+}
+
+\newcommand*\RuleCFExtMeta{
+  \inferrule[CF-ExtMeta]{
+    \CtxWf{\Ctx} \\
+    \DVar \not\in \CtxDom\Ctx
+  }{
+    \CtxWf{\CtxExtD\Ctx\DVar}
+  }
+}
+

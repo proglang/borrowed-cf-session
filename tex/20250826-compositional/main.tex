@@ -1,0 +1,569 @@
+\documentclass{article}
+
+\usepackage[pdftex,usenames,dvipsnames]{xcolor}
+\usepackage{mathpartir}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\usepackage{placeins}
+\usepackage{mathtools}
+
+
+
+\input{symbols}
+\input{rules/unrestricted-types}
+\input{rules/ord-types}
+\input{rules/bounded-session-types}
+% \input{rules/session-type-formation}
+% \input{rules/type-formation}
+\input{rules/context-formation}
+\input{rules/session-subtyping}
+\input{rules/type-subtyping}
+\input{rules/type-context-splitting}
+\input{rules/constant-typing}
+\input{rules/typing}
+\input{rules/process-typing}
+\input{rules/reduction}
+\input{rules/congruence}
+
+\newtheorem{lemma}{Lemma}
+
+\title{Context-Free Session Types with Borrowing}
+\date{August 26, 2025}
+
+\begin{document}
+\maketitle
+
+\begin{figure}[tp]
+  \begin{itemize}
+  \item prove subject reduction (start: April 24)
+  \item sketch translation, prove simulation (start: April 24)
+  \item target FreeST according to I\&C paper; encode existentials by
+    universals
+  \item maybe: bisimulation
+  \item later: add recursive types and recursion to source language
+  \item later: add explicit polymorphism as in FreeST
+  \end{itemize}
+  \caption{The Plan}
+  \label{fig:the-plan}
+\end{figure}
+
+
+The next couple of lemmas are needed to prove that
+expression reduction preserves typing.
+
+\begin{lemma}
+  If $\HasType {\Ctx} {\V} {\T} {\Eff}$
+  then $\Eff = \EffPure$.
+\end{lemma}
+\begin{proof}
+  By induction on the derivation of $\HasType {\Ctx} {\V} {\T} {\Eff}$.
+\end{proof}
+
+\begin{lemma}[Substitution]\
+  \begin{itemize}
+    \item If $\HasType {\Ctx[1]} {\V} {\T[1]} {\Eff[1]}$ and
+    $\HasType {\CtxExtUnord{\CtxVar x{\T[1]}}{\Ctx[2]}} {\E} {\T[2]} {\Eff[2]}$
+    then 
+    $\HasType {\CtxExtUnord{\Ctx[1]}{\Ctx[2]}} {\Subs\E\V x} {\T[2]} {\Eff[2]}$
+    \item If $\HasType {\Ctx[1]} {\V} {\T[1]} {\Eff[1]}$ and
+    $\HasType {\CtxExt{\CtxVar x{\T[1]}}{\Ctx[2]}} {\E} {\T[2]} {\Eff[2]}$
+    then 
+    $\HasType {\CtxExt{\Ctx[1]}{\Ctx[2]}} {\Subs\E\V x} {\T[2]} {\Eff[2]}$
+    \item If $\HasType {\Ctx[1]} {\V} {\T[1]} {\Eff[1]}$
+    and
+    $\HasType
+    {\CtxPattern{\CtxExtUnord{\CtxVar x{\T[1]}}{\Ctx[2]}}}
+    {\E}
+    {\T[2]}
+    {\Eff[2]}$ then 
+    $\HasType {\CtxPattern{\CtxExtUnord{\Ctx[1]}{\Ctx[2]}}} {\Subs\E\V x} {\T[2]} {\Eff[2]}$
+  \item If $\HasType {\Ctx[1]} {\V} {\T[1]} {\Eff[1]}$
+    and
+    $\HasType
+    {\CtxPattern{\CtxExt{\CtxVar x{\T[1]}}{\Ctx[2]}}}
+    {\E}
+    {\T[2]}
+    {\Eff[2]}$ then 
+    $\HasType {\CtxPattern{\CtxExt{\Ctx[1]}{\Ctx[2]}}} {\Subs\E\V x} {\T[2]} {\Eff[2]}$
+  \end{itemize}
+\end{lemma}
+
+\begin{lemma}[Expression reduction preserves typing]
+  If $\E[1] \Reduces \E[2]$ and 
+  $\HasType
+      {\Ctx}
+      {\E[1]}
+      {\T}
+      {\Eff[1]}$
+  then 
+  $\HasType
+      {\Ctx}
+      {\E[2]}
+      {\T}
+      {\Eff[2]}$
+  for some $\Eff[2] \leq \Eff[1]$.
+\end{lemma}
+
+The following is an auxiliary lemma to prove that 
+process reduction preserves typing.
+
+\begin{lemma}
+    $\HasType
+      {\CtxExtUnord {\Ctx[1]}{\Ctx[2]}}
+      {\EC[\E]}
+      {\T[1]}
+      {\Eff[1]}$ 
+    if and only if
+    $\HasType
+      {\Ctx[1]}
+      {\E}
+      {\T[2]}
+      {\Eff[2]}$
+    and 
+    $\HasType
+      {\CtxExtUnord {\CtxVar x{\T[2]}}{\Ctx[2]}}
+      {\EC[x]}
+      {\T[1]}
+      {\Eff[1]}$ 
+\end{lemma}
+
+\begin{lemma}[Process reduction preserves typing]
+  If $\Proc[1] \Reduces \Proc[2]$ and 
+  $\ProcHasType {\Ctx} {\Proc[1]}$
+  then 
+  $\ProcHasType {\Ctx} {\Proc[2]}$.
+\end{lemma}
+
+% SYNTAX OF EXPS
+
+\begin{figure}
+  \begin{align*}
+    \C \grmeq
+      & \CUnit
+        % \grmor \CLink
+        \grmor \CNew
+        \grmor \CFork
+        \grmor \CTerm 
+        \grmor \CWait
+        \grmor \CSend
+        \grmor \CRecv
+    \\&
+    \grmor \CSplit \grmor \CSSplit
+    \grmor \CDrop \grmor \CAcq
+        \tag{Constants} \\
+    \E \grmeq
+      & \C \grmor \EVar \grmor \EAbs\EVar\E \grmor \EApp\E\E 
+        \grmor \ESeq\E\E
+        \grmor \EPair\E\E
+        \grmor \ELetPair{\EVar}{\EVar}{\E}{\E} \\
+      &  \grmor \EInj i \E 
+        \grmor\ECase\E{\EVar}{\E}{\EVar}{\E} \\
+      % & \grmor \EMatch{\E}{\ell:\E_\ell}{\ell\in L}
+      % \grmor \EFork\E \grmor \ELet\EVar\E\E
+        \tag{Expressions}
+  \end{align*}
+  \caption{Syntax of expressions}
+  \label{fig:syntax-expressions}
+\end{figure}
+
+% RUNTIME SYNTAX
+
+\begin{figure}[t!]
+  \begin{align*}
+    \U,\V \grmeq
+    & \C
+      \grmor \EVar
+      \grmor \EAbs \EVar\E
+      \grmor \EInj{i} \V
+      \grmor \EPair \U\V
+      % \grmor \CSend \V 
+              \tag{Values}
+    \\
+    \EC \grmeq&
+              \ECEmpty
+              \grmor \EApp \EC\E
+              \grmor \EApp \V\EC
+              \grmor \ESeq \EC\E
+              \grmor \EPair \EC\E
+              \grmor \EPair \V\EC
+              \grmor \EInj{i}\EC
+              \grmor \\
+    & \ELet {\EPair \EVar\EVar}\EC\E
+              \grmor 
+      \ECase{\EC}{\EVar}{\E}{\EVar}{\E}
+      % \EMatch{E}{\ell : \E_\ell}{\ell\in L}
+              \tag{Evaluation contexts}
+    \\
+    \Bind \grmeq&
+                  \EVar
+                  \grmor \BEmp
+                  \grmor \BSeq\Bind\Bind
+                  \tag{Channel binders}
+    \\
+    \BindGroup \grmeq
+    & \Bind
+      \grmor \BPar\BindGroup\BindGroup
+      \tag{Binder group}
+    \\
+    \Proc \grmeq
+    & \PExp\E
+      \grmor \PPar\Proc\Proc
+      \grmor \PNew{\BindGroup}{\BindGroup}{\Proc}
+      \tag{Processes}
+    \\
+    \FC \grmeq
+    & \PExp \EC
+      \tag{Thread evaluation contexts}
+    \\
+    \CC \grmeq
+    & \ECEmpty
+      \grmor \PPar{\CC}{\Proc}
+      % \grmor \PNew \Bind\Bind \CC
+      \tag{Process contexts}
+  \end{align*}
+  The operators on binders and binder groups are associative with unit
+  $\BEmp$, but not commutative. Moreover, $\BSeq{}{}$ and $\BPar{}{}$
+  associate with one another as follows:
+  we define $\BSeq{\Bind}{(\BPar{\BindGroup}{\BindGroup'})}$ as
+  $\BPar{(\BSeq\Bind\BindGroup)}{\BindGroup'}$ inductively with base
+  case $\BSeq{\Bind}{(\BPar{\Bind'}{\BindGroup})} =
+  \BPar{(\BSeq\Bind\Bind')}{\BindGroup}$ with the same convention when
+  sequencing from the right side.
+  \caption{Run-time syntax}
+  \label{fig:syntax-runtime}
+\end{figure}
+
+% EXP EVALUATION
+
+\begin{figure}[t!]
+  \begin{mathpar}
+    \RuleExpRedApp \and
+    \RuleExpRedSeq \and
+    \RuleExpRedLet \and
+    \RuleExpRedCaseLeft \and
+    % \RuleExpRedCaseRight \and
+    \RuleExpRedCtx
+  \end{mathpar}
+  \caption{Expression reduction ($\E \Reduces \E$)}
+  \label{fig:expression-reduction}
+\end{figure}
+
+\begin{figure}[tp]
+  \begin{mathpar}
+    % \RuleProcCongRefl \and
+    % \RuleProcCongTrans \and
+    \RuleProcCongParComm \and
+    \RuleProcCongParAssoc \and
+    \RuleProcCongParUnit \and
+    \RuleProcCongResSwap \and
+    \RuleProcCongResComm \and
+    \RuleProcCongExtend
+  \end{mathpar}
+  \caption{Process congruence}
+  \label{fig:configuration-congruence}
+\end{figure}
+
+\begin{figure}[t!]
+  \begin{mathpar}
+    \RuleProcRedExp \and
+    % \RuleProcRedLink \and
+    \RuleProcRedNew \and
+    \RuleProcRedFork \and
+    \RuleProcRedCom \and
+    \RuleProcRedSplit \and
+    \RuleProcRedSplitLocal \and
+    \RuleProcRedDrop \and
+    \RuleProcRedAcquire \and
+    \RuleProcRedClose \and
+    % \RuleProcRedChoice \and
+    \RuleProcRedPar \and
+    \RuleProcRedBind \and
+    \RuleProcRedStruct
+  \end{mathpar}
+  \caption{Process reduction ($\Proc \Reduces \Proc$)}
+  \label{fig:process-reduction}
+\end{figure}
+
+\begin{figure}
+  \begin{align*}
+    \Mob ::=~
+    & \MobMobile \grmor \MobStationary
+    \tag{Mobility with $\MobMobile < \MobStationary$} \\
+    % \O \grmeq & 0 \grmor 1 \grmor 2 \grmor \dots
+    % \tag{Priorities} \\
+    % \P, \Q \in {}& \Nat \cup \{ \bot, \top \}
+    % \tag{Priority bounds} \\
+    \Dir \grmeq
+      & \DirLeft \grmor \DirRight \grmor \DirUnord
+        % \grmor \DirNone
+        \tag{Directions} \\
+    \Eff \grmeq
+      & \EffPure \grmor \EffImpure
+        \tag{Effects with $\EffPure < \EffImpure$} \\
+    \Pair \grmeq
+      & \PairUnord \grmor \PairOrd
+        \tag{Pairs} \\
+        % \K ::=~
+        % & \KType\Mul \grmor \KSession\Mul
+        % \tag{Kinds} \\ % needed?
+    \T \grmeq
+      &
+        \BUnit \grmor
+        % \B \grmor % Let us use Unit as a representative of all base types
+        \TArr{\Mob}{\Dir,\Eff}\T\T \grmor \T\Pair[\Dir]\T \grmor \TSum\T\T \grmor \S 
+        \tag{Types} \\
+    \S \grmeq
+      & \SSkip \grmor \SSeq\S\S \grmor \STerm[\O] \grmor \SWait[\O] \grmor
+        \SSend[\O]\T \grmor \SRecv[\O]\T
+        \\
+      &
+        \grmor \SChoice[\O]{\ell:\S_\ell}{\ell\in L}
+        \grmor \SBranch[\O]{\ell:\S_\ell}{\ell\in L}
+        \grmor \SRet \grmor \SAcq
+      % \grmor
+      % \SRec\SVar\S \grmor \SVar % no rec yet
+        \tag{Session types}
+    \\
+    \Ctx \grmeq
+      & \CtxEmpty \grmor \CtxVar \EVar\T \grmor \CtxExt\Ctx\Ctx \grmor \CtxExtUnord\Ctx\Ctx
+        \tag{Typing environments}
+    \\
+    \CtxPatternRaw \grmeq
+      & []
+        \grmor \CtxExt{\CtxPatternRaw}\Ctx
+        \grmor \CtxExt\Ctx{\CtxPatternRaw}
+        \grmor \CtxExtUnord{\CtxPatternRaw}\Ctx
+        \grmor \CtxExtUnord\Ctx{\CtxPatternRaw}
+    \tag{Context patterns}
+  \end{align*}
+  % TODO: perhaps diff syntax for effects (not to be confounded with the
+  % lin direction)
+  Left context patterns
+  \begin{mathpar}
+    \inferrule{}{\IsLeftPat~[]}
+
+    \inferrule{\IsLeftPat~\CtxPatternRaw}{\IsLeftPat~(\CtxExt{\CtxPatternRaw}\Ctx)}
+
+    \inferrule{\IsLeftPat~\CtxPatternRaw}{\IsLeftPat~(\CtxExtUnord{\CtxPatternRaw}\Ctx)}
+
+    \inferrule{\IsLeftPat~\CtxPatternRaw}{\IsLeftPat~(\CtxExtUnord\Ctx{\CtxPatternRaw})}
+  \end{mathpar}
+
+  Typing contexts and patterns are subject to the following laws
+  \begin{mathpar}
+    \CtxExt\CtxEmpty\Ctx = \Ctx \and
+    \CtxExt\Ctx\CtxEmpty = \Ctx \and
+    \CtxExtUnord\CtxEmpty\Ctx = \Ctx \and
+    \CtxExtUnord\Ctx\CtxEmpty = \Ctx \\
+    \CtxExt{\Ctx_1}{(\CtxExt{\Ctx_2}{\Ctx_3})} =
+    \CtxExt{(\CtxExt{\Ctx_1}{\Ctx_2})}{\Ctx_3} \and
+    \CtxExtUnord{\Ctx_1}{(\CtxExtUnord{\Ctx_2}{\Ctx_3})} =
+    \CtxExtUnord{(\CtxExtUnord{\Ctx_1}{\Ctx_2})}{\Ctx_3} \and
+    \CtxExtUnord{\Ctx_1}{\Ctx_2} = \CtxExtUnord{\Ctx_2}{\Ctx_1}
+  \end{mathpar}
+  Rewrite rule for weakening (apply transitively in any context modulo
+  the monoid laws)
+  \begin{mathpar}
+    \CtxPar{(\CtxExt{\Ctx_1}{\Ctx_2})}{(\CtxExt{\Ctx_3}{\Ctx_4})}
+    \preccurlyeq
+    \CtxExt{(\CtxPar{\Ctx_1}{\Ctx_3})}{(\CtxPar{\Ctx_2}{\Ctx_4})}
+  \end{mathpar}
+  Laws for context-free session types
+  \begin{mathpar}
+    \SSeq\SSkip\S = \S \and
+    \SSeq \S\SSkip = \S \and
+    \SSeq{\S[1]}{(\SSeq{\S[2]}{\S[3]})} =
+    \SSeq{(\SSeq{\S[1]}{\S[2]})}{{\S[3]}} \and
+    \SSeq{(\SChoice[\O]{\ell:\S_\ell}{\ell\in L})}\S =
+    \SChoice[\O]{\ell:\SSeq{\S_\ell}\S}{\ell\in L} \and
+    \SSeq{(\SBranch[\O]{\ell:\S_\ell}{\ell\in L})}\S = \SBranch[\O]{\ell:\SSeq{\S_\ell}\S}{\ell\in L}
+  \end{mathpar}
+  \caption{Type and typing context syntax}
+  \label{fig:syntax-types}
+\end{figure}
+
+
+% Unrestricted Types
+
+% \begin{figure}
+%   \begin{mathpar}
+%     \RuleUBase \and
+%     \RuleUProd \and
+%     % \RuleUSum \and
+%     \RuleUArr \and
+%     \RuleUSkip \and
+%     \RuleUSeq \and
+%     \RuleUVar \and
+%     \RuleURec
+%   \end{mathpar}
+%   PT: only $\DirNone$ arrows are unrestricted!
+%   \caption{Unrestricted Types ($\Unr\T$)}
+%   \label{fig:unrestricted-types}
+% \end{figure}
+
+% \begin{figure}
+%   \begin{mathpar}
+%     \RuleOProdOne \and
+%     \RuleOProdTwo \and 
+%     \RuleOArr 
+%   \end{mathpar}
+%   TODO: Should it be $\Ord\,T\PairOrd U$? Otherwise why to we have an
+%   ordered-pair type constructor?\\
+%   PT: (obsolete) I don't think there is a useful syntactical
+%   classification for an ordered type and we get by with using $\Unr{}$.
+%   \caption{Ordered Types ($\Ord\T$)}
+%   \label{fig:ordered-types}
+% \end{figure}
+
+% Bounded Session Types
+
+\begin{figure}
+  \begin{mathpar}
+    \RuleTeAcq \and
+    \RuleTeTerm \and
+    \RuleTeRet \and
+    \RuleTeSeqOne \and
+    \RuleTeSeqTwo \and
+    \RuleTeBranch \and
+    \RuleTeChoice \and
+    \RuleTeVar \and
+    \RuleTeRec \\
+    \RuleTeBase \and
+    \RuleTeProd \and
+    \RuleTeVariant \and
+    \RuleTeArr \and
+    \RuleTeCtxEmpty \and
+    \RuleTeCtxSeq \and
+    \RuleTeCtxPar \and
+    \RuleTeCtxVar
+  \end{mathpar}
+  TODO: infinite types as well? \\
+  PT: yes! \\
+  PT: I think we need bounded function types where the introduction
+  ensures that only variables of bounded type are captured. These
+  functions can be argument to fork and these functions can be sent
+  over a higher-order channel. \\
+  PT: in \textsc{T-Fork}, $\Bounded{\Ctx}$ is used, so have to define
+  it for all types \\
+  VV: let's do fork as a typing rule \\
+  Remark: there are no unrestricted arrows anymore! However, we could
+  use the exclamation point modality from linear logic which cuts off
+  the context \\
+  PT: hmmm, the bounded predicate is not sufficient! \\
+  PT: suppose $\Ctx = \Ctx_1,\Ctx_2$. If $\Bounded{\Ctx_1}$, then
+  $\Ctx_2$ is really independent of $\Ctx_1$. Hence, some uses of
+  $\Unr{\Ctx_i}$ can be replaced by $\Bounded{\Ctx_i}$!
+  \caption{Mobile Types and Contexts ($\Mobile\T$, $\Mobile\Ctx$); Bounded Session Types ($\Bounded\S$)}
+  \label{fig:bounded-session-types}
+\end{figure}
+
+% Constant Typing
+
+\begin{figure}
+  \begin{mathpar}
+    \RuleCTUnit \and
+    \RuleCTNew \and
+    % \RuleCTLink \and
+    \RuleCTSplit \and
+    \RuleCTSSplit \and
+    \RuleCTDrop \and
+    \RuleCTAcquire \and
+    \RuleCTFork \and
+    \RuleCTSend \and
+    \RuleCTRecv \and
+    \RuleCTTerm \and
+    \RuleCTWait \and
+    % \RuleCTSelect \and
+  \end{mathpar}
+  \caption{Constant Typing ($\HasCType\C\T$)}
+  \label{fig:constant-typing}
+\end{figure}
+
+
+% Session Type Formation: no need
+% Type Formation: no need
+
+% Typing
+
+\begin{figure}[tp]
+  \begin{mathpar}
+    \RuleTConst \and
+    \RuleTVar \and
+    % \RuleTAbsUnr \and
+    \RuleTAbsLin \and
+    \RuleTAbsLeft \and
+    \RuleTAbsRight \and
+    % \RuleTAppUnr \and
+    \RuleTAppLin \and
+    \RuleTAppLeft \and
+    \RuleTAppRight \and
+  \end{mathpar}
+  \caption{Typing: constants, variables, and functions}
+  \label{fig:typing-functinos}
+\end{figure}
+\begin{figure}
+  \begin{mathpar}
+    \RuleTPairUnord \and
+    \RuleTPairOrd \and
+    \RuleTLet \and
+    \RuleTLetUnit \and
+    \RuleTLetUnord \and
+    \RuleTLetOrd \and
+    \RuleTInLeft \and
+    \RuleTCaseSum \and
+    % \RuleTFork \and
+    % \RuleTMatch \and
+    % \RuleTMatchLin \and
+    \RuleTWeakCE
+    % \\
+    % \Big(\RuleTWeakC
+    % \and
+    % \RuleTWeakE\Big)
+  \end{mathpar}
+   % TODO: Contraction? Exchange? Weakening on the right only?
+  \caption{Typing ($\HasType\Ctx\E\T\Eff$)}
+  \label{fig:typing}
+\end{figure}
+
+\begin{figure}[tp]
+  \begin{mathpar}
+    \RuleTExpr \and
+    \RuleTPar \and
+    \RuleTRes \\
+    \RuleBindEmp \and
+    \RuleBindSeq \and
+    \RuleBindPar \and
+    \RuleBindVar
+  \end{mathpar}
+  \caption{Process typing and binding}
+  \label{fig:process-typing}
+\end{figure}
+
+% \begin{lemma}
+%   If $\HasType \Ctx \E U \_$ 
+%   and 
+%   $\HasType {\CtxPattern {\CtxVar \EVar U}} {E[\EVar]} T \Eff$, then
+%   $\HasType {\CtxPattern \Ctx} {E[\E]} T \Eff$
+% \end{lemma}
+
+% \begin{figure}[t!]
+%   \begin{mathpar}
+%     \RuleCSEmpty \and
+%     \RuleCSSplit \and
+%     \RuleCSLeft \and
+%     \RuleCSRight \and
+%     \RuleCSBoth
+%   \end{mathpar}
+%   (PJT: Is this needed?)
+%   \caption{Typing context split}
+%   \label{fig:context-split}
+% \end{figure}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

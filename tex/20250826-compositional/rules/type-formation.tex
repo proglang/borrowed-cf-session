@@ -1,0 +1,28 @@
+% Type Formation
+
+\newcommand*\RuleTFBase{
+  \inferrule[TF-Base]{}{
+    \HasTKind{\Ctx}{\B}{\KType\MulUnr}
+  }
+}
+
+\newcommand*\RuleTFArr{
+  \inferrule[TF-Arr]{
+    \HasTKind{\Ctx}{\T_1}{\KType{\Mul_1}} \\
+    \HasTKind{\Ctx}{\T_2}{\KType{\Mul_2}}
+  }{
+    \HasTKind{\Ctx}{(\TArr\Mul{\T_1}{\T_2})}{\KType\Mul}
+  }
+}
+
+\newcommand*\RuleTFProd{
+  \inferrule[TF-Prod]{
+    \HasTKind{\Ctx}{\T_1}{\KType{\Mul_1}} \\
+    \HasTKind{\Ctx}{\T_2}{\KType{\Mul_2}} \\
+    \Mul_1 \MulLeq \Mul \\
+    \Mul_2 \MulLeq \Mul
+  }{
+    \HasTKind{\Ctx}{(\TProd\Dir{\T_1}{\T_2})}{\KType\Mul}
+  }
+}
+

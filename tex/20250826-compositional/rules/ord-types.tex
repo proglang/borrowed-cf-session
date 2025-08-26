@@ -1,0 +1,23 @@
+% Ordered Types
+
+\newcommand*\RuleOProdOne{
+  \inferrule[O-Prod1]{
+    \Ord{\T_1} 
+  } {
+    \Ord{(\TPair{\T_1}{\T_2})}
+  }
+}
+
+\newcommand*\RuleOProdTwo{
+  \inferrule[O-Prod2]{
+    \Ord{\T_2} 
+  } {
+    \Ord{(\TPair{\T_1}{\T_2})}
+  }
+}
+
+\newcommand*\RuleOArr{
+  \inferrule[O-Arr]{}{
+    \Ord{(\TArr\Dir\Eff{\T_1}{\T_2})}
+  }
+}
