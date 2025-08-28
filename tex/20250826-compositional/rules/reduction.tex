@@ -80,7 +80,7 @@
 
 \newcommand*\RuleProcRedAcquire{
   \inferrule[R-Acquire]{}{
-    \PNew {\BSeq{\EVar}{\BindGroup[1]}}{\BindGroup[2]}{ (\PPar{\FCapp{\EApp \CAcq{\EVar}}}\Proc)}
+    \PNew {\BPar{\BEmp}{\BSeq{\EVar}{\BindGroup[1]}}}{\BindGroup[2]}{ (\PPar{\FCapp{\EApp \CAcq{\EVar}}}\Proc)}
     \Reduces 
     \PNew {\BSeq{\EVar}{\BindGroup[1]}}{\BindGroup[2]} { ({ \PPar{\FCapp{\EVar}}\Proc})}
   }
@@ -118,7 +118,7 @@
   \inferrule[R-New]{}{
     { {\FCapp{\EApp \CNew \CUnit}}}
     \Reduces 
-    \PNew xy { {\FCapp{\EPair xy}}}
+    \PNew {\BPar{\BEmp}{x}}{\BPar{\BEmp}{y}} { {\FCapp{\EPair xy}}}
   }
 }
 

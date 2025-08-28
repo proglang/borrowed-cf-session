@@ -30,7 +30,7 @@
 \newtheorem{lemma}{Lemma}
 
 \title{Context-Free Session Types with Borrowing}
-\date{August 26, 2025}
+\date{August 28, 2025}
 
 \begin{document}
 \maketitle
@@ -223,8 +223,9 @@ process reduction preserves typing.
       % \grmor \PNew \Bind\Bind \CC
       \tag{Process contexts}
   \end{align*}
-  The operators on binders and binder groups are associative with unit
-  $\BEmp$, but not commutative. Moreover, $\BSeq{}{}$ and $\BPar{}{}$
+  The operators on binders and binder groups are
+  associative. Sequential composition $\BSeq{}{}$ comes with unit
+  $\BEmp$. Moreover, $\BSeq{}{}$ and $\BPar{}{}$
   associate with one another as follows:
   we define $\BSeq{\Bind}{(\BPar{\BindGroup}{\BindGroup'})}$ as
   $\BPar{(\BSeq\Bind\BindGroup)}{\BindGroup'}$ inductively with base
@@ -321,9 +322,11 @@ process reduction preserves typing.
       &
         \grmor \SChoice[\O]{\ell:\S_\ell}{\ell\in L}
         \grmor \SBranch[\O]{\ell:\S_\ell}{\ell\in L}
+    \\
+    &
         \grmor \SRet \grmor \SAcq
-      % \grmor
-      % \SRec\SVar\S \grmor \SVar % no rec yet
+      \grmor
+      \SRec\SVar\S \grmor \SVar % no rec yet
         \tag{Session types}
     \\
     \Ctx \grmeq
@@ -439,22 +442,28 @@ process reduction preserves typing.
     \RuleTeCtxPar \and
     \RuleTeCtxVar
   \end{mathpar}
-  TODO: infinite types as well? \\
-  PT: yes! \\
-  PT: I think we need bounded function types where the introduction
-  ensures that only variables of bounded type are captured. These
-  functions can be argument to fork and these functions can be sent
-  over a higher-order channel. \\
-  PT: in \textsc{T-Fork}, $\Bounded{\Ctx}$ is used, so have to define
-  it for all types \\
-  VV: let's do fork as a typing rule \\
-  Remark: there are no unrestricted arrows anymore! However, we could
-  use the exclamation point modality from linear logic which cuts off
-  the context \\
-  PT: hmmm, the bounded predicate is not sufficient! \\
-  PT: suppose $\Ctx = \Ctx_1,\Ctx_2$. If $\Bounded{\Ctx_1}$, then
-  $\Ctx_2$ is really independent of $\Ctx_1$. Hence, some uses of
-  $\Unr{\Ctx_i}$ can be replaced by $\Bounded{\Ctx_i}$!
+  A \emph{mobile} session type starts with an $\SAcq$ followed by a bounded
+  session type. A \emph{bounded} session type ends with a $\STerm$ or
+  a $\SRet$, in the non-recursive case. In the recursive case, a
+  session type is bounded, if all finite traces end (consistently) in
+  $\STerm$ or $\SRet$. 
+
+  % TODO: infinite types as well? \\
+  % PT: yes! \\
+  % PT: I think we need bounded function types where the introduction
+  % ensures that only variables of bounded type are captured. These
+  % functions can be argument to fork and these functions can be sent
+  % over a higher-order channel. \\
+  % PT: in \textsc{T-Fork}, $\Bounded{\Ctx}$ is used, so have to define
+  % it for all types \\
+  % VV: let's do fork as a typing rule \\
+  % Remark: there are no unrestricted arrows anymore! However, we could
+  % use the exclamation point modality from linear logic which cuts off
+  % the context \\
+  % PT: hmmm, the bounded predicate is not sufficient! \\
+  % PT: suppose $\Ctx = \Ctx_1,\Ctx_2$. If $\Bounded{\Ctx_1}$, then
+  % $\Ctx_2$ is really independent of $\Ctx_1$. Hence, some uses of
+  % $\Unr{\Ctx_i}$ can be replaced by $\Bounded{\Ctx_i}$!
   \caption{Mobile Types and Contexts ($\Mobile\T$, $\Mobile\Ctx$); Bounded Session Types ($\Bounded\S$)}
   \label{fig:bounded-session-types}
 \end{figure}

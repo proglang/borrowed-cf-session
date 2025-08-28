@@ -24,7 +24,7 @@
 
 \newcommand*\RuleCTNew{
   \inferrule[CT-New]{}{
-    \HasCType{\CNew_{\S}}{\TArr{\MobMobile}{\DirUnord,\EffPure}{\BUnit}{\TPairUnord{\S}{\Dual\S}}}
+    \HasCType{\CNew_{\S}}{\TArr{\MobMobile}{\DirUnord,\EffPure}{\BUnit}{\TPairUnord{(\SSeq{\SAcq}{\S})}{(\SSeq{\SAcq}{\Dual~\S})}}}
   }
 }
 

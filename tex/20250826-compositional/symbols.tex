@@ -40,8 +40,8 @@
 
 % Pairs
 \newcommand*\Pair[1][{}]{\mathbin{\typecolor{\otimes}_{#1}}}
-\newcommand*\PairUnord{\typecolor{\otimes}}
-\newcommand*\PairOrd{\typecolor{\odot}}
+\newcommand*\PairUnord{\mathbin{\typecolor{\otimes}}}
+\newcommand*\PairOrd{\mathbin{\typecolor{\odot}}}
 
 % Kinds
 \newcommand*\K{K}
@@ -90,8 +90,8 @@
 \newcommand*\STerm[1][{}]{\TypeKeyword{Close}} % Term}}
 \newcommand*\SDual[1]{\typecolor{#1}^{\metacolor\bot}} % {\typecolor{\Dual\,({#1})}}
 \newcommand*\STrans[2][{}]{\typecolor{\operatorname{\#}{#2}}}
-\newcommand*\SSend[2][{}]{\typecolor{\operatorname{!}{#2}}}
-\newcommand*\SRecv[2][{}]{\typecolor{\operatorname{?}{#2}}}
+\newcommand*\SSend[2][{}]{\typecolor{\operatorname{!}{\!#2}}}
+\newcommand*\SRecv[2][{}]{\typecolor{\operatorname{?}{\!#2}}}
 \newcommand*\SRecord[2]{\typecolor{\{{#1}\}_{#2}}}
 \newcommand*\SVariant[2]{\typecolor{\langle{#1}\rangle_{#2}}}
 \newcommand*\SMulti[3][{}]{\typecolor{\odot\SRecord{#2}{#3}}}
