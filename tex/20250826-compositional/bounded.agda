@@ -4,7 +4,7 @@ open import Data.Empty using (⊥-elim)
 open import Data.Nat using (ℕ; zero; suc; _+_; _≤_; z≤n; s≤s; _⊔_)
 open import Data.Nat.Properties using (≤-trans; n≤1+n)
 open import Data.Fin using (Fin; zero; suc)
-open import Data.Fin.Subset using (Subset; inside; outside; _∈_; _∪_; ⊥; _⊆_; ⁅_⁆; Nonempty)
+open import Data.Fin.Subset using (Subset; inside; outside; _∈_; _∉_; _∪_; ⊥; _⊆_; ⁅_⁆; Nonempty)
 open import Data.Fin.Subset.Properties using (nonempty?; _∈?_; ∪-idem; x∈⁅x⁆; x∈p∪q⁺; x∈p∪q⁻; ∉⊥; ⊥⊆)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Product as Product using (∃; ∄; _×_; _,_; proj₁)
@@ -161,11 +161,17 @@ concSW↑ {Y = Y} (suc x) {suc y} y∈ | no weps∉ = y∈
 concSW↑ {Y = Y} (suc x) {zero} y∈ | yes weps∈ = x∈p∪q⁺ (inj₁ (there (x∈⁅x⁆ x)))
 concSW↑ {Y = Y} (suc x) {suc y} y∈ | yes weps∈ = x∈p∪q⁺ (inj₂ y∈)
 
-concSW⊆ :  ∀ {s} {Y : WSet n} → Y ⊆ ⁅ suc s ⁆ → concSW inlr Y ⊆ ⁅ suc s ⁆
+lemma1 : ∀ {s : Fin (suc n)} → weps ∉ outside ∷ ⁅ s ⁆
+lemma1 ()
+lemma0 : ∀ {s} {Y : WSet n} → Y ⊆ ⁅ suc s ⁆ → weps ∉ Y
+lemma0 Y⊆ ε∈ = contradiction (Y⊆ ε∈) lemma1
+
+
+concSW⊆ : ∀ {s} {Y : WSet n} → Y ⊆ ⁅ suc s ⁆ → concSW inlr Y ⊆ ⁅ suc s ⁆
 concSW⊆ {Y = Y} Y⊆ x∈
   with weps ∈? Y
-... | no ¬a = {!!}
-... | yes a = {!!}
+... | no ¬a = Y⊆ x∈
+... | yes a = contradiction a (lemma0 Y⊆)
 
 
 -- a pointed CPO (actually a complete lattice)
@@ -351,7 +357,8 @@ sound-bounded {S = Seq S₁ S₂} η ass-η (bounded-loop-seq lps) i
   rewrite concW↓₁ {Y = L$ S₂ η i} = ⊥⊆
 sound-bounded η ass-η (bounded-choice bs bs₁) i
   with sound-bounded η ass-η bs i | sound-bounded η ass-η bs₁ i
-... | iv | iv₁ = {!∪-sup _ _ _ iv iv₁!}
+... | iv | iv₁
+  = ∪-sup _ _ _ (concSW⊆{s = suc zero} iv) (concSW⊆{s = suc zero} iv₁)
 sound-bounded η ass-η (bounded-mu bs) i x = {!!}
 
 -- -- the lemma
