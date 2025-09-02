@@ -1,11 +1,24 @@
 % Mobile and Bounded Session Types
 
+\newcommand*\RuleTeSkip{
+  \inferrule[Te-Skip]{}{\Skips\SSkip}
+}
+
+\newcommand*\RuleTeSkipSeq{
+  \inferrule[Te-Skip-Seq]{\Skips\S[1] \\ \Skips\S[2]}{\Skips
+    (\SSeq{\S[1]}{\S[2]})}
+}
+
+\newcommand*\RuleTeSkipMu{
+  \inferrule[Te-Skip-Rec]{\Skips\S}{\Skips (\SRec\SVar\S)}
+}
+
 \newcommand*\RuleTeAcq{
   \inferrule[Te-Acq]{\Bounded\S}{\Mobile{(\SSeq\SAcq\S)}}
 }
 
 \newcommand*\RuleTeTerm{
-  \inferrule[Te-Term]{}{
+  \inferrule[Te-Close]{}{
     \Bounded\STerm
   }
 }
@@ -18,7 +31,8 @@
 
 \newcommand*\RuleTeSeqOne{
   \inferrule[Te-Seq1]{
-    \Bounded{\S_1}
+    \Bounded{\S_1} \\
+    \Skips{\S_2}
   } {
     \Bounded{(\SSeq{\S_1}{\S_2})}
   }

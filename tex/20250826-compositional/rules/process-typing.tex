@@ -31,12 +31,12 @@
     { \CtxExtUnord\Ctx{\CtxExtUnord{\Ctx[1]}{\Ctx[2]}}
     }
     \Proc  \\
-    \S \vdash \Bind[1] \leadsto \Ctx[1] \\
-    \SDual\S \vdash \Bind[2] \leadsto \Ctx[2]
+    \S \vdash \BindGroup[1] \leadsto \Ctx[1] \\
+    \SDual\S \vdash \BindGroup[2] \leadsto \Ctx[2]
   }{
     \ProcHasType
     {\Ctx}
-    {\PNew{\Bind[1]}{\Bind[2]}\Proc}
+    {\PNew{\BindGroup[1]}{\BindGroup[2]}\Proc}
   }
 }
 
@@ -48,19 +48,19 @@
 
 \newcommand*\RuleBindSeq{
   \inferrule[B-Seq]{
-    \S[1] \vdash \Bind[1] \leadsto \Ctx[1] \\
-    \S[2] \vdash \Bind[2] \leadsto \Ctx[2]
+    \S[1] \vdash \BindGroup[1] \leadsto \Ctx[1] \\
+    \S[2] \vdash \BindGroup[2] \leadsto \Ctx[2]
   }{
-    \SSeq{\S[1]}{\S[2]} \vdash \BSeq{\Bind[1]}{\Bind[2]} \leadsto \CtxExt{\Ctx[1]}{\Ctx[2]}
+    \SSeq{\S[1]}{\S[2]} \vdash \BSeq{\BindGroup[1]}{\BindGroup[2]} \leadsto \CtxExt{\Ctx[1]}{\Ctx[2]}
   }
 }
 
 \newcommand*\RuleBindPar{
   \inferrule[B-Par]{
-    \SSeq{\S[1]}{\SRet} \vdash \Bind[1] \leadsto \Ctx[1] \\
-    \SSeq{\SAcq}{\S[2]} \vdash \Bind[2] \leadsto \Ctx[2]
+    \SSeq{\S[1]}{\SRet} \vdash \BindGroup[1] \leadsto \Ctx[1] \\
+    \SSeq{\SAcq}{\S[2]} \vdash \BindGroup[2] \leadsto \Ctx[2]
   }{
-    \SSeq{\S[1]}{\S[2]} \vdash \BPar{\Bind[1]}{\Bind[2]} \leadsto \CtxExtUnord{\Ctx[1]}{\Ctx[2]}
+    \SSeq{\S[1]}{\S[2]} \vdash \BPar{\BindGroup[1]}{\BindGroup[2]} \leadsto \CtxExtUnord{\Ctx[1]}{\Ctx[2]}
   }
 }
 

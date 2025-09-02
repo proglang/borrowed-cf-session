@@ -88,6 +88,17 @@ expression reduction preserves typing.
     {\Eff[2]}$ then 
     $\HasType {\CtxPattern{\CtxExt{\Ctx[1]}{\Ctx[2]}}} {\Subs\E\V x} {\T[2]} {\Eff[2]}$
   \end{itemize}
+  PT thinks it should be:
+  $\HasType {\Ctx[1]} {\V} {\T[1]} {\Eff[1]}$
+  and
+  $\HasType
+    {\CtxPattern{\CtxVar x{\T[1]}}}
+    {\E}
+    {\T[2]}
+    {\Eff[2]}$
+    implies
+    $\HasType {\CtxPattern{{\Ctx[1]}}} {\Subs\E\V x} {\T[2]}
+    {\Eff[2]}$, for disjoint $\Ctx[1]$ and $\CtxPattern{}$.
 \end{lemma}
 
 \begin{lemma}[Expression reduction preserves typing]
@@ -129,12 +140,100 @@ process reduction preserves typing.
       {\Eff[1]}$ 
 \end{lemma}
 
+\begin{lemma}
+  \label{lemma:inversion-evaluation-context}
+  If $\HasType{\Ctx}{\EC[\E]}{\T}{\Eff}$, then there exists $\Ctx'$,
+  $\T'$, and $\Eff'$ such that $\HasType{\Ctx'}{\E}{\T'}{\Eff'}$.
+\end{lemma}
+\begin{proof}
+  By induction on $\EC$.
+\end{proof}
+
+\begin{lemma}
+  \label{lemma:inversion-process-evaluation-context}
+  If $\ProcHasType{\Ctx_0} {\FCapp{\E}}$, then there exists $\Ctx$,
+  $\T$, and $\Eff$ such that $\HasType{\Ctx}{\E}{\T}{\Eff}$.
+\end{lemma}
+\begin{proof}
+  It must be that $\FC = \PExp \EC$, for some evaluation context $\EC$.
+  By inversion of the process typing,
+  $\HasType{\Ctx_0}{\EC[\E]}{\TBUnit}{\EffImpure}$.
+  By Lemma~\ref{lemma:inversion-evaluation-context}, there is  $\Ctx$,
+  $\T$, and $\Eff$ such that $\HasType{\Ctx}{\E}{\T}{\Eff}$.
+\end{proof}
+
+\clearpage
 \begin{lemma}[Process reduction preserves typing]
   If $\Proc[1] \Reduces \Proc[2]$ and 
   $\ProcHasType {\Ctx} {\Proc[1]}$
   then 
   $\ProcHasType {\Ctx} {\Proc[2]}$.
 \end{lemma}
+\begin{proof}
+  \textbf{Case} \TirName{R-Exp}.
+
+  \textbf{Case} $\left\{\RuleProcRedNew\right.$.\\
+  As $\ProcHasType\Ctx {\FCapp{\EApp \CNew \CUnit}}$, there must be
+  some $\Ctx'$ such that
+  $\HasType{\Ctx'}{\EApp \CNew \CUnit}{\T}{\Eff}$ (by Lemma~\ref{lemma:inversion-process-evaluation-context}). \\
+  By inversion, we obtain $\Ctx' = \CtxEmpty$ and $\T =
+  \TPairUnord{(\SSeq{\SAcq}{\S})}{(\SSeq{\SAcq}{\Dual~\S})}$. \\
+  Let $\Ctx'' = \CtxPar{\CtxVar x{(\SSeq{\SAcq}{\S})} }{\CtxVar y
+    {\SSeq{\SAcq}{\Dual~\S}}}$. \\
+  We have
+  $\HasType{\Ctx''}{\EPair
+    xy}{\TPairUnord{(\SSeq{\SAcq}{\S})}{(\SSeq{\SAcq}{\Dual~\S})}}{\EffPure}$.
+  \\
+  By lemma XXX, we have
+  $\ProcHasType{\CtxPar{\Ctx}{\Ctx''}}{\FCapp{\EPair xy}}$.
+  \\
+  Let $\Ctx[1] =\CtxVar x{(\SSeq{\SAcq}{\S})}$ and $\Ctx[2] = \CtxVar
+  y {\SSeq{\SAcq}{\Dual~\S}}$ so that $\Ctx'' =
+  \CtxPar{\Ctx[1]}{\Ctx[2]}$.
+  \\
+  Clearly, $\S \vdash {\BPar{\BEmp}{x}} \leadsto \Ctx[1]$ and
+  $\Dual~\S \vdash {\BPar{\BEmp}{y}} \leadsto \Ctx[2]$ hold.
+  \\
+  Conclude with rule \TirName{TP-Res} and obtain
+  $\ProcHasType {\Ctx}
+  {\PNew {\BPar{\BEmp}{x}}{\BPar{\BEmp}{y}}{\FCapp{\EPair xy}}}$.
+
+  
+
+  \textbf{Case} $\left\{ \RuleProcRedFork \right.$.\\
+  As $\ProcHasType\Ctx {\FCapp{\EApp \CFork \V}}$, there must be some
+  $\Ctx'$ such that
+  $\HasType{\Ctx'}{\EApp \CFork \V}{\T}{\Eff}$ (by
+  Lemma~\ref{lemma:inversion-process-evaluation-context}). \\
+  By inversion, we obtain
+  $\HasType{\Ctx'}\V{\TArr{\MobMobile}{\DirUnord,\EffImpure}\BUnit\BUnit}\EffPure$,
+  so that $\T = \BUnit$ and $\Eff = \EffImpure$ and $\Ctx =
+  \CtxPar{\Ctx'}{\Ctx''}$ (because the function is $\DirUnord$ its
+  application must do a parallel split), for some $\Ctx''$.
+  \\
+  NEED A LEMMA to conclude $\ProcHasType{\Ctx''}{\FCapp{\CUnit}}$.
+  \\
+  Clearly, $\ProcHasType{\Ctx'}{\PExp {\EApp\V\CUnit}}$, so that
+  $\ProcHasType{\CtxPar{\Ctx'}{\Ctx''}}{\PPar{\FCapp{\CUnit}}{\PExp {\EApp\V\CUnit}}}$.
+
+  Case \TirName{R-Com}.
+
+  Case \TirName{R-RSplit}.
+
+  Case \TirName{R-LSplit}.
+
+  Case \TirName{R-Drop}.
+
+  Case \TirName{R-Acquire}.
+
+  Case \TirName{R-Close}.
+
+  Case \TirName{R-Par}.
+
+  Case \TirName{R-Bind}.
+
+  Case \TirName{R-Struct}.
+\end{proof}
 
 % SYNTAX OF EXPS
 
@@ -379,6 +478,7 @@ process reduction preserves typing.
     \SSeq \S\SSkip = \S \and
     \SSeq{\S[1]}{(\SSeq{\S[2]}{\S[3]})} =
     \SSeq{(\SSeq{\S[1]}{\S[2]})}{{\S[3]}} \and
+    \SRec\SVar\S = \S{[\SRec\SVar\S/\SVar]} \and
     \SSeq{(\SChoice[\O]{\ell:\S_\ell}{\ell\in L})}\S =
     \SChoice[\O]{\ell:\SSeq{\S_\ell}\S}{\ell\in L} \and
     \SSeq{(\SBranch[\O]{\ell:\S_\ell}{\ell\in L})}\S = \SBranch[\O]{\ell:\SSeq{\S_\ell}\S}{\ell\in L}
@@ -424,7 +524,9 @@ process reduction preserves typing.
 
 \begin{figure}
   \begin{mathpar}
-    \RuleTeAcq \and
+    \RuleTeSkip \and
+    \RuleTeSkipSeq \and
+    \RuleTeSkipMu \\
     \RuleTeTerm \and
     \RuleTeRet \and
     \RuleTeSeqOne \and
@@ -433,6 +535,7 @@ process reduction preserves typing.
     \RuleTeChoice \and
     \RuleTeVar \and
     \RuleTeRec \\
+    \RuleTeAcq \and
     \RuleTeBase \and
     \RuleTeProd \and
     \RuleTeVariant \and
@@ -443,10 +546,12 @@ process reduction preserves typing.
     \RuleTeCtxVar
   \end{mathpar}
   A \emph{mobile} session type starts with an $\SAcq$ followed by a bounded
-  session type. A \emph{bounded} session type ends with a $\STerm$ or
+  session type. A mobile type or environment contains only mobile
+  session types. A \emph{bounded} session type ends with a $\STerm$ or
   a $\SRet$, in the non-recursive case. In the recursive case, a
   session type is bounded, if all finite traces end (consistently) in
-  $\STerm$ or $\SRet$. 
+  $\STerm$ or $\SRet$. A \emph{skipping} session type is equivalent to
+  a single $\SSkip$.
 
   % TODO: infinite types as well? \\
   % PT: yes! \\
@@ -464,7 +569,8 @@ process reduction preserves typing.
   % PT: suppose $\Ctx = \Ctx_1,\Ctx_2$. If $\Bounded{\Ctx_1}$, then
   % $\Ctx_2$ is really independent of $\Ctx_1$. Hence, some uses of
   % $\Unr{\Ctx_i}$ can be replaced by $\Bounded{\Ctx_i}$!
-  \caption{Mobile Types and Contexts ($\Mobile\T$, $\Mobile\Ctx$); Bounded Session Types ($\Bounded\S$)}
+  \caption{Mobile types and contexts ($\Mobile\T$, $\Mobile\Ctx$);
+    bounded session types ($\Bounded\S$); skipping session types ($\Skips\S$)}
   \label{fig:bounded-session-types}
 \end{figure}
 
@@ -569,6 +675,8 @@ process reduction preserves typing.
 %   \caption{Typing context split}
 %   \label{fig:context-split}
 % \end{figure}
+
+
 
 \end{document}
 
