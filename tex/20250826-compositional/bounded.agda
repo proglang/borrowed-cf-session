@@ -4,11 +4,11 @@ open import Data.Empty using (⊥-elim)
 open import Data.Nat using (ℕ; zero; suc; _+_; _≤_; z≤n; s≤s; _⊔_)
 open import Data.Nat.Properties using (≤-trans; n≤1+n)
 open import Data.Fin using (Fin; zero; suc)
-open import Data.Fin.Subset using (Subset; inside; outside; _∈_; _∉_; _∪_; _-_; ⊥; _⊆_; ⁅_⁆; Nonempty)
-open import Data.Fin.Subset.Properties using (nonempty?; _∈?_; ∪-idem; x∈⁅x⁆; x∈p∪q⁺; x∈p∪q⁻; ∉⊥; ⊥⊆)
+open import Data.Fin.Subset using (Subset; inside; outside; Side; _∈_; _∉_; _∪_; _─_; _-_; ⊥; _⊆_; ⁅_⁆; Nonempty)
+open import Data.Fin.Subset.Properties using (nonempty?; _∈?_; ∪-idem; x∈⁅x⁆; x∈p∪q⁺; x∈p∪q⁻; ∉⊥; ⊥⊆; x∈p∧x≢y⇒x∈p-y; ∪-identityʳ; p─q⊆p; drop-∷-⊆)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Product as Product using (∃; ∄; _×_; _,_; proj₁)
-open import Data.Vec using ([]; _∷_; _[_]=_; here; there)
+open import Data.Vec using (Vec; []; _∷_; _[_]=_; here; there; replicate)
 open import Relation.Nullary using (¬_; contradiction; contraposition)
 open import Relation.Nullary.Decidable using (Dec; yes; no)
 open import Relation.Binary.PropositionalEquality.Core
@@ -39,6 +39,22 @@ m⊔n≤o⇒n≤o (suc m) (suc n) (suc o) (s≤s m⊔n≤o) = s≤s (m⊔n≤o�
   with x∈p∪q⁻ X Y x∈
 ... | inj₁ x∈X = X⊆Z x∈X
 ... | inj₂ x∈Y = Y⊆Z x∈Y
+
+X-X : ∀ {n} (X : Subset n) → X ─ X ≡ ⊥
+X-X [] = refl
+X-X (outside ∷ X) = cong (outside ∷_) (X-X X)
+X-X (inside ∷ X) = cong (outside ∷_) (X-X X)
+
+⁅x⁆-x : ∀ {n : ℕ} {x : Fin n} → ⁅ x ⁆ - x ≡ ⊥
+⁅x⁆-x {x = x} = X-X ⁅ x ⁆
+
+∪-⊆ : ∀ {n} → (X Y : Subset n) → Y ⊆ X → X ∪ Y ≡ X
+∪-⊆ [] [] Y⊆X = refl
+∪-⊆ (outside ∷ X) (outside ∷ Y) Y⊆X = cong (outside ∷_) (∪-⊆ X Y (drop-∷-⊆ Y⊆X))
+∪-⊆ (outside ∷ X) (inside ∷ Y) Y⊆X with Y⊆X here
+... | ()
+∪-⊆ (inside ∷ X) (outside ∷ Y) Y⊆X = cong (inside ∷_) (∪-⊆ X Y (drop-∷-⊆ Y⊆X))
+∪-⊆ (inside ∷ X) (inside ∷ Y) Y⊆X = cong (inside ∷_) (∪-⊆ X Y (drop-∷-⊆ Y⊆X))
 
 --------------------------------------------------------------------------------
 
@@ -88,6 +104,9 @@ weps = zero
 inlr : Sym n
 inlr = suc zero
 
+weps≢ : ∀ {y : Fin n} → suc y ≢ zero
+weps≢ ()
+
 -- concatenation of last symbols
 conc : Sym n → Sym n → Sym n
 conc zero y = y
@@ -110,7 +129,7 @@ concW X Y
 ... | yes a
   with weps ∈? Y
 ... | no zero∉ = Y
-... | yes zero∈ = X ∪ Y         -- wrong! must be Y - weps
+... | yes zero∈ = X ∪ (Y - weps)
 
 concSW : Sym n → WSet n → WSet n
 concSW zero Y = Y
@@ -119,7 +138,7 @@ concSW (suc x) Y
 ... | no weps∉ = Y
 ... | yes weps∈ = ⁅ suc x ⁆ ∪ Y
 
--- properties
+-- properties of conc and friends
 
 concW↓₁' : {X Y : WSet n} → X ≡ ⊥ → concW X Y ≡ ⊥
 concW↓₁' {n = n}{X = X}{Y = Y} X≡⊥
@@ -155,9 +174,11 @@ concW↑ {X = X}{Y = Y}{x}{y} x∈ y∈
 concW↑ {X = X} {Y = Y} {zero} {y} x∈ y∈ | yes a | no weps∉ = y∈
 concW↑ {X = X} {Y = Y} {suc x} {zero} x∈ y∈ | yes a | no weps∉ = contradiction y∈ weps∉
 concW↑ {X = X} {Y = Y} {suc x} {suc y} x∈ y∈ | yes a | no weps∉ = y∈
-concW↑ {X = X} {Y = Y} {zero} {y} x∈ y∈ | yes a | yes weps∈ = x∈p∪q⁺ (inj₂ y∈)
+concW↑ {X = X} {Y = Y} {zero} {zero} x∈ y∈ | yes a | yes weps∈ = x∈p∪q⁺ (inj₁ x∈)
+concW↑ {X = X} {Y = Y} {zero} {suc y} x∈ y∈ | yes a | yes weps∈ = x∈p∪q⁺ (inj₂ (x∈p∧x≢y⇒x∈p-y y∈ weps≢))
 concW↑ {X = X} {Y = Y} {suc x} {zero} x∈ y∈ | yes a | yes weps∈ = x∈p∪q⁺ (inj₁ x∈)
-concW↑ {X = X} {Y = Y} {suc x} {suc y} x∈ y∈ | yes a | yes weps∈ = x∈p∪q⁺ (inj₂ y∈)
+concW↑ {n = n} {X = X} {Y = Y} {suc x} {suc y} x∈ y∈ | yes a | yes weps∈ = x∈p∪q⁺ (inj₂ (x∈p∧x≢y⇒x∈p-y {y = weps} y∈ weps≢))
+
 
 concSW↑ : {Y : WSet n} → ∀ x {y} → y ∈ Y → conc x y ∈ concSW x Y
 concSW↑ {Y = Y} zero {y} y∈ = y∈
@@ -201,10 +222,11 @@ concWε {n}{X}{Y} Y≡ε
 ... | yes a
   with weps ∈? Y
 ... | no weps∉ rewrite Y≡ε = ⊥-elim (weps∉ here)
-... | yes weps∈ = {!!}
+... | yes weps∈ rewrite Y≡ε | ⁅x⁆-x {x = weps{n}} = ∪-identityʳ X
 
 
--- a pointed CPO (actually a complete lattice)
+--------------------------------------------------------------------------------
+-- WSet is a pointed CPO (actually a complete lattice)
 _⊑_ : WSet n → WSet n → Set
 a? ⊑ b? = a? ⊆ b?
 
@@ -228,40 +250,43 @@ module specification where
     fix : ∀ {A : Set} → (A → A) → A
 
   L$ : Session n k → (Fin k → WSet n) → WSet n
-  L$ (` x) η = η x
-  L$ Skip η = ⁅ weps ⁆
-  L$ (Atom x) η = ⁅ suc (suc x) ⁆
-  L$ (Seq S S₁) η = concW (L$ S η) (L$ S₁ η)
-  L$ (Choice S S₁) η = concSW inlr (L$ S η) ∪ concSW inlr (L$ S₁ η)
-  L$ (Mu S) η = fix (λ A → L$ S (ext η A))
+  L$ (` x) η          = η x
+  L$ Skip η           = ⁅ weps ⁆
+  L$ (Atom x) η       = ⁅ suc (suc x) ⁆
+  L$ (Seq S S₁) η     = concW (L$ S η) (L$ S₁ η)
+  L$ (Choice S S₁) η  = concSW inlr (L$ S η) ∪ concSW inlr (L$ S₁ η)
+  L$ (Mu S) η         = fix (λ A → L$ S (ext η A))
 
 -- version with step count
 
 fixᵢ : (WSet n → ℕ → WSet n) → ℕ → WSet n
-fixᵢ f zero = f ⊥ zero          -- was ⊥
-fixᵢ f (suc i) = f (fixᵢ f i) i
+fixᵢ f zero     = f ⊥ zero          -- standard: ⊥, but this is also correct
+fixᵢ f (suc i)  = f (fixᵢ f i) i
 
 
 L$ : Session n k → (Fin k → WSet n) → ℕ → WSet n
-L$ (` x) η i = η x
-L$ Skip η i = ⁅ weps ⁆
-L$ (Atom x) η i = ⁅ suc (suc x) ⁆
-L$ (Seq S S₁) η i = concW (L$ S η i) (L$ S₁ η i)
-L$ (Choice S S₁) η i = concSW inlr (L$ S η i) ∪ concSW inlr (L$ S₁ η i)
-L$ (Mu S) η i = fixᵢ (λ A → L$ S (ext η A)) i
+L$ (` x) η i          = η x
+L$ Skip η i           = ⁅ weps ⁆
+L$ (Atom x) η i       = ⁅ suc (suc x) ⁆
+L$ (Seq S S₁) η i     = concW (L$ S η i) (L$ S₁ η i)
+L$ (Choice S S₁) η i  = concSW inlr (L$ S η i) ∪ concSW inlr (L$ S₁ η i)
+L$ (Mu S) η i         = fixᵢ (λ A → L$ S (ext η A)) i
 
 variable
   S S₁ S₂ : Session n k
+
+--------------------------------------------------------------------------------
+-- several inductively defined properties with soundness proofs wrt the trace semantics
 
 -- session types generating the empty trace
 
 data skips : Session n k → Set where
 
-  skips-Skip : skips {n} {k} Skip
+  skips-Skip  : skips {n} {k} Skip
 
-  skips-Seq  : skips S₁ → skips S₂ → skips (Seq S₁ S₂)
+  skips-Seq   : skips S₁ → skips S₂ → skips (Seq S₁ S₂)
 
-  skips-Mu   : skips S → skips (Mu S)
+  skips-Mu    : skips S → skips (Mu S)
 
 sound-skips : (S : Session n k) (η : Fin k → WSet n) → skips S
   → ∀ i → L$ S η i ≡ ⁅ weps ⁆
@@ -274,7 +299,7 @@ sound-skips Skip η skips-Skip i = refl
 sound-skips (Atom x) η () i
 sound-skips (Seq S S₁) η (skips-Seq sk sk₁) i
   rewrite sound-skips S η sk i | sound-skips S₁ η sk₁ i
-  = ∪-idem ⁅ weps ⁆
+  = ∪-⊆ ⁅ weps ⁆ (⁅ weps ⁆ - weps) (p─q⊆p ⁅ weps ⁆ ⁅ weps ⁆)
 sound-skips (Choice S S₁) η () i
 sound-skips (Mu S) η (skips-Mu sk) i = sound-skips-fix S η sk i
 
@@ -285,17 +310,17 @@ sound-skips-fix S η sk (suc i) = sound-skips S (ext η (fixᵢ (λ A → L$ S (
 
 data finite : Session n k → Set where
 
-  finite-Skip : finite{n}{k} Skip
+  finite-Skip   : finite{n}{k} Skip
 
-  finite-Atom : ∀ {a : Fin n} → finite{n}{k} (Atom a)
+  finite-Atom   : ∀ {a : Fin n} → finite{n}{k} (Atom a)
 
-  finite-Seq : finite S₁ → finite S₂ → finite (Seq S₁ S₂)
+  finite-Seq    : finite S₁ → finite S₂ → finite (Seq S₁ S₂)
 
-  finite-Left : finite S₁ → finite (Choice S₁ S₂)
+  finite-Left   : finite S₁ → finite (Choice S₁ S₂)
 
-  finite-Right : finite S₂ → finite (Choice S₁ S₂)
+  finite-Right  : finite S₂ → finite (Choice S₁ S₂)
 
-  finite-Mu : finite S → finite (Mu S)
+  finite-Mu     : finite S → finite (Mu S)
 
 sound-finite : {S : Session n k} → (η : Fin k → WSet n) → (fn : finite S)
   → ∀ i → Nonempty (L$ S η i)
@@ -325,15 +350,15 @@ sound-finite-fix {S = S} η fn (suc i) = sound-finite (ext η (fixᵢ (λ A → 
 
 data loops : Session n k → Set where
 
-  loops-var : ∀ {x} → loops{n}{k} (` x)
+  loops-var        : ∀ {x} → loops{n}{k} (` x)
 
-  loops-seq-left : loops S₁ → loops (Seq S₁ S₂)
+  loops-seq-left   : loops S₁ → loops (Seq S₁ S₂)
 
-  loops-seq-right : loops S₂ → loops (Seq S₁ S₂)
+  loops-seq-right  : loops S₂ → loops (Seq S₁ S₂)
 
-  loops-choice : loops S₁ → loops S₂ → loops (Choice S₁ S₂)
+  loops-choice     : loops S₁ → loops S₂ → loops (Choice S₁ S₂)
 
-  loops-Mu : loops S → loops (Mu S)
+  loops-Mu         : loops S → loops (Mu S)
 
 sound-loops : {S : Session n k} (η : Fin k → WSet n) (ass-η : ∀ x → η x ≡ ⊥) (lps : loops S)
   → ∀ i → L$ S η i ≡ ⊥
@@ -364,20 +389,20 @@ clos = suc (suc zero)
 
 data bounded : Session (suc n) k → Set where
 
-  bounded-var : ∀ {x} → bounded{n}{k} (` x)
+  bounded-var     : ∀ {x} → bounded{n}{k} (` x)
 
-  bounded-close : bounded{n}{k} (Atom zero) -- clos
+  bounded-close   : bounded{n}{k} (Atom zero) -- clos
 
-  bounded-bounded-seq : bounded S₂ → bounded (Seq S₁ S₂)
+  bounded-seq-2   : bounded S₂ → bounded (Seq S₁ S₂)
 
   --  I believe this is fine, but can't prove it
   --  bounded-loop-seq : loops S₁ → bounded (Seq S₁ S₂)
 
-  bounded-seq-1 : bounded S₁ → skips S₂ → bounded (Seq S₁ S₂)
+  bounded-seq-1   : bounded S₁ → skips S₂ → bounded (Seq S₁ S₂)
 
-  bounded-choice : bounded S₁ → bounded S₂ → bounded (Choice S₁ S₂)
+  bounded-choice  : bounded S₁ → bounded S₂ → bounded (Choice S₁ S₂)
 
-  bounded-mu : bounded S → bounded (Mu S)
+  bounded-mu      : bounded S → bounded (Mu S)
 
 
 sound-bounded : {S : Session (suc n) k}
@@ -394,16 +419,14 @@ sound-bounded-fix : {S : Session (suc n) (suc k)}
 
 sound-bounded η ass-η bounded-var i = ass-η _
 sound-bounded η ass-η bounded-close i x = x
-sound-bounded {S = Seq S₁ S₂} η ass-η (bounded-bounded-seq bs) i
+sound-bounded {S = Seq S₁ S₂} η ass-η (bounded-seq-2 bs) i
   with sound-bounded η ass-η bs i
 ... | iv = concW⊆{s = suc zero}{X = L$ S₁ η i} iv
 -- sound-bounded {S = Seq S₁ S₂} η ass-η (bounded-loop-seq lps) i
 --   rewrite sound-loops η {!!} lps i
 --   rewrite concW↓₁ {Y = L$ S₂ η i} = ⊥⊆
 sound-bounded {S = Seq S₁ S₂} η ass-η (bounded-seq-1 bs sks) i
-  with sound-bounded η ass-η bs i
-... | iv
-  rewrite sound-skips S₂ η sks i = {!!}
+  rewrite sound-skips S₂ η sks i | concWε {X = L$ S₁ η i} refl = sound-bounded η ass-η bs i
 
 sound-bounded η ass-η (bounded-choice bs bs₁) i
   with sound-bounded η ass-η bs i | sound-bounded η ass-η bs₁ i
@@ -413,23 +436,3 @@ sound-bounded η ass-η (bounded-mu bs) i = sound-bounded-fix η ass-η bs i
 
 sound-bounded-fix η ass-η bs zero = sound-bounded (ext η ⊥) (λ{ zero → ⊥⊆ ; (suc x) → ass-η x}) bs zero
 sound-bounded-fix {S = S} η ass-η bs (suc i) = sound-bounded (ext η (fixᵢ (λ A → L$ S (ext η A)) i)) (λ{ zero → sound-bounded-fix η ass-η bs i ; (suc x) → ass-η x}) bs i
-
--- -- the lemma
--- rb : ∀ S → (dom-η : dom η ⊆ var S)
---          → (ass-X : ∀ X ∈ dom η → η X ⊆ { □ })
---          → (bs : bounded S)
---          → L$ S η ⊆ { □ }
--- rb X = OK: ass-X X
--- rb ε = OK: ¬ bounded ε
--- rb a = OK: bounded a → a ≡ □
--- rb (S₁ ; S₂) = cases by inversion on bounded (S₁ ; S₂)
---   1. finite S₁ , bounded S₂ : L$ S₁ η ⊃ ∅ , L$ S₂ η ⊆ { □ }
---      conc≤1 (L$ S₁ η) (L$ S₂ η) ⊆ { □ }
---   2. loops S₁ : L$ S₁ η = ∅ implies conc≤1 (L$ S₁ η) (L$ S₂ η) = ∅ ⊆ { □ }
--- rb (S₁ & S₂) = OK: by rb S₁ and rb S₂
--- rb (μX.S) = fixed point induction
---   base case: rb S η[ X ↦ ∅ ]
---         * dom-η′ is ok
---         * ass-X′ is ok by ass-X and η X ⊆ { □ }
---         * bs′ by inversion of bs
---   inductive case: if A ⊆ { □ } then rb S η[ X ↦ A ] ⊆ { □ }
