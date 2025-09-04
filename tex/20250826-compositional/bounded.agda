@@ -65,12 +65,12 @@ variable
 -- n - size of alphabet
 
 data Session (n : ℕ) : (k : ℕ) → Set where
-  `_   : Fin k → Session n k
-  Skip : Session n k
-  Atom : Fin n → Session n k
-  Seq  : Session n k → Session n k → Session n k
-  Choice : Session n k → Session n k → Session n k
-  Mu   : Session n (suc k) → Session n k
+  `_      : Fin k → Session n k
+  Skip    : Session n k
+  Atom    : Fin n → Session n k
+  Seq     : Session n k → Session n k → Session n k
+  Choice  : Session n k → Session n k → Session n k
+  Mu      : Session n (suc k) → Session n k
 
 
   
@@ -171,13 +171,13 @@ concW↑ {X = X}{Y = Y}{x}{y} x∈ y∈
 ... | no ¬a = ⊥-elim (¬a (_ , x∈))
 ... | yes a
   with weps ∈? Y
-concW↑ {X = X} {Y = Y} {zero} {y} x∈ y∈ | yes a | no weps∉ = y∈
-concW↑ {X = X} {Y = Y} {suc x} {zero} x∈ y∈ | yes a | no weps∉ = contradiction y∈ weps∉
-concW↑ {X = X} {Y = Y} {suc x} {suc y} x∈ y∈ | yes a | no weps∉ = y∈
-concW↑ {X = X} {Y = Y} {zero} {zero} x∈ y∈ | yes a | yes weps∈ = x∈p∪q⁺ (inj₁ x∈)
-concW↑ {X = X} {Y = Y} {zero} {suc y} x∈ y∈ | yes a | yes weps∈ = x∈p∪q⁺ (inj₂ (x∈p∧x≢y⇒x∈p-y y∈ weps≢))
-concW↑ {X = X} {Y = Y} {suc x} {zero} x∈ y∈ | yes a | yes weps∈ = x∈p∪q⁺ (inj₁ x∈)
-concW↑ {n = n} {X = X} {Y = Y} {suc x} {suc y} x∈ y∈ | yes a | yes weps∈ = x∈p∪q⁺ (inj₂ (x∈p∧x≢y⇒x∈p-y {y = weps} y∈ weps≢))
+concW↑ {x = zero} {y} x∈ y∈ | yes a | no weps∉ = y∈
+concW↑ {x = suc x} {zero} x∈ y∈ | yes a | no weps∉ = contradiction y∈ weps∉
+concW↑ {x = suc x} {suc y} x∈ y∈ | yes a | no weps∉ = y∈
+concW↑ {x = zero} {zero} x∈ y∈ | yes a | yes weps∈ = x∈p∪q⁺ (inj₁ x∈)
+concW↑ {x = zero} {suc y} x∈ y∈ | yes a | yes weps∈ = x∈p∪q⁺ (inj₂ (x∈p∧x≢y⇒x∈p-y y∈ weps≢))
+concW↑ {x = suc x} {zero} x∈ y∈ | yes a | yes weps∈ = x∈p∪q⁺ (inj₁ x∈)
+concW↑ {x = suc x} {suc y} x∈ y∈ | yes a | yes weps∈ = x∈p∪q⁺ (inj₂ (x∈p∧x≢y⇒x∈p-y {y = weps} y∈ weps≢))
 
 
 concSW↑ : {Y : WSet n} → ∀ x {y} → y ∈ Y → conc x y ∈ concSW x Y

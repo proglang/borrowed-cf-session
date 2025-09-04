@@ -88,18 +88,104 @@ expression reduction preserves typing.
     {\Eff[2]}$ then 
     $\HasType {\CtxPattern{\CtxExt{\Ctx[1]}{\Ctx[2]}}} {\Subs\E\V x} {\T[2]} {\Eff[2]}$
   \end{itemize}
-  PT thinks it should be:
-  $\HasType {\Ctx[1]} {\V} {\T[1]} {\Eff[1]}$
+\end{lemma}
+\begin{lemma}[Substitution]
+  \label{lem:substitution}
+  If 
+  $\HasType {\Ctx[0]} {\E[0]} {\T[0]} {\EffPure}$
+  and
+  $\MobMobile (\Ctx[0])$
   and
   $\HasType
-    {\CtxPattern{\CtxVar x{\T[1]}}}
+    {\CtxPattern[0]{\CtxVar y{\T[0]}}}
     {\E}
-    {\T[2]}
-    {\Eff[2]}$
+    {\T}
+    {\Eff}$
     implies
-    $\HasType {\CtxPattern{{\Ctx[1]}}} {\Subs\E\V x} {\T[2]}
-    {\Eff[2]}$, for disjoint $\Ctx[1]$ and $\CtxPattern{}$.
-\end{lemma}
+    $\HasType {\CtxPattern[0]{{\Ctx[0]}}} {\Subs\E{\E[0]} y} {\T}
+    {\Eff}$, for disjoint $\Ctx[0]$ and $\CtxPatternRaw_0$.
+  \end{lemma}
+  PT: somehow we need to make sure that $\Ctx[0]$ is independent so
+  that it can safely be moved around in the context.
+\begin{proof}
+  By rule induction on the derivation of  $\HasType
+  {\CtxPattern[0]{\CtxVar x{\T[0]}}} {\E} {\T} {\Eff}$.
+
+  \textbf{Case} $\RuleTConst$. n.a.
+
+  \textbf{Case} $\RuleTVar$. Immediate for $x=y$ and empty $\CtxPattern[0]{}$.
+
+  \textbf{Case} $\RuleTAbsLin$. Here $x\ne y$; by variable convention, assume
+  $x \notin dom (\Ctx[0])$; by induction,
+  $\HasType
+  {\CtxExtUnord{\CtxPattern[0]{{\Ctx[0]}}}{\CtxVar\EVar{\T[1]}}}
+  {\Subs\E{\E[0]} y} {\T[2]} {\Eff}$; by assumption, $\MobMobile
+  (\Ctx[0])$ which implies $\Mob (\CtxPattern[0]{{\Ctx[0]}})$; conclude
+  by \TirName{T-AbsLin}.
+
+  \textbf{Case} \TirName{T-AbsLeft} and \TirName{T-AbsRight} are
+  analogous.
+
+  \textbf{Case} $\RuleTAppLin$. \\
+  Either $y\in \E[1]$ or $y \in \E[2]$.
+  If $y\in \E[1]$, then $\Ctx[1]$ has the form $\CtxPattern[0]{\CtxVar y
+    {\T[0]}}$ and induction yields
+  $\HasType {\CtxPattern[0]{\Ctx[0]}} {\Subs{\E[1]}{\E[0]}y}
+  {(\TArr{\Mob}{\DirUnord,{\Eff[3]}}{\T[1]}{\T[2]})}
+  {\Eff[1]}$. Conclude by applying \TirName{TApp-Lin}. 
+
+  If $y\in \E[2]$, argue analogously.
+
+  \textbf{Case} \TirName{T-AppLeft} and \TirName{T-AppRight} are
+  analogous.
+
+  \textbf{Case} \TirName{T-PairUnord} and \TirName{T-PairOrd} are analogous.
+
+  \textbf{Case} $\RuleTLet$.
+
+  Either $y\in\E[1]$ or $x\ne y$ and $y\in\E[2]$.
+
+  If $y\in\E[1]$, then $\Ctx$ has the form $\CtxPattern[1]{\CtxVar y
+    {\T[0]}}$ and $\CtxPattern[0]{} = \CtxPattern{\CtxPattern[1]{}}$.
+  By induction, $\HasType {\CtxPattern[1]{\Ctx[0]}} {\E[1]} {\T[1]}
+  {\Eff[1]}$ and applying \TirName{T-Let} yields a typing in context
+  $\CtxPattern[0]{\Ctx[0]}$.
+
+  If $x \ne y \in \E[2]$, then $y$ must appear in $\CtxPatternRaw$, so
+  that $\CtxPattern{\Ctx} = \CtxPattern[0]{\CtxVar y {\T[0]}}[{\Ctx}]$, for
+  some 2-hole pattern $\CtxPatternRaw_0$. By induction using the
+  pattern $\CtxPattern[0]{\CtxVar y {\T[0]}}[{\CtxVar x {\T[1]}}]$, we
+  obtain a judgment in context $\CtxPattern[0]{\Ctx[0]}[{\CtxVar x {\T[1]}}]$
+ and applying \TirName{T-Let}
+  we obtain a typing in context $\CtxPattern[0]{\Ctx[0]}[{\Ctx}]$. The
+  $\IsLeftPat$ property is not affected as it refers to the position
+  of $x$ in the context.
+
+  \textbf{Case} $\RuleTLetUnit$.
+
+  Either $y \in \E[1]$ or $y \in \E[2]$.
+
+  If $y \in \E[1]$, then the argument is analogous to \TirName{T-Let}.
+
+  If $y \in \E[2]$, then $y$ must appear in $\CtxPatternRaw$, so
+  that $\CtxPattern{\Ctx} = \CtxPattern[0]{\CtxVar y {\T[0]}}[{\Ctx}]$, for
+  some 2-hole pattern $\CtxPatternRaw_0$. By induction using the
+  pattern $\CtxPattern[0]{\CtxVar y {\T[0]}}[\CtxEmpty]$, we
+  obtain a judgment in context $\CtxPattern[0]{\Ctx[0]}[\CtxEmpty]$
+ and applying \TirName{T-LetUnit}
+ we obtain a typing in context $\CtxPattern[0]{\Ctx[0]}[{\Ctx}]$.
+
+ \textbf{Case} \TirName{T-LetUnit} and \TirName{T-LetOrd} are analogous
+ to \TirName{T-Let} and \TirName{T-LetUnit}.
+
+ \textbf{Case} \TirName{T-Inj}. Immediate by induction.
+
+ \textbf{Case} \TirName{T-CaseSum}. Analogous to \TirName{T-Let}.
+
+ \textbf{Case} $\RuleTWeakCE$.
+
+ TODO!
+\end{proof}
 
 \begin{lemma}[Expression reduction preserves typing]
   If $\E[1] \Reduces \E[2]$ and 
