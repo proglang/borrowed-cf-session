@@ -94,7 +94,7 @@ expression reduction preserves typing.
   If 
   $\HasType {\Ctx[0]} {\E[0]} {\T[0]} {\EffPure}$
   and
-  $\MobMobile (\Ctx[0])$
+  ($\MobMobile (\T[0])$ implies $\MobMobile (\Ctx[0])$)
   and
   $\HasType
     {\CtxPattern[0]{\CtxVar y{\T[0]}}}
@@ -116,11 +116,14 @@ expression reduction preserves typing.
   \textbf{Case} $\RuleTVar$. Immediate for $x=y$ and empty $\CtxPattern[0]{}$.
 
   \textbf{Case} $\RuleTAbsLin$. Here $x\ne y$; by variable convention, assume
-  $x \notin dom (\Ctx[0])$; by induction,
+  $x \notin dom (\Ctx[0])$;
+  we have $\Ctx = \CtxPattern[0]{{\T[0]}}$;
+  if $\Mob = \MobMobile$, then $\MobMobile (\T[0])$;
+  by induction,
   $\HasType
   {\CtxExtUnord{\CtxPattern[0]{{\Ctx[0]}}}{\CtxVar\EVar{\T[1]}}}
-  {\Subs\E{\E[0]} y} {\T[2]} {\Eff}$; by assumption, $\MobMobile
-  (\Ctx[0])$ which implies $\Mob (\CtxPattern[0]{{\Ctx[0]}})$; conclude
+  {\Subs\E{\E[0]} y} {\T[2]} {\Eff}$;   if $\Mob = \MobMobile$, then, by assumption, $\MobMobile
+  (\Ctx[0])$ which implies $\MobMobile (\CtxPattern[0]{{\Ctx[0]}})$; conclude
   by \TirName{T-AbsLin}.
 
   \textbf{Case} \TirName{T-AbsLeft} and \TirName{T-AbsRight} are
@@ -184,7 +187,19 @@ expression reduction preserves typing.
 
  \textbf{Case} $\RuleTWeakCE$.
 
- TODO!
+ We are given   $\HasType {\CtxPattern[0]{\CtxVar y {\T[0]}}} {\E}
+ {\T} {\Eff[2]}$, that is, $\Ctx[2] = \CtxPattern[0]{\CtxVar y
+   {\T[0]}}$.
+ We have to show that $\Ctx[2] \preccurlyeq \Ctx[1]$ implies the
+ existence of some $\CtxPatternRaw_1$ such that $\Ctx[1] =
+ \CtxPattern[1]{\CtxVar y {\T[0]}}$. This result follows by induction
+ on the number of applications of the rewrite rule for weakening.
+ In the same way we can show that
+ $\CtxPattern[0]{\CtxVar y {\T[0]}}\preccurlyeq \CtxPattern[1]{\CtxVar y {\T[0]}}$
+ implies
+ $\CtxPattern[0]{\Ctx[0]}\preccurlyeq
+ \CtxPattern[1]{\Ctx[0]}$.
+ Conclude by applying rule \TirName{T-WeakCE}.
 \end{proof}
 
 \begin{lemma}[Expression reduction preserves typing]
