@@ -23,8 +23,14 @@
   }
 }
 
+\newcommand*\RuleTeWait{
+  \inferrule[Te-Wait]{}{
+    \Bounded\SWait
+  }
+}
+
 \newcommand*\RuleTeRet{
-  \inferrule[Te-Rel]{}{
+  \inferrule[Te-Ret]{}{
     \Bounded\SRet
   }
 }
