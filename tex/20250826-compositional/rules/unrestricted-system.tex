@@ -1,0 +1,88 @@
+\newcommand*\DefRule[3]{
+  \expandafter \DefRuleHelper \expandafter {\RuleNamePrefix} {#1} {#2} {#3}
+}
+
+\newcommand*\DefRuleHelper[4]{
+  \expandafter \newcommand \csname \RuleCmdPrefix #2\endcsname
+    {
+      \inferrule[#1#2]{#3}{#4}
+    }
+}
+
+\def\RuleCmdPrefix{RuleTU}
+\def\RuleNamePrefix{TU-}
+
+\DefRule {Const} {
+  \HasCType \TC \TT
+}{
+  \HasType \TCtx \TC \TT
+}
+
+\DefRule {Var} {
+  \TCtxVar \TEVar \TT \in \TCtx
+}{
+  \HasType \TCtx \TEVar \TT
+}
+
+\DefRule {Abs} {
+  \HasType {\TCtxExt{\TCtx}{\TCtxVar\TEVar{\TT[1]}}}
+    {\TE}
+    {\TT[2]}
+}{
+  \HasType \TCtx
+    {\TEAbs \TEVar \TE}
+    {\TTArr{\TT[1]}{\TT[2]}}
+}
+
+\def\RuleCmdPrefix{RuleCU}
+\def\RuleNamePrefix{CU-}
+
+\DefRule {Unit} {} {
+  \HasCType \TCUnit
+    {\TBUnit}
+}
+
+\DefRule {New} {} {
+  \HasCType \TCNew
+    {\TTArr \TBUnit {\TTProd\TBChan\TBChan}}
+}
+
+\DefRule {Fork} {} {
+  \HasCType \TCFork
+    {\TTArr{(\TTArr \TBUnit \TBUnit)}{\TBUnit}}
+}
+
+\DefRule {Close} {} {
+  \HasCType \TCClose
+    {\TTArr \TBChan \TBUnit}
+}
+
+\DefRule {Wait} {} {
+  \HasCType \TCWait
+    {\TTArr \TBChan \TBUnit}
+}
+
+\DefRule {Send} {} {
+  \HasCType {{\TCSend}_{\TT}}
+    {\TTArr {\TTProd \TT \TBChan} \TBUnit}
+}
+
+\DefRule {Recv} {} {
+  \HasCType {{\TCRecv}_{\TT}}
+    {\TTArr \TBChan \TT}
+}
+
+\DefRule {Split} {} {
+  \HasCType {\TCSplit}
+    {\TTArr \TBChan {\TTProd \TBChan \TBChan}}
+}
+
+\DefRule {Drop} {} {
+  \HasCType {\TCDrop}
+    {\TTArr \TBChan \TBUnit}
+}
+
+\DefRule {Acquire} {} {
+  \HasCType {\TCAcq}
+    {\TTArr \TBChan \TBChan}
+}

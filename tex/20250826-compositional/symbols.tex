@@ -6,10 +6,12 @@
 \newcommand{\typecolor}{\textcolor{RoyalPurple}}
 \newcommand{\targettypecolor}{\textcolor{blue}}
 \newcommand{\termcolor}{\textcolor{Mahogany}}
+\newcommand{\targettermcolor}{\textcolor{Sepia}}
+\newcommand{\procbindcolor}{\termcolor}
+\newcommand{\targetprocbindcolor}{\targettermcolor}
 \newcommand{\priocolor}{\textcolor{Emerald}}  % LimeGreen -> too light
 \newcommand{\dircolor}{\textcolor{Melon}}
 \newcommand{\mobcolor}{\textcolor{LimeGreen}}
-\newcommand{\targettermcolor}{\textcolor{Sepia}}
 
 \newcommand*\Keyword[1]{\operatorname{\texttt{#1}}}
 \newcommand*\TermKeyword[1]{\termcolor{\Keyword{#1}}}
@@ -115,21 +117,20 @@
 \DeclareMathOperator\Smerge{merge}
 
 % Target
-\newcommand*\TT{\targettypecolor{T}}
+\newcommand*\TT[1][]{\targettypecolor{T_{#1}}}
 \newcommand*\ST{\targettypecolor{S}}
 \newcommand*\STSend[2][{}]{\targettypecolor{\operatorname{!}^{\priocolor{#1}}{#2}.}}
 \newcommand*\STRecv[2][{}]{\targettypecolor{\operatorname{?}^{\priocolor{#1}}{#2}.}}
 \newcommand*\STWait[1][{}]{\targettypecolor{\Keyword{Wait}}^{\priocolor{#1}}}
 \newcommand*\STTerm[1][{}]{\targettypecolor{\Keyword{Close}}^{\priocolor{#1}}} % Term}}
-\newcommand*\TTPair[3][{}]{\targettypecolor{{#2}\otimes^{#1}{#3}}}
 \newcommand*\STDual[1]{\targettypecolor{\Dual\,({#1})}}
 \newcommand*\TBUnit{\TargetTypeKeyword{Unit}}
+\newcommand*\TBChan{\TargetTypeKeyword{Chan}}
 
 \newcommand*\TTVariant[2]{\targettypecolor{\langle{#1}\rangle_{#2}}}
-\newcommand*\TTArr[3]{\targettypecolor{{#2}\to^{#1}{#3}}}
-
-\newcommand*\TCtx{\targetctxcolor{\Gamma}}
-\newcommand*\TCtxEmpty{\targetctxcolor{\emptyset}}
+\newcommand*\TTArr[2]{\targettypecolor{{#1}\to{#2}}}
+\newcommand*\TTProd[2]{\targettypecolor{{#1}\times{#2}}}
+\newcommand*\TTSum[2]{\targettypecolor{{#1}+{#2}}}
 
 % Contexts
 \newcommand*\Ctx[1][{}]{\ctxcolor{\Gamma_{#1}}}
@@ -158,11 +159,11 @@
 \newcommand*\SCtxExt[3]{{#1},{#2}:{#3}}
 
 % binders
-\newcommand*\BindGroup[1][{}]{\termcolor{B_{#1}}}
-\newcommand*\Bind[1][{}]{\termcolor{b_{#1}}}
-\newcommand*\BSeq[2]{\termcolor{#1; #2}}
-\newcommand*\BPar[2]{\termcolor{#1\|#2}}
-\newcommand*\BEmp{\termcolor{\cdot}}
+\newcommand*\BindGroup[1][{}]{\procbindcolor{B_{#1}}}
+\newcommand*\Bind[1][{}]{\procbindcolor{b_{#1}}}
+\newcommand*\BSeq[2]{\procbindcolor{#1; #2}}
+\newcommand*\BPar[2]{\procbindcolor{#1\|#2}}
+\newcommand*\BEmp{\procbindcolor{\cdot}}
 
 % Expressions
 \newcommand*\E[1][{}]{\termcolor{e_{#1}}}
@@ -194,7 +195,7 @@
 \newcommand*\CWrap{\targettermcolor{\mathit{wrap}}}
 
 % Constants
-\newcommand*\C{\termcolor{c}}
+\newcommand*\C[1][]{\termcolor{c#1}}
 \newcommand*\CUnit{\TermKeyword{()}}
 \newcommand*\CBase{\TermKeyword{b}}
 \newcommand*\CFork{\TermKeyword{fork}}
@@ -234,18 +235,30 @@
 \newcommand*\TC{\targettermcolor{c}}
 \newcommand*\TCUnit{\TargetTermKeyword{()}}
 \newcommand*\TCBase{\TargetTermKeyword{b}}
-\newcommand*\TCFork{\TargetTermKeyword{spawn}}
-\newcommand*\TCSplit{\TargetTermKeyword{split}}
+\newcommand*\TCFork{\TargetTermKeyword{fork}}
+\newcommand*\TCSplit{\TargetTermKeyword{rsplit}}
 \newcommand*\TCNew{\TargetTermKeyword{new}}
 \newcommand*\TCLink{\TargetTermKeyword{link}}
 \newcommand*\TCWait{\TargetTermKeyword{wait}}
-\newcommand*\TCTerm{\TargetTermKeyword{close}} % term}}
+\newcommand*\TCClose{\TargetTermKeyword{close}}
 \newcommand*\TCSend{\TargetTermKeyword{send}}
-\newcommand*\TCRecv{\TargetTermKeyword{recv}} % recv}}
+\newcommand*\TCRecv{\TargetTermKeyword{recv}}
 \newcommand*\TCSelect[1]{\EApp{\TargetTermKeyword{select}}{#1}}
 \newcommand*\TCBranch{\TargetTermKeyword{branch}}
 \newcommand*\TCOffer{\TargetTermKeyword{offer}}
 \newcommand*\TCDrop{\TargetTermKeyword{drop}}
+\newcommand*\TCAcq{\TargetTermKeyword{acquire}}
+
+% target contexts
+\newcommand*\TCtx{\targetctxcolor{\Gamma}}
+\newcommand*\TCtxEmpty{\targetctxcolor{\emptyset}}
+\newcommand*\TCtxVar[2]{\targetctxcolor{{\targettermcolor{#1}}:{\targettypecolor{#2}}}}
+\newcommand*\TCtxExt[2]{\targetctxcolor{{#1},{#2}}}
+\newcommand*\TCtxApp[2]{\metacolor{\targetctxcolor{#1}\cup\targetctxcolor{#2}}}
+
+\newcommand*\TBind[1][{}]{\targetprocbindcolor{B_{#1}}}
+\newcommand*\TBEmp{\targetprocbindcolor{\cdot}}
+\newcommand*\TBExt[2]{\targetprocbindcolor{{#1},{#2}}}
 
 % Values
 \newcommand*\V{\termcolor{v}}
@@ -285,7 +298,7 @@
 
 % Effect Order
 \newcommand*\EffLeq{\sqsubseteq}
-\newcommand*\EffJoin{\metacolor\sqcup} 
+\newcommand*\EffJoin{\metacolor{{}\sqcup{}}} 
 
 % Flags
 \newcommand*\Flag{\termcolor{\phi}}
@@ -326,7 +339,10 @@
 \newcommand*\HasTKind[3]{{#1}\vdash{#2}:{#3}}
 
 % Expression Typing
-\newcommand*\HasType[5][{}]{{\ctxcolor{#2}}\vdash{\termcolor{#3}}:{\typecolor{#4}}\mid{\typecolor{#5}}}
+\NewDocumentCommand \HasType {o m m m}
+  {
+    {#2} \vdash {#3} : {#4} \IfValueT{#1}{\mid{#1}}
+  }
 
 % Constant Typing
 \newcommand*\HasCType[2]{{#1}:{#2}}
@@ -367,6 +383,11 @@
 \newcommand{\Congruent}{\equiv}
 
 % Translations
+\newcommand*\TrCmd[2]{\metacolor{\mathcal{T}_{#1}(#2)}}
+\newcommand\TrT{\TrCmd T}
+\newcommand\TrCtx{\TrCmd \Gamma}
+\newcommand\TrBG{\TrCmd B}
+
 \newcommand*\TA[2]{\metacolor{\llbracket #1;#2 \rrbracket_{\Gamma}}}
 % \newcommand*\TA[2]{\metacolor{\llbracket #2 \rrbracket_{\Gamma} ({#1})}}
 % {\metacolor{\mathcal{T}_{\Ctx}( #1 , #2 )}}

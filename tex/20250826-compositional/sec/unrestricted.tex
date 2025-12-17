@@ -1,0 +1,80 @@
+\begin{figure}
+  \begin{align*}
+    \TC \grmeq
+      & \TCUnit
+        \grmor \TCNew
+        \grmor \TCFork
+        \grmor \TCClose 
+        \grmor \TCWait
+        \grmor \TCSend_{\TT}
+        \grmor \TCRecv_{\TT}
+    \\&
+    \grmor \TCSplit
+    \grmor \TCDrop \grmor \TCAcq
+        \tag{Constants} \\
+    % \TE \grmeq
+    %   & \TC \grmor \TEVar \grmor \TEAbs\TEVar\TE \grmor \TEApp\TE\TE 
+    %     \grmor \TESeq\TE\TE
+    %     \grmor \TEPair\TE\TE
+    %     \grmor \TELetPair{\TEVar}{\TEVar}{\TE}{\TE} \\
+    %   &  \grmor \TEInj i \TE 
+    %     \grmor\TECase\TE{\TEVar}{\TE}{\TEVar}{\TE} \\
+    %   % & \grmor \EMatch{\E}{\ell:\E_\ell}{\ell\in L}
+    %   % \grmor \EFork\E \grmor \ELet\EVar\E\E
+    %     \tag{Expressions}
+    % \\
+    \TT \grmeq
+        & \TBUnit \grmor \TTArr\TT\TT \grmor \TTProd\TT\TT
+                  \grmor \TTSum\TT\TT \grmor \TBChan
+          \tag{Types}
+    \\
+    \TCtx \grmeq
+        & \TCtxEmpty \grmor \TCtxExt{\TCtx}{\TCtxVar\TEVar\TT}
+          \tag{Contexts}
+    \\
+    \TBind \grmeq
+        & \TBEmp \grmor \TEVar \grmor \TBExt{\TBind}{\TBind}
+          \tag{Channel binders}
+  \end{align*}
+  \caption{Syntax of unrestricted expressions and types}
+  \label{fig:syntax-unr-expressions-types}
+\end{figure}
+
+\begin{figure}
+  \begin{mathpar}
+    \RuleCUUnit \and
+    \RuleCUNew  \and
+    \RuleCUFork \and
+    \RuleCUClose\and
+    \RuleCUWait \and
+    \RuleCUSend \and
+    \RuleCURecv \and
+    \RuleCUSplit\and
+    \RuleCUDrop \and
+    \RuleCUAcquire
+    \\
+    \RuleTUConst \and
+    \RuleTUVar \and
+    \RuleTUAbs
+  \end{mathpar}
+  etc.---system is standard (no linearity/ordering)
+  \caption{Typing of constants and expression in the unrestricted system}
+  \label{fig:typing-unr}
+\end{figure}
+
+\begin{figure}
+  \begin{align*}
+    \TrT{\BUnit} &= \TBUnit &
+    \TrT{\TArr {\Mob} {\Dir,\Eff} {\T[1]} {\T[2]}} &= \TTArr {\TrT{\T[1]}} {\TrT{\T[2]}} \\
+    \TrT{\S} &= \TBChan &
+    \TrT{\TPair[\Dir] {\T[1]} {\T[2]}} &= \TTProd {\TrT{\T[1]}} {\TrT{\T[2]}} \\
+    && \TrT{\TSum {\T[1]} {\T[2]}} &= \TTSum {\TrT{\T[1]}} {\TrT{\T[2]}}
+    \\[\smallskipamount]
+    \TrCtx{\CtxEmpty} &= \TCtxEmpty &
+    \TrCtx{\CtxExt{\Ctx[1]}{\Ctx[2]}} &= \TCtxApp{\TrCtx{\Ctx[1]}}{\TrCtx{\Ctx[2]}} \\
+    \TrCtx{\CtxVar\EVar\T} &= \TCtxExt{\TCtxEmpty}{\TCtxVar\EVar{\TrT\T}} &
+    \TrCtx{\CtxExtUnord{\Ctx[1]}{\Ctx[2]}} &= \TCtxApp{\TrCtx{\Ctx[1]}}{\TrCtx{\Ctx[2]}}
+  \end{align*}
+  \caption{Translation of types and contexts}
+\end{figure}
+
