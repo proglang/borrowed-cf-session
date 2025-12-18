@@ -18,12 +18,19 @@ open import Relation.Binary.PropositionalEquality.WithK using (≡-irrelevant) p
 module Level = StdlibLevel
 open Level
   using (Level; 0ℓ)
-  renaming (_⊔_ to _ℓ⊔_)
+  renaming (_⊔_ to _⊔ℓ_)
   public
 
 open import Function
-  hiding (id)
+  hiding (id; seq)
   public
+
+import Data.Unit
+import Data.Unit.Polymorphic
+open module Unit  = Data.Unit
+  using (⊤; tt) public
+open module ↑Unit = Data.Unit.Polymorphic
+  using () renaming (⊤ to ↑⊤; tt to ↑tt) public
 
 open import Data.Empty
   using (⊥; ⊥-elim; ⊥-elim-irr)
@@ -71,7 +78,7 @@ module V where
   record IsMapOp {a b c} {A : Set a} {B : Set b} {C : Set c}
                  (f* : ∀ {k} → Vec A k → B → Vec C k)
                  (f : A → B → C)
-                 : Set (a ℓ⊔ b ℓ⊔ c)
+                 : Set (a ⊔ℓ b ⊔ℓ c)
     where
     field
       cong-[] : ∀ b → f* [] b ≡ []
