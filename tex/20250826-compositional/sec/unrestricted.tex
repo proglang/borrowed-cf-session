@@ -4,7 +4,7 @@
       & \TCUnit
         \grmor \TCNew
         \grmor \TCFork
-        \grmor \TCClose 
+        \grmor \TCTerm 
         \grmor \TCWait
         \grmor \TCSend_{\TT}
         \grmor \TCRecv_{\TT}
@@ -12,17 +12,6 @@
     \grmor \TCSplit
     \grmor \TCDrop \grmor \TCAcq
         \tag{Constants} \\
-    % \TE \grmeq
-    %   & \TC \grmor \TEVar \grmor \TEAbs\TEVar\TE \grmor \TEApp\TE\TE 
-    %     \grmor \TESeq\TE\TE
-    %     \grmor \TEPair\TE\TE
-    %     \grmor \TELetPair{\TEVar}{\TEVar}{\TE}{\TE} \\
-    %   &  \grmor \TEInj i \TE 
-    %     \grmor\TECase\TE{\TEVar}{\TE}{\TEVar}{\TE} \\
-    %   % & \grmor \EMatch{\E}{\ell:\E_\ell}{\ell\in L}
-    %   % \grmor \EFork\E \grmor \ELet\EVar\E\E
-    %     \tag{Expressions}
-    % \\
     \TT \grmeq
         & \TBUnit \grmor \TTArr\TT\TT \grmor \TTProd\TT\TT
                   \grmor \TTSum\TT\TT \grmor \TBChan
@@ -32,12 +21,31 @@
         & \TCtxEmpty \grmor \TCtxExt{\TCtx}{\TCtxVar\TEVar\TT}
           \tag{Contexts}
     \\
-    \TBind \grmeq
-        & \TBEmp \grmor \TEVar \grmor \TBExt{\TBind}{\TBind}
-          \tag{Channel binders}
+    \TProc \grmeq
+        & \TPExp\TE
+          \grmor \TPPar\TProc\TProc
+          \grmor \TPNew[xx] \TProc
+          \grmor \TPSync  x \TProc
+          \grmor \TPSync* x \TProc
+          \tag{Processes}
   \end{align*}
-  \caption{Syntax of unrestricted expressions and types}
-  \label{fig:syntax-unr-expressions-types}
+  \caption{Syntax of unrestricted constants and types, processes}
+  \label{fig:unr-syn}
+\end{figure}
+
+\begin{figure}
+  \begin{mathpar}
+    \RuleUProcRedExp      \and
+    \RuleUProcRedFork     \and
+    \RuleUProcRedNew      \and
+    \RuleUProcRedRSplit   \and
+    \RuleUProcRedDrop     \and
+    \RuleUProcRedAcquire  \and
+    \RuleUProcRedClose    \and
+    \RuleUProcRedCom
+  \end{mathpar}
+  \caption{Reduction of unrestricted processes}
+  \label{fig:unr-red-proc}
 \end{figure}
 
 \begin{figure}

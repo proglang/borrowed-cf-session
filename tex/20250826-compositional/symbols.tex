@@ -7,6 +7,8 @@
 \newcommand{\targettypecolor}{\textcolor{blue}}
 \newcommand{\termcolor}{\textcolor{Mahogany}}
 \newcommand{\targettermcolor}{\textcolor{Sepia}}
+\newcommand{\proccolor}{\termcolor}
+\newcommand{\targetproccolor}{\targettermcolor}
 \newcommand{\procbindcolor}{\termcolor}
 \newcommand{\targetprocbindcolor}{\targettermcolor}
 \newcommand{\priocolor}{\textcolor{Emerald}}  % LimeGreen -> too light
@@ -221,7 +223,8 @@
 \newcommand*\TEAbs[3][{}]{\targettermcolor{\lambda_{#1}{#2}.{#3}}}
 \newcommand*\TEApp[2]{\targettermcolor{{#1}\,{#2}}}
 \newcommand*\TEInj[2]{\targettermcolor{\Keyword{inj$_{#1}$}{#2}}}
-\newcommand*\TEPair[3][{}]{\targettermcolor{{#2} \otimes_{#1} {#3}}}
+\newcommand*\TEPair[2]{\targettermcolor{{#1} \otimes {#2}}}
+\newcommand*\TETrip[3]{\TEPair{#1}{\TEPair{#2}{#3}}}
 \newcommand*\TECase[5]{\targettermcolor{\Keyword{case} {#1} \mathop{\{} \Keyword{inj$_1$} {#2} \Rightarrow{#3}; \Keyword{inj$_2$} {#4} \Rightarrow{#5} \mathop{\}}}}
 \newcommand*\TELet[2]{\targettermcolor{\Keyword{let}\,{#1} \Keyword{=} {#2}\,\Keyword{in}\,}}
 \newcommand*\TESeq[1]{\targettermcolor{{#1}\!\Keyword{;}}}
@@ -230,17 +233,23 @@
 \newcommand*\TEMatch[3]{\targettermcolor{\Keyword{match}\, {#1}\, \Keyword{with}\, \TERecord{#2}{#3}}}
 \newcommand*\TEMatchA[3]{\targettermcolor{\begin{array}[t]{@{}l@{}l}\Keyword{match}&\, {#1}\, \Keyword{with}\\&\ERecord{#2}{#3}\end{array}}}
 \newcommand*\TERecord[2]{\targettermcolor{\{{#1}\}_{#2}}}
-
+\NewDocumentCommand \TEChan {o m o}
+  {
+    \TEPair
+      {\TEPair {\IfValueTF{#1}{#1}{\TCUnit}} {#2}}
+      {\IfValueTF{#3}{#3}{\TCUnit}}
+  }
+    
 % target constants
 \newcommand*\TC{\targettermcolor{c}}
-\newcommand*\TCUnit{\TargetTermKeyword{()}}
+\newcommand*\TCUnit{\TargetTermKeyword{*}}
 \newcommand*\TCBase{\TargetTermKeyword{b}}
 \newcommand*\TCFork{\TargetTermKeyword{fork}}
 \newcommand*\TCSplit{\TargetTermKeyword{rsplit}}
 \newcommand*\TCNew{\TargetTermKeyword{new}}
 \newcommand*\TCLink{\TargetTermKeyword{link}}
 \newcommand*\TCWait{\TargetTermKeyword{wait}}
-\newcommand*\TCClose{\TargetTermKeyword{close}}
+\newcommand*\TCTerm{\TargetTermKeyword{close}}
 \newcommand*\TCSend{\TargetTermKeyword{send}}
 \newcommand*\TCRecv{\TargetTermKeyword{recv}}
 \newcommand*\TCSelect[1]{\EApp{\TargetTermKeyword{select}}{#1}}
@@ -264,6 +273,10 @@
 \newcommand*\V{\termcolor{v}}
 \newcommand*\U{\termcolor{u}}
 
+% Target Values
+\newcommand*\TV[1][]{\targettermcolor{v_{#1}}}
+\newcommand*\TU[1][]{\targettermcolor{u_{#1}}}
+
 % Evaluation Contexts
 \newcommand*\EC{\termcolor{E}}
 \newcommand*\ECEmpty{\termcolor{\Box}}
@@ -277,10 +290,19 @@
 \newcommand*\CCapp[2][{}]{\termcolor{\mathcal{G}_{#1}[#2]}}
 
 % Processes
-\newcommand*\Proc[1][{}]{\termcolor{{P}_{#1}}}
-\newcommand*\PExp[2][{}]{\termcolor{{}^{#1}\langle{#2}\rangle}}
-\newcommand*\PNew[3]{\termcolor{(\nu [{#1}][{#2}]){#3}}}
-\newcommand*\PPar[2]{\termcolor{{#1} \,\|\, {#2}}}
+\newcommand*\Proc[1][{}]{\proccolor{{P}_{#1}}}
+\newcommand*\PExp[2][{}]{\proccolor{{}^{#1}\langle{#2}\rangle}}
+\newcommand*\PNew[3]{\proccolor{(\nu [{#1}][{#2}]){#3}}}
+\newcommand*\PPar[2]{\proccolor{{#1} \,\|\, {#2}}}
+
+% Target Processes
+\newcommand*\TProc[1][]{\targetproccolor{{P}_{#1}}}
+\newcommand*\TPExp[1]{\targetproccolor{\langle{#1}\rangle}}
+\newcommand*\TPNew[2][xy]{\targetproccolor{(\nu #1){#2}}}
+\newcommand*\TPPar[2]{\targetproccolor{{#1} \,\|\, {#2}}}
+\NewDocumentCommand \TPSync {s m m} {\targetproccolor{%
+    (\varphi \IfBooleanT{#1}{{}^{*}} #2){#3}%
+}}
 
 % Variable Sets ("Dependencies")
 \newcommand*\D{\Delta}

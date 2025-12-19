@@ -53,7 +53,7 @@
 }
 
 \DefRule {Close} {} {
-  \HasCType \TCClose
+  \HasCType \TCTerm
     {\TTArr \TBChan \TBUnit}
 }
 
@@ -85,4 +85,97 @@
 \DefRule {Acquire} {} {
   \HasCType {\TCAcq}
     {\TTArr \TBChan \TBChan}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Reduction rules
+
+\def\RuleCmdPrefix{RuleUProcRed}
+\def\RuleNamePrefix{RU-}
+
+\DefRule {Exp} {
+  \TE[1]  \Reduces \TE[2]
+}{
+  \FCapp{\TE[1]} \Reduces \FCapp{\TE[2]}
+}
+
+\DefRule {Fork} {} {
+  \FCapp{\TEApp \TCFork \TV}
+  \Reduces
+  \TPPar{\FCapp\TCUnit}{\TPExp{\TEApp\TV\TCUnit}}
+}
+
+\DefRule {New} {} {
+  \FCapp{\TEApp \TCNew \TCUnit}
+  \Reduces
+  \TPNew {
+    \TPSync {z_1} {\TPSync {z_2} {
+      \FCapp{\TEPair
+        {(\TEChan [z_1]x)}
+        {(\TEChan [z_2]y)}
+      }
+    }}
+  }
+}
+
+\DefRule {RSplit} {} {
+    \TPNew {(
+      \TPPar {\FCapp{\TEApp \TCSplit {(\TEChan [e_1]x[e_2])}}} \TProc
+    )}
+    \Reduces
+    \TPNew {
+      \TPSync z {(
+        \TPPar {\FCapp{\TEPair
+          {(\TEChan [e_1] x [z]   )}
+          {(\TEChan [z]   x [e_2] )}
+        }} \TProc
+      )} 
+    }
+}
+
+\DefRule {Drop} {} {
+    \TPNew {
+      \TPSync z {(
+        \TPPar {\FCapp{\TEApp \TCDrop {(\TEChan x[z])}}} \TProc
+      )} 
+    }
+    \Reduces 
+    \TPNew {
+      \TPSync* z {(
+        \TPPar {\FCapp{\TCUnit}} \TProc
+      )} 
+    }
+}
+
+\DefRule {Acquire} {} {
+    \TPNew {
+      \TPSync* z {(
+        \TPPar {\FCapp{\TEApp \TCAcq {(\TEChan [z]x[e])}}} \TProc
+      )} 
+    }
+    \Reduces 
+    \TPNew {(
+      \TPPar {\FCapp{\TEChan x[e]}} \TProc
+    )}
+}
+
+\DefRule {Close} {} {
+    \TPNew {(
+      \TPPar {\FCapp[1]{\TEApp\TCTerm {(\TEChan x)}}}
+             {\FCapp[2]{\TEApp\TCWait {(\TEChan y)}}}
+    )}
+    \Reduces 
+    \TPPar {\FCapp[1]{\TCUnit}} {\FCapp[2]{\TCUnit}}
+}
+
+\DefRule {Com} {} {
+  \TPNew {(
+    \TPPar {\FCapp[1]{\TEApp {\TCSend_{\TT}} {(\TEPair \TV {(\TEChan x[e_1])}}}} {
+    \TPPar {\FCapp[2]{\TEApp {\TCRecv_{\TT}} {(\TEChan y[e_2])}}} {\TProc}}
+  )}
+  \Reduces
+  \TPNew {(
+    \TPPar {\FCapp[1]{\TCUnit}} {
+    \TPPar {\FCapp[2]{\TV}} {\TProc}}
+  )}
 }
