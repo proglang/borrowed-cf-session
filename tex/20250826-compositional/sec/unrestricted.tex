@@ -9,8 +9,9 @@
         \grmor \TCSend_{\TT}
         \grmor \TCRecv_{\TT}
     \\&
-    \grmor \TCSplit
-    \grmor \TCDrop \grmor \TCAcq
+        \grmor \TCSplit
+        \grmor \TCSSplit
+        \grmor \TCDrop \grmor \TCAcq
         \tag{Constants} \\
     \TT \grmeq
         & \TBUnit \grmor \TTArr\TT\TT \grmor \TTProd\TT\TT
@@ -38,6 +39,7 @@
     \RuleUProcRedExp      \and
     \RuleUProcRedFork     \and
     \RuleUProcRedNew      \and
+    \RuleUProcRedLSplit   \and
     \RuleUProcRedRSplit   \and
     \RuleUProcRedDrop     \and
     \RuleUProcRedAcquire  \and
@@ -57,7 +59,8 @@
     \RuleCUWait \and
     \RuleCUSend \and
     \RuleCURecv \and
-    \RuleCUSplit\and
+    \RuleCULSplit\and
+    \RuleCURSplit\and
     \RuleCUDrop \and
     \RuleCUAcquire
     \\
@@ -86,3 +89,17 @@
   \caption{Translation of types and contexts}
 \end{figure}
 
+\begin{figure}
+  \begin{mathpar}
+    \RuleTransExpSubVar   \and
+    \RuleTransExpCtxVar   \and
+    \RuleTransExpAbsLin   \and
+    \RuleTransExpSend     \and
+    \RuleTransExpRecv     \and
+    \RuleTransProcExp   \and
+    \RuleTransProcPar   \and
+    \RuleTransProcBind  \and
+    \RuleTransBindParEmpty
+  \end{mathpar}
+  \caption{Translation of expressions and processes}
+\end{figure}

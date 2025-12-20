@@ -1,0 +1,90 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Translation of expressions
+
+\def\RuleCmdPrefix{RuleTransExp}
+\def\RuleNamePrefix{Tr-Exp-}
+
+\DefRule {SubVar} {
+  \EVar \in \Sub
+} {
+  \HasType {\Ctx} \EVar \T \TransExp \Sub(\EVar)
+}
+
+\DefRule {CtxVar} {
+  \EVar \notin \Sub
+} {
+  \HasType {\Ctx} \EVar \T \TransExp \EVar
+}
+
+\DefRule {AbsLin} {
+  \HasType {\CtxExtUnord\Ctx{\CtxVar\EVar{\T[1]}}} \E {\T[2]}
+    \TransExp \TE*
+} {
+  \HasType \Ctx {(\EAbs\EVar\E)} {(\TArr{\Mob}{\DirUnord,\Eff}{\T[1]}{\T[2]})}
+    \TransExp \TEAbs\TEVar{\TE*}
+}
+
+\DefRule {Send} {} {
+  \HasType {\Ctx} \CSend
+    {\TArr \MobMobile {\DirUnord,\EffImpure} {\T\PairUnord{\SSend\T}} \BUnit}
+  \TransExp
+  \TCSend_{\TrT\T}
+}
+
+\DefRule {Recv} {} {
+  \HasType {\Ctx} \CRecv
+    {\TArr \MobMobile {\DirUnord,\EffImpure} {\SRecv\T} \T}
+  \TransExp
+  \TCRecv_{\TrT\T}
+}
+
+\def\RuleCmdPrefix{RuleTransProc}
+\def\RuleNamePrefix{Tr-Proc-}
+
+\DefRule {Exp} {
+  \HasType {\Ctx,abc} \E \T
+    \TransExp \TE*
+} {
+  \ProcHasType \Ctx {\PExp{\E}}
+  \TransProc
+  \TPExp{\TE*}
+}
+
+\DefRule {Par} {
+  \ProcHasType{\Ctx[1]}{\Proc[1]}
+    \TransProc \TProc*[1]\\
+  \ProcHasType{\Ctx[2]}{\Proc[2]}
+    \TransProc \TProc*[2]
+} {
+  \ProcHasType
+    {\CtxPar{\Ctx[1]}{\Ctx[2]}}
+    {\PPar{\Proc[1]}{\Proc[2]}}
+  \TransProc
+  \TPPar {\TProc*[1]} {\TProc*[2]}
+}
+
+\DefRule [\small\text{($\TEVar,\TEVary$ fresh)}] {Bind} {
+  \ProcHasType {\CtxPar \Ctx {\CtxPar {\Ctx[1]} {\Ctx[2]}}} \Proc
+    \TransProc \TProc* \\
+  % \BindGivesCtx \S {\BindGroup[1]} {\Ctx[1]} \\
+  % \BindGivesCtx {\SDual\S} {\BindGroup[2]} {\Ctx[2]} \\
+} {
+  \ProcHasType
+    {\Ctx}
+    {\PNew {\BindGroup[1]}{\BindGroup[2]} \Proc}
+  \TransProc
+  \TPNew {\TProc*}
+}
+
+\def\RuleCmdPrefix{RuleTransBind}
+\def\RuleNamePrefix{Tr-Bind-}
+
+% An empty sequence of channel binders indicates on the left of a binder group
+% indicates that the left side of the rsplit was already been dropped.
+\DefRule {ParEmpty} {
+  \ProcHasType {\Ctx,\BindGroup} \Proc
+    \TransBind[\SubExt{X}{\TE}] YY
+} {
+  \Ctx, \BPar \BEmp \BindGroup \vdash \Proc \TransBind
+    \TPSync* z {\TProc*}
+}

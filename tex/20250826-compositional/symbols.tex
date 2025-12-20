@@ -21,6 +21,8 @@
 \newcommand*\TargetTypeKeyword[1]{\targettypecolor{\Keyword{#1}}}
 \newcommand*\TargetTermKeyword[1]{\targettermcolor{\Keyword{#1}}}
 
+\newcommand*\NewMetaVar[3][]{\NewDocumentCommand #2 {s O{}} {#1{\IfBooleanTF{##1}{#3'}{#3}_{##2}}}}
+
 % Grammars
 \newcommand{\grmeq}{\; \Coloneqq \;\;}
 \newcommand{\grmor}{\;\mid\;}
@@ -60,7 +62,7 @@
 \newcommand*\BString{\TypeKeyword{String}}
 
 % Types
-\newcommand*\T[1][{}]{\typecolor{T_{#1}}}
+\NewMetaVar[\typecolor] \T T
 \newcommand*\TProd[3]{\typecolor{{#2}\otimes_{#1}{#3}}}
 \newcommand*\TPair[3][{}]{\typecolor{{#2}\Pair[#1]{#3}}}
 \newcommand*\TPairUnord[2]{\TProd\DirUnord{#1}{#2}} % \typecolor{{#1}\PairUnord{#2}}}
@@ -85,8 +87,9 @@
 \newcommand*\pglb{\mathbin{\priocolor{\sqcap}}}
 
 % Session Types
-\renewcommand*\S[1][{}]{\typecolor{S_{#1}}}
-\newcommand*\R[1][{}]{\typecolor{R_{#1}}}
+\let\S=\undefined
+\NewMetaVar[\typecolor] \S S
+\NewMetaVar[\typecolor] \R R
 \newcommand*\SVar{\typecolor{X}}
 \newcommand*\SSkip{\TypeKeyword{Skip}}
 \newcommand*\SSeq[2]{\typecolor{{#1};{#2}}}
@@ -94,8 +97,8 @@
 \newcommand*\STerm[1][{}]{\TypeKeyword{Close}} % Term}}
 \newcommand*\SDual[1]{\typecolor{#1}^{\metacolor\bot}} % {\typecolor{\Dual\,({#1})}}
 \newcommand*\STrans[2][{}]{\typecolor{\operatorname{\#}{#2}}}
-\newcommand*\SSend[2][{}]{\typecolor{\operatorname{!}{\!#2}}}
-\newcommand*\SRecv[2][{}]{\typecolor{\operatorname{?}{\!#2}}}
+\newcommand*\SSend[1]{\typecolor{\operatorname{!}{\!#1}}}
+\newcommand*\SRecv[1]{\typecolor{\operatorname{?}{\!#1}}}
 \newcommand*\SRecord[2]{\typecolor{\{{#1}\}_{#2}}}
 \newcommand*\SVariant[2]{\typecolor{\langle{#1}\rangle_{#2}}}
 \newcommand*\SMulti[3][{}]{\typecolor{\odot\SRecord{#2}{#3}}}
@@ -119,8 +122,8 @@
 \DeclareMathOperator\Smerge{merge}
 
 % Target
-\newcommand*\TT[1][]{\targettypecolor{T_{#1}}}
-\newcommand*\ST{\targettypecolor{S}}
+\NewMetaVar[\targettypecolor] \TT T
+\NewMetaVar[\targettypecolor] \ST S
 \newcommand*\STSend[2][{}]{\targettypecolor{\operatorname{!}^{\priocolor{#1}}{#2}.}}
 \newcommand*\STRecv[2][{}]{\targettypecolor{\operatorname{?}^{\priocolor{#1}}{#2}.}}
 \newcommand*\STWait[1][{}]{\targettypecolor{\Keyword{Wait}}^{\priocolor{#1}}}
@@ -135,7 +138,7 @@
 \newcommand*\TTSum[2]{\targettypecolor{{#1}+{#2}}}
 
 % Contexts
-\newcommand*\Ctx[1][{}]{\ctxcolor{\Gamma_{#1}}}
+\NewMetaVar[\ctxcolor] \Ctx \Gamma
 \newcommand*\CtxEmpty{\ctxcolor{\emptyset}}
 % \newcommand*\CtxEmpty{\ctxcolor{\cdot}}
 \newcommand*\CtxVar[2]{\ctxcolor{{\termcolor{#1}}:{\typecolor{#2}}}}
@@ -161,16 +164,17 @@
 \newcommand*\SCtxExt[3]{{#1},{#2}:{#3}}
 
 % binders
-\newcommand*\BindGroup[1][{}]{\procbindcolor{B_{#1}}}
-\newcommand*\Bind[1][{}]{\procbindcolor{b_{#1}}}
+\NewMetaVar[\procbindcolor] \BindGroup B
+\NewMetaVar[\procbindcolor] \Bind      b
 \newcommand*\BSeq[2]{\procbindcolor{#1; #2}}
 \newcommand*\BPar[2]{\procbindcolor{#1\|#2}}
 \newcommand*\BEmp{\procbindcolor{\cdot}}
+\DeclareMathOperator\BindHead{head}
 
 % Expressions
-\newcommand*\E[1][{}]{\termcolor{e_{#1}}}
-\newcommand*\EVar[1][{}]{\termcolor{x_{#1}}}
-\newcommand*\EVary{\termcolor{y}}
+\NewMetaVar[\termcolor] \E     e
+\NewMetaVar[\termcolor] \EVar  x
+\NewMetaVar[\termcolor] \EVary y
 \newcommand*\EBorrow[1]{\termcolor{\&{#1}}}
 \newcommand*\EAbs[3][{}]{\termcolor{\lambda_{#1}{#2}.{#3}}}
 \newcommand*\EApp[2]{\termcolor{{#1}\,{#2}}}
@@ -217,10 +221,10 @@
 
 
 % target Expressions
-\newcommand*\TE[1][{}]{\targettermcolor{e_{#1}}}
-\newcommand*\TEVar[1][{}]{\targettermcolor{x_{#1}}}
-\newcommand*\TEVary{\targettermcolor{y}}
-\newcommand*\TEAbs[3][{}]{\targettermcolor{\lambda_{#1}{#2}.{#3}}}
+\NewMetaVar[\targettermcolor] \TE     e
+\NewMetaVar[\targettermcolor] \TEVar  x
+\NewMetaVar[\targettermcolor] \TEVary y
+\newcommand*\TEAbs[2]{\targettermcolor{\lambda {#1}.{#2}}}
 \newcommand*\TEApp[2]{\targettermcolor{{#1}\,{#2}}}
 \newcommand*\TEInj[2]{\targettermcolor{\Keyword{inj$_{#1}$}{#2}}}
 \newcommand*\TEPair[2]{\targettermcolor{{#1} \otimes {#2}}}
@@ -245,7 +249,8 @@
 \newcommand*\TCUnit{\TargetTermKeyword{*}}
 \newcommand*\TCBase{\TargetTermKeyword{b}}
 \newcommand*\TCFork{\TargetTermKeyword{fork}}
-\newcommand*\TCSplit{\TargetTermKeyword{rsplit}}
+\newcommand*\TCSplit{\TargetTermKeyword{lsplit}}
+\newcommand*\TCSSplit{\TargetTermKeyword{rsplit}}
 \newcommand*\TCNew{\TargetTermKeyword{new}}
 \newcommand*\TCLink{\TargetTermKeyword{link}}
 \newcommand*\TCWait{\TargetTermKeyword{wait}}
@@ -259,44 +264,47 @@
 \newcommand*\TCAcq{\TargetTermKeyword{acquire}}
 
 % target contexts
-\newcommand*\TCtx{\targetctxcolor{\Gamma}}
+\NewMetaVar[\targetctxcolor] \TCtx \Gamma
 \newcommand*\TCtxEmpty{\targetctxcolor{\emptyset}}
 \newcommand*\TCtxVar[2]{\targetctxcolor{{\targettermcolor{#1}}:{\targettypecolor{#2}}}}
 \newcommand*\TCtxExt[2]{\targetctxcolor{{#1},{#2}}}
 \newcommand*\TCtxApp[2]{\metacolor{\targetctxcolor{#1}\cup\targetctxcolor{#2}}}
 
-\newcommand*\TBind[1][{}]{\targetprocbindcolor{B_{#1}}}
+\NewMetaVar[\targetprocbindcolor] \TBind B
 \newcommand*\TBEmp{\targetprocbindcolor{\cdot}}
 \newcommand*\TBExt[2]{\targetprocbindcolor{{#1},{#2}}}
 
-% Values
-\newcommand*\V{\termcolor{v}}
-\newcommand*\U{\termcolor{u}}
+% Substitutions
+\NewMetaVar \Sub \sigma
+\newcommand*\SubId{\mathrm{id}}
+\newcommand*\SubExt[3][\Sub]{{#1}[{#2} \mapsto {#3}]}
 
-% Target Values
-\newcommand*\TV[1][]{\targettermcolor{v_{#1}}}
-\newcommand*\TU[1][]{\targettermcolor{u_{#1}}}
+% Values
+\NewMetaVar[\termcolor] \V v
+\NewMetaVar[\termcolor] \U u
+\NewMetaVar[\targettermcolor] \TV v
+\NewMetaVar[\targettermcolor] \TU u
 
 % Evaluation Contexts
 \newcommand*\EC{\termcolor{E}}
 \newcommand*\ECEmpty{\termcolor{\Box}}
 
 % Flagged Contexts
-\newcommand*\FC[1][{}]{\termcolor{\mathcal{F}_{#1}}}
-\newcommand*\FCapp[2][{}]{\termcolor{\mathcal{F}_{#1}[#2]}}
+\NewMetaVar[\termcolor] \FC {\mathcal{F}}
+\newcommand*\FCapp[2][]{\termcolor{\FC[1][#2]}}
 
 % Configuration Contexts
-\newcommand*\CC[1][{}]{\termcolor{\mathcal{G}_{#1}}}
-\newcommand*\CCapp[2][{}]{\termcolor{\mathcal{G}_{#1}[#2]}}
+\NewMetaVar[\termcolor] \CC {\mathcal{G}}
+\newcommand*\CCapp[2][]{\termcolor{\CC[1][#2]}}
 
 % Processes
-\newcommand*\Proc[1][{}]{\proccolor{{P}_{#1}}}
+\NewMetaVar[\proccolor] \Proc P
 \newcommand*\PExp[2][{}]{\proccolor{{}^{#1}\langle{#2}\rangle}}
 \newcommand*\PNew[3]{\proccolor{(\nu [{#1}][{#2}]){#3}}}
 \newcommand*\PPar[2]{\proccolor{{#1} \,\|\, {#2}}}
 
 % Target Processes
-\newcommand*\TProc[1][]{\targetproccolor{{P}_{#1}}}
+\NewMetaVar[\targetproccolor] \TProc P
 \newcommand*\TPExp[1]{\targetproccolor{\langle{#1}\rangle}}
 \newcommand*\TPNew[2][xy]{\targetproccolor{(\nu #1){#2}}}
 \newcommand*\TPPar[2]{\targetproccolor{{#1} \,\|\, {#2}}}
@@ -312,7 +320,7 @@
 \newcommand*\DJoin{\cup}
 
 % Effects
-\newcommand*\Eff[1][{}]{\typecolor{\epsilon_{#1}}}
+\NewMetaVar[\typecolor] \Eff \epsilon
 \newcommand*\EffPure{\typecolor{\textsc{p}}}
 \newcommand*\EffImpure{\typecolor{\textsc{i}}}
 % \newcommand*\EffPure{\typecolor{\mathbf{0}}}
@@ -371,6 +379,7 @@
 
 % Process Typing
 \newcommand*\ProcHasType[2]{\ctxcolor{#1} \vdash {\termcolor{#2}} }
+\newcommand*\BindGivesCtx[3]{#1 \vdash #2 \leadsto #3}
 
 % Type Context Formation
 \newcommand*\CtxWf[1]{\vdash{#1}}
@@ -406,9 +415,14 @@
 
 % Translations
 \newcommand*\TrCmd[2]{\metacolor{\mathcal{T}_{#1}(#2)}}
+\newcommand*\TrRel[1]{\leadsto_{#1}}
 \newcommand\TrT{\TrCmd T}
 \newcommand\TrCtx{\TrCmd \Gamma}
 \newcommand\TrBG{\TrCmd B}
+
+\newcommand*\TransExp[1][\Sub]{\stackrel{#1}{\TrRel{}}}
+\newcommand\TransProc[1][\Sub]{\stackrel{#1}{\TrRel{\!P}}}
+\newcommand\TransBind[1][\Sub]{\stackrel{#1}{\TrRel{\!B}}}
 
 \newcommand*\TA[2]{\metacolor{\llbracket #1;#2 \rrbracket_{\Gamma}}}
 % \newcommand*\TA[2]{\metacolor{\llbracket #2 \rrbracket_{\Gamma} ({#1})}}

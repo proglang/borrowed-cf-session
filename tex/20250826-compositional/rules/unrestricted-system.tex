@@ -1,13 +1,5 @@
-\newcommand*\DefRule[3]{
-  \expandafter \DefRuleHelper \expandafter {\RuleNamePrefix} {#1} {#2} {#3}
-}
-
-\newcommand*\DefRuleHelper[4]{
-  \expandafter \newcommand \csname \RuleCmdPrefix #2\endcsname
-    {
-      \inferrule[#1#2]{#3}{#4}
-    }
-}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Typing rules for expressions
 
 \def\RuleCmdPrefix{RuleTU}
 \def\RuleNamePrefix{TU-}
@@ -33,6 +25,9 @@
     {\TEAbs \TEVar \TE}
     {\TTArr{\TT[1]}{\TT[2]}}
 }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Typing rules for constants
 
 \def\RuleCmdPrefix{RuleCU}
 \def\RuleNamePrefix{CU-}
@@ -72,8 +67,13 @@
     {\TTArr \TBChan \TT}
 }
 
-\DefRule {Split} {} {
+\DefRule {LSplit} {} {
   \HasCType {\TCSplit}
+    {\TTArr \TBChan {\TTProd \TBChan \TBChan}}
+}
+
+\DefRule {RSplit} {} {
+  \HasCType {\TCSSplit}
     {\TTArr \TBChan {\TTProd \TBChan \TBChan}}
 }
 
@@ -109,7 +109,7 @@
   \FCapp{\TEApp \TCNew \TCUnit}
   \Reduces
   \TPNew {
-    \TPSync {z_1} {\TPSync {z_2} {
+    \TPSync* {z_1} {\TPSync* {z_2} {
       \FCapp{\TEPair
         {(\TEChan [z_1]x)}
         {(\TEChan [z_2]y)}
@@ -118,9 +118,22 @@
   }
 }
 
-\DefRule {RSplit} {} {
+\DefRule {LSplit} {} {
     \TPNew {(
       \TPPar {\FCapp{\TEApp \TCSplit {(\TEChan [e_1]x[e_2])}}} \TProc
+    )}
+    \Reduces
+    \TPNew {(
+      \TPPar {\FCapp{\TEPair
+        {(\TEChan [e_1] x   )}
+        {(\TEChan       x [e_2] )}
+      }} \TProc
+    )}
+}
+
+\DefRule {RSplit} {} {
+    \TPNew {(
+      \TPPar {\FCapp{\TEApp \TCSSplit {(\TEChan [e_1]x[e_2])}}} \TProc
     )}
     \Reduces
     \TPNew {

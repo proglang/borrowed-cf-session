@@ -30,8 +30,8 @@
     { \CtxExtUnord\Ctx{\CtxExtUnord{\Ctx[1]}{\Ctx[2]}}
     }
     \Proc  \\
-    \S \vdash \BindGroup[1] \leadsto \Ctx[1] \\
-    \SDual\S \vdash \BindGroup[2] \leadsto \Ctx[2]
+    \BindGivesCtx \S {\BindGroup[1]} {\Ctx[1]} \\
+    \BindGivesCtx {\SDual\S} {\BindGroup[2]} {\Ctx[2]}
   }{
     \ProcHasType
     {\Ctx}
@@ -41,31 +41,37 @@
 
 \newcommand*\RuleBindEmp{
   \inferrule[B-Emp]{}{
-    \SSkip \vdash \BEmp \leadsto \CtxEmpty
+    \BindGivesCtx \SSkip \BEmp \CtxEmpty
   }
 }
 
 \newcommand*\RuleBindSeq{
   \inferrule[B-Seq]{
-    \S[1] \vdash \BindGroup[1] \leadsto \Ctx[1] \\
-    \S[2] \vdash \BindGroup[2] \leadsto \Ctx[2]
+    \BindGivesCtx {\S[1]} {\BindGroup[1]} {\Ctx[1]} \\
+    \BindGivesCtx {\S[2]} {\BindGroup[2]} {\Ctx[2]}
   }{
-    \SSeq{\S[1]}{\S[2]} \vdash \BSeq{\BindGroup[1]}{\BindGroup[2]} \leadsto \CtxExt{\Ctx[1]}{\Ctx[2]}
+    \BindGivesCtx
+      {\SSeq{\S[1]}{\S[2]}}
+      {\BSeq{\BindGroup[1]}{\BindGroup[2]}}
+      {\CtxExt{\Ctx[1]}{\Ctx[2]}}
   }
 }
 
 \newcommand*\RuleBindPar{
   \inferrule[B-Par]{
-    \SSeq{\S[1]}{\SRet} \vdash \BindGroup[1] \leadsto \Ctx[1] \\
-    \SSeq{\SAcq}{\S[2]} \vdash \BindGroup[2] \leadsto \Ctx[2]
+    \BindGivesCtx {\SSeq{\S[1]}{\SRet}} {\BindGroup[1]} {\Ctx[1]} \\
+    \BindGivesCtx {\SSeq{\SAcq}{\S[2]}} {\BindGroup[2]} {\Ctx[2]}
   }{
-    \SSeq{\S[1]}{\S[2]} \vdash \BPar{\BindGroup[1]}{\BindGroup[2]} \leadsto \CtxExtUnord{\Ctx[1]}{\Ctx[2]}
+    \BindGivesCtx
+      {\SSeq{\S[1]}{\S[2]}}
+      {\BPar{\BindGroup[1]}{\BindGroup[2]}}
+      {\CtxExtUnord{\Ctx[1]}{\Ctx[2]}}
   }
 }
 
 \newcommand*\RuleBindVar{
   \inferrule[B-Var]{}{
-    \S \vdash \EVar \leadsto \CtxVar\EVar\S
+    \BindGivesCtx \S \EVar {\CtxVar\EVar\S}
   }
 }
 

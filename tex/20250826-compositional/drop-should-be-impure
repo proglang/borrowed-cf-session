@@ -1,0 +1,18 @@
+drop, acquire should be impure
+
+at least for drop being pure is not compatible R-Drop:
+
+-- c:S;Ret
+
+> let x,y = lsplit c in
+
+-- x:S
+-- y:Ret
+
+> drop y ; ...
+
+-- x:S
+
+but the drop cannot reduce because the process configuration looks like
+
+ν[x,y,B₁][B₂](𝓕[drop y] ∥ P)

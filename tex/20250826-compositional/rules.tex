@@ -1,0 +1,53 @@
+% Macro for easy \inferrule definitions.
+%
+%   \DefRule {⟨name⟩} {⟨premises⟩} {⟨conclusion⟩}
+%
+% defines a new macro \⟨prefix⟩⟨name⟩ where ⟨prefix⟩ is the definition of
+% \RuleCmdPrefix. The macro contents are equivalent to
+%
+%   \inferrule[\RuleNamePrefix]{⟨premises⟩}{⟨conclusion⟩}
+% 
+% == Usage example ==
+%
+% Define for each group of rules the prefixes for names and commands:
+%
+%   \def\RuleNamePrefix{PrintedNamePrefix}
+%   \def\RuleCmdPrefix{RulePrefixExample}
+%
+% Define rules:
+%
+%   \DefRule {MyRule} {...} {...}
+%
+% And use in the document:
+%
+%   \RulePrefixExampleMyRule
+%
+% which produces the \inferrule with the name "PrintedNamePrefixMyRule"
+\NewDocumentCommand \DefRule {o m m m} {
+  \expandafter \DefRuleHelper \expandafter {\RuleNamePrefix} {#1} {#2} {#3} {#4}
+}
+
+\newcommand*\DefRuleHelper[5]{
+  \expandafter \newcommand \csname \RuleCmdPrefix #3\endcsname
+    {
+      \inferrule[#1#3]{#4}{#5} \IfValueT{#2}{~#2}
+    }
+}
+
+% \input{rules/session-type-formation}
+% \input{rules/type-formation}
+
+\input{rules/bounded-session-types}
+\input{rules/congruence}
+\input{rules/constant-typing}
+\input{rules/context-formation}
+\input{rules/ord-types}
+\input{rules/process-typing}
+\input{rules/reduction}
+\input{rules/session-subtyping}
+\input{rules/translation}
+\input{rules/type-context-splitting}
+\input{rules/type-subtyping}
+\input{rules/typing}
+\input{rules/unrestricted-system}
+\input{rules/unrestricted-types}
