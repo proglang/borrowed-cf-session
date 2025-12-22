@@ -96,21 +96,21 @@
 \DefRule {Exp} {
   \TE[1]  \Reduces \TE[2]
 }{
-  \FCapp{\TE[1]} \Reduces \FCapp{\TE[2]}
+  \TFCapp{\TE[1]} \Reduces \TFCapp{\TE[2]}
 }
 
 \DefRule {Fork} {} {
-  \FCapp{\TEApp \TCFork \TV}
+  \TFCapp{\TEApp \TCFork \TV}
   \Reduces
-  \TPPar{\FCapp\TCUnit}{\TPExp{\TEApp\TV\TCUnit}}
+  \TPPar{\TFCapp\TCUnit}{\TPExp{\TEApp\TV\TCUnit}}
 }
 
 \DefRule {New} {} {
-  \FCapp{\TEApp \TCNew \TCUnit}
+  \TFCapp{\TEApp \TCNew \TCUnit}
   \Reduces
   \TPNew {
     \TPSync* {z_1} {\TPSync* {z_2} {
-      \FCapp{\TEPair
+      \TFCapp{\TEPair
         {(\TEChan [z_1]x)}
         {(\TEChan [z_2]y)}
       }
@@ -120,11 +120,11 @@
 
 \DefRule {LSplit} {} {
     \TPNew {(
-      \TPPar {\FCapp{\TEApp \TCSplit {(\TEChan [e_1]x[e_2])}}} \TProc
+      \TPPar {\TFCapp{\TEApp \TCSplit {(\TEChan [e_1]x[e_2])}}} \TProc
     )}
     \Reduces
     \TPNew {(
-      \TPPar {\FCapp{\TEPair
+      \TPPar {\TFCapp{\TEPair
         {(\TEChan [e_1] x   )}
         {(\TEChan       x [e_2] )}
       }} \TProc
@@ -133,12 +133,12 @@
 
 \DefRule {RSplit} {} {
     \TPNew {(
-      \TPPar {\FCapp{\TEApp \TCSSplit {(\TEChan [e_1]x[e_2])}}} \TProc
+      \TPPar {\TFCapp{\TEApp \TCSSplit {(\TEChan [e_1]x[e_2])}}} \TProc
     )}
     \Reduces
     \TPNew {
       \TPSync z {(
-        \TPPar {\FCapp{\TEPair
+        \TPPar {\TFCapp{\TEPair
           {(\TEChan [e_1] x [z]   )}
           {(\TEChan [z]   x [e_2] )}
         }} \TProc
@@ -149,13 +149,13 @@
 \DefRule {Drop} {} {
     \TPNew {
       \TPSync z {(
-        \TPPar {\FCapp{\TEApp \TCDrop {(\TEChan x[z])}}} \TProc
+        \TPPar {\TFCapp{\TEApp \TCDrop {(\TEChan x[z])}}} \TProc
       )} 
     }
     \Reduces 
     \TPNew {
       \TPSync* z {(
-        \TPPar {\FCapp{\TCUnit}} \TProc
+        \TPPar {\TFCapp{\TCUnit}} \TProc
       )} 
     }
 }
@@ -163,32 +163,32 @@
 \DefRule {Acquire} {} {
     \TPNew {
       \TPSync* z {(
-        \TPPar {\FCapp{\TEApp \TCAcq {(\TEChan [z]x[e])}}} \TProc
+        \TPPar {\TFCapp{\TEApp \TCAcq {(\TEChan [z]x[e])}}} \TProc
       )} 
     }
     \Reduces 
     \TPNew {(
-      \TPPar {\FCapp{\TEChan x[e]}} \TProc
+      \TPPar {\TFCapp{\TEChan x[e]}} \TProc
     )}
 }
 
 \DefRule {Close} {} {
     \TPNew {(
-      \TPPar {\FCapp[1]{\TEApp\TCTerm {(\TEChan x)}}}
-             {\FCapp[2]{\TEApp\TCWait {(\TEChan y)}}}
+      \TPPar {\TFCapp[1]{\TEApp\TCTerm {(\TEChan x)}}}
+             {\TFCapp[2]{\TEApp\TCWait {(\TEChan y)}}}
     )}
     \Reduces 
-    \TPPar {\FCapp[1]{\TCUnit}} {\FCapp[2]{\TCUnit}}
+    \TPPar {\TFCapp[1]{\TCUnit}} {\TFCapp[2]{\TCUnit}}
 }
 
 \DefRule {Com} {} {
   \TPNew {(
-    \TPPar {\FCapp[1]{\TEApp {\TCSend_{\TT}} {(\TEPair \TV {(\TEChan x[e_1])}}}} {
-    \TPPar {\FCapp[2]{\TEApp {\TCRecv_{\TT}} {(\TEChan y[e_2])}}} {\TProc}}
+    \TPPar {\TFCapp[1]{\TEApp {\TCSend_{\TT}} {(\TEPair \TV {(\TEChan x[e_1])}}}} {
+    \TPPar {\TFCapp[2]{\TEApp {\TCRecv_{\TT}} {(\TEChan y[e_2])}}} {\TProc}}
   )}
   \Reduces
   \TPNew {(
-    \TPPar {\FCapp[1]{\TCUnit}} {
-    \TPPar {\FCapp[2]{\TV}} {\TProc}}
+    \TPPar {\TFCapp[1]{\TCUnit}} {
+    \TPPar {\TFCapp[2]{\TV}} {\TProc}}
   )}
 }

@@ -140,9 +140,9 @@
 
 \newcommand*\RuleProcRedStruct{
   \inferrule[R-Struct]{
-    \Proc[1] \equiv \Proc[1]' \\
-    \Proc[1]' \Reduces \Proc[2]' \\
-    \Proc[2]' \equiv \Proc[2]
+    \Proc[1] \equiv \Proc*[1] \\
+    \Proc*[1] \Reduces \Proc*[2] \\
+    \Proc*[2] \equiv \Proc[2]
   }{
     \Proc[1] \Reduces \Proc[2]
   }

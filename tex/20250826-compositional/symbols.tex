@@ -286,16 +286,24 @@
 \NewMetaVar[\targettermcolor] \TU u
 
 % Evaluation Contexts
-\newcommand*\EC{\termcolor{E}}
+\NewMetaVar[\termcolor] \EC E
 \newcommand*\ECEmpty{\termcolor{\Box}}
 
 % Flagged Contexts
-\NewMetaVar[\termcolor] \FC {\mathcal{F}}
-\newcommand*\FCapp[2][]{\termcolor{\FC[1][#2]}}
+\NewMetaVar[\proccolor] \FC {\mathcal{F}}
+\newcommand*\FCapp[2][]{\termcolor{\FC[#1][#2]}}
+
+% Target Flagged Contexts
+\NewMetaVar[\targetproccolor] \TFC {\mathcal{F}}
+\newcommand*\TFCapp[2][]{\targetproccolor{\TFC[#1][#2]}}
 
 % Configuration Contexts
-\NewMetaVar[\termcolor] \CC {\mathcal{G}}
-\newcommand*\CCapp[2][]{\termcolor{\CC[1][#2]}}
+\NewMetaVar[\proccolor] \CC {\mathcal{G}}
+\newcommand*\CCapp[2][]{\proccolor{\CC[#1][#2]}}
+
+% Target Configuration Contexts
+\NewMetaVar[\targetproccolor] \TCC {\mathcal{G}}
+\newcommand*\TCCapp[2][]{\targetproccolor{\TCC[#1][#2]}}
 
 % Processes
 \NewMetaVar[\proccolor] \Proc P
