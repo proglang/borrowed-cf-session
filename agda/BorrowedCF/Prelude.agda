@@ -98,7 +98,7 @@ module Π where
   open import Data.Product public
   open import Data.Product.Properties public
 
-open Π using (_×_; _,_; proj₁; proj₂; Σ-syntax; ∃; ∄; curry; uncurry) public
+open Π using (_×_; _,_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∄; curry; uncurry) public
 
 module Sum where
   open import Data.Sum public
