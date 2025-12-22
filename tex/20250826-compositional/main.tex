@@ -39,62 +39,56 @@ The next couple of lemmas are needed to prove that
 expression reduction preserves typing.
 
 \begin{lemma}
-  If $\HasType {\Ctx} {\V} {\T} {\Eff}$
+  If $\HasType[\Eff] {\Ctx} {\V} {\T}$
   then $\Eff = \EffPure$.
 \end{lemma}
 \begin{proof}
-  By induction on the derivation of $\HasType {\Ctx} {\V} {\T} {\Eff}$.
+  By induction on the derivation of $\HasType[\Eff] {\Ctx} {\V} {\T}$.
 \end{proof}
 
 \begin{lemma}[Substitution]\
   \begin{itemize}
-    \item If $\HasType {\Ctx[1]} {\V} {\T[1]} {\Eff[1]}$ and
-    $\HasType {\CtxExtUnord{\CtxVar x{\T[1]}}{\Ctx[2]}} {\E} {\T[2]} {\Eff[2]}$
+    \item If $\HasType[\Eff[1]] {\Ctx[1]} {\V} {\T[1]}$ and
+    $\HasType[\Eff[2]] {\CtxExtUnord{\CtxVar x{\T[1]}}{\Ctx[2]}} {\E} {\T[2]}$
     then 
-    $\HasType {\CtxExtUnord{\Ctx[1]}{\Ctx[2]}} {\Subs\E\V x} {\T[2]} {\Eff[2]}$
+    $\HasType[\Eff[2]] {\CtxExtUnord{\Ctx[1]}{\Ctx[2]}} {\Subs\E\V x} {\T[2]}$
     \item If $\HasType {\Ctx[1]} {\V} {\T[1]} {\Eff[1]}$ and
-    $\HasType {\CtxExt{\CtxVar x{\T[1]}}{\Ctx[2]}} {\E} {\T[2]} {\Eff[2]}$
+    $\HasType[\Eff[2]] {\CtxExt{\CtxVar x{\T[1]}}{\Ctx[2]}} {\E} {\T[2]}$
     then 
-    $\HasType {\CtxExt{\Ctx[1]}{\Ctx[2]}} {\Subs\E\V x} {\T[2]} {\Eff[2]}$
-    \item If $\HasType {\Ctx[1]} {\V} {\T[1]} {\Eff[1]}$
+    $\HasType[\Eff[2]] {\CtxExt{\Ctx[1]}{\Ctx[2]}} {\Subs\E\V x} {\T[2]}$
+    \item If $\HasType[\Eff[1]] {\Ctx[1]} {\V} {\T[1]}$
     and
-    $\HasType
+    $\HasType[\Eff[1]]
     {\CtxPattern{\CtxExtUnord{\CtxVar x{\T[1]}}{\Ctx[2]}}}
     {\E}
-    {\T[2]}
-    {\Eff[2]}$ then 
-    $\HasType {\CtxPattern{\CtxExtUnord{\Ctx[1]}{\Ctx[2]}}} {\Subs\E\V x} {\T[2]} {\Eff[2]}$
-  \item If $\HasType {\Ctx[1]} {\V} {\T[1]} {\Eff[1]}$
+    {\T[2]}$ then 
+    $\HasType[\Eff[2]] {\CtxPattern{\CtxExtUnord{\Ctx[1]}{\Ctx[2]}}} {\Subs\E\V x} {\T[2]}$
+  \item If $\HasType[\Eff[1]] {\Ctx[1]} {\V} {\T[1]}$
     and
-    $\HasType
+    $\HasType[\Eff[2]]
     {\CtxPattern{\CtxExt{\CtxVar x{\T[1]}}{\Ctx[2]}}}
     {\E}
-    {\T[2]}
-    {\Eff[2]}$ then 
-    $\HasType {\CtxPattern{\CtxExt{\Ctx[1]}{\Ctx[2]}}} {\Subs\E\V x} {\T[2]} {\Eff[2]}$
+    {\T[2]}$ then 
+    $\HasType[\Eff[2]] {\CtxPattern{\CtxExt{\Ctx[1]}{\Ctx[2]}}} {\Subs\E\V x} {\T[2]}$
   \end{itemize}
 \end{lemma}
 \begin{lemma}[Substitution]
   \label{lem:substitution}
   If 
-  $\HasType {\Ctx[0]} {\E[0]} {\T[0]} {\EffPure}$
+  $\HasType[\EffPure] {\Ctx[0]} {\E[0]} {\T[0]}$
   and
   ($\MobMobile (\T[0])$ implies $\MobMobile (\Ctx[0])$)
   and
-  $\HasType
-    {\CtxPattern[0]{\CtxVar y{\T[0]}}}
-    {\E}
-    {\T}
-    {\Eff}$
+  $\HasType[\Eff] {\CtxPattern[0]{\CtxVar y{\T[0]}}} \E \T$
     implies
-    $\HasType {\CtxPattern[0]{{\Ctx[0]}}} {\Subs\E{\E[0]} y} {\T}
-    {\Eff}$, for disjoint $\Ctx[0]$ and $\CtxPatternRaw_0$.
+    $\HasType[\Eff] {\CtxPattern[0]{{\Ctx[0]}}} {\Subs\E{\E[0]} y} {\T}$,
+    for disjoint $\Ctx[0]$ and $\CtxPatternRaw_0$.
   \end{lemma}
   PT: somehow we need to make sure that $\Ctx[0]$ is independent so
   that it can safely be moved around in the context.
 \begin{proof}
-  By rule induction on the derivation of  $\HasType
-  {\CtxPattern[0]{\CtxVar x{\T[0]}}} {\E} {\T} {\Eff}$.
+  By rule induction on the derivation of $\HasType[\Eff]
+  {\CtxPattern[0]{\CtxVar x{\T[0]}}} \E \T$.
 
   \textbf{Case} $\RuleTConst$. n.a.
 
@@ -105,9 +99,9 @@ expression reduction preserves typing.
   we have $\Ctx = \CtxPattern[0]{{\T[0]}}$;
   if $\Mob = \MobMobile$, then $\MobMobile (\T[0])$;
   by induction,
-  $\HasType
+  $\HasType[\Eff]
   {\CtxExtUnord{\CtxPattern[0]{{\Ctx[0]}}}{\CtxVar\EVar{\T[1]}}}
-  {\Subs\E{\E[0]} y} {\T[2]} {\Eff}$;   if $\Mob = \MobMobile$, then, by assumption, $\MobMobile
+  {\Subs\E{\E[0]} y} {\T[2]}$;   if $\Mob = \MobMobile$, then, by assumption, $\MobMobile
   (\Ctx[0])$ which implies $\MobMobile (\CtxPattern[0]{{\Ctx[0]}})$; conclude
   by \TirName{T-AbsLin}.
 
@@ -118,9 +112,9 @@ expression reduction preserves typing.
   Either $y\in \E[1]$ or $y \in \E[2]$.
   If $y\in \E[1]$, then $\Ctx[1]$ has the form $\CtxPattern[0]{\CtxVar y
     {\T[0]}}$ and induction yields
-  $\HasType {\CtxPattern[0]{\Ctx[0]}} {\Subs{\E[1]}{\E[0]}y}
-  {(\TArr{\Mob}{\DirUnord,{\Eff[3]}}{\T[1]}{\T[2]})}
-  {\Eff[1]}$. Conclude by applying \TirName{TApp-Lin}. 
+  $\HasType[\Eff[1]] {\CtxPattern[0]{\Ctx[0]}} {\Subs{\E[1]}{\E[0]}y}
+  {(\TArr{\Mob}{\DirUnord,{\Eff[3]}}{\T[1]}{\T[2]})}$.
+  Conclude by applying \TirName{TApp-Lin}. 
 
   If $y\in \E[2]$, argue analogously.
 
@@ -133,11 +127,10 @@ expression reduction preserves typing.
 
   Either $y\in\E[1]$ or $x\ne y$ and $y\in\E[2]$.
 
-  If $y\in\E[1]$, then $\Ctx$ has the form $\CtxPattern[1]{\CtxVar y
-    {\T[0]}}$ and $\CtxPattern[0]{} = \CtxPattern{\CtxPattern[1]{}}$.
-  By induction, $\HasType {\CtxPattern[1]{\Ctx[0]}} {\E[1]} {\T[1]}
-  {\Eff[1]}$ and applying \TirName{T-Let} yields a typing in context
-  $\CtxPattern[0]{\Ctx[0]}$.
+  If $y\in\E[1]$, then $\Ctx$ has the form $\CtxPattern[1]{\CtxVar y {\T[0]}}$
+  and $\CtxPattern[0]{} = \CtxPattern{\CtxPattern[1]{}}$. By induction,
+  $\HasType[\Eff[1]] {\CtxPattern[1]{\Ctx[0]}} {\E[1]} {\T[1]}$ and applying
+  \TirName{T-Let} yields a typing in context $\CtxPattern[0]{\Ctx[0]}$.
 
   If $x \ne y \in \E[2]$, then $y$ must appear in $\CtxPatternRaw$, so
   that $\CtxPattern{\Ctx} = \CtxPattern[0]{\CtxVar y {\T[0]}}[{\Ctx}]$, for
@@ -172,9 +165,8 @@ expression reduction preserves typing.
 
  \textbf{Case} $\RuleTWeakCE$.
 
- We are given   $\HasType {\CtxPattern[0]{\CtxVar y {\T[0]}}} {\E}
- {\T} {\Eff[2]}$, that is, $\Ctx[2] = \CtxPattern[0]{\CtxVar y
-   {\T[0]}}$.
+ We are given $\HasType[\Eff[2]] {\CtxPattern[0]{\CtxVar y {\T[0]}}} \E \T$,
+ that is, $\Ctx[2] = \CtxPattern[0]{\CtxVar y {\T[0]}}$.
  We have to show that $\Ctx[2] \preccurlyeq \Ctx[1]$ implies the
  existence of some $\CtxPatternRaw_1$ such that $\Ctx[1] =
  \CtxPattern[1]{\CtxVar y {\T[0]}}$. This result follows by induction
@@ -189,17 +181,15 @@ expression reduction preserves typing.
 
 \begin{lemma}[Expression reduction preserves typing]
   If $\E[1] \Reduces \E[2]$ and 
-  $\HasType
+  $\HasType[\Eff[1]]
       {\Ctx}
       {\E[1]}
-      {\T}
-      {\Eff[1]}$
+      {\T}$
   then 
-  $\HasType
+  $\HasType[\Eff[2]]
       {\Ctx}
       {\E[2]}
-      {\T}
-      {\Eff[2]}$
+      {\T}$
   for some $\Eff[2] \leq \Eff[1]$.
 \end{lemma}
 
@@ -207,29 +197,26 @@ The following is an auxiliary lemma to prove that
 process reduction preserves typing.
 
 \begin{lemma}
-    $\HasType
+    $\HasType[\Eff[1]]
       {\CtxExtUnord {\Ctx[1]}{\Ctx[2]}}
-      {\EC[\E]}
-      {\T[1]}
-      {\Eff[1]}$ 
+      {\ECapp\E}
+      {\T[1]}$
     if and only if
-    $\HasType
+    $\HasType[\Eff[2]]
       {\Ctx[1]}
       {\E}
-      {\T[2]}
-      {\Eff[2]}$
+      {\T[2]}$
     and 
-    $\HasType
+    $\HasType[\Eff[1]]
       {\CtxExtUnord {\CtxVar x{\T[2]}}{\Ctx[2]}}
-      {\EC[x]}
-      {\T[1]}
-      {\Eff[1]}$ 
+      {\ECapp x}
+      {\T[1]}$
 \end{lemma}
 
 \begin{lemma}
   \label{lemma:inversion-evaluation-context}
-  If $\HasType{\Ctx}{\EC[\E]}{\T}{\Eff}$, then there exists $\Ctx'$,
-  $\T'$, and $\Eff'$ such that $\HasType{\Ctx'}{\E}{\T'}{\Eff'}$.
+  If $\HasType[\Eff]{\Ctx}{\ECapp\E}{\T}$, then there exists $\Ctx*$,
+  $\T*$, and $\Eff*$ such that $\HasType[\Eff*]{\Ctx*}{\E}{\T*}$.
 \end{lemma}
 \begin{proof}
   By induction on $\EC$.
@@ -237,15 +224,15 @@ process reduction preserves typing.
 
 \begin{lemma}
   \label{lemma:inversion-process-evaluation-context}
-  If $\ProcHasType{\Ctx_0} {\FCapp{\E}}$, then there exists $\Ctx$,
-  $\T$, and $\Eff$ such that $\HasType{\Ctx}{\E}{\T}{\Eff}$.
+  If $\ProcHasType{\Ctx[0]} {\FCapp{\E}}$, then there exists $\Ctx$,
+  $\T$, and $\Eff$ such that $\HasType[\Eff]{\Ctx}{\E}{\T}$.
 \end{lemma}
 \begin{proof}
   It must be that $\FC = \PExp \EC$, for some evaluation context $\EC$.
   By inversion of the process typing,
-  $\HasType{\Ctx_0}{\EC[\E]}{\TBUnit}{\EffImpure}$.
+  $\HasType[\EffImpure]{\Ctx[0]}{\ECapp{\E}}{\BUnit}$.
   By Lemma~\ref{lemma:inversion-evaluation-context}, there is  $\Ctx$,
-  $\T$, and $\Eff$ such that $\HasType{\Ctx}{\E}{\T}{\Eff}$.
+  $\T$, and $\Eff$ such that $\HasType[\Eff]{\Ctx}{\E}{\T}$.
 \end{proof}
 
 \clearpage
@@ -260,21 +247,21 @@ process reduction preserves typing.
 
   \textbf{Case} $\left\{\RuleProcRedNew\right.$.\\
   As $\ProcHasType\Ctx {\FCapp{\EApp \CNew \CUnit}}$, there must be
-  some $\Ctx'$ such that
-  $\HasType{\Ctx'}{\EApp \CNew \CUnit}{\T}{\Eff}$ (by Lemma~\ref{lemma:inversion-process-evaluation-context}). \\
-  By inversion, we obtain $\Ctx' = \CtxEmpty$ and $\T =
+  some $\Ctx*$ such that
+  $\HasType[\Eff]{\Ctx*}{\EApp \CNew \CUnit}{\T}$ (by Lemma~\ref{lemma:inversion-process-evaluation-context}). \\
+  By inversion, we obtain $\Ctx* = \CtxEmpty$ and $\T =
   \TPairUnord{(\SSeq{\SAcq}{\S})}{(\SSeq{\SAcq}{\Dual~\S})}$. \\
-  Let $\Ctx'' = \CtxPar{\CtxVar x{(\SSeq{\SAcq}{\S})} }{\CtxVar y
+  Let $\Ctx** = \CtxPar{\CtxVar x{(\SSeq{\SAcq}{\S})} }{\CtxVar y
     {\SSeq{\SAcq}{\Dual~\S}}}$. \\
   We have
-  $\HasType{\Ctx''}{\EPair
+  $\HasType{\Ctx**}{\EPair
     xy}{\TPairUnord{(\SSeq{\SAcq}{\S})}{(\SSeq{\SAcq}{\Dual~\S})}}{\EffPure}$.
   \\
   By lemma XXX, we have
-  $\ProcHasType{\CtxPar{\Ctx}{\Ctx''}}{\FCapp{\EPair xy}}$.
+  $\ProcHasType{\CtxPar{\Ctx}{\Ctx**}}{\FCapp{\EPair xy}}$.
   \\
   Let $\Ctx[1] =\CtxVar x{(\SSeq{\SAcq}{\S})}$ and $\Ctx[2] = \CtxVar
-  y {\SSeq{\SAcq}{\Dual~\S}}$ so that $\Ctx'' =
+  y {\SSeq{\SAcq}{\Dual~\S}}$ so that $\Ctx** =
   \CtxPar{\Ctx[1]}{\Ctx[2]}$.
   \\
   Clearly, $\S \vdash {\BPar{\BEmp}{x}} \leadsto \Ctx[1]$ and
@@ -288,19 +275,19 @@ process reduction preserves typing.
 
   \textbf{Case} $\left\{ \RuleProcRedFork \right.$.\\
   As $\ProcHasType\Ctx {\FCapp{\EApp \CFork \V}}$, there must be some
-  $\Ctx'$ such that
-  $\HasType{\Ctx'}{\EApp \CFork \V}{\T}{\Eff}$ (by
+  $\Ctx*$ such that
+  $\HasType[\Eff]{\Ctx*}{\EApp \CFork \V}{\T}$ (by
   Lemma~\ref{lemma:inversion-process-evaluation-context}). \\
   By inversion, we obtain
-  $\HasType{\Ctx'}\V{\TArr{\MobMobile}{\DirUnord,\EffImpure}\BUnit\BUnit}\EffPure$,
+  $\HasType[\EffPure]{\Ctx*}\V{\TArr{\MobMobile}{\DirUnord,\EffImpure}\BUnit\BUnit}$,
   so that $\T = \BUnit$ and $\Eff = \EffImpure$ and $\Ctx =
-  \CtxPar{\Ctx'}{\Ctx''}$ (because the function is $\DirUnord$ its
-  application must do a parallel split), for some $\Ctx''$.
+  \CtxPar{\Ctx*}{\Ctx**}$ (because the function is $\DirUnord$ its
+  application must do a parallel split), for some $\Ctx**$.
   \\
-  NEED A LEMMA to conclude $\ProcHasType{\Ctx''}{\FCapp{\CUnit}}$.
+  NEED A LEMMA to conclude $\ProcHasType{\Ctx**}{\FCapp{\CUnit}}$.
   \\
-  Clearly, $\ProcHasType{\Ctx'}{\PExp {\EApp\V\CUnit}}$, so that
-  $\ProcHasType{\CtxPar{\Ctx'}{\Ctx''}}{\PPar{\FCapp{\CUnit}}{\PExp {\EApp\V\CUnit}}}$.
+  Clearly, $\ProcHasType{\Ctx*}{\PExp {\EApp\V\CUnit}}$, so that
+  $\ProcHasType{\CtxPar{\Ctx*}{\Ctx**}}{\PPar{\FCapp{\CUnit}}{\PExp {\EApp\V\CUnit}}}$.
 
   Case \TirName{R-Com}.
 
@@ -725,7 +712,7 @@ process reduction preserves typing.
     % \RuleTWeakE\Big)
   \end{mathpar}
    % TODO: Contraction? Exchange? Weakening on the right only?
-  \caption{Typing ($\HasType\Ctx\E\T\Eff$)}
+  \caption{Typing ($\HasType[\Eff]\Ctx\E\T$)}
   \label{fig:typing}
 \end{figure}
 
@@ -746,8 +733,8 @@ process reduction preserves typing.
 % \begin{lemma}
 %   If $\HasType \Ctx \E U \_$ 
 %   and 
-%   $\HasType {\CtxPattern {\CtxVar \EVar U}} {E[\EVar]} T \Eff$, then
-%   $\HasType {\CtxPattern \Ctx} {E[\E]} T \Eff$
+%   $\HasType[\Eff] {\CtxPattern {\CtxVar \EVar U}} {E[\EVar]} T$, then
+%   $\HasType[\Eff] {\CtxPattern \Ctx} {E[\E]} T$
 % \end{lemma}
 
 % \begin{figure}[t!]
