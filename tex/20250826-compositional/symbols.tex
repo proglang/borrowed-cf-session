@@ -32,6 +32,8 @@
   }%
 }
 
+\DeclareMathOperator\dom{\mathsf{dom}}
+
 % Grammars
 \newcommand{\grmeq}{\; \Coloneqq \;\;}
 \newcommand{\grmor}{\;\mid\;}
@@ -140,6 +142,8 @@
 \newcommand*\STDual[1]{\targettypecolor{\Dual\,({#1})}}
 \newcommand*\TBUnit{\TargetTypeKeyword{Unit}}
 \newcommand*\TBChan{\TargetTypeKeyword{Chan}}
+\newcommand*\TBChanD{\TargetTypeKeyword{DChan}}
+\NewDocumentCommand\TBChanF{s}{\targettypecolor{\TargetTypeKeyword{FChan}\IfBooleanT{#1}{{}^?}}}
 
 \newcommand*\TTVariant[2]{\targettypecolor{\langle{#1}\rangle_{#2}}}
 \newcommand*\TTArr[2]{\targettypecolor{{#1}\to{#2}}}
@@ -233,6 +237,7 @@
 \NewMetaVar[\targettermcolor] \TE     e
 \NewMetaVar[\targettermcolor] \TEVar  x
 \NewMetaVar[\targettermcolor] \TEVary y
+\NewMetaVar[\targettermcolor] \TEVarz z
 \newcommand*\TEAbs[2]{\targettermcolor{\lambda {#1}.{#2}}}
 \newcommand*\TEApp[2]{\targettermcolor{{#1}\,{#2}}}
 \newcommand*\TEInj[2]{\targettermcolor{\Keyword{inj$_{#1}$}{#2}}}
@@ -287,6 +292,7 @@
 \NewMetaVar \Sub \sigma
 \newcommand*\SubId{\mathrm{id}}
 \newcommand*\SubExt[3][\Sub]{{#1}[{#2} \mapsto {#3}]}
+\newcommand*\SubSingle[2]{\{{#1}\mapsto{#2}\}}
 
 % Values
 \NewMetaVar[\termcolor] \V v
@@ -324,11 +330,12 @@
 % Target Processes
 \NewMetaVar[\targetproccolor] \TProc P
 \newcommand*\TPExp[1]{\targetproccolor{\langle{#1}\rangle}}
-\newcommand*\TPNew[2][xy]{\targetproccolor{(\nu #1){#2}}}
+\newcommand*\TPNew[2][xy]{\targetproccolor{(\TBindNu #1){#2}}}
 \newcommand*\TPPar[2]{\targetproccolor{{#1} \,\|\, {#2}}}
-\NewDocumentCommand \TPSync {s m m} {\targetproccolor{%
-    (\varphi \IfBooleanT{#1}{{}^{*}} #2){#3}%
-}}
+\NewDocumentCommand\TPSync{s m m}{\targetproccolor{(\TBindSync[#1]#2){#3}}}
+
+\newcommand*\TBindNu{\nu}
+\NewDocumentCommand\TBindSync{s O{#1}}{\IfBooleanTF{#2}{\varphi^*}{\varphi}}
 
 % Variable Sets ("Dependencies")
 \newcommand*\D{\Delta}
@@ -468,7 +475,7 @@
 \newcommand{\note}[2]{{\color{red}[#1:} #2{\color{red}]}}
 \newcommand{\vv}[1]{\note{vv}{#1}}
 \newcommand{\pt}[1]{\note{pt}{#1}}
-\newcommand{\hs}[1]{\note{hs}{#1}}
+\newcommand{\js}[1]{\note{js}{#1}}
 
 %%% Local Variables:
 %%% mode: latex

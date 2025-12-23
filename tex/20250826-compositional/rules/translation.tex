@@ -76,8 +76,24 @@
   \TPNew {\TProc*}
 }
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Translation of bind groups
+
 \def\RuleCmdPrefix{RuleTransBind}
 \def\RuleNamePrefix{Tr-Bind-}
+
+\DefRule {ConsSeq} {
+  \Bind \ne \BEmp \\
+  \Bind \stackrel{\TEChan{\TEVary}[\TEVarz]}{\leadsto} \Sub
+} {
+  \BSeq\EVar\Bind \stackrel{\TEChan[\TE]{\TEVary}[\TEVarz]}{\leadsto}
+    \SubExt\TEVar{\TEChan[e]{\TEVary}[\TEVarz]}
+}
+
+\DefRule {LastSeq} {} {
+  \EVar \stackrel{\TEChan[\TE]{\TEVary}[\TEVarz]}{\leadsto}
+    \SubSingle \TEVar {\TEChan[\TE]{\TEVary}[\TEVarz]}
+}
 
 % An empty sequence of channel binders indicates on the left of a binder group
 % indicates that the left side of the rsplit was already been dropped.
@@ -87,4 +103,8 @@
 } {
   \Ctx, \BPar \BEmp \BindGroup \vdash \Proc \TransBind
     \TPSync* z {\TProc*}
+}
+
+\DefRule {ParNonEmpty} {
+} {
 }

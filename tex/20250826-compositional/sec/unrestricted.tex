@@ -1,21 +1,35 @@
+\clearpage
+\section{Translation}
+\label{sec:translation}
+
+The previous sections defined a calculus based on a linear and ordered type
+system. In this section we first define an alternative calculus that closer to
+how splitting and borrowing of channels would be implemented in a real-world
+porgramming language. On its own, the target calculus from this section
+provides fewer guarantees. We show that translating a well typed expression
+into the target calculus preserves any guarantees made by the much more
+expressive type system from before.
+
 \begin{figure}
+  \setlength{\abovedisplayskip}{0pt}%
+  \setlength{\belowdisplayskip}{0pt}%
   \begin{align*}
-    \TC \grmeq
-      & \TCUnit
-        \grmor \TCNew
-        \grmor \TCFork
-        \grmor \TCTerm 
-        \grmor \TCWait
-        \grmor \TCSend_{\TT}
-        \grmor \TCRecv_{\TT}
-    \\&
-        \grmor \TCSplit
-        \grmor \TCSSplit
-        \grmor \TCDrop \grmor \TCAcq
-        \tag{Constants} \\
+    % \TC \grmeq
+    %   & \TCUnit
+    %     \grmor \TCNew
+    %     \grmor \TCFork
+    %     \grmor \TCTerm 
+    %     \grmor \TCWait
+    %     \grmor \TCSend_{\TT}
+    %     \grmor \TCRecv_{\TT}
+    % \\&
+    %     \grmor \TCSplit
+    %     \grmor \TCSSplit
+    %     \grmor \TCDrop \grmor \TCAcq
+    %     \tag{Constants} \\
     \TT \grmeq
         & \TBUnit \grmor \TTArr\TT\TT \grmor \TTProd\TT\TT
-                  \grmor \TTSum\TT\TT \grmor \TBChan
+                  \grmor \TTSum\TT\TT \grmor \TBChanD \grmor \TBChanF
           \tag{Types}
     \\
     \TCtx \grmeq
@@ -30,9 +44,30 @@
           \grmor \TPSync* x \TProc
           \tag{Processes}
   \end{align*}
-  \caption{Syntax of unrestricted constants and types, processes}
-  \label{fig:unr-syn}
+  \caption{Syntax of translated types $\TT$, contexts $\TCtx$, and processes
+    $\TProc$}
+  \label{fig:unr-syntax}
 \end{figure}
+
+\Cref{fig:unr-syntax} defines the syntax of our target calculus. The syntax of
+constants, expressions, and values does not changed and is omitted. However, we
+view $\TCSend_{\TT}$ and $\TCRecv_{\TT}$ as a family of operations each,
+annotated by the message payload type $\TT$.
+
+The type syntax does not differentiate between different kinds of function
+arrows. Product types are unordered. $\TBUnit$ and sum types are carried over
+unmodified. Channels are untyped and there are now two kinds: data channels
+$\TBChanD$ and synchronization channels $\TBChanF$. We define the following
+type abbreviations:
+%
+\begin{align*}
+  \TBChanF* &= \TTSum\TBChanF\TBUnit\\
+  \TBChan &= \TTProd{\TBChanF*}{\TTProd{\TBChanD}{\TBChanF*}}
+\end{align*}
+
+In the syntax of processes, bind groups $\BindGroup$ are eliminated by the
+translation. The $\TBindNu$-binder follows the standard syntax more closely.
+Additionally, there are $\TBindSync$ and $\TBindSync*$ binders.
 
 \begin{figure}
   \begin{mathpar}
@@ -47,8 +82,13 @@
     \RuleUProcRedCom
   \end{mathpar}
   \caption{Reduction of unrestricted processes}
-  \label{fig:unr-red-proc}
+  \label{fig:unr-process-reduction}
 \end{figure}
+
+The reduction behaviour of translated expressions is the same as their
+untranslated counterpart (\cref{fig:expression-reduction}).
+\Cref{fig:unr-process-reduction} defines the reduction relation for translated
+processes.
 
 \begin{figure}
   \begin{mathpar}
@@ -70,8 +110,9 @@
   \end{mathpar}
   etc.---system is standard (no linearity/ordering)
   \caption{Typing of constants and expression in the unrestricted system}
-  \label{fig:typing-unr}
+  \label{fig:unr-typing}
 \end{figure}
+
 
 \begin{figure}
   \begin{align*}
@@ -99,7 +140,82 @@
     \RuleTransProcExp   \and
     \RuleTransProcPar   \and
     \RuleTransProcBind  \and
-    \RuleTransBindParEmpty
+    \RuleTransBindParEmpty  \and
+    \RuleTransBindConsSeq   \and
+    \RuleTransBindLastSeq
   \end{mathpar}
   \caption{Translation of expressions and processes}
+  \label{fig:translation}
 \end{figure}
+
+\begin{lemma}[Translation preserves typing]
+  \label{lemma:translation-preserves-typing}
+%
+  For any context $\Ctx$ and substitution $\Sub$ with
+  $\TCtx*=\TrCtx\Ctx\setminus\dom\Sub$
+%
+  \begin{enumerate}
+    \item
+      If $\HasType[\Eff] \Ctx \E \T$
+      and $\HasType \Ctx \E \T \TransExp \TE*$
+      then $\HasType {\TCtx*} {\TE*} {\TrT\T}$.
+    \item
+      If $\ProcHasType \Ctx \Proc$
+      and $\ProcHasType \Ctx \Proc \TransProc \TProc*$
+      then $\ProcHasType {\TCtx*} {\TProc*}$.
+  \end{enumerate}
+\end{lemma}
+
+If \cref{lemma:translation-preserves-typing} holds it will also hold for
+$\TCtx*=\TrCtx\Ctx$ since the target type system contains rules for weakening.
+As written, it guarantees that $\Sub$ has been applied wherever possible.
+
+\begin{lemma}[Bisimulation]
+  \label{lemma:translation-bisimulation}
+%
+  For any context $\Ctx$ and substitution $\Sub$ with
+  $\TCtx*=\TrCtx\Ctx\setminus\dom\Sub$
+%
+  \begin{enumerate}
+    \item If
+      $\HasType[\Eff[1]] \Ctx {\E[1]} \T$,
+      $\HasType \Ctx {\E[1]} \T \TransExp \TE*[1]$,
+      and
+      $\HasType[\Eff[2]] \Ctx {\E[2]} \T$,
+      $\HasType \Ctx {\E[2]} \T \TransExp \TE*[2]$,
+      then
+      $\E[1] \Reduces \E[2]$
+      iff
+      $\TE*[1] \Reduces \TE*[2]$.
+    \item If
+      $\ProcHasType \Ctx \Proc$
+      and
+      $\ProcHasType \Ctx \Proc \TransProc \TProc*$,
+      then for all
+      $\ProcHasType \Ctx {\Proc[i]}$
+      with
+      $\ProcHasType \Ctx {\Proc[i]} \TransProc \TProc*[i]$,
+      $\Proc \Reduces \Proc[i]$
+      iff
+      $\TProc* \Reduces \TProc*[i]$.
+  \end{enumerate}
+\end{lemma}
+
+\begin{lemma}[Weak subject reduction]
+  \label{lemma:translated-subject-reduction}
+%
+  For any context $\Ctx$ and substitution $\Sub$ with
+  $\TCtx*=\TrCtx\Ctx\setminus\dom\Sub$
+%
+  \begin{enumerate}
+    \item If $\HasType[\Eff] \Ctx \E \T$, $\HasType \Ctx \E \T \TransExp \TE*$,
+      and $\TE* \Reduces \TE**$, then $\HasType{\TCtx*}{\TE**}{\TrT\T}$
+    \item If $\ProcHasType\Ctx\Proc$, $\ProcHasType\Ctx\Proc \TransProc
+      \TProc*$, and $\TProc* \Reduces \TProc**$ then
+      $\ProcHasType{\TCtx*}{\TProc**}$.
+  \end{enumerate}
+\end{lemma}
+\begin{proof}
+  Follows from the bisimulation and typing preserving translation
+  (\cref{lemma:translation-preserves-typing}).
+\end{proof}
