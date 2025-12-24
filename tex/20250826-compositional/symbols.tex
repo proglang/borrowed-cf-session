@@ -332,7 +332,12 @@
 \newcommand*\TPExp[1]{\targetproccolor{\langle{#1}\rangle}}
 \newcommand*\TPNew[2][xy]{\targetproccolor{(\TBindNu #1){#2}}}
 \newcommand*\TPPar[2]{\targetproccolor{{#1} \,\|\, {#2}}}
+\NewDocumentCommand\TPFlag{m m}{\targetproccolor{#1 \mapsto #2}}
 \NewDocumentCommand\TPSync{s m m}{\targetproccolor{(\TBindSync[#1]#2){#3}}}
+
+\NewMetaVar[\targetproccolor] \Flag \phi
+\newcommand*\FlagSet{\top}
+\newcommand*\FlagUnset{\bot}
 
 \newcommand*\TBindNu{\nu}
 \NewDocumentCommand\TBindSync{s O{#1}}{\IfBooleanTF{#2}{\varphi^*}{\varphi}}
@@ -354,11 +359,6 @@
 % Effect Order
 \newcommand*\EffLeq{\sqsubseteq}
 \newcommand*\EffJoin{\metacolor{{}\sqcup{}}} 
-
-% Flags
-\newcommand*\Flag{\termcolor{\phi}}
-\newcommand*\FlagMain{\termcolor{\bullet}}
-\newcommand*\FlagAux{\termcolor{\circ}}
 
 % Graphs
 \newcommand*\Graph{G}

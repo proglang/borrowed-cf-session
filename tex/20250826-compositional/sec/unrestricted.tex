@@ -36,12 +36,16 @@ expressive type system from before.
         & \TCtxEmpty \grmor \TCtxExt{\TCtx}{\TCtxVar\TEVar\TT}
           \tag{Contexts}
     \\
+    \Flag \grmeq
+      & \FlagUnset \grmor \FlagSet
+    \\
     \TProc \grmeq
         & \TPExp\TE
           \grmor \TPPar\TProc\TProc
           \grmor \TPNew[xx] \TProc
-          \grmor \TPSync  x \TProc
-          \grmor \TPSync* x \TProc
+          \grmor \TPSync x \TProc
+          \grmor \TPFlag x \Flag
+          %\grmor \TPSync* x \TProc
           \tag{Processes}
   \end{align*}
   \caption{Syntax of translated types $\TT$, contexts $\TCtx$, and processes
@@ -57,13 +61,21 @@ annotated by the message payload type $\TT$.
 The type syntax does not differentiate between different kinds of function
 arrows. Product types are unordered. $\TBUnit$ and sum types are carried over
 unmodified. Channels are untyped and there are now two kinds: data channels
-$\TBChanD$ and synchronization channels $\TBChanF$. We define the following
-type abbreviations:
+$\TBChanD$ and synchronization channels $\TBChanF$. Communication channels
+$\TBChan$ are defined using type abbreviations:
 %
 \begin{align*}
   \TBChanF* &= \TTSum\TBChanF\TBUnit\\
   \TBChan &= \TTProd{\TBChanF*}{\TTProd{\TBChanD}{\TBChanF*}}
 \end{align*}
+%
+A communication channel is a triple $\targettermcolor{c} =
+\TEChan[\TEVar]\TEVary[\TEVarz]$ made up of an optional synchronization channel
+$\TEVar$, a data channel $\TEVary$ and a second optional synchronization
+channel $\TEVarz$. If $\TEVar$ is a channel, an $\TEApp \TCAcq c$ will have to
+be executed first before any communication can happen. Payloads are transferred
+via the data channel $\TEVary$. If $\TEVarz$ is an actual channel
+$\targettermcolor{c}$ will have to be dropped instead of terminated.
 
 In the syntax of processes, bind groups $\BindGroup$ are eliminated by the
 translation. The $\TBindNu$-binder follows the standard syntax more closely.
@@ -109,10 +121,17 @@ processes.
     \RuleTUAbs
   \end{mathpar}
   etc.---system is standard (no linearity/ordering)
-  \caption{Typing of constants and expression in the unrestricted system}
+  \begin{mathpar}
+    \RuleTProcExpr    \and
+    \RuleTProcPar     \and
+    \RuleTProcRes     \and
+    \RuleTProcSync
+  \end{mathpar}
+  \caption{Typing of constants, expressions and processes}
   \label{fig:unr-typing}
 \end{figure}
 
+\Cref{fig:unr-typing} shows the typing rules for constants, expressions and processes.
 
 \begin{figure}
   \begin{align*}

@@ -88,6 +88,37 @@
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Typing rules for processes
+
+\def\RuleCmdPrefix{RuleTProc}
+\def\RuleNamePrefix{TU-Proc-}
+
+\DefRule {Expr} {
+  \HasType \TCtx \TE \TBUnit
+} {
+  \ProcHasType \TCtx {\TPExp\TE}
+}
+
+\DefRule {Par} {
+  \ProcHasType \TCtx {\TProc[1]} \\
+  \ProcHasType \TCtx {\TProc[2]}
+} {
+  \ProcHasType \TCtx {\TPPar{\TProc[1]}{\TProc[2]}}
+}
+
+\DefRule {Res} {
+  \ProcHasType {\TCtxExt{\TCtxExt \TCtx {\TCtxVar x \TBChanD}}{\TCtxVar y \TBChanD}} \TProc \\
+} {
+  \ProcHasType \TCtx {\TPNew{\TProc}}
+}
+
+\DefRule {Sync} {
+  \ProcHasType {\TCtxExt \TCtx {\TCtxVar x \TBChanF}} \TProc \\
+} {
+  \ProcHasType \TCtx {\TPSync x{\TProc}}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Reduction rules
 
 \def\RuleCmdPrefix{RuleUProcRed}
