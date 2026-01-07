@@ -1,21 +1,24 @@
 module BorrowedCF.Substitution where
 
-open import Data.These using (These; this; that; these; mergeThese)
-open import Data.List.Membership.Propositional
+open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.Maybe as May using (Maybe; just; nothing)
+open import Data.Maybe.Properties as May using ()
 open import Data.Maybe.Relation.Unary.Any as Just using (just) renaming (Any to Just)
 open import Data.Maybe.Relation.Unary.All as IfJust using (just; nothing) renaming (All to IfJust)
+open import Data.Maybe.Relation.Unary.All.Properties as IfJust using ()
 open import Data.Maybe.Relation.Binary.Connected as Conn using (Connected; just; just-nothing; nothing-just; nothing)
-open import Data.Tree.Binary as T using (Tree; leaf; node)
+open import Data.List.Membership.Propositional as ∈ using (_∈_; _∉_)
+open import Data.List.Membership.Propositional.Properties as ∈ using ()
 open import Data.List.NonEmpty as L⁺ using (List⁺; _∷_; _⁺++⁺_)
-open import Data.List.Relation.Unary.Any as Any⁰ using (here; there) renaming (Any to Any⁰)
-open import Data.List.Relation.Unary.Any as Any⁰ using (here; there) renaming (Any to Any⁰)
+open import Data.List.Relation.Unary.AllPairs as AllPairs using (AllPairs; []; _∷_)
 open import Data.List.Relation.Unary.All as All using (All; []; _∷_)
 open import Data.List.Relation.Unary.All.Properties as All using ()
+open import Data.List.Relation.Unary.Any as Any⁰ using (here; there) renaming (Any to Any⁰)
+open import Data.List.Relation.Unary.Any.Properties as Any⁰ using ()
 open import Data.List.Relation.Binary.Disjoint.Propositional using (Disjoint)
 open import Data.List.Relation.Unary.Unique.Propositional as Uniq using (Unique)
 open import Data.List.Relation.Unary.Unique.Propositional.Properties as Uniq using ()
-open import Data.Bool using (Bool; true; false; if_then_else_)
+open import Data.These using (These; this; that; these; mergeThese)
 open import Data.Vec as V using (Vec; []; _∷_)
 open import Data.Vec.Functional as VF using () renaming (_∷_ to _V∷_)
 
@@ -158,75 +161,80 @@ T n = Maybe (T⁺ n)
 Struct : T n → Set
 Struct = IfJust Struct⁺
 
-mkStruct⁺ : (ps : ParSeq) {ts : List⁺ (T⁺ n)} →
+Disjoint⁺ : Rel (T⁺ n) _
+Disjoint⁺ = Disjoint on WT.leaves
+
+Disjoint⁰ : Rel (T n) _
+Disjoint⁰ = Connected Disjoint⁺
+
+struct⁺-mk : (ps : ParSeq) {ts : List⁺ (T⁺ n)} →
   All⁺ (IfJust (ps ≢_) ∘ WT.label ∩ WT.Layered _≢_) ts →
   Unique (L.concatMap WT.leaves (L⁺.toList ts)) →
-  Σ (T⁺ n) Struct⁺
-mkStruct⁺ ps {t ∷ []} ((lab , lay) ∷ _) uniq
-  rewrite L.++-identityʳ (WT.leaves t) =
-  t , lay , uniq
-mkStruct⁺ ps {t₁ ∷ t₂ ∷ ts} lay uniq
-  rewrite sym (WT.catLeaves-≡ ts) =
-  node ps (t₁ ∷ t₂ ∷ ts) Nat.sz<ss
-    , node lay
-    , uniq
+  Struct⁺ (WT.mk ps ts)
+struct⁺-mk ps {t ∷ []} ((lab , lay) ∷ _) uniq
+  rewrite L.++-identityʳ (WT.leaves t)
+  = lay , uniq
+struct⁺-mk ps {t₁ ∷ t₂ ∷ ts} lay uniq
+  rewrite WT.catLeaves-≡ ts
+  = node lay , uniq
 
-unwrapT : (ps : ParSeq) → ∀ {t} → Struct⁺ t →
-  Σ[ ts ∈ List⁺ (T⁺ n) ]
-    All⁺ (IfJust (ps ≢_) ∘ WT.label ∩ WT.Layered _≢_) ts
-      × WT.leaves t ≡ L.concatMap WT.leaves (L⁺.toList ts)
-unwrapT ps {leaf x} 𝓢 = L⁺.[ leaf x ] , (nothing , leaf) ∷ [] , refl
-unwrapT ps {node ps′ ts n} 𝓢 with psEq? ps ps′
-unwrapT ps {n@(node _ _ _)} 𝓢 | no ps≢ =
-  L⁺.[ n ]
-    , (just ps≢ , 𝓢 .proj₁) ∷ []
-    , sym (L.++-identityʳ _)
-unwrapT ps {node ps′ (t ∷ ts) n} (node lay , uniq) | yes refl = t ∷ ts
-  , lay
-  , cong (WT.leaves t ++_) (WT.catLeaves-≡ ts)
+struct-mk : (ps : ParSeq) {ts : List (T⁺ n)} →
+  All (IfJust (ps ≢_) ∘ WT.label ∩ WT.Layered _≢_) ts →
+  Unique (L.concatMap WT.leaves ts) →
+  Struct (May.map (WT.mk ps) (L⁺.fromList ts))
+struct-mk ps {[]}    xs uniq = nothing
+struct-mk ps {_ ∷ _} xs uniq = just (struct⁺-mk ps xs uniq)
 
-cat⁺ : ParSeq → {t₁ t₂ : T⁺ n} → Struct⁺ t₁ → Struct⁺ t₂ → Disjoint (WT.leaves t₁) (WT.leaves t₂) → Σ (T⁺ n) Struct⁺
-cat⁺ ps x y x∩y=∅ =
-  let xs , pˣ , eqˣ = unwrapT ps x in
-  let ys , pʸ , eqʸ = unwrapT ps y in
-  mkStruct⁺ ps {xs L⁺.⁺++⁺ ys} (All.++⁺ pˣ pʸ)
-    $ subst Unique (sym (L.concatMap-++ WT.leaves (L⁺.toList xs) (L⁺.toList ys)))
-    $ Uniq.++⁺ (subst Unique eqˣ (proj₂ x)) (subst Unique eqʸ (proj₂ y))
-    $ subst₂ Disjoint eqˣ eqʸ x∩y=∅
+denode : ParSeq → T⁺ n → List⁺ (T⁺ n)
+denode ps (leaf x) = L⁺.[ leaf x ]
+denode ps n@(node ps′ (t ∷ ts) p) = if does (psEq? ps ps′) then t ∷ ts else L⁺.[ n ]
 
--- cat : ParSeq → {t₁ t₂ : T n} → Struct t₁ → Struct t₂ → Σ (T n) Struct
--- cat ps {t₁} {t₂} s₁ s₂ = {!!} -- May.alignWith (mergeThese (cat⁺ ps)) t₁ t₂ , {!!}
+denode-struct : (ps : ParSeq) {t : T⁺ n} →
+  Struct⁺ t → All⁺ (IfJust (ps ≢_) ∘ WT.label ∩ WT.Layered _≢_) (denode ps t)
+denode-struct ps {leaf _} x = (nothing , x .proj₁) ∷ []
+denode-struct ps {node ps′ (t ∷ ts) p} x with psEq? ps ps′
+denode-struct ps {node ps′ (t ∷ ts) p} (node lay , _) | yes refl = lay
+denode-struct ps {node ps′ (t ∷ ts) p} (lay      , _) | no  ps≢  = (just ps≢ , lay) ∷ []
+
+denode-leaves : (ps : ParSeq) (t : T⁺ n) →
+  L.concatMap WT.leaves (L⁺.toList (denode ps t)) ≡ WT.leaves t
+denode-leaves ps (leaf x) = refl
+denode-leaves ps (node ps′ (t ∷ ts) p) with does (psEq? ps ps′)
+... | true = cong (WT.leaves t ++_) (sym (WT.catLeaves-≡ ts))
+... | false = L.++-identityʳ _
+
+cat⁺ : ParSeq → T⁺ n → T⁺ n → T⁺ n
+cat⁺ ps t₁ t₂ = WT.mk ps (denode ps t₁ ⁺++⁺ denode ps t₂)
+
+cat : ParSeq → T n → T n → T n
+cat ps = May.alignWith (mergeThese (cat⁺ ps))
+
+struct⁺-cat⁺ : (ps : ParSeq) {t₁ t₂ : T⁺ n} → Struct⁺ t₁ → Struct⁺ t₂ → Disjoint⁺ t₁ t₂ → Struct⁺ (cat⁺ ps t₁ t₂)
+struct⁺-cat⁺ ps {t₁} {t₂} x y x∩y=∅ =
+  struct⁺-mk ps (All.++⁺ (denode-struct ps x) (denode-struct ps y))
+    $ subst Unique (sym (L.concatMap-++ WT.leaves (L⁺.toList (denode ps t₁)) (L⁺.toList (denode ps t₂))))
+    $ Uniq.++⁺ (subst Unique (sym (denode-leaves ps t₁)) (proj₂ x))
+               (subst Unique (sym (denode-leaves ps t₂)) (proj₂ y))
+    $ subst₂ Disjoint (sym (denode-leaves ps t₁)) (sym (denode-leaves ps t₂)) x∩y=∅
+
+struct-cat⁺ : (ps : ParSeq) {t₁ t₂ : T n} → Struct t₁ → Struct t₂ → Disjoint⁰ t₁ t₂ → Struct (cat ps t₁ t₂)
+struct-cat⁺ ps nothing  nothing  x∩y=∅ = nothing
+struct-cat⁺ ps (just x) nothing  x∩y=∅ = just x
+struct-cat⁺ ps nothing  (just x) x∩y=∅ = just x
+struct-cat⁺ ps (just x) (just y) x∩y=∅ = just (struct⁺-cat⁺ ps x y (Conn.drop-just x∩y=∅))
+
+struct-map⁺ : ∀ {t} {f : 𝔽 m → 𝔽 n} → Injective _≡_ _≡_ f → Struct t → Struct (May.map (WT.mapᴸ f) t)
+struct-map⁺ inj-f = IfJust.gmap λ where
+  {t′} (lay , uniq) → WT.layered-map⁺ lay , subst Unique (sym (WT.leaves-map t′)) (Uniq.map⁺ inj-f uniq)
+
+struct-map⁻ : ∀ {t} {f : 𝔽 m → 𝔽 n} → Struct (May.map (WT.mapᴸ f) t) → Struct t
+struct-map⁻ 𝓢 =
+  IfJust.map (λ where {t′} (lay , uniq) → WT.layered-map⁻ lay
+                                        , Uniq.map⁻ (subst Unique (WT.leaves-map t′) uniq)
+             )
+             (IfJust.map⁻ 𝓢)
 
 -- {-
--- T′ : ℕ → Set
--- T′ n = Σ[ t ∈ T n ] (WT.IsLeaf t ⊎ ParSeq)
-
--- Forest : ℕ → Set
--- Forest n = List (T n)
-
--- Struct : ℕ → Set
--- Struct n = Maybe (T′ n)
-
--- mkStruct⁺ : ParSeq → List⁺ (T n) → T′ n
--- mkStruct⁺ ps (t ∷ []) = (t , inj₂ (psFlip ps))
--- mkStruct⁺ ps (t₁ ∷ t₂ ∷ ts) = (node _ (t₁ ∷ t₂ ∷ ts) Nat.sz<ss , inj₂ ps)
-
--- mkStruct : ParSeq → List (T n) → Struct n
--- mkStruct ps [] = nothing
--- mkStruct ps (t ∷ ts) = just (mkStruct⁺ ps (t ∷ ts))
-
--- unwrapT : ParSeq → T′ n → List⁺ (T n)
--- unwrapT ps (leaf x , _) = L⁺.[ leaf x ]
--- unwrapT ps (node _ ts p , inj₂ ps′) with does (psEq? ps ps′)
--- unwrapT ps (node _ (t ∷ ts) p , inj₂ ps′) | true  = t ∷ ts
--- unwrapT ps (node _ ts p       , inj₂ ps′) | false = L⁺.[ node _ ts p ]
-
--- catT : ParSeq → T′ n → T′ n → T′ n
--- catT ps x y = mkStruct⁺ ps (unwrapT ps x L⁺.⁺++⁺ unwrapT ps y)
-
--- cat : ParSeq → Struct n → Struct n → Struct n
--- cat = May.alignWith ∘ mergeThese ∘ catT
-
 -- UniqVars : T n → Set
 -- UniqVars = Unique ∘ WT.leaves
 
@@ -312,13 +320,93 @@ cat⁺ ps x y x∩y=∅ =
 -- var-⋯⁻ (just t) ρ (just x) = just {!!}
 -- -}
 
--- -- ext𝓢 : Direction → Struct n → Struct (1 + n)
--- -- ext𝓢 {n} d 𝓢 =
--- --   let 𝓢⁺ = 𝓢 𝓢⋯ᵣ suc in
--- --   let 𝓢⁰ = just (leaf zero , inj₁ (_ , refl)) in
--- --   ?
--- -- --  cat (directionToParSeq d) (select[L⇒ 𝓢⁰ R⇒ 𝓢⁺ 𝟙⇒ 𝓢⁺ ] d)
--- -- --                            (select[L⇒ 𝓢⁺ R⇒ 𝓢⁰ 𝟙⇒ 𝓢⁰ ] d)
+-- mkConnected : ∀ {a b ℓ} {A : Set a} {B : Set b} {R : REL A B ℓ} {x : Maybe A} {y : Maybe B} →
+--   (∀ {x′} {y′} → x ≡ just x′ → y ≡ just y′ → R x′ y′) → Connected R x y
+-- mkConnected {x = just _}  {just _}  f = just (f refl refl)
+-- mkConnected {x = just _}  {nothing} f = just-nothing
+-- mkConnected {x = nothing} {just _}  f = nothing-just
+-- mkConnected {x = nothing} {nothing} f = nothing
+
+-- map-just⁻¹ : ∀ {a b} {A : Set a} {B : Set b} {f : A → B} (mx : Maybe A) {y} → .(May.map f mx ≡ just y) → ∃ λ x → mx ≡ just x
+-- map-just⁻¹ (just x) eq = x , refl
+
+-- ext𝓢 : Direction → (t : T n) → Struct t → Σ[ t′ ∈ T (1 + n) ] Struct t′
+-- ext𝓢 {n} d t 𝓢 =
+--   let
+--     𝓢⁰ : Σ (T (1 + n)) Struct
+--     𝓢⁰ = just (leaf zero) , just (leaf , [] ∷ [])
+--   in
+--   let
+--     𝓢⁺ : Σ[ t′ ∈ T (1 + n) ] Struct t′
+--     𝓢⁺ = May.map (WT.mapᴸ suc) t
+--        , IfJust.gmap (λ{ {t} (lay , uniq) → WT.layered-map⁺ lay
+--                                           , subst Unique (sym (WT.leaves-map t)) (Uniq.map⁺ Fin.suc-injective uniq) })
+--                      𝓢
+--   in
+--   let
+--     𝓢⁰/⁺-disjoint : Disjoint⁰ (proj₁ 𝓢⁰) (proj₁ 𝓢⁺)
+--     𝓢⁰/⁺-disjoint = mkConnected λ where
+--       refl eq (here refl , z∈𝓢⁺) →
+--         let eq′ = cong WT.leaves (May.just-injective (sym eq ■ cong (May.map _) (map-just⁻¹ t eq .proj₂)))
+--                     ■ WT.leaves-map (map-just⁻¹ t eq .proj₁)
+--         in
+--         case Any⁰.satisfied (Any⁰.map⁻ (subst (zero ∈_) eq′ z∈𝓢⁺)) .proj₂ of λ()
+--   in
+--   let xy,dis : Σ[ x ∈ ∃ (Struct {n = 1 + n}) ] Σ[ y ∈ ∃ (Struct {n = 1 + n}) ] Disjoint⁰ (proj₁ x) (proj₁ y)
+--       xy,dis = select[L⇒ 𝓢⁰ , 𝓢⁺ , 𝓢⁰/⁺-disjoint
+--                       R⇒ 𝓢⁺ , 𝓢⁰ , Conn.sym (λ disj {v} z → disj (Π.swap z)) 𝓢⁰/⁺-disjoint
+--                       𝟙⇒ 𝓢⁰ , 𝓢⁺ , 𝓢⁰/⁺-disjoint ] d
+--   in
+--   cat (directionToParSeq d)
+--     (xy,dis .proj₁ .proj₂)
+--     (xy,dis .proj₂ .proj₁ .proj₂)
+--     (xy,dis .proj₂ .proj₂)
+
+-- fullTree : ∀ {m} → ParSeq → Σ (T m) Struct
+-- fullTree {m} ps =
+--   let ts = L.map leaf (L.allFin m) in
+--   let
+--     eq =
+--       L.allFin m                      ≡⟨ L.concat-map-[ L.allFin m ] ⟨
+--       L.concatMap L.[_] (L.allFin m)  ≡⟨ cong L.concat (L.map-∘ (L.allFin m)) ⟩
+--       L.concatMap WT.leaves ts        ∎
+--   in
+--   mkStruct ps {ts} (All.tabulate isLayered) (subst Unique eq (Uniq.allFin⁺ m))
+--   where
+--   open ≡-Reasoning
+--   isLayered : ∀ {x} → x ∈ L.map leaf (L.allFin m) → IfJust (_≢_ ps) (WT.label x) × WT.Layered _≢_ x
+--   isLayered x∈ rewrite Any⁰.lookup-result (Any⁰.map⁻ x∈) = nothing , leaf
+
+-- -- wkTree : ∀ m → ParSeq → Σ (T (suc m + n)) Struct
+-- -- wkTree zero    ps = just (leaf zero) , just (leaf , [] ∷ [])
+-- -- wkTree (suc m) ps =
+-- --   just (node ps (L.map (λ x → leaf (x ↑ˡ _)) (L.allFin (suc (suc m)))) {!!})
+-- --     , just ({!!} , {!!})
+
+-- -- ext𝓢′ : Direction → ∀ m → (t : T n) → Struct t → Σ (T (suc m + n)) Struct
+-- -- ext𝓢′ {n} d m t str =
+-- --   let T′ = T (suc m + n) in
+-- --   let
+-- --     structNew : Σ T′ Struct
+-- --     structNew = just (node {!!} {!!} {!!}) , just {!!}
+-- --   in
+-- --   let
+-- --     structWk : Σ T′ Struct
+-- --     structWk = May.map (WT.mapᴸ (suc m ↑ʳ_)) t , IfJust.gmap
+-- --       (λ{ {t′} (lay , uniq) → WT.layered-map⁺ lay ,
+-- --                               subst Unique (sym (WT.leaves-map t′)) (Uniq.map⁺ (↑ʳ-injective (suc m) _ _) uniq)
+-- --       })
+-- --       str
+-- --   in
+-- --   let
+-- --     structDisj : Disjoint⁰ (proj₁ structNew) (proj₁ structWk)
+-- --     structDisj = {!!}
+-- --   in
+-- --   let
+-- --     xy,disj : Σ[ x ∈ Σ T′ Struct ] Σ[ y ∈ Σ T′ Struct ] Disjoint⁰ (proj₁ x) (proj₁ y)
+-- --     xy,disj = {!!}
+-- --   in
+-- --   {!!}
 
 -- -- {-
 -- -- extΓ : {𝓢 : Struct n} {d : Direction} → Ty → Ctxt 𝓢 → Ctxt (ext𝓢 d 𝓢)
@@ -334,9 +422,9 @@ cat⁺ ps x y x∩y=∅ =
 
 -- -- infix 4 _︔_⊢_∶_∣_
 
--- -- data _︔_⊢_∶_∣_ (Γ : Ctxt n) : (𝓢 : Struct n) → Tm n → Ty → Effect → Set₁ where
--- --   ⊢` : ∀ {ps} →
--- --     let 𝓢 = just (leaf α , ps) in
+-- -- data _︔_⊢_∶_∣_ (Γ : Ctxt n) : {t : T n} (𝓢 : Struct t) → Tm n → Ty → Effect → Set₁ where
+-- --   ⊢` :
+-- --     let 𝓢 = just (leaf {x = α} , [] ∷ []) in
 -- --     Γ α ≡ t →
 -- --    -----------------------------------
 -- --     Γ ︔ 𝓢 ⊢ ` α ∶ t ∣ ℙ
@@ -347,8 +435,8 @@ cat⁺ ps x y x∩y=∅ =
 -- --    -------------------------
 -- --     Γ ︔ 𝓢 ⊢ K c ∶ t ∣ ℙ
 
--- --   ⊢λ : ∀ {𝓢 m d ϵ} →
--- --     t₁ VF.∷ Γ ︔ ext𝓢 d 𝓢 ⊢ e ∶ t₂ ∣ ϵ →
+-- --   ⊢λ : ∀ {T 𝓢 m d ϵ} →
+-- --     t₁ VF.∷ Γ ︔ ext𝓢 d T 𝓢 .proj₂ ⊢ e ∶ t₂ ∣ ϵ →
 -- --     Γ ︔ 𝓢 ⊢ (`λ e) ∶ arr m d ϵ t₁ t₂ ∣ ℙ
 
 -- --   -- ⊢· : ∀ {𝓢 𝓢₁ 𝓢₂ m d ϵ ϵ₁ ϵ₂ ϵ₃} →
