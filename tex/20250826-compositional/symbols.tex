@@ -473,7 +473,7 @@
 
 % Notes
 \newcommand{\note}[2]{{\color{red}[#1:} #2{\color{red}]}}
-\newcommand{\vv}[1]{\note{vv}{#1}}
+\renewcommand{\vv}[1]{\note{vv}{#1}} % clashes with \vv from newtxmath, loaded automatically by acmart
 \newcommand{\pt}[1]{\note{pt}{#1}}
 \newcommand{\js}[1]{\note{js}{#1}}
 
