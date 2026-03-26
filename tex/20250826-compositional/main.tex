@@ -484,12 +484,12 @@ process reduction preserves typing.
         \TArr{\Mob}{\Dir,\Eff}\T\T \grmor \T\Pair[\Dir]\T \grmor \TSum\T\T \grmor \S 
         \tag{Types} \\
     \S \grmeq
-      & \SSkip \grmor \SSeq\S\S \grmor \STerm[\O] \grmor \SWait[\O] \grmor
-        \SSend[\O]\T \grmor \SRecv[\O]\T
+      & \SSkip \grmor \SSeq\S\S \grmor \STerm \grmor \SWait \grmor
+        \SSend\T \grmor \SRecv\T
         \\
       &
-        \grmor \SChoice[\O]{\ell:\S_\ell}{\ell\in L}
-        \grmor \SBranch[\O]{\ell:\S_\ell}{\ell\in L}
+        \grmor \SChoice{\ell:\S_\ell}{\ell\in L}
+        \grmor \SBranch{\ell:\S_\ell}{\ell\in L}
     \\
     &
         \grmor \SRet \grmor \SAcq
@@ -548,9 +548,9 @@ process reduction preserves typing.
     \SSeq{\S[1]}{(\SSeq{\S[2]}{\S[3]})} =
     \SSeq{(\SSeq{\S[1]}{\S[2]})}{{\S[3]}} \and
     \SRec\SVar\S = \S{[\SRec\SVar\S/\SVar]} \and
-    \SSeq{(\SChoice[\O]{\ell:\S_\ell}{\ell\in L})}\S =
-    \SChoice[\O]{\ell:\SSeq{\S_\ell}\S}{\ell\in L} \and
-    \SSeq{(\SBranch[\O]{\ell:\S_\ell}{\ell\in L})}\S = \SBranch[\O]{\ell:\SSeq{\S_\ell}\S}{\ell\in L}
+    \SSeq{(\SChoice{\ell:\S_\ell}{\ell\in L})}\S =
+    \SChoice{\ell:\SSeq{\S_\ell}\S}{\ell\in L} \and
+    \SSeq{(\SBranch{\ell:\S_\ell}{\ell\in L})}\S = \SBranch{\ell:\SSeq{\S_\ell}\S}{\ell\in L}
   \end{mathpar}
   \caption{Type and typing context syntax}
   \label{fig:syntax-types}

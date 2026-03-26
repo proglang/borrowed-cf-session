@@ -61,13 +61,13 @@
 
 \newcommand*\RuleCTWait{
   \inferrule[CT-Wait]{}{
-    \HasCType\CWait{\TArr{\MobMobile}{\DirUnord,\EffImpure}{\SWait[\O]}\BUnit}
+    \HasCType\CWait{\TArr{\MobMobile}{\DirUnord,\EffImpure}{\SWait}\BUnit}
   }
 }
 
 \newcommand*\RuleCTTerm{
   \inferrule[CT-Term]{}{
-    \HasCType\CTerm{\TArr{\MobMobile}{\DirUnord,\EffImpure}{\STerm[\O]}\BUnit}
+    \HasCType\CTerm{\TArr{\MobMobile}{\DirUnord,\EffImpure}{\STerm}\BUnit}
   }
 }
 

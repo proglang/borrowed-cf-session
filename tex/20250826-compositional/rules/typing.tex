@@ -138,18 +138,18 @@
   \inferrule[T-AppLeft]{
     % \Unr{\Ctx_1} \vee \Eff[1] = \EffPure
     % \\
-    \HasType[{\Q[1]}]
+    \HasType
       {\Ctx_1}
       {\E[1]}
       {(\TArr{\Mob}{\DirLeft,{\Eff[3]}}{\T[1]}{\T[2]})}
       {\EffPure} \\
-    \HasType[{\Q[2]}]
+    \HasType
       {\Ctx_2}
       {\E[2]}
       {\T[1]}
       {\Eff[2]}
   }{
-    \HasType[{\P[1] \plub \P[2] \plub \Q[3]}]
+    \HasType
       {\CtxSeq {\Ctx_2}{\Ctx_1}}
       {(\EApp{\E[1]}{\E[2]})}
       {\T[2]}
@@ -161,18 +161,18 @@
   \inferrule[T-AppRight]{
     % \Unr{\Ctx_2} \vee \Eff[2] = \EffPure
     % \\
-    \HasType[{\Q[1]}]
+    \HasType
       {\Ctx_1}
       {\E[1]}
       {(\TArr{\Mob}{\DirRight,{\Eff[3]}}{\T[1]}{\T[2]})}
       {\Eff[1]} \\
-    \HasType[{\Q[2]}]
+    \HasType
       {\Ctx_2}
       {\E[2]}
       {\T[1]}
       {\EffPure}
   }{
-    \HasType[{\P[1] \plub \P[2] \plub \Q[3]}]
+    \HasType
       {\CtxSeq {\Ctx_1}{\Ctx_2}}
       {(\EApp{\E[1]}{\E[2]})}
       {\T[2]}
@@ -422,12 +422,12 @@
 
 \newcommand*\RuleTPack{
   \inferrule[T-Pack]{
-    \HasTargetType[\Q]
+    \HasTargetType
       \Ctx
       {\E}
       {\T{[{\S}/\alpha]}}
   }{
-    \HasTargetType[\Q]
+    \HasTargetType
       \Ctx
       {\EPack{\S}{\E}{\TExists[\pr{S}]\alpha\T}}
       {\TExists[\pr{S}]\alpha\T}
@@ -436,19 +436,19 @@
 
 \newcommand*\RuleTUnpack{
   \inferrule[T-Unpack]{
-    \HasTargetType[{\Q[1]}]
+    \HasTargetType
       {\Ctx}
       {\E[1]}
-      {\TExists[\O]\alpha{\T[1]}}
+      {\TExists\alpha{\T[1]}}
     \\
-    \HasTargetType[{\Q[2]}]
+    \HasTargetType
       {\CtxExtTarget{\CtxExtTarget\Ctx\alpha}{\CtxVar x {\T[1]}}}
       {\E[2]}
       {\T[2]}
     \\
     \alpha \notin \T[2]
   }{
-    \HasTargetType[{\Q[1] \plub \Q[2]}]
+    \HasTargetType
       \Ctx
       {\EOpen\alpha x {\E[1]} {\E[2]}}
       {\T[2]}
