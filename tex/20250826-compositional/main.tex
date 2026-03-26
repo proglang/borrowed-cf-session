@@ -596,24 +596,24 @@ process reduction preserves typing.
     \RuleTeSkip \and
     \RuleTeSkipSeq \and
     \RuleTeSkipMu \\
+    \RuleTeVar \and
     \RuleTeTerm \and
     \RuleTeWait \and
     \RuleTeRet \and
-    \RuleTeSeqOne \and
-    \RuleTeSeqTwo \and
+    \RuleTeSeqOne \\
+    \RuleTeRec \and
     \RuleTeBranch \and
     \RuleTeChoice \and
-    \RuleTeVar \and
-    \RuleTeRec \\
-    \RuleTeAcq \and
+    \RuleTeSeqTwo \\
     \RuleTeBase \and
-    \RuleTeProd \and
-    \RuleTeVariant \and
     \RuleTeArr \and
+    \RuleTeAcq \and
+    \RuleTeProd \and
+    \RuleTeVariant \\
     \RuleTeCtxEmpty \and
+    \RuleTeCtxVar \and
     \RuleTeCtxSeq \and
-    \RuleTeCtxPar \and
-    \RuleTeCtxVar
+    \RuleTeCtxPar
   \end{mathpar}
   A \emph{mobile} session type starts with an $\SAcq$ followed by a bounded
   session type. A mobile type or environment contains only mobile

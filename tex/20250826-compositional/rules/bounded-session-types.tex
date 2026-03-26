@@ -6,11 +6,11 @@
 
 \newcommand*\RuleTeSkipSeq{
   \inferrule[Te-Skip-Seq]{\Skips\S[1] \\ \Skips\S[2]}{\Skips
-    (\SSeq{\S[1]}{\S[2]})}
+    {(\SSeq{\S[1]}{\S[2]})}}
 }
 
 \newcommand*\RuleTeSkipMu{
-  \inferrule[Te-Skip-Rec]{\Skips\S}{\Skips (\SRec\SVar\S)}
+  \inferrule[Te-Skip-Rec]{\Skips\S}{\Skips \SRec\SVar\S}
 }
 
 \newcommand*\RuleTeAcq{
@@ -98,10 +98,10 @@
 }
 
 \newcommand*\RuleTeVariant{
-  \inferrule[Te-Var]{
+  \inferrule[Te-Variant]{
     \forall\ell. \Mobile \T[\ell]
   }{
-    \Mobile{(\TVariant{\T[\ell]}{\ell\in L})}}
+    \Mobile\TVariant{\T[\ell]}{\ell\in L}}
 }
 
 \newcommand*\RuleTeArr{
@@ -121,7 +121,7 @@
     \Mobile \Ctx[1] \\
     \Mobile \Ctx[2]
   }{
-    \Mobile (\CtxSeq{\Ctx[1]}{\Ctx[2]})
+    \Mobile {(\CtxSeq{\Ctx[1]}{\Ctx[2]})}
   }
 }
 
@@ -130,7 +130,7 @@
     \Mobile \Ctx[1] \\
     \Mobile \Ctx[2]
   }{
-    \Mobile (\CtxPar{\Ctx[1]}{\Ctx[2]})
+    \Mobile {(\CtxPar{\Ctx[1]}{\Ctx[2]})}
   }
 }
 
@@ -138,7 +138,7 @@
   \inferrule[Te-Ctx-Var]{
     \Mobile \T
   }{
-    \Mobile (\CtxVar \EVar \T)
+    \Mobile{(\CtxVar \EVar \T\mkern1.5mu\relax)}
   }
 }
 
