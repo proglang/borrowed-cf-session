@@ -140,12 +140,17 @@
   \TFCapp{\TEApp \TCNew \TCUnit}
   \Reduces
   \TPNew {
-    \TPSync* {z_1} {\TPSync* {z_2} {
-      \TFCapp{\TEPair
-        {(\TEChan [z_1]x)}
-        {(\TEChan [z_2]y)}
+    \TPSync {z_1} {\TPSync {z_2} {(
+      \TPPar{
+        \TPPar {\TPFlag {z_1} \FlagSet}
+               {\TPFlag {z_2} \FlagSet}
+      }{
+        \TFCapp{\TEPair
+          {(\TEChan [z_1]x)}
+          {(\TEChan [z_2]y)}
+        }
       }
-    }}
+    )}}
   }
 }
 
@@ -169,33 +174,37 @@
     \Reduces
     \TPNew {
       \TPSync z {(
-        \TPPar {\TFCapp{\TEPair
-          {(\TEChan [e_1] x [z]   )}
-          {(\TEChan [z]   x [e_2] )}
-        }} \TProc
+        \TPPar {\TPFlag z \FlagUnset} {
+          \TPPar {\TFCapp{\TEPair
+            {(\TEChan [e_1] x [z]   )}
+            {(\TEChan [z]   x [e_2] )}
+          }} \TProc
+        }
       )} 
     }
 }
 
 \DefRule {Drop} {} {
-    \TPNew {
-      \TPSync z {(
+    \TPNew {(
+      \TPPar {\TPFlag z \FlagUnset} {
         \TPPar {\TFCapp{\TEApp \TCDrop {(\TEChan x[z])}}} \TProc
-      )} 
-    }
+      }
+    )}
     \Reduces 
-    \TPNew {
-      \TPSync* z {(
+    \TPNew {(
+      \TPPar {\TPFlag z \FlagSet} {
         \TPPar {\TFCapp{\TCUnit}} \TProc
-      )} 
-    }
+      }
+    )}
 }
 
 \DefRule {Acquire} {} {
     \TPNew {
-      \TPSync* z {(
-        \TPPar {\TFCapp{\TEApp \TCAcq {(\TEChan [z]x[e])}}} \TProc
-      )} 
+      \TPSync z {(
+        \TPPar {\TPFlag z \FlagSet} {
+          \TPPar {\TFCapp{\TEApp \TCAcq {(\TEChan [z]x[e])}}} \TProc
+        }
+      )}
     }
     \Reduces 
     \TPNew {(
