@@ -214,8 +214,10 @@
 
 \DefRule {Com} {} {
   \TPNew {(
-    \TPPar {\TFCapp[1]{\TEApp {\TCSend_{\TT}} {(\TEPair \TV {(\TEChan x[e_1])}}}} {
-    \TPPar {\TFCapp[2]{\TEApp {\TCRecv_{\TT}} {(\TEChan y[e_2])}}} {\TProc}}
+    \TPPar {\TFCapp[1]{\TEApp {\TCSend} {(\TEPair \TV {(\TEChan x[e_1])}}}} {
+    \TPPar {\TFCapp[2]{\TEApp {\TCRecv} {(\TEChan y[e_2])}}} {\TProc}}
+    % \TPPar {\TFCapp[1]{\TEApp {\TCSend_{\TT}} {(\TEPair \TV {(\TEChan x[e_1])}}}} {
+    % \TPPar {\TFCapp[2]{\TEApp {\TCRecv_{\TT}} {(\TEChan y[e_2])}}} {\TProc}}
   )}
   \Reduces
   \TPNew {(

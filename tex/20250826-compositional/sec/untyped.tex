@@ -27,18 +27,15 @@ expressive type system from before.
     %     \grmor \TCSSplit
     %     \grmor \TCDrop \grmor \TCAcq
     %     \tag{Constants} \\
-    \TT \grmeq
-        & \TBUnit \grmor \TTArr\TT\TT \grmor \TTProd\TT\TT
-                  \grmor \TTSum\TT\TT \grmor \TBChanD \grmor \TBChanF
-          \tag{Types}
-    \\
-    \TCtx \grmeq
-        & \TCtxEmpty \grmor \TCtxExt{\TCtx}{\TCtxVar\TEVar\TT}
-          \tag{Contexts}
-    \\
-    \Flag \grmeq
-      & \FlagUnset \grmor \FlagSet
-    \\
+    % \TT \grmeq
+    %     & \TBUnit \grmor \TTArr\TT\TT \grmor \TTProd\TT\TT
+    %               \grmor \TTSum\TT\TT \grmor \TBChanD \grmor \TBChanF
+    %       \tag{Types}
+    % \\
+    % \TCtx \grmeq
+    %     & \TCtxEmpty \grmor \TCtxExt{\TCtx}{\TCtxVar\TEVar\TT}
+    %       \tag{Contexts}
+    % \\
     \TProc \grmeq
         & \TPExp\TE
           \grmor \TPPar\TProc\TProc
@@ -46,29 +43,29 @@ expressive type system from before.
           \grmor \TPSync x \TProc
           \grmor \TPFlag x \Flag
           %\grmor \TPSync* x \TProc
-          \tag{Processes}
+      \tag{Configurations}
+    \\
+    \Flag \grmeq & \FlagUnset \grmor \FlagSet
+    \tag{Synchronization flags}
   \end{align*}
-  \caption{Syntax of translated types $\TT$, contexts $\TCtx$, and processes
-    $\TProc$}
+  \caption{Syntax of translated rocesses configurations $\TProc$ and synchronization flags $\Flag$}
   \label{fig:unr-syntax}
 \end{figure}
 
-\Cref{fig:unr-syntax} defines the syntax of our target calculus. The syntax of
-constants, expressions, and values does not changed and is omitted. However, we
-view $\TCSend_{\TT}$ and $\TCRecv_{\TT}$ as a family of constants each,
-annotated by the message payload type $\TT$.
+The syntax of constants, values, and expressions remains unchanged.
+\Cref{fig:unr-syntax} gives a new definition of process configurations $\TProc$.
 
-The type syntax does not differentiate between different kinds of function
-arrows. Product types are unordered. $\TBUnit$ and sum types are carried over
-unmodified. Channels are untyped and there are now two kinds: data channels
-$\TBChanD$ and synchronization channels $\TBChanF$. Communication channels
-$\TBChan$ are defined using type abbreviations:
-%
-\begin{align*}
-  \TBChanF* &= \TTSum\TBChanF\TBUnit\\
-  \TBChan &= \TTProd{\TBChanF*}{\TTProd{\TBChanD}{\TBChanF*}}
-\end{align*}
-%
+% The type syntax does not differentiate between different kinds of function
+% arrows. Product types are unordered. $\TBUnit$ and sum types are carried over
+% unmodified. Channels are untyped and there are now two kinds: data channels
+% $\TBChanD$ and synchronization channels $\TBChanF$. Communication channels
+% $\TBChan$ are defined using type abbreviations:
+% %
+% \begin{align*}
+%   \TBChanF* &= \TTSum\TBChanF\TBUnit\\
+%   \TBChan &= \TTProd{\TBChanF*}{\TTProd{\TBChanD}{\TBChanF*}}
+% \end{align*}
+
 A communication channel is a triple $\targettermcolor{c} =
 \TEChan[\TEVar]\TEVary[\TEVarz]$ made up of an optional synchronization channel
 $\TEVar$, a data channel $\TEVary$ and a second optional synchronization
@@ -79,7 +76,10 @@ $\targettermcolor{c}$ will have to be dropped instead of terminated.
 
 In the syntax of processes, bind groups $\BindGroup$ are eliminated by the
 translation. The $\TBindNu$-binder follows the standard syntax more closely.
-Additionally, there are $\TBindSync$ and $\TBindSync*$ binders.
+The new binder $\TBindSync$ binds asynchronous channels used to synchronize
+between two parts of a remote split. Synchronization must use asynchronous
+communication so that a $\CDrop$ does not block until the corresponding
+$\CAcq$.
 
 \begin{figure}
   \begin{mathpar}
@@ -93,7 +93,7 @@ Additionally, there are $\TBindSync$ and $\TBindSync*$ binders.
     \RuleUProcRedClose    \and
     \RuleUProcRedCom
   \end{mathpar}
-  \caption{Reduction of unrestricted processes}
+  \caption{Reduction of translated processes}
   \label{fig:unr-process-reduction}
 \end{figure}
 
@@ -102,52 +102,52 @@ untranslated counterpart (\cref{fig:expression-reduction}).
 \Cref{fig:unr-process-reduction} defines the reduction relation for translated
 processes.
 
-\begin{figure}
-  \begin{mathpar}
-    \RuleCUUnit \and
-    \RuleCUNew  \and
-    \RuleCUFork \and
-    \RuleCUClose\and
-    \RuleCUWait \and
-    \RuleCUSend \and
-    \RuleCURecv \and
-    \RuleCULSplit\and
-    \RuleCURSplit\and
-    \RuleCUDrop \and
-    \RuleCUAcquire
-    \\
-    \RuleTUConst \and
-    \RuleTUVar \and
-    \RuleTUAbs
-  \end{mathpar}
-  etc.---system is standard (no linearity/ordering)
-  \begin{mathpar}
-    \RuleTProcExpr    \and
-    \RuleTProcPar     \and
-    \RuleTProcRes     \and
-    \RuleTProcSync
-  \end{mathpar}
-  \caption{Typing of constants, expressions and processes}
-  \label{fig:unr-typing}
-\end{figure}
+% \begin{figure}
+%   \begin{mathpar}
+%     \RuleCUUnit \and
+%     \RuleCUNew  \and
+%     \RuleCUFork \and
+%     \RuleCUClose\and
+%     \RuleCUWait \and
+%     \RuleCUSend \and
+%     \RuleCURecv \and
+%     \RuleCULSplit\and
+%     \RuleCURSplit\and
+%     \RuleCUDrop \and
+%     \RuleCUAcquire
+%     \\
+%     \RuleTUConst \and
+%     \RuleTUVar \and
+%     \RuleTUAbs
+%   \end{mathpar}
+%   etc.---system is standard (no linearity/ordering)
+%   \begin{mathpar}
+%     \RuleTProcExpr    \and
+%     \RuleTProcPar     \and
+%     \RuleTProcRes     \and
+%     \RuleTProcSync
+%   \end{mathpar}
+%   \caption{Typing of constants, expressions and processes}
+%   \label{fig:unr-typing}
+% \end{figure}
+%
+% \Cref{fig:unr-typing} shows the typing rules for constants, expressions and processes.
 
-\Cref{fig:unr-typing} shows the typing rules for constants, expressions and processes.
-
-\begin{figure}
-  \begin{align*}
-    \TrT{\BUnit} &= \TBUnit &
-    \TrT{\TArr {\Mob} {\Dir,\Eff} {\T[1]} {\T[2]}} &= \TTArr {\TrT{\T[1]}} {\TrT{\T[2]}} \\
-    \TrT{\S} &= \TBChan &
-    \TrT{\TPair[\Dir] {\T[1]} {\T[2]}} &= \TTProd {\TrT{\T[1]}} {\TrT{\T[2]}} \\
-    && \TrT{\TSum {\T[1]} {\T[2]}} &= \TTSum {\TrT{\T[1]}} {\TrT{\T[2]}}
-    \\[\smallskipamount]
-    \TrCtx{\CtxEmpty} &= \TCtxEmpty &
-    \TrCtx{\CtxExt{\Ctx[1]}{\Ctx[2]}} &= \TCtxApp{\TrCtx{\Ctx[1]}}{\TrCtx{\Ctx[2]}} \\
-    \TrCtx{\CtxVar\EVar\T} &= \TCtxExt{\TCtxEmpty}{\TCtxVar\EVar{\TrT\T}} &
-    \TrCtx{\CtxExtUnord{\Ctx[1]}{\Ctx[2]}} &= \TCtxApp{\TrCtx{\Ctx[1]}}{\TrCtx{\Ctx[2]}}
-  \end{align*}
-  \caption{Translation of types and contexts}
-\end{figure}
+% \begin{figure}
+%   \begin{align*}
+%     \TrT{\BUnit} &= \TBUnit &
+%     \TrT{\TArr {\Mob} {\Dir,\Eff} {\T[1]} {\T[2]}} &= \TTArr {\TrT{\T[1]}} {\TrT{\T[2]}} \\
+%     \TrT{\S} &= \TBChan &
+%     \TrT{\TPair[\Dir] {\T[1]} {\T[2]}} &= \TTProd {\TrT{\T[1]}} {\TrT{\T[2]}} \\
+%     && \TrT{\TSum {\T[1]} {\T[2]}} &= \TTSum {\TrT{\T[1]}} {\TrT{\T[2]}}
+%     \\[\smallskipamount]
+%     \TrCtx{\CtxEmpty} &= \TCtxEmpty &
+%     \TrCtx{\CtxExt{\Ctx[1]}{\Ctx[2]}} &= \TCtxApp{\TrCtx{\Ctx[1]}}{\TrCtx{\Ctx[2]}} \\
+%     \TrCtx{\CtxVar\EVar\T} &= \TCtxExt{\TCtxEmpty}{\TCtxVar\EVar{\TrT\T}} &
+%     \TrCtx{\CtxExtUnord{\Ctx[1]}{\Ctx[2]}} &= \TCtxApp{\TrCtx{\Ctx[1]}}{\TrCtx{\Ctx[2]}}
+%   \end{align*}
+%   \caption{Translation of types and contexts}
+% \end{figure}
 
 \begin{figure}
   \begin{mathpar}
@@ -167,33 +167,33 @@ processes.
   \label{fig:translation}
 \end{figure}
 
-\begin{lemma}[Translation preserves typing]
-  \label{lemma:translation-preserves-typing}
-%
-  For any context $\Ctx$ and substitution $\Sub$ with
-  $\TCtx*=\TrCtx\Ctx\setminus\dom\Sub$
-%
-  \begin{enumerate}
-    \item
-      If $\HasType[\Eff] \Ctx \E \T$
-      and $\HasType \Ctx \E \T \TransExp \TE*$
-      then $\HasType {\TCtx*} {\TE*} {\TrT\T}$.
-    \item
-      If $\ProcHasType \Ctx \Proc$
-      and $\ProcHasType \Ctx \Proc \TransProc \TProc*$
-      then $\ProcHasType {\TCtx*} {\TProc*}$.
-  \end{enumerate}
-\end{lemma}
+% \begin{lemma}[Translation preserves typing]
+%   \label{lemma:translation-preserves-typing}
+% %
+%   For any context $\Ctx$ and substitution $\Sub$ with
+%   $\TCtx*=\TrCtx\Ctx\setminus\dom\Sub$
+% %
+%   \begin{enumerate}
+%     \item
+%       If $\HasType[\Eff] \Ctx \E \T$
+%       and $\HasType \Ctx \E \T \TransExp \TE*$
+%       then $\HasType {\TCtx*} {\TE*} {\TrT\T}$.
+%     \item
+%       If $\ProcHasType \Ctx \Proc$
+%       and $\ProcHasType \Ctx \Proc \TransProc \TProc*$
+%       then $\ProcHasType {\TCtx*} {\TProc*}$.
+%   \end{enumerate}
+% \end{lemma}
 
-If \cref{lemma:translation-preserves-typing} holds it will also hold for
-$\TCtx*=\TrCtx\Ctx$ since the target type system contains rules for weakening.
-As written, it guarantees that $\Sub$ has been applied wherever possible.
+% If \cref{lemma:translation-preserves-typing} holds it will also hold for
+% $\TCtx*=\TrCtx\Ctx$ since the target type system contains rules for weakening.
+% As written, it guarantees that $\Sub$ has been applied wherever possible.
 
 \begin{lemma}[Bisimulation]
   \label{lemma:translation-bisimulation}
 %
-  For any context $\Ctx$ and substitution $\Sub$ with
-  $\TCtx*=\TrCtx\Ctx\setminus\dom\Sub$
+  For any context $\Ctx$ and substitution $\Sub$
+  %with $\TCtx*=\TrCtx\Ctx\setminus\dom\Sub$
 %
   \begin{enumerate}
     \item If
@@ -220,21 +220,21 @@ As written, it guarantees that $\Sub$ has been applied wherever possible.
   \end{enumerate}
 \end{lemma}
 
-\begin{lemma}[Weak subject reduction]
-  \label{lemma:translated-subject-reduction}
-%
-  For any context $\Ctx$ and substitution $\Sub$ with
-  $\TCtx*=\TrCtx\Ctx\setminus\dom\Sub$
-%
-  \begin{enumerate}
-    \item If $\HasType[\Eff] \Ctx \E \T$, $\HasType \Ctx \E \T \TransExp \TE*$,
-      and $\TE* \Reduces \TE**$, then $\HasType{\TCtx*}{\TE**}{\TrT\T}$
-    \item If $\ProcHasType\Ctx\Proc$, $\ProcHasType\Ctx\Proc \TransProc
-      \TProc*$, and $\TProc* \Reduces \TProc**$ then
-      $\ProcHasType{\TCtx*}{\TProc**}$.
-  \end{enumerate}
-\end{lemma}
-\begin{proof}
-  Follows from the bisimulation and typing preserving translation
-  (\cref{lemma:translation-preserves-typing}).
-\end{proof}
+% \begin{lemma}[Weak subject reduction]
+%   \label{lemma:translated-subject-reduction}
+% %
+%   For any context $\Ctx$ and substitution $\Sub$ with
+%   $\TCtx*=\TrCtx\Ctx\setminus\dom\Sub$
+% %
+%   \begin{enumerate}
+%     \item If $\HasType[\Eff] \Ctx \E \T$, $\HasType \Ctx \E \T \TransExp \TE*$,
+%       and $\TE* \Reduces \TE**$, then $\HasType{\TCtx*}{\TE**}{\TrT\T}$
+%     \item If $\ProcHasType\Ctx\Proc$, $\ProcHasType\Ctx\Proc \TransProc
+%       \TProc*$, and $\TProc* \Reduces \TProc**$ then
+%       $\ProcHasType{\TCtx*}{\TProc**}$.
+%   \end{enumerate}
+% \end{lemma}
+% \begin{proof}
+%   Follows from the bisimulation and typing preserving translation
+%   (\cref{lemma:translation-preserves-typing}).
+% \end{proof}

@@ -326,8 +326,8 @@
 \NewDocumentCommand\TPSync{s m m}{\targetproccolor{(\TBindSync[#1]#2){#3}}}
 
 \NewMetaVar[\targetproccolor] \Flag \phi
-\newcommand*\FlagSet{\top}
-\newcommand*\FlagUnset{\bot}
+\newcommand*\FlagSet{1}
+\newcommand*\FlagUnset{0}
 
 \newcommand*\TBindNu{\nu}
 \NewDocumentCommand\TBindSync{s O{#1}}{\IfBooleanTF{#2}{\varphi^*}{\varphi}}
