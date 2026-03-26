@@ -1,0 +1,154 @@
+\section{Expressions and processes}
+
+Figures in this section: syntax of expressions (\cref{fig:syntax-expressions}),
+run-time syntax (\cref{fig:syntax-runtime}), reduction (expressions:
+\cref{fig:expression-reduction}, processes: \cref{fig:process-reduction}),
+process congruence (\cref{fig:configuration-congruence}).
+
+\begin{figure}
+  \begin{align*}
+    \C \grmeq
+      & \CUnit
+        % \grmor \CLink
+        \grmor \CNew
+        \grmor \CFork
+        \grmor \CTerm 
+        \grmor \CWait
+        \grmor \CSend
+        \grmor \CRecv
+    \\&
+    \grmor \CSplit \grmor \CSSplit
+    \grmor \CDrop \grmor \CAcq
+        \tag{Constants} \\
+    \E \grmeq
+      & \C \grmor \EVar \grmor \EAbs\EVar\E \grmor \EApp\E\E 
+        \grmor \ESeq\E\E
+        \grmor \EPair\E\E
+        \grmor \ELetPair{\EVar}{\EVar}{\E}{\E} \\
+      &  \grmor \EInj i \E 
+        \grmor\ECase\E{\EVar}{\E}{\EVar}{\E}
+      % & \grmor \EMatch{\E}{\ell:\E_\ell}{\ell\in L}
+      % \grmor \EFork\E \grmor \ELet\EVar\E\E
+        \tag{Expressions}
+  \end{align*}
+  \caption{Syntax of expressions}
+  \label{fig:syntax-expressions}
+\end{figure}
+
+\begin{figure}[t!]
+  \begin{align*}
+    \U,\V \grmeq
+    & \C
+      \grmor \EVar
+      \grmor \EAbs \EVar\E
+      \grmor \EInj{i} \V
+      \grmor \EPair \U\V
+      % \grmor \CSend \V 
+              \tag{Values}
+    \\
+    \EC \grmeq&
+              \ECEmpty
+              \grmor \EApp \EC\E
+              \grmor \EApp \V\EC
+              \grmor \ESeq \EC\E
+              \grmor \EPair \EC\E
+              \grmor \EPair \V\EC
+              \grmor \EInj{i}\EC
+              \grmor \\
+    & \ELet {\EPair \EVar\EVar}\EC\E
+              \grmor 
+      \ECase{\EC}{\EVar}{\E}{\EVar}{\E}
+      % \EMatch{E}{\ell : \E_\ell}{\ell\in L}
+              \tag{Evaluation contexts}
+    \\
+    \Bind \grmeq&
+                  \EVar
+                  \grmor \BEmp
+                  \grmor \BSeq\Bind\Bind
+                  \tag{Channel binders}
+    \\
+    \BindGroup \grmeq
+    & \Bind
+      \grmor \BPar\BindGroup\BindGroup
+      \tag{Binder group}
+    \\
+    \Proc \grmeq
+    & \PExp\E
+      \grmor \PPar\Proc\Proc
+      \grmor \PNew{\BindGroup}{\BindGroup}{\Proc}
+      \tag{Processes}
+    \\
+    \FC \grmeq
+    & \PExp \EC
+      \tag{Thread evaluation contexts}
+    \\
+    \CC \grmeq
+    & \ECEmpty
+      \grmor \PPar{\CC}{\Proc}
+      % \grmor \PNew \Bind\Bind \CC
+      \tag{Process contexts}
+  \end{align*}
+  The operators on binders and binder groups are
+  associative. Sequential composition $\BSeq{}{}$ comes with unit
+  $\BEmp$. Moreover, $\BSeq{}{}$ and $\BPar{}{}$
+  associate with one another as follows:
+  we define $\BSeq{\Bind}{(\BPar{\BindGroup}{\BindGroup'})}$ as
+  $\BPar{(\BSeq\Bind\BindGroup)}{\BindGroup'}$ inductively with base
+  case $\BSeq{\Bind}{(\BPar{\Bind'}{\BindGroup})} =
+  \BPar{(\BSeq\Bind\Bind')}{\BindGroup}$ with the same convention when
+  sequencing from the right side.
+  \caption{Run-time syntax}
+  \label{fig:syntax-runtime}
+\end{figure}
+
+% EXP EVALUATION
+
+\begin{figure}[t!]
+  \begin{mathpar}
+    \RuleExpRedApp \and
+    \RuleExpRedSeq \and
+    \RuleExpRedLet \and
+    \RuleExpRedCaseLeft \and
+    % \RuleExpRedCaseRight \and
+    \RuleExpRedCtx
+  \end{mathpar}
+  \caption{Expression reduction ($\E \Reduces \E$)}
+  \label{fig:expression-reduction}
+\end{figure}
+
+\begin{figure}[tp]
+  \begin{mathpar}
+    % \RuleProcCongRefl \and
+    % \RuleProcCongTrans \and
+    \RuleProcCongParComm \and
+    \RuleProcCongParAssoc \and
+    \RuleProcCongParUnit \and
+    \RuleProcCongResSwap \and
+    \RuleProcCongResComm \and
+    \RuleProcCongExtend
+  \end{mathpar}
+  \caption{Process congruence}
+  \label{fig:configuration-congruence}
+\end{figure}
+
+\begin{figure}[t!]
+  \begin{mathpar}
+    \RuleProcRedExp \and
+    % \RuleProcRedLink \and
+    \RuleProcRedNew \and
+    \RuleProcRedFork \and
+    \RuleProcRedCom \and
+    \RuleProcRedSplit \and
+    \RuleProcRedSplitLocal \and
+    \RuleProcRedDrop \and
+    \RuleProcRedAcquire \and
+    \RuleProcRedClose \and
+    % \RuleProcRedChoice \and
+    \RuleProcRedPar \and
+    \RuleProcRedBind \and
+    \RuleProcRedStruct
+  \end{mathpar}
+  \caption{Process reduction ($\Proc \Reduces \Proc$)}
+  \label{fig:process-reduction}
+\end{figure}
+
