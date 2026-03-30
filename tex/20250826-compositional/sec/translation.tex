@@ -37,7 +37,7 @@ expressive type system from before.
     %       \tag{Contexts}
     % \\
     \TProc \grmeq
-        & \TPExp\TE
+        & \TPExp\E
           \grmor \TPPar\TProc\TProc
           \grmor \TPNew[xx] \TProc
           \grmor \TPSync x \TProc
@@ -76,7 +76,7 @@ The syntax of constants, values, and expressions remains unchanged.
 A communication channel is a triple $\targettermcolor{c} =
 \TEChan[\TEVar]\TEVary[\TEVarz]$ made up of an optional synchronization channel
 $\TEVar$, a data channel $\TEVary$ and a second optional synchronization
-channel $\TEVarz$. If $\TEVar$ is a channel, an $\TEApp \TCAcq c$ will have to
+channel $\TEVarz$. If $\TEVar$ is a channel, an $\EApp \CAcq c$ will have to
 be executed first before any communication can happen. Payloads are transferred
 via the data channel $\TEVary$. If $\TEVarz$ is an actual channel
 $\targettermcolor{c}$ will have to be dropped instead of terminated.

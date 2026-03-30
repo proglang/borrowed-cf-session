@@ -207,7 +207,7 @@
 
 % Constants
 \newcommand*\C[1][]{\termcolor{c#1}}
-\newcommand*\CUnit{\TermKeyword{()}}
+\newcommand*\CUnit{\TermKeyword{*}}
 \newcommand*\CBase{\TermKeyword{b}}
 \newcommand*\CFork{\TermKeyword{fork}}
 \newcommand*\CSplit{\TermKeyword{lsplit}}
@@ -225,50 +225,15 @@
 \newcommand*\COffer{\TermKeyword{offer}}
 
 
-% target Expressions
-\NewMetaVar[\targettermcolor] \TE     e
+% target expressions
 \NewMetaVar[\targettermcolor] \TEVar  x
 \NewMetaVar[\targettermcolor] \TEVary y
 \NewMetaVar[\targettermcolor] \TEVarz z
-\newcommand*\TEAbs[2]{\targettermcolor{\lambda {#1}.{#2}}}
-\newcommand*\TEApp[2]{\targettermcolor{{#1}\,{#2}}}
-\newcommand*\TEInj[2]{\targettermcolor{\Keyword{inj$_{#1}$}{#2}}}
-\newcommand*\TEPair[2]{\targettermcolor{{#1} \otimes {#2}}}
-\newcommand*\TETrip[3]{\TEPair{#1}{\TEPair{#2}{#3}}}
-\newcommand*\TECase[5]{\targettermcolor{\Keyword{case} {#1} \mathop{\{} \Keyword{inj$_1$} {#2} \Rightarrow{#3}; \Keyword{inj$_2$} {#4} \Rightarrow{#5} \mathop{\}}}}
-\newcommand*\TELet[2]{\targettermcolor{\Keyword{let}\,{#1} \Keyword{=} {#2}\,\Keyword{in}\,}}
-\newcommand*\TESeq[1]{\targettermcolor{{#1}\!\Keyword{;}}}
-\newcommand*\TELetPair[4][{}]{\targettermcolor{\TELet{\TEPair[#1]{#2}{#3}}{#4}}}
-\newcommand*\TEFork[1]{\targettermcolor{\TCFork~{#1}}}
-\newcommand*\TEMatch[3]{\targettermcolor{\Keyword{match}\, {#1}\, \Keyword{with}\, \TERecord{#2}{#3}}}
-\newcommand*\TEMatchA[3]{\targettermcolor{\begin{array}[t]{@{}l@{}l}\Keyword{match}&\, {#1}\, \Keyword{with}\\&\ERecord{#2}{#3}\end{array}}}
-\newcommand*\TERecord[2]{\targettermcolor{\{{#1}\}_{#2}}}
-\NewDocumentCommand \TEChan {o m o}
+\NewDocumentCommand \TEChan {O{\CUnit} m O{\CUnit}}
   {
-    \TEPair
-      {\TEPair {\IfValueTF{#1}{#1}{\TCUnit}} {#2}}
-      {\IfValueTF{#3}{#3}{\TCUnit}}
+    \EPair {\EPair {#1} {#2}} {#3}
   }
     
-% target constants
-\newcommand*\TC{\targettermcolor{c}}
-\newcommand*\TCUnit{\TargetTermKeyword{*}}
-\newcommand*\TCBase{\TargetTermKeyword{b}}
-\newcommand*\TCFork{\TargetTermKeyword{fork}}
-\newcommand*\TCSplit{\TargetTermKeyword{lsplit}}
-\newcommand*\TCSSplit{\TargetTermKeyword{rsplit}}
-\newcommand*\TCNew{\TargetTermKeyword{new}}
-\newcommand*\TCLink{\TargetTermKeyword{link}}
-\newcommand*\TCWait{\TargetTermKeyword{wait}}
-\newcommand*\TCTerm{\TargetTermKeyword{close}}
-\newcommand*\TCSend{\TargetTermKeyword{send}}
-\newcommand*\TCRecv{\TargetTermKeyword{recv}}
-\newcommand*\TCSelect[1]{\EApp{\TargetTermKeyword{select}}{#1}}
-\newcommand*\TCBranch{\TargetTermKeyword{branch}}
-\newcommand*\TCOffer{\TargetTermKeyword{offer}}
-\newcommand*\TCDrop{\TargetTermKeyword{drop}}
-\newcommand*\TCAcq{\TargetTermKeyword{acquire}}
-
 % target contexts
 \NewMetaVar[\targetctxcolor] \TCtx \Gamma
 \newcommand*\TCtxEmpty{\targetctxcolor{\emptyset}}

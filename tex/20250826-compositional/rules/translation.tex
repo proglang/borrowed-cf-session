@@ -38,13 +38,16 @@
   \TCRecv_{\TrT\T}
 }
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Translation of processes
+
 \def\RuleCmdPrefix{RuleTransProc}
 \def\RuleNamePrefix{Tr-}
 
 \DefRule {Exp} {} {
   \PExp{\E}
   \TransProc
-  \TPExp{\metacolor{\Sub{[\TE*]}}}
+  \TPExp{\metacolor{\Sub{[\E*]}}}
 }
 
 \DefRule {Par} {
@@ -57,8 +60,8 @@
 }
 
 \DefRule {Bind} {
-  \BindGroup[1] \TransBind[\TCUnit,x,\TCUnit] {\TCC[1]} {\Sub[1]} \\
-  \BindGroup[2] \TransBind[\TCUnit,y,\TCUnit] {\TCC[2]} {\Sub[2]} \\
+  \BindGroup[1] \TransBind[\TEChan \TEVar] {\TCC[1]} {\Sub[1]} \\
+  \BindGroup[2] \TransBind[\TEChan \TEVary] {\TCC[2]} {\Sub[2]} \\
   \Proc \TransProc[{\Sub \cup \Sub[1] \cup \Sub[2]}] \TProc* \\
 } {
   \PNew {\BindGroup[1]}{\BindGroup[2]} \Proc
@@ -72,17 +75,6 @@
 \def\RuleCmdPrefix{RuleTransBind}
 \def\RuleNamePrefix{Tr-Bind}
 
-% Tr-BindPar
-\DefRule {Par} {
-  \BindGroup[1] \TransBind[{\TE[1],x,z}] {\TCC[1]} {\Sub[1]} \\
-  \BindGroup[2] \TransBind[{z,x,\TE[2]}] {\TCC[2]} {\Sub[2]} \\
-  \BindFlag{\BindGroup[1]} = \Flag
-}{
-  \BPar {\BindGroup[1]} {\BindGroup[2]} \TransBind[{\TE[1],x,\TE[2]}]
-    {\TPSync {z} {(\TPPar {\TPFlag z \Flag} {\TCC[1][\TCC[2]]})}}
-    {\Sub[1] \cup \Sub[2]}
-}
-
 % Tr-BindVar
 \DefRule {Var} {} {
   \procbindcolor{\EVar} \TransBind \TCCEmpty {\SubSingle \EVar \E}
@@ -95,9 +87,20 @@
 
 % Tr-BindSeq
 \DefRule {Seq} {
-  \Bind[1] \TransBind[z_1,x,\TCUnit] {\TCC[1]} {\Sub[1]} \\
-  \Bind[2] \TransBind[\TCUnit,x,z_2] {\TCC[2]} {\Sub[2]} \\
+  \Bind[1] \TransBind[{\TEChan[\E[1]] \TEVar}] {\TCC[1]} {\Sub[1]} \\
+  \Bind[2] \TransBind[{\TEChan \TEVar [\E[2]]}] {\TCC[2]} {\Sub[2]} \\
 }{
-  \BSeq {\Bind[1]} {\Bind[2]} \TransBind[z_1,x,z_2]
+  \BSeq {\Bind[1]} {\Bind[2]} \TransBind[{\TEChan[\E[1]] \TEVar [\E[2]]}]
     \TCCEmpty {\Sub[1] \cup \Sub[2]}
+}
+
+% Tr-BindPar
+\DefRule {Par} {
+  \BindGroup[1] \TransBind[{\TEChan[\E[1]] \TEVar [\TEVarz]}] {\TCC[1]} {\Sub[1]} \\
+  \BindGroup[2] \TransBind[{\TEChan[\TEVarz] \TEVar [\E[1]]}] {\TCC[2]} {\Sub[2]} \\
+  \BindFlag{\BindGroup[1]} = \Flag
+}{
+  \BPar {\BindGroup[1]} {\BindGroup[2]} \TransBind[{\TEChan[\E[1]] \TEVar [\E[2]]}]
+    {\TPSync {z} {(\TPPar {\TPFlag z \Flag} {\TCC[1][\TCC[2]]})}}
+    {\Sub[1] \cup \Sub[2]}
 }
