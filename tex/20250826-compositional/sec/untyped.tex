@@ -208,49 +208,20 @@ processes.
 \begin{lemma}[Bisimulation]
   \label{lemma:translation-bisimulation}
 %
-  For any context $\Ctx$ and substitution $\Sub$
-  %with $\TCtx*=\TrCtx\Ctx\setminus\dom\Sub$
-%
-  \begin{enumerate}
-    %\item If
-    %  $\HasType[\Eff[1]] \Ctx {\E[1]} \T$,
-    %  $\HasType \Ctx {\E[1]} \T \TransExp \TE*[1]$,
-    %  and
-    %  $\HasType[\Eff[2]] \Ctx {\E[2]} \T$,
-    %  $\HasType \Ctx {\E[2]} \T \TransExp \TE*[2]$,
-    %  then
-    %  $\E[1] \Reduces \E[2]$
-    %  iff
-    %  $\TE*[1] \Reduces \TE*[2]$.
-    \item If
-      $\ProcHasType \Ctx \Proc$
-      and
-      $\ProcHasType \Ctx \Proc \TransProc \TProc*$,
-      then for all
-      $\ProcHasType \Ctx {\Proc[i]}$
-      with
-      $\ProcHasType \Ctx {\Proc[i]} \TransProc \TProc*[i]$,
-      $\Proc \Reduces \Proc[i]$
-      iff
-      $\TProc* \Reduces \TProc*[i]$.
-  \end{enumerate}
-\end{lemma}
+  For any context $\Ctx$, process $\Proc$, and substitution $\Sub$ if
+    $\ProcHasType \Ctx \Proc$
+  and
+    $\Proc \TransProc \TProc*$,
+  then for all
+    $\Proc[i]$
+  where
+    $\Proc[i] \TransProc \TProc*[i]$,
+  it holds
+    $\Proc \Reduces \Proc[i]$
+  iff
+    $\TProc* \Reduces \TProc*[i]$.
 
-% \begin{lemma}[Weak subject reduction]
-%   \label{lemma:translated-subject-reduction}
-% %
-%   For any context $\Ctx$ and substitution $\Sub$ with
-%   $\TCtx*=\TrCtx\Ctx\setminus\dom\Sub$
-% %
-%   \begin{enumerate}
-%     \item If $\HasType[\Eff] \Ctx \E \T$, $\HasType \Ctx \E \T \TransExp \TE*$,
-%       and $\TE* \Reduces \TE**$, then $\HasType{\TCtx*}{\TE**}{\TrT\T}$
-%     \item If $\ProcHasType\Ctx\Proc$, $\ProcHasType\Ctx\Proc \TransProc
-%       \TProc*$, and $\TProc* \Reduces \TProc**$ then
-%       $\ProcHasType{\TCtx*}{\TProc**}$.
-%   \end{enumerate}
-% \end{lemma}
-% \begin{proof}
-%   Follows from the bisimulation and typing preserving translation
-%   (\cref{lemma:translation-preserves-typing}).
-% \end{proof}
+  {\upshape \js{$\Sub$ needs to be restricted: should only substitute channel
+  variables with values. Do we need to impose requirements on the inserted
+  values?}}
+\end{lemma}
