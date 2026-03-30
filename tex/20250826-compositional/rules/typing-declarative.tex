@@ -9,7 +9,7 @@
     \C
     \T
 }{
-  \HasType[\EffPure]
+  \HasType
     \CtxEmpty
     \C
     \T
@@ -17,153 +17,134 @@
 
 % T-Var
 \DefRule {Var} {} {
-  \HasType[\EffPure]
+  \HasType
     {\CtxVar \EVar\T}
     \EVar
     \T
 }
 
-% T-Fork
-\DefRule {Fork} {
-  \Bounded \Ctx
-  \\
-  \HasType[\Eff[1]]
-    {\Ctx}
-    {\E}
-    {\TArr{\MobMobile}{\Eff} {\BUnit} {\BUnit}}
-}{
-  \HasType[\EffPure]
-    \Ctx
-    {\EFork \E}
-    {\BUnit}
-}
-
 % T-AbsUnr
 \DefRule {AbsUnr} {
   \Unr\Ctx \\
-  \HasType[\Eff]
+  \HasType[\Eff*]
     {\CtxExt\Ctx{\CtxVar\EVar{\T[1]}}}
     {\E}
     {\T[2]}
 }{
-  \HasType[\EffPure]
+  \HasType
     \Ctx
-    {(\EAbs\EVar\E)}
-    {(\TArr{\MobMobile}{\DirNone,\Eff}{\T[1]}{\T[2]})}
+    {\EAbs\EVar\E}
+    {\TArr{\MobMobile}{\DirNone,\Eff*}{\T[1]}{\T[2]}}
 }
 
 % T-AbsLin
 \DefRule {AbsLin} {
-  \HasType[\Eff]
+  \HasType[\Eff*]
     {\CtxExtUnord\Ctx{\CtxVar\EVar{\T[1]}}}
     {\E}
     {\T[2]} \\
     \Mob (\Ctx)
 }{
-  \HasType[\EffPure]
+  \HasType
     \Ctx
     {\EAbs\EVar\E}
-    {\TArr{\Mob}{\DirUnord,\Eff}{\T[1]}{\T[2]}}
+    {\TArr{\Mob}{\DirUnord,\Eff*}{\T[1]}{\T[2]}}
 }
 
 % T-AbsLeft
 \DefRule {AbsLeft} {
-  \HasType[\Eff]
+  \HasType[\Eff*]
     {\CtxExt{\CtxVar{\EVar}{\T[1]}}\Ctx}
     {\E}
     {\T[2]} \\
     \Mob (\Ctx)
 }{
-  \HasType[\EffPure]
+  \HasType
     \Ctx
     {\EAbs\EVar\E}
-    {\TArr{\Mob}{\DirLeft,\Eff}{\T[1]}{\T[2]}}
+    {\TArr{\Mob}{\DirLeft,\Eff*}{\T[1]}{\T[2]}}
 }
 
 % T-AbsRight
 \DefRule {AbsRight} {
-  \HasType[\Eff]
+  \HasType[\Eff*]
     {\CtxExt\Ctx{\CtxVar{\EVar}{\T[1]}}}
     {\E}
     {\T[2]} \\
     \Mob (\Ctx)
 }{
-  \HasType[\EffPure]
+  \HasType
     \Ctx
     {\EAbs\EVar\E}
-    {\TArr{\Mob}{\DirRight,\Eff}{\T[1]}{\T[2]}}
+    {\TArr{\Mob}{\DirRight,\Eff*}{\T[1]}{\T[2]}}
 }
 
 % T-AppUnr
 \DefRule {AppUnr} {
-  \HasType[\Eff[1]]
-    {\Ctx_1}
+  \HasType
+    {\Ctx[1]}
     {\E[1]}
-    {(\TArr{\Mob}{\DirNone,{\Eff}[3]}{\T[1]}{\T[2]})} \\
-  \HasType[\Eff[2]]
-    {\Ctx_2}
+    {\TArr{\Mob}{\DirNone,\Eff}{\T[1]}{\T[2]}} \\
+  \HasType
+    {\Ctx[2]}
     {\E[2]}
     {\T[1]}
 }{
-  \HasType[\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]]
-    {\CtxSeq {\Ctx_1}{\Ctx_2}}
-    {(\EApp{\E[1]}{\E[2]})}
+  \HasType
+    {\CtxSeq{\Ctx[1]}{\Ctx[2]}}
+    {\E[1] \E[2]}
     {\T[2]}
 }
 
 % T-AppLine
 \DefRule {AppLin} {
-  \HasType[\Eff[1]]
-    {\Ctx_1}
+  \HasType
+    {\Ctx[1]}
     {\E[1]}
-    {\TArr{\Mob}{\DirUnord,{\Eff[3]}}{\T[1]}{\T[2]}} \\
-  \HasType[\Eff[2]]
-    {\Ctx_2}
+    {\TArr{\Mob}{\DirUnord,\Eff}{\T[1]}{\T[2]}} \\
+  \HasType
+    {\Ctx[2]}
     {\E[2]}
     {\T[1]}
 }{
-  \HasType[\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]]
-    {\CtxPar {\Ctx_1}{\Ctx_2}}
+  \HasType
+    {\CtxPar{\Ctx[1]}{\Ctx[2]}}
     {\E[1] \E[2]}
     {\T[2]}
 }
 
 % T-AppLeft
 \DefRule {AppLeft} {
-  % \Unr{\Ctx_1} \vee \Eff[1] = \EffPure
-  % \\
   \HasType[\EffPure]
-    {\Ctx_1}
+    {\Ctx[1]}
     {\E[1]}
-    {\TArr{\Mob}{\DirLeft,{\Eff[3]}}{\T[1]}{\T[2]}}
-    \\
-  \HasType[\Eff[2]]
-    {\Ctx_2}
+    {\TArr{\Mob}{\DirLeft,\Eff}{\T[1]}{\T[2]}}
+  \\
+  \HasType
+    {\Ctx[2]}
     {\E[2]}
     {\T[1]}
 }{
-  \HasType[\Eff[2] \EffJoin \Eff[3]]
-    {\CtxSeq {\Ctx_2}{\Ctx_1}}
+  \HasType
+    {\CtxSeq{\Ctx[2]}{\Ctx[1]}}
     {\E[1] \E[2]}
     {\T[2]}
 }
 
 % T-AppRight
 \DefRule {AppRight} {
-  % \Unr{\Ctx_2} \vee \Eff[2] = \EffPure
-  % \\
-  \HasType[\Eff[1]]
-    {\Ctx_1}
+  \HasType
+    {\Ctx[1]}
     {\E[1]}
-    {\TArr{\Mob}{\DirRight,{\Eff[3]}}{\T[1]}{\T[2]}}
+    {\TArr{\Mob}{\DirRight,\Eff}{\T[1]}{\T[2]}}
     \\
-  \HasType[\EffPure]
-    {\Ctx_2}
+  \HasType
+    {\Ctx[2]}
     {\E[2]}
     {\T[1]}
 }{
-  \HasType[\Eff[1] \EffJoin \Eff[3]]
-    {\CtxSeq {\Ctx_1}{\Ctx_2}}
+  \HasType
+    {\CtxSeq {\Ctx[1]}{\Ctx[2]}}
     {\E[1] \E[2]}
     {\T[2]}
 }
@@ -307,32 +288,34 @@
     {\T}
 }
 
-% T-WeakC
+% T-WeakCE
 \DefRule {WeakC} {
-  \Unr{\Ctx[2]} \\
+  \Ctx[2] \preccurlyeq \Ctx[1]
+  \\
   \HasType
-    {\CtxExt{\Ctx[1]}{\Ctx[2]}}
+    {\Ctx[1]}
     {\E}
     {\T}
 }{
-  \HasType[\Eff]
-    {\Ctx[1]}
+  \HasType
+    {\Ctx[2]}
     {\E}
     {\T}
 }
 
+% T-WeakCE
 \DefRule {WeakCE} {
   \Ctx[2] \preccurlyeq \Ctx[1]
   \\
   \Eff[1] \le \Eff[2]
   \\
   \HasType[\Eff[1]]
-    {\Ctx_1}
+    {\Ctx[1]}
     {\E}
     {\T}
 }{
   \HasType[\Eff[2]]
-    {\Ctx_2}
+    {\Ctx[2]}
     {\E}
     {\T}
 }
