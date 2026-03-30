@@ -27,7 +27,7 @@
 \DefRule {AbsUnr} {
   \Unr\Ctx \\
   \HasType[\Eff*]
-    {\CtxExt\Ctx{\CtxVar\EVar{\T[1]}}}
+    {\CtxPar\Ctx{\CtxVar\EVar{\T[1]}}}
     {\E}
     {\T[2]}
 }{
@@ -223,7 +223,7 @@
   \HasType
     {\Ctx[1]}
     {\E[1]}
-    {\TPairUnord {\T[1]}{\T[2]}} \\
+    {\TPairUnord {\T[1]}{\T[2]}} \\\\
   \HasType
     {\CtxExtUnord{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}} \CtxPatOp \Ctx[2]}
     {\E[2]}
@@ -240,7 +240,7 @@
   \HasType
     {\Ctx[1]}
     {\E[1]}
-    {\TPairOrd {\T[1]}{\T[2]}} \\
+    {\TPairOrd {\T[1]}{\T[2]}} \\\\
   \HasType
     {\CtxExt{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}} \CtxPatOp \Ctx[2]}
     {\E[2]}

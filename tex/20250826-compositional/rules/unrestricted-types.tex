@@ -1,62 +1,85 @@
 % Unrestricted Types
 
-\newcommand*\RuleUBase{
-  \inferrule[U-Base]{}{
-    \Unr\B
-  }
+\def\RuleNamePrefix{U-}
+\def\RuleCmdPrefix{RuleU}
+
+% U-Base
+\DefRule {Base} {} {
+  \Unr \B
 }
 
-\newcommand*\RuleUProd{
-  \inferrule[U-Prod]{
-    \Unr{\T_1} \\
-    \Unr{\T_2}
-  } {
-    \Unr{(\TPair{\T_1}{\T_2})}
-  }
+% U-Prod
+\DefRule {Prod} {
+  \Unr \T[1] \\
+  \Unr \T[2]
+} {
+  \Unr \TPair{\T[1]}{\T[2]}
 }
 
-% \newcommand*\RuleUSum{
-%   \inferrule[U-Sum]{
-%     \Unr{\T_1} \\
-%     \Unr{\T_2}
-%   } {
-%     \Unr{(\TSum{\T_1}{\T_2})}
-%   }
-% }
-
-\newcommand*\RuleUArr{
-  \inferrule[U-Arr]{}{
-    \Unr{(\TArr\DirNone\Eff{\T_1}{\T_2})}
-  }
+% U-Sum
+\DefRule {Sum} {
+  \Unr \T[1] \\
+  \Unr \T[2]
+} {
+  \Unr \TSum{\T[1]}{\T[2]}
 }
 
-\newcommand*\RuleUSkip{
-  \inferrule[U-Skip]{}{
-    \Unr{\SSkip}
-  }
+% U-Arr
+\DefRule {Arr} {} {
+  \Unr \TArr{\Mob}{\DirNone,\Eff}{\T[1]}{\T[2]}
 }
 
-\newcommand*\RuleUSeq{
-  \inferrule[U-Seq]{
-    \Unr{\S_1} \\
-    \Unr{\S_2}
-  } {
-    \Unr{(\SSeq{\S_1}{\S_2})}
-  }
+% U-Skip
+\DefRule {Skip} {} {
+  \Unr{\SSkip}
 }
 
-\newcommand*\RuleUVar{
-  \inferrule[U-Var]{}{
-    \Unr{\SVar}
-  }
+% U-Seq
+\DefRule {Seq} {
+  \Unr \S[1] \\
+  \Unr \S[2]
+} {
+  \Unr \SSeq{\S[1]}{\S[2]}
 }
 
-\newcommand*\RuleURec{
-  \inferrule[U-Rec]{
-    \Unr{\S}
-  } {
-    \Unr{(\SRec\SVar\S)}
-  }
+% U-Var
+\DefRule {Var} {} {
+  \Unr{\SVar}
+}
+
+% U-Rec
+\DefRule {Rec} {
+  \Unr{\S}
+} {
+  \Unr{(\SRec\SVar\S)}
+}
+
+% U-CtxEmpty
+\DefRule {CtxEmpty} {} {
+  \Unr \CtxEmpty
+}
+
+% U-CtxVar
+\DefRule {CtxVar} {
+  \Unr \T
+}{
+  \Unr {\CtxVar \EVar \T}
+}
+
+% U-CtxSeq
+\DefRule {CtxSeq} {
+  \Unr \Ctx[1] \\
+  \Unr \Ctx[2]
+}{
+  \Unr \CtxSeq{\Ctx[1]}{\Ctx[2]}
+}
+
+% U-CtxPar
+\DefRule {CtxPar} {
+  \Unr \Ctx[1] \\
+  \Unr \Ctx[2]
+}{
+  \Unr \CtxPar{\Ctx[1]}{\Ctx[2]}
 }
 
 %%% Local Variables:

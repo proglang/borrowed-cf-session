@@ -21,7 +21,7 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
     % \P, \Q \in {}& \Nat \cup \{ \bot, \top \}
     % \tag{Priority bounds} \\
     \Dir \grmeq
-      & \DirLeft \grmor \DirRight \grmor \DirUnord
+      & \DirLeft \grmor \DirRight \grmor \DirUnord \grmor \DirNone
         % \grmor \DirNone
         \tag{Directions} \\
     \Eff \grmeq
@@ -101,21 +101,24 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
 
 % Unrestricted Types
 
-% \begin{figure}
-%   \begin{mathpar}
-%     \RuleUBase \and
-%     \RuleUProd \and
-%     % \RuleUSum \and
-%     \RuleUArr \and
-%     \RuleUSkip \and
-%     \RuleUSeq \and
-%     \RuleUVar \and
-%     \RuleURec
-%   \end{mathpar}
-%   PT: only $\DirNone$ arrows are unrestricted!
-%   \caption{Unrestricted Types ($\Unr\T$)}
-%   \label{fig:unrestricted-types}
-% \end{figure}
+\begin{figure}
+  \begin{mathpar}
+    \RuleUBase \and
+    \RuleUArr \and
+    \RuleUSkip \and
+    \RuleUVar \\
+    \RuleUProd \and
+    \RuleUSum \and
+    \RuleUSeq \and
+    \RuleURec \\
+    \RuleUCtxEmpty \and
+    \RuleUCtxVar \and
+    \RuleUCtxSeq \and
+    \RuleUCtxPar
+  \end{mathpar}
+  \caption{Unrestricted Types ($\Unr\T$) and contexts ($\Unr\Ctx$)}
+  \label{fig:unrestricted-types}
+\end{figure}
 
 % \begin{figure}
 %   \begin{mathpar}
@@ -217,14 +220,14 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
 \begin{figure}
   \begin{mathpar}
     \RuleTConst \and
-    \RuleTVar \and
-    % \RuleTAbsUnr \and
+    \RuleTVar \\
+    \RuleTAbsUnr \and
+    \RuleTAppUnr \and
     \RuleTAbsLin \and
-    \RuleTAbsLeft \and
-    \RuleTAbsRight \and
-    % \RuleTAppUnr \and
     \RuleTAppLin \and
+    \RuleTAbsLeft \and
     \RuleTAppLeft \and
+    \RuleTAbsRight \and
     \RuleTAppRight \and
     \RuleTPairUnord \and
     \RuleTPairOrd \and
