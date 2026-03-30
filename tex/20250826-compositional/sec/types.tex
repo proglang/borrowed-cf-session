@@ -1,11 +1,15 @@
 \section{Types}
 
-Figures in this section: syntax of types, left context patterns, equalities of
-contexts, weakening of contexts, session type laws (\cref{fig:syntax-types});
-predicates $\Mobile$/$\Bounded$/$\Skips$ (\cref{fig:bounded-session-types});
-typing rules of constants (\cref{fig:constant-typing}); typing rules
-(constants, variables, functions: \cref{fig:typing-functions}; pairs, let,
-case, weakening: \cref{fig:typing}; processes: \cref{fig:process-typing})
+Figures in this section: syntax of types, equalities of contexts, weakening of
+contexts, session type laws (\cref{fig:syntax-types}); predicates
+$\Mobile$/$\Bounded$/$\Skips$ (\cref{fig:bounded-session-types}); typing rules
+of constants (\cref{fig:constant-typing}); typing rules (constants, variables,
+functions: \cref{fig:typing-functions}; pairs, let, case, weakening:
+\cref{fig:typing}; processes: \cref{fig:process-typing})
+
+When talking about contexts we may use the operator $\ctxcolor{\Ctx[1]
+\CtxPatOp \Ctx[2]}$ as a metavariable for context formers
+$\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
 
 
 \begin{figure}
@@ -53,29 +57,12 @@ case, weakening: \cref{fig:typing}; processes: \cref{fig:process-typing})
     \Ctx \grmeq
       & \CtxEmpty \grmor \CtxVar \EVar\T \grmor \CtxExt\Ctx\Ctx \grmor \CtxExtUnord\Ctx\Ctx
         \tag{Typing environments}
-    \\
-    \CtxPatternRaw \grmeq
-      & []
-        \grmor \CtxExt{\CtxPatternRaw}\Ctx
-        \grmor \CtxExt\Ctx{\CtxPatternRaw}
-        \grmor \CtxExtUnord{\CtxPatternRaw}\Ctx
-        \grmor \CtxExtUnord\Ctx{\CtxPatternRaw}
-    \tag{Context patterns}
   \end{align*}
   % TODO: perhaps diff syntax for effects (not to be confounded with the
   % lin direction)
-  Left context patterns
-  \begin{mathpar}
-    \inferrule{}{\IsLeftPat~[]}
 
-    \inferrule{\IsLeftPat~\CtxPatternRaw}{\IsLeftPat~(\CtxExt{\CtxPatternRaw}\Ctx)}
-
-    \inferrule{\IsLeftPat~\CtxPatternRaw}{\IsLeftPat~(\CtxExtUnord{\CtxPatternRaw}\Ctx)}
-
-    \inferrule{\IsLeftPat~\CtxPatternRaw}{\IsLeftPat~(\CtxExtUnord\Ctx{\CtxPatternRaw})}
-  \end{mathpar}
-
-  Typing contexts and patterns are subject to the following laws
+  \medskip
+  Typing contexts are subject to the following laws
   \begin{mathpar}
     \CtxExt\CtxEmpty\Ctx = \Ctx \and
     \CtxExt\Ctx\CtxEmpty = \Ctx \and
@@ -87,6 +74,8 @@ case, weakening: \cref{fig:typing}; processes: \cref{fig:process-typing})
     \CtxExtUnord{(\CtxExtUnord{\Ctx_1}{\Ctx_2})}{\Ctx_3} \and
     \CtxExtUnord{\Ctx_1}{\Ctx_2} = \CtxExtUnord{\Ctx_2}{\Ctx_1}
   \end{mathpar}
+
+  \medskip
   Rewrite rule for weakening (apply transitively in any context modulo
   the monoid laws)
   \begin{mathpar}
@@ -94,6 +83,8 @@ case, weakening: \cref{fig:typing}; processes: \cref{fig:process-typing})
     \preccurlyeq
     \CtxExt{(\CtxPar{\Ctx_1}{\Ctx_3})}{(\CtxPar{\Ctx_2}{\Ctx_4})}
   \end{mathpar}
+
+  \medskip
   Laws for context-free session types
   \begin{mathpar}
     \SSeq\SSkip\S = \S \and

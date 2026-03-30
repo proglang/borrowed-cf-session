@@ -220,17 +220,16 @@
 \newcommand*\RuleTLetUnit{
   \inferrule[T-LetUnit]{
     \HasType[\Eff[1]]
-      {\Ctx}
+      {\Ctx[1]}
       {\E[1]}
       {\BUnit} \\
     \HasType[\Eff[2]]
-      {\CtxPattern{\CtxEmpty}}
+      {\Ctx[2]}
       {\E[2]}
-      {\T[2]} \\
-      \Eff[1] = \EffImpure \implies \IsLeftPat~\CtxPatternRaw
+      {\T[2]}
   }{
     \HasType[\Eff[1] \EffJoin \Eff[2]]
-      {\CtxPattern{\Ctx}}
+      {\CtxPat 1 2}
       {\ESeq{\E[1]}{\E[2]}}
       {\T[2]}
   }
@@ -239,17 +238,16 @@
 \newcommand*\RuleTLet{
   \inferrule[T-Let]{
     \HasType[\Eff[1]]
-      {\Ctx}
+      {\Ctx[1]}
       {\E[1]}
       {\T[1]} \\
     \HasType[\Eff[2]]
-      {\CtxPattern{\CtxVar x{{\T[1]}}}}
+      {\CtxVar x {{\T[1]}} \CtxPatOp \Ctx[2]}
       {\E[2]}
-      {\T[2]} \\
-      \Eff[1] = \EffImpure \implies \IsLeftPat~\CtxPatternRaw
+      {\T[2]}
   }{
     \HasType[\Eff[1] \EffJoin \Eff[2]]
-      {\CtxPattern{\Ctx}}
+      {\CtxPat 1 2}
       {\ELet x{\E[1]}{\E[2]}}
       {\T[2]}
   }
@@ -258,17 +256,16 @@
 \newcommand*\RuleTLetUnord{
   \inferrule[T-LetUnord]{
     \HasType[\Eff[1]]
-      {\Ctx}
+      {\Ctx[1]}
       {\E[1]}
       {\TPairUnord {\T[1]}{\T[2]}} \\
     \HasType[\Eff[2]]
-      {\CtxPattern{\CtxExtUnord{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}}}}
+      {\CtxExtUnord{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}} \CtxPatOp \Ctx[2]}
       {\E[2]}
-      {\T[3]} \\
-      \Eff[1] = \EffImpure \implies \IsLeftPat~\CtxPatternRaw
+      {\T[3]}
   }{
     \HasType[\Eff[1] \EffJoin \Eff[2]]
-      {\CtxPattern{\Ctx}}
+      {\CtxPat 1 2}
       {\ELetPair xy{\E[1]}{\E[2]}}
       {\T[3]}
   }
@@ -277,17 +274,16 @@
 \newcommand*\RuleTLetOrd{
   \inferrule[T-LetOrd]{
     \HasType[\Eff[1]]
-      {\Ctx}
+      {\Ctx[1]}
       {\E[1]}
       {\TPairOrd {\T[1]}{\T[2]}} \\
     \HasType[\Eff[2]]
-      {\CtxPattern{\CtxExt{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}}}}
+      {\CtxExt{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}} \CtxPatOp \Ctx[2]}
       {\E[2]}
-      {\T[3]} \\
-      \Eff[1] = \EffImpure \implies \IsLeftPat~\CtxPatternRaw
+      {\T[3]}
   }{
     \HasType[\Eff[1] \EffJoin \Eff[2]]
-      {\CtxPattern{\Ctx}}
+      {\CtxPat 1 2}
       {\ELetPair xy{\E[1]}{\E[2]}}
       {\T[3]}
   }
@@ -310,24 +306,22 @@
 \newcommand*\RuleTCaseSum{
   \inferrule[T-CaseSum]{
     \HasType[\Eff]
-      {\Ctx}
+      {\Ctx[1]}
       {\E}
       {\TSum{\T[1]}{\T[2]}}
     \\
     \HasType[\Eff[1]]
-      {\CtxPattern{\CtxVar{\EVar_1}{\T[1]}}}
+      {\CtxVar{\EVar_1}{\T[1]} \CtxPatOp \Ctx[2]}
       {\E[1]}
       {\T}
     \\
     \HasType[\Eff[2]]
-      {\CtxPattern{\CtxVar{\EVar_2}{\T[2]}}}
+      {\CtxVar{\EVar_2}{\T[2]} \CtxPatOp \Ctx[2]}
       {\E[2]}
       {\T}
-    \\
-    \Eff = \EffImpure \implies \IsLeftPat~\CtxPatternRaw
   }{
     \HasType[\Eff \EffJoin \Eff[1] \EffJoin \Eff[2]]
-      {\CtxPattern{\Ctx}}
+      {\CtxPat 1 2}
       {\ECase\E{x_1}{\E[1]}{x_2}{\E[2]}}
       {\T}
   }

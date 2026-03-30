@@ -147,6 +147,8 @@
 \newcommand*\CtxVar[2]{\ctxcolor{{\termcolor{#1}}:{\typecolor{#2}}}}
 \newcommand*\CtxExt[2]{\ctxcolor{{#1},{#2}}}
 \newcommand*\CtxExtUnord[2]{\ctxcolor{{#1} \parallel {#2}}}
+\newcommand*\CtxPat[2]{\ctxcolor{\Ctx[#1] \CtxPatOp \Ctx[#2]}}
+\newcommand*\CtxPatOp{*}
 \newcommand*\CtxPatternRaw{\ctxcolor{\mathcal{G}}}
 \newcommand*\CtxPattern[2][{}]{\ctxcolor{\mathcal{G}_{#1}[#2]}}
 \newcommand*\CtxLeftPattern[1]{\ctxcolor{\mathcal{L}[#1]}}
@@ -386,7 +388,7 @@
 % Expression Typing
 \NewDocumentCommand \HasType {o m m m}
   {
-    {#2} \vdash {#3} : {#4} \IfValueT{#1}{\mid{#1}}
+    \ctxcolor{#2} \vdash {#3} : {#4} \IfValueT{#1}{\mid{#1}}
   }
 
 % Constant Typing
