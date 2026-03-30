@@ -312,6 +312,7 @@
 % Target Configuration Contexts
 \NewMetaVar[\targetproccolor] \TCC {\mathcal{G}}
 \newcommand*\TCCapp[2][]{\targetproccolor{\TCC[#1][#2]}}
+\newcommand*\TCCEmpty{\targetproccolor{\Box}}
 
 % Processes
 \NewMetaVar[\proccolor] \Proc P
@@ -327,12 +328,14 @@
 \NewDocumentCommand\TPFlag{m m}{\targetproccolor{#1 \mapsto #2}}
 \NewDocumentCommand\TPSync{s m m}{\targetproccolor{(\TBindSync[#1]#2){#3}}}
 
-\NewMetaVar[\targetproccolor] \Flag \phi
-\newcommand*\FlagSet{1}
-\newcommand*\FlagUnset{0}
-
 \newcommand*\TBindNu{\nu}
 \NewDocumentCommand\TBindSync{s O{#1}}{\IfBooleanTF{#2}{\varphi^*}{\varphi}}
+
+\NewMetaVar[\targetproccolor] \Flag \phi
+\newcommand*\FlagSet{\targetproccolor 1}
+\newcommand*\FlagUnset{\targetproccolor 0}
+
+\newcommand*\BindFlag[1]{\metacolor{\phi\ifstrempty{#1}{}{(#1)}}}
 
 % Variable Sets ("Dependencies")
 \newcommand*\D{\Delta}
@@ -437,9 +440,8 @@
 \newcommand\TrCtx{\TrCmd \Gamma}
 \newcommand\TrBG{\TrCmd B}
 
-\newcommand*\TransExp[1][\Sub]{\stackrel{#1}{\TrRel{}}}
-\newcommand\TransProc[1][\Sub]{\stackrel{#1}{\TrRel{\!P}}}
-\newcommand\TransBind[1][\Sub]{\stackrel{#1}{\TrRel{\!B}}}
+\newcommand*\TransProc[1][\Sub]{\stackrel{#1}{\TrRel{}}}
+\newcommand*\TransBind[3][\E]{\stackrel{\targettermcolor{#1}}{\TrRel{}} #2 \mid #3}
 
 \newcommand*\TA[2]{\metacolor{\llbracket #1;#2 \rrbracket_{\Gamma}}}
 % \newcommand*\TA[2]{\metacolor{\llbracket #2 \rrbracket_{\Gamma} ({#1})}}

@@ -39,72 +39,65 @@
 }
 
 \def\RuleCmdPrefix{RuleTransProc}
-\def\RuleNamePrefix{Tr-Proc-}
+\def\RuleNamePrefix{Tr-}
 
-\DefRule {Exp} {
-  \HasType {\Ctx,abc} \E \T
-    \TransExp \TE*
-} {
-  \ProcHasType \Ctx {\PExp{\E}}
+\DefRule {Exp} {} {
+  \PExp{\E}
   \TransProc
-  \TPExp{\TE*}
+  \TPExp{\metacolor{\Sub{[\TE*]}}}
 }
 
 \DefRule {Par} {
-  \ProcHasType{\Ctx[1]}{\Proc[1]}
-    \TransProc \TProc*[1]\\
-  \ProcHasType{\Ctx[2]}{\Proc[2]}
-    \TransProc \TProc*[2]
+  \Proc[1] \TransProc \TProc*[1] \\
+  \Proc[2] \TransProc \TProc*[2]
 } {
-  \ProcHasType
-    {\CtxPar{\Ctx[1]}{\Ctx[2]}}
-    {\PPar{\Proc[1]}{\Proc[2]}}
+  \PPar {\Proc[1]} {\Proc[2]}
   \TransProc
   \TPPar {\TProc*[1]} {\TProc*[2]}
 }
 
-\DefRule [\text{\small ($\TEVar,\TEVary$ fresh)}] {Bind} {
-  \ProcHasType {\CtxPar \Ctx {\CtxPar {\Ctx[1]} {\Ctx[2]}}} \Proc
-    \TransProc \TProc* \\
-  % \BindGivesCtx \S {\BindGroup[1]} {\Ctx[1]} \\
-  % \BindGivesCtx {\SDual\S} {\BindGroup[2]} {\Ctx[2]} \\
+\DefRule {Bind} {
+  \BindGroup[1] \TransBind[\TCUnit,x,\TCUnit] {\TCC[1]} {\Sub[1]} \\
+  \BindGroup[2] \TransBind[\TCUnit,y,\TCUnit] {\TCC[2]} {\Sub[2]} \\
+  \Proc \TransProc[{\Sub \cup \Sub[1] \cup \Sub[2]}] \TProc* \\
 } {
-  \ProcHasType
-    {\Ctx}
-    {\PNew {\BindGroup[1]}{\BindGroup[2]} \Proc}
+  \PNew {\BindGroup[1]}{\BindGroup[2]} \Proc
   \TransProc
-  \TPNew {\TProc*}
+  \TPNew {\TCC[1][\TCC[2][\TProc*]]}
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Translation of bind groups
 
 \def\RuleCmdPrefix{RuleTransBind}
-\def\RuleNamePrefix{Tr-Bind-}
+\def\RuleNamePrefix{Tr-Bind}
 
-\DefRule {ConsSeq} {
-  \Bind \ne \BEmp \\
-  \Bind \stackrel{\TEChan{\TEVary}[\TEVarz]}{\leadsto} \Sub
-} {
-  \BSeq\EVar\Bind \stackrel{\TEChan[\TE]{\TEVary}[\TEVarz]}{\leadsto}
-    \SubExt\TEVar{\TEChan[e]{\TEVary}[\TEVarz]}
+% Tr-BindPar
+\DefRule {Par} {
+  \BindGroup[1] \TransBind[{\TE[1],x,z}] {\TCC[1]} {\Sub[1]} \\
+  \BindGroup[2] \TransBind[{z,x,\TE[2]}] {\TCC[2]} {\Sub[2]} \\
+  \BindFlag{\BindGroup[1]} = \Flag
+}{
+  \BPar {\BindGroup[1]} {\BindGroup[2]} \TransBind[{\TE[1],x,\TE[2]}]
+    {\TPSync {z} {(\TPPar {\TPFlag z \Flag} {\TCC[1][\TCC[2]]})}}
+    {\Sub[1] \cup \Sub[2]}
 }
 
-\DefRule {LastSeq} {} {
-  \EVar \stackrel{\TEChan[\TE]{\TEVary}[\TEVarz]}{\leadsto}
-    \SubSingle \TEVar {\TEChan[\TE]{\TEVary}[\TEVarz]}
+% Tr-BindVar
+\DefRule {Var} {} {
+  \procbindcolor{\EVar} \TransBind \TCCEmpty {\SubSingle \EVar \E}
 }
 
-% An empty sequence of channel binders indicates on the left of a binder group
-% indicates that the left side of the rsplit was already been dropped.
-\DefRule {ParEmpty} {
-  \ProcHasType {\Ctx,\BindGroup} \Proc
-    \TransBind[\SubExt{X}{\TE}] YY
-} {
-  \Ctx, \BPar \BEmp \BindGroup \vdash \Proc \TransBind
-    \TPSync* z {\TProc*}
+% Tr-BindNil
+\DefRule {Nil} {} {
+  \BEmp \TransBind \TCCEmpty \emptyset
 }
 
-\DefRule {ParNonEmpty} {
-} {
+% Tr-BindSeq
+\DefRule {Seq} {
+  \Bind[1] \TransBind[z_1,x,\TCUnit] {\TCC[1]} {\Sub[1]} \\
+  \Bind[2] \TransBind[\TCUnit,x,z_2] {\TCC[2]} {\Sub[2]} \\
+}{
+  \BSeq {\Bind[1]} {\Bind[2]} \TransBind[z_1,x,z_2]
+    \TCCEmpty {\Sub[1] \cup \Sub[2]}
 }

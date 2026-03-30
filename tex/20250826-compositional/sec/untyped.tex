@@ -45,10 +45,17 @@ expressive type system from before.
           %\grmor \TPSync* x \TProc
       \tag{Configurations}
     \\
+    \TCC
+      \grmeq& \TCCEmpty
+      \grmor \TPPar \TCC \TProc
+      \grmor \TPNew[xx] \TCC
+      \grmor \TPSync x \TCC
+      \tag{Configuration contexts}
+    \\
     \Flag \grmeq & \FlagUnset \grmor \FlagSet
-    \tag{Synchronization flags}
+      \tag{Synchronization flags}
   \end{align*}
-  \caption{Syntax of translated rocesses configurations $\TProc$ and synchronization flags $\Flag$}
+  \caption{Untyped run-time syntax}
   \label{fig:unr-syntax}
 \end{figure}
 
@@ -150,21 +157,29 @@ processes.
 % \end{figure}
 
 \begin{figure}
-  \textcolor{red}{Wrong and incomplete!}
   \begin{mathpar}
-    \RuleTransExpSubVar   \and
-    \RuleTransExpCtxVar   \and
-    \RuleTransExpAbsLin   \and
-    \RuleTransExpSend     \and
-    \RuleTransExpRecv     \and
+%   \RuleTransExpSubVar   \and
+%   \RuleTransExpCtxVar   \and
+%   \RuleTransExpAbsLin   \and
+%   \RuleTransExpSend     \and
+%   \RuleTransExpRecv     \and
     \RuleTransProcExp   \and
     \RuleTransProcPar   \and
-    \RuleTransProcBind  \and
-    \RuleTransBindParEmpty  \and
-    \RuleTransBindConsSeq   \and
-    \RuleTransBindLastSeq
+    \RuleTransProcBind  \\
+    \RuleTransBindPar   \and
+    \RuleTransBindSeq   \and
+    \RuleTransBindVar   \and
+    \RuleTransBindNil
   \end{mathpar}
-  \caption{Translation of expressions ($\HasType \Ctx \E \T \TransExp \TE*$) and processes ($\ProcHasType \Ctx \Proc \TransProc \TProc*$)}
+  \begin{align*}
+    \BindFlag{\BPar{\BindGroup[1]}{\BindGroup[2]}} &= \BindFlag{\BindGroup[2]}
+      & \BindFlag{\EVar} &= \FlagUnset \\
+    \BindFlag{\BSeq{\Bind[1]}{\Bind[2]}} &= \BindFlag{\Bind[1]} \sqcup \BindFlag{\Bind[2]}
+      & \BindFlag{\BEmp} &= \FlagSet
+  \end{align*}
+  \caption{Translation of
+    processes ($\Proc \TransProc \TProc*$)
+    and bind groups ($\BindGroup \TransBind \TCC \Sub$)}
   \label{fig:translation}
 \end{figure}
 
@@ -197,16 +212,16 @@ processes.
   %with $\TCtx*=\TrCtx\Ctx\setminus\dom\Sub$
 %
   \begin{enumerate}
-    \item If
-      $\HasType[\Eff[1]] \Ctx {\E[1]} \T$,
-      $\HasType \Ctx {\E[1]} \T \TransExp \TE*[1]$,
-      and
-      $\HasType[\Eff[2]] \Ctx {\E[2]} \T$,
-      $\HasType \Ctx {\E[2]} \T \TransExp \TE*[2]$,
-      then
-      $\E[1] \Reduces \E[2]$
-      iff
-      $\TE*[1] \Reduces \TE*[2]$.
+    %\item If
+    %  $\HasType[\Eff[1]] \Ctx {\E[1]} \T$,
+    %  $\HasType \Ctx {\E[1]} \T \TransExp \TE*[1]$,
+    %  and
+    %  $\HasType[\Eff[2]] \Ctx {\E[2]} \T$,
+    %  $\HasType \Ctx {\E[2]} \T \TransExp \TE*[2]$,
+    %  then
+    %  $\E[1] \Reduces \E[2]$
+    %  iff
+    %  $\TE*[1] \Reduces \TE*[2]$.
     \item If
       $\ProcHasType \Ctx \Proc$
       and
