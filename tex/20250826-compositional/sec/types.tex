@@ -2,10 +2,9 @@
 
 Figures in this section: syntax of types, equalities of contexts, weakening of
 contexts, session type laws (\cref{fig:syntax-types}); predicates
-$\Mobile$/$\Bounded$/$\Skips$ (\cref{fig:bounded-session-types}); typing rules
-of constants (\cref{fig:constant-typing}); typing rules (constants, variables,
-functions: \cref{fig:typing-functions}; pairs, let, case, weakening:
-\cref{fig:typing}; processes: \cref{fig:process-typing})
+$\Mobile$/$\Bounded$/$\Skips$ (\cref{fig:bounded-session-types}); typing of
+constants (\cref{fig:constant-typing}); typing of expressions
+(\cref{fig:typing}).
 
 When talking about contexts we may use the operator $\ctxcolor{\Ctx[1]
 \CtxPatOp \Ctx[2]}$ as a metavariable for context formers
@@ -227,19 +226,13 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
     \RuleTAppLin \and
     \RuleTAppLeft \and
     \RuleTAppRight \and
-  \end{mathpar}
-  \caption{Typing: constants, variables, and functions}
-  \label{fig:typing-functions}
-\end{figure}
-\begin{figure}
-  \begin{mathpar}
     \RuleTPairUnord \and
     \RuleTPairOrd \and
     \RuleTLet \and
     \RuleTLetUnit \and
     \RuleTLetUnord \and
     \RuleTLetOrd \and
-    \RuleTInLeft \and
+    \RuleTInj \and
     \RuleTCaseSum \and
     % \RuleTFork \and
     % \RuleTMatch \and
@@ -251,7 +244,7 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
     % \RuleTWeakE\Big)
   \end{mathpar}
    % TODO: Contraction? Exchange? Weakening on the right only?
-  \caption{Typing ($\HasType[\Eff]\Ctx\E\T$)}
+  \caption{Expression typing ($\HasType[\Eff]\Ctx\E\T$)}
   \label{fig:typing}
 \end{figure}
 

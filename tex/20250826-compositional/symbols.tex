@@ -386,9 +386,9 @@
 \newcommand*\HasTKind[3]{{#1}\vdash{#2}:{#3}}
 
 % Expression Typing
-\NewDocumentCommand \HasType {o m m m}
+\NewDocumentCommand \HasType {O{\Eff} m m m}
   {
-    \ctxcolor{#2} \vdash {#3} : {#4} \IfValueT{#1}{\mid{#1}}
+    \ctxcolor{#2} \vdash {#3} : {#4} \ifstrempty{#1}{}{\mid{#1}}
   }
 
 % Constant Typing
