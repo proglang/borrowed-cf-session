@@ -59,6 +59,24 @@ expressive type system from before.
   \label{fig:unr-syntax}
 \end{figure}
 
+\begin{figure}
+  \begin{mathpar}
+    %\RuleTransCongRefl \and
+    \RuleTransCongParComm \and
+    \RuleTransCongParAssoc \and
+    \RuleTransCongParUnit \and
+    \RuleTransCongResSwap \and
+    \RuleTransCongResComm \and
+    \RuleTransCongFlagComm \and
+    \RuleTransCongResFlagComm \and
+    \RuleTransCongResExtend \and
+    \RuleTransCongFlagExtend
+    %\RuleTransCongTrans
+  \end{mathpar}
+  \caption{Congruence rules of translated processes}
+  \label{fig:translated-congruence}
+\end{figure}
+
 The syntax of constants, values, and expressions remains unchanged.
 \Cref{fig:unr-syntax} gives a new definition of process configurations $\TProc$.
 

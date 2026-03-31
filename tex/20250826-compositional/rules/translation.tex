@@ -44,12 +44,14 @@
 \def\RuleCmdPrefix{RuleTransProc}
 \def\RuleNamePrefix{Tr-}
 
+% Tr-Exp
 \DefRule {Exp} {} {
   \PExp{\E}
   \TransProc
   \TPExp{\metacolor{\Sub{[\E*]}}}
 }
 
+% Tr-Par
 \DefRule {Par} {
   \Proc[1] \TransProc \TProc*[1] \\
   \Proc[2] \TransProc \TProc*[2]
@@ -59,6 +61,7 @@
   \TPPar {\TProc*[1]} {\TProc*[2]}
 }
 
+% Tr-Bind
 \DefRule {Bind} {
   \BindGroup[1] \TransBind[\TEChan \TEVar] {\TCC[1]} {\Sub[1]} \\
   \BindGroup[2] \TransBind[\TEChan \TEVary] {\TCC[2]} {\Sub[2]} \\

@@ -1,0 +1,92 @@
+% Congruence of translated processes
+
+\def\RuleNamePrefix{TrC-}
+\def\RuleCmdPrefix{RuleTransCong}
+
+% TrC-Refl
+\DefRule {Refl} {} {
+  \TProc \Congruent \TProc
+}
+
+% TrC-ParComm
+\DefRule {ParComm} {} {
+  \TPPar{\TProc[1]}{\TProc[2]}
+    \Congruent \TPPar{\TProc[2]}{\TProc[1]}
+}
+
+% TrC-ParAssoc
+\DefRule {ParAssoc} {} {
+  \TPPar{\TProc[1]}{(\TPPar{\TProc[2]}{\TProc[3]})}
+    \Congruent \TPPar{(\TPPar {\TProc[1]}{\TProc[2]})}{\TProc[3]}
+}
+
+% TrC-Trans
+\DefRule {Trans} {
+  \TProc[1] \Congruent \TProc[2] \\
+  \TProc[2] \Congruent \TProc[3]
+}{
+  \TProc[1] \Congruent \TProc[3]
+}
+
+% TrC-ParUnit
+\DefRule {ParUnit} {} {
+  \TPPar{\TPExp{\CUnit}}{\TProc} \Congruent \TProc
+}
+
+% TrC-ResSwap
+\DefRule {ResSwap} {} {
+  \TPNew[xy] \TProc
+    \Congruent \TPNew[yx] \TProc
+}
+
+% TrC-ResComm
+\DefRule {ResComm} {
+  \{\TEVar[1],\TEVary[1]\} \cap \{\TEVar[2],\TEVary[2]\} = \emptyset
+}{
+  \TPNew[x_1y_1] {\TPNew[x_2y_2] \TProc}
+  \Congruent
+  \TPNew[x_2y_2] {\TPNew[x_1y_1] \TProc} 
+}
+
+% TrC-FlagComm
+\DefRule {FlagComm} {
+  \TEVar \neq \TEVary
+}{
+  \TPSync \TEVar {\TPSync \TEVary \TProc}
+  \Congruent
+  \TPSync \TEVary {\TPSync \TEVar \TProc} 
+}
+
+% TrC-ResFlagComm
+\DefRule {ResFlagComm} {
+  \TEVarz \not\in \{\TEVar,\TEVary\}
+}{
+  \TPNew {\TPSync \TEVarz \TProc}
+  \Congruent
+  \TPSync \TEVarz {\TPNew \TProc} 
+}
+
+
+% TrC-ResExtend
+\DefRule {ResExtend} {
+  \TEVar,\TEVary \not\in \Fv(\TProc[1])
+}{
+  \TPPar{\TProc[1]}{\TPNew{\TProc[2]}}
+  \Congruent
+  {\TPNew{(\TPPar{\TProc[1]}{\TProc[2]})}}
+}
+
+% TrC-FlagExtend
+\DefRule {FlagExtend} {
+  \TEVar \not\in \Fv(\TProc[1])
+}{
+  \TPPar{\TProc[1]}{\TPSync \TEVar {\TProc[2]}}
+  \Congruent
+  {\TPSync \TEVar {(\TPPar{\TProc[1]}{\TProc[2]})}}
+}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:
