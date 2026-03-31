@@ -22,7 +22,7 @@ open Level
   public
 
 open import Function
-  hiding (id; seq)
+  hiding (seq)
   public
 
 import Data.Unit
