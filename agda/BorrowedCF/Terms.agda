@@ -8,20 +8,25 @@ open import Relation.Binary.Construct.Closure.Symmetric as Sym using (symmetric)
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Modes
-open import BorrowedCF.Types
-import BorrowedCF.Kits as Kits
+open import BorrowedCF.Types hiding (s; s₁; s₂; s₃; s′)
+open import BorrowedCF.Kits as Kits using (SortTy; Var; NoVar)
 
 open Nat.Variables
 
-data Sort : Set where
-  𝕖 𝕥 : Sort
+data Sort : SortTy → Set where
+  𝕖 : Sort Var
+  𝕥 : Sort NoVar
 
-Scope = List Sort
+Scope = List (Sort Var)
 
 variable
-  s s₁ s₂ s₃ s′ s₁′ s₂′ s₃′ : Sort
+  st : SortTy
+  s s₁ s₂ s₃ s′ s₁′ s₂′ s₃′ : Sort st
   S S₁ S₂ S₃ S′ : Scope
   x y z x₁ x₂ : s ∈ S
+
+data ParSeq : Set where
+  par seq : ParSeq
 
 infix 12 _∥_ _;_
 
@@ -76,14 +81,15 @@ _≈_ = EqClosure _≈′_
 ∥-cong xs ys = Eq*.gmap (_∥ _) ∥′-cong₁ xs ◅◅ ∥-comm ◅◅ Eq*.gmap (_∥ _) ∥′-cong₁ ys ◅◅ ∥-comm
 
 data Const : Set where
-  `new `fork `close `wait `send `recv `lsplit `rsplit `drop `acq : Const
+  `unit `fork `send `recv `drop `acq `end : Const
+  `new : 𝕊 0 → Const
+  `lsplit `rsplit : (s₁ s₂ : 𝕊 0) → Const
 
 infix 4 _⊢_
 
-data _⊢_ (S : Scope) : Sort → Set where
-  `_ : s ∈ S → S ⊢ s
-
+data _⊢_ (S : Scope) : Sort st → Set where
   -- Terms
+  `_ : 𝕖 ∈ S → S ⊢ 𝕖
   K : (c : Const) → S ⊢ 𝕖
   λ[_] : (d : Dir) (e : 𝕖 ∷ S ⊢ 𝕖) → S ⊢ 𝕖
   _·_ : (e₁ e₂ : S ⊢ 𝕖) → S ⊢ 𝕖
@@ -98,8 +104,8 @@ data _⊢_ (S : Scope) : Sort → Set where
 open module Syntax = Kits.Syntax record
   { Sort = Sort
   ; _⊢_ = λ S s → S ⊢ s
-  ; `_ = `_
-  ; `-injective = λ{ refl → refl }
+  ; `_ = λ{ {_} {𝕖} x → ` x }
+  ; `-injective = λ{ {_} {𝕖} refl → refl }
   }
   hiding (Sort; _⊢_; `_; Traversal)
   renaming (id to idₖ)
@@ -115,23 +121,23 @@ K c ⋯ ϕ = K c
 e₁ · e₂ ⋯ ϕ = (e₁ ⋯ ϕ) · (e₂ ⋯ ϕ)
 e₁ ,⟨ d ⟩ e₂ ⋯ ϕ = (e₁ ⋯ ϕ) ,⟨ d ⟩ (e₂ ⋯ ϕ)
 `let e₁ `in e₂ ⋯ ϕ = `let (e₁ ⋯ ϕ) `in (e₂ ⋯ ϕ ↑ 𝕖)
-`let⊗ e₁ `in e₂ ⋯ ϕ = `let⊗ (e₁ ⋯ ϕ) `in (e₂ ⋯ ϕ ↑ 𝕖 ↑ 𝕖)
+`let⊗ e₁ `in e₂ ⋯ ϕ = `let⊗ (e₁ ⋯ ϕ) `in (e₂ ⋯ ϕ ↑* [2* 𝕖 ])
 ⟨ t ⟩ ⋯ ϕ = ⟨ t ⟩
 
 ⋯-id : ⦃ K : Kit _∋/⊢_ ⦄ (x : S ⊢ s) → x ⋯ idₖ ≡ x
 ⋯-id (` x) = `/`-is-` x
 ⋯-id (x₁ ; x₂) = cong₂ _;_ (⋯-id x₁) (⋯-id x₂)
 ⋯-id (K x) = refl
-⋯-id (λ[ d ] e) = cong λ[ d ] (cong (e ⋯_) (~-ext id↑~id) ■ ⋯-id e)
+⋯-id (λ[ d ] e) = cong λ[ d ] (cong (e ⋯_) (∼-ext id↑∼id) ■ ⋯-id e)
 ⋯-id (e₁ · e₂) = cong₂ _·_ (⋯-id e₁) (⋯-id e₂)
 ⋯-id (e₁ ,⟨ d ⟩ e₂) = cong₂ (_,⟨ d ⟩_) (⋯-id e₁) (⋯-id e₂)
-⋯-id (`let e₁ `in e₂) = cong₂ `let_`in_ (⋯-id e₁) (cong (e₂ ⋯_) (~-ext id↑~id) ■ ⋯-id e₂)
-⋯-id (`let⊗ e₁ `in e₂) = cong₂ `let⊗_`in_ (⋯-id e₁) (cong (e₂ ⋯_) (~-ext (id↑*~id (𝕖 ∷ 𝕖 ∷ []))) ■ ⋯-id e₂)
+⋯-id (`let e₁ `in e₂) = cong₂ `let_`in_ (⋯-id e₁) (cong (e₂ ⋯_) (∼-ext id↑∼id) ■ ⋯-id e₂)
+⋯-id (`let⊗ e₁ `in e₂) = cong₂ `let⊗_`in_ (⋯-id e₁) (cong (e₂ ⋯_) (∼-ext (id↑*∼id [2* 𝕖 ])) ■ ⋯-id e₂)
 ⋯-id ⟨ t ⟩ = refl
 
 open module Traversal = Syntax.Traversal record
   { _⋯_ = _⋯_
-  ; ⋯-var = λ x ϕ → refl
+  ; ⋯-var = λ{ {s = 𝕖} x ϕ → refl }
   ; ⋯-id = ⋯-id
   }
   hiding (_⋯_; ⋯-id; CTraversal)
@@ -144,23 +150,24 @@ fusion (` x) ϕ₁ ϕ₂ = sym (&/⋯-⋯ (ϕ₁ _ x) ϕ₂)
 fusion (x₁ ; x₂) ϕ₁ ϕ₂ = cong₂ _;_ (fusion x₁ ϕ₁ ϕ₂) (fusion x₂ ϕ₁ ϕ₂)
 fusion (K c) ϕ₁ ϕ₂ = refl
 fusion (λ[ d ] e) ϕ₁ ϕ₂ = cong λ[ d ] $
-  fusion e (ϕ₁ ↑ 𝕖) (ϕ₂ ↑ 𝕖) ■ cong (e ⋯_) (sym (~-ext (dist-↑-· 𝕖 ϕ₁ ϕ₂)))
+  fusion e (ϕ₁ ↑ 𝕖) (ϕ₂ ↑ 𝕖) ■ cong (e ⋯_) (sym (∼-ext (dist-↑-· 𝕖 ϕ₁ ϕ₂)))
 fusion (e₁ · e₂) ϕ₁ ϕ₂ = cong₂ _·_ (fusion e₁ ϕ₁ ϕ₂) (fusion e₂ ϕ₁ ϕ₂)
 fusion (e₁ ,⟨ d ⟩ e₂) ϕ₁ ϕ₂ = cong₂ (_,⟨ d ⟩_) (fusion e₁ ϕ₁ ϕ₂) (fusion e₂ ϕ₁ ϕ₂)
 fusion (`let e₁ `in e₂) ϕ₁ ϕ₂ = cong₂ `let_`in_ (fusion e₁ ϕ₁ ϕ₂) $
   fusion e₂ (ϕ₁ ↑ 𝕖) (ϕ₂ ↑ 𝕖)
-    ■ (cong (e₂ ⋯_) (sym (~-ext (dist-↑-· 𝕖 ϕ₁ ϕ₂))))
+    ■ (cong (e₂ ⋯_) (sym (∼-ext (dist-↑-· 𝕖 ϕ₁ ϕ₂))))
 fusion (`let⊗ e₁ `in e₂) ϕ₁ ϕ₂ = cong₂ `let⊗_`in_ (fusion e₁ ϕ₁ ϕ₂) $
-  fusion e₂ (ϕ₁ ↑ 𝕖 ↑ 𝕖) (ϕ₂ ↑ 𝕖 ↑ 𝕖)
-    ■ cong (e₂ ⋯_) (sym (~-ext (dist-↑*-· (𝕖 ∷ 𝕖 ∷ []) ϕ₁ ϕ₂)))
+  fusion e₂ (ϕ₁ ↑* [2* 𝕖 ]) (ϕ₂ ↑* [2* 𝕖 ])
+    ■ cong (e₂ ⋯_) (sym (∼-ext (dist-↑*-· [2* 𝕖 ] ϕ₁ ϕ₂)))
 fusion ⟨ t ⟩ ϕ₁ ϕ₂ = refl
 
 open module CTraversal = Traversal.CTraversal record { fusion = fusion }
   hiding (fusion; Types)
   public
 
-open module Types = CTraversal.Types record { ↑ᵗ = λ x → 𝕥}
+open module Types = CTraversal.Types record { ↑ᵗ = λ x → _ , 𝕥 }
   hiding (Typing)
+  renaming (lookup to lookupCx)
   public
 
 variable
@@ -175,26 +182,146 @@ _⋯𝓢_ : Struct S → S →ᵣ S′ → Struct S′
 x ∥ y ⋯𝓢 ρ = (x ⋯𝓢 ρ) ∥ (y ⋯𝓢 ρ)
 x ; y ⋯𝓢 ρ = (x ⋯𝓢 ρ) ; (y ⋯𝓢 ρ)
 
+lookup-𝕋 : Ctx S → s ∈ S → 𝕋
+lookup-𝕋 Γ x with ⟨ t ⟩ ← lookupCx Γ x = t
+
+lookupCx≡⟨lookup-𝕋⟩ : (Γ : Ctx S) (x : 𝕖 ∈ S) → lookupCx Γ x ≡ ⟨ lookup-𝕋 Γ x ⟩
+lookupCx≡⟨lookup-𝕋⟩ Γ x with ⟨ t ⟩ ← lookupCx Γ x = refl
+
+data MobCx {S} (Γ : Ctx S) : Struct S → Set where
+  []  : MobCx Γ []
+  _∥_ : MobCx Γ α₁ → MobCx Γ α₂ → MobCx Γ (α₁ ∥ α₂)
+  _;_ : MobCx Γ α₁ → MobCx Γ α₂ → MobCx Γ (α₁ ; α₂)
+  `_  : Mobile (lookup-𝕋 Γ x) → MobCx Γ (` x)
+
+joinP/S : ParSeq → Struct S → Struct S → Struct S
+joinP/S par = _∥_
+joinP/S seq = _;_
+
+joinDir : Dir → Struct S → Struct S → Struct S
+joinDir 𝟙 = _∥_
+joinDir L = _;_
+joinDir R = flip _;_
+
+Split : Dir → Struct S → Struct S → Struct S → Set
+Split d α α₁ α₂ = α ≈ joinDir d α₁ α₂
+
+infix 4 ⊢_∶_
+
+private
+  _→m,1_∣_ : 𝕋 → 𝕋 → Eff → 𝕋
+  t →m,1 u ∣ ϵ = arr mob 𝟙 ϵ t u
+
+data ⊢_∶_ : Const → 𝕋 → Set where
+  `unit : ⊢ `unit ∶ unit
+  `new : ∀ {s} → ⊢ `new s ∶ arr mob 𝟙 ϵ unit (pair 𝟙 ⟨ acq ; s ⟩ ⟨ acq ; dual s ⟩)
+  `lsplit : ∀ {s₁ s₂} → ⊢ `lsplit s₁ s₂ ∶ arr mob 𝟙 ϵ ⟨ s₁ ; s₂ ⟩ (pair L ⟨ s₁ ⟩ ⟨ s₂ ⟩)
+  `rsplit : ∀ {s₁ s₂} → ⊢ `rsplit s₁ s₂ ∶ arr mob 𝟙 ϵ ⟨ s₁ ; s₂ ⟩ (pair 𝟙 ⟨ s₁ ; ret ⟩ ⟨ acq ; s₂ ⟩)
+  `drop : ⊢ `drop ∶ arr mob 𝟙 ϵ ⟨ ret ⟩ unit
+  `acq : ∀ {s} → ⊢ `acq ∶ ⟨ acq ; s ⟩ →m,1 ⟨ s ⟩ ∣ ϵ
+  `fork : ⊢ `fork ∶ (unit →m,1 unit ∣ 𝕀) →m,1 unit ∣ ϵ
+  `send : ∀ {t} → Mobile t → ⊢ `send ∶ pair 𝟙 t ⟨ msg ‼ t ⟩ →m,1 unit ∣ 𝕀
+  `recv : ∀ {t} → Mobile t → ⊢ `recv ∶ ⟨ msg ⁇ t ⟩ →m,1 t ∣ 𝕀
+  `end : ⊢ `end ∶ ⟨ end p ⟩ →m,1 unit ∣ 𝕀
+
 infix 4 _;_⊢_∶_∣_
 
-data _;_⊢_∶_∣_ {S} : Ctx S → Struct S → S ⊢ 𝕖 → 𝕋 → Eff → Set where
---  T-Var : ∀ {x} →
---    Γ ; α ⊢ ` x : ? ∣
+data _;_⊢_∶_∣_ {S} (Γ : Ctx S) (γ : Struct S) : S ⊢ 𝕖 → 𝕋 → Eff → Set where
+  T-Const : ∀ {c t} →
+    γ ≈ [] →
+    ⊢ c ∶ t →
+    -------------------
+    Γ ; γ ⊢ K c ∶ t ∣ ϵ
 
-  T-AbsLin : ∀ {e t u} →
-    ⟨ t ⟩ ∷ Γ ; (α ⋯𝓢 weaken _) ∥ ` here refl ⊢ e ∶ u ∣ ϵ′ →
-    -------------------------------------
-    Γ ; α ⊢ λ[ 𝟙 ] e ∶ arr 𝓂 𝟙 ϵ′ t u ∣ ϵ
+  T-Var : ∀ {x t} →
+    γ ≈ ` x →
+    lookupCx Γ x ≡ ⟨ t ⟩ →
+    ----------------------
+    Γ ; γ ⊢ ` x ∶ t ∣ ϵ
 
--- data Const : Set where
---   `new `fork `close `wait `send `recv `lsplit `rsplit `drop `acq : Const
+  T-Abs : ∀ {e t u} →
+    (𝓂 ≡ mob → MobCx Γ α) →
+    ⟨ t ⟩ ∷ Γ ; joinDir d (` here refl) (γ ⋯𝓢 weaken _) ⊢ e ∶ u ∣ ϵ′ →
+    -----------------------------------------------------------------
+    Γ ; γ ⊢ λ[ 𝟙 ] e ∶ arr 𝓂 d ϵ′ t u ∣ ϵ
 
--- data Tm (n : ℕ) : Set where
---   ⟨_⟩ : Const → Tm n
---   `_ : (x : 𝔽 n) → Tm n
---   λ[_] : Dir → Tm (suc n) → Tm n
---   _·_ : Tm n → Tm n → Tm n
---   _;_ : Tm n → Tm n → Tm n
---   _,⟨_⟩_ : Tm n → Dir → Tm n → Tm n
---   `let_`in_ : Tm n → Tm (1 + n) → Tm n
---   `let⊗_`in_ : Tm n → Tm (2 + n) → Tm n
+  T-App : ∀ {e₁ e₂ t u} →
+    Split d γ γ₁ γ₂                 →
+    Γ ; γ₁ ⊢ e₁ ∶ arr 𝓂 d ϵ t u ∣ ϵ →
+    Γ ; γ₂ ⊢ e₂ ∶ t             ∣ ϵ →
+    ---------------------------------
+    Γ ; γ ⊢ e₁ · e₂ ∶ u ∣ ϵ
+
+  T-Let : ∀ {e₁ e₂ t u} (p/s : ParSeq) →
+    γ ≈ joinP/S p/s γ₁ γ₂ →
+    Γ ; γ₁ ⊢ e₁ ∶ t ∣ ϵ →
+    ⟨ t ⟩ ∷ Γ ; joinP/S p/s (` here refl) (γ₂ ⋯𝓢 weaken _) ⊢ e₂ ∶ u ∣ ϵ →
+    ---------------------------------------------------------------------
+    Γ ; γ ⊢ `let e₁ `in e₂ ∶ u ∣ ϵ
+
+  T-LetUnit : ∀ {e₁ e₂ t} (p/s : ParSeq) →
+    γ ≈ joinP/S p/s γ₁ γ₂ →
+    Γ ; γ₁ ⊢ e₁ ∶ unit ∣ ϵ →
+    Γ ; γ₂ ⊢ e₂ ∶ t    ∣ ϵ →
+    ---------------------------------------
+    Γ ; γ ⊢ e₁ ; e₂ ∶ t ∣ ϵ
+
+  T-LetPair : ∀ {e₁ e₂ t₁ t₂ u} (p/s : ParSeq) →
+    γ ≈ joinP/S p/s γ₁ γ₂ →
+    Γ ; γ₁ ⊢ e₁ ∶ pair d t₁ t₂ ∣ ϵ →
+    ⟨ t₁ ⟩ ∷ ⟨ t₂ ⟩ ∷ Γ ;
+      joinP/S p/s (joinDir d (` here refl) (` there (here refl)))
+                  (γ₂ ⋯𝓢 weaken* [2* 𝕖 ])
+      ⊢ e₂ ∶ u ∣ ϵ →
+    ---------------------------------------
+    Γ ; γ ⊢ `let⊗ e₁ `in e₂ ∶ u ∣ ϵ
+
+record TKit (K : Kit _∋/⊢_) : Set₁ where
+  private instance _ = K
+  infix 4 _∋/⊢_∶_ _∶_;_⇒_;_
+  infixl 6 _⊢↑_
+
+--  field _∋/⊢_∶_
+
+  _∶_;_⇒_;_ : S₁ –[ K ]→ S₂ → Ctx S₁ → Struct S₁ → Ctx S₂ → Struct S₂ → Set
+  _∶_;_⇒_;_ {S₁} {S₂} ϕ Γ₁ γ₁ Γ₂ γ₂ = ?
+
+-- infix 4 _⊢_∶_
+
+-- data _⊢_∶_ (Γ : Ctx S) : S ⊢ s → S ∶⊢ s → Set where
+--   ⟨_⟩ : ∀ {e t} → Γ ; γ ⊢ e ∶ t ∣ ϵ → Γ ⊢ e ∶ ⟨ t ⟩
+
+-- open module Typing = Types.Typing record
+--   { _⊢_∶_ = λ Γ e t → Γ ⊢ e ∶ t
+--   ; ⊢` = λ{ {s = 𝕖} {Γ = Γ} {x} refl →
+--                subst (λ t → Γ ⊢ ` x ∶ t)
+--                      (sym (lookupCx≡⟨lookup-𝕋⟩ Γ x))
+--                      ⟨ T-Var {ϵ = ℙ} (Eq*.reflexive _) (lookupCx≡⟨lookup-𝕋⟩ Γ x) ⟩
+--          }
+--   }
+--   hiding (_⊢_∶_)
+--   public
+
+-- ⟨_⟩⊢⋯_ : ⦃ K : Kit _∋/⊢_ ⦄ ⦃ W : WkKit K ⦄ ⦃ TK : TKit K ⦄
+--        ⦃ C₁ : CKit K Kᵣ K ⦄ ⦃ C₂ : CKit K K K ⦄ ⦃ C₃ : CKit K Kₛ Kₛ ⦄
+--        {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st}
+--        {e : S₁ ⊢ 𝕖} {t : 𝕋} {ϕ : S₁ –[ K ]→ S₂} →
+--        Γ₁ ; γ₁ ⊢ e ∶ t ∣ ϵ →
+--        ϕ ∶ Γ₁ ⇒ₖ Γ₂ →
+--        Γ₂ ; γ₂ ⊢ e ⋯ ϕ ∶ t ∣ ϵ
+-- ⟨ T-Const x x₁ ⟩⊢⋯ ⊢ϕ = {!!}
+-- ⟨ T-Var x x₁ ⟩⊢⋯ ⊢ϕ = {!!}
+-- ⟨ T-Abs x e ⟩⊢⋯ ⊢ϕ = {!!}
+-- ⟨ T-App γ e₁ e₂ ⟩⊢⋯ ⊢ϕ = T-App {!!} {!!} {!!}
+-- ⟨ T-Let p/s x e e₁ ⟩⊢⋯ ⊢ϕ = {!!}
+-- ⟨ T-LetUnit p/s x e e₁ ⟩⊢⋯ ⊢ϕ = {!!}
+-- ⟨ T-LetPair p/s x e e₁ ⟩⊢⋯ ⊢ϕ = {!!}
+
+-- _⊢⋯_ : ⦃ K : Kit _∋/⊢_ ⦄ ⦃ W : WkKit K ⦄ ⦃ TK : TKit K ⦄
+--        ⦃ C₁ : CKit K Kᵣ K ⦄ ⦃ C₂ : CKit K K K ⦄ ⦃ C₃ : CKit K Kₛ Kₛ ⦄
+--        {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st}
+--        {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} {ϕ : S₁ –[ K ]→ S₂} →
+--        Γ₁ ⊢ e ∶ t →
+--        ϕ ∶ Γ₁ ⇒ₖ Γ₂ →
+--        Γ₂ ⊢ e ⋯ ϕ ∶ t ⋯ ϕ
+-- ⟨ e ⟩ ⊢⋯ ⊢ϕ = ⟨ {!⟨ e ⟩ ⊢⋯ ⊢ϕ!} ⟩

@@ -6,7 +6,7 @@ import Relation.Binary.HeterogeneousEquality
 
 open module ≡ = Relation.Binary.PropositionalEquality
   renaming (trans to infixr 1 _■_)
-  hiding ([_])
+  hiding ([_]; J)
   public
 
 open module ≅ = Relation.Binary.HeterogeneousEquality
@@ -22,7 +22,7 @@ open Level
   public
 
 open import Function
-  hiding (seq)
+  hiding (seq; _⟨_⟩_)
   public
 
 import Data.Unit
@@ -69,12 +69,16 @@ module L where
   open import Data.List public
   open import Data.List.Properties public
 
-open L using (List; []; _∷_; _++_) public
+  [2*_] : ∀ {a} {A : Set a} → A → List A
+  [2* x ] = x ∷ x ∷ []
+
+open L using (List; []; _∷_; _++_; [2*_]) public
 
 module V where
   open import Data.Vec public
   open import Data.Vec.Properties public
 
+{-
   record IsMapOp {a b c} {A : Set a} {B : Set b} {C : Set c}
                  (f* : ∀ {k} → Vec A k → B → Vec C k)
                  (f : A → B → C)
@@ -90,9 +94,10 @@ module V where
 
     lookup-map′ : ∀ {k} as b (i : 𝔽 k) → lookup (f* as b) i ≡ f (lookup as i) b
     lookup-map′ as b i = cong (λ as′ → lookup as′ i) (map-≡ as b) ■ lookup-map i (_⟨ f ⟩ b) as
+-}
 
-open V using (Vec; []; _∷_; lookup; lookup-map; ∷-injective; IsMapOp) public
-open V.IsMapOp ⦃ … ⦄ using (map-≡; lookup-map′) public
+open V using (Vec; []; _∷_; lookup; lookup-map; ∷-injective {- ; IsMapOp -}) public
+-- open V.IsMapOp ⦃ … ⦄ using (map-≡; lookup-map′) public
 
 module Π where
   open import Data.Product public
@@ -124,6 +129,7 @@ open module Un = Relation.Unary
 open import Data.Bool using (true; false) public
 open import Relation.Nullary public
 
+{-
 Π/+ : ℕ × ℕ → ℕ
 Π/+ (m , n) = m + n
 
@@ -136,3 +142,4 @@ IsMapOp₂ f* f = ∀ {k} as b → f* {k} as b ≡ V.map (_⟨ f ⟩ b) as
 infix 1 IsMapOp₁ IsMapOp₂
 
 syntax IsMapOp₂ {A = A} {B} f* f = f* Lifts f on A × B
+-}

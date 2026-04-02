@@ -17,22 +17,25 @@ private
   pattern zero  = here refl
   pattern suc x = there x
 
+data SortTy : Set where Var NoVar : SortTy
+
 record Syntax : Set₁ where
-  field  Sort         : Set
-         _⊢_          : List Sort → Sort → Set
-         `_           : ∀ {S} {s : Sort} → S ∋ s → S ⊢ s
+  field  Sort         : SortTy → Set
+         _⊢_          : ∀ {st} → List (Sort Var) → Sort st → Set
+         `_           : ∀ {S} {s : Sort Var} → S ∋ s → S ⊢ s
          `-injective  : ∀ {S s} {x y : S ∋ s} → ` x ≡ ` y → x ≡ y
 
   private variable
-    s s₁ s₂ s₃ s' s₁' s₂' s₃'  : Sort
-    S S₁ S₂ S₃ S' S₁' S₂' S₃'  : List Sort
+    st                         : SortTy
+    s s₁ s₂ s₃ s' s₁' s₂' s₃'  : Sort st
+    S S₁ S₂ S₃ S' S₁' S₂' S₃'  : List (Sort Var)
     x y z x₁ x₂                : S ∋ s
 
-  Scoped = List Sort → Sort → Set
+  Scoped = List (Sort Var) → Sort Var → Set
 
   variable _∋/⊢_  _∋/⊢₁_ _∋/⊢₂_ : Scoped
 
-  record Kit (_∋/⊢_ : List Sort → Sort → Set) : Set where
+  record Kit (_∋/⊢_ : List (Sort Var) → Sort Var → Set) : Set where
     field  id/`            : S ∋ s → S ∋/⊢ s
            `/id            : S ∋/⊢ s → S ⊢ s
            wk              : ∀ s' → S ∋/⊢ s → (s' ∷ S) ∋/⊢ s
@@ -42,7 +45,7 @@ record Syntax : Set₁ where
            wk-id/`         :  ∀ s' (x : S ∋ s) → wk s' (id/` x) ≡ id/` (suc x)
 
     infix 4 _→ₖ_
-    _→ₖ_ : List Sort → List Sort → Set
+    _→ₖ_ : List (Sort Var) → List (Sort Var) → Set
     S₁ →ₖ S₂ = ∀ s → S₁ ∋ s → S₂ ∋/⊢ s
 
     infixl  8  _&_
@@ -60,7 +63,6 @@ record Syntax : Set₁ where
     (x/t ∷ₖ ϕ) _ zero     = x/t
     (x/t ∷ₖ ϕ) _ (suc x)  = ϕ _ x
 
-    infixl 20 _↑_
     _↑_ : S₁ →ₖ S₂ → ∀ s → (s ∷ S₁) →ₖ (s ∷ S₂)
     ϕ ↑ s = id/` zero ∷ₖ wkm s ϕ
 
@@ -74,16 +76,16 @@ record Syntax : Set₁ where
     weaken* []      = id
     weaken* (s ∷ S) = wkm s (weaken* S)
 
-    infix 4 _~_
+    infix 4 _∼_
 
-    _~_ : (ϕ₁ ϕ₂ : S₁ →ₖ S₂) → Set
-    _~_ {S₁} ϕ₁ ϕ₂ = ∀ s (x : S₁ ∋ s) → ϕ₁ s x ≡ ϕ₂ s x
+    _∼_ : (ϕ₁ ϕ₂ : S₁ →ₖ S₂) → Set
+    _∼_ {S₁} ϕ₁ ϕ₂ = ∀ s (x : S₁ ∋ s) → ϕ₁ s x ≡ ϕ₂ s x
 
-    postulate ~-ext : ∀ {ϕ₁ ϕ₂ : S₁ →ₖ S₂} → ϕ₁ ~ ϕ₂ → ϕ₁ ≡ ϕ₂
+    postulate ∼-ext : ∀ {ϕ₁ ϕ₂ : S₁ →ₖ S₂} → ϕ₁ ∼ ϕ₂ → ϕ₁ ≡ ϕ₂
 
-    id↑~id : (id {S} ↑ s) ~ id {s ∷ S}
-    id↑~id s zero    = refl
-    id↑~id s (suc x) =
+    id↑∼id : (id {S} ↑ s) ∼ id {s ∷ S}
+    id↑∼id s zero    = refl
+    id↑∼id s (suc x) =
       (id ↑ _) s (suc x) ≡⟨⟩
       wk _ (id/` x)      ≡⟨ wk-id/` _ x ⟩
       id/` (suc x)       ≡⟨⟩
@@ -95,34 +97,34 @@ record Syntax : Set₁ where
     ϕ ↑* (s ∷ S)  = (ϕ ↑* S) ↑ s
 
     -- only necessary for `Generics.agda`; not counted for line numbers
-    id↑*~id : ∀ S → (id ↑* S) ~ id {S ++ S'}
-    id↑*~id []      sx x = refl
-    id↑*~id (s ∷ S) sx x =
-      ((id ↑* S) ↑ s) sx x ≡⟨ cong (λ ■ → (■ ↑ s) sx x) (~-ext (id↑*~id S)) ⟩
-      (id ↑ s) sx x        ≡⟨ id↑~id sx x ⟩
+    id↑*∼id : ∀ S → (id ↑* S) ∼ id {S ++ S'}
+    id↑*∼id []      sx x = refl
+    id↑*∼id (s ∷ S) sx x =
+      ((id ↑* S) ↑ s) sx x ≡⟨ cong (λ ■ → (■ ↑ s) sx x) (∼-ext (id↑*∼id S)) ⟩
+      (id ↑ s) sx x        ≡⟨ id↑∼id sx x ⟩
       id sx x              ∎
 
   infix 4 _∋/⊢[_]_ _–[_]→_
 
-  _∋/⊢[_]_ :  List Sort → Kit _∋/⊢_ → Sort → Set
+  _∋/⊢[_]_ :  List (Sort Var) → Kit _∋/⊢_ → Sort Var → Set
   _∋/⊢[_]_ {_∋/⊢_} S K s = S ∋/⊢ s
 
-  _–[_]→_ :  List Sort → Kit _∋/⊢_ → List Sort → Set
+  _–[_]→_ :  List (Sort Var) → Kit _∋/⊢_ → List (Sort Var) → Set
   S₁ –[ K ]→ S₂ = Kit._→ₖ_ K S₁ S₂
 
   open Kit ⦃ … ⦄ public
 
   record Traversal : Set₁ where
-    infixl 5 _⋯_
+    infixl 5 _⋯_ _⋯ᵣ_ _⋯ₛ_
     field  _⋯_    : ∀ ⦃ K : Kit _∋/⊢_ ⦄ → S₁ ⊢ s → S₁ –[ K ]→ S₂ → S₂ ⊢ s
            ⋯-var  : ∀ ⦃ K : Kit _∋/⊢_ ⦄ (x : S₁ ∋ s) (ϕ : S₁ –[ K ]→ S₂) → (` x) ⋯ ϕ ≡ `/id (x & ϕ)
            ⋯-id   : ∀ ⦃ K : Kit _∋/⊢_ ⦄ (t : S ⊢ s) → t ⋯ id ⦃ K ⦄ ≡ t
 
-    ⋯-cong : ⦃ K : Kit _∋/⊢_ ⦄ (t : S₁ ⊢ s) {ϕ₁ ϕ₂ : S₁ –[ K ]→ S₂} → ϕ₁ ~ ϕ₂ → t ⋯ ϕ₁ ≡ t ⋯ ϕ₂
-    ⋯-cong t ϕ~ = cong (t ⋯_) (~-ext ϕ~)
+    ⋯-cong : ⦃ K : Kit _∋/⊢_ ⦄ (t : S₁ ⊢ s) {ϕ₁ ϕ₂ : S₁ –[ K ]→ S₂} → ϕ₁ ∼ ϕ₂ → t ⋯ ϕ₁ ≡ t ⋯ ϕ₂
+    ⋯-cong t ϕ∼ = cong (t ⋯_) (∼-ext ϕ∼)
 
-    ⋯-id~ : ⦃ K : Kit _∋/⊢_ ⦄ (t : S ⊢ s) {ϕ : S –[ K ]→ S} → ϕ ~ id → t ⋯ ϕ ≡ t
-    ⋯-id~ t ϕ~id = trans (⋯-cong t ϕ~id) (⋯-id t)
+    ⋯-id∼ : ⦃ K : Kit _∋/⊢_ ⦄ (t : S ⊢ s) {ϕ : S –[ K ]→ S} → ϕ ∼ id → t ⋯ ϕ ≡ t
+    ⋯-id∼ t ϕ∼id = trans (⋯-cong t ϕ∼id) (⋯-id t)
 
     instance
       Kᵣ : Kit _∋_
@@ -143,6 +145,13 @@ record Syntax : Set₁ where
     open Kit Kₛ public using () renaming
       (_→ₖ_ to infix 4 _→ₛ_; wkm to wkmₛ; _∷ₖ_ to _∷ₛ_; _↑_ to _↑ₛ_;
        id to idₛ; ⦅_⦆ to ⦅_⦆ₛ; weaken to weakenₛ)
+
+    _⋯ᵣ_ : S₁ ⊢ s → S₁ –[ Kᵣ ]→ S₂ → S₂ ⊢ s
+    _⋯ᵣ_ = _⋯_
+
+
+    _⋯ₛ_ : S₁ ⊢ s → S₁ –[ Kₛ ]→ S₂ → S₂ ⊢ s
+    _⋯ₛ_ = _⋯_
 
     record WkKit (K : Kit _∋/⊢_): Set₁ where
       private instance _ = K
@@ -175,7 +184,7 @@ record Syntax : Set₁ where
           `/id ⦃ K₂ ⦄  (x & ϕ)      ∎
 
       dist-↑-· :  ∀ s (ϕ₁ : S₁ –[ K₁ ]→ S₂) (ϕ₂ : S₂ –[ K₂ ]→ S₃) →
-                  ((ϕ₁ ·ₖ ϕ₂) ↑ s) ~ ((ϕ₁ ↑ s) ·ₖ (ϕ₂ ↑ s))
+                  ((ϕ₁ ·ₖ ϕ₂) ↑ s) ∼ ((ϕ₁ ↑ s) ·ₖ (ϕ₂ ↑ s))
       dist-↑-· s ϕ₁ ϕ₂ s₁ x@zero = `/id-injective (
         `/id ⦃ K₁⊔K₂ ⦄ (x & ((ϕ₁ ·ₖ ϕ₂) ↑ s))        ≡⟨⟩
         `/id ⦃ K₁⊔K₂ ⦄ (id/` zero)                   ≡⟨ `/`-is-` ⦃ K₁⊔K₂ ⦄ zero ⟩
@@ -197,11 +206,11 @@ record Syntax : Set₁ where
 
       -- only necessary for `Generics.agda`; not counted for line numbers
       dist-↑*-· :  ∀ S (ϕ₁ : S₁ –[ K₁ ]→ S₂) (ϕ₂ : S₂ –[ K₂ ]→ S₃) →
-                   ((ϕ₁ ·ₖ ϕ₂) ↑* S) ~ ((ϕ₁ ↑* S) ·ₖ (ϕ₂ ↑* S))
+                   ((ϕ₁ ·ₖ ϕ₂) ↑* S) ∼ ((ϕ₁ ↑* S) ·ₖ (ϕ₂ ↑* S))
       dist-↑*-· []      ϕ₁ ϕ₂ sx x = refl
       dist-↑*-· (s ∷ S) ϕ₁ ϕ₂ sx x =
         ((ϕ₁ ·ₖ ϕ₂) ↑* (s ∷ S)) sx x              ≡⟨⟩
-        (((ϕ₁ ·ₖ ϕ₂) ↑* S) ↑ s) sx x              ≡⟨ cong (λ ■ → (■ ↑ s) sx x) (~-ext (dist-↑*-· S ϕ₁ ϕ₂)) ⟩
+        (((ϕ₁ ·ₖ ϕ₂) ↑* S) ↑ s) sx x              ≡⟨ cong (λ ■ → (■ ↑ s) sx x) (∼-ext (dist-↑*-· S ϕ₁ ϕ₂)) ⟩
         (((ϕ₁ ↑* S) ·ₖ (ϕ₂ ↑* S)) ↑ s) sx x       ≡⟨ dist-↑-· s (ϕ₁ ↑* S) (ϕ₂ ↑* S) sx x ⟩
         (((ϕ₁ ↑* S) ↑ s) ·ₖ ((ϕ₂ ↑* S) ↑ s)) sx x ≡⟨⟩
         ((ϕ₁ ↑* (s ∷ S)) ·ₖ (ϕ₂ ↑* (s ∷ S))) sx x ∎
@@ -221,7 +230,7 @@ record Syntax : Set₁ where
                (t ⋯ ϕ₁) ⋯ ϕ₂ ≡ t ⋯ (ϕ₁ ·ₖ ϕ₂)
 
       ↑-wk :  ∀  ⦃ K : Kit _∋/⊢_ ⦄ ⦃ W : WkKit K ⦄ ⦃ C₁ : CKit K Kᵣ K ⦄ ⦃ C₂ : CKit Kᵣ K K ⦄
-                 (ϕ : S₁ –[ K ]→ S₂) s → (ϕ ·ₖ weaken s) ~ (weaken s ·ₖ (ϕ ↑ s))
+                 (ϕ : S₁ –[ K ]→ S₂) s → (ϕ ·ₖ weaken s) ∼ (weaken s ·ₖ (ϕ ↑ s))
       ↑-wk {S₁} {S₂} ϕ s sx x = `/id-injective (
           `/id ((ϕ ·ₖ weaken s) sx x)        ≡⟨⟩
           `/id (x & ϕ &/⋯ weaken s)          ≡⟨ &/⋯-⋯ (x & ϕ) (weaken s) ⟩
@@ -236,7 +245,7 @@ record Syntax : Set₁ where
                 t ⋯ ϕ ⋯ weaken s ≡ t ⋯ weaken s ⋯ (ϕ ↑ s)
       ⋯-↑-wk t ϕ s =
         t ⋯ ϕ ⋯ weaken s           ≡⟨ fusion t ϕ (weaken s) ⟩
-        t ⋯ (ϕ ·ₖ weaken s)        ≡⟨ cong (t ⋯_) (~-ext (↑-wk ϕ s)) ⟩
+        t ⋯ (ϕ ·ₖ weaken s)        ≡⟨ cong (t ⋯_) (∼-ext (↑-wk ϕ s)) ⟩
         t ⋯ (weaken s ·ₖ (ϕ ↑ s))  ≡⟨ sym (fusion t (weaken s) (ϕ ↑ s)) ⟩
         t ⋯ weaken s ⋯ (ϕ ↑ s)     ∎
 
@@ -250,7 +259,41 @@ record Syntax : Set₁ where
                      ; &/⋯-⋯     = λ t ϕ → refl
                      ; &/⋯-wk-↑  = λ t ϕ → ⋯-↑-wk t ϕ _ }
 
-      wk-cancels-⦅⦆ : ∀ ⦃ K : Kit _∋/⊢_ ⦄ (x/t : S ∋/⊢[ K ] s) → (weaken s ·ₖ ⦅ x/t ⦆) ~ id
+      ↑*-wk :  ∀  ⦃ K : Kit _∋/⊢_ ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄
+                  (ϕ : S₁ –[ K ]→ S₂) S → (ϕ ·ₖ weaken* S) ∼ (weaken* S ·ₖ (ϕ ↑* S))
+      ↑*-wk ⦃ K ⦄ ϕ [] sx x = `/id-injective (
+        `/id ((ϕ ·ₖ weaken* []) sx x)  ≡⟨⟩
+        `/id (x & ϕ &/⋯ id)            ≡⟨ &/⋯-⋯ (x & ϕ) id ⟩
+        `/id (x & ϕ) ⋯ id              ≡⟨ ⋯-id (`/id (x & ϕ)) ⟩
+        `/id (x & ϕ)                   ≡⟨ &/⋯-& ⦃ Cᵣ ⦄ x ϕ ⟨
+        `/id (x &/⋯ ϕ)                 ≡⟨⟩
+        `/id ⦃ K ⦄ ((weaken* [] ·ₖ (ϕ ↑* [])) sx x) ∎)
+      ↑*-wk ⦃ K ⦄ ϕ (s ∷ S) sx x = `/id-injective (
+        `/id (x & ϕ ·ₖ weaken* (s ∷ S))               ≡⟨⟩
+        `/id (x & ϕ &/⋯ weaken* (s ∷ S))              ≡⟨ &/⋯-⋯ {K₁ = K} {K₂ = Kᵣ} (x & ϕ) (weaken* (s ∷ S)) ⟩
+        `/id (x & ϕ) ⋯ᵣ weaken* (s ∷ S)               ≡⟨⟩
+        `/id (x & ϕ) ⋯ᵣ weaken* S ·ₖ weakenᵣ s        ≡⟨ fusion (`/id (x & ϕ)) (weaken* S) (weakenᵣ s) ⟨
+        `/id (x & ϕ) ⋯ᵣ weaken* S ⋯ weakenᵣ s         ≡⟨ cong (_⋯ weakenᵣ s) (&/⋯-⋯ (x & ϕ) (weaken* S)) ⟨
+        `/id (x & ϕ &/⋯ weaken* S) ⋯ weakenᵣ s        ≡⟨⟩
+        `/id (x & ϕ ·ₖ weaken* S) ⋯ weakenᵣ s         ≡⟨ cong (λ ϕ′ → `/id (x & ϕ′) ⋯ weakenᵣ s) (∼-ext (↑*-wk ϕ S)) ⟩
+        `/id ⦃ K ⦄ (x & weaken* S ·ₖ (ϕ ↑* S)) ⋯ weakenᵣ s  ≡⟨⟩
+        `/id ⦃ K ⦄ (x & weaken* S &/⋯ ϕ ↑* S) ⋯ weakenᵣ s   ≡⟨ cong (_⋯ weakenᵣ s) (&/⋯-⋯ {K₁ = Kᵣ} (x & weaken* S) (ϕ ↑* S)) ⟩
+        ` (x & weaken* S) ⋯ ϕ ↑* S ⋯ weakenᵣ s              ≡⟨ ⋯-↑-wk (` (x & weaken* S)) (ϕ ↑* S) s ⟩
+        ` (x & weaken* S) ⋯ weakenᵣ s ⋯ ϕ ↑* (s ∷ S)        ≡⟨ cong (_⋯ (ϕ ↑* (s ∷ S))) (wk-`/id ⦃ Wᵣ ⦄ s (x & weaken* S)) ⟩
+        ` (x & weaken* (s ∷ S)) ⋯ ϕ ↑* (s ∷ S)              ≡⟨ &/⋯-⋯ {K₁ = Kᵣ} (wk s (x & weaken* S)) (ϕ ↑* (s ∷ S)) ⟨
+        `/id ⦃ K ⦄ (x & weaken* (s ∷ S) &/⋯ ϕ ↑* (s ∷ S))   ≡⟨⟩
+        `/id ⦃ K ⦄ (x & weaken* (s ∷ S) ·ₖ (ϕ ↑* (s ∷ S)))  ∎)
+
+      ⋯-↑*-wk : ∀  ⦃ K : Kit _∋/⊢_ ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄
+                   (t : S₁ ⊢ s) (ϕ : S₁ –[ K ]→ S₂) S →
+                t ⋯ ϕ ⋯ᵣ weaken* S ≡ t ⋯ᵣ weaken* S ⋯ (ϕ ↑* S)
+      ⋯-↑*-wk t ϕ S =
+        t ⋯ ϕ ⋯ weaken* S            ≡⟨ fusion t ϕ (weaken* S) ⟩
+        t ⋯ (ϕ ·ₖ weaken* S)         ≡⟨ cong (t ⋯_) (∼-ext (↑*-wk ϕ S)) ⟩
+        t ⋯ (weaken* S ·ₖ (ϕ ↑* S))  ≡⟨ sym (fusion t (weaken* S) (ϕ ↑* S)) ⟩
+        t ⋯ weaken* S ⋯ (ϕ ↑* S)     ∎
+
+      wk-cancels-⦅⦆ : ∀ ⦃ K : Kit _∋/⊢_ ⦄ (x/t : S ∋/⊢[ K ] s) → (weaken s ·ₖ ⦅ x/t ⦆) ∼ id
       wk-cancels-⦅⦆ ⦃ K ⦄ x/t sx x = `/id-injective (
           `/id ⦃ K ⦄ (x & (weaken _ ·ₖ ⦅ x/t ⦆))  ≡⟨⟩
           `/id ⦃ K ⦄ (id/` (suc x) &/⋯ ⦅ x/t ⦆)   ≡⟨ &/⋯-& ⦃ Cᵣ ⦃ K ⦄ ⦄ (suc x) ⦅ x/t ⦆ ⟩
@@ -261,14 +304,14 @@ record Syntax : Set₁ where
                          t ⋯ weaken s ⋯ ⦅ x/t ⦆ ≡ t
       wk-cancels-⦅⦆-⋯ t x/t =
         t ⋯ weaken _ ⋯ ⦅ x/t ⦆     ≡⟨ fusion t (weaken _) ⦅ x/t ⦆ ⟩
-        t ⋯ (weaken _ ·ₖ ⦅ x/t ⦆)  ≡⟨ cong (t ⋯_) (~-ext (wk-cancels-⦅⦆ x/t)) ⟩
+        t ⋯ (weaken _ ·ₖ ⦅ x/t ⦆)  ≡⟨ cong (t ⋯_) (∼-ext (wk-cancels-⦅⦆ x/t)) ⟩
         t ⋯ id                     ≡⟨ ⋯-id t ⟩
         t                          ∎
 
       dist-↑-⦅⦆ :  ∀  ⦃ K₁ : Kit _∋/⊢₁_ ⦄ ⦃ K₂ : Kit _∋/⊢₂_ ⦄ ⦃ K : Kit _∋/⊢_ ⦄ ⦃ W₂ : WkKit K₂ ⦄
                       ⦃ C₁ : CKit K₁ K₂ K ⦄ ⦃ C₂ : CKit K₂ K K ⦄
                       (x/t : S₁ ∋/⊢[ K₁ ] s) (ϕ : S₁ –[ K₂ ]→ S₂) →
-                   (⦅ x/t ⦆ ·ₖ ϕ) ~ ((ϕ ↑ s) ·ₖ ⦅ x/t &/⋯ ϕ ⦆)
+                   (⦅ x/t ⦆ ·ₖ ϕ) ∼ ((ϕ ↑ s) ·ₖ ⦅ x/t &/⋯ ϕ ⦆)
       dist-↑-⦅⦆ {s = s} ⦃ K₁ ⦄ ⦃ K₂ ⦄ ⦃ K ⦄ ⦃ W₂ ⦄ ⦃ C₁ ⦄ ⦃ C₂ ⦄ x/t ϕ sx x@zero = `/id-injective (
           `/id (x & (⦅ x/t ⦆ ·ₖ ϕ))                    ≡⟨⟩
           `/id (x/t &/⋯ ϕ)                             ≡⟨⟩
@@ -290,19 +333,19 @@ record Syntax : Set₁ where
                      t ⋯ ⦅ x/t ⦆ ⋯ ϕ ≡ t ⋯ (ϕ ↑ s) ⋯ ⦅ x/t &/⋯ ϕ ⦆
       dist-↑-⦅⦆-⋯ t x/t ϕ =
         t ⋯ ⦅ x/t ⦆ ⋯ ϕ                   ≡⟨ fusion t ⦅ x/t ⦆ ϕ ⟩
-        t ⋯ (⦅ x/t ⦆ ·ₖ ϕ)                ≡⟨ cong (t ⋯_) (~-ext (dist-↑-⦅⦆ x/t ϕ)) ⟩
+        t ⋯ (⦅ x/t ⦆ ·ₖ ϕ)                ≡⟨ cong (t ⋯_) (∼-ext (dist-↑-⦅⦆ x/t ϕ)) ⟩
         t ⋯ ((ϕ ↑ _) ·ₖ ⦅ (x/t &/⋯ ϕ) ⦆)  ≡⟨ sym (fusion t (ϕ ↑ _) ⦅ x/t &/⋯ ϕ ⦆ ) ⟩
         t ⋯ (ϕ ↑ _) ⋯ ⦅ (x/t &/⋯ ϕ) ⦆     ∎
 
       record Types : Set₁ where
-        field ↑ᵗ : Sort → Sort
+        field ↑ᵗ : ∀ {st} → Sort st → ∃[ st' ] Sort st'
 
-        _∶⊢_ : List Sort → Sort → Set
-        S ∶⊢ s = S ⊢ (↑ᵗ s)
+        _∶⊢_ : ∀ {t} → List (Sort Var) → Sort t → Set
+        S ∶⊢ s = S ⊢ proj₂ (↑ᵗ s)
 
         infixr 5 _∷_ _++ᶜ_
 
-        data Ctx : List Sort → Set where
+        data Ctx : List (Sort Var) → Set where
           []   : Ctx []
           _∷_  : S ∶⊢ s → Ctx S → Ctx (s ∷ S)
 
@@ -318,7 +361,7 @@ record Syntax : Set₁ where
         Γ ∋ x ∶ t = lookup Γ x ≡ t
 
         record Typing : Set₁ where
-          field  _⊢_∶_  : ∀ {s : Sort} → Ctx S → S ⊢ s → S ∶⊢ s → Set
+          field  _⊢_∶_  : ∀ {s : Sort st} → Ctx S → S ⊢ s → S ∶⊢ s → Set
                  ⊢`     : ∀ {Γ : Ctx S} {x : S ∋ s} {t} → Γ ∋ x ∶ t → Γ ⊢ ` x ∶ t
 
           infix 4 _⊢_∶_
@@ -378,7 +421,7 @@ record Syntax : Set₁ where
           record TTraversal : Set₁ where
             field _⊢⋯_ : ∀  ⦃ K : Kit _∋/⊢_ ⦄ ⦃ W : WkKit K ⦄ ⦃ TK : TKit K ⦄
                             ⦃ C₁ : CKit K Kᵣ K ⦄ ⦃ C₂ : CKit K K K ⦄ ⦃ C₃ : CKit K Kₛ Kₛ ⦄
-                            {S₁ S₂} {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort}
+                            {S₁ S₂ st} {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st}
                             {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} {ϕ : S₁ –[ K ]→ S₂} →
                          Γ₁ ⊢ e ∶ t →
                          ϕ ∶ Γ₁ ⇒ₖ Γ₂ →
@@ -398,7 +441,7 @@ record Syntax : Set₁ where
               (⊢wk to ⊢wkₛ; _∶_⇒ₖ_ to _∶_⇒ₛ_; ⊢⦅_⦆ to ⊢⦅_⦆ₛ)
 
             _⊢⋯[_]_ :
-              {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort} {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} →
+              {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st} {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} →
               Γ₁ ⊢ e ∶ t →
               {K : Kit _∋/⊢_} ⦃ W : WkKit K ⦄ ⦃ C₁ : CKit K Kᵣ K ⦄ ⦃ C₂ : CKit K K K ⦄ ⦃ C₃ : CKit K Kₛ Kₛ ⦄
               (TK : TKit K) →
@@ -410,7 +453,7 @@ record Syntax : Set₁ where
 
             -- Renaming preserves typing
 
-            _⊢⋯ᵣ_ : ∀ {S₁ S₂} {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort}
+            _⊢⋯ᵣ_ : ∀ {S₁ S₂ st} {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st}
                       {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} {ρ : S₁ →ᵣ S₂} →
                     Γ₁ ⊢ e ∶ t →
                     ρ ∶ Γ₁ ⇒ᵣ Γ₂ →
@@ -419,7 +462,7 @@ record Syntax : Set₁ where
 
             -- Substitution preserves typing
 
-            _⊢⋯ₛ_ : ∀ {S₁ S₂} {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort}
+            _⊢⋯ₛ_ : ∀ {S₁ S₂ st} {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st}
                       {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} {σ : S₁ →ₛ S₂} →
                     Γ₁ ⊢ e ∶ t →
                     σ ∶ Γ₁ ⇒ₛ Γ₂ →
