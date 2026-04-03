@@ -138,22 +138,20 @@
   \inferrule[T-AppLeft]{
     % \Unr{\Ctx_1} \vee \Eff[1] = \EffPure
     % \\
-    \HasType
+    \HasType[\EffPure]
       {\Ctx_1}
       {\E[1]}
       {(\TArr{\Mob}{\DirLeft,{\Eff[3]}}{\T[1]}{\T[2]})}
-      {\EffPure} \\
-    \HasType
+       \\
+    \HasType[\Eff[2]]
       {\Ctx_2}
       {\E[2]}
       {\T[1]}
-      {\Eff[2]}
   }{
-    \HasType
+    \HasType[(\Eff[2] \EffJoin \Eff[3])]
       {\CtxSeq {\Ctx_2}{\Ctx_1}}
       {(\EApp{\E[1]}{\E[2]})}
       {\T[2]}
-      {(\Eff[2] \EffJoin \Eff[3])}
   }
 }
 
@@ -161,28 +159,26 @@
   \inferrule[T-AppRight]{
     % \Unr{\Ctx_2} \vee \Eff[2] = \EffPure
     % \\
-    \HasType
+    \HasType[\Eff[1]]
       {\Ctx_1}
       {\E[1]}
       {(\TArr{\Mob}{\DirRight,{\Eff[3]}}{\T[1]}{\T[2]})}
-      {\Eff[1]} \\
-    \HasType
+       \\
+    \HasType[\EffPure]
       {\Ctx_2}
       {\E[2]}
       {\T[1]}
-      {\EffPure}
   }{
-    \HasType
+    \HasType[(\Eff[1] \EffJoin \Eff[3])]
       {\CtxSeq {\Ctx_1}{\Ctx_2}}
       {(\EApp{\E[1]}{\E[2]})}
       {\T[2]}
-      {(\Eff[1] \EffJoin \Eff[3])}
   }
 }
 
 \newcommand*\RuleTPairUnord{
   \inferrule[T-PairUnord]{
-    \HasType{\Eff[1]}
+    \HasType[\Eff[1]]
       {\Ctx_1}
       {\E[1]}
       {\T[1]} \\
