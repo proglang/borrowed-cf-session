@@ -1,7 +1,7 @@
 open import Axiom.Extensionality.Propositional
 open import Level using (0ℓ)
 
-module BorrowedCF.FinKits (∼-ext : Extensionality 0ℓ 0ℓ) where
+module BorrowedCF.FinKits where
 
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat using (ℕ; zero; suc; _+_)
@@ -75,13 +75,14 @@ record Syntax : Set₁ where
     ϕ ↑* zero  = ϕ
     ϕ ↑* suc m = ϕ ↑* m ↑
 
-    -- only necessary for `Generics.agda`; not counted for line numbers
+{-
     id↑*∼id : ∀ m → id {n} ↑* m ≗ id
     id↑*∼id zero    x = refl
     id↑*∼id (suc m) x =
       (id ↑* m ↑) x  ≡⟨ cong (λ ■ → (■ ↑) x) (∼-ext (id↑*∼id m)) ⟩
       (id ↑) x       ≡⟨ id↑∼id x ⟩
       id x           ∎
+-}
 
   open Kit ⦃ … ⦄ public
 
@@ -95,12 +96,10 @@ record Syntax : Set₁ where
 
   record Traversal : Set₁ where
     infixl 5 _⋯_ _⋯ᵣ_ _⋯ₛ_
-    field  _⋯_   : ⦃ K : Kit 𝓕 ⦄ → Tm m → m –[ K ]→ n → Tm n
-           ⋯-var : ⦃ K : Kit 𝓕 ⦄ (x : Fin m) (ϕ : m –[ K ]→ n) → (` x) ⋯ ϕ ≡ `/id (ϕ x)
-           ⋯-id  : ⦃ K : Kit 𝓕 ⦄ (t : Tm m) → t ⋯ id ⦃ K ⦄ ≡ t
-
-    ⋯-cong : ⦃ K : Kit 𝓕 ⦄ (t : Tm m) {ϕ₁ ϕ₂ : m –[ K ]→ n} → ϕ₁ ≗ ϕ₂ → t ⋯ ϕ₁ ≡ t ⋯ ϕ₂
-    ⋯-cong t ϕ∼ = cong (t ⋯_) (∼-ext ϕ∼)
+    field  _⋯_    : ⦃ K : Kit 𝓕 ⦄ → Tm m → m –[ K ]→ n → Tm n
+           ⋯-var  : ⦃ K : Kit 𝓕 ⦄ (x : Fin m) (ϕ : m –[ K ]→ n) → (` x) ⋯ ϕ ≡ `/id (ϕ x)
+           ⋯-id   : ⦃ K : Kit 𝓕 ⦄ (t : Tm m) → t ⋯ id ⦃ K ⦄ ≡ t
+           ⋯-cong : ⦃ K : Kit 𝓕 ⦄ (t : Tm m) {ϕ₁ ϕ₂ : m –[ K ]→ n} → ϕ₁ ≗ ϕ₂ → t ⋯ ϕ₁ ≡ t ⋯ ϕ₂
 
     ⋯-id∼ : ⦃ K : Kit 𝓕 ⦄ (t : Tm n) {ϕ : n –[ K ]→ n} → ϕ ≗ id → t ⋯ ϕ ≡ t
     ⋯-id∼ t ϕ∼id = trans (⋯-cong t ϕ∼id) (⋯-id t)
@@ -183,15 +182,17 @@ record Syntax : Set₁ where
         `/id ⦃ K₁⊔K₂ ⦄ ((ϕ₁ ↑ ·ₖ ϕ₂ ↑) x)      ∎
         )
 
+{-
       dist-↑*-· : (m : ℕ) (ϕ₁ : n₁ –[ K₁ ]→ n₂) (ϕ₂ : n₂ –[ K₂ ]→ n₃) →
                   (ϕ₁ ·ₖ ϕ₂) ↑* m ≗ ϕ₁ ↑* m ·ₖ ϕ₂ ↑* m
       dist-↑*-· zero    ϕ₁ ϕ₂ x = refl
       dist-↑*-· (suc m) ϕ₁ ϕ₂ x =
         ((ϕ₁ ·ₖ ϕ₂) ↑* suc m) x         ≡⟨⟩
-        (((ϕ₁ ·ₖ ϕ₂) ↑* m) ↑) x         ≡⟨ cong (λ ■ → (■ ↑) x) (∼-ext (dist-↑*-· m ϕ₁ ϕ₂)) ⟩
+        (((ϕ₁ ·ₖ ϕ₂) ↑* m) ↑) x         ≡⟨ {!dist-↑*-· m ϕ₁ ϕ₂!} ⟩ -- cong (λ ■ → (■ ↑) x) (∼-ext (dist-↑*-· m ϕ₁ ϕ₂)) ⟩
         ((ϕ₁ ↑* m ·ₖ ϕ₂ ↑* m) ↑) x      ≡⟨ dist-↑-· (ϕ₁ ↑* m) (ϕ₂ ↑* m) x ⟩
         (ϕ₁ ↑* m ↑ ·ₖ ϕ₂ ↑* m ↑) x      ≡⟨⟩
         (ϕ₁ ↑* suc m ·ₖ ϕ₂ ↑* suc m) x  ∎
+-}
 
     _·[_]_ : {K₁ : Kit 𝓕₁} {K₂ : Kit 𝓕₂} {K₁⊔K₂ : Kit 𝓕} →
              n₁ –[ K₁ ]→ n₂ → CKit K₁ K₂ K₁⊔K₂ →
@@ -221,7 +222,7 @@ record Syntax : Set₁ where
                t ⋯ ϕ ⋯ weaken ≡ t ⋯ weaken ⋯ ϕ ↑
       ⋯-↑-wk t ϕ =
         t ⋯ ϕ ⋯ weaken       ≡⟨ fusion t ϕ weaken ⟩
-        t ⋯ (ϕ ·ₖ weaken)    ≡⟨ cong (t ⋯_) (∼-ext (↑-wk ϕ)) ⟩
+        t ⋯ (ϕ ·ₖ weaken)    ≡⟨ ⋯-cong t (↑-wk ϕ) ⟩
         t ⋯ (weaken ·ₖ ϕ ↑)  ≡⟨ sym (fusion t weaken (ϕ ↑)) ⟩
         t ⋯ weaken ⋯ ϕ ↑     ∎
 
@@ -235,6 +236,7 @@ record Syntax : Set₁ where
                      ; &/⋯-⋯     = λ t ϕ → refl
                      ; &/⋯-wk-↑  = λ t ϕ → ⋯-↑-wk t ϕ }
 
+{-
       ↑*-wk : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄
               (ϕ : n₁ –[ K ]→ n₂) (m : ℕ) → ϕ ·ₖ weaken* m ≗ weaken* m ·ₖ ϕ ↑* m
       ↑*-wk ⦃ K ⦄ ϕ zero x = `/id-injective (
@@ -268,6 +270,7 @@ record Syntax : Set₁ where
         t ⋯ (ϕ ·ₖ weaken* m)       ≡⟨ cong (t ⋯_) (∼-ext (↑*-wk ϕ m)) ⟩
         t ⋯ (weaken* m ·ₖ ϕ ↑* m)  ≡⟨ sym (fusion t (weaken* m) (ϕ ↑* m)) ⟩
         t ⋯ weaken* m ⋯ ϕ ↑* m     ∎
+-}
 
       wk-cancels-⦅⦆ : ⦃ K : Kit 𝓕 ⦄ (x/t : 𝓕[ K ] m) → weakenᵣ ·ₖ ⦅ x/t ⦆ ≗ id
       wk-cancels-⦅⦆ ⦃ K ⦄ x/t x = `/id-injective (&/⋯-& ⦃ Cᵣ ⦃ K ⦄ ⦄ (suc x) ⦅ x/t ⦆)
@@ -276,7 +279,7 @@ record Syntax : Set₁ where
                          t ⋯ weaken ⋯ ⦅ x/t ⦆ ≡ t
       wk-cancels-⦅⦆-⋯ t x/t =
         t ⋯ weaken ⋯ ⦅ x/t ⦆     ≡⟨ fusion t weaken ⦅ x/t ⦆ ⟩
-        t ⋯ (weaken ·ₖ ⦅ x/t ⦆)  ≡⟨ cong (t ⋯_) (∼-ext (wk-cancels-⦅⦆ x/t)) ⟩
+        t ⋯ (weaken ·ₖ ⦅ x/t ⦆)  ≡⟨ ⋯-cong t (wk-cancels-⦅⦆ x/t) ⟩
         t ⋯ id                   ≡⟨ ⋯-id t ⟩
         t                        ∎
 
@@ -305,7 +308,7 @@ record Syntax : Set₁ where
                      t ⋯ ⦅ x/t ⦆ ⋯ ϕ ≡ t ⋯ ϕ ↑ ⋯ ⦅ x/t &/⋯ ϕ ⦆
       dist-↑-⦅⦆-⋯ t x/t ϕ =
         t ⋯ ⦅ x/t ⦆ ⋯ ϕ               ≡⟨ fusion t ⦅ x/t ⦆ ϕ ⟩
-        t ⋯ (⦅ x/t ⦆ ·ₖ ϕ)            ≡⟨ cong (t ⋯_) (∼-ext (dist-↑-⦅⦆ x/t ϕ)) ⟩
+        t ⋯ (⦅ x/t ⦆ ·ₖ ϕ)            ≡⟨ ⋯-cong t (dist-↑-⦅⦆ x/t ϕ) ⟩
         t ⋯ (ϕ ↑ ·ₖ ⦅ (x/t &/⋯ ϕ) ⦆)  ≡⟨ sym (fusion t (ϕ ↑) ⦅ x/t &/⋯ ϕ ⦆ ) ⟩
         t ⋯ ϕ ↑ ⋯ ⦅ (x/t &/⋯ ϕ) ⦆     ∎
 
