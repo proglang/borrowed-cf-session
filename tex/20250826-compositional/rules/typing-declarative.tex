@@ -9,7 +9,7 @@
     \C
     \T
 }{
-  \HasType
+  \HasType[\EffPure]
     \CtxEmpty
     \C
     \T
@@ -17,7 +17,7 @@
 
 % T-Var
 \DefRule {Var} {} {
-  \HasType
+  \HasType[\EffPure]
     {\CtxVar \EVar\T}
     \EVar
     \T
@@ -25,58 +25,61 @@
 
 % T-AbsUnr
 \DefRule {AbsUnr} {
-  \Unr\Ctx \\
-  \HasType[\Eff*]
-    {\CtxPar\Ctx{\CtxVar\EVar{\T[1]}}}
-    {\E}
-    {\T[2]}
-}{
   \HasType
+    {\CtxPar\Ctx{\CtxPar
+      {\CtxVar f {\TArr{\MobMobile}{\DirNone,\Eff}{\T[1]}{\T[2]}}}
+      {\CtxVar\EVar{\T[1]}}
+    }}
+    {\E}
+    {\T[2]} \\
+  \Unr\Ctx
+}{
+  \HasType[\EffPure]
     \Ctx
-    {\EAbs\EVar\E}
-    {\TArr{\MobMobile}{\DirNone,\Eff*}{\T[1]}{\T[2]}}
+    {\EMu {\EAbs\EVar\E}}
+    {\TArr{\MobMobile}{\DirNone,\Eff}{\T[1]}{\T[2]}}
 }
 
 % T-AbsLin
 \DefRule {AbsLin} {
-  \HasType[\Eff*]
+  \HasType
     {\CtxExtUnord\Ctx{\CtxVar\EVar{\T[1]}}}
     {\E}
     {\T[2]} \\
-    \Mob (\Ctx)
+  \Mob (\Ctx)
 }{
-  \HasType
+  \HasType[\EffPure]
     \Ctx
     {\EAbs\EVar\E}
-    {\TArr{\Mob}{\DirUnord,\Eff*}{\T[1]}{\T[2]}}
+    {\TArr{\Mob}{\DirUnord,\Eff}{\T[1]}{\T[2]}}
 }
 
 % T-AbsLeft
 \DefRule {AbsLeft} {
-  \HasType[\Eff*]
+  \HasType
     {\CtxExt{\CtxVar{\EVar}{\T[1]}}\Ctx}
     {\E}
     {\T[2]} \\
-    \Mob (\Ctx)
+  \Mob (\Ctx)
 }{
-  \HasType
+  \HasType[\EffPure]
     \Ctx
     {\EAbs\EVar\E}
-    {\TArr{\Mob}{\DirLeft,\Eff*}{\T[1]}{\T[2]}}
+    {\TArr{\Mob}{\DirLeft,\Eff}{\T[1]}{\T[2]}}
 }
 
 % T-AbsRight
 \DefRule {AbsRight} {
-  \HasType[\Eff*]
+  \HasType
     {\CtxExt\Ctx{\CtxVar{\EVar}{\T[1]}}}
     {\E}
     {\T[2]} \\
-    \Mob (\Ctx)
+  \Mob (\Ctx)
 }{
-  \HasType
+  \HasType[\EffPure]
     \Ctx
     {\EAbs\EVar\E}
-    {\TArr{\Mob}{\DirRight,\Eff*}{\T[1]}{\T[2]}}
+    {\TArr{\Mob}{\DirRight,\Eff}{\T[1]}{\T[2]}}
 }
 
 % T-AppUnr

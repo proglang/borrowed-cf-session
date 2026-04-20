@@ -181,6 +181,7 @@
 \NewMetaVar[\termcolor] \EVar  x
 \NewMetaVar[\termcolor] \EVary y
 \newcommand*\EBorrow[1]{\termcolor{\&{#1}}}
+\newcommand*\EMu[2][f\!]{\termcolor{\mu {#1}.{#2}}}
 \newcommand*\EAbs[3][{}]{\termcolor{\lambda_{#1}{#2}.{#3}}}
 \newcommand*\EApp[2]{\termcolor{{#1}\,{#2}}}
 \newcommand*\EAppD[3][{}]{\termcolor{({#2}\,{#3})_{#1}}} % with direction

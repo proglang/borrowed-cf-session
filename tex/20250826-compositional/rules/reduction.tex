@@ -18,6 +18,12 @@
   }
 }
 
+\newcommand*\RuleExpRedUnfold{
+  \inferrule[E-Unfold]{}{
+    \EMu e \Reduces \Subs e {\EMu e} f
+  }
+}
+
 \newcommand*\RuleExpRedCaseLeft{
   \inferrule[E-SumElim]{}{
     \ECase{(\EInj i\V)}{x_1}{\E[1]}{x_2}{\E[2]} \Reduces \Subs {\E[i]} \V {x_i}

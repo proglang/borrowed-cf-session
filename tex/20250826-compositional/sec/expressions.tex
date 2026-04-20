@@ -26,7 +26,8 @@ process congruence (\cref{fig:configuration-congruence}).
         \grmor \EPair\E\E
         \grmor \ELetPair{\EVar}{\EVar}{\E}{\E} \\
       &  \grmor \EInj i \E 
-        \grmor\ECase\E{\EVar}{\E}{\EVar}{\E}
+        \grmor \ECase\E{\EVar}{\E}{\EVar}{\E}
+        \grmor \EMu[\EVar] \E
       % & \grmor \EMatch{\E}{\ell:\E_\ell}{\ell\in L}
       % \grmor \EFork\E \grmor \ELet\EVar\E\E
         \tag{Expressions}
@@ -108,6 +109,7 @@ process congruence (\cref{fig:configuration-congruence}).
     \RuleExpRedApp \and
     \RuleExpRedSeq \and
     \RuleExpRedLet \and
+    \RuleExpRedUnfold \and
     \RuleExpRedCaseLeft \and
     % \RuleExpRedCaseRight \and
     \RuleExpRedCtx
