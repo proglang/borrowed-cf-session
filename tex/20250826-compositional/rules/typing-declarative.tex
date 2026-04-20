@@ -361,43 +361,6 @@
 %   }
 % }
 
-%% EXISTENTIAL TARGET CALCULUS
-
-\newcommand*\RuleTPack{
-  \inferrule[T-Pack]{
-    \HasTargetType
-      \Ctx
-      {\E}
-      {\T{[{\S}/\alpha]}}
-  }{
-    \HasTargetType
-      \Ctx
-      {\EPack{\S}{\E}{\TExists[\pr{S}]\alpha\T}}
-      {\TExists[\pr{S}]\alpha\T}
-  }
-}
-
-\newcommand*\RuleTUnpack{
-  \inferrule[T-Unpack]{
-    \HasTargetType
-      {\Ctx}
-      {\E[1]}
-      {\TExists\alpha{\T[1]}}
-    \\
-    \HasTargetType
-      {\CtxExtTarget{\CtxExtTarget\Ctx\alpha}{\CtxVar x {\T[1]}}}
-      {\E[2]}
-      {\T[2]}
-    \\
-    \alpha \notin \T[2]
-  }{
-    \HasTargetType
-      \Ctx
-      {\EOpen\alpha x {\E[1]} {\E[2]}}
-      {\T[2]}
-  }
-}
-
 %%% Local
 
 %%% Local Variables:
