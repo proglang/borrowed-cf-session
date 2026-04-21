@@ -44,9 +44,17 @@ suc m ↑⋆ ρ = ↑ m ↑⋆ ρ
 ↑-pres-≗ eq zero    = refl
 ↑-pres-≗ eq (suc x) = cong suc (eq x)
 
+↑⋆-pres-≗ : (n : ℕ) → ρ₁ ≗ ρ₂ → n ↑⋆ ρ₁ ≗ n ↑⋆ ρ₂
+↑⋆-pres-≗ zero ρ≗ = ρ≗
+↑⋆-pres-≗ (suc n) ρ≗ = ↑-pres-≗ (↑⋆-pres-≗ n ρ≗)
+
 ↑-id : ρ ≗ id → ↑ ρ ≗ id
 ↑-id eq zero    = refl
 ↑-id eq (suc x) = cong suc (eq x)
+
+↑⋆-id : (n : ℕ) → ρ ≗ id → n ↑⋆ ρ ≗ id
+↑⋆-id zero eq = eq
+↑⋆-id (suc n) eq = ↑-id (↑⋆-id n eq)
 
 wk : Ren n (suc n)
 wk = suc

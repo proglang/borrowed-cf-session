@@ -62,27 +62,26 @@ record Syntax : Set₁ where
     weaken* zero    = id
     weaken* (suc m) = wkm (weaken* m)
 
-    id↑∼id : (id {n} ↑) ≗ id
-    id↑∼id zero    = refl
-    id↑∼id (suc x) =
-      (id ↑) (suc x)  ≡⟨⟩
-      wk (id/` x)     ≡⟨ wk-id/` x ⟩
-      id/` (suc x)    ≡⟨⟩
-      id (suc x)      ∎
-
     infixl 8 _↑*_
     _↑*_ : n₁ →ₖ n₂ → ∀ m → (m + n₁) →ₖ (m + n₂)
     ϕ ↑* zero  = ϕ
     ϕ ↑* suc m = ϕ ↑* m ↑
 
-{-
-    id↑*∼id : ∀ m → id {n} ↑* m ≗ id
-    id↑*∼id zero    x = refl
-    id↑*∼id (suc m) x =
-      (id ↑* m ↑) x  ≡⟨ cong (λ ■ → (■ ↑) x) (∼-ext (id↑*∼id m)) ⟩
-      (id ↑) x       ≡⟨ id↑∼id x ⟩
-      id x           ∎
--}
+    id↑ : {ϕ : n →ₖ n} → ϕ ≗ id → ϕ ↑ ≗ id
+    id↑ eq zero = refl
+    id↑ eq (suc x) = trans (cong wk (eq x)) (wk-id/` x)
+
+    id↑* : ∀ m {ϕ : n →ₖ n} → ϕ ≗ id → ϕ ↑* m ≗ id
+    id↑* zero eq = eq
+    id↑* (suc m) eq = id↑ (id↑* m eq)
+
+    _~↑ : {ϕ₁ ϕ₂ : m →ₖ n} → ϕ₁ ≗ ϕ₂ → ϕ₁ ↑ ≗ ϕ₂ ↑
+    (eq ~↑) zero = refl
+    (eq ~↑) (suc x) = cong wk (eq x)
+
+    _~↑*_ : {ϕ₁ ϕ₂ : m →ₖ n} → ϕ₁ ≗ ϕ₂ → ∀ m → ϕ₁ ↑* m ≗ ϕ₂ ↑* m
+    eq ~↑* zero = eq
+    eq ~↑* suc m = (eq ~↑* m) ~↑
 
   open Kit ⦃ … ⦄ public
 
@@ -98,11 +97,8 @@ record Syntax : Set₁ where
     infixl 5 _⋯_ _⋯ᵣ_ _⋯ₛ_
     field  _⋯_    : ⦃ K : Kit 𝓕 ⦄ → Tm m → m –[ K ]→ n → Tm n
            ⋯-var  : ⦃ K : Kit 𝓕 ⦄ (x : Fin m) (ϕ : m –[ K ]→ n) → (` x) ⋯ ϕ ≡ `/id (ϕ x)
-           ⋯-id   : ⦃ K : Kit 𝓕 ⦄ (t : Tm m) → t ⋯ id ⦃ K ⦄ ≡ t
+           ⋯-id   : ⦃ K : Kit 𝓕 ⦄ (t : Tm n) {ϕ : n –[ K ]→ n} → ϕ ≗ id → t ⋯ ϕ ≡ t
            ⋯-cong : ⦃ K : Kit 𝓕 ⦄ (t : Tm m) {ϕ₁ ϕ₂ : m –[ K ]→ n} → ϕ₁ ≗ ϕ₂ → t ⋯ ϕ₁ ≡ t ⋯ ϕ₂
-
-    ⋯-id∼ : ⦃ K : Kit 𝓕 ⦄ (t : Tm n) {ϕ : n –[ K ]→ n} → ϕ ≗ id → t ⋯ ϕ ≡ t
-    ⋯-id∼ t ϕ∼id = trans (⋯-cong t ϕ∼id) (⋯-id t)
 
     instance
       Kᵣ : Kit Fin
@@ -182,17 +178,15 @@ record Syntax : Set₁ where
         `/id ⦃ K₁⊔K₂ ⦄ ((ϕ₁ ↑ ·ₖ ϕ₂ ↑) x)      ∎
         )
 
-{-
       dist-↑*-· : (m : ℕ) (ϕ₁ : n₁ –[ K₁ ]→ n₂) (ϕ₂ : n₂ –[ K₂ ]→ n₃) →
                   (ϕ₁ ·ₖ ϕ₂) ↑* m ≗ ϕ₁ ↑* m ·ₖ ϕ₂ ↑* m
       dist-↑*-· zero    ϕ₁ ϕ₂ x = refl
       dist-↑*-· (suc m) ϕ₁ ϕ₂ x =
         ((ϕ₁ ·ₖ ϕ₂) ↑* suc m) x         ≡⟨⟩
-        (((ϕ₁ ·ₖ ϕ₂) ↑* m) ↑) x         ≡⟨ {!dist-↑*-· m ϕ₁ ϕ₂!} ⟩ -- cong (λ ■ → (■ ↑) x) (∼-ext (dist-↑*-· m ϕ₁ ϕ₂)) ⟩
+        (((ϕ₁ ·ₖ ϕ₂) ↑* m) ↑) x         ≡⟨ (dist-↑*-· m ϕ₁ ϕ₂ ~↑) x ⟩
         ((ϕ₁ ↑* m ·ₖ ϕ₂ ↑* m) ↑) x      ≡⟨ dist-↑-· (ϕ₁ ↑* m) (ϕ₂ ↑* m) x ⟩
         (ϕ₁ ↑* m ↑ ·ₖ ϕ₂ ↑* m ↑) x      ≡⟨⟩
         (ϕ₁ ↑* suc m ·ₖ ϕ₂ ↑* suc m) x  ∎
--}
 
     _·[_]_ : {K₁ : Kit 𝓕₁} {K₂ : Kit 𝓕₂} {K₁⊔K₂ : Kit 𝓕} →
              n₁ –[ K₁ ]→ n₂ → CKit K₁ K₂ K₁⊔K₂ →
@@ -279,8 +273,7 @@ record Syntax : Set₁ where
                          t ⋯ weaken ⋯ ⦅ x/t ⦆ ≡ t
       wk-cancels-⦅⦆-⋯ t x/t =
         t ⋯ weaken ⋯ ⦅ x/t ⦆     ≡⟨ fusion t weaken ⦅ x/t ⦆ ⟩
-        t ⋯ (weaken ·ₖ ⦅ x/t ⦆)  ≡⟨ ⋯-cong t (wk-cancels-⦅⦆ x/t) ⟩
-        t ⋯ id                   ≡⟨ ⋯-id t ⟩
+        t ⋯ (weaken ·ₖ ⦅ x/t ⦆)  ≡⟨ ⋯-id t (wk-cancels-⦅⦆ x/t) ⟩
         t                        ∎
 
       dist-↑-⦅⦆ : ⦃ K₁ : Kit 𝓕₁ ⦄ ⦃ K₂ : Kit 𝓕₂ ⦄ ⦃ K : Kit 𝓕 ⦄ ⦃ W₂ : WkKit K₂ ⦄

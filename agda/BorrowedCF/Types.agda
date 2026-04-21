@@ -51,6 +51,8 @@ data Ty where
 
 variable
   s s₁ s₂ s₃ s′ : 𝕊 n
+  T T₁ T₂ T₃ T′ : 𝕋
+  U U₁ U₂ U₃ U′ : 𝕋
 
 postulate
   Skips : 𝕊 n → Set
@@ -84,3 +86,9 @@ dual (s₁ ; s₂) = dual s₁ ; dual s₂
 dual skip = skip
 dual ret = ret
 dual acq = acq
+
+relaxEff : 𝕋 → Eff → 𝕋
+relaxEff ⟨ s ⟩ _ = ⟨ s ⟩
+relaxEff unit _ = unit
+relaxEff (arr m d e t u) e′ = arr m d e′ (relaxEff t e′) (relaxEff u e′)
+relaxEff (pair d t u) e′ = pair d (relaxEff t e′) (relaxEff u e′)
