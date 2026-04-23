@@ -1,449 +1,397 @@
 % Algorithmic Expression Typing
 
-\newcommand*\RuleTConst{
-  \inferrule[T-Const]{
-    \HasCType
-      \C
-      \T
-  }{
-    \HasType[\EffPure]
-      \CtxEmpty
-      \C
-      \T
-  }
+\def\RuleNamePrefix{A-}
+\def\RuleCmdPrefix{RuleAlg}
+
+% A-Const
+\DefRule {Const} {
+  \HasCType \C \T \\
+
+}{
+  \InferType[\EffPure] \C \T
 }
 
-\newcommand*\RuleTVar{
-  \inferrule[T-Var]{}{
-    \HasType[\EffPure]
-      {\CtxVar \EVar\T}
-      \EVar
-      \T
-  }
+% A-Var
+\DefRule {Var} {
+} {
+  \InferType[\EffPure] \EVar \T
 }
 
-\newcommand*\RuleTFork{
-  \inferrule[T-Fork]{
-    \Bounded \Ctx
-    \\
-    \HasType[\Eff[1]]
-      {\Ctx}
-      {\E}
-      {\TArr{\MobMobile}{\Eff} {\BUnit} {\BUnit}}
-  }{
-    \HasType[\EffPure]
-      \Ctx
-      {\EFork \E}
-      {\BUnit}
-  }
+% A-Abs
+\DefRule {Abs} {
+}{
 }
 
-\newcommand*\RuleTAbsUnr{
-  \inferrule[T-AbsUnr]{
-    \Unr\Ctx \\
-    \HasType[\Eff]
-      {\CtxExt\Ctx{\CtxVar\EVar{\T[1]}}}
-      {\E}
-      {\T[2]}
-  }{
-    \HasType[\EffPure]
-      \Ctx
-      {(\EAbs\EVar\E)}
-      {(\TArr{\MobMobile}{\DirNone,\Eff}{\T[1]}{\T[2]})}
-  }
-}
-
-\newcommand*\RuleTAbsLin{
-  \inferrule[T-AbsLin]{
-    \HasType[\Eff]
-      {\CtxExtUnord\Ctx{\CtxVar\EVar{\T[1]}}}
-      {\E}
-      {\T[2]} \\
-      \Mob (\Ctx)
-  }{
-    \HasType[\EffPure]
-      \Ctx
-      {(\EAbs\EVar\E)}
-      {(\TArr{\Mob}{\DirUnord,\Eff}{\T[1]}{\T[2]})}
-  }
-}
-
-\newcommand*\RuleTAbsLeft{
-  \inferrule[T-AbsLeft]{
-    \HasType[\Eff]
-      {\CtxExt{\CtxVar{\EVar}{\T[1]}}\Ctx}
-      {\E}
-      {\T[2]} \\
-      \Mob (\Ctx)
-  }{
-    \HasType[\EffPure]
-      \Ctx
-      {(\EAbs\EVar\E)}
-      {(\TArr{\Mob}{\DirLeft,\Eff}{\T[1]}{\T[2]})}
-  }
-}
-
-\newcommand*\RuleTAbsRight{
-  \inferrule[T-AbsRight]{
-    \HasType[\Eff]
-      {\CtxExt\Ctx{\CtxVar{\EVar}{\T[1]}}}
-      {\E}
-      {\T[2]} \\
-      \Mob (\Ctx)
-  }{
-    \HasType[\EffPure]
-      \Ctx
-      {(\EAbs\EVar\E)}
-      {(\TArr{\Mob}{\DirRight,\Eff}{\T[1]}{\T[2]})}
-  }
-}
-
-\newcommand*\RuleTAppUnr{
-  \inferrule[T-AppUnr]{
-    \HasType[\Eff[1]]
-      {\Ctx_1}
-      {\E[1]}
-      {(\TArr{\Mob}{\DirNone,{\Eff}[3]}{\T[1]}{\T[2]})} \\
-    \HasType[\Eff[2]]
-      {\Ctx_2}
-      {\E[2]}
-      {\T[1]}
-  }{
-    \HasType[\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]]
-      {\CtxSeq {\Ctx_1}{\Ctx_2}}
-      {(\EApp{\E[1]}{\E[2]})}
-      {\T[2]}
-  }
-}
-
-\newcommand*\RuleTAppLin{
-  \inferrule[T-AppLin]{
-    \HasType[\Eff[1]]
-      {\Ctx_1}
-      {\E[1]}
-      {(\TArr{\Mob}{\DirUnord,{\Eff[3]}}{\T[1]}{\T[2]})} \\
-    \HasType[\Eff[2]]
-      {\Ctx_2}
-      {\E[2]}
-      {\T[1]}
-  }{
-    \HasType[\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]]
-      {\CtxPar {\Ctx_1}{\Ctx_2}}
-      {(\EApp{\E[1]}{\E[2]})}
-      {\T[2]}
-  }
-}
-
-\newcommand*\RuleTAppLeft{
-  \inferrule[T-AppLeft]{
-    % \Unr{\Ctx_1} \vee \Eff[1] = \EffPure
-    % \\
-    \HasType[\EffPure]
-      {\Ctx_1}
-      {\E[1]}
-      {(\TArr{\Mob}{\DirLeft,{\Eff[3]}}{\T[1]}{\T[2]})}
-       \\
-    \HasType[\Eff[2]]
-      {\Ctx_2}
-      {\E[2]}
-      {\T[1]}
-  }{
-    \HasType[(\Eff[2] \EffJoin \Eff[3])]
-      {\CtxSeq {\Ctx_2}{\Ctx_1}}
-      {(\EApp{\E[1]}{\E[2]})}
-      {\T[2]}
-  }
-}
-
-\newcommand*\RuleTAppRight{
-  \inferrule[T-AppRight]{
-    % \Unr{\Ctx_2} \vee \Eff[2] = \EffPure
-    % \\
-    \HasType[\Eff[1]]
-      {\Ctx_1}
-      {\E[1]}
-      {(\TArr{\Mob}{\DirRight,{\Eff[3]}}{\T[1]}{\T[2]})}
-       \\
-    \HasType[\EffPure]
-      {\Ctx_2}
-      {\E[2]}
-      {\T[1]}
-  }{
-    \HasType[(\Eff[1] \EffJoin \Eff[3])]
-      {\CtxSeq {\Ctx_1}{\Ctx_2}}
-      {(\EApp{\E[1]}{\E[2]})}
-      {\T[2]}
-  }
-}
-
-\newcommand*\RuleTPairUnord{
-  \inferrule[T-PairUnord]{
-    \HasType[\Eff[1]]
-      {\Ctx_1}
-      {\E[1]}
-      {\T[1]} \\
-    \HasType[\Eff[2]]
-      {\Ctx_2}
-      {\E[2]}
-      {\T[2]}
-  }{
-    \HasType[\Eff[1] \EffJoin \Eff[2]]
-      {\CtxPar {\Ctx_1}{\Ctx_2}}
-      {\EPair{\E[1]}{\E[2]}}
-      {\TPairUnord{\T[1]}{\T[2]}}
-  }
-}
-
-\newcommand*\RuleTPairOrd{
-  \inferrule[T-PairOrd]{
-    % \Unr{\Ctx_1} \vee \Unr {\T[1]} \vee \Eff[2] = \EffPure \\
-    \HasType[\Eff[1]]
-      {\Ctx_1}
-      {\E[1]}
-      {\T[1]} \\
-    \HasType[\EffPure]
-      {\Ctx_2}
-      {\E[2]}
-      {\T[2]}
-  }{
-    \HasType[\Eff[1]]
-      {\CtxSeq {\Ctx_1}{\Ctx_2}}
-      {\EPair{\E[1]}{\E[2]}}
-      {\TPairOrd{\T[1]}{\T[2]}}
-  }
-}
-
-\newcommand*\RuleTLetUnit{
-  \inferrule[T-LetUnit]{
-    \HasType[\Eff[1]]
-      {\Ctx[1]}
-      {\E[1]}
-      {\BUnit} \\
-    \HasType[\Eff[2]]
-      {\Ctx[2]}
-      {\E[2]}
-      {\T[2]}
-  }{
-    \HasType[\Eff[1] \EffJoin \Eff[2]]
-      {\CtxPat 1 2}
-      {\ESeq{\E[1]}{\E[2]}}
-      {\T[2]}
-  }
-}
-
-\newcommand*\RuleTLet{
-  \inferrule[T-Let]{
-    \HasType[\Eff[1]]
-      {\Ctx[1]}
-      {\E[1]}
-      {\T[1]} \\
-    \HasType[\Eff[2]]
-      {\CtxVar x {{\T[1]}} \CtxPatOp \Ctx[2]}
-      {\E[2]}
-      {\T[2]}
-  }{
-    \HasType[\Eff[1] \EffJoin \Eff[2]]
-      {\CtxPat 1 2}
-      {\ELet x{\E[1]}{\E[2]}}
-      {\T[2]}
-  }
-}
-
-\newcommand*\RuleTLetUnord{
-  \inferrule[T-LetUnord]{
-    \HasType[\Eff[1]]
-      {\Ctx[1]}
-      {\E[1]}
-      {\TPairUnord {\T[1]}{\T[2]}} \\
-    \HasType[\Eff[2]]
-      {\CtxExtUnord{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}} \CtxPatOp \Ctx[2]}
-      {\E[2]}
-      {\T[3]}
-  }{
-    \HasType[\Eff[1] \EffJoin \Eff[2]]
-      {\CtxPat 1 2}
-      {\ELetPair xy{\E[1]}{\E[2]}}
-      {\T[3]}
-  }
-}
-
-\newcommand*\RuleTLetOrd{
-  \inferrule[T-LetOrd]{
-    \HasType[\Eff[1]]
-      {\Ctx[1]}
-      {\E[1]}
-      {\TPairOrd {\T[1]}{\T[2]}} \\
-    \HasType[\Eff[2]]
-      {\CtxExt{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}} \CtxPatOp \Ctx[2]}
-      {\E[2]}
-      {\T[3]}
-  }{
-    \HasType[\Eff[1] \EffJoin \Eff[2]]
-      {\CtxPat 1 2}
-      {\ELetPair xy{\E[1]}{\E[2]}}
-      {\T[3]}
-  }
-}
-
-\newcommand*\RuleTInLeft{
-  \inferrule[T-Inj]{
-    \HasType[\Eff]
-      {\Ctx}
-      {\E}
-      {\T[i]}
-  }{
-    \HasType[\Eff]
-      {\Ctx}
-      {\EInj{i} \E}
-      {\TSum{\T[1]}{\T[2]}}
-  }
-}
-
-\newcommand*\RuleTCaseSum{
-  \inferrule[T-CaseSum]{
-    \HasType[\Eff]
-      {\Ctx[1]}
-      {\E}
-      {\TSum{\T[1]}{\T[2]}}
-    \\
-    \HasType[\Eff[1]]
-      {\CtxVar{\EVar_1}{\T[1]} \CtxPatOp \Ctx[2]}
-      {\E[1]}
-      {\T}
-    \\
-    \HasType[\Eff[2]]
-      {\CtxVar{\EVar_2}{\T[2]} \CtxPatOp \Ctx[2]}
-      {\E[2]}
-      {\T}
-  }{
-    \HasType[\Eff \EffJoin \Eff[1] \EffJoin \Eff[2]]
-      {\CtxPat 1 2}
-      {\ECase\E{x_1}{\E[1]}{x_2}{\E[2]}}
-      {\T}
-  }
-}
-
-\newcommand*\RuleTWeakC{
-  \inferrule[T-WeakC]{
-    \Unr\Ctx_2 \\
-    \HasType[\Eff]
-      {\CtxExt{\Ctx_1}{\Ctx_2}}
-      {\E}
-      {\T}
-  }{
-    \HasType[\Eff]
-      {\Ctx_1}
-      {\E}
-      {\T}
-  }
-}
-
-\newcommand*\RuleTWeakE{
-  \inferrule[T-WeakE]{
-    \HasType[\EffPure]
-      {\Ctx}
-      {\E}
-      {\T}
-  }{
-    \HasType[\EffPure]
-      {\Ctx}
-      {\E}
-      {\T}
-  }
-}
-
-\newcommand*\RuleTWeakCE{
-  \inferrule[T-WeakCE]{
-    \Ctx[2] \preccurlyeq \Ctx[1]
-    \\
-    \Eff[1] \le \Eff[2]
-    \\
-    \HasType[\Eff[1]]
-      {\Ctx_1}
-      {\E}
-      {\T}
-  }{
-    \HasType[\Eff[2]]
-      {\Ctx_2}
-      {\E}
-      {\T}
-  }
-}
-
-\newcommand*\RuleTMatch{
-  \inferrule[T-MatchLeft]{
-    \HasType[\Eff]
-      {\Ctx_1}
-      {\E}
-      {\SBranch{\ell:\S_\ell}{\ell\in L}}
-    \\
-    \HasType[\Eff[\ell]]
-      {\Ctx_2}
-      {\E_\ell}
-      {\TArr{\Mob}{\Eff[\ell]}{\S_\ell}{\T}}
-  }{
-    \HasType[\Eff \EffJoin \EffJoin \{ \Eff[\ell] \}_{\ell\in L}]
-      {\CtxSeq{\Ctx_1}{\Ctx_2}}
-      {\EMatch{\E}{\ell:\E_\ell}{\ell\in L}}
-      {\T}
-  }
-}
-
-\newcommand*\RuleTMatchLin{
-  \inferrule[T-MatchLin]{
-    \HasType[\Eff]
-      {\Ctx_1}
-      {\E}
-      {\SBranch{\ell:\S_\ell}{\ell\in L}}
-    \\
-    \HasType[\Eff[\ell]]
-      {\Ctx_2}
-      {\E_\ell}
-      {\TArr{\Mob}{\Eff[\ell]}{\S_\ell}{\T}}
-  }{
-    \HasType[\Eff \EffJoin \EffJoin\{ \Eff[\ell]\}_{\ell\in L}]
-      {\CtxPar{\Ctx_1}{\Ctx_2}}
-      {\EMatch{\E}{\ell:\E_\ell}{\ell\in L}}
-      {\T}
-  }
-}
-
-%% EXISTENTIAL TARGET CALCULUS
-
-\newcommand*\RuleTPack{
-  \inferrule[T-Pack]{
-    \HasTargetType
-      \Ctx
-      {\E}
-      {\T{[{\S}/\alpha]}}
-  }{
-    \HasTargetType
-      \Ctx
-      {\EPack{\S}{\E}{\TExists[\pr{S}]\alpha\T}}
-      {\TExists[\pr{S}]\alpha\T}
-  }
-}
-
-\newcommand*\RuleTUnpack{
-  \inferrule[T-Unpack]{
-    \HasTargetType
-      {\Ctx}
-      {\E[1]}
-      {\TExists\alpha{\T[1]}}
-    \\
-    \HasTargetType
-      {\CtxExtTarget{\CtxExtTarget\Ctx\alpha}{\CtxVar x {\T[1]}}}
-      {\E[2]}
-      {\T[2]}
-    \\
-    \alpha \notin \T[2]
-  }{
-    \HasTargetType
-      \Ctx
-      {\EOpen\alpha x {\E[1]} {\E[2]}}
-      {\T[2]}
-  }
-}
+% \newcommand*\RuleTAbsUnr{
+%   \inferrule[T-AbsUnr]{
+%     \Unr\Ctx \\
+%     \HasType[\Eff]
+%       {\CtxExt\Ctx{\CtxVar\EVar{\T[1]}}}
+%       {\E}
+%       {\T[2]}
+%   }{
+%     \HasType[\EffPure]
+%       \Ctx
+%       {(\EAbs\EVar\E)}
+%       {(\TArr{\MobMobile}{\DirNone,\Eff}{\T[1]}{\T[2]})}
+%   }
+% }
+% 
+% \newcommand*\RuleTAbsLin{
+%   \inferrule[T-AbsLin]{
+%     \HasType[\Eff]
+%       {\CtxExtUnord\Ctx{\CtxVar\EVar{\T[1]}}}
+%       {\E}
+%       {\T[2]} \\
+%       \Mob (\Ctx)
+%   }{
+%     \HasType[\EffPure]
+%       \Ctx
+%       {(\EAbs\EVar\E)}
+%       {(\TArr{\Mob}{\DirUnord,\Eff}{\T[1]}{\T[2]})}
+%   }
+% }
+% 
+% \newcommand*\RuleTAbsLeft{
+%   \inferrule[T-AbsLeft]{
+%     \HasType[\Eff]
+%       {\CtxExt{\CtxVar{\EVar}{\T[1]}}\Ctx}
+%       {\E}
+%       {\T[2]} \\
+%       \Mob (\Ctx)
+%   }{
+%     \HasType[\EffPure]
+%       \Ctx
+%       {(\EAbs\EVar\E)}
+%       {(\TArr{\Mob}{\DirLeft,\Eff}{\T[1]}{\T[2]})}
+%   }
+% }
+% 
+% \newcommand*\RuleTAbsRight{
+%   \inferrule[T-AbsRight]{
+%     \HasType[\Eff]
+%       {\CtxExt\Ctx{\CtxVar{\EVar}{\T[1]}}}
+%       {\E}
+%       {\T[2]} \\
+%       \Mob (\Ctx)
+%   }{
+%     \HasType[\EffPure]
+%       \Ctx
+%       {(\EAbs\EVar\E)}
+%       {(\TArr{\Mob}{\DirRight,\Eff}{\T[1]}{\T[2]})}
+%   }
+% }
+% 
+% \newcommand*\RuleTAppUnr{
+%   \inferrule[T-AppUnr]{
+%     \HasType[\Eff[1]]
+%       {\Ctx_1}
+%       {\E[1]}
+%       {(\TArr{\Mob}{\DirNone,{\Eff}[3]}{\T[1]}{\T[2]})} \\
+%     \HasType[\Eff[2]]
+%       {\Ctx_2}
+%       {\E[2]}
+%       {\T[1]}
+%   }{
+%     \HasType[\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]]
+%       {\CtxSeq {\Ctx_1}{\Ctx_2}}
+%       {(\EApp{\E[1]}{\E[2]})}
+%       {\T[2]}
+%   }
+% }
+% 
+% \newcommand*\RuleTAppLin{
+%   \inferrule[T-AppLin]{
+%     \HasType[\Eff[1]]
+%       {\Ctx_1}
+%       {\E[1]}
+%       {(\TArr{\Mob}{\DirUnord,{\Eff[3]}}{\T[1]}{\T[2]})} \\
+%     \HasType[\Eff[2]]
+%       {\Ctx_2}
+%       {\E[2]}
+%       {\T[1]}
+%   }{
+%     \HasType[\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]]
+%       {\CtxPar {\Ctx_1}{\Ctx_2}}
+%       {(\EApp{\E[1]}{\E[2]})}
+%       {\T[2]}
+%   }
+% }
+% 
+% \newcommand*\RuleTAppLeft{
+%   \inferrule[T-AppLeft]{
+%     % \Unr{\Ctx_1} \vee \Eff[1] = \EffPure
+%     % \\
+%     \HasType[\EffPure]
+%       {\Ctx_1}
+%       {\E[1]}
+%       {(\TArr{\Mob}{\DirLeft,{\Eff[3]}}{\T[1]}{\T[2]})}
+%        \\
+%     \HasType[\Eff[2]]
+%       {\Ctx_2}
+%       {\E[2]}
+%       {\T[1]}
+%   }{
+%     \HasType[(\Eff[2] \EffJoin \Eff[3])]
+%       {\CtxSeq {\Ctx_2}{\Ctx_1}}
+%       {(\EApp{\E[1]}{\E[2]})}
+%       {\T[2]}
+%   }
+% }
+% 
+% \newcommand*\RuleTAppRight{
+%   \inferrule[T-AppRight]{
+%     % \Unr{\Ctx_2} \vee \Eff[2] = \EffPure
+%     % \\
+%     \HasType[\Eff[1]]
+%       {\Ctx_1}
+%       {\E[1]}
+%       {(\TArr{\Mob}{\DirRight,{\Eff[3]}}{\T[1]}{\T[2]})}
+%        \\
+%     \HasType[\EffPure]
+%       {\Ctx_2}
+%       {\E[2]}
+%       {\T[1]}
+%   }{
+%     \HasType[(\Eff[1] \EffJoin \Eff[3])]
+%       {\CtxSeq {\Ctx_1}{\Ctx_2}}
+%       {(\EApp{\E[1]}{\E[2]})}
+%       {\T[2]}
+%   }
+% }
+% 
+% \newcommand*\RuleTPairUnord{
+%   \inferrule[T-PairUnord]{
+%     \HasType[\Eff[1]]
+%       {\Ctx_1}
+%       {\E[1]}
+%       {\T[1]} \\
+%     \HasType[\Eff[2]]
+%       {\Ctx_2}
+%       {\E[2]}
+%       {\T[2]}
+%   }{
+%     \HasType[\Eff[1] \EffJoin \Eff[2]]
+%       {\CtxPar {\Ctx_1}{\Ctx_2}}
+%       {\EPair{\E[1]}{\E[2]}}
+%       {\TPairUnord{\T[1]}{\T[2]}}
+%   }
+% }
+% 
+% \newcommand*\RuleTPairOrd{
+%   \inferrule[T-PairOrd]{
+%     % \Unr{\Ctx_1} \vee \Unr {\T[1]} \vee \Eff[2] = \EffPure \\
+%     \HasType[\Eff[1]]
+%       {\Ctx_1}
+%       {\E[1]}
+%       {\T[1]} \\
+%     \HasType[\EffPure]
+%       {\Ctx_2}
+%       {\E[2]}
+%       {\T[2]}
+%   }{
+%     \HasType[\Eff[1]]
+%       {\CtxSeq {\Ctx_1}{\Ctx_2}}
+%       {\EPair{\E[1]}{\E[2]}}
+%       {\TPairOrd{\T[1]}{\T[2]}}
+%   }
+% }
+% 
+% \newcommand*\RuleTLetUnit{
+%   \inferrule[T-LetUnit]{
+%     \HasType[\Eff[1]]
+%       {\Ctx[1]}
+%       {\E[1]}
+%       {\BUnit} \\
+%     \HasType[\Eff[2]]
+%       {\Ctx[2]}
+%       {\E[2]}
+%       {\T[2]}
+%   }{
+%     \HasType[\Eff[1] \EffJoin \Eff[2]]
+%       {\CtxPat 1 2}
+%       {\ESeq{\E[1]}{\E[2]}}
+%       {\T[2]}
+%   }
+% }
+% 
+% \newcommand*\RuleTLet{
+%   \inferrule[T-Let]{
+%     \HasType[\Eff[1]]
+%       {\Ctx[1]}
+%       {\E[1]}
+%       {\T[1]} \\
+%     \HasType[\Eff[2]]
+%       {\CtxVar x {{\T[1]}} \CtxPatOp \Ctx[2]}
+%       {\E[2]}
+%       {\T[2]}
+%   }{
+%     \HasType[\Eff[1] \EffJoin \Eff[2]]
+%       {\CtxPat 1 2}
+%       {\ELet x{\E[1]}{\E[2]}}
+%       {\T[2]}
+%   }
+% }
+% 
+% \newcommand*\RuleTLetUnord{
+%   \inferrule[T-LetUnord]{
+%     \HasType[\Eff[1]]
+%       {\Ctx[1]}
+%       {\E[1]}
+%       {\TPairUnord {\T[1]}{\T[2]}} \\
+%     \HasType[\Eff[2]]
+%       {\CtxExtUnord{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}} \CtxPatOp \Ctx[2]}
+%       {\E[2]}
+%       {\T[3]}
+%   }{
+%     \HasType[\Eff[1] \EffJoin \Eff[2]]
+%       {\CtxPat 1 2}
+%       {\ELetPair xy{\E[1]}{\E[2]}}
+%       {\T[3]}
+%   }
+% }
+% 
+% \newcommand*\RuleTLetOrd{
+%   \inferrule[T-LetOrd]{
+%     \HasType[\Eff[1]]
+%       {\Ctx[1]}
+%       {\E[1]}
+%       {\TPairOrd {\T[1]}{\T[2]}} \\
+%     \HasType[\Eff[2]]
+%       {\CtxExt{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}} \CtxPatOp \Ctx[2]}
+%       {\E[2]}
+%       {\T[3]}
+%   }{
+%     \HasType[\Eff[1] \EffJoin \Eff[2]]
+%       {\CtxPat 1 2}
+%       {\ELetPair xy{\E[1]}{\E[2]}}
+%       {\T[3]}
+%   }
+% }
+% 
+% \newcommand*\RuleTInLeft{
+%   \inferrule[T-Inj]{
+%     \HasType[\Eff]
+%       {\Ctx}
+%       {\E}
+%       {\T[i]}
+%   }{
+%     \HasType[\Eff]
+%       {\Ctx}
+%       {\EInj{i} \E}
+%       {\TSum{\T[1]}{\T[2]}}
+%   }
+% }
+% 
+% \newcommand*\RuleTCaseSum{
+%   \inferrule[T-CaseSum]{
+%     \HasType[\Eff]
+%       {\Ctx[1]}
+%       {\E}
+%       {\TSum{\T[1]}{\T[2]}}
+%     \\
+%     \HasType[\Eff[1]]
+%       {\CtxVar{\EVar_1}{\T[1]} \CtxPatOp \Ctx[2]}
+%       {\E[1]}
+%       {\T}
+%     \\
+%     \HasType[\Eff[2]]
+%       {\CtxVar{\EVar_2}{\T[2]} \CtxPatOp \Ctx[2]}
+%       {\E[2]}
+%       {\T}
+%   }{
+%     \HasType[\Eff \EffJoin \Eff[1] \EffJoin \Eff[2]]
+%       {\CtxPat 1 2}
+%       {\ECase\E{x_1}{\E[1]}{x_2}{\E[2]}}
+%       {\T}
+%   }
+% }
+% 
+% \newcommand*\RuleTWeakC{
+%   \inferrule[T-WeakC]{
+%     \Unr\Ctx_2 \\
+%     \HasType[\Eff]
+%       {\CtxExt{\Ctx_1}{\Ctx_2}}
+%       {\E}
+%       {\T}
+%   }{
+%     \HasType[\Eff]
+%       {\Ctx_1}
+%       {\E}
+%       {\T}
+%   }
+% }
+% 
+% \newcommand*\RuleTWeakE{
+%   \inferrule[T-WeakE]{
+%     \HasType[\EffPure]
+%       {\Ctx}
+%       {\E}
+%       {\T}
+%   }{
+%     \HasType[\EffPure]
+%       {\Ctx}
+%       {\E}
+%       {\T}
+%   }
+% }
+% 
+% \newcommand*\RuleTWeakCE{
+%   \inferrule[T-WeakCE]{
+%     \Ctx[2] \preccurlyeq \Ctx[1]
+%     \\
+%     \Eff[1] \le \Eff[2]
+%     \\
+%     \HasType[\Eff[1]]
+%       {\Ctx_1}
+%       {\E}
+%       {\T}
+%   }{
+%     \HasType[\Eff[2]]
+%       {\Ctx_2}
+%       {\E}
+%       {\T}
+%   }
+% }
+% 
+% \newcommand*\RuleTMatch{
+%   \inferrule[T-MatchLeft]{
+%     \HasType[\Eff]
+%       {\Ctx_1}
+%       {\E}
+%       {\SBranch{\ell:\S_\ell}{\ell\in L}}
+%     \\
+%     \HasType[\Eff[\ell]]
+%       {\Ctx_2}
+%       {\E_\ell}
+%       {\TArr{\Mob}{\Eff[\ell]}{\S_\ell}{\T}}
+%   }{
+%     \HasType[\Eff \EffJoin \EffJoin \{ \Eff[\ell] \}_{\ell\in L}]
+%       {\CtxSeq{\Ctx_1}{\Ctx_2}}
+%       {\EMatch{\E}{\ell:\E_\ell}{\ell\in L}}
+%       {\T}
+%   }
+% }
+% 
+% \newcommand*\RuleTMatchLin{
+%   \inferrule[T-MatchLin]{
+%     \HasType[\Eff]
+%       {\Ctx_1}
+%       {\E}
+%       {\SBranch{\ell:\S_\ell}{\ell\in L}}
+%     \\
+%     \HasType[\Eff[\ell]]
+%       {\Ctx_2}
+%       {\E_\ell}
+%       {\TArr{\Mob}{\Eff[\ell]}{\S_\ell}{\T}}
+%   }{
+%     \HasType[\Eff \EffJoin \EffJoin\{ \Eff[\ell]\}_{\ell\in L}]
+%       {\CtxPar{\Ctx_1}{\Ctx_2}}
+%       {\EMatch{\E}{\ell:\E_\ell}{\ell\in L}}
+%       {\T}
+%   }
+% }
+% 
 
 %%% Local
 

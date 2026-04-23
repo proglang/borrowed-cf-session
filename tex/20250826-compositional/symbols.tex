@@ -359,6 +359,14 @@
   {
     \ctxcolor{#2} \vdash {#3} : {#4} \ifstrempty{#1}{}{\mid{#1}}
   }
+\NewDocumentCommand \InferType {O{\Eff} O{\Ctx} m m}
+  {
+    \ctxcolor{#2} \vdash {#3} \Rightarrow {#4} \mid {#1}
+  }
+\NewDocumentCommand \CheckType {O{\Eff} O{\Ctx} m m}
+  {
+    \ctxcolor{#2} \vdash {#3} \Leftarrow {#4} \mid {#1}
+  }
 
 % Constant Typing
 \newcommand*\HasCType[2]{{#1}:{#2}}
