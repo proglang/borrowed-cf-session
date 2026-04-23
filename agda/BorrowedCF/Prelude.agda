@@ -52,6 +52,9 @@ module Fin where
   open import Data.Fin public
   open import Data.Fin.Properties public
 
+  import Data.Fin.Patterns
+  module Patterns = Data.Fin.Patterns
+
   ↑ˡ≢↑ʳ : ∀ {m} {x : Fin m} {n} {y : Fin n} → x ↑ˡ n ≢ m ↑ʳ y
   ↑ˡ≢↑ʳ {suc m} {suc x} {suc n} {y} eq = ↑ˡ≢↑ʳ (suc-injective eq)
 

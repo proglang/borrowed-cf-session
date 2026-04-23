@@ -12,133 +12,11 @@ open import Relation.Binary.Construct.Closure.Symmetric as Sym using (symmetric)
 open import BorrowedCF.Prelude
 open import BorrowedCF.Modes
 open import BorrowedCF.Types hiding (s; s₁; s₂; s₃; s′)
+open import BorrowedCF.Context renaming (module Substitution to 𝐂)
 
 import BorrowedCF.FinKits as Kits
 
 open Nat.Variables
-
-data ParSeq : Set where
-  par seq : ParSeq
-
-infix 12 _∥_ _;_
-
-data Struct (n : ℕ) : Set where
-  `_  : 𝔽 n → Struct n
-  []  : Struct n
-  _∥_ : Struct n → Struct n → Struct n
-  _;_ : Struct n → Struct n → Struct n
-
-variable
-  α α₁ α₂ α₃ α′ : Struct n
-  β β₁ β₂ β₃ β′ : Struct n
-  γ γ₁ γ₂ γ₃ γ′ : Struct n
-
-infix 4 _≈′_
-
-data _≈′_ {n} : Rel (Struct n) 0ℓ where
-  ;′-unit₁ : [] ; α ≈′ α
-  ;′-unit₂ : α ; [] ≈′ α
-  ;′-assoc : (α ; β) ; γ ≈′ α ; (β ; γ)
-  ;′-cong₁ : α ≈′ α′ → α ; β ≈′ α′ ; β
-  ;′-cong₂ : β ≈′ β′ → α ; β ≈′ α ; β′
-
-  ∥′-unit  : α ∥ [] ≈′ α
-  ∥′-assoc : (α ∥ β) ∥ γ ≈′ α ∥ (β ∥ γ)
-  ∥′-comm  : α ∥ β ≈′ β ∥ α
-  ∥′-cong₁ : α ≈′ α′ → α ∥ β ≈′ α′ ∥ β
-
-infix 4 _≈_
-
-_≈_ : Rel (Struct n) _
-_≈_ = EqClosure _≈′_
-
-;-unit₁ : [] ; α ≈ α
-;-unit₁ = Eq*.return ;′-unit₁
-
-;-unit₂ : α ; [] ≈ α
-;-unit₂ = Eq*.return ;′-unit₂
-
-;-assoc : (α ; β) ; γ ≈ α ; (β ; γ)
-;-assoc = Eq*.return ;′-assoc
-
-;-cong : α ≈ α′ → β ≈ β′ → α ; β ≈ α′ ; β′
-;-cong xs ys = Eq*.gmap (_; _) ;′-cong₁ xs ◅◅ Eq*.gmap (_ ;_) ;′-cong₂ ys
-
-∥-unit : α ∥ [] ≈ α
-∥-unit = Eq*.return ∥′-unit
-
-∥-assoc : (α ∥ β) ∥ γ ≈ α ∥ (β ∥ γ)
-∥-assoc = Eq*.return ∥′-assoc
-
-∥-comm : α ∥ β ≈ β ∥ α
-∥-comm = Eq*.return ∥′-comm
-
-∥-cong : α ≈ α′ → β ≈ β′ → α ∥ β ≈ α′ ∥ β′
-∥-cong xs ys = Eq*.gmap (_∥ _) ∥′-cong₁ xs ◅◅ ∥-comm ◅◅ Eq*.gmap (_∥ _) ∥′-cong₁ ys ◅◅ ∥-comm
-
-≈-isEquivalence : ∀ n → IsEquivalence (_≈_ {n})
-≈-isEquivalence _ = Eq*.isEquivalence _≈′_
-
-private module ≈-Equivalence {n} = IsEquivalence (≈-isEquivalence n)
-open ≈-Equivalence
-  using ()
-  renaming (refl to ≈-refl; sym to ≈-sym; trans to ≈-trans)
-  public
-
-infix 4 _∈ₛ_
-
-data _∈ₛ_ (x : 𝔽 n) : Struct n → Set where
-  ∈-`  : x ∈ₛ ` x
-  ∈-∥₁ : x ∈ₛ α₁ → x ∈ₛ α₁ ∥ α₂
-  ∈-∥₂ : x ∈ₛ α₂ → x ∈ₛ α₁ ∥ α₂
-  ∈-;₁ : x ∈ₛ α₁ → x ∈ₛ α₁ ; α₂
-  ∈-;₂ : x ∈ₛ α₂ → x ∈ₛ α₁ ; α₂
-
-≈′-pres¹-∈ : ∀ {x} → α ≈′ β → x ∈ₛ α → x ∈ₛ β
-≈′-pres¹-∈ ;′-unit₁ (∈-;₂ x∈) = x∈
-≈′-pres¹-∈ ;′-unit₂ (∈-;₁ x∈) = x∈
-≈′-pres¹-∈ ;′-assoc (∈-;₁ (∈-;₁ x∈)) = ∈-;₁ x∈
-≈′-pres¹-∈ ;′-assoc (∈-;₁ (∈-;₂ x∈)) = ∈-;₂ (∈-;₁ x∈)
-≈′-pres¹-∈ ;′-assoc (∈-;₂ x∈) = ∈-;₂ (∈-;₂ x∈)
-≈′-pres¹-∈ ∥′-unit (∈-∥₁ x∈) = x∈
-≈′-pres¹-∈ ∥′-assoc (∈-∥₁ (∈-∥₁ x∈)) = ∈-∥₁ x∈
-≈′-pres¹-∈ ∥′-assoc (∈-∥₁ (∈-∥₂ x∈)) = ∈-∥₂ (∈-∥₁ x∈)
-≈′-pres¹-∈ ∥′-assoc (∈-∥₂ x∈) = ∈-∥₂ (∈-∥₂ x∈)
-≈′-pres¹-∈ ∥′-comm (∈-∥₁ x∈) = ∈-∥₂ x∈
-≈′-pres¹-∈ ∥′-comm (∈-∥₂ x∈) = ∈-∥₁ x∈
-≈′-pres¹-∈ (;′-cong₁ eq) (∈-;₁ x∈) = ∈-;₁ (≈′-pres¹-∈ eq x∈)
-≈′-pres¹-∈ (;′-cong₁ eq) (∈-;₂ x∈) = ∈-;₂ x∈
-≈′-pres¹-∈ (;′-cong₂ eq) (∈-;₁ x∈) = ∈-;₁ x∈
-≈′-pres¹-∈ (;′-cong₂ eq) (∈-;₂ x∈) = ∈-;₂ (≈′-pres¹-∈ eq x∈)
-≈′-pres¹-∈ (∥′-cong₁ eq) (∈-∥₁ x∈) = ∈-∥₁ (≈′-pres¹-∈ eq x∈)
-≈′-pres¹-∈ (∥′-cong₁ eq) (∈-∥₂ x∈) = ∈-∥₂ x∈
-
-≈′-pres²-∈ : ∀ {x} → α ≈′ β → x ∈ₛ β → x ∈ₛ α
-≈′-pres²-∈ ;′-unit₁ x∈ = ∈-;₂ x∈
-≈′-pres²-∈ ;′-unit₂ x∈ = ∈-;₁ x∈
-≈′-pres²-∈ ;′-assoc (∈-;₁ x∈) = ∈-;₁ (∈-;₁ x∈)
-≈′-pres²-∈ ;′-assoc (∈-;₂ (∈-;₁ x∈)) = ∈-;₁ (∈-;₂ x∈)
-≈′-pres²-∈ ;′-assoc (∈-;₂ (∈-;₂ x∈)) = ∈-;₂ x∈
-≈′-pres²-∈ ∥′-unit x∈ = ∈-∥₁ x∈
-≈′-pres²-∈ ∥′-assoc (∈-∥₁ x∈) = ∈-∥₁ (∈-∥₁ x∈)
-≈′-pres²-∈ ∥′-assoc (∈-∥₂ (∈-∥₁ x∈)) = ∈-∥₁ (∈-∥₂ x∈)
-≈′-pres²-∈ ∥′-assoc (∈-∥₂ (∈-∥₂ x∈)) = ∈-∥₂ x∈
-≈′-pres²-∈ ∥′-comm (∈-∥₁ x∈) = ∈-∥₂ x∈
-≈′-pres²-∈ ∥′-comm (∈-∥₂ x∈) = ∈-∥₁ x∈
-≈′-pres²-∈ (;′-cong₁ eq) (∈-;₁ x∈) = ∈-;₁ (≈′-pres²-∈ eq x∈)
-≈′-pres²-∈ (;′-cong₁ eq) (∈-;₂ x∈) = ∈-;₂ x∈
-≈′-pres²-∈ (;′-cong₂ eq) (∈-;₁ x∈) = ∈-;₁ x∈
-≈′-pres²-∈ (;′-cong₂ eq) (∈-;₂ x∈) = ∈-;₂ (≈′-pres²-∈ eq x∈)
-≈′-pres²-∈ (∥′-cong₁ eq) (∈-∥₁ x∈) = ∈-∥₁ (≈′-pres²-∈ eq x∈)
-≈′-pres²-∈ (∥′-cong₁ eq) (∈-∥₂ x∈) = ∈-∥₂ x∈
-
-≈-pres-∈ : ∀ {x} → α ≈ β → x ∈ₛ α → x ∈ₛ β
-≈-pres-∈ refl x∈ = x∈
-≈-pres-∈ (Sym.fwd y ◅ ys) x∈ = ≈-pres-∈ ys (≈′-pres¹-∈ y x∈)
-≈-pres-∈ (Sym.bwd y ◅ ys) x∈ = ≈-pres-∈ ys (≈′-pres²-∈ y x∈)
-
-γ≈`x⇒`x∈γ : ∀ {x} → γ ≈ ` x → x ∈ₛ γ
-γ≈`x⇒`x∈γ eq = ≈-pres-∈ (≈-sym eq) ∈-`
 
 data Const : Set where
   `unit `fork `send `recv `drop `acq `end : Const
@@ -223,11 +101,7 @@ open module CTraversal = Traversal.CTraversal record { fusion = fusion }
   hiding (fusion)
   public
 
-Ctx = Vector 𝕋
-
-variable
-  Γ Γ₁ Γ₂ Γ₃ Γ′ : Ctx n
-
+{-
 infixl 5 _⋯𝓢_
 
 _⋯𝓢_ : Struct m → m →ᵣ n → Struct n
@@ -235,41 +109,7 @@ _⋯𝓢_ : Struct m → m →ᵣ n → Struct n
 [] ⋯𝓢 ρ = []
 x ∥ y ⋯𝓢 ρ = (x ⋯𝓢 ρ) ∥ (y ⋯𝓢 ρ)
 x ; y ⋯𝓢 ρ = (x ⋯𝓢 ρ) ; (y ⋯𝓢 ρ)
-
-data MobCx (Γ : Ctx n) : Struct n → Set where
-  []  : MobCx Γ []
-  _∥_ : MobCx Γ α₁ → MobCx Γ α₂ → MobCx Γ (α₁ ∥ α₂)
-  _;_ : MobCx Γ α₁ → MobCx Γ α₂ → MobCx Γ (α₁ ; α₂)
-  `_  : ∀ {x} → Mobile (Γ x) → MobCx Γ (` x)
-
-joinP/S : ParSeq → Struct n → Struct n → Struct n
-joinP/S par = _∥_
-joinP/S seq = _;_
-
-joinP/S-∅₁ : ∀ p/s → γ₁ ≈ [] → joinP/S p/s γ₁ γ₂ ≈ γ₂
-joinP/S-∅₁ par eq = ∥-cong eq refl ◅◅ ∥-comm ◅◅ ∥-unit
-joinP/S-∅₁ seq eq = ;-cong eq refl ◅◅ ;-unit₁
-
-joinDir : Dir → Struct n → Struct n → Struct n
-joinDir 𝟙 = _∥_
-joinDir L = _;_
-joinDir R = flip _;_
-
-cong-joinDir : (d : Dir) → α₁ ≈ α₂ → β₁ ≈ β₂ → joinDir d α₁ β₁ ≈ joinDir d α₂ β₂
-cong-joinDir L eq-α eq-β = ;-cong eq-α eq-β
-cong-joinDir R eq-α eq-β = ;-cong eq-β eq-α
-cong-joinDir 𝟙 eq-α eq-β = ∥-cong eq-α eq-β
-
-Split : Dir → Struct n → Struct n → Struct n → Set
-Split d α α₁ α₂ = α ≈ joinDir d α₁ α₂
-
-SeqIsPure : ParSeq → Eff → Eff → Set
-SeqIsPure par ϵ₁ ϵ₂ = ϵ₁ ≡ ϵ₂
-SeqIsPure seq ϵ₁ ϵ₂ = ϵ₂ ≡ ℙ
-
-pairDir : ParSeq → Dir
-pairDir par = 𝟙
-pairDir seq = L
+-}
 
 infix 4 ⊢_∶_
 
@@ -297,32 +137,32 @@ infix 4 _;_⊢_∶_∣_
 
 data _;_⊢_∶_∣_ (Γ : Ctx n) (γ : Struct n) : Tm n → 𝕋 → Eff → Set where
   T-Const : ∀ {c} →
-    γ ≈ [] →
+    (γ-eq : γ ≈ []) →
     ⊢ c ∶ T →
     -------------------
     Γ ; γ ⊢ K c ∶ T ∣ ℙ
 
-  T-Var : ∀ {x} →
-    γ ≈ ` x →
-    Γ x ≡ T →
+  T-Var : ∀ x →
+    (γ-eq : γ ≈ ` x) →
+    (T-eq : Γ x ≡ T) →
     -------------------
     Γ ; γ ⊢ ` x ∶ T ∣ ℙ
 
   T-Abs :
-    (𝓂 ≡ mob → MobCx Γ α) →
-    T F.∷ Γ ; joinDir d (` zero) (γ ⋯𝓢 weaken) ⊢ e ∶ U ∣ ϵ →
-    --------------------------------------------------------
+    (𝓂→C : 𝓂 ≡ mob → MobCx Γ γ) →
+    T F.∷ Γ ; join d (` zero) (𝐂.wk γ) ⊢ e ∶ U ∣ ϵ →
+    ------------------------------------------------
     Γ ; γ ⊢ λ[ d ] e ∶ arr 𝓂 d ϵ T U ∣ ℙ
 
   T-App :
-    Split d γ γ₁ γ₂                 →
+    (γ-eq : Split d γ γ₁ γ₂)        →
     Γ ; γ₁ ⊢ e₁ ∶ arr 𝓂 d ϵ T U ∣ ϵ →
     Γ ; γ₂ ⊢ e₂ ∶ T             ∣ ϵ →
     ---------------------------------
     Γ ; γ ⊢ e₁ · e₂ ∶ U ∣ ϵ
 
   T-Pair : (p/s : ParSeq) →
-    γ ≈ joinP/S p/s γ₁ γ₂ →
+    (γ-eq : γ ≈ join p/s γ₁ γ₂) →
     Γ ; γ₁ ⊢ e₁ ∶ T ∣ ϵ₁ →
     Γ ; γ₂ ⊢ e₂ ∶ U ∣ ϵ₂ →
     SeqIsPure p/s ϵ₁ ϵ₂ →
@@ -330,27 +170,27 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) (γ : Struct n) : Tm n → 𝕋 → Eff → S
     Γ ; γ ⊢ e₁ ,⟨ pairDir p/s ⟩ e₂ ∶ pair (pairDir p/s) T U ∣ ϵ₁
 
   T-Let : (p/s : ParSeq) →
-    γ ≈ joinP/S p/s γ₁ γ₂ →
+    (γ-eq : Split p/s γ γ₁ γ₂) →
     Γ ; γ₁ ⊢ e₁ ∶ T ∣ ϵ →
-    T F.∷ Γ ; joinP/S p/s (` zero) (γ₂ ⋯𝓢 weaken) ⊢ e₂ ∶ U ∣ ϵ →
-    ------------------------------------------------------------
+    T F.∷ Γ ; join p/s (` zero) (𝐂.wk γ₂) ⊢ e₂ ∶ U ∣ ϵ →
+    ----------------------------------------------------
     Γ ; γ ⊢ `let e₁ `in e₂ ∶ U ∣ ϵ
 
   T-LetUnit : (p/s : ParSeq) →
-    γ ≈ joinP/S p/s γ₁ γ₂ →
+    (γ-eq : Split p/s γ γ₁ γ₂) →
     Γ ; γ₁ ⊢ e₁ ∶ unit ∣ ϵ →
     Γ ; γ₂ ⊢ e₂ ∶ T    ∣ ϵ →
     ------------------------
     Γ ; γ ⊢ e₁ ; e₂ ∶ T ∣ ϵ
 
   T-LetPair : (p/s : ParSeq) →
-    γ ≈ joinP/S p/s γ₁ γ₂ →
+    (γ-eq : Split p/s γ γ₁ γ₂) →
     Γ ; γ₁ ⊢ e₁ ∶ pair d T₁ T₂ ∣ ϵ →
     T₁ F.∷ T₂ F.∷ Γ ;
-      joinP/S p/s (joinDir d (` zero) (` suc zero))
-                  (γ₂ ⋯𝓢 weaken* 2)
+      join p/s (join d (` zero) (` suc zero))
+               (𝐂.wk (𝐂.wk γ₂))
       ⊢ e₂ ∶ U ∣ ϵ →
-    -----------------------------------------------
+    -----------------------------------------
     Γ ; γ ⊢ `let⊗ e₁ `in e₂ ∶ U ∣ ϵ
 
   T-WeakEff :
@@ -359,134 +199,140 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) (γ : Struct n) : Tm n → 𝕋 → Eff → S
     Γ ; γ ⊢ e ∶ T ∣ 𝕀
 
 
-record TKit (K : Kit 𝓕) (CK : CKit K Kᵣ K) : Set₁ where
-  private instance _ = K; _ = CK
+record TKit (K : Kit 𝓕) : Set₁ where
+  private instance _ = K
 
-  infix 4 _;_⊢_∶_ _∶_;_⇒ₖ_
   field
-    _;_⊢_∶_ : Ctx n → Struct n → 𝓕 n → 𝕋 → Set
-    id/⊢` : (x : 𝔽 n) → Γ ; ` x ⊢ id/` x ∶ Γ x
-    ⊢`/id : {x/t : 𝓕 n} → Γ ; γ ⊢ x/t ∶ T → Γ ; γ ⊢ `/id x/t ∶ T ∣ ℙ
-    ⊢wk : (T : 𝕋) (e : 𝓕 n) → Γ ; γ ⊢ e ∶ T′ → T F.∷ Γ ; γ ⋯𝓢 wk ⊢ wk e ∶ T′
+    𝓕[_;_⊢_∶_] : Ctx n → Struct n → 𝓕 n → 𝕋 → Set
+    ⊢id/` : {x : 𝔽 n} → γ ≈ ` x → 𝓕[ Γ ; γ ⊢ id/` x ∶ Γ x ]
+    ⊢`/id : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ T ] → Γ ; γ ⊢ `/id x/t ∶ T ∣ ℙ
+    ⊢wk : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ U ] → 𝓕[ T F.∷ Γ ; 𝐂.wk γ ⊢ wk x/t ∶ U ]
 
+  infix 4 _∶_⊢_⇒_
 
+  _∶_⊢_⇒_ : m –[ K ]→ n → m 𝐂.→ₛ n → Ctx m → Ctx n → Set
+  ϕ ∶ σ ⊢ Γ₁ ⇒ Γ₂ = ∀ x → 𝓕[ Γ₂ ; σ x ⊢ ϕ x ∶ Γ₁ x ]
 
-  _∶_;_⇒ₖ_ : m –[ K ]→ n → Ctx m → Struct m → Ctx n → Set
-  ϕ ∶ Γ₁ ; γ₁ ⇒ₖ Γ₂ = ∀ x → x ∈ₛ γ₁ → ∃ λ γ₂ → Γ₂ ; γ₂ ⊢ ϕ x ∶ Γ₁ x
+  ⊢id : {Γ : Ctx n} → idₖ ∶ 𝐂.idₛ ⊢ Γ ⇒ Γ
+  ⊢id x = ⊢id/` refl
 
-  ⊢↑ : {ϕ : m –[ K ]→ n} → ϕ ∶ Γ₁ ; γ ⇒ₖ Γ₂ → (∀ {x} → suc x ∈ₛ γ′ → x ∈ₛ γ) → ϕ ↑ ∶ T F.∷ Γ₁ ; γ′ ⇒ₖ T F.∷ Γ₂
-  ⊢↑ ⊢ϕ γ≼ zero x∈ = _ , id/⊢` zero
-  ⊢↑ ⊢ϕ γ≼ (suc x) x∈ = {!⊢ϕ x (γ≼ x∈)!}
+  ⊢↑ : ∀ {ϕ : m –[ K ]→ n} {σ} → ϕ ∶ σ ⊢ Γ₁ ⇒ Γ₂ → ϕ ↑ ∶ σ 𝐂.↑ ⊢ T F.∷ Γ₁ ⇒ T F.∷ Γ₂
+  ⊢↑ ⊢ϕ zero = ⊢id/` refl
+  ⊢↑ ⊢ϕ (suc x) = ⊢wk (⊢ϕ x)
 
-{-
-  data _∶_;_⇒ₖ_;_ : m –[ K ]→ n → Ctx m → Struct m → Ctx n → Struct n → Set where
-    ϕ-id : ∀ {ϕ : n –[ K ]→ n} → ϕ ≗ idₖ  → ϕ ∶ Γ ; γ ⇒ₖ Γ ; γ
+  ⊢⦅_⦆ : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ T ] → ⦅ x/t ⦆ ∶ 𝐂.⦅ γ ⦆ ⊢ T F.∷ Γ ⇒ Γ
+  ⊢⦅ ⊢x/t ⦆ zero    = ⊢x/t
+  ⊢⦅ ⊢x/t ⦆ (suc y) = ⊢id/` refl
 
-    ϕ-↑ : ∀ {ϕ′ : m –[ K ]→ n} {ϕ} p/s →
-      ϕ ≗ ϕ′ ↑ →
-      γ ≈ joinP/S p/s (γ₁ ⋯𝓢 wk) (` zero) →
-      γ′ ≈ joinP/S p/s (γ₂ ⋯𝓢 wk) (` zero) →
-      ϕ′ ∶ Γ₁ ; γ₁ ⇒ₖ Γ₂ ; γ₂ →
-      ϕ ∶ T F.∷ Γ₁ ; γ ⇒ₖ T F.∷ Γ₂ ; γ′
+  ⊢weaken : (Γ : Ctx n) → weaken ∶ 𝐂.weaken ⊢ Γ ⇒ T F.∷ Γ
+  ⊢weaken Γ x = ⊢wk (⊢id/` refl)
 
-    ϕ-wk : ∀ {ϕ′ : m –[ K ]→ n} {ϕ : m –[ K ]→ suc n} (p/s : ParSeq) →
-      ϕ ≗ ϕ′ ·ₖ wk →
-      γ₂ ⋯𝓢 wk ≈ γ′ →
-      ϕ′ ∶ Γ₁ ; γ₁ ⇒ₖ Γ₂ ; γ₂ →
-      ϕ ∶ Γ₁ ; γ₁ ⇒ₖ T F.∷ Γ₂ ; γ′
+infix 4 _∶_⊢[_]_⇒_
 
-  _&_ : {ϕ : m –[ K ]→ n} (x : 𝔽 m) → ϕ ∶ Γ ; ` x ⇒ₖ Γ′ ; γ′ → Γ′ ; γ′ ⊢ ϕ x ∶ Γ x
-  x & ϕ-id eq rewrite eq x = id/⊢` x
-  zero & ϕ-↑ p/s eq s₁ s₂ ⊢ϕ rewrite eq zero = {!!}
-  suc x & ϕ-↑ p/s eq s₁ s₂ ⊢ϕ = {!!}
-  x & ϕ-wk p/s x₁ x₂ ⊢ϕ = {!!}
+_∶_⊢[_]_⇒_ : ∀ {K : Kit 𝓕} → m –[ K ]→ n → m 𝐂.→ₛ n → TKit K → Ctx m → Ctx n → Set
+ϕ ∶ σ ⊢[ TK ] Γ₁ ⇒ Γ₂ = ϕ ∶ σ ⊢ Γ₁ ⇒ Γ₂ where open TKit TK
 
-  ⊢ϕ-pres-∅ : {ϕ : m –[ K ]→ n} → ϕ ∶ Γ ; γ ⇒ₖ Γ′ ; γ′ → γ ≈ [] → γ′ ≈ []
-  ⊢ϕ-pres-∅ (ϕ-id x) eq = eq
-  ⊢ϕ-pres-∅ (ϕ-↑ p/s eq-↑ s₁ s₂ ⊢ϕ) eq = {!!}
-  ⊢ϕ-pres-∅ (ϕ-wk p/s x x₁ ⊢ϕ) eq = {!!}
--}
+open TKit ⦃ ... ⦄ public
 
-instance
-  TKᵣ : TKit Kᵣ it
-  TKᵣ = record
-    { _;_⊢_∶_ = λ Γ γ x T → γ ≈ ` x × Γ x ≡ T
-    ; id/⊢` = λ x → refl , refl
-    ; ⊢`/id = uncurry T-Var
-    }
+infixl 5 _⊢≈_ _⊢⋯_
 
-  TKₛ : TKit Kₛ it
-  TKₛ = record
-    { _;_⊢_∶_ = λ Γ γ x T → Γ ; γ ⊢ x ∶ T ∣ ℙ
-    ; id/⊢` = λ x → T-Var refl refl
-    ; ⊢`/id = λ x → x
-    }
+_⊢≈_ : Γ ; γ₁ ⊢ e ∶ T ∣ ϵ → γ₁ ≈ γ₂ → Γ ; γ₂ ⊢ e ∶ T ∣ ϵ
+T-Const γ-eq x ⊢≈ eq = T-Const (≈-trans (≈-sym eq) γ-eq) x
+T-Var x γ-eq T-eq ⊢≈ eq = T-Var x (≈-trans (≈-sym eq) γ-eq) T-eq
+T-Abs {d = d} 𝓂→C x ⊢≈ eq = T-Abs (mobCx-≈ eq ∘ 𝓂→C) (x ⊢≈ cong-join d refl (cong-wk eq))
+T-App γ-eq x x₁ ⊢≈ eq = T-App (≈-trans (≈-sym eq) γ-eq) x x₁
+T-Pair p/s γ-eq x x₁ x₂ ⊢≈ eq = T-Pair p/s (≈-trans (≈-sym eq) γ-eq) x x₁ x₂
+T-Let p/s γ-eq x x₁ ⊢≈ eq = T-Let p/s (≈-trans (≈-sym eq) γ-eq) x x₁
+T-LetUnit p/s γ-eq x x₁ ⊢≈ eq = T-LetUnit p/s (≈-trans (≈-sym eq) γ-eq) x x₁
+T-LetPair p/s γ-eq x x₁ ⊢≈ eq = T-LetPair p/s (≈-trans (≈-sym eq) γ-eq) x x₁
+T-WeakEff x ⊢≈ eq = T-WeakEff (x ⊢≈ eq)
 
-open TKit ⦃ … ⦄
+mobCx-⋯ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ TK : TKit K ⦄ →
+  {ϕ : m –[ K ]→ n} {σ : _} →
+  MobCx Γ₁ γ → ϕ ∶ σ ⊢[ TK ] Γ₁ ⇒ Γ₂ → MobCx Γ₂ (γ 𝐂.⋯ σ)
+mobCx-⋯ [] ⊢ϕ = []
+mobCx-⋯ (C₁ ∥ C₂) ⊢ϕ = mobCx-⋯ C₁ ⊢ϕ ∥ mobCx-⋯ C₂ ⊢ϕ
+mobCx-⋯ (C₁ ; C₂) ⊢ϕ = mobCx-⋯ C₁ ⊢ϕ ; mobCx-⋯ C₂ ⊢ϕ
+mobCx-⋯ (` x) ⊢ϕ = {!MobCx.` ?!}
 
-_⊢⋯_ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ →
-       ⦃ C₁ : CKit K Kᵣ K ⦄ ⦃ C₂ : CKit K K K ⦄ ⦃ C₃ : CKit K Kₛ Kₛ ⦄ ⦃ TK : TKit K C₁ ⦄ →
-       {e : Tm m} {ϕ : m –[ K ]→ n} →
-       Γ₁ ; γ₁ ⊢ e ∶ T ∣ ϵ →
-       ϕ ∶ Γ₁ ; γ₁ ⇒ₖ Γ₂ →
-       ∃ λ γ₂ → Γ₂ ; γ₂ ⊢ e ⋯ ϕ ∶ T ∣ ϵ
-T-Const γ≈∅ c ⊢⋯ ⊢ϕ = [] , T-Const refl c
-_⊢⋯_ ⦃ TK = TK ⦄ (T-Var {x = x} γ≈` refl) ⊢ϕ = Π.map₂ (⊢`/id ⦃ TK ⦄) (⊢ϕ x (γ≈`x⇒`x∈γ γ≈`))
-T-Abs x e ⊢⋯ ⊢ϕ = {!e ⊢⋯ ?!}
-T-App x e₁ e₂ ⊢⋯ ⊢ϕ with e₁ ⊢⋯ {!!} | e₂ ⊢⋯ {!!}
-... | γ₁ , e₁′ | γ₂ , e₂′ = _ , T-App refl e₁′ e₂′
-T-Pair p/s x x₁ x₂ x₃ ⊢⋯ ⊢ϕ = {!!}
-T-Let p/s x e e₁ ⊢⋯ ⊢ϕ = {!!}
-T-LetUnit p/s x e e₁ ⊢⋯ ⊢ϕ = {!!}
-T-LetPair p/s x e e₁ ⊢⋯ ⊢ϕ = {!!}
+subst-γ : Γ ; γ₁ ⊢ e ∶ T ∣ ϵ → γ₁ ≡ γ₂ → Γ ; γ₂ ⊢ e ∶ T ∣ ϵ
+subst-γ x refl = x
+
+_⊢⋯_ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ TK : TKit K ⦄ →
+       ⦃ C₁ : CKit K Kᵣ K ⦄ ⦃ C₂ : CKit K K K ⦄ ⦃ C₃ : CKit K Kₛ Kₛ ⦄ →
+       {ϕ : m –[ K ]→ n} {σ : _} →
+       Γ₁ ; γ ⊢ e ∶ T ∣ ϵ →
+       ϕ ∶ σ ⊢[ TK ] Γ₁ ⇒ Γ₂ →
+       Γ₂ ; γ 𝐂.⋯ σ ⊢ e ⋯ ϕ ∶ T ∣ ϵ
+T-Const γ-eq x ⊢⋯ ⊢ϕ = T-Const (⋯-preserves-≈ γ-eq) x
+_⊢⋯_ {γ = γ} {σ = σ} (T-Var x γ-eq T-eq) ⊢ϕ =
+  let open ≈-Reasoning in
+  ⊢`/id (subst 𝓕[ _ ; _ ⊢ _ ∶_] T-eq (⊢ϕ x)) ⊢≈ (begin
+    σ x        ≡⟨⟩
+    ` x 𝐂.⋯ σ  ≈⟨ ⋯-preserves-≈ γ-eq ⟨
+    γ 𝐂.⋯ σ    ∎)
+_⊢⋯_ {γ = γ} (T-Abs {d = d} 𝓂→C x) ⊢ϕ =
+  let open Fin.Patterns in
+  T-Abs {!{!mobCx-≈!} ∘ 𝓂→C!} $ subst-γ (x ⊢⋯ ⊢↑ ⊢ϕ) $
+    join-dist-⋯ d (` 0F) _
+      ■ cong (join d (` 0F)) (sym (𝐂.⋯-↑-wk γ _))
+T-App {d = d} {γ₁} {γ₂} γ-eq e₁ e₂ ⊢⋯ ⊢ϕ =
+  let open ≈-Reasoning in
+  let eq = begin _ ≈⟨ ⋯-preserves-≈ γ-eq ⟩
+                 _ ≡⟨ join-dist-⋯ d γ₁ γ₂ ⟩
+                 _ ∎
+  in
+  T-App eq (e₁ ⊢⋯ ⊢ϕ) (e₂ ⊢⋯ ⊢ϕ)
+T-Pair {γ₁ = γ₁} {γ₂} p/s γ-eq x₁ x₂ seq→ℙ ⊢⋯ ⊢ϕ =
+  let open ≈-Reasoning in
+  let eq = begin _ ≈⟨ ⋯-preserves-≈ γ-eq ⟩
+                 _ ≡⟨ join-dist-⋯ p/s γ₁ γ₂ ⟩
+                 _ ∎
+  in
+  T-Pair p/s eq (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ) seq→ℙ
+T-Let {γ₁ = γ₁} {γ₂} p/s γ-eq x₁ x₂ ⊢⋯ ⊢ϕ =
+  let open Fin.Patterns in
+  let open ≈-Reasoning in
+  let eq = begin _ ≈⟨ ⋯-preserves-≈ γ-eq ⟩
+                 _ ≡⟨ join-dist-⋯ p/s γ₁ γ₂ ⟩
+                 _ ∎
+  in
+  T-Let p/s eq (x₁ ⊢⋯ ⊢ϕ) $ subst-γ (x₂ ⊢⋯ ⊢↑ ⊢ϕ) $
+    join-dist-⋯ p/s (` 0F) (𝐂.wk γ₂)
+      ■ cong (join p/s (` 0F)) (sym (𝐂.⋯-↑-wk γ₂ _))
+T-LetUnit {γ₁ = γ₁} {γ₂} p/s γ-eq x x₁ ⊢⋯ ⊢ϕ =
+  let open ≈-Reasoning in
+  let eq = begin _ ≈⟨ ⋯-preserves-≈ γ-eq ⟩
+                 _ ≡⟨ join-dist-⋯ p/s γ₁ γ₂ ⟩
+                 _ ∎
+  in
+  T-LetUnit p/s eq (x ⊢⋯ ⊢ϕ) (x₁ ⊢⋯ ⊢ϕ)
+T-LetPair {γ₁ = γ₁} {γ₂} {d = d} p/s γ-eq x x₁ ⊢⋯ ⊢ϕ =
+  let open Fin.Patterns in
+  let open ≈-Reasoning in
+  let eq = begin _ ≈⟨ ⋯-preserves-≈ γ-eq ⟩
+                 _ ≡⟨ join-dist-⋯ p/s γ₁ γ₂ ⟩
+                 _ ∎
+  in
+  T-LetPair p/s eq (x ⊢⋯ ⊢ϕ) $ subst-γ (x₁ ⊢⋯ ⊢↑ (⊢↑ ⊢ϕ)) $
+    join-dist-⋯ p/s (join d (` 0F) (` 1F)) _
+      ■ cong₂ (join p/s) (join-dist-⋯ d _ _)
+                         (sym (cong 𝐂.wk (𝐂.⋯-↑-wk γ₂ _) ■ 𝐂.⋯-↑-wk (𝐂.wk γ₂) _))
 T-WeakEff x ⊢⋯ ⊢ϕ = {!!}
 
--- record TKit (K : Kit _∋/⊢_) : Set₁ where
---   private instance _ = K
---   infix 4 _∋/⊢_∶_ _∶_;_⇒_;_
---   infixl 6 _⊢↑_
+instance
+  TKᵣ : TKit Kᵣ
+  TKᵣ = record
+    { 𝓕[_;_⊢_∶_] = λ Γ γ x T → γ ≈ ` x × Γ x ≡ T
+    ; ⊢id/` = λ γ-eq → γ-eq , refl
+    ; ⊢`/id = λ (γ-eq , T-eq) → T-Var _ γ-eq T-eq
+    ; ⊢wk = λ (γ-eq , T-eq) → cong-wk γ-eq , T-eq
+    }
 
--- --  field _∋/⊢_∶_
-
---   _∶_;_⇒_;_ : S₁ –[ K ]→ S₂ → Ctx S₁ → Struct S₁ → Ctx S₂ → Struct S₂ → Set
---   _∶_;_⇒_;_ {S₁} {S₂} ϕ Γ₁ γ₁ Γ₂ γ₂ = {!(x : 𝕖 ∈ S₁) (t : 𝕋) → Γ₁ !}
-
--- -- infix 4 _⊢_∶_
-
--- -- data _⊢_∶_ (Γ : Ctx S) : S ⊢ s → S ∶⊢ s → Set where
--- --   ⟨_⟩ : ∀ {e t} → Γ ; γ ⊢ e ∶ t ∣ ϵ → Γ ⊢ e ∶ ⟨ t ⟩
-
--- -- open module Typing = Types.Typing record
--- --   { _⊢_∶_ = λ Γ e t → Γ ⊢ e ∶ t
--- --   ; ⊢` = λ{ {s = 𝕖} {Γ = Γ} {x} refl →
--- --                subst (λ t → Γ ⊢ ` x ∶ t)
--- --                      (sym (lookupCx≡⟨lookup-𝕋⟩ Γ x))
--- --                      ⟨ T-Var {ϵ = ℙ} (Eq*.reflexive _) (lookupCx≡⟨lookup-𝕋⟩ Γ x) ⟩
--- --          }
--- --   }
--- --   hiding (_⊢_∶_)
--- --   public
-
--- -- ⟨_⟩⊢⋯_ : ⦃ K : Kit _∋/⊢_ ⦄ ⦃ W : WkKit K ⦄ ⦃ TK : TKit K ⦄
--- --        ⦃ C₁ : CKit K Kᵣ K ⦄ ⦃ C₂ : CKit K K K ⦄ ⦃ C₃ : CKit K Kₛ Kₛ ⦄
--- --        {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st}
--- --        {e : S₁ ⊢ 𝕖} {t : 𝕋} {ϕ : S₁ –[ K ]→ S₂} →
--- --        Γ₁ ; γ₁ ⊢ e ∶ t ∣ ϵ →
--- --        ϕ ∶ Γ₁ ⇒ₖ Γ₂ →
--- --        Γ₂ ; γ₂ ⊢ e ⋯ ϕ ∶ t ∣ ϵ
--- -- ⟨ T-Const x x₁ ⟩⊢⋯ ⊢ϕ = {!!}
--- -- ⟨ T-Var x x₁ ⟩⊢⋯ ⊢ϕ = {!!}
--- -- ⟨ T-Abs x e ⟩⊢⋯ ⊢ϕ = {!!}
--- -- ⟨ T-App γ e₁ e₂ ⟩⊢⋯ ⊢ϕ = T-App {!!} {!!} {!!}
--- -- ⟨ T-Let p/s x e e₁ ⟩⊢⋯ ⊢ϕ = {!!}
--- -- ⟨ T-LetUnit p/s x e e₁ ⟩⊢⋯ ⊢ϕ = {!!}
--- -- ⟨ T-LetPair p/s x e e₁ ⟩⊢⋯ ⊢ϕ = {!!}
-
--- -- _⊢⋯_ : ⦃ K : Kit _∋/⊢_ ⦄ ⦃ W : WkKit K ⦄ ⦃ TK : TKit K ⦄
--- --        ⦃ C₁ : CKit K Kᵣ K ⦄ ⦃ C₂ : CKit K K K ⦄ ⦃ C₃ : CKit K Kₛ Kₛ ⦄
--- --        {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st}
--- --        {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} {ϕ : S₁ –[ K ]→ S₂} →
--- --        Γ₁ ⊢ e ∶ t →
--- --        ϕ ∶ Γ₁ ⇒ₖ Γ₂ →
--- --        Γ₂ ⊢ e ⋯ ϕ ∶ t ⋯ ϕ
--- -- ⟨ e ⟩ ⊢⋯ ⊢ϕ = ⟨ {!⟨ e ⟩ ⊢⋯ ⊢ϕ!} ⟩
+  TKₛ : TKit Kₛ
+  TKₛ = record
+    { 𝓕[_;_⊢_∶_] = λ Γ γ x T → Γ ; γ ⊢ x ∶ T ∣ ℙ
+    ; ⊢id/` = λ γ-eq → T-Var _ γ-eq refl
+    ; ⊢`/id = λ x → x
+    ; ⊢wk = λ {_} {Γ} {γ} {T} x → subst (_ ;_⊢ _ ∶ _ ∣ _) (𝐂.weaken/wk γ) (x ⊢⋯ ⊢weaken ⦃ TKᵣ ⦄ {T = T} Γ)
+    }
