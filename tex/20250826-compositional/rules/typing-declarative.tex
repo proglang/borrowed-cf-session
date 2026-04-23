@@ -291,9 +291,9 @@
     {\T}
 }
 
-% T-WeakCE
+% T-WeakC
 \DefRule {WeakC} {
-  \Ctx[2] \preccurlyeq \Ctx[1]
+  \Ctx[1] \SubCtx \Ctx[2]
   \\
   \HasType
     {\Ctx[1]}
@@ -308,7 +308,7 @@
 
 % T-WeakCE
 \DefRule {WeakCE} {
-  \Ctx[2] \preccurlyeq \Ctx[1]
+  \Ctx[1] \SubCtx \Ctx[2]
   \\
   \Eff[1] \le \Eff[2]
   \\
