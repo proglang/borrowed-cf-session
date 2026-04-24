@@ -80,6 +80,7 @@ open module Traversal = Syntax.Traversal record
   ; ⋯-cong = ⋯-cong
   }
   hiding (_⋯_; ⋯-id; ⋯-cong; CTraversal)
+  public
 
 fusion :
   ⦃ K₁ : Kit 𝓕₁ ⦄ ⦃ K₂ : Kit 𝓕₂ ⦄ ⦃ K : Kit 𝓕 ⦄ ⦃ W₁ : WkKit K₁ ⦄ ⦃ C : CKit K₁ K₂ K ⦄
@@ -223,17 +224,6 @@ infixl 5 _⊢≈_ _⊢⋯_
 
 _⊢≈_ : Γ ; γ₁ ⊢ e ∶ T ∣ ϵ → γ₁ ≈ γ₂ → Γ ; γ₂ ⊢ e ∶ T ∣ ϵ
 x ⊢≈ eq = T-Weaken ≤ϵ-refl (refl eq) x
-{-
-T-Const γ-eq x ⊢≈ eq = T-Const (≈-trans (≈-sym eq) γ-eq) x
-T-Var x γ-eq T-eq ⊢≈ eq = T-Var x (≈-trans (≈-sym eq) γ-eq) T-eq
-T-Abs {d = d} 𝓂→C x ⊢≈ eq = T-Abs (mobCx-≈ eq ∘ 𝓂→C) (x ⊢≈ cong-join d refl (cong-wk eq))
-T-App γ-eq x x₁ ⊢≈ eq = T-App (≈-trans (≈-sym eq) γ-eq) x x₁
-T-Pair p/s γ-eq x x₁ x₂ ⊢≈ eq = T-Pair p/s (≈-trans (≈-sym eq) γ-eq) x x₁ x₂
-T-Let p/s γ-eq x x₁ ⊢≈ eq = T-Let p/s (≈-trans (≈-sym eq) γ-eq) x x₁
-T-LetUnit p/s γ-eq x x₁ ⊢≈ eq = T-LetUnit p/s (≈-trans (≈-sym eq) γ-eq) x x₁
-T-LetPair p/s γ-eq x x₁ ⊢≈ eq = T-LetPair p/s (≈-trans (≈-sym eq) γ-eq) x x₁
-T-Weak ϵ≤ γ≤ x ⊢≈ eq = T-Weak ϵ≤ (≼-trans γ≤ (refl eq)) x
--}
 
 mobCx-⋯ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ TK : TKit K ⦄ →
   {ϕ : m –[ K ]→ n} {σ : _} →
