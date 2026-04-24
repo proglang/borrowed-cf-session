@@ -9,7 +9,6 @@ open import Relation.Binary.Construct.Union as U using (_∪_)
 import Relation.Binary.Reasoning.Setoid as Reasoning
 
 open import BorrowedCF.Prelude
-open import BorrowedCF.Modes
 open import BorrowedCF.Types hiding (s; s₁; s₂; s₃; s′)
 
 open Nat.Variables
