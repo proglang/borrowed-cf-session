@@ -81,32 +81,13 @@ module V where
   open import Data.Vec public
   open import Data.Vec.Properties public
 
-{-
-  record IsMapOp {a b c} {A : Set a} {B : Set b} {C : Set c}
-                 (f* : ∀ {k} → Vec A k → B → Vec C k)
-                 (f : A → B → C)
-                 : Set (a ⊔ℓ b ⊔ℓ c)
-    where
-    field
-      cong-[] : ∀ b → f* [] b ≡ []
-      cong-∷  : ∀ {k} a as b → f* {suc k} (a ∷ as) b ≡ f a b ∷ f* as b
-
-    map-≡ : ∀ {k} as b → f* {k} as b ≡ map (_⟨ f ⟩ b) as
-    map-≡ []       b = cong-[] b
-    map-≡ (a ∷ as) b = cong-∷ a as b ■ cong (_ ∷_) (map-≡ as b)
-
-    lookup-map′ : ∀ {k} as b (i : 𝔽 k) → lookup (f* as b) i ≡ f (lookup as i) b
-    lookup-map′ as b i = cong (λ as′ → lookup as′ i) (map-≡ as b) ■ lookup-map i (_⟨ f ⟩ b) as
--}
-
-open V using (Vec; []; _∷_; lookup; lookup-map; ∷-injective {- ; IsMapOp -}) public
--- open V.IsMapOp ⦃ … ⦄ using (map-≡; lookup-map′) public
+open V using (Vec; []; _∷_; lookup; lookup-map; ∷-injective) public
 
 module Π where
   open import Data.Product public
   open import Data.Product.Properties public
 
-open Π using (_×_; _,_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∄; curry; uncurry) public
+open Π using (_×_; _,_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∄; ∃-syntax; curry; uncurry) public
 
 module Sum where
   open import Data.Sum public
@@ -131,18 +112,3 @@ open module Un = Relation.Unary
 
 open import Data.Bool using (true; false) public
 open import Relation.Nullary public
-
-{-
-Π/+ : ℕ × ℕ → ℕ
-Π/+ (m , n) = m + n
-
-IsMapOp₁ : ∀ {a b} {A : Set a} {B : Set b} → (∀ {k} → Vec A k → Vec B k) → (A → B) → Set _
-IsMapOp₁ f* f = ∀ {k} → f* {k} ≗ V.map f
-
-IsMapOp₂ : ∀ {a b c} {A : Set a} {B : Set b} {C : Set c} → (∀ {k} → Vec A k → B → Vec C k) → (A → B → C) → Set _
-IsMapOp₂ f* f = ∀ {k} as b → f* {k} as b ≡ V.map (_⟨ f ⟩ b) as
-
-infix 1 IsMapOp₁ IsMapOp₂
-
-syntax IsMapOp₂ {A = A} {B} f* f = f* Lifts f on A × B
--}

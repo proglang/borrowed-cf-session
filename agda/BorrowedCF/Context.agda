@@ -4,6 +4,7 @@ open import Data.Vec.Functional as F using (Vector)
 open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosure)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (Star; _◅_; _◅◅_; kleisliStar) renaming (ε to refl)
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (symmetric)
+open import Relation.Binary.Construct.Union as U using (_∪_)
 
 import Relation.Binary.Reasoning.Setoid as Reasoning
 
@@ -25,8 +26,8 @@ data Struct (n : ℕ) : Set where
   _;_ : Struct n → Struct n → Struct n
 
 private variable
-  α α₁ α₂ α₃ α′ : Struct n
-  β β₁ β₂ β₃ β′ : Struct n
+  α α₁ α₂ α₃ α′ α₁′ α₂′ : Struct n
+  β β₁ β₂ β₃ β′ β₁′ β₂′ : Struct n
 
 variable
   γ γ₁ γ₂ γ₃ γ′ : Struct n
@@ -85,6 +86,31 @@ open ≈-Equivalence
   public
 
 module ≈-Reasoning {n} = Reasoning record { isEquivalence = ≈-isEquivalence n }
+
+{-
+≈⁻¹-[];[] : α ; β ≈ [] → α ≈ [] × β ≈ []
+≈⁻¹-[];[] {α = ` x} (x₁ ◅ eq) = {!!}
+≈⁻¹-[];[] {α = []} eq = refl , ≈-trans (≈-sym ;-unit₁) eq
+≈⁻¹-[];[] {α = α ∥ α₁} eq = {!!}
+≈⁻¹-[];[] {α = α ; α₁} eq = {!!}
+
+≈⁻¹-; : α ≈ β ; γ → (α ≈ β × [] ≈ γ) ⊎ (α ≈ γ × [] ≈ β) ⊎ ∃[ α₁ ] ∃[ α₂ ] α ≡ α₁ ; α₂ × α₁ ≈ β × α₂ ≈ γ
+≈⁻¹-; refl = inj₂ (inj₂ (_ , _ , refl , refl , refl))
+≈⁻¹-; (x ◅ eq) with ≈⁻¹-; eq
+... | inj₁ (α≈β , []≈γ) = inj₁ (x ◅ α≈β , []≈γ)
+... | inj₂ (inj₁ (α≈γ , []≈β)) = inj₂ (inj₁ (x ◅ α≈γ , []≈β))
+≈⁻¹-; (Sym.fwd ;′-unit₁ ◅ eq) | inj₂ (inj₂ (α₁ , α₂ , refl , β≈ , γ≈)) = inj₂ (inj₂ (_ , _ , refl , {!!} , {!!}))
+≈⁻¹-; (Sym.fwd ;′-unit₂ ◅ eq) | inj₂ (inj₂ (α₁ , α₂ , refl , β≈ , γ≈)) = {!!}
+≈⁻¹-; (Sym.fwd ;′-assoc ◅ eq) | inj₂ (inj₂ (α₁ , α₂ , refl , β≈ , γ≈)) = {!!}
+≈⁻¹-; (Sym.fwd (;′-cong₁ x) ◅ eq) | inj₂ (inj₂ (α₁ , α₂ , refl , β≈ , γ≈)) = {!!}
+≈⁻¹-; (Sym.fwd (;′-cong₂ x) ◅ eq) | inj₂ (inj₂ (α₁ , α₂ , refl , β≈ , γ≈)) = {!!}
+≈⁻¹-; (Sym.fwd ∥′-unit ◅ eq) | inj₂ (inj₂ (α₁ , α₂ , refl , β≈ , γ≈)) = {!!}
+≈⁻¹-; (Sym.bwd ;′-unit₁ ◅ eq) | inj₂ (inj₂ (α₁ , α₂ , refl , β≈ , γ≈)) = inj₂ (inj₁ (γ≈ , β≈))
+≈⁻¹-; (Sym.bwd ;′-unit₂ ◅ eq) | inj₂ (inj₂ (α₁ , α₂ , refl , β≈ , γ≈)) = inj₁ (β≈ , γ≈)
+≈⁻¹-; (Sym.bwd ;′-assoc ◅ eq) | inj₂ (inj₂ (α₁ , α₂ , refl , β≈ , γ≈)) = {!!}
+≈⁻¹-; (Sym.bwd (;′-cong₁ x) ◅ eq) | inj₂ (inj₂ (α₁ , α₂ , refl , β≈ , γ≈)) = {!!}
+≈⁻¹-; (Sym.bwd (;′-cong₂ x) ◅ eq) | inj₂ (inj₂ (α₁ , α₂ , refl , β≈ , γ≈)) = {!!}
+-}
 
 biasedDir : ParSeq → Dir
 biasedDir par = 𝟙
@@ -173,6 +199,58 @@ data _∈ₛ_ (x : 𝔽 n) : Struct n → Set where
 γ≈`x⇒`x∈γ : ∀ {x} → γ ≈ ` x → x ∈ₛ γ
 γ≈`x⇒`x∈γ eq = ≈-pres-∈ (≈-sym eq) ∈-`
 
+
+infix 4 _≼_
+
+data _≼_ {n} : Rel (Struct n) 0ℓ where
+  refl : α ≈ β → α ≼ β
+  ≼-trans : α ≼ β → β ≼ γ → α ≼ γ
+  ≼-wk : (α₁ ∥ α₂) ; (β₁ ∥ β₂) ≼ (α₁ ; β₁) ∥ (α₂ ; β₂)
+  ≼-cong-; : α ≼ α′ → β ≼ β′ → α ; β ≼ α′ ; β′
+  ≼-cong-∥ : α ≼ α′ → β ≼ β′ → α ∥ β ≼ α′ ∥ β′
+
+≼-isPreorder : ∀ n → Bin.IsPreorder (_≈_ {n}) _≼_
+≼-isPreorder n = record
+  { isEquivalence = ≈-isEquivalence n
+  ; reflexive = refl
+  ; trans = ≼-trans
+  }
+
+{-
+infix 4 _≺_ _≼_
+
+data _≺_ : Struct n → Struct n → Set where
+  ≺-wk : (α₁ ∥ α₂) ; (β₁ ∥ β₂) ≺ (α₁ ; β₁) ∥ (α₂ ; β₂)
+  ;′-cong₁ : α ≺ α′ → α₁ ; β₁ ≺ α′ ; β
+  ;′-cong₂ : β ≺ β′ → α ; β ≺ α ; β′
+  ∥′-cong₁ : α ≺ α′ → α ∥ β ≺ α′ ∥ β
+
+≺-irrefl : Bin.Irreflexive (_≈_ {n}) _≺_
+≺-irrefl eq ≺-wk = {!!}
+≺-irrefl eq (;′-cong₁ x) = {!!}
+≺-irrefl eq (;′-cong₂ x) = {!!}
+≺-irrefl eq (∥′-cong₁ x) = {!!}
+
+_≼_ : Rel (Struct n) _
+_≼_ = Star (_≈_ ∪ _≺_)
+
+≼-antisym : Bin.Antisymmetric (_≈_ {n}) _≼_
+≼-antisym x x₁ = {!!}
+
+≼-isPartialOrder : ∀ n → Bin.IsPartialOrder (_≈_ {n}) _≼_
+≼-isPartialOrder n = record
+  { isPreorder = record
+    { isEquivalence = ≈-isEquivalence n
+    ; reflexive = Star.return ∘ inj₁
+    ; trans = _◅◅_
+    }
+  ; antisym = ≼-antisym
+  }
+
+≼-respects-≈ : α₁ ≼ β₂ → α₁ ≈ α₂ → β₁ ≈ β₂ → α₂ ≼ β₂
+≼-respects-≈ α≼β eq-α eq-β = {!!}
+-}
+
 module Substitution where
 
   _→ₛ_ : ℕ → ℕ → Set
@@ -258,8 +336,8 @@ module Substitution where
   ⋯-preserves-≈ refl = refl
   ⋯-preserves-≈ (x ◅ xs) = Sym.gmap (_⋯ _) ⋯-preserves-≈′ x ◅ ⋯-preserves-≈ xs
 
-  join-dist-⋯ : ∀ {A} ⦃ J : Join A ⦄ (a : A) (α β : Struct n) → join a α β ⋯ σ ≡ join a (α ⋯ σ) (β ⋯ σ)
-  join-dist-⋯ a α β with joinDir a
+  join-⋯ : ∀ {A} ⦃ J : Join A ⦄ (a : A) (α β : Struct n) → join a α β ⋯ σ ≡ join a (α ⋯ σ) (β ⋯ σ)
+  join-⋯ a α β with joinDir a
   ... | L = refl
   ... | R = refl
   ... | 𝟙 = refl
@@ -267,10 +345,18 @@ module Substitution where
   cong-wk : α ≈ β → wk α ≈ wk β
   cong-wk {α = α} {β} eq rewrite sym (weaken/wk α) | sym (weaken/wk β) = ⋯-preserves-≈ eq
 
+  ≼-⋯ : α ≼ β → α ⋯ σ ≼ β ⋯ σ
+  ≼-⋯ (refl x) = refl (⋯-preserves-≈ x)
+  ≼-⋯ (≼-trans x y) = ≼-trans (≼-⋯ x) (≼-⋯ y)
+  ≼-⋯ ≼-wk = ≼-wk
+  ≼-⋯ (≼-cong-; x y) = ≼-cong-; (≼-⋯ x) (≼-⋯ y)
+  ≼-⋯ (≼-cong-∥ x y) = ≼-cong-∥ (≼-⋯ x) (≼-⋯ y)
+
 open Substitution using
   ( ⋯-preserves-≈
   ; cong-wk
-  ; join-dist-⋯
+  ; join-⋯
+  ; ≼-⋯
   ) public
 
 Split : ∀ {A} → ⦃ Join A ⦄ → A → Struct n → Struct n → Struct n → Set
@@ -283,30 +369,6 @@ SeqIsPure seq ϵ₁ ϵ₂ = ϵ₂ ≡ ℙ
 pairDir : ParSeq → Dir
 pairDir par = 𝟙
 pairDir seq = L
-
-infix 4 _≼′_ _≼_
-
-data _≼′_ : Struct n → Struct n → Set where
-  refl : α ≈ β → α ≼′ β
-  ≼′-wk : (α₁ ∥ α₁) ; (β₁ ∥ β₂) ≼′ (α₁ ; β₁) ∥ (α₂ ; β₂)
-  ;′-cong₁ : α ≼′ α′ → α₁ ; β₁ ≼′ α′ ; β
-  ;′-cong₂ : β ≼′ β′ → α ; β ≼′ α ; β′
-  ∥′-cong₁ : α ≼′ α′ → α ∥ β ≼′ α′ ∥ β
-
-{-
-≼-isPartialOrder : ∀ n → Bin.IsPartialOrder (_≈_ {n}) _≼_
-≼-isPartialOrder n = record
-  { isPreorder = record
-    { isEquivalence = ≈-isEquivalence n
-    ; reflexive = {!!}
-    ; trans = {!!}
-    }
-  ; antisym = {!!}
-  }
-
-≼-respects-≈ : α₁ ≼ β₂ → α₁ ≈ α₂ → β₁ ≈ β₂ → α₂ ≼ β₂
-≼-respects-≈ α≼β eq-α eq-β = {!!}
--}
 
 Ctx = Vector 𝕋
 

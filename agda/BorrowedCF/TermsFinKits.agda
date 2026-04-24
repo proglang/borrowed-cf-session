@@ -193,10 +193,12 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) (γ : Struct n) : Tm n → 𝕋 → Eff → S
     -----------------------------------------
     Γ ; γ ⊢ `let⊗ e₁ `in e₂ ∶ U ∣ ϵ
 
-  T-WeakEff :
-    Γ ; γ ⊢ e ∶ T ∣ ℙ →
-    -------------------
-    Γ ; γ ⊢ e ∶ T ∣ 𝕀
+  T-Weak :
+    (ϵ≤ : ϵ′ ≤ϵ ϵ) →
+    (γ≤ : γ′ ≼ γ) →
+    Γ ; γ′ ⊢ e ∶ T ∣ ϵ′ →
+    ---------------------
+    Γ ; γ ⊢ e ∶ T ∣ ϵ
 
 
 record TKit (K : Kit 𝓕) : Set₁ where
@@ -245,7 +247,7 @@ T-Pair p/s γ-eq x x₁ x₂ ⊢≈ eq = T-Pair p/s (≈-trans (≈-sym eq) γ-e
 T-Let p/s γ-eq x x₁ ⊢≈ eq = T-Let p/s (≈-trans (≈-sym eq) γ-eq) x x₁
 T-LetUnit p/s γ-eq x x₁ ⊢≈ eq = T-LetUnit p/s (≈-trans (≈-sym eq) γ-eq) x x₁
 T-LetPair p/s γ-eq x x₁ ⊢≈ eq = T-LetPair p/s (≈-trans (≈-sym eq) γ-eq) x x₁
-T-WeakEff x ⊢≈ eq = T-WeakEff (x ⊢≈ eq)
+T-Weak ϵ≤ γ≤ x ⊢≈ eq = T-Weak ϵ≤ (≼-trans γ≤ (refl eq)) x
 
 mobCx-⋯ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ TK : TKit K ⦄ →
   {ϕ : m –[ K ]→ n} {σ : _} →
@@ -274,19 +276,19 @@ _⊢⋯_ {γ = γ} {σ = σ} (T-Var x γ-eq T-eq) ⊢ϕ =
 _⊢⋯_ {γ = γ} (T-Abs {d = d} 𝓂→C x) ⊢ϕ =
   let open Fin.Patterns in
   T-Abs {!{!mobCx-≈!} ∘ 𝓂→C!} $ subst-γ (x ⊢⋯ ⊢↑ ⊢ϕ) $
-    join-dist-⋯ d (` 0F) _
+    join-⋯ d (` 0F) _
       ■ cong (join d (` 0F)) (sym (𝐂.⋯-↑-wk γ _))
 T-App {d = d} {γ₁} {γ₂} γ-eq e₁ e₂ ⊢⋯ ⊢ϕ =
   let open ≈-Reasoning in
   let eq = begin _ ≈⟨ ⋯-preserves-≈ γ-eq ⟩
-                 _ ≡⟨ join-dist-⋯ d γ₁ γ₂ ⟩
+                 _ ≡⟨ join-⋯ d γ₁ γ₂ ⟩
                  _ ∎
   in
   T-App eq (e₁ ⊢⋯ ⊢ϕ) (e₂ ⊢⋯ ⊢ϕ)
 T-Pair {γ₁ = γ₁} {γ₂} p/s γ-eq x₁ x₂ seq→ℙ ⊢⋯ ⊢ϕ =
   let open ≈-Reasoning in
   let eq = begin _ ≈⟨ ⋯-preserves-≈ γ-eq ⟩
-                 _ ≡⟨ join-dist-⋯ p/s γ₁ γ₂ ⟩
+                 _ ≡⟨ join-⋯ p/s γ₁ γ₂ ⟩
                  _ ∎
   in
   T-Pair p/s eq (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ) seq→ℙ
@@ -294,16 +296,16 @@ T-Let {γ₁ = γ₁} {γ₂} p/s γ-eq x₁ x₂ ⊢⋯ ⊢ϕ =
   let open Fin.Patterns in
   let open ≈-Reasoning in
   let eq = begin _ ≈⟨ ⋯-preserves-≈ γ-eq ⟩
-                 _ ≡⟨ join-dist-⋯ p/s γ₁ γ₂ ⟩
+                 _ ≡⟨ join-⋯ p/s γ₁ γ₂ ⟩
                  _ ∎
   in
   T-Let p/s eq (x₁ ⊢⋯ ⊢ϕ) $ subst-γ (x₂ ⊢⋯ ⊢↑ ⊢ϕ) $
-    join-dist-⋯ p/s (` 0F) (𝐂.wk γ₂)
+    join-⋯ p/s (` 0F) (𝐂.wk γ₂)
       ■ cong (join p/s (` 0F)) (sym (𝐂.⋯-↑-wk γ₂ _))
 T-LetUnit {γ₁ = γ₁} {γ₂} p/s γ-eq x x₁ ⊢⋯ ⊢ϕ =
   let open ≈-Reasoning in
   let eq = begin _ ≈⟨ ⋯-preserves-≈ γ-eq ⟩
-                 _ ≡⟨ join-dist-⋯ p/s γ₁ γ₂ ⟩
+                 _ ≡⟨ join-⋯ p/s γ₁ γ₂ ⟩
                  _ ∎
   in
   T-LetUnit p/s eq (x ⊢⋯ ⊢ϕ) (x₁ ⊢⋯ ⊢ϕ)
@@ -311,14 +313,14 @@ T-LetPair {γ₁ = γ₁} {γ₂} {d = d} p/s γ-eq x x₁ ⊢⋯ ⊢ϕ =
   let open Fin.Patterns in
   let open ≈-Reasoning in
   let eq = begin _ ≈⟨ ⋯-preserves-≈ γ-eq ⟩
-                 _ ≡⟨ join-dist-⋯ p/s γ₁ γ₂ ⟩
+                 _ ≡⟨ join-⋯ p/s γ₁ γ₂ ⟩
                  _ ∎
   in
   T-LetPair p/s eq (x ⊢⋯ ⊢ϕ) $ subst-γ (x₁ ⊢⋯ ⊢↑ (⊢↑ ⊢ϕ)) $
-    join-dist-⋯ p/s (join d (` 0F) (` 1F)) _
-      ■ cong₂ (join p/s) (join-dist-⋯ d _ _)
+    join-⋯ p/s (join d (` 0F) (` 1F)) _
+      ■ cong₂ (join p/s) (join-⋯ d _ _)
                          (sym (cong 𝐂.wk (𝐂.⋯-↑-wk γ₂ _) ■ 𝐂.⋯-↑-wk (𝐂.wk γ₂) _))
-T-WeakEff x ⊢⋯ ⊢ϕ = {!!}
+T-Weak ϵ≤ γ≤ x ⊢⋯ ⊢ϕ = T-Weak ϵ≤ (≼-⋯ γ≤) (x ⊢⋯ ⊢ϕ)
 
 instance
   TKᵣ : TKit Kᵣ

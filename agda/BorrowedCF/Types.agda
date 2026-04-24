@@ -16,6 +16,12 @@ data Mob : Set where
 data Eff : Set where
   ℙ 𝕀 : Eff
 
+variable ϵ ϵ₁ ϵ₂ ϵ₃ ϵ′ : Eff
+
+data _≤ϵ_ : Rel Eff 0ℓ where
+  ℙ≤ϵ : ℙ ≤ϵ ϵ
+  𝕀≤𝕀 : 𝕀 ≤ϵ 𝕀
+
 data Kind : Set where
   𝕤 𝕥 : Kind
 
@@ -23,7 +29,6 @@ variable
   p p₁ p₂ p₃ p′ : Pol
   d d₁ d₂ d₃ d′ : Dir
   𝓂 𝓂₁ 𝓂₂ 𝓂₃ 𝓂′ : Mob
-  ϵ ϵ₁ ϵ₂ ϵ₃ ϵ′ : Eff
   κ κ₁ κ₂ κ₃ κ′ : Kind
 
 ⟦_⟧κ : Kind → Set
