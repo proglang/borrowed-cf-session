@@ -22,6 +22,10 @@ data _≤ϵ_ : Rel Eff 0ℓ where
   ℙ≤ϵ : ℙ ≤ϵ ϵ
   𝕀≤𝕀 : 𝕀 ≤ϵ 𝕀
 
+≤ϵ-refl : ϵ ≤ϵ ϵ
+≤ϵ-refl {ℙ} = ℙ≤ϵ
+≤ϵ-refl {𝕀} = 𝕀≤𝕀
+
 data Kind : Set where
   𝕤 𝕥 : Kind
 

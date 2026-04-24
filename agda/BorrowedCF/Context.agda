@@ -6,7 +6,8 @@ open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using 
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (symmetric)
 open import Relation.Binary.Construct.Union as U using (_∪_)
 
-import Relation.Binary.Reasoning.Setoid as Reasoning
+import Relation.Binary.Reasoning.Setoid as SetoidReasoning
+import Relation.Binary.Reasoning.Preorder as PreorderReasoning
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Types hiding (s; s₁; s₂; s₃; s′)
@@ -78,13 +79,16 @@ _≈_ = EqClosure _≈′_
 ≈-isEquivalence : ∀ n → IsEquivalence (_≈_ {n})
 ≈-isEquivalence _ = Eq*.isEquivalence _≈′_
 
+≈-setoid : ℕ → Setoid _ _
+≈-setoid n = record { isEquivalence = ≈-isEquivalence n }
+
 private module ≈-Equivalence {n} = IsEquivalence (≈-isEquivalence n)
 open ≈-Equivalence
   using ()
   renaming (refl to ≈-refl; reflexive to ≈-reflexive; sym to ≈-sym; trans to ≈-trans)
   public
 
-module ≈-Reasoning {n} = Reasoning record { isEquivalence = ≈-isEquivalence n }
+module ≈-Reasoning {n} = SetoidReasoning (≈-setoid n)
 
 {-
 ≈⁻¹-[];[] : α ; β ≈ [] → α ≈ [] × β ≈ []
@@ -114,34 +118,6 @@ module ≈-Reasoning {n} = Reasoning record { isEquivalence = ≈-isEquivalence 
 biasedDir : ParSeq → Dir
 biasedDir par = 𝟙
 biasedDir seq = L
-
-record Join (A : Set) : Set where
-  field joinDir : A → Dir
-
-  join : A → Struct n → Struct n → Struct n
-  join a with joinDir a
-  ... | 𝟙 = _∥_
-  ... | L = _;_
-  ... | R = flip _;_
-
-  cong-join : ∀ a → α₁ ≈ α₂ → β₁ ≈ β₂ → join a α₁ β₁ ≈ join a α₂ β₂
-  cong-join a with joinDir a
-  ... | 𝟙 = ∥-cong
-  ... | L = ;-cong
-  ... | R = flip ;-cong
-
-open Join ⦃ ... ⦄ public
-
-instance
-  join-dir : Join Dir
-  join-dir = record { joinDir = id }
-
-  join-p/s : Join ParSeq
-  join-p/s = record { joinDir = biasedDir }
-
--- joinP/S-∅₁ : ∀ p/s → γ₁ ≈ [] → joinP/S p/s γ₁ γ₂ ≈ γ₂
--- joinP/S-∅₁ par eq = ∥-cong eq refl ◅◅ ∥-comm ◅◅ ∥-unit
--- joinP/S-∅₁ seq eq = ;-cong eq refl ◅◅ ;-unit₁
 
 infix 4 _∈ₛ_
 
@@ -215,6 +191,11 @@ data _≼_ {n} : Rel (Struct n) 0ℓ where
   ; trans = ≼-trans
   }
 
+≼-preorder : ℕ → Bin.Preorder _ _ _
+≼-preorder n = record { isPreorder = ≼-isPreorder n }
+
+module ≼-Reasoning {n} = PreorderReasoning (≼-preorder n)
+
 {-
 infix 4 _≺_ _≼_
 
@@ -249,6 +230,48 @@ _≼_ = Star (_≈_ ∪ _≺_)
 ≼-respects-≈ : α₁ ≼ β₂ → α₁ ≈ α₂ → β₁ ≈ β₂ → α₂ ≼ β₂
 ≼-respects-≈ α≼β eq-α eq-β = {!!}
 -}
+
+record Join (A : Set) : Set where
+  field joinDir : A → Dir
+
+  join : A → Struct n → Struct n → Struct n
+  join a with joinDir a
+  ... | 𝟙 = _∥_
+  ... | L = _;_
+  ... | R = flip _;_
+
+  ≈-join : ∀ a → α₁ ≈ α₂ → β₁ ≈ β₂ → join a α₁ β₁ ≈ join a α₂ β₂
+  ≈-join a with joinDir a
+  ... | 𝟙 = ∥-cong
+  ... | L = ;-cong
+  ... | R = flip ;-cong
+
+  ≼-join : ∀ a → α₁ ≼ α₂ → β₁ ≼ β₂ → join a α₁ β₁ ≼ join a α₂ β₂
+  ≼-join a with joinDir a
+  ... | 𝟙 = ≼-cong-∥
+  ... | L = ≼-cong-;
+  ... | R = flip ≼-cong-;
+
+  join-[]₁ : ∀ a → join a [] β ≈ β
+  join-[]₁ a with joinDir a
+  ... | 𝟙 = ∥-comm ◅◅ ∥-unit
+  ... | L = ;-unit₁
+  ... | R = ;-unit₂
+
+  join-[]₂ : ∀ a → join a α [] ≈ α
+  join-[]₂ a with joinDir a
+  ... | 𝟙 = ∥-unit
+  ... | L = ;-unit₂
+  ... | R = ;-unit₁
+
+open Join ⦃ ... ⦄ public
+
+instance
+  join-dir : Join Dir
+  join-dir = record { joinDir = id }
+
+  join-p/s : Join ParSeq
+  join-p/s = record { joinDir = biasedDir }
 
 module Substitution where
 
@@ -320,6 +343,18 @@ module Substitution where
   ⋯-↑-wk : (γ : Struct m) (σ : m →ₛ n) → wk (γ ⋯ σ) ≡ wk γ ⋯ σ ↑
   ⋯-↑-wk γ σ rewrite sym (weaken/wk γ) | sym (weaken/wk (γ ⋯ σ)) = ⋯-↑-weaken γ σ
 
+  _⋯-weaken-cancels-⦅_⦆ : (α : Struct n) (γ : Struct n) → α ⋯ weaken ⋯ ⦅ γ ⦆ ≡ α
+  (` x) ⋯-weaken-cancels-⦅ γ ⦆ = refl
+  [] ⋯-weaken-cancels-⦅ γ ⦆ = refl
+  (α ∥ β) ⋯-weaken-cancels-⦅ γ ⦆ = cong₂ _∥_ (α ⋯-weaken-cancels-⦅ γ ⦆) (β ⋯-weaken-cancels-⦅ γ ⦆)
+  (α ; β) ⋯-weaken-cancels-⦅ γ ⦆ = cong₂ _;_ (α ⋯-weaken-cancels-⦅ γ ⦆) (β ⋯-weaken-cancels-⦅ γ ⦆)
+
+  _⋯-wk-cancels-⦅_⦆ : (α : Struct n) (γ : Struct n) → wk α ⋯ ⦅ γ ⦆ ≡ α
+  (` x) ⋯-wk-cancels-⦅ γ ⦆ = refl
+  [] ⋯-wk-cancels-⦅ γ ⦆ = refl
+  (α ∥ β) ⋯-wk-cancels-⦅ γ ⦆ = cong₂ _∥_ (α ⋯-wk-cancels-⦅ γ ⦆) (β ⋯-wk-cancels-⦅ γ ⦆)
+  (α ; β) ⋯-wk-cancels-⦅ γ ⦆ = cong₂ _;_ (α ⋯-wk-cancels-⦅ γ ⦆) (β ⋯-wk-cancels-⦅ γ ⦆)
+
   ⋯-preserves-≈′ : (_⋯ σ) Bin.Preserves _≈′_ ⟶ _≈′_
   ⋯-preserves-≈′ ;′-unit₁ = ;′-unit₁
   ⋯-preserves-≈′ ;′-unit₂ = ;′-unit₂
@@ -361,13 +396,17 @@ open Substitution using
 Split : ∀ {A} → ⦃ Join A ⦄ → A → Struct n → Struct n → Struct n → Set
 Split a α β γ = α ≈ join a β γ
 
-SeqIsPure : ParSeq → Eff → Eff → Set
-SeqIsPure par ϵ₁ ϵ₂ = ϵ₁ ≡ ϵ₂
-SeqIsPure seq ϵ₁ ϵ₂ = ϵ₂ ≡ ℙ
+data Seq⇒Pure : ParSeq → Rel Eff 0ℓ where
+  par : Seq⇒Pure par ϵ ϵ
+  seq : Seq⇒Pure seq ϵ ℙ
 
-pairDir : ParSeq → Dir
-pairDir par = 𝟙
-pairDir seq = L
+seq⇒pure-ℙℙ : ∀ {p/s} → Seq⇒Pure p/s ℙ ℙ
+seq⇒pure-ℙℙ {par} = par
+seq⇒pure-ℙℙ {seq} = seq
+
+seq⇒pure-ℙϵ⁻¹ : ∀ {p/s} → Seq⇒Pure p/s ℙ ϵ → ϵ ≡ ℙ
+seq⇒pure-ℙϵ⁻¹ par = refl
+seq⇒pure-ℙϵ⁻¹ seq = refl
 
 Ctx = Vector 𝕋
 
