@@ -4,7 +4,6 @@ open import Data.Vec.Functional as F using (Vector)
 open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosure)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (Star; _◅_; _◅◅_; kleisliStar) renaming (ε to refl)
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (symmetric)
-open import Relation.Binary.Construct.Union as U using (_∪_)
 
 import Relation.Binary.Reasoning.Setoid as SetoidReasoning
 import Relation.Binary.Reasoning.Preorder as PreorderReasoning

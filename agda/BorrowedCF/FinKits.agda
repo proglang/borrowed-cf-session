@@ -3,7 +3,9 @@ open import Level using (0ℓ)
 
 module BorrowedCF.FinKits where
 
-open import Data.Fin using (Fin; zero; suc)
+open import Function using (_∘_; _$_)
+open import Data.Fin as Fin using (Fin; zero; suc; _↑ˡ_; _↑ʳ_)
+open import Data.Sum as Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Product using (∃-syntax; _,_; proj₁; proj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; subst; _≗_; module ≡-Reasoning)
@@ -188,6 +190,7 @@ record Syntax : Set₁ where
         (ϕ₁ ↑* m ↑ ·ₖ ϕ₂ ↑* m ↑) x      ≡⟨⟩
         (ϕ₁ ↑* suc m ·ₖ ϕ₂ ↑* suc m) x  ∎
 
+    infix 6 _·[_]_
     _·[_]_ : {K₁ : Kit 𝓕₁} {K₂ : Kit 𝓕₂} {K₁⊔K₂ : Kit 𝓕} →
              n₁ –[ K₁ ]→ n₂ → CKit K₁ K₂ K₁⊔K₂ →
              n₂ –[ K₂ ]→ n₃ → n₁ –[ K₁⊔K₂ ]→ n₃
@@ -304,6 +307,21 @@ record Syntax : Set₁ where
         t ⋯ (⦅ x/t ⦆ ·ₖ ϕ)            ≡⟨ ⋯-cong t (dist-↑-⦅⦆ x/t ϕ) ⟩
         t ⋯ (ϕ ↑ ·ₖ ⦅ (x/t &/⋯ ϕ) ⦆)  ≡⟨ sym (fusion t (ϕ ↑) ⦅ x/t &/⋯ ϕ ⦆ ) ⟩
         t ⋯ ϕ ↑ ⋯ ⦅ (x/t &/⋯ ϕ) ⦆     ∎
+
+      ↑*∼id/wk-splitAt : ⦃ K : Kit 𝓕 ⦄ ⦃ C : CKit K Kᵣ K ⦄ →
+        ∀ (ϕ : n₁ –[ K ]→ n₂) m → ϕ ↑* m ≗ [ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* ⦃ Kᵣ ⦄ m ] ∘ Fin.splitAt m
+      ↑*∼id/wk-splitAt ⦃ K ⦄ ϕ zero x = `/id-injective $
+        `/id ((ϕ ↑* zero) x)    ≡⟨⟩
+        `/id (ϕ x)              ≡⟨ ⋯-id (`/id (ϕ x)) (λ _ → refl) ⟨
+        `/id (ϕ x) ⋯ (λ y → y)  ≡⟨ &/⋯-⋯ (ϕ x) (λ y → y) ⟨
+        `/id (ϕ x &/⋯ λ y → y)  ∎
+      ↑*∼id/wk-splitAt ϕ (suc m) zero = refl
+      ↑*∼id/wk-splitAt ⦃ K ⦄ ϕ (suc m) (suc x) = `/id-injective $
+        `/id ⦃ K ⦄ ((ϕ ↑* suc m) (suc x))  ≡⟨⟩
+        `/id ⦃ K ⦄ (wk ((ϕ ↑* m) x))       ≡⟨ cong (`/id ∘ wk) (↑*∼id/wk-splitAt ϕ m x) ⟩
+        `/id ⦃ K ⦄ (wk ([ id/` ∘ (_↑ˡ _) , ϕ ·ₖ weaken* ⦃ Kᵣ ⦄ m ] (Fin.splitAt m x))) ≡⟨ {!!} ⟩
+        `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ _) , ϕ ·ₖ weaken* (suc m) ] (Sum.map₁ suc (Fin.splitAt m x))) ≡⟨⟩
+        `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ _) , ϕ ·ₖ weaken* (suc m) ] (Fin.splitAt (suc m) (suc x))) ∎
 
       -- record Types : Set₁ where
       --   field ↑ᵗ : ∀ {st} → Sort st → ∃[ st' ] Sort st'
