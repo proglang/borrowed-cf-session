@@ -1,11 +1,9 @@
-open import Axiom.Extensionality.Propositional
-open import Level using (0ℓ)
-
 module BorrowedCF.FinKits where
 
 open import Function using (_∘_; _$_)
 open import Data.Fin as Fin using (Fin; zero; suc; _↑ˡ_; _↑ʳ_)
 open import Data.Sum as Sum using (_⊎_; inj₁; inj₂; [_,_])
+open import Data.Sum.Properties as Sum using ([,]-∘; [,]-cong; [-,]-cong; [,-]-cong; [,]-map)
 open import Data.Nat using (ℕ; zero; suc; _+_)
 open import Data.Product using (∃-syntax; _,_; proj₁; proj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; subst; _≗_; module ≡-Reasoning)
@@ -63,6 +61,10 @@ record Syntax : Set₁ where
     weaken* : (m : ℕ) → n →ₖ m + n
     weaken* zero    = id
     weaken* (suc m) = wkm (weaken* m)
+
+    weaken*~↑ʳ : ∀ m → weaken* {n} m ≗ id/` ∘ (m ↑ʳ_)
+    weaken*~↑ʳ zero x = refl
+    weaken*~↑ʳ (suc m) x = trans (cong wk (weaken*~↑ʳ m x)) (wk-id/` (m ↑ʳ x))
 
     infixl 8 _↑*_
     _↑*_ : n₁ →ₖ n₂ → ∀ m → (m + n₁) →ₖ (m + n₂)
@@ -134,7 +136,7 @@ record Syntax : Set₁ where
 
     instance
       Wᵣ : WkKit Kᵣ ; Wₛ : WkKit Kₛ
-      Wᵣ = record { wk-`/id = λ x → ⋯-var x (weaken) }
+      Wᵣ = record { wk-`/id = λ x → ⋯-var x weaken }
       Wₛ = record { wk-`/id = λ t → refl }
 
     open WkKit ⦃ … ⦄ public
@@ -233,13 +235,13 @@ record Syntax : Set₁ where
                      ; &/⋯-⋯     = λ t ϕ → refl
                      ; &/⋯-wk-↑  = λ t ϕ → ⋯-↑-wk t ϕ }
 
-{-
+
       ↑*-wk : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄
               (ϕ : n₁ –[ K ]→ n₂) (m : ℕ) → ϕ ·ₖ weaken* m ≗ weaken* m ·ₖ ϕ ↑* m
       ↑*-wk ⦃ K ⦄ ϕ zero x = `/id-injective (
         `/id ((ϕ ·ₖ weaken* zero) x)  ≡⟨⟩
         `/id (ϕ x &/⋯ id)             ≡⟨ &/⋯-⋯ (ϕ x) id ⟩
-        `/id (ϕ x) ⋯ id               ≡⟨ ⋯-id (`/id (ϕ x)) ⟩
+        `/id (ϕ x) ⋯ id               ≡⟨ ⋯-id (`/id (ϕ x)) (λ _ → refl) ⟩
         `/id (ϕ x)                    ≡⟨ &/⋯-& ⦃ Cᵣ ⦄ x ϕ ⟨
         `/id (x &/⋯ ϕ)                ≡⟨⟩
         `/id ⦃ K ⦄ ((weaken* zero ·ₖ ϕ ↑* zero) x) ∎)
@@ -250,7 +252,7 @@ record Syntax : Set₁ where
         `/id (ϕ x) ⋯ᵣ weaken* m ·ₖ weakenᵣ              ≡⟨ fusion (`/id (ϕ x)) (weaken* m) weakenᵣ ⟨
         `/id (ϕ x) ⋯ᵣ weaken* m ⋯ weakenᵣ               ≡⟨ cong (_⋯ weakenᵣ) (&/⋯-⋯ (ϕ x) (weaken* m)) ⟨
         `/id (ϕ x &/⋯ weaken* m) ⋯ weakenᵣ              ≡⟨⟩
-        `/id ((ϕ ·ₖ weaken* m) x) ⋯ weakenᵣ             ≡⟨ cong (λ ϕ′ → `/id (ϕ′ x) ⋯ weakenᵣ) (∼-ext (↑*-wk ϕ m)) ⟩
+        `/id ((ϕ ·ₖ weaken* m) x) ⋯ weakenᵣ             ≡⟨ cong (λ z → `/id z ⋯ weakenᵣ) (↑*-wk ϕ m x) ⟩
         `/id ⦃ K ⦄ ((weaken* m ·ₖ ϕ ↑* m) x) ⋯ weakenᵣ  ≡⟨⟩
         `/id ⦃ K ⦄ (weaken* m x &/⋯ ϕ ↑* m) ⋯ weakenᵣ   ≡⟨ cong (_⋯ weakenᵣ) (&/⋯-⋯ {K₁ = Kᵣ} (weaken* m x) (ϕ ↑* m)) ⟩
         ` (weaken* m x) ⋯ ϕ ↑* m ⋯ weakenᵣ              ≡⟨ ⋯-↑-wk (` weaken* m x) (ϕ ↑* m) ⟩
@@ -264,10 +266,9 @@ record Syntax : Set₁ where
                 t ⋯ ϕ ⋯ᵣ weaken* m ≡ t ⋯ᵣ weaken* m ⋯ ϕ ↑* m
       ⋯-↑*-wk t ϕ m =
         t ⋯ ϕ ⋯ weaken* m          ≡⟨ fusion t ϕ (weaken* m) ⟩
-        t ⋯ (ϕ ·ₖ weaken* m)       ≡⟨ cong (t ⋯_) (∼-ext (↑*-wk ϕ m)) ⟩
+        t ⋯ (ϕ ·ₖ weaken* m)       ≡⟨ ⋯-cong t (↑*-wk ϕ m) ⟩
         t ⋯ (weaken* m ·ₖ ϕ ↑* m)  ≡⟨ sym (fusion t (weaken* m) (ϕ ↑* m)) ⟩
         t ⋯ weaken* m ⋯ ϕ ↑* m     ∎
--}
 
       wk-cancels-⦅⦆ : ⦃ K : Kit 𝓕 ⦄ (x/t : 𝓕[ K ] m) → weakenᵣ ·ₖ ⦅ x/t ⦆ ≗ id
       wk-cancels-⦅⦆ ⦃ K ⦄ x/t x = `/id-injective (&/⋯-& ⦃ Cᵣ ⦃ K ⦄ ⦄ (suc x) ⦅ x/t ⦆)
@@ -308,7 +309,16 @@ record Syntax : Set₁ where
         t ⋯ (ϕ ↑ ·ₖ ⦅ (x/t &/⋯ ϕ) ⦆)  ≡⟨ sym (fusion t (ϕ ↑) ⦅ x/t &/⋯ ϕ ⦆ ) ⟩
         t ⋯ ϕ ↑ ⋯ ⦅ (x/t &/⋯ ϕ) ⦆     ∎
 
-      ↑*∼id/wk-splitAt : ⦃ K : Kit 𝓕 ⦄ ⦃ C : CKit K Kᵣ K ⦄ →
+      &/⋯-wk∘weaken : ∀ ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄ m (x/t : 𝓕[ K ] n) →
+        wk ⦃ K ⦄ (x/t &/⋯ weaken* ⦃ Kᵣ ⦄ m) ≡ x/t &/⋯ weaken* ⦃ Kᵣ ⦄ (suc m)
+      &/⋯-wk∘weaken ⦃ K ⦄ ⦃ C ⦄ m x/t = `/id-injective $
+        `/id ⦃ K ⦄ (wk (x/t &/⋯ weaken* ⦃ Kᵣ ⦄ m)) ≡⟨ wk-`/id (x/t &/⋯ weaken* ⦃ Kᵣ ⦄ m) ⟨
+        `/id ⦃ K ⦄ (x/t &/⋯ weaken* ⦃ Kᵣ ⦄ m) ⋯ weakenᵣ ≡⟨ cong (_⋯ weakenᵣ) (&/⋯-⋯ x/t (weaken* m)) ⟩
+        `/id ⦃ K ⦄ x/t ⋯ weaken* m ⋯ weakenᵣ ≡⟨ fusion (`/id x/t) (weaken* m) weakenᵣ ⟩
+        `/id ⦃ K ⦄ x/t ⋯ weaken* (suc m) ≡⟨ &/⋯-⋯ x/t (weaken* (suc m)) ⟨
+        `/id ⦃ K ⦄ (x/t &/⋯ weaken* (suc m)) ∎
+
+      ↑*∼id/wk-splitAt : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄ →
         ∀ (ϕ : n₁ –[ K ]→ n₂) m → ϕ ↑* m ≗ [ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* ⦃ Kᵣ ⦄ m ] ∘ Fin.splitAt m
       ↑*∼id/wk-splitAt ⦃ K ⦄ ϕ zero x = `/id-injective $
         `/id ((ϕ ↑* zero) x)    ≡⟨⟩
@@ -316,12 +326,17 @@ record Syntax : Set₁ where
         `/id (ϕ x) ⋯ (λ y → y)  ≡⟨ &/⋯-⋯ (ϕ x) (λ y → y) ⟨
         `/id (ϕ x &/⋯ λ y → y)  ∎
       ↑*∼id/wk-splitAt ϕ (suc m) zero = refl
-      ↑*∼id/wk-splitAt ⦃ K ⦄ ϕ (suc m) (suc x) = `/id-injective $
+      ↑*∼id/wk-splitAt {n₁ = n₁} {n₂} ⦃ K ⦄ ϕ (suc m) (suc x) = `/id-injective $
         `/id ⦃ K ⦄ ((ϕ ↑* suc m) (suc x))  ≡⟨⟩
         `/id ⦃ K ⦄ (wk ((ϕ ↑* m) x))       ≡⟨ cong (`/id ∘ wk) (↑*∼id/wk-splitAt ϕ m x) ⟩
-        `/id ⦃ K ⦄ (wk ([ id/` ∘ (_↑ˡ _) , ϕ ·ₖ weaken* ⦃ Kᵣ ⦄ m ] (Fin.splitAt m x))) ≡⟨ {!!} ⟩
-        `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ _) , ϕ ·ₖ weaken* (suc m) ] (Sum.map₁ suc (Fin.splitAt m x))) ≡⟨⟩
-        `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ _) , ϕ ·ₖ weaken* (suc m) ] (Fin.splitAt (suc m) (suc x))) ∎
+        `/id ⦃ K ⦄ (wk ([ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* ⦃ Kᵣ ⦄ m ] (Fin.splitAt m x)))
+          ≡⟨ cong (`/id ⦃ K ⦄) ([,]-∘ (wk ⦃ K ⦄) (Fin.splitAt m x)) ⟩
+        `/id ⦃ K ⦄ ([ wk ∘ id/` ∘ (_↑ˡ n₂) , wk ∘ (ϕ ·ₖ weaken* m) ] (Fin.splitAt m x))
+          ≡⟨ cong (`/id ⦃ K ⦄) ([,]-cong (λ y → wk-id/` (y ↑ˡ _)) (λ y → &/⋯-wk∘weaken m (ϕ y)) (Fin.splitAt m x)) ⟩
+        `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n₂) ∘ suc , ϕ ·ₖ weaken* (suc m) ] (Fin.splitAt m x))
+          ≡⟨ cong (`/id ⦃ K ⦄) ([,]-map (Fin.splitAt m x)) ⟨
+        `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* (suc m) ] (Sum.map₁ suc (Fin.splitAt m x))) ≡⟨⟩
+        `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* (suc m) ] (Fin.splitAt (suc m) (suc x))) ∎
 
       -- record Types : Set₁ where
       --   field ↑ᵗ : ∀ {st} → Sort st → ∃[ st' ] Sort st'

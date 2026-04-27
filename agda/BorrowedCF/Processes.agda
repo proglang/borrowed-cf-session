@@ -33,28 +33,123 @@ _⋯ₚ_ : ⦃ K : Kit 𝓕 ⦄ → Proc m → m –[ K ]→ n → Proc n
 P ∥ Q ⋯ₚ ϕ = (P ⋯ₚ ϕ) ∥ (Q ⋯ₚ ϕ)
 ν {b₁} {b₂} B₁ B₂ P ⋯ₚ ϕ = ν B₁ B₂ (P ⋯ₚ ϕ ↑* (b₁ + b₂))
 
-bind-swap : ∀ b₁ b₂ → b₁ + b₂ + n →ᵣ b₂ + b₁ + n
-bind-swap {n} b₁ b₂ = Fin.join _ _ ∘ Sum.map₁ (Fin.swap b₁) ∘ Fin.splitAt (b₁ + b₂)
+⋯ₚ-cong : ⦃ K : Kit 𝓕 ⦄ (P : Proc m) {ϕ₁ ϕ₂ : m –[ K ]→ n} → ϕ₁ ≗ ϕ₂ → P ⋯ₚ ϕ₁ ≡ P ⋯ₚ ϕ₂
+⋯ₚ-cong ⟪ e ⟫ eq = cong ⟪_⟫ (⋯-cong e eq)
+⋯ₚ-cong (P ∥ Q) eq = cong₂ _∥_ (⋯ₚ-cong P eq) (⋯ₚ-cong Q eq)
+⋯ₚ-cong (ν B₁ B₂ P) eq = cong (ν B₁ B₂) (⋯ₚ-cong P (eq ~↑* _))
+
+fusionₚ : ⦃ K₁ : Kit 𝓕₁ ⦄ ⦃ K₂ : Kit 𝓕₂ ⦄ ⦃ K : Kit 𝓕 ⦄ ⦃ W₁ : WkKit K₁ ⦄
+          ⦃ C : CKit K₁ K₂ K ⦄ (P : Proc n₁) (ϕ₁ : n₁ –[ K₁ ]→ n₂) (ϕ₂ : n₂ –[ K₂ ]→ n₃) →
+          P ⋯ₚ ϕ₁ ⋯ₚ ϕ₂ ≡ P ⋯ₚ ϕ₁ ·ₖ ϕ₂
+fusionₚ ⟪ e ⟫ ϕ₁ ϕ₂ = cong ⟪_⟫ (fusion e ϕ₁ ϕ₂)
+fusionₚ (P ∥ Q) ϕ₁ ϕ₂ = cong₂ _∥_ (fusionₚ P ϕ₁ ϕ₂) (fusionₚ Q ϕ₁ ϕ₂)
+fusionₚ (ν B₁ B₂ P) ϕ₁ ϕ₂ = cong (ν B₁ B₂) (fusionₚ P (ϕ₁ ↑* _) (ϕ₂ ↑* _) ■ sym (⋯ₚ-cong P (dist-↑*-· _ ϕ₁ ϕ₂)))
+
+bindSwap : ∀ b₁ b₂ → b₁ + b₂ + n →ᵣ b₂ + b₁ + n
+bindSwap {n} b₁ b₂ = Fin.join _ _ ∘ Sum.map₁ (Fin.swap b₁) ∘ Fin.splitAt (b₁ + b₂)
+
+bindComm : ∀ a₁ a₂ b₁ b₂ → a₁ + a₂ + (b₁ + b₂ + n) →ᵣ b₁ + b₂ + (a₁ + a₂ + n)
+bindComm {n} a₁ a₂ b₁ b₂ =
+  Fin.cast (+-assoc (b₁ + b₂) (a₁ + a₂) n)
+    ∘ bindSwap {n} (a₁ + a₂) (b₁ + b₂)
+    ∘ Fin.cast (sym (+-assoc (a₁ + a₂) (b₁ + b₂) n))
+
+weaken*-bindSwap-ex : ∀ a b → weaken* ⦃ Kᵣ ⦄ (a + b) ·ₖ bindSwap {n} a b ≗ weaken* (b + a)
+weaken*-bindSwap-ex a b x
+  rewrite weaken*~↑ʳ ⦃ Kᵣ ⦄ (a + b) x
+        | Fin.splitAt-↑ʳ (a + b) _ x
+        | weaken*~↑ʳ ⦃ Kᵣ ⦄ (b + a) x
+        = refl
+
+module _ ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄ {ϕ : m –[ K ]→ n} where
+  bindSwap-exˡ : ∀ b₁ b₂ x →
+    `/id ⦃ K ⦄ ((ϕ ↑* (b₂ + b₁)) (Fin.swap b₁ x ↑ˡ m))
+      ≡
+    `/id ⦃ K ⦄ (id/` ⦃ K ⦄ (x ↑ˡ n) &/⋯ bindSwap b₁ b₂)
+  bindSwap-exˡ b₁ b₂ x = let open ≡-Reasoning in
+    `/id ⦃ K ⦄ ((ϕ ↑* (b₂ + b₁)) (Fin.swap b₁ x ↑ˡ m))
+      ≡⟨ cong (`/id ⦃ K ⦄) (↑*∼id/wk-splitAt ϕ (b₂ + b₁) (Fin.swap b₁ x ↑ˡ m)) ⟩
+    `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n) , ϕ ·ₖ weaken* (b₂ + b₁) ] (splitAt (b₂ + b₁) (Fin.swap b₁ x ↑ˡ m)))
+      ≡⟨ cong (`/id ⦃ K ⦄ ∘ [ _ , _ ]) (Fin.splitAt-↑ˡ (b₂ + b₁) (Fin.swap b₁ x) m) ⟩
+    `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n) , ϕ ·ₖ weaken* (b₂ + b₁) ]′ (inj₁ (Fin.swap b₁ x)))
+      ≡⟨⟩
+    `/id ⦃ K ⦄ (id/` (Fin.swap b₁ x ↑ˡ n))
+      ≡⟨ `/`-is-` ⦃ K ⦄ (Fin.swap b₁ x ↑ˡ n) ⟩
+    ` (Fin.swap b₁ x ↑ˡ n)
+      ≡⟨⟩
+    ` (Fin.join (b₂ + b₁) n (inj₁ (Fin.swap b₁ x)))
+      ≡⟨ cong (`_ ∘ Fin.join _ _ ∘ Sum.map₁ (Fin.swap b₁)) (Fin.splitAt-↑ˡ (b₁ + b₂) x n) ⟨
+    ` (Fin.join _ _ (Sum.map₁ (Fin.swap b₁) (Fin.splitAt (b₁ + b₂) (x ↑ˡ n))))
+      ≡⟨⟩
+    ` (bindSwap b₁ b₂ (x ↑ˡ n))
+      ≡⟨ &/⋯-& ⦃ C ⦄ (x ↑ˡ n) (bindSwap b₁ b₂) ⟨
+    `/id ⦃ K ⦄ (id/` ⦃ K ⦄ (x ↑ˡ n) &/⋯ bindSwap b₁ b₂) ∎
+
+  bindSwap-exʳ : ∀ b₁ b₂ x →
+    `/id ⦃ K ⦄ ((ϕ ↑* (b₂ + b₁)) (b₂ + b₁ ↑ʳ x))
+      ≡
+    `/id ⦃ K ⦄ ((ϕ ·ₖ weaken* (b₁ + b₂)) x &/⋯ (bindSwap b₁ b₂))
+  bindSwap-exʳ b₁ b₂ x = let open ≡-Reasoning in
+    `/id ⦃ K ⦄ ((ϕ ↑* (b₂ + b₁)) (b₂ + b₁ ↑ʳ x))
+      ≡⟨ cong (`/id ⦃ K ⦄) (↑*∼id/wk-splitAt ϕ (b₂ + b₁) (b₂ + b₁ ↑ʳ x)) ⟩
+    `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n) , ϕ ·ₖ weaken* ⦃ Kᵣ ⦄ (b₂ + b₁) ] (Fin.splitAt (b₂ + b₁) (b₂ + b₁ ↑ʳ x)))
+      ≡⟨ cong (`/id ⦃ K ⦄ ∘ [ _ , _ ]) (Fin.splitAt-↑ʳ (b₂ + b₁) m x) ⟩
+    `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n) , ϕ ·ₖ weaken* ⦃ Kᵣ ⦄ (b₂ + b₁) ]′ (inj₂ x))
+      ≡⟨⟩
+    `/id ⦃ K ⦄ (ϕ x &/⋯ weaken* (b₂ + b₁))
+      ≡⟨ &/⋯-⋯ (ϕ x) (weaken* (b₂ + b₁)) ⟩
+    `/id ⦃ K ⦄ (ϕ x) ⋯ weaken* (b₂ + b₁)
+      ≡⟨ ⋯-cong (`/id (ϕ x)) (weaken*-bindSwap-ex b₁ b₂) ⟨
+    `/id ⦃ K ⦄ (ϕ x) ⋯ weaken* (b₁ + b₂) ·ₖ bindSwap b₁ b₂
+      ≡⟨ fusion (`/id (ϕ x)) (weaken* (b₁ + b₂)) (bindSwap b₁ b₂) ⟨
+    `/id ⦃ K ⦄ (ϕ x) ⋯ weaken* (b₁ + b₂) ⋯ bindSwap b₁ b₂
+      ≡⟨ cong (_⋯ bindSwap b₁ b₂) (&/⋯-⋯ (ϕ x) (weaken* (b₁ + b₂))) ⟨
+    `/id ⦃ K ⦄ (ϕ x &/⋯ weaken* (b₁ + b₂)) ⋯ bindSwap b₁ b₂
+      ≡⟨ &/⋯-⋯ (ϕ x &/⋯ weaken* (b₁ + b₂)) (bindSwap b₁ b₂) ⟨
+    `/id ⦃ K ⦄ (ϕ x &/⋯ weaken* (b₁ + b₂) &/⋯ bindSwap b₁ b₂)
+      ≡⟨⟩
+    `/id ⦃ K ⦄ ((ϕ ·ₖ weaken* (b₁ + b₂)) x &/⋯ (bindSwap b₁ b₂)) ∎
+
+  bindSwap-↑*-dist : (b₁ b₂ : ℕ) → bindSwap {m} b₁ b₂ ·[ Cᵣ ] ϕ ↑* (b₂ + b₁) ≗ ϕ ↑* (b₁ + b₂) ·ₖ bindSwap b₁ b₂
+  bindSwap-↑*-dist b₁ b₂ x = `/id-injective $
+    let open ≡-Reasoning in
+    `/id ⦃ K ⦄ ((bindSwap b₁ b₂ ·[ Cᵣ ] ϕ ↑* (b₂ + b₁)) x) ≡⟨⟩
+    `/id ⦃ K ⦄ (bindSwap b₁ b₂ x &/⋯ ϕ ↑* (b₂ + b₁))
+      ≡⟨ [,]-∘ (λ z → `/id ⦃ K ⦄ ((ϕ ↑* (b₂ + b₁)) z)) (Sum.map₁ (Fin.swap b₁) (Fin.splitAt (b₁ + b₂) x)) ⟩
+    [ (λ y → `/id ⦃ K ⦄ ((ϕ ↑* (b₂ + b₁)) (y ↑ˡ m)))
+    , (λ y → `/id ⦃ K ⦄ ((ϕ ↑* (b₂ + b₁)) ((b₂ + b₁) ↑ʳ y)))
+    ] (Sum.map₁ (Fin.swap b₁) (Fin.splitAt (b₁ + b₂) x))
+      ≡⟨ [,]-map (Fin.splitAt (b₁ + b₂) x) ⟩
+    [ (λ y → `/id ⦃ K ⦄ ((ϕ ↑* (b₂ + b₁)) (Fin.swap b₁ y ↑ˡ m)))
+    , (λ y → `/id ⦃ K ⦄ ((ϕ ↑* (b₂ + b₁)) ((b₂ + b₁) ↑ʳ y)))
+    ] (Fin.splitAt (b₁ + b₂) x)
+      ≡⟨ [,]-cong (bindSwap-exˡ b₁ b₂) (bindSwap-exʳ b₁ b₂) (Fin.splitAt (b₁ + b₂) x) ⟩
+    [ (λ y → `/id ⦃ K ⦄ (id/` ⦃ K ⦄ (y ↑ˡ _) &/⋯ bindSwap {n} b₁ b₂))
+    , (λ y → `/id ⦃ K ⦄ ((ϕ ·ₖ weaken* (b₁ + b₂)) y &/⋯ bindSwap {n} b₁ b₂))
+    ] (Fin.splitAt (b₁ + b₂) x)
+      ≡⟨ [,]-∘ (λ z → `/id ⦃ K ⦄ (CKit._&/⋯_ C z (bindSwap {n} b₁ b₂))) (Fin.splitAt (b₁ + b₂) x) ⟨
+    `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ _) , ϕ ·ₖ weaken* (b₁ + b₂) ] (Fin.splitAt (b₁ + b₂) x) &/⋯ bindSwap {n} b₁ b₂)
+      ≡⟨ cong (λ z → `/id (z &/⋯ bindSwap b₁ b₂)) (↑*∼id/wk-splitAt ϕ (b₁ + b₂) x) ⟨
+    `/id ⦃ K ⦄ ((ϕ ↑* (b₁ + b₂)) x &/⋯ bindSwap b₁ b₂) ≡⟨⟩
+    `/id ⦃ K ⦄ ((ϕ ↑* (b₁ + b₂) ·ₖ bindSwap b₁ b₂) x) ∎
+
+  bindSwap-↑*-dist-⋯ : ∀ (b₁ b₂ : ℕ) P → P ⋯ₚ bindSwap {m} b₁ b₂ ⋯ₚ ϕ ↑* (b₂ + b₁) ≡ P ⋯ₚ ϕ ↑* (b₁ + b₂) ⋯ₚ bindSwap b₁ b₂
+  bindSwap-↑*-dist-⋯ b₁ b₂ P = fusionₚ P _ _ ■ ⋯ₚ-cong P (bindSwap-↑*-dist b₁ b₂) ■ sym (fusionₚ P _ _)
+
+  postulate bindComm-↑*-dist : ∀ a₁ a₂ b₁ b₂ → bindComm a₁ a₂ b₁ b₂ ·ₖ ϕ ↑* (a₁ + a₂) ↑* (b₁ + b₂) ≗ ϕ ↑* (b₁ + b₂) ↑* (a₁ + a₂) ·ₖ bindComm a₁ a₂ b₁ b₂
 {-
-  Fin.cast (Nat.+-assoc b₂ b₁ n)
-    ∘ Fin.join _ _
-    ∘ Sum.map₁ (Fin.join _ _ ∘ Sum.swap ∘ Fin.splitAt b₁)
-    ∘ Fin.splitAt (b₁ + b₂)
-    ∘ Fin.cast (sym (Nat.+-assoc b₁ b₂ n))
+  bindComm-↑*-dist a₁ a₂ b₁ b₂ x = `/id-injective $
+    let open ≡-Reasoning in
+    `/id ⦃ K ⦄ ((bindComm a₁ a₂ b₁ b₂ ·ₖ ϕ ↑* (a₁ + a₂) ↑* (b₁ + b₂)) x)   ≡⟨⟩
+    `/id ⦃ K ⦄ (bindComm a₁ a₂ b₁ b₂ x &/⋯ ϕ ↑* (a₁ + a₂) ↑* (b₁ + b₂))    ≡⟨⟩
+    `/id ⦃ K ⦄ ((ϕ ↑* (a₁ + a₂) ↑* (b₁ + b₂)) (bindComm a₁ a₂ b₁ b₂ x))
+      ≡⟨ {!!} ⟩
+    `/id ⦃ K ⦄ ((ϕ ↑* (b₁ + b₂) ↑* (a₁ + a₂)) x &/⋯ bindComm a₁ a₂ b₁ b₂)  ≡⟨⟩
+    `/id ⦃ K ⦄ ((ϕ ↑* (b₁ + b₂) ↑* (a₁ + a₂) ·ₖ bindComm a₁ a₂ b₁ b₂) x)   ∎
 -}
 
-bind-comm : ∀ a₁ a₂ b₁ b₂ → a₁ + a₂ + (b₁ + b₂ + n) →ᵣ b₁ + b₂ + (a₁ + a₂ + n)
-bind-comm {n} a₁ a₂ b₁ b₂ = {!bind-swap (a₁ + a₂) (b₁ + b₂ + n)!}
-{-
-  let eq p₁ p₂ q₁ q₂ = cong (p₁ + p₂ +_) (Nat.+-assoc q₁ q₂ n) ■ Nat.+-assoc p₁ p₂ (q₁ + (q₂ + n)) in
-  Fin.cast (eq b₁ b₂ a₁ a₂)
-    ∘ bind-swap {n} (a₁ + a₂) (b₁ + b₂)
-    ∘ Fin.cast (sym (eq a₁ a₂ b₁ b₂))
--}
-
-module _ ⦃ K : Kit 𝓕 ⦄ ⦃ C : CKit K Kᵣ K ⦄ {ϕ : m –[ K ]→ n} where
-  bind-swap-exchange : (b₁ b₂ : ℕ) → bind-swap {m} b₁ b₂ ·[ Cᵣ ] ϕ ↑* (b₂ + b₁) ≗ ϕ ↑* (b₁ + b₂) ·ₖ bind-swap b₁ b₂
-  bind-swap-exchange = {!!}
+  bindComm-↑*-dist-⋯ : ∀ a₁ a₂ b₁ b₂ P → P ⋯ₚ bindComm a₁ a₂ b₁ b₂ ⋯ₚ ϕ ↑* (a₁ + a₂) ↑* (b₁ + b₂) ≡ P ⋯ₚ ϕ ↑* (b₁ + b₂) ↑* (a₁ + a₂) ⋯ₚ bindComm a₁ a₂ b₁ b₂
+  bindComm-↑*-dist-⋯ a₁ a₂ b₁ b₂ P = fusionₚ P _ _ ■ ⋯ₚ-cong P (bindComm-↑*-dist a₁ a₂ b₁ b₂) ■ sym (fusionₚ P _ _)
 
 infix 4 _≋′_
 
@@ -62,9 +157,9 @@ data _≋′_ {n} : Rel (Proc n) 0ℓ where
   ∥-comm′ : P ∥ Q ≋′ Q ∥ P
   ∥-assoc′ : P₁ ∥ (P₂ ∥ P₃) ≋′ (P₁ ∥ P₂) ∥ P₃
   ∥-unit′ : ⟪ K `unit ⟫ ∥ P ≋′ P
-  ν-swap′ : ∀ {b₁ b₂} {B₁ : Bind b₁} {B₂ : Bind b₂} {P} → ν B₁ B₂ P ≋′ ν B₂ B₁ (P ⋯ₚ bind-swap b₁ b₂)
+  ν-swap′ : ∀ {b₁ b₂} {B₁ : Bind b₁} {B₂ : Bind b₂} {P} → ν B₁ B₂ P ≋′ ν B₂ B₁ (P ⋯ₚ bindSwap b₁ b₂)
   ν-comm′ : ∀ {a₁ a₂ b₁ b₂} {A₁ : Bind a₁} {A₂ : Bind a₂} {B₁ : Bind b₁} {B₂ : Bind b₂} {P} →
-    ν B₁ B₂ (ν A₁ A₂ P) ≋′ ν A₁ A₂ (ν B₁ B₂ (P ⋯ₚ bind-comm a₁ a₂ b₁ b₂))
+    ν B₁ B₂ (ν A₁ A₂ P) ≋′ ν A₁ A₂ (ν B₁ B₂ (P ⋯ₚ bindComm a₁ a₂ b₁ b₂))
   ν-ext′ : ∀ {b₁ b₂} {B₁ : Bind b₁} {B₂ : Bind b₂} {P Q} →
     P ∥ ν B₁ B₂ Q ≋′ ν B₁ B₂ ((P ⋯ₚ weaken* ⦃ Kᵣ ⦄ (b₁ + b₂)) ∥ Q)
   ∥-cong′ : P₁ ≋′ P₂ → P₁ ∥ Q ≋′ P₂ ∥ Q
@@ -94,7 +189,7 @@ module _ where
   ∥-cong ps qs = gmap (_∥ _) ∥-cong′ ps ◅◅ ∥-comm ◅◅ gmap (_∥ _) ∥-cong′ qs ◅◅ ∥-comm
 
   ν-swap : ∀ {b₁ b₂} {B₁ : Bind b₁} {B₂ : Bind b₂} {P : Proc (b₁ + b₂ + n)} →
-    ν B₁ B₂ P ≋ ν B₂ B₁ (P ⋯ₚ bind-swap b₁ b₂)
+    ν B₁ B₂ P ≋ ν B₂ B₁ (P ⋯ₚ bindSwap b₁ b₂)
   ν-swap = return ν-swap′
 
   ν-comm : ∀ {a₁ a₂ b₁ b₂} {A₁ : Bind a₁} {A₂ : Bind a₂} {B₁ : Bind b₁} {B₂ : Bind b₂} {P : Proc (a₁ + a₂ + (b₁ + b₂ + n))} →
@@ -104,27 +199,21 @@ module _ where
   ν-cong : P ≋ Q → ν B₁ B₂ P ≋ ν B₁ B₂ Q
   ν-cong = gmap (ν _ _) ν-cong′
 
+  ⋯-preserves-≋′ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄ {ϕ : m –[ K ]→ n} → (_⋯ₚ ϕ) Bin.Preserves _≋′_ ⟶ _≋′_
+  ⋯-preserves-≋′ ∥-comm′ = ∥-comm′
+  ⋯-preserves-≋′ ∥-assoc′ = ∥-assoc′
+  ⋯-preserves-≋′ ∥-unit′ = ∥-unit′
+  ⋯-preserves-≋′ (ν-swap′ {a} {b}) =
+    subst₂ _≋′_ refl (cong (ν _ _) (sym (bindSwap-↑*-dist-⋯ a b _))) ν-swap′
+  ⋯-preserves-≋′ (ν-comm′ {a₁}{a₂}{b₁}{b₂}{A₁}{A₂}) =
+    subst₂ _≋′_ refl (cong (ν A₁ A₂ ∘ ν _ _) (sym (bindComm-↑*-dist-⋯ a₁ a₂ b₁ b₂ _))) ν-comm′
+  ⋯-preserves-≋′ ν-ext′ =
+    let eq = fusionₚ _ _ _ ■ ⋯ₚ-cong _ (↑*-wk _ _) ■ sym (fusionₚ _ _ _) in
+    subst₂ _≋′_ refl (cong (ν _ _) (cong₂ _∥_ eq refl)) ν-ext′
+  ⋯-preserves-≋′ (∥-cong′ x) = ∥-cong′ (⋯-preserves-≋′ x)
+  ⋯-preserves-≋′ (ν-cong′ x) = ν-cong′ (⋯-preserves-≋′ x)
+
   infix 5 _≋-⋯_
 
-  ⋯-preserves-≋′ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} → (_⋯ₚ ϕ) Bin.Preserves _≋′_ ⟶ _≋_
-  ⋯-preserves-≋′ ∥-comm′ = {!ν-comm!}
-  ⋯-preserves-≋′ ∥-assoc′ = {!!}
-  ⋯-preserves-≋′ ∥-unit′ = {!!}
-  ⋯-preserves-≋′ ν-swap′ = ν-swap ◅◅ ν-cong {!!}
-  ⋯-preserves-≋′ ν-comm′ = {!!}
-  ⋯-preserves-≋′ ν-ext′ = {!!}
-  ⋯-preserves-≋′ (∥-cong′ x) = {!!}
-  ⋯-preserves-≋′ (ν-cong′ x) = {!!}
-
-  -- ⋯-preserves-≋′ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} → (_⋯ₚ ϕ) Bin.Preserves _≋′_ ⟶ _≋′_
-  -- ⋯-preserves-≋′ ∥-comm′ = ∥-comm′
-  -- ⋯-preserves-≋′ ∥-assoc′ = ∥-assoc′
-  -- ⋯-preserves-≋′ ∥-unit′ = ∥-unit′
-  -- ⋯-preserves-≋′ (ν-swap′ {b₁}{b₂}{B₁}{B₂}) = subst (_ ≋′_) {!cong (λ P → ν B₁ B₂ P) !} ν-swap′
-  -- ⋯-preserves-≋′ ν-comm′ = {!ν-comm′!}
-  -- ⋯-preserves-≋′ ν-ext′ = {!!}
-  -- ⋯-preserves-≋′ (∥-cong′ x) = {!!} --∥-cong′ (⋯-preserves-≋′ x)
-  -- ⋯-preserves-≋′ (ν-cong′ x) = {!!} --ν-cong′ (⋯-preserves-≋′ x)
-
-  -- -- _≋-⋯_ : ⦃ K : Kit 𝓕 ⦄ → P ≋ Q → (ϕ : m –[ K ]→ n) → P ⋯ₚ ϕ ≋ Q ⋯ₚ ϕ
-  -- -- eq ≋-⋯ ϕ = join (gmap (_⋯ₚ ϕ) ⋯-preserves-≋′ eq)
+  _≋-⋯_ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄ → P ≋ Q → (ϕ : m –[ K ]→ n) → P ⋯ₚ ϕ ≋ Q ⋯ₚ ϕ
+  eq ≋-⋯ ϕ = gmap (_⋯ₚ ϕ) ⋯-preserves-≋′ eq
