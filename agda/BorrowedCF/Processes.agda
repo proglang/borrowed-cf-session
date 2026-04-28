@@ -1,19 +1,19 @@
 module BorrowedCF.Processes where
 
-open import Data.Nat.ListAction using (sum)
 open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosure)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (Star; _◅_; _◅◅_; kleisliStar) renaming (ε to refl)
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (symmetric)
 
 import BorrowedCF.Context as 𝐂
+import BorrowedCF.Processes.BindGroups
+
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Types
 
 open Nat.Variables
 
-Bind : ℕ → Set
-Bind n = ∃[ xs ] sum xs ≡ n
+open module 𝐁 = BorrowedCF.Processes.BindGroups using (Bind; bind) public
 
 data Proc (n : ℕ) : Set where
   ⟪_⟫ : (e : Tm n) → Proc n
@@ -44,6 +44,9 @@ fusionₚ : ⦃ K₁ : Kit 𝓕₁ ⦄ ⦃ K₂ : Kit 𝓕₂ ⦄ ⦃ K : Kit �
 fusionₚ ⟪ e ⟫ ϕ₁ ϕ₂ = cong ⟪_⟫ (fusion e ϕ₁ ϕ₂)
 fusionₚ (P ∥ Q) ϕ₁ ϕ₂ = cong₂ _∥_ (fusionₚ P ϕ₁ ϕ₂) (fusionₚ Q ϕ₁ ϕ₂)
 fusionₚ (ν B₁ B₂ P) ϕ₁ ϕ₂ = cong (ν B₁ B₂) (fusionₚ P (ϕ₁ ↑* _) (ϕ₂ ↑* _) ■ sym (⋯ₚ-cong P (dist-↑*-· _ ϕ₁ ϕ₂)))
+
+postulate
+  wkₚ : ∀ b₁ b₂ → b₁ + b₂ + n →ᵣ suc b₁ + suc b₂ + n
 
 bindSwap : ∀ b₁ b₂ → b₁ + b₂ + n →ᵣ b₂ + b₁ + n
 bindSwap {n} b₁ b₂ = Fin.join _ _ ∘ Sum.map₁ (Fin.swap b₁) ∘ Fin.splitAt (b₁ + b₂)

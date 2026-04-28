@@ -28,7 +28,7 @@ data Tm (n : ℕ) : Set where
   λ[_] : (d : Dir) (e : Tm (1 + n)) → Tm n
   _·_ : (e₁ e₂ : Tm n) → Tm n
   _;_ : (e₁ e₂ : Tm n) → Tm n
-  _,⟨_⟩_ : (e₁ : Tm n) (d : Dir) (e₂ : Tm n) → Tm n
+  _⊗_ : (e₁ : Tm n) (e₂ : Tm n) → Tm n
   `let_`in_ : (e₁ : Tm n) (e₂ : Tm (1 + n)) → Tm n
   `let⊗_`in_ : (e₁ : Tm n) (e₂ : Tm (2 + n)) → Tm n
 
@@ -49,7 +49,7 @@ K c ⋯ ϕ = K c
 λ[ d ] e ⋯ ϕ = λ[ d ] (e ⋯ ϕ ↑)
 (e · e₁) ⋯ ϕ = (e ⋯ ϕ) · (e₁ ⋯ ϕ)
 (e ; e₁) ⋯ ϕ =  (e ⋯ ϕ) ; (e₁ ⋯ ϕ)
-(e ,⟨ d ⟩ e₁) ⋯ ϕ =  (e ⋯ ϕ) ,⟨ d ⟩ (e₁ ⋯ ϕ)
+(e ⊗ e₁) ⋯ ϕ =  (e ⋯ ϕ) ⊗ (e₁ ⋯ ϕ)
 (`let e `in e₁) ⋯ ϕ = `let (e ⋯ ϕ) `in (e₁ ⋯ ϕ ↑)
 (`let⊗ e `in e₁) ⋯ ϕ = `let⊗ (e ⋯ ϕ) `in (e₁ ⋯ ϕ ↑ ↑)
 
@@ -59,7 +59,7 @@ K c ⋯ ϕ = K c
 ⋯-id (λ[ d ] e) eq = cong λ[ d ] (⋯-id e (id↑ eq))
 ⋯-id (e · e₁) eq = cong₂ _·_ (⋯-id e eq) (⋯-id e₁ eq)
 ⋯-id (e ; e₁) eq = cong₂ _;_ (⋯-id e eq) (⋯-id e₁ eq)
-⋯-id (e ,⟨ d ⟩ e₁) eq = cong₂ (_,⟨ d ⟩_) (⋯-id e eq) (⋯-id e₁ eq)
+⋯-id (e ⊗ e₁) eq = cong₂ _⊗_ (⋯-id e eq) (⋯-id e₁ eq)
 ⋯-id (`let e `in e₁) eq = cong₂ `let_`in_ (⋯-id e eq) (⋯-id e₁ (id↑ eq))
 ⋯-id (`let⊗ e `in e₁) eq = cong₂ `let⊗_`in_ (⋯-id e eq) (⋯-id e₁ (id↑* 2 eq))
 
@@ -69,7 +69,7 @@ K c ⋯ ϕ = K c
 ⋯-cong (λ[ d ] e) eq = cong λ[ d ] (⋯-cong e (eq ~↑))
 ⋯-cong (e · e₁) eq = cong₂ _·_ (⋯-cong e eq) (⋯-cong e₁ eq)
 ⋯-cong (e ; e₁) eq = cong₂ _;_ (⋯-cong e eq) (⋯-cong e₁ eq)
-⋯-cong (e ,⟨ d ⟩ e₁) eq = cong₂ (_,⟨ d ⟩_) (⋯-cong e eq) (⋯-cong e₁ eq)
+⋯-cong (e ⊗ e₁) eq = cong₂ _⊗_ (⋯-cong e eq) (⋯-cong e₁ eq)
 ⋯-cong (`let e `in e₁) eq = cong₂ `let_`in_ (⋯-cong e eq) (⋯-cong e₁ (eq ~↑))
 ⋯-cong (`let⊗ e `in e₁) eq = cong₂ `let⊗_`in_ (⋯-cong e eq) (⋯-cong e₁ (eq ~↑* 2))
 
@@ -91,7 +91,7 @@ fusion (K c) ϕ₁ ϕ₂ = refl
 fusion (λ[ d ] e) ϕ₁ ϕ₂ = cong λ[ d ] $
   fusion e (ϕ₁ ↑) (ϕ₂ ↑) ■ ⋯-cong e (sym ∘ dist-↑-· ϕ₁ ϕ₂)
 fusion (e₁ · e₂) ϕ₁ ϕ₂ = cong₂ _·_ (fusion e₁ ϕ₁ ϕ₂) (fusion e₂ ϕ₁ ϕ₂)
-fusion (e₁ ,⟨ d ⟩ e₂) ϕ₁ ϕ₂ = cong₂ (_,⟨ d ⟩_) (fusion e₁ ϕ₁ ϕ₂) (fusion e₂ ϕ₁ ϕ₂)
+fusion (e₁ ⊗ e₂) ϕ₁ ϕ₂ = cong₂ _⊗_ (fusion e₁ ϕ₁ ϕ₂) (fusion e₂ ϕ₁ ϕ₂)
 fusion (`let e₁ `in e₂) ϕ₁ ϕ₂ = cong₂ `let_`in_ (fusion e₁ ϕ₁ ϕ₂) $
   fusion e₂ (ϕ₁ ↑) (ϕ₂ ↑) ■ ⋯-cong e₂ (sym ∘ dist-↑-· ϕ₁ ϕ₂)
 fusion (`let⊗ e₁ `in e₂) ϕ₁ ϕ₂ = cong₂ `let⊗_`in_ (fusion e₁ ϕ₁ ϕ₂) $
@@ -154,7 +154,7 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
     Γ ; γ₂ ⊢ e₂ ∶ U ∣ ϵ₂ →
     Seq⇒Pure p/s ϵ₁ ϵ₂ →
     -------------------------------------------------
-    Γ ; join d γ₁ γ₂ ⊢ e₁ ,⟨ d ⟩ e₂ ∶ pair d T U ∣ ϵ₁
+    Γ ; join d γ₁ γ₂ ⊢ e₁ ⊗ e₂ ∶ pair d T U ∣ ϵ₁
 
   T-Let : (p/s : ParSeq) {γ₁ γ₂ : Struct n} →
     Γ ; γ₁ ⊢ e₁ ∶ T ∣ ϵ →

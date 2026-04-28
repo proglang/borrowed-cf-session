@@ -112,6 +112,12 @@ module L where
 
 open L using (List; []; _∷_; _++_; [2*_]) public
 
+module L⁺ where
+  open import Data.List.NonEmpty public
+  open import Data.List.NonEmpty.Properties public
+
+open L⁺ using (List⁺; _∷_; _∷⁺_) public
+
 module V where
   open import Data.Vec public
   open import Data.Vec.Properties public
