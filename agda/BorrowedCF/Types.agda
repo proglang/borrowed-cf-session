@@ -81,6 +81,20 @@ data Mobile : 𝕋 → Set where
   acq  : Bounded s → Mobile ⟨ acq ; s ⟩
   pair : ∀ {t u} → Mobile t → Mobile u → Mobile (pair d t u)
 
+data UnrTy : ∀ κ {x : ⟦ κ ⟧κ} → Ty κ x → Set
+
+Unr  = UnrTy 𝕥
+UnrS = UnrTy 𝕤
+
+data UnrTy where
+  unit : Unr unit
+  pair : Unr T → Unr U → Unr (pair d T U)
+  --arr  :
+  skip : UnrS {n} skip
+  `_   : (x : 𝔽 n) → UnrS (` x)
+  _;_  : UnrS s₁ → UnrS s₂ → UnrS (s₁ ; s₂)
+  mu   : UnrS s → UnrS (mu s)
+
 dualPol : Pol → Pol
 dualPol ‼ = ⁇
 dualPol ⁇ = ‼
