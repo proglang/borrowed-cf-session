@@ -207,7 +207,7 @@ module _ where
     R-New : (E : Frame n) →
       ⟪ E [ K (`new s) · K `unit ] ⟫
         ─→ₚ
-      ν (𝐁.mk (0 ∷⁺ L⁺.[ 1 ])) (𝐁.mk (0 ∷⁺ L⁺.[ 1 ]))
+      ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
         ⟪ E ⋯ᶠ weaken* ⦃ Kᵣ ⦄ _ [ (` 0F) ⊗ (` 1F) ] ⟫
 
     R-Fork : (E : Frame n) (V : Value e) →
@@ -215,11 +215,11 @@ module _ where
         ─→ₚ
       ⟪ E [ K `unit ] ⟫ ∥ ⟪ e · K `unit ⟫
 
-    R-Com : ∀ {b₁ b₂} (B₁ : Bind b₁) (B₂ : Bind b₂) {P} {e} (E₁ E₂ : Frame (b₁ + b₂ + n)) →
-      Value e →
-      ν (𝐁.suc B₁) (𝐁.suc B₂)
-        ((⟪ E₁ ⋯ᶠ wkₚ b₁ b₂ [ K `send · ((` 0F) ⊗ (e ⋯ wkₚ b₁ b₂)) ] ⟫
-          ∥ ⟪ E₂ ⋯ᶠ wkₚ b₁ b₂ [ K `recv · (` ((suc b₁ ↑ʳ 0F) ↑ˡ n)) ] ⟫)
-          ∥ (P ⋯ₚ wkₚ b₁ b₂))
-        ─→ₚ
-      ν B₁ B₂ ((⟪ E₁ [ K `unit ] ⟫ ∥ ⟪ E₂ [ e ] ⟫) ∥ P)
+    -- R-Com : ∀ {b₁ b₂} (B₁ : Bind b₁) (B₂ : Bind b₂) {P} {e} (E₁ E₂ : Frame (b₁ + b₂ + n)) →
+    --   Value e →
+    --   ν (𝐁.suc B₁) (𝐁.suc B₂)
+    --     ((⟪ E₁ ⋯ᶠ wkₚ b₁ b₂ [ K `send · ((` 0F) ⊗ (e ⋯ wkₚ b₁ b₂)) ] ⟫
+    --       ∥ ⟪ E₂ ⋯ᶠ wkₚ b₁ b₂ [ K `recv · (` ((suc b₁ ↑ʳ 0F) ↑ˡ n)) ] ⟫)
+    --       ∥ (P ⋯ₚ wkₚ b₁ b₂))
+    --     ─→ₚ
+    --   ν B₁ B₂ ((⟪ E₁ [ K `unit ] ⟫ ∥ ⟪ E₂ [ e ] ⟫) ∥ P)

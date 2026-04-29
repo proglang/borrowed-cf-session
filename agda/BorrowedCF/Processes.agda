@@ -1,11 +1,11 @@
 module BorrowedCF.Processes where
 
+open import Data.Nat.ListAction using (sum)
 open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosure)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (Star; _◅_; _◅◅_; kleisliStar) renaming (ε to refl)
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (symmetric)
 
 import BorrowedCF.Context as 𝐂
-import BorrowedCF.Processes.BindGroups
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
@@ -13,16 +13,20 @@ open import BorrowedCF.Types
 
 open Nat.Variables
 
-open module 𝐁 = BorrowedCF.Processes.BindGroups using (Bind; bind) public
+BindGroup : Set
+BindGroup = List⁺ ℕ
+
+sum⁺ : BindGroup → ℕ
+sum⁺ = sum ∘ L⁺.toList
 
 data Proc (n : ℕ) : Set where
   ⟪_⟫ : (e : Tm n) → Proc n
   _∥_ : (P Q : Proc n) → Proc n
-  ν   : ∀ {b₁ b₂} (B₁ : Bind b₁) (B₂ : Bind b₂) (P : Proc (b₁ + b₂ + n)) → Proc n
+  ν   : (B₁ B₂ : BindGroup) (P : Proc (sum⁺ B₁ + sum⁺ B₂ + n)) → Proc n
 
 variable
-  A A₁ A₂ A₃ A′ : Bind n
-  B B₁ B₂ B₃ B′ : Bind n
+  A A₁ A₂ A₃ A′ : BindGroup
+  B B₁ B₂ B₃ B′ : BindGroup
   P P₁ P₂ P₃ P′ : Proc n
   Q Q₁ Q₂ Q₃ Q′ : Proc n
 
@@ -31,7 +35,7 @@ infixl 5 _⋯ₚ_
 _⋯ₚ_ : ⦃ K : Kit 𝓕 ⦄ → Proc m → m –[ K ]→ n → Proc n
 ⟪ e ⟫ ⋯ₚ ϕ = ⟪ e ⋯ ϕ ⟫
 P ∥ Q ⋯ₚ ϕ = (P ⋯ₚ ϕ) ∥ (Q ⋯ₚ ϕ)
-ν {b₁} {b₂} B₁ B₂ P ⋯ₚ ϕ = ν B₁ B₂ (P ⋯ₚ ϕ ↑* (b₁ + b₂))
+ν B₁ B₂ P ⋯ₚ ϕ = ν B₁ B₂ (P ⋯ₚ ϕ ↑* (sum⁺ B₁ + sum⁺ B₂))
 
 ⋯ₚ-cong : ⦃ K : Kit 𝓕 ⦄ (P : Proc m) {ϕ₁ ϕ₂ : m –[ K ]→ n} → ϕ₁ ≗ ϕ₂ → P ⋯ₚ ϕ₁ ≡ P ⋯ₚ ϕ₂
 ⋯ₚ-cong ⟪ e ⟫ eq = cong ⟪_⟫ (⋯-cong e eq)
@@ -160,11 +164,9 @@ data _≋′_ {n} : Rel (Proc n) 0ℓ where
   ∥-comm′ : P ∥ Q ≋′ Q ∥ P
   ∥-assoc′ : P₁ ∥ (P₂ ∥ P₃) ≋′ (P₁ ∥ P₂) ∥ P₃
   ∥-unit′ : ⟪ K `unit ⟫ ∥ P ≋′ P
-  ν-swap′ : ∀ {b₁ b₂} {B₁ : Bind b₁} {B₂ : Bind b₂} {P} → ν B₁ B₂ P ≋′ ν B₂ B₁ (P ⋯ₚ bindSwap b₁ b₂)
-  ν-comm′ : ∀ {a₁ a₂ b₁ b₂} {A₁ : Bind a₁} {A₂ : Bind a₂} {B₁ : Bind b₁} {B₂ : Bind b₂} {P} →
-    ν B₁ B₂ (ν A₁ A₂ P) ≋′ ν A₁ A₂ (ν B₁ B₂ (P ⋯ₚ bindComm a₁ a₂ b₁ b₂))
-  ν-ext′ : ∀ {b₁ b₂} {B₁ : Bind b₁} {B₂ : Bind b₂} {P Q} →
-    P ∥ ν B₁ B₂ Q ≋′ ν B₁ B₂ ((P ⋯ₚ weaken* ⦃ Kᵣ ⦄ (b₁ + b₂)) ∥ Q)
+  ν-swap′ : ν B₁ B₂ P ≋′ ν B₂ B₁ (P ⋯ₚ bindSwap (sum⁺ B₁) (sum⁺ B₂))
+  ν-comm′ : ν B₁ B₂ (ν A₁ A₂ P) ≋′ ν A₁ A₂ (ν B₁ B₂ (P ⋯ₚ bindComm (sum⁺ A₁) (sum⁺ A₂) (sum⁺ B₁) (sum⁺ B₂)))
+  ν-ext′ : P ∥ ν B₁ B₂ Q ≋′ ν B₁ B₂ ((P ⋯ₚ weaken* ⦃ Kᵣ ⦄ (sum⁺ B₁ + sum⁺ B₂)) ∥ Q)
   ∥-cong′ : P₁ ≋′ P₂ → P₁ ∥ Q ≋′ P₂ ∥ Q
   ν-cong′ : P ≋′ Q → ν B₁ B₂ P ≋′ ν B₁ B₂ Q
 
@@ -191,12 +193,10 @@ module _ where
   ∥-cong : P₁ ≋ P₂ → Q₁ ≋ Q₂ → P₁ ∥ Q₁ ≋ P₂ ∥ Q₂
   ∥-cong ps qs = gmap (_∥ _) ∥-cong′ ps ◅◅ ∥-comm ◅◅ gmap (_∥ _) ∥-cong′ qs ◅◅ ∥-comm
 
-  ν-swap : ∀ {b₁ b₂} {B₁ : Bind b₁} {B₂ : Bind b₂} {P : Proc (b₁ + b₂ + n)} →
-    ν B₁ B₂ P ≋ ν B₂ B₁ (P ⋯ₚ bindSwap b₁ b₂)
+  ν-swap : ν {n = n} B₁ B₂ P ≋ ν B₂ B₁ (P ⋯ₚ _)
   ν-swap = return ν-swap′
 
-  ν-comm : ∀ {a₁ a₂ b₁ b₂} {A₁ : Bind a₁} {A₂ : Bind a₂} {B₁ : Bind b₁} {B₂ : Bind b₂} {P : Proc (a₁ + a₂ + (b₁ + b₂ + n))} →
-    ν B₁ B₂ (ν A₁ A₂ P) ≋ ν A₁ A₂ (ν B₁ B₂ (P ⋯ₚ _))
+  ν-comm : ν B₁ B₂ (ν A₁ A₂ P) ≋ ν A₁ A₂ (ν B₁ B₂ (P ⋯ₚ _))
   ν-comm = return ν-comm′
 
   ν-cong : P ≋ Q → ν B₁ B₂ P ≋ ν B₁ B₂ Q
@@ -206,10 +206,12 @@ module _ where
   ⋯-preserves-≋′ ∥-comm′ = ∥-comm′
   ⋯-preserves-≋′ ∥-assoc′ = ∥-assoc′
   ⋯-preserves-≋′ ∥-unit′ = ∥-unit′
-  ⋯-preserves-≋′ (ν-swap′ {a} {b}) =
-    subst₂ _≋′_ refl (cong (ν _ _) (sym (bindSwap-↑*-dist-⋯ a b _))) ν-swap′
-  ⋯-preserves-≋′ (ν-comm′ {a₁}{a₂}{b₁}{b₂}{A₁}{A₂}) =
-    subst₂ _≋′_ refl (cong (ν A₁ A₂ ∘ ν _ _) (sym (bindComm-↑*-dist-⋯ a₁ a₂ b₁ b₂ _))) ν-comm′
+  ⋯-preserves-≋′ (ν-swap′ {B₁} {B₂}) =
+    subst₂ _≋′_ refl (cong (ν _ _) (sym (bindSwap-↑*-dist-⋯ (sum⁺ B₁) (sum⁺ B₂) _))) ν-swap′
+  ⋯-preserves-≋′ (ν-comm′ {A₁} {A₂} {B₁} {B₂}) =
+    subst₂ _≋′_ refl
+      (cong (ν B₁ B₂ ∘ ν _ _) (sym (bindComm-↑*-dist-⋯ (sum⁺ B₁) (sum⁺ B₂) (sum⁺ A₁) (sum⁺ A₂) _)))
+      ν-comm′
   ⋯-preserves-≋′ ν-ext′ =
     let eq = fusionₚ _ _ _ ■ ⋯ₚ-cong _ (↑*-wk _ _) ■ sym (fusionₚ _ _ _) in
     subst₂ _≋′_ refl (cong (ν _ _) (cong₂ _∥_ eq refl)) ν-ext′
