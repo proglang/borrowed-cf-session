@@ -93,14 +93,14 @@ _⋯-wk-cancels-⦅_⦆ : (α : Struct n) (γ : Struct n) → wk α ⋯ ⦅ γ �
 (α ; β) ⋯-wk-cancels-⦅ γ ⦆ = cong₂ _;_ (α ⋯-wk-cancels-⦅ γ ⦆) (β ⋯-wk-cancels-⦅ γ ⦆)
 
 _Preserves[_]_⇒_ : ∀ {ℓ} → m →ₛ n → Pred 𝕋 ℓ → Ctx m → Ctx n → Set _
-σ Preserves[ P ] Γ₁ ⇒ Γ₂ = ∀ x → P (Γ₁ x) → AllCx P Γ₂ (σ x)
+σ Preserves[ P ] Γ₁ ⇒ Γ₂ = ∀ {x} → P (Γ₁ x) → AllCx P Γ₂ (σ x)
 
 module _ {ℓ} {P : Pred 𝕋 ℓ} where
   allCx-⋯ : σ Preserves[ P ] Γ₁ ⇒ Γ₂ → AllCx P Γ₁ γ → AllCx P Γ₂ (γ ⋯ σ)
   allCx-⋯ P⇒ΠP []      = []
   allCx-⋯ P⇒ΠP (x ∥ y) = allCx-⋯ P⇒ΠP x ∥ allCx-⋯ P⇒ΠP y
   allCx-⋯ P⇒ΠP (x ; y) = allCx-⋯ P⇒ΠP x ; allCx-⋯ P⇒ΠP y
-  allCx-⋯ P⇒ΠP (` Px)  = P⇒ΠP _ Px
+  allCx-⋯ P⇒ΠP (` Px)  = P⇒ΠP Px
 
   allCx-wk : AllCx P Γ γ → AllCx P (T F.∷ Γ) (wk γ)
   allCx-wk [] = []
@@ -109,8 +109,8 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
   allCx-wk (` x) = ` x
 
   ↑-preserves : σ Preserves[ P ] Γ₁ ⇒ Γ₂ → (σ ↑) Preserves[ P ] (T F.∷ Γ₁) ⇒ (T F.∷ Γ₂)
-  ↑-preserves p⇒ zero    px = ` px
-  ↑-preserves p⇒ (suc x) px = allCx-wk (p⇒ x px)
+  ↑-preserves p⇒ {zero}  px = ` px
+  ↑-preserves p⇒ {suc x} px = allCx-wk (p⇒ px)
 
 ≈′-⋯ : σ Preserves[ Unr ] Γ₁ ⇒ Γ₂ → (_⋯ σ) Bin.Preserves (Γ₁ ∶_≈′_) ⟶ (Γ₂ ∶_≈′_)
 ≈′-⋯ σ-unr ;′-unit₁ = ;′-unit₁
@@ -129,7 +129,7 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
 ≈-⋯ = Eq*.gmap _ ∘ ≈′-⋯
 
 ≈-wk : Γ ∶ α ≈ β → T F.∷ Γ ∶ wk α ≈ wk β
-≈-wk {α = α} {β} eq rewrite sym (weaken/wk α) | sym (weaken/wk β) = ≈-⋯ (λ _ u → ` u) eq
+≈-wk {α = α} {β} eq rewrite sym (weaken/wk α) | sym (weaken/wk β) = ≈-⋯ `_ eq
 
 ≼-⋯ : σ Preserves[ Unr ] Γ₁ ⇒ Γ₂ → Γ₁ ∶ α ≼ β → Γ₂ ∶ α ⋯ σ ≼ β ⋯ σ
 ≼-⋯ σ-unr (≼-refl eq)    = ≼-refl (≈-⋯ σ-unr eq)

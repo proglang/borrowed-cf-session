@@ -63,6 +63,9 @@ _∶_≈_ Γ = EqClosure (Γ ∶_≈′_)
 ∥-cong : Γ ∶ α ≈ α′ → Γ ∶ β ≈ β′ → Γ ∶ α ∥ β ≈ α′ ∥ β′
 ∥-cong xs ys = Eq*.gmap (_∥ _) ∥′-cong₁ xs ◅◅ ∥-comm ◅◅ Eq*.gmap (_∥ _) ∥′-cong₁ ys ◅◅ ∥-comm
 
+∥/;-transmute : UnrCx Γ α → UnrCx Γ β → Γ ∶ α ∥ β ≈ α ; β
+∥/;-transmute U₁ U₂ = Eq*.return (∥′-tm-; U₁ U₂)
+
 ≈-isEquivalence : (Γ : Ctx n) → IsEquivalence (Γ ∶_≈_)
 ≈-isEquivalence Γ = Eq*.isEquivalence (Γ ∶_≈′_)
 

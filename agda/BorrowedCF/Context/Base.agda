@@ -15,7 +15,7 @@ variable
 data ParSeq : Set where
   par seq : ParSeq
 
-infix 12 _∥_ _;_
+infixl 17 _∥_ _;_
 
 data Struct (n : ℕ) : Set where
   `_  : 𝔽 n → Struct n
@@ -39,6 +39,13 @@ module _ {ℓ} (P : Pred 𝕋 ℓ) (Γ : Ctx n) where
     _∥_ : AllCx α → AllCx β → AllCx (α ∥ β)
     _;_ : AllCx α → AllCx β → AllCx (α ; β)
     `_  : ∀ {x} → P (Γ x) → AllCx (` x)
+
+module _ {ℓ} {P : Pred 𝕋 ℓ} {Γ : Ctx n} where
+  allCx-∥⁻¹ : AllCx P Γ (α ∥ β) → AllCx P Γ α × AllCx P Γ β
+  allCx-∥⁻¹ (x ∥ y) = x , y
+
+  allCx-;⁻¹ : AllCx P Γ (α ; β) → AllCx P Γ α × AllCx P Γ β
+  allCx-;⁻¹ (x ; y) = x , y
 
 UnrCx : REL (Ctx n) (Struct n) _
 UnrCx = AllCx Unr

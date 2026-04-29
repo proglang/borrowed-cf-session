@@ -53,6 +53,19 @@ record Join (A : Set) : Set where
   ... | R = refl
   ... | 𝟙 = refl
 
+  allCx-join⁺ : ∀ {ℓ} {P : Pred 𝕋 ℓ} a → AllCx P Γ α → AllCx P Γ β → AllCx P Γ (join a α β)
+  allCx-join⁺ a with joinDir a
+  ... | L = _;_
+  ... | R = flip _;_
+  ... | 𝟙 = _∥_
+
+  allCx-join⁻ : ∀ {ℓ} {P : Pred 𝕋 ℓ} a → AllCx P Γ (join a α β) → AllCx P Γ α × AllCx P Γ β
+  allCx-join⁻ a with joinDir a
+  ... | L = allCx-;⁻¹
+  ... | R = Π.swap ∘ allCx-;⁻¹
+  ... | 𝟙 = allCx-∥⁻¹
+
+
 open Join ⦃ ... ⦄ public
 
 instance

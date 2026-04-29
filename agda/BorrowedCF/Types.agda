@@ -11,7 +11,7 @@ data Dir : Set where
   L R 𝟙 : Dir
 
 data Mob : Set where
-  mob loc : Mob
+  M S : Mob
 
 data Eff : Set where
   ℙ 𝕀 : Eff
@@ -26,10 +26,25 @@ data _≤ϵ_ : Rel Eff 0ℓ where
 ≤ϵ-refl {ℙ} = ℙ≤ϵ
 ≤ϵ-refl {𝕀} = 𝕀≤𝕀
 
+data Lin : Set where
+  𝟙 unr : Lin
+
+record Arr : Set where
+  constructor arr
+  field
+    lin : Lin
+    dir : Dir
+    mob : Mob
+    eff : Eff
+
+  Mobile = mob ≡ M
+  Unr = lin ≡ unr
+
 data Kind : Set where
   𝕤 𝕥 : Kind
 
 variable
+  a a₁ a₂ a₃ a′ : Arr
   p p₁ p₂ p₃ p′ : Pol
   d d₁ d₂ d₃ d′ : Dir
   𝓂 𝓂₁ 𝓂₂ 𝓂₃ 𝓂′ : Mob
@@ -44,11 +59,15 @@ data Ty : ∀ κ → ⟦ κ ⟧κ → Set
 𝕊 = Ty 𝕤
 𝕋 = Ty 𝕥 _
 
+infixl 17 _;_
+infixl 16 _⊗⟨_⟩_ _⊗¹_ _⊗ᴸ_
+infixr 15 _⟨_⟩→_
+
 data Ty where
-  ⟨_⟩  : 𝕊 0 → 𝕋
-  unit : 𝕋
-  arr  : (m : Mob) (d : Dir) (e : Eff) (t u : 𝕋) → 𝕋
-  pair : (d : Dir) (t u : 𝕋) → 𝕋
+  ⟨_⟩    : 𝕊 0 → 𝕋
+  `⊤     : 𝕋
+  _⟨_⟩→_ : (t : 𝕋) (a : Arr) (u : 𝕋) → 𝕋
+  _⊗⟨_⟩_ : (t : 𝕋) (d : Dir) (u : 𝕋) → 𝕋
 
   `_  : (x : 𝔽 n) → 𝕊 n
   end : (p : Pol) → 𝕊 n
@@ -57,6 +76,9 @@ data Ty where
   mu  : (s : 𝕊 (suc n)) → 𝕊 n
   _;_ : (s₁ s₂ : 𝕊 n) → 𝕊 n
   skip ret acq : 𝕊 n
+
+pattern _⊗¹_ T U = T ⊗⟨ 𝟙 ⟩ U
+pattern _⊗ᴸ_ T U = T ⊗⟨ L ⟩ U
 
 variable
   s s₁ s₂ s₃ s′ : 𝕊 n
@@ -68,18 +90,18 @@ postulate
 
 data Bounded {n} : 𝕊 n → Set where
   `_ : (x : 𝔽 n) → Bounded (` x)
-  end : Bounded (end p)
-  ret : Bounded ret
+  end  : Bounded (end p)
+  ret  : Bounded ret
   _;₁_ : Bounded s₁ → Skips s₂ → Bounded (s₁ ; s₂)
   -;₂_ : Bounded s₂ → Bounded (s₁ ; s₂)
   mu   : Bounded s → Bounded (mu s)
   brn  : Bounded s₁ → Bounded s₂ → Bounded (brn p s₁ s₂)
 
 data Mobile : 𝕋 → Set where
-  unit : Mobile unit
-  arr  : ∀ {t u} → Mobile (arr mob d ϵ t u)
-  acq  : Bounded s → Mobile ⟨ acq ; s ⟩
-  pair : ∀ {t u} → Mobile t → Mobile u → Mobile (pair d t u)
+  `⊤  : Mobile `⊤
+  arr : Arr.Mobile a → Mobile (T ⟨ a ⟩→ U)
+  acq : Bounded s → Mobile ⟨ acq ; s ⟩
+  _⊗_ : Mobile T → Mobile U → Mobile (T ⊗⟨ d ⟩ U)
 
 data UnrTy : ∀ κ {x : ⟦ κ ⟧κ} → Ty κ x → Set
 
@@ -87,9 +109,10 @@ Unr  = UnrTy 𝕥
 UnrS = UnrTy 𝕤
 
 data UnrTy where
-  unit : Unr unit
-  pair : Unr T → Unr U → Unr (pair d T U)
-  --arr  :
+  `⊤   : Unr `⊤
+  _⊗_  : Unr T → Unr U → Unr (T ⊗⟨ d ⟩ U)
+  arr  : Arr.Unr a → Unr (T ⟨ a ⟩→ U)
+  ⟨_⟩  : UnrS s → Unr ⟨ s ⟩
   skip : UnrS {n} skip
   `_   : (x : 𝔽 n) → UnrS (` x)
   _;_  : UnrS s₁ → UnrS s₂ → UnrS (s₁ ; s₂)
@@ -111,7 +134,7 @@ dual ret = ret
 dual acq = acq
 
 relaxEff : 𝕋 → Eff → 𝕋
+relaxEff `⊤ _ = `⊤
 relaxEff ⟨ s ⟩ _ = ⟨ s ⟩
-relaxEff unit _ = unit
-relaxEff (arr m d e t u) e′ = arr m d e′ (relaxEff t e′) (relaxEff u e′)
-relaxEff (pair d t u) e′ = pair d (relaxEff t e′) (relaxEff u e′)
+relaxEff (t ⟨ a ⟩→ u) e′ = relaxEff t e′ ⟨ record a { eff = e′ } ⟩→ relaxEff u e′
+relaxEff (t ⊗⟨ d ⟩ u) e′ = relaxEff t e′ ⊗⟨ d ⟩ relaxEff u e′
