@@ -37,34 +37,34 @@
 
 \newcommand*\RuleTeSeqOne{
   \inferrule[Te-Seq1]{
-    \Bounded{\S_1} \\
-    \Skips{\S_2}
+    \Bounded{\S[1]} \\
+    \Skips{\S[2]}
   } {
-    \Bounded{(\SSeq{\S_1}{\S_2})}
+    \Bounded{(\SSeq{\S[1]}{\S[2]})}
   }
 }
 
 \newcommand*\RuleTeSeqTwo{
   \inferrule[Te-Seq2]{
-    \Bounded{\S_2}
+    \Bounded{\S[2]}
   } {
-    \Bounded{(\SSeq{\S_1}{\S_2})}
+    \Bounded{(\SSeq{\S[1]}{\S[2]})}
   }
 }
 
 \newcommand*\RuleTeBranch{
   \inferrule[Te-Branch]{
-    \forall \ell.\ \Bounded{\S_\ell}
+    \forall \ell.\ \Bounded{\S[\ell]}
   } {
-    \Bounded{\SBranch{\ell:\S_\ell}{\ell\in L}}
+    \Bounded{\SBranch{\ell:\S[\ell]}{\ell\in L}}
   }
 }
 
 \newcommand*\RuleTeChoice{
   \inferrule[Te-Choice]{
-    \forall \ell.\ \Bounded{\S_\ell}
+    \forall \ell.\ \Bounded{\S[\ell]}
   } {
-    \Bounded{\SChoice{\ell:\S_\ell}{\ell\in L}}
+    \Bounded{\SChoice{\ell:\S[\ell]}{\ell\in L}}
   }
 }
 
@@ -106,7 +106,7 @@
 
 \newcommand*\RuleTeArr{
   \inferrule[Te-Arr]{}{
-    \Mobile{(\TArr{\MobMobile}{\Dir,\Eff}{\T_1}{\T_2})}
+    \Mobile{(\TArr{\MobMobile}{\Dir,\Eff}{\T[1]}{\T[2]})}
   }
 }
 

@@ -13,9 +13,9 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
 
 \begin{figure}
   \begin{align*}
-    \Mob ::=~
-    & \MobMobile \grmor \MobStationary
-    \tag{Mobility with $\MobMobile < \MobStationary$} \\
+    \Mob \grmeq
+      & \MobMobile \grmor \MobStationary
+        \tag{Mobility with $\MobMobile < \MobStationary$} \\
     % \O \grmeq & 0 \grmor 1 \grmor 2 \grmor \dots
     % \tag{Priorities} \\
     % \P, \Q \in {}& \Nat \cup \{ \bot, \top \}
@@ -132,20 +132,6 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
   \caption{Unrestricted Types ($\Unr\T$) and contexts ($\Unr\Ctx$)}
   \label{fig:unrestricted-types}
 \end{figure}
-
-% \begin{figure}
-%   \begin{mathpar}
-%     \RuleOProdOne \and
-%     \RuleOProdTwo \and 
-%     \RuleOArr 
-%   \end{mathpar}
-%   TODO: Should it be $\Ord\,T\PairOrd U$? Otherwise why to we have an
-%   ordered-pair type constructor?\\
-%   PT: (obsolete) I don't think there is a useful syntactical
-%   classification for an ordered type and we get by with using $\Unr{}$.
-%   \caption{Ordered Types ($\Ord\T$)}
-%   \label{fig:ordered-types}
-% \end{figure}
 
 % Bounded Session Types
 
