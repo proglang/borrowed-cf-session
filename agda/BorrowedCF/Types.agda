@@ -103,20 +103,11 @@ data Mobile : 𝕋 → Set where
   acq : Bounded s → Mobile ⟨ acq ; s ⟩
   _⊗_ : Mobile T → Mobile U → Mobile (T ⊗⟨ d ⟩ U)
 
-data UnrTy : ∀ κ {x : ⟦ κ ⟧κ} → Ty κ x → Set
-
-Unr  = UnrTy 𝕥
-UnrS = UnrTy 𝕤
-
-data UnrTy where
+data Unr : 𝕋 → Set where
   `⊤   : Unr `⊤
   _⊗_  : Unr T → Unr U → Unr (T ⊗⟨ d ⟩ U)
   arr  : Arr.Unr a → Unr (T ⟨ a ⟩→ U)
-  ⟨_⟩  : UnrS s → Unr ⟨ s ⟩
-  skip : UnrS {n} skip
-  `_   : (x : 𝔽 n) → UnrS (` x)
-  _;_  : UnrS s₁ → UnrS s₂ → UnrS (s₁ ; s₂)
-  mu   : UnrS s → UnrS (mu s)
+  ⟨_⟩  : Skips s → Unr ⟨ s ⟩
 
 dualPol : Pol → Pol
 dualPol ‼ = ⁇
