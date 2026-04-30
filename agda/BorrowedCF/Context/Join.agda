@@ -37,13 +37,13 @@ record Join (A : Set) : Set where
 
   join-[]₁ : ∀ a → Γ ∶ join a [] β ≈ β
   join-[]₁ a with joinDir a
-  ... | 𝟙 = ∥-comm ◅◅ ∥-unit
+  ... | 𝟙 = ∥-unit₁
   ... | L = ;-unit₁
   ... | R = ;-unit₂
 
   join-[]₂ : ∀ a → Γ ∶ join a α [] ≈ α
   join-[]₂ a with joinDir a
-  ... | 𝟙 = ∥-unit
+  ... | 𝟙 = ∥-unit₂
   ... | L = ;-unit₂
   ... | R = ;-unit₁
 

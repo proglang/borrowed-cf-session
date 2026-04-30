@@ -61,19 +61,24 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
   % lin direction)
 
   \medskip
-  Typing contexts are subject to the following laws
+  Equality of typing contexts is the equivalence closure of the following
+  axioms
   \begin{mathpar}
-    \CtxExt\CtxEmpty\Ctx = \Ctx \and
-    \CtxExt\Ctx\CtxEmpty = \Ctx \and
+    %\CtxExt\CtxEmpty\Ctx = \Ctx \and
+    %\CtxExt\Ctx\CtxEmpty = \Ctx \and
     \CtxExtUnord\CtxEmpty\Ctx = \Ctx \and
-    \CtxExtUnord\Ctx\CtxEmpty = \Ctx \and
-    \inferrule{\Unr\Ctx}{\CtxPar \Ctx \Ctx = \Ctx} \and
-    \inferrule{\Unr\Ctx}{\CtxSeq \Ctx \Ctx = \Ctx} \\
+    %\CtxExtUnord\Ctx\CtxEmpty = \Ctx \and
+    \CtxExtUnord{\Ctx_1}{\Ctx_2} = \CtxExtUnord{\Ctx_2}{\Ctx_1} \and
     \CtxExt{\Ctx_1}{(\CtxExt{\Ctx_2}{\Ctx_3})} =
     \CtxExt{(\CtxExt{\Ctx_1}{\Ctx_2})}{\Ctx_3} \and
     \CtxExtUnord{\Ctx_1}{(\CtxExtUnord{\Ctx_2}{\Ctx_3})} =
-    \CtxExtUnord{(\CtxExtUnord{\Ctx_1}{\Ctx_2})}{\Ctx_3} \and
-    \CtxExtUnord{\Ctx_1}{\Ctx_2} = \CtxExtUnord{\Ctx_2}{\Ctx_1}
+    \CtxExtUnord{(\CtxExtUnord{\Ctx_1}{\Ctx_2})}{\Ctx_3} \\
+    \inferrule{\Unr\Ctx}{\CtxPar \Ctx \Ctx = \Ctx} \and
+    %\inferrule{\Unr\Ctx}{\CtxSeq \Ctx \Ctx = \Ctx} \and
+    \inferrule{\Unr\Ctx[1]}{\CtxPar{\Ctx[1]}{\Ctx[2]}
+      = \CtxSeq{\Ctx[1]}{\Ctx[2]}} \and
+    \inferrule{\Unr\Ctx[2]}{\CtxPar{\Ctx[1]}{\Ctx[2]}
+      = \CtxSeq{\Ctx[1]}{\Ctx[2]}}
   \end{mathpar}
 
   \medskip
@@ -196,6 +201,17 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
     bounded session types ($\Bounded\S$); skipping session types ($\Skips\S$)}
   \label{fig:bounded-session-types}
 \end{figure}
+
+\begin{lemma}%[Monoidal properties of contexts]
+  The context constructors satisfy the following properties with respect to
+  context equality.
+  \begin{itemize}
+    \item Sequential composition \textup{($\CtxSeq{\Ctx[1]}{\Ctx[2]}$)} forms a
+      monoid with identity $\CtxEmpty$.
+    \item Parallel composition \textup{($\CtxPar{\Ctx[1]}{\Ctx[2]}$)} forms a
+      commutative monoid with identity $\CtxEmpty$.
+  \end{itemize}
+\end{lemma}
 
 \begin{lemma}
   $\Unr\Ctx \implies \Mobile\Ctx$

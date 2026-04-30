@@ -113,8 +113,6 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
   ↑-preserves p⇒ {suc x} px = allCx-wk (p⇒ px)
 
 ≈′-⋯ : σ Preserves[ Unr ] Γ₁ ⇒ Γ₂ → (_⋯ σ) Bin.Preserves (Γ₁ ∶_≈′_) ⟶ (Γ₂ ∶_≈′_)
-≈′-⋯ σ-unr ;′-unit₁ = ;′-unit₁
-≈′-⋯ σ-unr ;′-unit₂ = ;′-unit₂
 ≈′-⋯ σ-unr ;′-assoc = ;′-assoc
 ≈′-⋯ σ-unr (;′-cong₁ x) = ;′-cong₁ (≈′-⋯ σ-unr x)
 ≈′-⋯ σ-unr (;′-cong₂ x) = ;′-cong₂ (≈′-⋯ σ-unr x)
@@ -123,7 +121,7 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
 ≈′-⋯ σ-unr ∥′-comm = ∥′-comm
 ≈′-⋯ σ-unr (∥′-cong₁ x) = ∥′-cong₁ (≈′-⋯ σ-unr x)
 ≈′-⋯ σ-unr (∥′-dup U) = ∥′-dup (allCx-⋯ σ-unr U)
-≈′-⋯ σ-unr (∥′-tm-; U₁ U₂) = ∥′-tm-; (allCx-⋯ σ-unr U₁) (allCx-⋯ σ-unr U₂)
+≈′-⋯ σ-unr (∥′-tm-; U) = ∥′-tm-; (Sum.map (allCx-⋯ σ-unr) (allCx-⋯ σ-unr) U)
 
 ≈-⋯ : σ Preserves[ Unr ] Γ₁ ⇒ Γ₂ → (_⋯ σ) Bin.Preserves (Γ₁ ∶_≈_) ⟶ (Γ₂ ∶_≈_)
 ≈-⋯ = Eq*.gmap _ ∘ ≈′-⋯
