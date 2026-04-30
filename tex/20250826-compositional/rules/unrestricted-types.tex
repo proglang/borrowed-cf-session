@@ -8,6 +8,11 @@
   \Unr \B
 }
 
+% U-Unit
+\DefRule {Unit} {} {
+  \Unr \BUnit
+}
+
 % U-Prod
 \DefRule {Prod} {
   \Unr \T[1] \\
@@ -27,6 +32,13 @@
 % U-Arr
 \DefRule {Arr} {} {
   \Unr \TArr{\MobMobile}{\DirNone,\Eff}{\T[1]}{\T[2]}
+}
+
+% U-Session
+\DefRule {Session} {
+  \Skips \S
+}{
+  \Unr \S
 }
 
 % U-Skip
