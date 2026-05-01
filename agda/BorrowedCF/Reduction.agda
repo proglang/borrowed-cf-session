@@ -49,7 +49,9 @@ _[_] : Frame n → Tm n → Tm n
 
 infixl 5 _⋯ᶠ_
 
-_⋯ᶠ_ : ⦃ K : Kit 𝓕 ⦄ → Frame m → m –[ K ]→ n → Frame n
+postulate _⋯ᶠ_ : ⦃ K : Kit 𝓕 ⦄ → Frame m → m –[ K ]→ n → Frame n
+
+{-
 □· e₂ ⋯ᶠ ϕ = □· (e₂ ⋯ ϕ)
 V₁ ·□ ⋯ᶠ ϕ = {!!}
 □⊗ e₂ ⋯ᶠ ϕ = {!!}
@@ -57,6 +59,7 @@ V₁ ⊗□ ⋯ᶠ ϕ = {!!}
 □; e₂ ⋯ᶠ ϕ = {!!}
 `let-`in e′ ⋯ᶠ ϕ = {!!}
 `let⊗-`in e′ ⋯ᶠ ϕ = {!!}
+-}
 
 infix 4 _─→_ _⋯→_
 
@@ -127,7 +130,7 @@ module _ (Γ-S : ChanCx Γ) where
 
   inv-pair : Value e → Γ ; γ ⊢ e ∶ T ⊗⟨ d ⟩ U ∣ ℙ →
     ∃[ α ] ∃[ β ] ∃[ e₁ ] ∃[ e₂ ]
-      e₁ ⊗ e₂ ≡ e
+      e ≡ e₁ ⊗ e₂
         × Γ ∶ join d α β ≼ γ
         × Γ ; α ⊢ e₁ ∶ T ∣ ℙ
         × Γ ; β ⊢ e₂ ∶ U ∣ ℙ
@@ -139,117 +142,135 @@ module _ (Γ-S : ChanCx Γ) where
       _ , _ , _ , _ , eq , ≼-trans γ≤′ γ≤ , x₁,x₂
   inv-pair V (T-Var x T-eq) = case sym T-eq ■ Γ-S x .proj₂ of λ()
 
+  inv-session : Value e → Γ ; γ ⊢ e ∶ ⟨ s ⟩ ∣ ϵ →
+    ∃[ x ] e ≡ ` x × Γ x ≡ ⟨ s ⟩ × Γ ∶ ` x ≼ γ
+  inv-session V (T-Var x T-eq) = x , refl , T-eq , ≼-refl refl
+  inv-session V (T-Weaken ϵ≤ γ≤ x) =
+    _ , inv-session V x .proj₂ .proj₁
+      , inv-session V x .proj₂ .proj₂ .proj₁
+      , ≼-trans (inv-session V x .proj₂ .proj₂ .proj₂) γ≤
+
   Unr×Value⇒UnrCx : Unr T → Value e → Γ ; γ ⊢ e ∶ T ∣ ϵ → UnrCx Γ γ
-  Unr×Value⇒UnrCx `⊤ V e = UnrCx≼-⇒-UnrCx [] (⊢`⊤⇒[]≼γ V e)
-  Unr×Value⇒UnrCx (_⊗_ {d = d} U₁ U₂) V e
-    with _ , _ , _ , _ , refl , γ≤ , e₁ , e₂ ← inv-pair V (value⇒pure V e)
-    with V-⊗ V₁ V₂ ← V
-    = UnrCx≼-⇒-UnrCx (allCx-join⁺ d (Unr×Value⇒UnrCx U₁ V₁ e₁) (Unr×Value⇒UnrCx U₂ V₂ e₂)) γ≤
-  Unr×Value⇒UnrCx (arr {a} refl) V e = {!!}
-  Unr×Value⇒UnrCx ⟨ U ⟩ V e = {!!}
+  Unr×Value⇒UnrCx U V (T-Const c) = []
+  Unr×Value⇒UnrCx U V (T-Var x refl) = ` U
+  Unr×Value⇒UnrCx (arr U) V (T-Abs Γ-unr Γ-mob e) = Γ-unr U
+  Unr×Value⇒UnrCx (U₁ ⊗ U₂) (V-⊗ V₁ V₂) (T-Pair p/s e₁ e₂ seq⇒p) =
+    allCx-join⁺ p/s (Unr×Value⇒UnrCx U₁ V₁ e₁) (Unr×Value⇒UnrCx U₂ V₂ e₂)
+  Unr×Value⇒UnrCx U V (T-Weaken ϵ≤ γ≤ e) = allCx-≼ id (Unr×Value⇒UnrCx U V e) γ≤
 
---   preservation′ : Γ ; γ ⊢ e ∶ t ∣ ϵ → e ─→ e′ → Γ ; γ ⊢ e′ ∶ t ∣ ϵ
---   preservation′ (T-App {a = a} {γ₁ = γ₁} {γ₂} refl f e) (E-App V) =
---     let open ≼-Reasoning in
---     let open Arr a in
---     let γ′ , γ≤ , f′ = inv-⊢abs (value⇒pure V-λ f) in
---     let γ≤′ = begin
---                 γ′ 𝐂.⋯ 𝐂.⦅ γ₂ ⦆
---               ≲⟨ 𝐂.≼-⋯ (λ{ {zero} U → Unr×Value⇒UnrCx U V e; {suc x} → `_ }) γ≤ ⟩
---                 join dir (` zero) (𝐂.wk γ₁) 𝐂.⋯ 𝐂.⦅ γ₂ ⦆
---               ≡⟨ join-⋯ dir _ _ ⟩
---                 join dir γ₂ (𝐂.wk γ₁ 𝐂.⋯ 𝐂.⦅ γ₂ ⦆)
---               ≡⟨ cong (join dir γ₂) (γ₁ 𝐂.⋯-wk-cancels-⦅ γ₂ ⦆) ⟩
---                 join dir γ₂ γ₁
---               ∎
---     in
---     T-Weaken ≤ϵ-refl γ≤′ (f′ ⊢⋯ₛ ⊢subₛ (value⇒pure V e) (λ U → Unr×Value⇒UnrCx U V e) {!!})
--- --    T-Weaken ≤ϵ-refl γ≤′ (f′ ⊢⋯ₛ (⊢⦅ value⇒pure V e ⦆ₛ , {!!} , {!!}))
--- --   preservation′ (T-Let p/s {γ₁} {γ₂} e₁ e₂) (E-Let V-e₁) =
--- --     let eq = join-⋯ {σ = 𝐂.⦅ γ₁ ⦆} p/s (` zero) (𝐂.wk γ₂)
--- --                ■ cong (join p/s γ₁) (γ₂ 𝐂.⋯-wk-cancels-⦅ γ₁ ⦆)
--- --     in
--- --     subst-γ eq (e₂ ⊢⋯ (⊢⦅ value⇒pure V-e₁ e₁ ⦆ₛ , {!!} , {!!}))
--- --   preservation′ (T-LetUnit p/s e₁ e₂) E-Seq =
--- --     let γ≼ = ≼-trans (≼-refl (≈-sym (join-[]₁ p/s)))
--- --                      (≼-join p/s (⊢`⊤⇒[]≼γ e₁) (≼-refl refl))
--- --     in
--- --     T-Weaken ≤ϵ-refl γ≼ e₂
--- --   preservation′ (T-LetPair {d = d} {T₂ = T₂} p/s {γ₁} {γ₂} e e′) (E-PairElim V₁ V₂) =
--- --     let open Fin.Patterns in
--- --     let open ≼-Reasoning in
--- --     let α , β , γ≤ , e₁ , e₂ = inv-⊢pair (value⇒pure (V-⊗ V₁ V₂) e) in
--- --     let γ≤′ = begin
--- --                 join p/s (join d (` 0F) (` 1F)) (𝐂.wk (𝐂.wk γ₂))
--- --                   𝐂.⋯ 𝐂.⦅ α 𝐂.⋯ 𝐂.weaken ⦆ 𝐂.⋯ 𝐂.⦅ β ⦆
--- --               ≡⟨ cong (𝐂._⋯ 𝐂.⦅ β ⦆) (join-⋯ p/s _ _) ⟩
--- --                 join p/s (join d (` 0F) (` 1F) 𝐂.⋯ 𝐂.⦅ α 𝐂.⋯ 𝐂.weaken ⦆) (𝐂.wk (𝐂.wk γ₂) 𝐂.⋯ 𝐂.⦅ α 𝐂.⋯ 𝐂.weaken ⦆) 𝐂.⋯ 𝐂.⦅ β ⦆
--- --               ≡⟨ cong₂ (λ x y → join p/s x y 𝐂.⋯ 𝐂.⦅ β ⦆)
--- --                        (join-⋯ d _ _)
--- --                        (𝐂.wk γ₂ 𝐂.⋯-wk-cancels-⦅ _ ⦆) ⟩
--- --                 join p/s (join d (α 𝐂.⋯ 𝐂.weaken) (` 0F)) (𝐂.wk γ₂) 𝐂.⋯ 𝐂.⦅ β ⦆
--- --               ≡⟨ join-⋯ p/s _ _ ⟩
--- --                 join p/s (join d (α 𝐂.⋯ 𝐂.weaken) (` 0F) 𝐂.⋯ 𝐂.⦅ β ⦆) (𝐂.wk γ₂ 𝐂.⋯ 𝐂.⦅ β ⦆)
--- --               ≡⟨ cong₂ (join p/s) (join-⋯ d _ _) (γ₂ 𝐂.⋯-wk-cancels-⦅ _ ⦆) ⟩
--- --                 join p/s (join d (α 𝐂.⋯ 𝐂.weaken 𝐂.⋯ 𝐂.⦅ β ⦆) β) γ₂
--- --               ≡⟨ cong (λ x → join p/s (join d x β) γ₂) (α 𝐂.⋯-weaken-cancels-⦅ β ⦆) ⟩
--- --                 join p/s (join d α β) γ₂
--- --               ≲⟨ ≼-join p/s γ≤ (≼-refl refl) ⟩
--- --                 join p/s γ₁ γ₂
--- --               ∎
--- --     in
--- --     T-Weaken ≤ϵ-refl γ≤′ (e′ ⊢⋯ₛ (⊢⦅ e₁ ⊢⋯ (⊢weakenᵣ {T = T₂} _ , {!!} , {!!}) ⦆ₛ , {!!} , {!!}) ⊢⋯ₛ (⊢⦅ e₂ ⦆ₛ , {!!} , {!!}))
--- --   preservation′ (T-Weaken ϵ≤ γ≤ e) x =
--- --     T-Weaken ϵ≤ γ≤ (preservation′ e x)
+  Mobile×Value⇒MobCx : Mobile T → Value e → Γ ; γ ⊢ e ∶ T ∣ ϵ → MobCx Γ γ
+  Mobile×Value⇒MobCx m V (T-Const x) = []
+  Mobile×Value⇒MobCx m V (T-Var x refl) = ` m
+  Mobile×Value⇒MobCx (arr m) V (T-Abs Γ-unr Γ-mob x) = Γ-mob m
+  Mobile×Value⇒MobCx (m₁ ⊗ m₂) (V-⊗ V₁ V₂) (T-Pair p/s e₁ e₂ seq⇒p) =
+    allCx-join⁺ p/s (Mobile×Value⇒MobCx m₁ V₁ e₁) (Mobile×Value⇒MobCx m₂ V₂ e₂)
+  Mobile×Value⇒MobCx m V (T-Weaken ϵ≤ γ≤ e) = allCx-≼ Unr⇒Mobile (Mobile×Value⇒MobCx m V e) γ≤
 
--- --   preservation : Γ ; γ ⊢ e ∶ t ∣ ϵ → e ⋯→ e′ → Γ ; γ ⊢ e′ ∶ t ∣ ϵ
--- --   preservation e (E-□ x) = preservation′ e x
--- --   preservation e E@(E-Ctx (□· _) E₁) with e
--- --   ... | T-App ϵ-eq e₁ e₂ = T-App ϵ-eq (preservation e₁ E₁) e₂
--- --   ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
--- --   preservation e E@(E-Ctx (V₁ ·□) E₂) with e
--- --   ... | T-App ϵ-eq e₁ e₂ = T-App ϵ-eq e₁ (preservation e₂ E₂)
--- --   ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
--- --   preservation e E@(E-Ctx (□⊗ _) E₁) with e
--- --   ... | T-Pair p/s e₁ e₂ seq⇒p = T-Pair p/s (preservation e₁ E₁) e₂ seq⇒p
--- --   ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
--- --   preservation e E@(E-Ctx (V₁ ⊗□) E₂) with e
--- --   ... | T-Pair p/s e₁ e₂ seq⇒p = T-Pair p/s e₁ (preservation e₂ E₂) seq⇒p
--- --   ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
--- --   preservation e E@(E-Ctx (□; _) E₁) with e
--- --   ... | T-LetUnit p/s e₁ e₂ = T-LetUnit p/s (preservation e₁ E₁) e₂
--- --   ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
--- --   preservation e E@(E-Ctx (`let-`in _) E₁) with e
--- --   ... | T-Let p/s e₁ e₂ = T-Let p/s (preservation e₁ E₁) e₂
--- --   ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
--- --   preservation e E@(E-Ctx (`let⊗-`in _) E₁) with e
--- --   ... | T-LetPair p/s e₁ e₂ = T-LetPair p/s (preservation e₁ E₁) e₂
--- --   ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
+  preservation′ : Γ ; γ ⊢ e ∶ t ∣ ϵ → e ─→ e′ → Γ ; γ ⊢ e′ ∶ t ∣ ϵ
+  preservation′ (T-App {a = a} {γ₁ = γ₁} {γ₂} refl f e) (E-App V) =
+    let open ≼-Reasoning in
+    let open Arr a in
+    let γ′ , γ≤ , f′ = inv-⊢abs (value⇒pure V-λ f) in
+    let γ≤′ = begin
+                γ′ 𝐂.⋯ 𝐂.⦅ γ₂ ⦆
+              ≲⟨ 𝐂.≼-⋯ (λ{ {zero} U → Unr×Value⇒UnrCx U V e; {suc x} → `_ }) γ≤ ⟩
+                join dir (` zero) (𝐂.wk γ₁) 𝐂.⋯ 𝐂.⦅ γ₂ ⦆
+              ≡⟨ join-⋯ dir _ _ ⟩
+                join dir γ₂ (𝐂.wk γ₁ 𝐂.⋯ 𝐂.⦅ γ₂ ⦆)
+              ≡⟨ cong (join dir γ₂) (γ₁ 𝐂.⋯-wk-cancels-⦅ γ₂ ⦆) ⟩
+                join dir γ₂ γ₁
+              ∎
+    in
+    T-Weaken ≤ϵ-refl γ≤′ (f′ ⊢⋯ₛ ⊢subₛ (value⇒pure V e) (λ U → Unr×Value⇒UnrCx U V e) (λ m → Mobile×Value⇒MobCx m V e))
+  preservation′ (T-Let p/s {γ₁} {γ₂} e₁ e₂) (E-Let V-e₁) =
+    let eq = join-⋯ {σ = 𝐂.⦅ γ₁ ⦆} p/s (` zero) (𝐂.wk γ₂)
+               ■ cong (join p/s γ₁) (γ₂ 𝐂.⋯-wk-cancels-⦅ γ₁ ⦆)
+    in
+    subst-γ eq (e₂ ⊢⋯ₛ ⊢subₛ (value⇒pure V-e₁ e₁) (λ U → Unr×Value⇒UnrCx U V-e₁ e₁) (λ m → Mobile×Value⇒MobCx m V-e₁ e₁))
+  preservation′ (T-LetUnit p/s e₁ e₂) E-Seq =
+    let γ≼ = ≼-trans (≼-refl (≈-sym (join-[]₁ p/s)))
+                     (≼-join p/s (⊢`⊤⇒[]≼γ V-K e₁) (≼-refl refl))
+    in
+    T-Weaken ≤ϵ-refl γ≼ e₂
+  preservation′ (T-LetPair {d = d} {T₂ = T₂} p/s {γ₁} {γ₂} e e′) (E-PairElim V₁ V₂) =
+    let open Fin.Patterns in
+    let open ≼-Reasoning in
+    let α , β , γ≤ , e₁ , e₂ = inv-⊢pair (value⇒pure (V-⊗ V₁ V₂) e) in
+    let γ≤′ = begin
+                join p/s (join d (` 0F) (` 1F)) (𝐂.wk (𝐂.wk γ₂))
+                  𝐂.⋯ 𝐂.⦅ α 𝐂.⋯ 𝐂.weaken ⦆ 𝐂.⋯ 𝐂.⦅ β ⦆
+              ≡⟨ cong (𝐂._⋯ 𝐂.⦅ β ⦆) (join-⋯ p/s _ _) ⟩
+                join p/s (join d (` 0F) (` 1F) 𝐂.⋯ 𝐂.⦅ α 𝐂.⋯ 𝐂.weaken ⦆) (𝐂.wk (𝐂.wk γ₂) 𝐂.⋯ 𝐂.⦅ α 𝐂.⋯ 𝐂.weaken ⦆) 𝐂.⋯ 𝐂.⦅ β ⦆
+              ≡⟨ cong₂ (λ x y → join p/s x y 𝐂.⋯ 𝐂.⦅ β ⦆)
+                       (join-⋯ d _ _)
+                       (𝐂.wk γ₂ 𝐂.⋯-wk-cancels-⦅ _ ⦆) ⟩
+                join p/s (join d (α 𝐂.⋯ 𝐂.weaken) (` 0F)) (𝐂.wk γ₂) 𝐂.⋯ 𝐂.⦅ β ⦆
+              ≡⟨ join-⋯ p/s _ _ ⟩
+                join p/s (join d (α 𝐂.⋯ 𝐂.weaken) (` 0F) 𝐂.⋯ 𝐂.⦅ β ⦆) (𝐂.wk γ₂ 𝐂.⋯ 𝐂.⦅ β ⦆)
+              ≡⟨ cong₂ (join p/s) (join-⋯ d _ _) (γ₂ 𝐂.⋯-wk-cancels-⦅ _ ⦆) ⟩
+                join p/s (join d (α 𝐂.⋯ 𝐂.weaken 𝐂.⋯ 𝐂.⦅ β ⦆) β) γ₂
+              ≡⟨ cong (λ x → join p/s (join d x β) γ₂) (α 𝐂.⋯-weaken-cancels-⦅ β ⦆) ⟩
+                join p/s (join d α β) γ₂
+              ≲⟨ ≼-join p/s γ≤ (≼-refl refl) ⟩
+                join p/s γ₁ γ₂
+              ∎
+    in
+    T-Weaken ≤ϵ-refl γ≤′ $
+      e′ ⊢⋯ₛ ⊢subₛ (e₁ ⊢⋯ ⊢weakenᵣ _) (λ U → 𝐂.allCx-⋯ `_ (Unr×Value⇒UnrCx U V₁ e₁))
+                                      (λ m → 𝐂.allCx-⋯ `_ (Mobile×Value⇒MobCx m V₁ e₁))
+         ⊢⋯ₛ ⊢subₛ e₂ (λ U → Unr×Value⇒UnrCx U V₂ e₂)
+                      (λ m → Mobile×Value⇒MobCx m V₂ e₂)
+  preservation′ (T-Weaken ϵ≤ γ≤ e) x =
+    T-Weaken ϵ≤ γ≤ (preservation′ e x)
 
--- -- module _ where
--- --   open Fin.Patterns
+  preservation : Γ ; γ ⊢ e ∶ t ∣ ϵ → e ⋯→ e′ → Γ ; γ ⊢ e′ ∶ t ∣ ϵ
+  preservation e (E-□ x) = preservation′ e x
+  preservation e E@(E-Ctx (□· _) E₁) with e
+  ... | T-App ϵ-eq e₁ e₂ = T-App ϵ-eq (preservation e₁ E₁) e₂
+  ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
+  preservation e E@(E-Ctx (V₁ ·□) E₂) with e
+  ... | T-App ϵ-eq e₁ e₂ = T-App ϵ-eq e₁ (preservation e₂ E₂)
+  ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
+  preservation e E@(E-Ctx (□⊗ _) E₁) with e
+  ... | T-Pair p/s e₁ e₂ seq⇒p = T-Pair p/s (preservation e₁ E₁) e₂ seq⇒p
+  ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
+  preservation e E@(E-Ctx (V₁ ⊗□) E₂) with e
+  ... | T-Pair p/s e₁ e₂ seq⇒p = T-Pair p/s e₁ (preservation e₂ E₂) seq⇒p
+  ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
+  preservation e E@(E-Ctx (□; _) E₁) with e
+  ... | T-LetUnit p/s e₁ e₂ = T-LetUnit p/s (preservation e₁ E₁) e₂
+  ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
+  preservation e E@(E-Ctx (`let-`in _) E₁) with e
+  ... | T-Let p/s e₁ e₂ = T-Let p/s (preservation e₁ E₁) e₂
+  ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
+  preservation e E@(E-Ctx (`let⊗-`in _) E₁) with e
+  ... | T-LetPair p/s e₁ e₂ = T-LetPair p/s (preservation e₁ E₁) e₂
+  ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
 
--- --   infix 4 _─→ₚ_
+module _ where
+  open Fin.Patterns
 
--- --   data _─→ₚ_ {n} : Proc n → Proc n → Set where
--- --     R-Exp : e₁ ⋯→ e₂ → ⟪ e₁ ⟫ ─→ₚ ⟪ e₂ ⟫
+  infix 4 _─→ₚ_
 
--- --     R-New : (E : Frame n) →
--- --       ⟪ E [ K (`new s) · K `unit ] ⟫
--- --         ─→ₚ
--- --       ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
--- --         ⟪ E ⋯ᶠ weaken* ⦃ Kᵣ ⦄ _ [ (` 0F) ⊗ (` 1F) ] ⟫
+  data _─→ₚ_ {n} : Proc n → Proc n → Set where
+    R-Exp : e₁ ⋯→ e₂ → ⟪ e₁ ⟫ ─→ₚ ⟪ e₂ ⟫
 
--- --     R-Fork : (E : Frame n) (V : Value e) →
--- --       ⟪ E [ K `fork · e ] ⟫
--- --         ─→ₚ
--- --       ⟪ E [ K `unit ] ⟫ ∥ ⟪ e · K `unit ⟫
+    R-New : (E : Frame n) →
+      ⟪ E [ K (`new s) · K `unit ] ⟫
+        ─→ₚ
+      ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
+        ⟪ E ⋯ᶠ weaken* ⦃ Kᵣ ⦄ _ [ (` 0F) ⊗ (` 1F) ] ⟫
 
--- --     -- R-Com : ∀ {b₁ b₂} (B₁ : Bind b₁) (B₂ : Bind b₂) {P} {e} (E₁ E₂ : Frame (b₁ + b₂ + n)) →
--- --     --   Value e →
--- --     --   ν (𝐁.suc B₁) (𝐁.suc B₂)
--- --     --     ((⟪ E₁ ⋯ᶠ wkₚ b₁ b₂ [ K `send · ((` 0F) ⊗ (e ⋯ wkₚ b₁ b₂)) ] ⟫
--- --     --       ∥ ⟪ E₂ ⋯ᶠ wkₚ b₁ b₂ [ K `recv · (` ((suc b₁ ↑ʳ 0F) ↑ˡ n)) ] ⟫)
--- --     --       ∥ (P ⋯ₚ wkₚ b₁ b₂))
--- --     --     ─→ₚ
--- --     --   ν B₁ B₂ ((⟪ E₁ [ K `unit ] ⟫ ∥ ⟪ E₂ [ e ] ⟫) ∥ P)
+    R-Fork : (E : Frame n) (V : Value e) →
+      ⟪ E [ K `fork · e ] ⟫
+        ─→ₚ
+      ⟪ E [ K `unit ] ⟫ ∥ ⟪ e · K `unit ⟫
+
+    -- R-Com : ∀ {b₁ b₂} (B₁ : Bind b₁) (B₂ : Bind b₂) {P} {e} (E₁ E₂ : Frame (b₁ + b₂ + n)) →
+    --   Value e →
+    --   ν (𝐁.suc B₁) (𝐁.suc B₂)
+    --     ((⟪ E₁ ⋯ᶠ wkₚ b₁ b₂ [ K `send · ((` 0F) ⊗ (e ⋯ wkₚ b₁ b₂)) ] ⟫
+    --       ∥ ⟪ E₂ ⋯ᶠ wkₚ b₁ b₂ [ K `recv · (` ((suc b₁ ↑ʳ 0F) ↑ˡ n)) ] ⟫)
+    --       ∥ (P ⋯ₚ wkₚ b₁ b₂))
+    --     ─→ₚ
+    --   ν B₁ B₂ ((⟪ E₁ [ K `unit ] ⟫ ∥ ⟪ E₂ [ e ] ⟫) ∥ P)

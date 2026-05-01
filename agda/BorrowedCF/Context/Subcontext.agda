@@ -5,9 +5,11 @@ import Relation.Binary.Reasoning.Preorder as PreorderReasoning
 open import BorrowedCF.Prelude
 open import BorrowedCF.Context.Base
 open import BorrowedCF.Context.Equivalence
+open import BorrowedCF.Types
 
 open Nat.Variables
 open Variables
+open Un using (_⊆_)
 
 infix 4 _∶_≼_
 
@@ -31,10 +33,10 @@ data _∶_≼_ (Γ : Ctx n) : Rel (Struct n) 0ℓ where
 
 module ≼-Reasoning {n} {Γ : Ctx n} = PreorderReasoning (≼-preorder Γ)
 
-UnrCx≼-⇒-UnrCx : UnrCx Γ α → Γ ∶ α ≼ β → UnrCx Γ β
-UnrCx≼-⇒-UnrCx Uα (≼-refl eq) = allCx-≈ eq Uα
-UnrCx≼-⇒-UnrCx Uα (≼-∅ Uβ) = Uβ
-UnrCx≼-⇒-UnrCx ((Uα₁ ∥ Uα₂) ; (Uβ₁ ∥ Uβ₂)) ≼-wk = (Uα₁ ; Uβ₁) ∥ (Uα₂ ; Uβ₂)
-UnrCx≼-⇒-UnrCx Uα (≼-trans α≼γ γ≼β) = UnrCx≼-⇒-UnrCx (UnrCx≼-⇒-UnrCx Uα α≼γ) γ≼β
-UnrCx≼-⇒-UnrCx (U₁ ; U₂) (≼-cong-; α≼β₁ α≼β₂) = UnrCx≼-⇒-UnrCx U₁ α≼β₁ ; UnrCx≼-⇒-UnrCx U₂ α≼β₂
-UnrCx≼-⇒-UnrCx (U₁ ∥ U₂) (≼-cong-∥ α≼β₁ α≼β₂) = UnrCx≼-⇒-UnrCx U₁ α≼β₁ ∥ UnrCx≼-⇒-UnrCx U₂ α≼β₂
+allCx-≼ : ∀ {ℓ} {P : Pred 𝕋 ℓ} → (Unr ⊆ P) → AllCx P Γ α → Γ ∶ α ≼ β → AllCx P Γ β
+allCx-≼ f C (≼-refl eq) = allCx-≈ eq C
+allCx-≼ f C (≼-∅ U) = allCx-map f U
+allCx-≼ f ((C₁ ∥ C₂) ; (C₁′ ∥ C₂′)) ≼-wk = (C₁ ; C₁′) ∥ (C₂ ; C₂′)
+allCx-≼ f C (≼-trans x y) = allCx-≼ f (allCx-≼ f C x) y
+allCx-≼ f (C₁ ; C₂) (≼-cong-; x y) = allCx-≼ f C₁ x ; allCx-≼ f C₂ y
+allCx-≼ f (C₁ ∥ C₂) (≼-cong-∥ x y) = allCx-≼ f C₁ x ∥ allCx-≼ f C₂ y

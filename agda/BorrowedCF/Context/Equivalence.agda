@@ -140,3 +140,12 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} {Γ : Ctx n} where
   allCx-≈ refl         ΠP = ΠP
   allCx-≈ (fwd x ◅ xs) ΠP = allCx-≈ xs (go-fwd x ΠP)
   allCx-≈ (bwd x ◅ xs) ΠP = allCx-≈ xs (go-bwd x ΠP)
+
+module _ {p q} {P : Pred 𝕋 p} {Q : Pred 𝕋 q} where
+  open Un
+
+  allCx-map : (P ⊆ Q) → AllCx P Γ ⊆ AllCx Q Γ
+  allCx-map f [] = []
+  allCx-map f (x ∥ y) = allCx-map f x ∥ allCx-map f y
+  allCx-map f (x ; y) = allCx-map f x ; allCx-map f y
+  allCx-map f (` x) = ` f x

@@ -40,6 +40,8 @@ record Arr : Set where
   Mobile = mob ≡ M
   Unr = lin ≡ unr
 
+  field ω⇒M : Unr → Mobile
+
 data Kind : Set where
   𝕤 𝕥 : Kind
 
@@ -85,8 +87,10 @@ variable
   T T₁ T₂ T₃ T′ : 𝕋
   U U₁ U₂ U₃ U′ : 𝕋
 
-postulate
-  Skips : 𝕊 n → Set
+data Skips {n} : 𝕊 n → Set where
+  skip : Skips skip
+  _;_  : (S₁ : Skips s₁) (S₂ : Skips s₂) → Skips (s₁ ; s₂)
+  mu   : (S : Skips s) → Skips (mu s)
 
 data Bounded {n} : 𝕊 n → Set where
   `_ : (x : 𝔽 n) → Bounded (` x)
@@ -101,6 +105,7 @@ data Mobile : 𝕋 → Set where
   `⊤  : Mobile `⊤
   arr : Arr.Mobile a → Mobile (T ⟨ a ⟩→ U)
   acq : Bounded s → Mobile ⟨ acq ; s ⟩
+  skip : Skips s → Mobile ⟨ s ⟩
   _⊗_ : Mobile T → Mobile U → Mobile (T ⊗⟨ d ⟩ U)
 
 data Unr : 𝕋 → Set where
@@ -108,6 +113,12 @@ data Unr : 𝕋 → Set where
   _⊗_  : Unr T → Unr U → Unr (T ⊗⟨ d ⟩ U)
   arr  : Arr.Unr a → Unr (T ⟨ a ⟩→ U)
   ⟨_⟩  : Skips s → Unr ⟨ s ⟩
+
+Unr⇒Mobile : Unr T → Mobile T
+Unr⇒Mobile `⊤ = `⊤
+Unr⇒Mobile (T ⊗ U) = Unr⇒Mobile T ⊗ Unr⇒Mobile U
+Unr⇒Mobile (arr {a} U) = arr (Arr.ω⇒M a U)
+Unr⇒Mobile ⟨ s ⟩   = skip s
 
 dualPol : Pol → Pol
 dualPol ‼ = ⁇

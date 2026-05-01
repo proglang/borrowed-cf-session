@@ -107,7 +107,8 @@ infix 4 ⊢_∶_
 
 private
   infixr 15 _→m,1_∣_
-  pattern _→m,1_∣_ T U e = T ⟨ arr unr 𝟙 M e ⟩→ U
+  _→m,1_∣_ : 𝕋 → 𝕋 → Eff → 𝕋
+  _→m,1_∣_ T U e = T ⟨ arr unr 𝟙 M e (λ _ → refl) ⟩→ U
 
 data ⊢_∶_ : Const → 𝕋 → Set where
   `unit : ⊢ `unit ∶ `⊤
