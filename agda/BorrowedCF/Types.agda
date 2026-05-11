@@ -1,3 +1,4 @@
+{-# OPTIONS --rewriting #-}
 module BorrowedCF.Types where
 
 open import BorrowedCF.Prelude
@@ -134,6 +135,25 @@ dual (s₁ ; s₂) = dual s₁ ; dual s₂
 dual skip = skip
 dual ret = ret
 dual acq = acq
+
+dualPol-involutive : dualPol ∘ dualPol ≗ id
+dualPol-involutive ‼ = refl
+dualPol-involutive ⁇ = refl
+
+{-# REWRITE dualPol-involutive #-}
+
+dual-involutive : dual {n} ∘ dual ≗ id
+dual-involutive (` x) = refl
+dual-involutive (end p) = refl
+dual-involutive (msg p t) = refl
+dual-involutive (brn p s₁ s₂) = cong₂ (brn p) (dual-involutive s₁) (dual-involutive s₂)
+dual-involutive (mu s) = cong mu (dual-involutive s)
+dual-involutive (s₁ ; s₂) = cong₂ _;_ (dual-involutive s₁) (dual-involutive s₂)
+dual-involutive skip = refl
+dual-involutive ret = refl
+dual-involutive acq = refl
+
+{-# REWRITE dual-involutive #-}
 
 relaxEff : 𝕋 → Eff → 𝕋
 relaxEff `⊤ _ = `⊤

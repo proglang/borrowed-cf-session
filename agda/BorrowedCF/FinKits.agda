@@ -309,35 +309,6 @@ record Syntax : Set₁ where
         t ⋯ (ϕ ↑ ·ₖ ⦅ (x/t &/⋯ ϕ) ⦆)  ≡⟨ sym (fusion t (ϕ ↑) ⦅ x/t &/⋯ ϕ ⦆ ) ⟩
         t ⋯ ϕ ↑ ⋯ ⦅ (x/t &/⋯ ϕ) ⦆     ∎
 
-      &/⋯-wk∘weaken : ∀ ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄ m (x/t : 𝓕[ K ] n) →
-        wk ⦃ K ⦄ (x/t &/⋯ weaken* ⦃ Kᵣ ⦄ m) ≡ x/t &/⋯ weaken* ⦃ Kᵣ ⦄ (suc m)
-      &/⋯-wk∘weaken ⦃ K ⦄ ⦃ C ⦄ m x/t = `/id-injective $
-        `/id ⦃ K ⦄ (wk (x/t &/⋯ weaken* ⦃ Kᵣ ⦄ m)) ≡⟨ wk-`/id (x/t &/⋯ weaken* ⦃ Kᵣ ⦄ m) ⟨
-        `/id ⦃ K ⦄ (x/t &/⋯ weaken* ⦃ Kᵣ ⦄ m) ⋯ weakenᵣ ≡⟨ cong (_⋯ weakenᵣ) (&/⋯-⋯ x/t (weaken* m)) ⟩
-        `/id ⦃ K ⦄ x/t ⋯ weaken* m ⋯ weakenᵣ ≡⟨ fusion (`/id x/t) (weaken* m) weakenᵣ ⟩
-        `/id ⦃ K ⦄ x/t ⋯ weaken* (suc m) ≡⟨ &/⋯-⋯ x/t (weaken* (suc m)) ⟨
-        `/id ⦃ K ⦄ (x/t &/⋯ weaken* (suc m)) ∎
-
-      ↑*∼id/wk-splitAt : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄ →
-        ∀ (ϕ : n₁ –[ K ]→ n₂) m → ϕ ↑* m ≗ [ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* ⦃ Kᵣ ⦄ m ] ∘ Fin.splitAt m
-      ↑*∼id/wk-splitAt ⦃ K ⦄ ϕ zero x = `/id-injective $
-        `/id ((ϕ ↑* zero) x)    ≡⟨⟩
-        `/id (ϕ x)              ≡⟨ ⋯-id (`/id (ϕ x)) (λ _ → refl) ⟨
-        `/id (ϕ x) ⋯ (λ y → y)  ≡⟨ &/⋯-⋯ (ϕ x) (λ y → y) ⟨
-        `/id (ϕ x &/⋯ λ y → y)  ∎
-      ↑*∼id/wk-splitAt ϕ (suc m) zero = refl
-      ↑*∼id/wk-splitAt {n₁ = n₁} {n₂} ⦃ K ⦄ ϕ (suc m) (suc x) = `/id-injective $
-        `/id ⦃ K ⦄ ((ϕ ↑* suc m) (suc x))  ≡⟨⟩
-        `/id ⦃ K ⦄ (wk ((ϕ ↑* m) x))       ≡⟨ cong (`/id ∘ wk) (↑*∼id/wk-splitAt ϕ m x) ⟩
-        `/id ⦃ K ⦄ (wk ([ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* ⦃ Kᵣ ⦄ m ] (Fin.splitAt m x)))
-          ≡⟨ cong (`/id ⦃ K ⦄) ([,]-∘ (wk ⦃ K ⦄) (Fin.splitAt m x)) ⟩
-        `/id ⦃ K ⦄ ([ wk ∘ id/` ∘ (_↑ˡ n₂) , wk ∘ (ϕ ·ₖ weaken* m) ] (Fin.splitAt m x))
-          ≡⟨ cong (`/id ⦃ K ⦄) ([,]-cong (λ y → wk-id/` (y ↑ˡ _)) (λ y → &/⋯-wk∘weaken m (ϕ y)) (Fin.splitAt m x)) ⟩
-        `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n₂) ∘ suc , ϕ ·ₖ weaken* (suc m) ] (Fin.splitAt m x))
-          ≡⟨ cong (`/id ⦃ K ⦄) ([,]-map (Fin.splitAt m x)) ⟨
-        `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* (suc m) ] (Sum.map₁ suc (Fin.splitAt m x))) ≡⟨⟩
-        `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* (suc m) ] (Fin.splitAt (suc m) (suc x))) ∎
-
       -- record Types : Set₁ where
       --   field ↑ᵗ : ∀ {st} → Sort st → ∃[ st' ] Sort st'
 

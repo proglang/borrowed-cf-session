@@ -1,3 +1,5 @@
+{-# OPTIONS --rewriting #-}
+
 module BorrowedCF.Context.Subcontext where
 
 import Relation.Binary.Reasoning.Preorder as PreorderReasoning

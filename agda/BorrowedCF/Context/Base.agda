@@ -1,3 +1,5 @@
+{-# OPTIONS --rewriting #-}
+
 module BorrowedCF.Context.Base where
 
 open import Data.Vec.Functional using (Vector)

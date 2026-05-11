@@ -1,3 +1,5 @@
+{-# OPTIONS --rewriting #-}
+
 module BorrowedCF.Terms where
 
 open import Data.List.Membership.Propositional using (_∈_; _∉_)

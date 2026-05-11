@@ -1,3 +1,5 @@
+{-# OPTIONS --rewriting #-}
+
 module BorrowedCF.Context.Equivalence where
 
 open import Algebra

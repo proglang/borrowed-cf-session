@@ -1,3 +1,5 @@
+{-# OPTIONS --rewriting #-}
+
 module BorrowedCF.Context where
 
 open import BorrowedCF.Prelude

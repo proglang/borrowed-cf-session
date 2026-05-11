@@ -1,4 +1,7 @@
+{-# OPTIONS --rewriting #-}
 module BorrowedCF.Prelude where
+
+open import Agda.Builtin.Equality.Rewrite public
 
 import Level as StdlibLevel
 import Relation.Binary.PropositionalEquality

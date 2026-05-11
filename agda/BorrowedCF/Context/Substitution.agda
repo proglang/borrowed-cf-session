@@ -1,3 +1,5 @@
+{-# OPTIONS --rewriting #-}
+
 module BorrowedCF.Context.Substitution where
 
 import Data.Vec.Functional as F
