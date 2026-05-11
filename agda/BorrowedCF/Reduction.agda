@@ -19,6 +19,14 @@ private variable
   e e₁ e₂ e₃ e′ : Tm n
   t t₁ t₂ t₃ t′ : 𝕋
 
+-- NB. Values are predicates on _unclosed_ terms. That is because
+-- channel variables are values but we don't want to keep two kinds of
+-- environments around. The notion of a "Value" is only correct in a
+-- context Γ where `ChanCx Γ` holds.
+
+ChanCx : Ctx n → Set
+ChanCx Γ = ∀ x → ∃ λ s → Γ x ≡ ⟨ s ⟩
+
 data Value {n} : Tm n → Set where
   V-` : ∀ {x} → Value (` x)
   V-K : ∀ {c} → Value (K c)
@@ -85,9 +93,6 @@ data _─→_ {n} : Tm n → Tm n → Set where
 data _⋯→_ {n} : Tm n → Tm n → Set where
   E-□   : e₁ ─→ e₂ → e₁ ⋯→ e₂
   E-Ctx : (E : Frame n) → e₁ ⋯→ e₂ → E [ e₁ ] ⋯→ E [ e₂ ]
-
-ChanCx : Ctx n → Set
-ChanCx Γ = ∀ x → ∃ λ s → Γ x ≡ ⟨ s ⟩
 
 value⇒pure : Value e → (x : Γ ; γ ⊢ e ∶ T ∣ ϵ) → Γ ; γ ⊢ e ∶ T ∣ ℙ
 value⇒pure V (T-Var x T-eq) = T-Var x T-eq
