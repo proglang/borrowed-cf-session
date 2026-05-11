@@ -1,6 +1,7 @@
 module BorrowedCF.Reduction where
 
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (_◅◅_) renaming (ε to refl)
+open import Data.Nat.ListAction using (sum)
 
 import Data.Vec.Functional as F
 
@@ -47,19 +48,31 @@ _[_] : Frame n → Tm n → Tm n
 (`let-`in e) [ e₀ ] = `let e₀ `in e
 (`let⊗-`in e) [ e₀ ] = `let⊗ e₀ `in e
 
-infixl 5 _⋯ᶠ_
+VSub : ⦃ K : Kit 𝓕 ⦄ → m –[ K ]→ n → Set
+VSub ϕ = ∀ x → Value (`/id (ϕ x))
 
-postulate _⋯ᶠ_ : ⦃ K : Kit 𝓕 ⦄ → Frame m → m –[ K ]→ n → Frame n
+value-⋯ : ⦃ K : Kit 𝓕 ⦄ → Value e → (ϕ : m –[ K ]→ n) → VSub ϕ → Value (e ⋯ ϕ)
+value-⋯ V-` ϕ Vϕ = Vϕ _
+value-⋯ V-K ϕ Vϕ = V-K
+value-⋯ V-λ ϕ Vϕ = V-λ
+value-⋯ (V-⊗ V₁ V₂) ϕ Vϕ = V-⊗ (value-⋯ V₁ ϕ Vϕ) (value-⋯ V₂ ϕ Vϕ)
 
-{-
-□· e₂ ⋯ᶠ ϕ = □· (e₂ ⋯ ϕ)
-V₁ ·□ ⋯ᶠ ϕ = {!!}
-□⊗ e₂ ⋯ᶠ ϕ = {!!}
-V₁ ⊗□ ⋯ᶠ ϕ = {!!}
-□; e₂ ⋯ᶠ ϕ = {!!}
-`let-`in e′ ⋯ᶠ ϕ = {!!}
-`let⊗-`in e′ ⋯ᶠ ϕ = {!!}
--}
+frame-⋯ : ⦃ K : Kit 𝓕 ⦄ → Frame m → (ϕ : m –[ K ]→ n) → VSub ϕ → Frame n
+frame-⋯ (□· e₂) ϕ Vϕ = □· (e₂ ⋯ ϕ)
+frame-⋯ (V₁ ·□) ϕ Vϕ = (value-⋯ V₁ ϕ Vϕ) ·□
+frame-⋯ (□⊗ e₂) ϕ Vϕ = □⊗ (e₂ ⋯ ϕ)
+frame-⋯ (V₁ ⊗□) ϕ Vϕ = (value-⋯ V₁ ϕ Vϕ) ·□
+frame-⋯ (□; e₂) ϕ Vϕ = □; (e₂ ⋯ ϕ)
+frame-⋯ (`let-`in e′) ϕ Vϕ = `let-`in (e′ ⋯ ϕ ↑)
+frame-⋯ (`let⊗-`in e′) ϕ Vϕ = `let⊗-`in (e′ ⋯ ϕ ↑ ↑)
+
+infixl 5 _⋯ᵛ_ _⋯ᶠ_
+
+_⋯ᵛ_ : Value e → (ϕ : m →ᵣ n) → Value (e ⋯ ϕ)
+V ⋯ᵛ ϕ = value-⋯ V ϕ λ x → V-`
+
+_⋯ᶠ_ : Frame m → (ϕ : m →ᵣ n) → Frame n
+E ⋯ᶠ ϕ = frame-⋯ E ϕ λ x → V-`
 
 infix 4 _─→_ _⋯→_
 
@@ -104,23 +117,6 @@ inv-⊢pair (T-Pair p/s x₁ x₂ par⇒seq)
 inv-⊢pair (T-Weaken ℙ≤ϵ γ≤ x) =
   let _ , _ , γ≤′ , x₁ , x₂ = inv-⊢pair x in
   _ , _ , ≼-trans γ≤′ γ≤ , x₁ , x₂
-
-{-
-progress : ChanCx Γ → Γ ; γ ⊢ e ∶ t ∣ ϵ → Value e ⊎ ∃[ e′ ] e ─→ e′
-progress Γ-S (T-Const c) = inj₁ V-K
-progress Γ-S (T-Var x T-eq) = inj₁ V-`
-progress Γ-S (T-Abs 𝓂→C e) = inj₁ V-λ
-progress Γ-S (T-App e₁ e₂) with progress Γ-S e₁
-... | inj₂ (_ , x₁) = inj₂ (_ , E-Cx-·₁ x₁)
-... | inj₁ V₁ with progress Γ-S e₂
-... | inj₂ (_ , x₂) = inj₂ (_ , E-Cx-·₂ V₁ x₂)
-... | inj₁ V₂ = {!!}
-progress Γ-S (T-Pair p/s e₁ e₂ seq⇒p) = {!!}
-progress Γ-S (T-Let p/s e₁ e₂) = {!!}
-progress Γ-S (T-LetUnit p/s e₁ e₂) = {!!}
-progress Γ-S (T-LetPair p/s e₁ e₂) = {!!}
-progress Γ-S (T-Weaken ϵ≤ γ≤ e) = progress Γ-S e
--}
 
 module _ (Γ-S : ChanCx Γ) where
   ⊢`⊤⇒[]≼γ : Value e → Γ ; γ ⊢ e ∶ `⊤ ∣ ϵ → Γ ∶ [] ≼ γ
@@ -248,6 +244,9 @@ module _ (Γ-S : ChanCx Γ) where
   ... | T-Weaken ϵ≤ γ≤ e′ = T-Weaken ϵ≤ γ≤ (preservation e′ E)
 
 module _ where
+  variable
+    b b₁ b₂ : ℕ
+
   open Fin.Patterns
 
   infix 4 _─→ₚ_
@@ -259,18 +258,61 @@ module _ where
       ⟪ E [ K (`new s) · K `unit ] ⟫
         ─→ₚ
       ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
-        ⟪ E ⋯ᶠ weaken* ⦃ Kᵣ ⦄ _ [ (` 0F) ⊗ (` 1F) ] ⟫
+        ⟪ E ⋯ᶠ weaken* _ [ (` 0F) ⊗ (` 1F) ] ⟫
 
     R-Fork : (E : Frame n) (V : Value e) →
       ⟪ E [ K `fork · e ] ⟫
         ─→ₚ
       ⟪ E [ K `unit ] ⟫ ∥ ⟪ e · K `unit ⟫
 
-    -- R-Com : ∀ {b₁ b₂} (B₁ : Bind b₁) (B₂ : Bind b₂) {P} {e} (E₁ E₂ : Frame (b₁ + b₂ + n)) →
-    --   Value e →
-    --   ν (𝐁.suc B₁) (𝐁.suc B₂)
-    --     ((⟪ E₁ ⋯ᶠ wkₚ b₁ b₂ [ K `send · ((` 0F) ⊗ (e ⋯ wkₚ b₁ b₂)) ] ⟫
-    --       ∥ ⟪ E₂ ⋯ᶠ wkₚ b₁ b₂ [ K `recv · (` ((suc b₁ ↑ʳ 0F) ↑ˡ n)) ] ⟫)
-    --       ∥ (P ⋯ₚ wkₚ b₁ b₂))
-    --     ─→ₚ
-    --   ν B₁ B₂ ((⟪ E₁ [ K `unit ] ⟫ ∥ ⟪ E₂ [ e ] ⟫) ∥ P)
+    R-Com : ∀ {E₁ E₂} → Value e →
+      let wkρ = wkₚ (b₁ + sum B₁) (b₂ + sum B₂) in
+      ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
+        ((⟪ E₁ ⋯ᶠ wkρ [ K `send · ((` 0F) ⊗ (e ⋯ wkρ)) ] ⟫
+          ∥ ⟪ E₂ ⋯ᶠ wkρ [ K `recv · (` {!weaken* ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) (zero {?})!}) ] ⟫)
+          ∥ (P ⋯ₚ wkρ))
+        ─→ₚ
+      ν (b₁ ∷ B₁) (b₂ ∷ B₂) ((⟪ E₁ [ K `unit ] ⟫ ∥ ⟪ E₂ [ e ] ⟫) ∥ P)
+
+    R-LSplit : ∀ {E} →
+      let x = Fin.cast (sym (cong (λ m → m + sum B + n) (L.sum-++ B₁ (suc b₁ ∷ B₂)) ■ {!+-assoc (sum B₁)!}))
+                       (weaken* ⦃ Kᵣ ⦄ (sum B₁) 0F)
+      in
+      ν (B₁ ++ suc b₁ ∷ B₂) B (⟪ E [ K (`lsplit {!!} {!!}) · (` x) ] ⟫ ∥ P)
+        ─→ₚ
+      ν (B₁ ++ suc (suc b₁) ∷ B₂) B (⟪ E ⋯ᶠ {!!} [ (` {!!}) ⊗ (` {!!}) ] ⟫ ∥ (P ⋯ₚ {!!}))
+
+    R-Drop : ∀ {E} →
+      ν (suc b₁ ∷ B₁) B₂
+        (⟪ E ⋯ᶠ weakenᵣ [ K `drop · (` 0F) ] ⟫ ∥ (P ⋯ₚ weakenᵣ))
+        ─→ₚ
+      ν (b₁ ∷ B₁) B₂
+        (⟪ E [ K `unit ] ⟫ ∥ P)
+
+    R-Acq : ∀ {E} →
+      ν (zero ∷ suc b₁ ∷ B₁) B₂
+        (⟪ E [ K `acq · (` 0F) ] ⟫ ∥ P)
+        ─→ₚ
+      ν (suc b₁ ∷ B₁) B₂ (⟪ E [ ` zero ] ⟫ ∥ P)
+
+    R-Close : ∀ {E₁ E₂} →
+      ν L.[ 1 ] L.[ 1 ]
+        ( ⟪ E₁ ⋯ᶠ weaken* ⦃ Kᵣ ⦄ _ [ K (`end ‼) · (` 0F) ] ⟫
+        ∥ ⟪ E₂ ⋯ᶠ weaken* ⦃ Kᵣ ⦄ _ [ K (`end ⁇) · (` 1F) ] ⟫
+        )
+        ─→ₚ
+      ⟪ E₁ [ K `unit ] ⟫ ∥ ⟪ E₂ [ K `unit ] ⟫
+
+    R-Par :
+      P ─→ₚ P′ →
+      P ∥ Q ─→ₚ P′ ∥ Q
+
+    R-Bind :
+      P ─→ₚ Q →
+      ν B₁ B₂ P ─→ₚ ν B₁ B₂ Q
+
+    R-Struct :
+      P ≋ P′ →
+      P′ ─→ₚ Q′ →
+      Q′ ≋ Q →
+      P ─→ₚ Q

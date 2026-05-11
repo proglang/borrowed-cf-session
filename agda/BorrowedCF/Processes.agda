@@ -5,7 +5,8 @@ open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosur
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (Star; _◅_; _◅◅_; kleisliStar) renaming (ε to refl)
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (symmetric)
 
-import BorrowedCF.Context as 𝐂
+open import BorrowedCF.Context as 𝐂 using (Ctx; Struct)
+open Struct
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
@@ -14,15 +15,12 @@ open import BorrowedCF.Types
 open Nat.Variables
 
 BindGroup : Set
-BindGroup = List⁺ ℕ
-
-sum⁺ : BindGroup → ℕ
-sum⁺ = sum ∘ L⁺.toList
+BindGroup = List ℕ
 
 data Proc (n : ℕ) : Set where
   ⟪_⟫ : (e : Tm n) → Proc n
   _∥_ : (P Q : Proc n) → Proc n
-  ν   : (B₁ B₂ : BindGroup) (P : Proc (sum⁺ B₁ + sum⁺ B₂ + n)) → Proc n
+  ν   : (B₁ B₂ : BindGroup) (P : Proc (sum B₁ + sum B₂ + n)) → Proc n
 
 variable
   A A₁ A₂ A₃ A′ : BindGroup
@@ -35,7 +33,7 @@ infixl 5 _⋯ₚ_
 _⋯ₚ_ : ⦃ K : Kit 𝓕 ⦄ → Proc m → m –[ K ]→ n → Proc n
 ⟪ e ⟫ ⋯ₚ ϕ = ⟪ e ⋯ ϕ ⟫
 P ∥ Q ⋯ₚ ϕ = (P ⋯ₚ ϕ) ∥ (Q ⋯ₚ ϕ)
-ν B₁ B₂ P ⋯ₚ ϕ = ν B₁ B₂ (P ⋯ₚ ϕ ↑* (sum⁺ B₁ + sum⁺ B₂))
+ν B₁ B₂ P ⋯ₚ ϕ = ν B₁ B₂ (P ⋯ₚ ϕ ↑* (sum B₁ + sum B₂))
 
 ⋯ₚ-cong : ⦃ K : Kit 𝓕 ⦄ (P : Proc m) {ϕ₁ ϕ₂ : m –[ K ]→ n} → ϕ₁ ≗ ϕ₂ → P ⋯ₚ ϕ₁ ≡ P ⋯ₚ ϕ₂
 ⋯ₚ-cong ⟪ e ⟫ eq = cong ⟪_⟫ (⋯-cong e eq)
@@ -164,9 +162,9 @@ data _≋′_ {n} : Rel (Proc n) 0ℓ where
   ∥-comm′ : P ∥ Q ≋′ Q ∥ P
   ∥-assoc′ : P₁ ∥ (P₂ ∥ P₃) ≋′ (P₁ ∥ P₂) ∥ P₃
   ∥-unit′ : ⟪ K `unit ⟫ ∥ P ≋′ P
-  ν-swap′ : ν B₁ B₂ P ≋′ ν B₂ B₁ (P ⋯ₚ bindSwap (sum⁺ B₁) (sum⁺ B₂))
-  ν-comm′ : ν B₁ B₂ (ν A₁ A₂ P) ≋′ ν A₁ A₂ (ν B₁ B₂ (P ⋯ₚ bindComm (sum⁺ A₁) (sum⁺ A₂) (sum⁺ B₁) (sum⁺ B₂)))
-  ν-ext′ : P ∥ ν B₁ B₂ Q ≋′ ν B₁ B₂ ((P ⋯ₚ weaken* ⦃ Kᵣ ⦄ (sum⁺ B₁ + sum⁺ B₂)) ∥ Q)
+  ν-swap′ : ν B₁ B₂ P ≋′ ν B₂ B₁ (P ⋯ₚ bindSwap (sum B₁) (sum B₂))
+  ν-comm′ : ν B₁ B₂ (ν A₁ A₂ P) ≋′ ν A₁ A₂ (ν B₁ B₂ (P ⋯ₚ bindComm (sum A₁) (sum A₂) (sum B₁) (sum B₂)))
+  ν-ext′ : P ∥ ν B₁ B₂ Q ≋′ ν B₁ B₂ ((P ⋯ₚ weaken* ⦃ Kᵣ ⦄ (sum B₁ + sum B₂)) ∥ Q)
   ∥-cong′ : P₁ ≋′ P₂ → P₁ ∥ Q ≋′ P₂ ∥ Q
   ν-cong′ : P ≋′ Q → ν B₁ B₂ P ≋′ ν B₁ B₂ Q
 
@@ -207,10 +205,10 @@ module _ where
   ⋯-preserves-≋′ ∥-assoc′ = ∥-assoc′
   ⋯-preserves-≋′ ∥-unit′ = ∥-unit′
   ⋯-preserves-≋′ (ν-swap′ {B₁} {B₂}) =
-    subst₂ _≋′_ refl (cong (ν _ _) (sym (bindSwap-↑*-dist-⋯ (sum⁺ B₁) (sum⁺ B₂) _))) ν-swap′
+    subst₂ _≋′_ refl (cong (ν _ _) (sym (bindSwap-↑*-dist-⋯ (sum B₁) (sum B₂) _))) ν-swap′
   ⋯-preserves-≋′ (ν-comm′ {A₁} {A₂} {B₁} {B₂}) =
     subst₂ _≋′_ refl
-      (cong (ν B₁ B₂ ∘ ν _ _) (sym (bindComm-↑*-dist-⋯ (sum⁺ B₁) (sum⁺ B₂) (sum⁺ A₁) (sum⁺ A₂) _)))
+      (cong (ν B₁ B₂ ∘ ν _ _) (sym (bindComm-↑*-dist-⋯ (sum B₁) (sum B₂) (sum A₁) (sum A₂) _)))
       ν-comm′
   ⋯-preserves-≋′ ν-ext′ =
     let eq = fusionₚ _ _ _ ■ ⋯ₚ-cong _ (↑*-wk _ _) ■ sym (fusionₚ _ _ _) in
@@ -222,3 +220,23 @@ module _ where
 
   _≋-⋯_ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄ → P ≋ Q → (ϕ : m –[ K ]→ n) → P ⋯ₚ ϕ ≋ Q ⋯ₚ ϕ
   eq ≋-⋯ ϕ = gmap (_⋯ₚ ϕ) ⋯-preserves-≋′ eq
+
+
+infix 4 _⊢_⇝_
+
+
+infix 4 _;_⊢ₚ_
+
+data _;_⊢ₚ_ (Γ : Ctx n) : Struct n → Proc n → Set where
+  TP-Expr : ∀ {γ e} →
+    Γ ; γ ⊢ e ∶ {!!} ∣ 𝕀 →
+    Γ ; γ ⊢ₚ ⟪ e ⟫
+
+  TP-Par : ∀ {γ₁ γ₂} →
+    Γ ; γ₁ ⊢ₚ P →
+    Γ ; γ₂ ⊢ₚ Q →
+    Γ ; γ₁ ∥ γ₂ ⊢ₚ P ∥ Q
+
+  TP-Res : ∀ {γ γ₁ γ₂} →
+--    Γ ; γ ∥ γ₁ ∥ γ₂ ⊢ₚ P →
+    Γ ; γ ⊢ₚ ν B₁ B₂ P

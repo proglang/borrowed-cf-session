@@ -17,7 +17,8 @@ import BorrowedCF.FinKits as Kits
 open Nat.Variables
 
 data Const : Set where
-  `unit `fork `send `recv `drop `acq `end : Const
+  `unit `fork `send `recv `drop `acq : Const
+  `end : Pol → Const
   `new : 𝕊 0 → Const
   `lsplit `rsplit : (s₁ s₂ : 𝕊 0) → Const
 
@@ -126,7 +127,7 @@ data ⊢_∶_ : Const → 𝕋 → Set where
   `send : Mobile T → ⊢ `send ∶ T ⊗¹ ⟨ msg ‼ T ⟩ →m,1 `⊤ ∣ 𝕀
   `recv : Mobile T → ⊢ `recv ∶      ⟨ msg ⁇ T ⟩ →m,1  T ∣ 𝕀
 
-  `end  : ⊢ `end ∶ ⟨ end p ⟩ →m,1 `⊤ ∣ 𝕀
+  `end  : ⊢ `end p ∶ ⟨ end p ⟩ →m,1 `⊤ ∣ 𝕀
 
 infix 4 _;_⊢_∶_∣_
 
