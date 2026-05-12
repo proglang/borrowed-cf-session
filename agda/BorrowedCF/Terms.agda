@@ -14,7 +14,7 @@ open import BorrowedCF.Types
 open import BorrowedCF.Context
 
 import BorrowedCF.Context.Substitution as 𝐂
-import BorrowedCF.FinKits as Kits
+open import BorrowedCF.FinKits as Kits using (Scoped) public
 
 open Nat.Variables
 
@@ -22,7 +22,7 @@ data Const : Set where
   `unit `fork `send `recv `drop `acq : Const
   `end : Pol → Const
   `new : 𝕊 0 → Const
-  `lsplit `rsplit : (s₁ s₂ : 𝕊 0) → Const
+  `lsplit `rsplit : Const
 
 data Tm (n : ℕ) : Set where
   `_ : 𝔽 n → Tm n
@@ -120,8 +120,8 @@ data ⊢_∶_ : Const → 𝕋 → Set where
 
   `new  : ⊢ `new s ∶ `⊤ →m,1 ⟨ acq ; s ⟩ ⊗¹ ⟨ acq ; dual s ⟩ ∣ ℙ
 
-  `lsplit : ⊢ `lsplit s₁ s₂ ∶ ⟨ s₁ ; s₂ ⟩ →m,1 ⟨ s₁ ⟩       ⊗ᴸ ⟨ s₂ ⟩       ∣ ℙ
-  `rsplit : ⊢ `rsplit s₁ s₂ ∶ ⟨ s₁ ; s₂ ⟩ →m,1 ⟨ s₁ ; ret ⟩ ⊗¹ ⟨ acq ; s₂ ⟩ ∣ ℙ
+  `lsplit : ⊢ `lsplit ∶ ⟨ s₁ ; s₂ ⟩ →m,1 ⟨ s₁ ⟩       ⊗ᴸ ⟨ s₂ ⟩       ∣ ℙ
+  `rsplit : ⊢ `rsplit ∶ ⟨ s₁ ; s₂ ⟩ →m,1 ⟨ s₁ ; ret ⟩ ⊗¹ ⟨ acq ; s₂ ⟩ ∣ ℙ
 
   `drop : ⊢ `drop ∶ ⟨ ret ⟩     →m,1 `⊤    ∣ ℙ
   `acq  : ⊢ `acq  ∶ ⟨ acq ; s ⟩ →m,1 ⟨ s ⟩ ∣ ℙ
@@ -335,3 +335,126 @@ infixl 5 _⊢⋯ₛ_
 
 _⊢⋯ₛ_ : ∀ {ϕ : m →ₖ n} {σ} → Γ₁ ; γ ⊢ e ∶ T ∣ ϵ → ϕ ∶ σ ⊢[ TKₛ ] Γ₁ ⇒ Γ₂ → Γ₂ ; γ 𝐂.⋯ σ ⊢ e ⋯ ϕ ∶ T ∣ ϵ
 _⊢⋯ₛ_ = _⊢⋯_ ⦃ TK = TKₛ ⦄
+
+swapᵣ : ∀ m₁ m₂ {n} → m₁ + m₂ + n →ᵣ m₂ + m₁ + n
+swapᵣ m₁ m₂ = Fin.join _ _ ∘ Sum.map₁ (Fin.swap m₁) ∘ Fin.splitAt (m₁ + m₂)
+
+assocSwapᵣ : ∀ a b {n} → a + (b + n) →ᵣ b + (a + n)
+assocSwapᵣ a b {n} = Fin.cast (+-assoc b a n) ∘ swapᵣ a b ∘ Fin.cast (sym (+-assoc a b n))
+
+wk-swap : ∀ a b {n} → weaken* (a + b) ·ₖ swapᵣ a b {n} ≗ weaken* ⦃ Kᵣ ⦄ (b + a)
+wk-swap a b x rewrite
+  weaken*~↑ʳ ⦃ Kᵣ ⦄ (a + b) x
+    | Fin.splitAt-↑ʳ (a + b) _ x
+    | weaken*~↑ʳ ⦃ Kᵣ ⦄ (b + a) x
+    = refl
+
+module _ ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄ where
+  open ≡-Reasoning
+
+  &/⋯-wk∘weaken : ∀ m (x/t : 𝓕[ K ] n) →
+    wk ⦃ K ⦄ (x/t &/⋯ weaken* ⦃ Kᵣ ⦄ m) ≡ x/t &/⋯ weaken* ⦃ Kᵣ ⦄ (suc m)
+  &/⋯-wk∘weaken m x/t = `/id-injective $
+    `/id ⦃ K ⦄ (wk (x/t &/⋯ weaken* ⦃ Kᵣ ⦄ m)) ≡⟨ wk-`/id (x/t &/⋯ weaken* ⦃ Kᵣ ⦄ m) ⟨
+    `/id ⦃ K ⦄ (x/t &/⋯ weaken* ⦃ Kᵣ ⦄ m) ⋯ weakenᵣ ≡⟨ cong (_⋯ weakenᵣ) (&/⋯-⋯ x/t (weaken* m)) ⟩
+    `/id ⦃ K ⦄ x/t ⋯ weaken* m ⋯ weakenᵣ ≡⟨ fusion (`/id x/t) (weaken* m) weakenᵣ ⟩
+    `/id ⦃ K ⦄ x/t ⋯ weaken* (suc m) ≡⟨ &/⋯-⋯ x/t (weaken* (suc m)) ⟨
+    `/id ⦃ K ⦄ (x/t &/⋯ weaken* (suc m)) ∎
+
+  ↑*∼id/wk-splitAt : ∀ (ϕ : n₁ –[ K ]→ n₂) m →
+    ϕ ↑* m ≗ [ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* ⦃ Kᵣ ⦄ m ] ∘ Fin.splitAt m
+  ↑*∼id/wk-splitAt ϕ zero x = `/id-injective $
+    `/id ((ϕ ↑* zero) x)    ≡⟨⟩
+    `/id (ϕ x)              ≡⟨ ⋯-id (`/id (ϕ x)) (λ _ → refl) ⟨
+    `/id (ϕ x) ⋯ (λ y → y)  ≡⟨ &/⋯-⋯ (ϕ x) (λ y → y) ⟨
+    `/id (ϕ x &/⋯ λ y → y)  ∎
+  ↑*∼id/wk-splitAt ϕ (suc m) zero = refl
+  ↑*∼id/wk-splitAt {n₁ = n₁} {n₂} ϕ (suc m) (suc x) = `/id-injective $
+    `/id ⦃ K ⦄ ((ϕ ↑* suc m) (suc x))  ≡⟨⟩
+    `/id ⦃ K ⦄ (wk ((ϕ ↑* m) x))       ≡⟨ cong (`/id ∘ wk) (↑*∼id/wk-splitAt ϕ m x) ⟩
+    `/id ⦃ K ⦄ (wk ([ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* ⦃ Kᵣ ⦄ m ] (Fin.splitAt m x)))
+      ≡⟨ cong (`/id ⦃ K ⦄) ([,]-∘ (wk ⦃ K ⦄) (Fin.splitAt m x)) ⟩
+    `/id ⦃ K ⦄ ([ wk ∘ id/` ∘ (_↑ˡ n₂) , wk ∘ (ϕ ·ₖ weaken* m) ] (Fin.splitAt m x))
+      ≡⟨ cong (`/id ⦃ K ⦄) ([,]-cong (λ y → wk-id/` (y ↑ˡ _)) (λ y → &/⋯-wk∘weaken m (ϕ y)) (Fin.splitAt m x)) ⟩
+    `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n₂) ∘ suc , ϕ ·ₖ weaken* (suc m) ] (Fin.splitAt m x))
+      ≡⟨ cong (`/id ⦃ K ⦄) ([,]-map (Fin.splitAt m x)) ⟨
+    `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* (suc m) ] (Sum.map₁ suc (Fin.splitAt m x))) ≡⟨⟩
+    `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* (suc m) ] (Fin.splitAt (suc m) (suc x))) ∎
+
+  dist-↑*-swapˡ : ∀ b₁ b₂ {n₁ n₂} {ϕ : n₁ –[ K ]→ n₂} x →
+    `/id ⦃ K ⦄ ((ϕ ↑* (b₂ + b₁)) (Fin.swap b₁ x ↑ˡ n₁))
+      ≡
+    `/id ⦃ K ⦄ (id/` ⦃ K ⦄ (x ↑ˡ n₂) &/⋯ swapᵣ b₁ b₂)
+  dist-↑*-swapˡ b₁ b₂ {n₁} {n₂} {ϕ} x =
+    `/id ⦃ K ⦄ ((ϕ ↑* (b₂ + b₁)) (Fin.swap b₁ x ↑ˡ n₁))
+      ≡⟨ cong (`/id ⦃ K ⦄) (↑*∼id/wk-splitAt ϕ (b₂ + b₁) (Fin.swap b₁ x ↑ˡ n₁)) ⟩
+    `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* (b₂ + b₁) ] (splitAt (b₂ + b₁) (Fin.swap b₁ x ↑ˡ n₁)))
+      ≡⟨ cong (`/id ⦃ K ⦄ ∘ [ _ , _ ]) (Fin.splitAt-↑ˡ (b₂ + b₁) (Fin.swap b₁ x) n₁) ⟩
+    `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* (b₂ + b₁) ]′ (inj₁ (Fin.swap b₁ x)))
+      ≡⟨⟩
+    `/id ⦃ K ⦄ (id/` (Fin.swap b₁ x ↑ˡ n₂))
+      ≡⟨ `/`-is-` ⦃ K ⦄ (Fin.swap b₁ x ↑ˡ n₂) ⟩
+    ` (Fin.swap b₁ x ↑ˡ n₂)
+      ≡⟨⟩
+    ` (Fin.join (b₂ + b₁) n₂ (inj₁ (Fin.swap b₁ x)))
+      ≡⟨ cong (`_ ∘ Fin.join _ _ ∘ Sum.map₁ (Fin.swap b₁)) (Fin.splitAt-↑ˡ (b₁ + b₂) x n₂) ⟨
+    ` (Fin.join _ _ (Sum.map₁ (Fin.swap b₁) (Fin.splitAt (b₁ + b₂) (x ↑ˡ n₂))))
+      ≡⟨⟩
+    ` (swapᵣ b₁ b₂ (x ↑ˡ n₂))
+      ≡⟨ &/⋯-& ⦃ C ⦄ (x ↑ˡ n₂) (swapᵣ b₁ b₂) ⟨
+    `/id ⦃ K ⦄ (id/` ⦃ K ⦄ (x ↑ˡ n₂) &/⋯ swapᵣ b₁ b₂) ∎
+
+  dist-↑*-swapʳ : ∀ b₁ b₂ {n₁ n₂} {ϕ : n₁ –[ K ]→ n₂} x →
+    `/id ⦃ K ⦄ ((ϕ ↑* (b₂ + b₁)) (b₂ + b₁ ↑ʳ x))
+      ≡
+    `/id ⦃ K ⦄ ((ϕ ·ₖ weaken* (b₁ + b₂)) x &/⋯ (swapᵣ b₁ b₂))
+  dist-↑*-swapʳ b₁ b₂ {n₁} {n₂} {ϕ} x =
+    `/id ⦃ K ⦄ ((ϕ ↑* (b₂ + b₁)) (b₂ + b₁ ↑ʳ x))
+      ≡⟨ cong (`/id ⦃ K ⦄) (↑*∼id/wk-splitAt ϕ (b₂ + b₁) (b₂ + b₁ ↑ʳ x)) ⟩
+    `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* ⦃ Kᵣ ⦄ (b₂ + b₁) ] (Fin.splitAt (b₂ + b₁) (b₂ + b₁ ↑ʳ x)))
+      ≡⟨ cong (`/id ⦃ K ⦄ ∘ [ _ , _ ]) (Fin.splitAt-↑ʳ (b₂ + b₁) n₁ x) ⟩
+    `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ n₂) , ϕ ·ₖ weaken* ⦃ Kᵣ ⦄ (b₂ + b₁) ]′ (inj₂ x))
+      ≡⟨⟩
+    `/id ⦃ K ⦄ (ϕ x &/⋯ weaken* (b₂ + b₁))
+      ≡⟨ &/⋯-⋯ (ϕ x) (weaken* (b₂ + b₁)) ⟩
+    `/id ⦃ K ⦄ (ϕ x) ⋯ weaken* (b₂ + b₁)
+      ≡⟨ ⋯-cong (`/id (ϕ x)) (wk-swap b₁ b₂) ⟨
+    `/id ⦃ K ⦄ (ϕ x) ⋯ weaken* (b₁ + b₂) ·ₖ swapᵣ b₁ b₂
+      ≡⟨ fusion (`/id (ϕ x)) (weaken* (b₁ + b₂)) (swapᵣ b₁ b₂) ⟨
+    `/id ⦃ K ⦄ (ϕ x) ⋯ weaken* (b₁ + b₂) ⋯ swapᵣ b₁ b₂
+      ≡⟨ cong (_⋯ swapᵣ b₁ b₂) (&/⋯-⋯ (ϕ x) (weaken* (b₁ + b₂))) ⟨
+    `/id ⦃ K ⦄ (ϕ x &/⋯ weaken* (b₁ + b₂)) ⋯ swapᵣ b₁ b₂
+      ≡⟨ &/⋯-⋯ (ϕ x &/⋯ weaken* (b₁ + b₂)) (swapᵣ b₁ b₂) ⟨
+    `/id ⦃ K ⦄ (ϕ x &/⋯ weaken* (b₁ + b₂) &/⋯ swapᵣ b₁ b₂)
+      ≡⟨⟩
+    `/id ⦃ K ⦄ ((ϕ ·ₖ weaken* (b₁ + b₂)) x &/⋯ (swapᵣ b₁ b₂)) ∎
+
+  dist-↑*-swap : ∀ m₁ m₂ {n₁ n₂} (ϕ : n₁ –[ K ]→ n₂) →
+    swapᵣ m₁ m₂ {n₁} ·[ Cᵣ ] ϕ ↑* (m₂ + m₁) ≗ ϕ ↑* (m₁ + m₂) ·ₖ swapᵣ m₁ m₂ {n₂}
+  dist-↑*-swap m₁ m₂ {n₁} {n₂} ϕ x = `/id-injective $
+    `/id ⦃ K ⦄ ((swapᵣ m₁ m₂ ·[ Cᵣ ] ϕ ↑* (m₂ + m₁)) x) ≡⟨⟩
+    `/id ⦃ K ⦄ (swapᵣ m₁ m₂ x &/⋯ ϕ ↑* (m₂ + m₁))
+      ≡⟨ [,]-∘ (λ z → `/id ⦃ K ⦄ ((ϕ ↑* (m₂ + m₁)) z)) (Sum.map₁ (Fin.swap m₁) (Fin.splitAt (m₁ + m₂) x)) ⟩
+    [ (λ y → `/id ⦃ K ⦄ ((ϕ ↑* (m₂ + m₁)) (y ↑ˡ n₁)))
+    , (λ y → `/id ⦃ K ⦄ ((ϕ ↑* (m₂ + m₁)) ((m₂ + m₁) ↑ʳ y)))
+    ] (Sum.map₁ (Fin.swap m₁) (Fin.splitAt (m₁ + m₂) x))
+      ≡⟨ [,]-map (Fin.splitAt (m₁ + m₂) x) ⟩
+    [ (λ y → `/id ⦃ K ⦄ ((ϕ ↑* (m₂ + m₁)) (Fin.swap m₁ y ↑ˡ n₁)))
+    , (λ y → `/id ⦃ K ⦄ ((ϕ ↑* (m₂ + m₁)) ((m₂ + m₁) ↑ʳ y)))
+    ] (Fin.splitAt (m₁ + m₂) x)
+      ≡⟨ [,]-cong (dist-↑*-swapˡ m₁ m₂) (dist-↑*-swapʳ m₁ m₂) (Fin.splitAt (m₁ + m₂) x) ⟩
+    [ (λ y → `/id ⦃ K ⦄ (id/` ⦃ K ⦄ (y ↑ˡ _) &/⋯ swapᵣ m₁ m₂ {n₂}))
+    , (λ y → `/id ⦃ K ⦄ ((ϕ ·ₖ weaken* (m₁ + m₂)) y &/⋯ swapᵣ m₁ m₂ {n₂}))
+    ] (Fin.splitAt (m₁ + m₂) x)
+      ≡⟨ [,]-∘ (λ z → `/id ⦃ K ⦄ (CKit._&/⋯_ C z (swapᵣ m₁ m₂ {n₂}))) (Fin.splitAt (m₁ + m₂) x) ⟨
+    `/id ⦃ K ⦄ ([ id/` ∘ (_↑ˡ _) , ϕ ·ₖ weaken* (m₁ + m₂) ] (Fin.splitAt (m₁ + m₂) x) &/⋯ swapᵣ m₁ m₂ {n₂})
+      ≡⟨ cong (λ z → `/id (z &/⋯ swapᵣ m₁ m₂)) (↑*∼id/wk-splitAt ϕ (m₁ + m₂) x) ⟨
+    `/id ⦃ K ⦄ ((ϕ ↑* (m₁ + m₂)) x &/⋯ swapᵣ m₁ m₂) ≡⟨⟩
+    `/id ⦃ K ⦄ ((ϕ ↑* (m₁ + m₂) ·ₖ swapᵣ m₁ m₂) x) ∎
+
+  postulate
+    dist-↑*-assocSwap : ∀ a b {m n} (ϕ : m –[ K ]→ n) →
+      assocSwapᵣ a b {m} ·[ Cᵣ ] ϕ ↑* a ↑* b ≗ ϕ ↑* b ↑* a ·ₖ assocSwapᵣ a b {n}
+  -- dist-↑*-assocSwap a b {m} {n} ϕ x = `/id-injective $
+  --   `/id ⦃ K ⦄ ((ϕ ↑* a ↑* b) (assocSwapᵣ a b x)) ≡⟨ {!!} ⟩
+  --   `/id ⦃ K ⦄ ((ϕ ↑* b ↑* a) x &/⋯ assocSwapᵣ a b) ∎

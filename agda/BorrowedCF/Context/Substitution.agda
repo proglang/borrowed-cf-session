@@ -41,6 +41,10 @@ wkₛ σ x = wk (σ x)
 weaken : n →ₛ suc n
 weaken = wkₛ idₛ
 
+weaken* : ∀ m → n →ₛ (m + n)
+weaken* zero = idₛ
+weaken* (suc m) = wkₛ (weaken* m)
+
 _↑ : m →ₛ n → suc m →ₛ suc n
 σ ↑ = ` zero ∷ₛ wkₛ σ
 
@@ -138,3 +142,6 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
 ≼-⋯ σ-unr (≼-trans  x y) = ≼-trans (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
 ≼-⋯ σ-unr (≼-cong-; x y) = ≼-cong-; (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
 ≼-⋯ σ-unr (≼-cong-∥ x y) = ≼-cong-∥ (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
+
+≼-𝐂wk : Γ ∶ α ≼ β → T F.∷ Γ ∶ wk α ≼ wk β
+≼-𝐂wk {α = α} {β} x rewrite sym (weaken/wk α) | sym (weaken/wk β) = ≼-⋯ `_ x
