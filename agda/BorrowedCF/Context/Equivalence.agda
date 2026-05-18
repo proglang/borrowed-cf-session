@@ -76,11 +76,15 @@ open ≈-Equivalence
 ;-unit₂ : Γ ∶ α ; [] ≈ α
 ;-unit₂ = ≈-sym (∥/;-transmute (inj₂ [])) ◅◅ ∥-unit₂
 
+;-commUnr : UnrCx Γ α ⊎ UnrCx Γ β → Γ ∶ α ; β ≈ β ; α
+;-commUnr Uα/Uβ = ≈-sym (∥/;-transmute Uα/Uβ) ◅◅ ∥-comm ◅◅ ∥/;-transmute (Sum.swap Uα/Uβ)
+
 ;-assoc : Γ ∶ (α ; β) ; γ ≈ α ; (β ; γ)
 ;-assoc = Eq*.return ;′-assoc
 
 ;-cong : Γ ∶ α ≈ α′ → Γ ∶ β ≈ β′ → Γ ∶ α ; β ≈ α′ ; β′
 ;-cong xs ys = Eq*.gmap (_; _) ;′-cong₁ xs ◅◅ Eq*.gmap (_ ;_) ;′-cong₂ ys
+
 
 module ≈-Reasoning {n} {Γ : Ctx n} = SetoidReasoning (≈-setoid Γ)
 
@@ -151,3 +155,37 @@ module _ {p q} {P : Pred 𝕋 p} {Q : Pred 𝕋 q} where
   allCx-map f (x ∥ y) = allCx-map f x ∥ allCx-map f y
   allCx-map f (x ; y) = allCx-map f x ; allCx-map f y
   allCx-map f (` x) = ` f x
+
+unjoinUnr : (Γ : Ctx n) (γ : Struct n) → ∃[ α ] ∃[ β ] Γ ∶ α ∥ β ≈ γ × AllCx Unr Γ α × AllCx (Un.∁ Unr) Γ β
+unjoinUnr Γ (` x) with unr? (Γ x)
+... | yes Ux = _ , _ , ∥-unit₂ , (` Ux) , []
+... | no ¬Ux = _ , _ , ∥-unit₁ , [] , (` ¬Ux)
+unjoinUnr Γ [] = _ , _ , ∥-unit₁ , [] , []
+unjoinUnr Γ (α ∥ β) =
+  let open ≈-Reasoning in
+  let α₁ , α₂ , α₁₂≈α , uα₁ , ¬uα₂ = unjoinUnr Γ α in
+  let β₁ , β₂ , β₁₂≈β , uβ₁ , ¬uβ₂ = unjoinUnr Γ β in
+  let eq = begin (α₁ ∥ β₁) ∥ (α₂ ∥ β₂)  ≈⟨ ∥-assoc ⟨
+                 α₁ ∥ β₁ ∥ α₂ ∥ β₂      ≈⟨ ∥-cong ∥-assoc refl ⟩
+                 α₁ ∥ (β₁ ∥ α₂) ∥ β₂    ≈⟨ ∥-cong (∥-cong refl ∥-comm) refl ⟩
+                 α₁ ∥ (α₂ ∥ β₁) ∥ β₂    ≈⟨ ∥-cong ∥-assoc refl ⟨
+                 α₁ ∥ α₂ ∥ β₁ ∥ β₂      ≈⟨ ∥-assoc ⟩
+                 (α₁ ∥ α₂) ∥ (β₁ ∥ β₂)  ≈⟨ ∥-cong α₁₂≈α β₁₂≈β ⟩
+                 α ∥ β ∎
+  in
+  α₁ ∥ β₁ , α₂ ∥ β₂ , eq , (uα₁ ∥ uβ₁) , (¬uα₂ ∥ ¬uβ₂)
+unjoinUnr Γ (α ; β) =
+  let open ≈-Reasoning in
+  let α₁ , α₂ , α₁₂≈α , uα₁ , ¬uα₂ = unjoinUnr Γ α in
+  let β₁ , β₂ , β₁₂≈β , uβ₁ , ¬uβ₂ = unjoinUnr Γ β in
+  let eq = begin (α₁ ; β₁) ∥ (α₂ ; β₂)  ≈⟨ ∥/;-transmute (inj₁ (uα₁ ; uβ₁)) ⟩
+                 (α₁ ; β₁) ; (α₂ ; β₂)  ≈⟨ ;-assoc ⟨
+                 α₁ ; β₁ ; α₂ ; β₂      ≈⟨ ;-cong ;-assoc refl ⟩
+                 α₁ ; (β₁ ; α₂) ; β₂    ≈⟨ ;-cong (;-cong refl (;-commUnr (inj₁ uβ₁))) refl ⟩
+                 α₁ ; (α₂ ; β₁) ; β₂    ≈⟨ ;-cong ;-assoc refl ⟨
+                 α₁ ; α₂ ; β₁ ; β₂      ≈⟨ ;-assoc ⟩
+                 (α₁ ; α₂) ; (β₁ ; β₂)  ≈⟨ ;-cong (∥/;-transmute (inj₁ uα₁)) (∥/;-transmute (inj₁ uβ₁)) ⟨
+                 (α₁ ∥ α₂) ; (β₁ ∥ β₂)  ≈⟨ ;-cong α₁₂≈α β₁₂≈β ⟩
+                 α ; β ∎
+  in
+  α₁ ; β₁ , α₂ ; β₂ , eq , (uα₁ ; uβ₁) , (¬uα₂ ; ¬uβ₂)
