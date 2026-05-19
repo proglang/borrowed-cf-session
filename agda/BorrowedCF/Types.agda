@@ -67,7 +67,7 @@ infixl 16 _⊗⟨_⟩_ _⊗¹_ _⊗ᴸ_
 infixr 15 _⟨_⟩→_
 
 data Ty where
-  ⟨_⟩    : 𝕊 0 → 𝕋
+  ⟨_⟩    : (s : 𝕊 0) → 𝕋
   `⊤     : 𝕋
   _⟨_⟩→_ : (t : 𝕋) (a : Arr) (u : 𝕋) → 𝕋
   _⊗⟨_⟩_ : (t : 𝕋) (d : Dir) (u : 𝕋) → 𝕋
@@ -120,6 +120,25 @@ Unr⇒Mobile `⊤ = `⊤
 Unr⇒Mobile (T ⊗ U) = Unr⇒Mobile T ⊗ Unr⇒Mobile U
 Unr⇒Mobile (arr {a} U) = arr (Arr.ω⇒M a U)
 Unr⇒Mobile ⟨ s ⟩   = skip s
+
+skips? : Un.Decidable (Skips {n})
+skips? (` x) = no λ()
+skips? (end p) = no λ()
+skips? (msg p t) = no λ()
+skips? (brn p s₁ s₂) = no λ()
+skips? (mu s) = map′ mu (λ{ (mu x) → x }) (skips? s)
+skips? (s₁ ; s₂) = map′ (uncurry _;_) (λ{ (x ; y) → (x , y) }) (skips? s₁ ×-dec skips? s₂)
+skips? skip = yes skip
+skips? ret = no λ()
+skips? acq = no λ()
+
+unr? : Un.Decidable Unr
+unr? ⟨ s ⟩ = map′ ⟨_⟩ (λ{ ⟨ x ⟩ → x }) (skips? s)
+unr? `⊤ = yes `⊤
+unr? (t ⟨ a ⟩→ u) with Arr.lin a in eq
+... | 𝟙   = no λ{ (arr eq′) → case sym eq ■ eq′ of λ() }
+... | unr = yes (arr eq)
+unr? (t ⊗⟨ d ⟩ u) = map′ (uncurry _⊗_) (λ{ (unrT ⊗ unrU) → unrT , unrU }) (unr? t ×-dec unr? u)
 
 dualPol : Pol → Pol
 dualPol ‼ = ⁇
