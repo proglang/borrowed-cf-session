@@ -11,6 +11,7 @@ import Relation.Binary.Reasoning.Setoid as SetoidReasoning
 
 open import BorrowedCF.Prelude hiding (_⟶_)
 open import BorrowedCF.Context.Base
+open import BorrowedCF.Context.Domain
 open import BorrowedCF.Types
 
 open Nat.Variables
@@ -87,6 +88,32 @@ open ≈-Equivalence
 
 
 module ≈-Reasoning {n} {Γ : Ctx n} = SetoidReasoning (≈-setoid Γ)
+
+≈⇒dom≡ : Γ ∶ α ≈ β → dom α ≡ dom β
+≈⇒dom≡ = Eq*.gfold isEquivalence dom ≈′⇒dom≡
+  where
+  open import Data.Fin.Subset
+  open import Data.Fin.Subset.Properties
+
+  ≈′⇒dom≡ : Γ ∶ α ≈′ β → dom α ≡ dom β
+  ≈′⇒dom≡ ;′-assoc = ∪-assoc _ _ _
+  ≈′⇒dom≡ (;′-cong₁ x) = cong (_∪ _) (≈′⇒dom≡ x)
+  ≈′⇒dom≡ (;′-cong₂ x) = cong (_ ∪_) (≈′⇒dom≡ x)
+  ≈′⇒dom≡ ∥′-unit = ∪-identityʳ _
+  ≈′⇒dom≡ ∥′-assoc = ∪-assoc _ _ _
+  ≈′⇒dom≡ ∥′-comm = ∪-comm _ _
+  ≈′⇒dom≡ (∥′-cong₁ x) = cong (_∪ _) (≈′⇒dom≡ x)
+  ≈′⇒dom≡ (∥′-dup U) = sym (∪-idem _)
+  ≈′⇒dom≡ (∥′-tm-; U) = refl
+
+dom≢⇒≉ : dom α ≢ dom β → ¬ Γ ∶ α ≈ β
+dom≢⇒≉ dom≢ a≈b = dom≢ (≈⇒dom≡ a≈b)
+
+`x≉[] : ∀ {x} → ¬ Γ ∶ ` x ≈ []
+`x≉[] {x = x} = dom≢⇒≉ λ ⁅x⁆≡⁅⁆ → ∉⊥ (subst (x ∈_) ⁅x⁆≡⁅⁆ (x∈⁅x⁆ x))
+  where
+  open import Data.Fin.Subset
+  open import Data.Fin.Subset.Properties
 
 ∥-isCommutativeMonoid : (Γ : Ctx n) → IsCommutativeMonoid (Γ ∶_≈_) _∥_ []
 ∥-isCommutativeMonoid Γ = record
@@ -189,3 +216,6 @@ unjoinUnr Γ (α ; β) =
                  α ; β ∎
   in
   α₁ ; β₁ , α₂ ; β₂ , eq , (uα₁ ; uβ₁) , (¬uα₂ ; ¬uβ₂)
+
+Empty⇒UnrCx : Γ ∶ γ ≈ [] → UnrCx Γ γ
+Empty⇒UnrCx γ≈[] = allCx-≈ (≈-sym γ≈[]) []
