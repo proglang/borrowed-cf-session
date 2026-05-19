@@ -44,7 +44,7 @@
 
 \newcommand*\RuleCTSplit{
   \inferrule[CT-LSplit]{}{
-    \HasCType{\CSplit_{\S[1],\S[2]}}{\TArr{\MobMobile}{\DirUnord,\EffPure}{\SSeq {\S_1}{\S_2}}{\TPairOrd{\S_1}{\S_2}}}
+    \HasCType{\CSplit_{\S[1],\S[2]}}{\TArr{\MobMobile}{\DirUnord,\EffPure}{\SSeq {\S[1]}{\S[2]}}{\TPairOrd{\S[1]}{\S[2]}}}
   }
 }
 
@@ -54,8 +54,8 @@
     {\CSSplit_{\S[1],\S[2]}}
     {\TArr{\MobMobile}{\DirUnord,
       \EffPure}
-      {\SSeq {\S_1}{\S_2}}
-      {\TPairUnord{(\SSeq{\S_1}{\SRet})}{(\SSeq{\SAcq}{\S_2})}}}
+      {\SSeq {\S[1]}{\S[2]}}
+      {\TPairUnord{(\SSeq{\S[1]}{\SRet})}{(\SSeq{\SAcq}{\S[2]})}}}
   }
 }
 
@@ -89,7 +89,7 @@
 
 \newcommand*\RuleCTSelect{
   \inferrule[CT-Select]{}{
-    \HasCType{\CSelect{k}}{\TArr{\MobMobile}{\SChoice{\ell:\S_\ell}{\ell\in L}}\S_k}
+    \HasCType{\CSelect{k}}{\TArr{\MobMobile}{\SChoice{\ell:\S[\ell]}{\ell\in L}}\S[k]}
   }
   \\
   \inferrule[CT-Select']{}{
@@ -99,7 +99,7 @@
 
 \newcommand*\RuleCTBranch{
   \inferrule[CT-Branch]{}{
-    \HasCType\CBranch{\TArr{\MobMobile}{\SBranch{\ell:\S_\ell}{\ell\in L}}{\Sigma_k \S_k}}
+    \HasCType\CBranch{\TArr{\MobMobile}{\SBranch{\ell:\S[\ell]}{\ell\in L}}{\Sigma_k \S[k]}}
   }
 }
 
@@ -114,7 +114,11 @@
 
 \newcommand*\RuleCTSplitAlt{
   \inferrule[CT-Split]{}{
-    \HasCType{\CSplit_{\S[1],\S[2]}}{\TArr{\MobMobile}{\DirUnord,\EffPure}{{(\SSeq {\S[1]}{\S[2]})}^{\K}}{\TPairOrd{\S[1]^{\S[2]\fatsemi\K}}{\S[2]^{\K}}}}
+    \HasCType{\CSplit_{\S[1],\S[2]}}{
+      \TArr {\MobMobile} {\DirUnord,\EffPure}
+        {{(\SSeq {\S[1]}{\S[2]})}^{\K}}
+        {\TPairOrd{\S[1]^{\S[2]\fatsemi\K}}{\S[2]^{\K}}}
+    }
   }
 }
 

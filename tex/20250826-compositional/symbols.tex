@@ -1,16 +1,17 @@
 \newcommand{\thecalculus}{\textsc{BGV}\xspace}
 
-\newcommand{\metacolor}{\textcolor{black}}
-\newcommand{\ctxcolor}{\textcolor{ACMPurple}}
-\newcommand{\typecolor}{\textcolor{ACMPurple}}
-\newcommand{\termcolor}{\textcolor{Mahogany}}
-\newcommand{\targettermcolor}{\textcolor{Sepia}}
+\newcommand{\metacolor}{\mathcolor{black}}
+\newcommand{\ctxcolor}{\mathcolor{ACMPurple}}
+\newcommand{\typecolor}{\mathcolor{ACMPurple}}
+\newcommand{\termcolor}{\mathcolor{Mahogany}}
+\newcommand{\targettermcolor}{\mathcolor{Sepia}}
 \newcommand{\proccolor}{\termcolor}
 \newcommand{\targetproccolor}{\targettermcolor}
 \newcommand{\procbindcolor}{\termcolor}
 \newcommand{\targetprocbindcolor}{\targettermcolor}
-\newcommand{\dircolor}{\textcolor{ACMOrange}}
-\newcommand{\mobcolor}{\textcolor{ACMGreen}}
+\newcommand{\dircolor}{\mathcolor{ACMOrange}}
+\newcommand{\mobcolor}{\mathcolor{ACMGreen}}
+\newcommand{\csetcolor}{\ctxcolor}
 
 \newcommand*\Keyword[1]{\operatorname{\texttt{#1}}}
 \newcommand*\TermKeyword[1]{\termcolor{\Keyword{#1}}}
@@ -70,7 +71,8 @@
 \newcommand*\BString{\TypeKeyword{String}}
 
 % Types
-\NewMetaVar[\typecolor] \T T
+\NewMetaVar[\typecolor] \T  T
+\NewMetaVar[\typecolor] \TU U
 \newcommand*\TProd[3]{\typecolor{{#2}\otimes_{#1}{#3}}}
 \newcommand*\TPair[3][{}]{\typecolor{{#2}\Pair[#1]{#3}}}
 \newcommand*\TPairUnord[2]{\TProd\DirUnord{#1}{#2}} % \typecolor{{#1}\PairUnord{#2}}}
@@ -159,6 +161,13 @@
 \newcommand*\CtxRestrict[2]{{#1}\downarrow{#2}}
 \newcommand*\SubCtx{\preccurlyeq}
 \newcommand*\CtxBind[2]{\ctxcolor{{#1}:{#2}}}
+
+% Constraint sets
+\NewMetaVar[\csetcolor] \CSet \Delta
+\newcommand*\CSEmpty{\csetcolor{\emptyset}}
+\newcommand*\CUnion{\csetcolor{\cup}}
+\newcommand*\CEq{\csetcolor{\simeq}}
+\newcommand*\CSub{\csetcolor{\lesssim}}
 
 % Session Contexts
 \newcommand*\SCtx{\Xi}
@@ -253,7 +262,6 @@
 \NewMetaVar[\termcolor] \V v
 \NewMetaVar[\termcolor] \U u
 \NewMetaVar[\targettermcolor] \TV v
-\NewMetaVar[\targettermcolor] \TU u
 
 % Evaluation Contexts
 \NewMetaVar[\termcolor] \EC E
@@ -316,7 +324,7 @@
 
 % Effect Order
 \newcommand*\EffLeq{\sqsubseteq}
-\newcommand*\EffJoin{\metacolor{{}\sqcup{}}} 
+\newcommand*\EffJoin{\metacolor{\sqcup}}
 
 % Graphs
 \newcommand*\Graph{G}
@@ -356,13 +364,13 @@
   {
     \ctxcolor{#2} \vdash {#3} : {#4} \ifstrempty{#1}{}{\mid{#1}}
   }
-\NewDocumentCommand \InferType {O{\Eff} O{\Ctx} m m}
+\NewDocumentCommand \InferType {O{\Ctx} m m m O{\CSet}}
   {
-    \ctxcolor{#2} \vdash {#3} \Rightarrow {#4} \mid {#1}
+    \ctxcolor{#1} \vdash #2 \Rightarrow #3 \mid #4 \uparrow \csetcolor{#5}
   }
-\NewDocumentCommand \CheckType {O{\Eff} O{\Ctx} m m}
+\NewDocumentCommand \CheckType {O{\Ctx} m m m O{\CSet}}
   {
-    \ctxcolor{#2} \vdash {#3} \Leftarrow {#4} \mid {#1}
+    \ctxcolor{#1} \vdash #2 \Leftarrow #3 \mid #4 \uparrow \csetcolor{#5}
   }
 
 % Constant Typing

@@ -7,18 +7,29 @@
 \DefRule {Const} {
   \HasCType \C \T
 }{
-  \InferType[\EffPure] \C \T
+  \InferType \C \T \EffPure
 }
 
 % A-Var
 \DefRule {Var} {
 } {
-  \InferType[\EffPure] \EVar \T
+  \InferType \EVar \T \EffPure
 }
 
-% A-Abs
-\DefRule {Abs} {
+% A-App
+\DefRule {App} {
+  \InferType {\E[1]} {\TArr{\Mob}{\Dir,\Eff[3]} \T \TU} {\Eff[1]} [\CSet[1]] \\
+  \CheckType {\E[2]} {\T} {\Eff[2]} [\CSet[2]] \\
 }{
+  \InferType {\E[1]\E[2]} {\TU} {\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]} [\CSet[1] \CUnion \CSet[2]]
+}
+
+% A-Check
+\DefRule {Check} {
+  \InferType \EVar {\T[2]} {\Eff[2]} \\
+  \Eff[2] \le \Eff[1]
+}{
+  \CheckType \EVar {\T[1]} {\Eff[1]} [\CSet \CUnion \{ \T[2] \CSub \T[1] \}]
 }
 
 % \newcommand*\RuleTAbsUnr{

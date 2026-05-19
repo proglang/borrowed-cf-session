@@ -2,11 +2,17 @@
 
 Algorithmic typing (\cref{fig:typing-algorithmic}).
 
+Correctness of splitting is checked via constraints accumulated in an set
+$\CSet$. Constraints are either of the form $\T \CEq \TU$ or $\T \CSub \TU$.
+
 \begin{figure}
+  \hfill \fbox{$\InferType \E \T \Eff$}
+   \quad \fbox{$\CheckType \E \T \Eff$}
   \begin{mathpar}
     \RuleAlgConst \and
     \RuleAlgVar \and
-    \RuleAlgAbs
+    \RuleAlgApp \and
+    \RuleAlgCheck
 %    \RuleTAppUnr \and
 %    \RuleTAbsLin \and
 %    \RuleTAppLin \and
@@ -32,6 +38,6 @@ Algorithmic typing (\cref{fig:typing-algorithmic}).
 %    % \and
 %    % \RuleTWeakE\Big)
   \end{mathpar}
-  \caption{Algorithmic typing ($\InferType\E\T$ and $\CheckType\E\T$)}
+  \caption{Algorithmic typing}
   \label{fig:typing-algorithmic}
 \end{figure}

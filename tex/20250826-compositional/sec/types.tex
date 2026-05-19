@@ -44,8 +44,8 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
         \SSend\T \grmor \SRecv\T
         \\
       &
-        \grmor \SChoice{\ell:\S_\ell}{\ell\in L}
-        \grmor \SBranch{\ell:\S_\ell}{\ell\in L}
+        \grmor \SChoice{\ell:\S[\ell]}{\ell\in L}
+        \grmor \SBranch{\ell:\S[\ell]}{\ell\in L}
     \\
     &
         \grmor \SRet \grmor \SAcq
@@ -68,11 +68,11 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
     %\CtxExt\Ctx\CtxEmpty = \Ctx \and
     \CtxExtUnord\CtxEmpty\Ctx = \Ctx \and
     %\CtxExtUnord\Ctx\CtxEmpty = \Ctx \and
-    \CtxExtUnord{\Ctx_1}{\Ctx_2} = \CtxExtUnord{\Ctx_2}{\Ctx_1} \and
-    \CtxExt{\Ctx_1}{(\CtxExt{\Ctx_2}{\Ctx_3})} =
-    \CtxExt{(\CtxExt{\Ctx_1}{\Ctx_2})}{\Ctx_3} \and
-    \CtxExtUnord{\Ctx_1}{(\CtxExtUnord{\Ctx_2}{\Ctx_3})} =
-    \CtxExtUnord{(\CtxExtUnord{\Ctx_1}{\Ctx_2})}{\Ctx_3} \\
+    \CtxExtUnord{\Ctx[1]}{\Ctx[2]} = \CtxExtUnord{\Ctx[2]}{\Ctx[1]} \and
+    \CtxExt{\Ctx[1]}{(\CtxExt{\Ctx[2]}{\Ctx[3]})} =
+    \CtxExt{(\CtxExt{\Ctx[1]}{\Ctx[2]})}{\Ctx[3]} \and
+    \CtxExtUnord{\Ctx[1]}{(\CtxExtUnord{\Ctx[2]}{\Ctx[3]})} =
+    \CtxExtUnord{(\CtxExtUnord{\Ctx[1]}{\Ctx[2]})}{\Ctx[3]} \\
     \inferrule{\Unr\Ctx}{\CtxPar \Ctx \Ctx = \Ctx} \and
     %\inferrule{\Unr\Ctx}{\CtxSeq \Ctx \Ctx = \Ctx} \and
     \inferrule{\Unr\Ctx[1]}{\CtxPar{\Ctx[1]}{\Ctx[2]}
@@ -86,9 +86,9 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
   to our earlier work. It now aligns better with direction of weakening rules
   and the exchange law of concurrent Kleene algebra.}
   \begin{mathpar}
-    \CtxExt{(\CtxPar{\Ctx_1}{\Ctx_3})}{(\CtxPar{\Ctx_2}{\Ctx_4})}
+    \CtxExt{(\CtxPar{\Ctx[1]}{\Ctx[3]})}{(\CtxPar{\Ctx[2]}{\Ctx[4]})}
     \SubCtx
-    \CtxPar{(\CtxExt{\Ctx_1}{\Ctx_2})}{(\CtxExt{\Ctx_3}{\Ctx_4})}
+    \CtxPar{(\CtxExt{\Ctx[1]}{\Ctx[2]})}{(\CtxExt{\Ctx[3]}{\Ctx[4]})}
 
     % TODO: how does weakening factor in here?
     \inferrule{
@@ -108,9 +108,9 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
     \SSeq{\S[1]}{(\SSeq{\S[2]}{\S[3]})} =
     \SSeq{(\SSeq{\S[1]}{\S[2]})}{{\S[3]}} \and
     \SRec\SVar\S = \S{[\SRec\SVar\S/\SVar]} \and
-    \SSeq{(\SChoice{\ell:\S_\ell}{\ell\in L})}\S =
-    \SChoice{\ell:\SSeq{\S_\ell}\S}{\ell\in L} \and
-    \SSeq{(\SBranch{\ell:\S_\ell}{\ell\in L})}\S = \SBranch{\ell:\SSeq{\S_\ell}\S}{\ell\in L}
+    \SSeq{(\SChoice{\ell:\S[\ell]}{\ell\in L})}\S =
+    \SChoice{\ell:\SSeq{\S[\ell]}\S}{\ell\in L} \and
+    \SSeq{(\SBranch{\ell:\S[\ell]}{\ell\in L})}\S = \SBranch{\ell:\SSeq{\S[\ell]}\S}{\ell\in L}
   \end{mathpar}
   \caption{Type and typing context syntax}
   \label{fig:syntax-types}
