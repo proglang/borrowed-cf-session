@@ -141,7 +141,7 @@
     {\E[1]}
     {\TArr{\Mob}{\DirRight,\Eff}{\T[1]}{\T[2]}}
     \\
-  \HasType
+  \HasType[\EffPure]
     {\Ctx[2]}
     {\E[2]}
     {\T[1]}
@@ -196,12 +196,12 @@
   \HasType
     {\Ctx[2]}
     {\E[2]}
-    {\T[2]}
+    {\T}
 }{
   \HasType
     {\CtxPat 1 2}
     {\ESeq{\E[1]}{\E[2]}}
-    {\T[2]}
+    {\T}
 }
 
 % T-Let
@@ -291,8 +291,8 @@
     {\T}
 }
 
-% T-WeakC
-\DefRule {WeakC} {
+% T-Weaken
+\DefRule {Weaken} {
   \Ctx[1] \SubCtx \Ctx[2]
   \\
   \HasType
@@ -306,19 +306,17 @@
     {\T}
 }
 
-% T-WeakCE
-\DefRule {WeakCE} {
-  \Ctx[1] \SubCtx \Ctx[2]
-  \\
+% T-Effect
+\DefRule {Effect} {
   \Eff[1] \le \Eff[2]
   \\
   \HasType[\Eff[1]]
-    {\Ctx[1]}
+    {\Ctx}
     {\E}
     {\T}
 }{
   \HasType[\Eff[2]]
-    {\Ctx[2]}
+    {\Ctx}
     {\E}
     {\T}
 }

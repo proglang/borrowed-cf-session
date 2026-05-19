@@ -93,7 +93,7 @@
     \Mobile{\T[1]} \\
     \Mobile{\T[2]}
   }{
-    \Mobile{(\TPair{\T[1]}{\T[2]})}
+    \Mobile{(\T[1] \TPair \T[2])}
   }
 }
 
@@ -101,7 +101,8 @@
   \inferrule[Te-Variant]{
     \forall\ell. \Mobile \T[\ell]
   }{
-    \Mobile\TVariant{\T[\ell]}{\ell\in L}}
+    \Mobile{\TVariant{\T[\ell]}{\ell\in L}}
+  }
 }
 
 \newcommand*\RuleTeArr{

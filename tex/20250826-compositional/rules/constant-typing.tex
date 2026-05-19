@@ -1,11 +1,5 @@
 % Constant Typing
 
-\newcommand*\RuleCTLink{
-  \inferrule[CT-Link]{}{
-    \HasCType{\CLink_{\S}}{\TArr{\MobMobile}{\DirUnord,\EffPure} {\TPairUnord{\S}{\Dual\S}}\BUnit}
-  }
-}
-
 \newcommand*\RuleCTUnit{
   \inferrule[CT-Unit]{}{
     \HasCType\CUnit\BUnit
@@ -75,7 +69,7 @@
   \inferrule[CT-Send]{
     \Mobile \T
   }{
-    \HasCType\CSend{\TArr{\MobMobile}{\DirUnord,\EffImpure}{{\T}\PairUnord{\SSend\T}}\BUnit}
+    \HasCType\CSend{\TArr{\MobMobile}{\DirUnord,\EffImpure}{\TPairUnord{\T}{\SSend\T}}\BUnit}
   }
 }
 

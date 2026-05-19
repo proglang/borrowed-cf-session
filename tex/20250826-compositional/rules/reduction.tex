@@ -128,14 +128,6 @@
   }
 }
 
-\newcommand*\RuleProcRedLink{
-  \inferrule[R-Link]{}{
-    \PNew xy {(\PPar{{\FCapp{\EApp\CLink{\EPair w x}}}}{\Proc})}
-    \Reduces 
-    \PPar{ {\FCapp{\CUnit}}}{\Subs \Proc wy}
-  }
-}
-
 \newcommand*\RuleProcRedFork{
   \inferrule[R-Fork]{}{
     { {\FCapp{\EApp \CFork \V}}}

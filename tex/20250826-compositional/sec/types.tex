@@ -10,16 +10,21 @@ When talking about contexts we may use the operator $\ctxcolor{\Ctx[1]
 \CtxPatOp \Ctx[2]}$ as a metavariable for context formers
 $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
 
+\begin{lemma}
+  Every context $\Ctx$ can be separated into contexts $\Ctx[1], \Ctx[2]$ with
+  $\Ctx = \CtxPar{\Ctx[1]}{\Ctx[2]}$ such that $\Unr\Ctx[1]$ and $\Unr\T$ is
+  not derivable for any $\CtxVar\EVar\T \in \Ctx[2]$.
+\end{lemma}
+\begin{proof}
+  \texttt{unjoinUnr}
+\end{proof}
+
 
 \begin{figure}
   \begin{align*}
     \Mob \grmeq
       & \MobMobile \grmor \MobStationary
         \tag{Mobility with $\MobMobile < \MobStationary$} \\
-    % \O \grmeq & 0 \grmor 1 \grmor 2 \grmor \dots
-    % \tag{Priorities} \\
-    % \P, \Q \in {}& \Nat \cup \{ \bot, \top \}
-    % \tag{Priority bounds} \\
     \Dir \grmeq
       & \DirLeft \grmor \DirRight \grmor \DirUnord \grmor \DirNone
         % \grmor \DirNone
@@ -27,17 +32,11 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
     \Eff \grmeq
       & \EffPure \grmor \EffImpure
         \tag{Effects with $\EffPure < \EffImpure$} \\
-    \Pair \grmeq
-      & \PairUnord \grmor \PairOrd
-        \tag{Pairs} \\
-        % \K ::=~
-        % & \KType\Mul \grmor \KSession\Mul
-        % \tag{Kinds} \\ % needed?
     \T \grmeq
       &
         \BUnit \grmor
         % \B \grmor % Let us use Unit as a representative of all base types
-        \TArr{\Mob}{\Dir,\Eff}\T\T \grmor \T\Pair[\Dir]\T \grmor \TSum\T\T \grmor \S 
+        \TArr{\Mob}{\Dir,\Eff}\T\T \grmor \T \TPair \T \grmor \TSum\T\T \grmor \S 
         \tag{Types} \\
     \S \grmeq
       & \SSkip \grmor \SSeq\S\S \grmor \STerm \grmor \SWait \grmor
@@ -84,7 +83,7 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
   \medskip
   Subcontext relation for weakening. \js{The direction is changed in comparison
   to our earlier work. It now aligns better with direction of weakening rules
-  and the exchange law of concurrent Kleene algebra.}
+  and the exchange law of concurrent Kleene algebra. Keep or revert?}
   \begin{mathpar}
     \CtxExt{(\CtxPar{\Ctx[1]}{\Ctx[3]})}{(\CtxPar{\Ctx[2]}{\Ctx[4]})}
     \SubCtx
@@ -213,7 +212,6 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
   \begin{mathpar}
     \RuleCTUnit \and
     \RuleCTNew \and
-    % \RuleCTLink \and
     \RuleCTSplit \and
     \RuleCTSSplit \and
     \RuleCTDrop \and
@@ -258,8 +256,8 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
     % \RuleTFork \and
     % \RuleTMatch \and
     % \RuleTMatchLin \and
-    \RuleTWeakCE
-    % \RuleTWeakC
+    \RuleTWeaken \and
+    \RuleTEffect
     % \\
     % \Big(\RuleTWeakC
     % \and
