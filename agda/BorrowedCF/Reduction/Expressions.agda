@@ -6,7 +6,6 @@ import Data.Vec.Functional as F
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
-open import BorrowedCF.Processes
 open import BorrowedCF.Types
 open import BorrowedCF.Context
 

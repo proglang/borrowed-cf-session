@@ -1,6 +1,6 @@
-{-# OPTIONS --rewriting --allow-unsolved-metas #-}
+{-# OPTIONS --rewriting #-}
 
-module BorrowedCF.Processes where
+module BorrowedCF.Processes.Typed where
 
 open import Data.Nat.ListAction using (sum)
 open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosure)
@@ -154,5 +154,7 @@ data _;_⊢ₚ_ (Γ : Ctx n) : Struct n → Proc n → Set where
   TP-Res :
     BindCtx {sum B₁} s Γ₁ →
     BindCtx {sum B₂} (dual s) Γ₂ →
-    (Γ₁ F.++ Γ₂) F.++ Γ ; ({!!} ∥ {!!}) ∥ (γ 𝐂.⋯ 𝐂.weaken* _) ⊢ₚ P →
+    (Γ₁ F.++ Γ₂) F.++ Γ ;
+      ((structBinder B₁ 𝐂.⋯ 𝐂.wkʳ (sum B₂) 𝐂.⋯ 𝐂.wkʳ n) ∥ (structBinder B₂ 𝐂.⋯ 𝐂.weaken* (sum B₁) 𝐂.⋯ 𝐂.wkʳ n))
+        ∥ (γ 𝐂.⋯ 𝐂.weaken* _) ⊢ₚ P →
     Γ ; γ ⊢ₚ ν B₁ B₂ P

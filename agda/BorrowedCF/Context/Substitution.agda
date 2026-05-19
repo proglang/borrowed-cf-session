@@ -45,6 +45,9 @@ weaken* : ∀ m → n →ₛ (m + n)
 weaken* zero = idₛ
 weaken* (suc m) = wkₛ (weaken* m)
 
+wkʳ : ∀ n → m →ₛ (m + n)
+wkʳ n x = ` (x ↑ˡ n)
+
 _↑ : m →ₛ n → suc m →ₛ suc n
 σ ↑ = ` zero ∷ₛ wkₛ σ
 

@@ -4,7 +4,6 @@ module BorrowedCF.Reduction.Base where
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
-open import BorrowedCF.Processes
 open import BorrowedCF.Types
 open import BorrowedCF.Context
 
