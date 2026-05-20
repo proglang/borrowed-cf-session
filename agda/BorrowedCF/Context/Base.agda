@@ -2,12 +2,14 @@
 
 module BorrowedCF.Context.Base where
 
-open import Data.Vec.Functional using (Vector)
-
 open import BorrowedCF.Prelude
 open import BorrowedCF.Types hiding (s; s₁; s₂; s₃; s′)
 
 open Nat.Variables
+
+import Data.Vec.Functional
+open Data.Vec.Functional using (Vector)
+open Data.Vec.Functional using () renaming (_∷_ to _⸴_) public
 
 Ctx = Vector 𝕋
 

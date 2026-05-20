@@ -2,8 +2,6 @@
 
 module BorrowedCF.Reduction.Expressions where
 
-import Data.Vec.Functional as F
-
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Types
@@ -48,7 +46,7 @@ module _ (Γ-S : ChanCx Γ) where
 
   inv-arr : Value e → Γ ; γ ⊢ e ∶ T ⟨ a ⟩→ U ∣ ϵ →
     (∃[ c ] e ≡ K c × ⊢ c ∶ T ⟨ a ⟩→ U)
-      ⊎ (∃[ e′ ] e ≡ ƛ e′ × T F.∷ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) ⊢ e′ ∶ U ∣ Arr.eff a)
+      ⊎ (∃[ e′ ] e ≡ ƛ e′ × T ⸴ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) ⊢ e′ ∶ U ∣ Arr.eff a)
   inv-arr V (T-Const c) = inj₁ (_ , refl , c)
   inv-arr V (T-Abs Γ-unr Γ-mob e) = inj₂ (_ , refl , e)
   inv-arr {a = a} V (T-Weaken ϵ≤ γ≤ e)

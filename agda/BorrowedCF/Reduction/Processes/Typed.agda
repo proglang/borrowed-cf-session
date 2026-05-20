@@ -6,8 +6,6 @@ open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using 
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
 
-import Data.Vec.Functional as F
-
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms as Terms hiding (wk)
 open import BorrowedCF.Processes.Typed

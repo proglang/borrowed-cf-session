@@ -2,13 +2,6 @@
 
 module BorrowedCF.Terms where
 
-open import Data.List.Membership.Propositional using (_∈_; _∉_)
-open import Data.List.Relation.Unary.Any as Any using (Any; here; there)
-open import Data.Vec.Functional as F using (Vector)
-open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosure)
-open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (_◅_; _◅◅_; kleisliStar) renaming (ε to refl)
-open import Relation.Binary.Construct.Closure.Symmetric as Sym using (symmetric)
-
 open import BorrowedCF.Prelude
 open import BorrowedCF.Types
 open import BorrowedCF.Context
@@ -153,16 +146,16 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
   T-Abs :
     (Γ-unr : Arr.Unr a → UnrCx Γ γ) →
     (Γ-mob : Arr.Mobile a → MobCx Γ γ) →
-    T F.∷ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) ⊢ e ∶ U ∣ Arr.eff a →
-    ------------------------------------------------------------------
+    T ⸴ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) ⊢ e ∶ U ∣ Arr.eff a →
+    ----------------------------------------------------------------
     Γ ; γ ⊢ ƛ e ∶ T ⟨ a ⟩→ U ∣ ℙ
 
   T-AbsRec :
     let open Fin.Patterns in
     UnrCx Γ γ →
     Arr.Unr a →
-    T F.∷ T ⟨ a ⟩→ U F.∷ Γ ; (` 0F) ∥ (` 1F) ∥ 𝐂.wk (𝐂.wk γ) ⊢ e ∶ U ∣ Arr.eff a →
-    ------------------------------------------------------------------------------
+    T ⸴ T ⟨ a ⟩→ U ⸴ Γ ; (` 0F) ∥ (` 1F) ∥ 𝐂.wk (𝐂.wk γ) ⊢ e ∶ U ∣ Arr.eff a →
+    --------------------------------------------------------------------------
     Γ ; γ ⊢ μ (ƛ e) ∶ T ⟨ a ⟩→ U ∣ ℙ
 
   T-App : ∀ {γ₁ γ₂} →
@@ -182,8 +175,8 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
 
   T-Let : (p/s : ParSeq) {γ₁ γ₂ : Struct n} →
     Γ ; γ₁ ⊢ e₁ ∶ T ∣ ϵ →
-    T F.∷ Γ ; join p/s (` zero) (𝐂.wk γ₂) ⊢ e₂ ∶ U ∣ ϵ →
-    ----------------------------------------------------
+    T ⸴ Γ ; join p/s (` zero) (𝐂.wk γ₂) ⊢ e₂ ∶ U ∣ ϵ →
+    --------------------------------------------------
     Γ ; join p/s γ₁ γ₂ ⊢ `let e₁ `in e₂ ∶ U ∣ ϵ
 
   T-LetUnit : (p/s : ParSeq) {γ₁ γ₂ : Struct n} →
@@ -194,7 +187,7 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
 
   T-LetPair : (p/s : ParSeq) {γ₁ γ₂ : Struct n} →
     Γ ; γ₁ ⊢ e₁ ∶ T₁ ⊗⟨ d ⟩ T₂ ∣ ϵ →
-    T₁ F.∷ T₂ F.∷ Γ ;
+    T₁ ⸴ T₂ ⸴ Γ ;
       join p/s (join d (` zero) (` suc zero))
                (𝐂.wk (𝐂.wk γ₂))
       ⊢ e₂ ∶ U ∣ ϵ →
@@ -215,7 +208,7 @@ record TKit (K : Kit 𝓕) : Set₁ where
     𝓕[_;_⊢_∶_] : Ctx n → Struct n → 𝓕 n → 𝕋 → Set
     ⊢id/` : (x : 𝔽 n) → 𝓕[ Γ ; ` x ⊢ id/` x ∶ Γ x ]
     ⊢`/id : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ T ] → Γ ; γ ⊢ `/id x/t ∶ T ∣ ℙ
-    ⊢wk : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ U ] → 𝓕[ T F.∷ Γ ; 𝐂.wk γ ⊢ wk x/t ∶ U ]
+    ⊢wk : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ U ] → 𝓕[ T ⸴ Γ ; 𝐂.wk γ ⊢ wk x/t ∶ U ]
 
   infix 4 _∶_⊢_⇒_
 
@@ -230,41 +223,22 @@ record TKit (K : Kit 𝓕) : Set₁ where
   ⊢id : {Γ : Ctx n} → idₖ ∶ 𝐂.idₛ ⊢ Γ ⇒ Γ
   ⊢id = record { _&_ = ⊢id/` ; &-unr = `_ ; &-mob = `_ }
 
-  ⊢↑ : ∀ {ϕ : m –[ K ]→ n} {σ} → ϕ ∶ σ ⊢ Γ₁ ⇒ Γ₂ → ϕ ↑ ∶ σ 𝐂.↑ ⊢ T F.∷ Γ₁ ⇒ T F.∷ Γ₂
+  ⊢↑ : ∀ {ϕ : m –[ K ]→ n} {σ} → ϕ ∶ σ ⊢ Γ₁ ⇒ Γ₂ → ϕ ↑ ∶ σ 𝐂.↑ ⊢ T ⸴ Γ₁ ⇒ T ⸴ Γ₂
   ⊢↑ ⊢ϕ = record
     { _&_   = λ{ zero → ⊢id/` zero; (suc x) → ⊢wk (⊢ϕ & x) }
     ; &-unr = λ {x} → 𝐂.↑-preserves (&-unr ⊢ϕ) {x}
     ; &-mob = λ {x} → 𝐂.↑-preserves (&-mob ⊢ϕ) {x}
     }
 
-  ⊢sub : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ T ] → (Unr T → UnrCx Γ γ) → (Mobile T → MobCx Γ γ) → ⦅ x/t ⦆ ∶ 𝐂.⦅ γ ⦆ ⊢ T F.∷ Γ ⇒ Γ
+  ⊢sub : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ T ] → (Unr T → UnrCx Γ γ) → (Mobile T → MobCx Γ γ) → ⦅ x/t ⦆ ∶ 𝐂.⦅ γ ⦆ ⊢ T ⸴ Γ ⇒ Γ
   ⊢sub ⊢x/t γ-unr γ-mob = record
     { _&_   = λ{ zero   → ⊢x/t ; (suc y) → ⊢id/` y }
     ; &-unr = λ{ {zero} → γ-unr; {suc y} → `_ }
     ; &-mob = λ{ {zero} → γ-mob; {suc y} → `_ }
     }
 
-  ⊢weaken : (Γ : Ctx n) → weaken ∶ 𝐂.weaken ⊢ Γ ⇒ T F.∷ Γ
+  ⊢weaken : (Γ : Ctx n) → weaken ∶ 𝐂.weaken ⊢ Γ ⇒ T ⸴ Γ
   ⊢weaken Γ = record { _&_ = ⊢wk ∘ ⊢id/` ; &-unr = `_ ; &-mob = `_}
-
-{-
-  _∶_⊢_⇒_ : m –[ K ]→ n → m 𝐂.→ₛ n → Ctx m → Ctx n → Set
-  ϕ ∶ σ ⊢ Γ₁ ⇒ Γ₂ = ∀ x → 𝓕[ Γ₂ ; σ x ⊢ ϕ x ∶ Γ₁ x ]
-
-  ⊢id : {Γ : Ctx n} → idₖ ∶ 𝐂.idₛ ⊢ Γ ⇒ Γ
-  ⊢id x = ⊢id/` x
-
-  ⊢↑ : ∀ {ϕ : m –[ K ]→ n} {σ} → ϕ ∶ σ ⊢ Γ₁ ⇒ Γ₂ → ϕ ↑ ∶ σ 𝐂.↑ ⊢ T F.∷ Γ₁ ⇒ T F.∷ Γ₂
-  ⊢↑ ⊢ϕ zero = ⊢id/` zero
-  ⊢↑ ⊢ϕ (suc x) = ⊢wk (⊢ϕ x)
-
-  ⊢⦅_⦆ : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ T ] → ⦅ x/t ⦆ ∶ 𝐂.⦅ γ ⦆ ⊢ T F.∷ Γ ⇒ Γ
-  ⊢⦅ ⊢x/t ⦆ zero    = ⊢x/t
-  ⊢⦅ ⊢x/t ⦆ (suc y) = ⊢id/` y
-
-  ⊢weaken : (Γ : Ctx n) → weaken ∶ 𝐂.weaken ⊢ Γ ⇒ T F.∷ Γ
-  ⊢weaken Γ x = ⊢wk (⊢id/` x)
--}
 
 infix 4 _∶_⊢[_]_⇒_
 

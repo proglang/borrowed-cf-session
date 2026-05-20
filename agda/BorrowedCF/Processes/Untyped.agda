@@ -13,8 +13,6 @@ open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Types
 
-import Data.Vec.Functional as F
-
 open Nat.Variables
 
 infix 15 _↦_

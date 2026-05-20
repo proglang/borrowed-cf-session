@@ -2,7 +2,6 @@
 
 module BorrowedCF.Context.Substitution where
 
-import Data.Vec.Functional as F
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
 
 open import BorrowedCF.Prelude
@@ -111,13 +110,13 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
   allCx-⋯ P⇒ΠP (x ; y) = allCx-⋯ P⇒ΠP x ; allCx-⋯ P⇒ΠP y
   allCx-⋯ P⇒ΠP (` Px)  = P⇒ΠP Px
 
-  allCx-wk : AllCx P Γ γ → AllCx P (T F.∷ Γ) (wk γ)
+  allCx-wk : AllCx P Γ γ → AllCx P (T ⸴ Γ) (wk γ)
   allCx-wk [] = []
   allCx-wk (x ∥ y) = allCx-wk x ∥ allCx-wk y
   allCx-wk (x ; y) = allCx-wk x ; allCx-wk y
   allCx-wk (` x) = ` x
 
-  ↑-preserves : σ Preserves[ P ] Γ₁ ⇒ Γ₂ → (σ ↑) Preserves[ P ] (T F.∷ Γ₁) ⇒ (T F.∷ Γ₂)
+  ↑-preserves : σ Preserves[ P ] Γ₁ ⇒ Γ₂ → (σ ↑) Preserves[ P ] (T ⸴ Γ₁) ⇒ (T ⸴ Γ₂)
   ↑-preserves p⇒ {zero}  px = ` px
   ↑-preserves p⇒ {suc x} px = allCx-wk (p⇒ px)
 
@@ -135,7 +134,7 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
 ≈-⋯ : σ Preserves[ Unr ] Γ₁ ⇒ Γ₂ → (_⋯ σ) Bin.Preserves (Γ₁ ∶_≈_) ⟶ (Γ₂ ∶_≈_)
 ≈-⋯ = Eq*.gmap _ ∘ ≈′-⋯
 
-≈-wk : Γ ∶ α ≈ β → T F.∷ Γ ∶ wk α ≈ wk β
+≈-wk : Γ ∶ α ≈ β → T ⸴ Γ ∶ wk α ≈ wk β
 ≈-wk {α = α} {β} eq rewrite sym (weaken/wk α) | sym (weaken/wk β) = ≈-⋯ `_ eq
 
 ≼-⋯ : σ Preserves[ Unr ] Γ₁ ⇒ Γ₂ → Γ₁ ∶ α ≼ β → Γ₂ ∶ α ⋯ σ ≼ β ⋯ σ
@@ -146,5 +145,5 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
 ≼-⋯ σ-unr (≼-cong-; x y) = ≼-cong-; (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
 ≼-⋯ σ-unr (≼-cong-∥ x y) = ≼-cong-∥ (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
 
-≼-𝐂wk : Γ ∶ α ≼ β → T F.∷ Γ ∶ wk α ≼ wk β
+≼-𝐂wk : Γ ∶ α ≼ β → T ⸴ Γ ∶ wk α ≼ wk β
 ≼-𝐂wk {α = α} {β} x rewrite sym (weaken/wk α) | sym (weaken/wk β) = ≼-⋯ `_ x
