@@ -40,8 +40,11 @@ record Arr : Set where
 
   Mobile = mob ≡ M
   Unr = lin ≡ unr
+  Par = dir ≡ 𝟙
 
-  field ω⇒M : Unr → Mobile
+  field
+    ω⇒M : Unr → Mobile
+    ω⇒𝟙 : Unr → Par
 
 data Kind : Set where
   𝕤 𝕥 : Kind

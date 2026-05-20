@@ -34,6 +34,7 @@ module Variables where
     β β₁ β₂ β₃ β′ β₁′ β₂′ : Struct n
 
 open Variables
+open Un
 
 module _ {ℓ} (P : Pred 𝕋 ℓ) (Γ : Ctx n) where
   data AllCx : Struct n → Set ℓ where
@@ -49,11 +50,18 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} {Γ : Ctx n} where
   allCx-;⁻¹ : AllCx P Γ (α ; β) → AllCx P Γ α × AllCx P Γ β
   allCx-;⁻¹ (x ; y) = x , y
 
-  allCx? : Un.Decidable P → Un.Decidable (AllCx P Γ)
+  allCx? : Decidable P → Decidable (AllCx P Γ)
   allCx? P? (` x) = map′ `_ (λ{ (` Px) → Px }) (P? (Γ x))
   allCx? P? [] = yes []
   allCx? P? (α ∥ β) = map′ (uncurry _∥_) allCx-∥⁻¹ (allCx? P? α ×-dec allCx? P? β)
   allCx? P? (α ; β) = map′ (uncurry _;_) allCx-;⁻¹ (allCx? P? α ×-dec allCx? P? β)
+
+module _ {p q} {P : Pred 𝕋 p} {Q : Pred 𝕋 q} where
+  allCx-map : (P ⊆ Q) → AllCx P Γ ⊆ AllCx Q Γ
+  allCx-map f [] = []
+  allCx-map f (x ∥ y) = allCx-map f x ∥ allCx-map f y
+  allCx-map f (x ; y) = allCx-map f x ; allCx-map f y
+  allCx-map f (` x) = ` f x
 
 UnrCx : REL (Ctx n) (Struct n) _
 UnrCx = AllCx Unr
@@ -63,3 +71,6 @@ MobCx = AllCx Mobile
 
 unrCx? : Un.Decidable (UnrCx Γ)
 unrCx? = allCx? unr?
+
+UnrCx⇒MobCx : UnrCx Γ ⊆ MobCx Γ
+UnrCx⇒MobCx = allCx-map Unr⇒Mobile

@@ -65,6 +65,9 @@ open ≈-Equivalence
 ∥-unit₁ : Γ ∶ [] ∥ α ≈ α
 ∥-unit₁ = ∥-comm ◅◅ Eq*.return ∥′-unit
 
+∥-dup : UnrCx Γ α → Γ ∶ α ≈ α ∥ α
+∥-dup = Eq*.return ∘ ∥′-dup
+
 ∥-cong : Γ ∶ α ≈ α′ → Γ ∶ β ≈ β′ → Γ ∶ α ∥ β ≈ α′ ∥ β′
 ∥-cong xs ys = Eq*.gmap (_∥ _) ∥′-cong₁ xs ◅◅ ∥-comm ◅◅ Eq*.gmap (_∥ _) ∥′-cong₁ ys ◅◅ ∥-comm
 
@@ -173,15 +176,6 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} {Γ : Ctx n} where
   allCx-≈ refl         ΠP = ΠP
   allCx-≈ (fwd x ◅ xs) ΠP = allCx-≈ xs (go-fwd x ΠP)
   allCx-≈ (bwd x ◅ xs) ΠP = allCx-≈ xs (go-bwd x ΠP)
-
-module _ {p q} {P : Pred 𝕋 p} {Q : Pred 𝕋 q} where
-  open Un
-
-  allCx-map : (P ⊆ Q) → AllCx P Γ ⊆ AllCx Q Γ
-  allCx-map f [] = []
-  allCx-map f (x ∥ y) = allCx-map f x ∥ allCx-map f y
-  allCx-map f (x ; y) = allCx-map f x ; allCx-map f y
-  allCx-map f (` x) = ` f x
 
 unjoinUnr : (Γ : Ctx n) (γ : Struct n) → ∃[ α ] ∃[ β ] Γ ∶ α ∥ β ≈ γ × AllCx Unr Γ α × AllCx (Un.∁ Unr) Γ β
 unjoinUnr Γ (` x) with unr? (Γ x)

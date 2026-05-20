@@ -21,6 +21,7 @@ data _─→_ {n} : Tm n → Tm n → Set where
   E-Seq : K `unit ; e ─→ e
   E-Let : Value e₁ → `let e₁ `in e₂ ─→ e₂ ⋯ ⦅ e₁ ⦆
   E-PairElim : (V₁ : Value e₁) (V₂ : Value e₂) → `let⊗ (e₁ ⊗ e₂) `in e ─→ e ⋯ ⦅ wk e₁ ⦆ ⋯ ⦅ e₂ ⦆
+  E-Unfold : μ e ─→ e ⋯ ⦅ μ e ⦆
 
 data _⋯→_ {n} : Tm n → Tm n → Set where
   E-□   : e₁ ─→ e₂ → e₁ ⋯→ e₂
@@ -140,6 +141,22 @@ module _ (Γ-S : ChanCx Γ) where
                                       (λ m → 𝐂.allCx-⋯ `_ (Mobile×Value⇒MobCx m V₁ e₁))
          ⊢⋯ₛ ⊢subₛ e₂ (λ U → Unr×Value⇒UnrCx U V₂ e₂)
                       (λ m → Mobile×Value⇒MobCx m V₂ e₂)
+  preservation′ (T-AbsRec {γ = γ} {a = a} Γ-unr a-unr e) E-Unfold =
+    let open Fin.Patterns in
+    let open ≼-Reasoning in
+    let γ≤ = begin
+               (` 0F) ∥ (` 1F) ∥ 𝐂.wk (𝐂.wk γ) 𝐂.⋯ 𝐂.⦅ γ ⦆ 𝐂.↑    ≡⟨⟩
+               (` 0F) ∥ 𝐂.wk γ ∥ (𝐂.wk (𝐂.wk γ) 𝐂.⋯ 𝐂.⦅ γ ⦆ 𝐂.↑)  ≡⟨ cong ((` 0F) ∥ 𝐂.wk γ ∥_) (𝐂.⋯-↑-wk (𝐂.wk γ) _) ⟨
+               (` 0F) ∥ 𝐂.wk γ ∥ 𝐂.wk (𝐂.wk γ 𝐂.⋯ 𝐂.⦅ γ ⦆)        ≡⟨ cong ((` 0F) ∥ 𝐂.wk γ ∥_) (cong 𝐂.wk (γ 𝐂.⋯-wk-cancels-⦅ γ ⦆)) ⟩
+               (` 0F) ∥ 𝐂.wk γ ∥ 𝐂.wk γ                           ≈⟨ ∥-assoc ⟩
+               (` 0F) ∥ (𝐂.wk γ ∥ 𝐂.wk γ)                         ≈⟨ ∥-cong ≈-refl (∥-dup (𝐂.allCx-wk Γ-unr)) ⟨
+               (` 0F) ∥ 𝐂.wk γ                                    ≡⟨⟩
+               join 𝟙 (` 0F) (𝐂.wk γ)                             ≡⟨ cong (λ d → join d _ _) (Arr.ω⇒𝟙 a a-unr) ⟨
+               join (Arr.dir a) (` 0F) (𝐂.wk γ)                   ∎
+    in
+    T-Abs {a = a} (const Γ-unr) (const (UnrCx⇒MobCx Γ-unr))
+      $ T-Weaken ≤ϵ-refl γ≤
+      $ e ⊢⋯ₛ ⊢↑ (⊢subₛ (T-AbsRec Γ-unr a-unr e) (const Γ-unr) (const (UnrCx⇒MobCx Γ-unr)))
   preservation′ (T-Weaken ϵ≤ γ≤ e) x =
     T-Weaken ϵ≤ γ≤ (preservation′ e x)
 
@@ -171,6 +188,7 @@ module _ (Γ-S : ChanCx Γ) where
   progress (T-Const x) = inj₁ V-K
   progress (T-Var x T-eq) = inj₁ V-`
   progress (T-Abs Γ-unr Γ-mob e) = inj₁ V-λ
+  progress (T-AbsRec Γ-unr a-unr e) = inj₂ (inj₂ (_ , E-□ E-Unfold))
   progress (T-App refl e₁ e₂)
     with progress e₁
   ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (□· _) e₁↛))
