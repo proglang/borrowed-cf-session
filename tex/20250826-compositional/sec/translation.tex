@@ -167,9 +167,9 @@ processes.
 %     && \TrT{\TSum {\T[1]} {\T[2]}} &= \TTSum {\TrT{\T[1]}} {\TrT{\T[2]}}
 %     \\[\smallskipamount]
 %     \TrCtx{\CtxEmpty} &= \TCtxEmpty &
-%     \TrCtx{\CtxExt{\Ctx[1]}{\Ctx[2]}} &= \TCtxApp{\TrCtx{\Ctx[1]}}{\TrCtx{\Ctx[2]}} \\
+%     \TrCtx{\Ctx[1] \CtxSeq \Ctx[2]} &= \TCtxApp{\TrCtx{\Ctx[1]}}{\TrCtx{\Ctx[2]}} \\
 %     \TrCtx{\CtxVar\EVar\T} &= \TCtxExt{\TCtxEmpty}{\TCtxVar\EVar{\TrT\T}} &
-%     \TrCtx{\CtxExtUnord{\Ctx[1]}{\Ctx[2]}} &= \TCtxApp{\TrCtx{\Ctx[1]}}{\TrCtx{\Ctx[2]}}
+%     \TrCtx{\Ctx[1] \CtxPar \Ctx[2]} &= \TCtxApp{\TrCtx{\Ctx[1]}}{\TrCtx{\Ctx[2]}}
 %   \end{align*}
 %   \caption{Translation of types and contexts}
 % \end{figure}

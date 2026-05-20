@@ -5,14 +5,17 @@
 
 % A-Const
 \DefRule {Const} {
+  \CtxEmpty \SubCtx \Ctx \\
   \HasCType \C \T
 }{
   \InferType \C \T \EffPure [\CSEmpty]
 }
 
 % A-Var
-\DefRule {Var} {} {
-  \InferType \EVar \T \EffPure [\CSEmpty]
+\DefRule {Var} {
+  \CtxVar \EVar \Ctx(\EVar) \SubCtx \Ctx
+} {
+  \InferType \EVar {\Ctx(\EVar)} \EffPure [\CSEmpty]
 }
 
 % A-App
@@ -20,10 +23,10 @@
   \CtxAlgJoinCheck{\E[1]}{\E[2]} \\
   \Dir = \DirLeft \implies \Eff[1] = \EffPure \\
   \Dir = \DirRight \implies \Eff[2] = \EffPure \\\\
-  \InferType {\E[1]} {\TArr{\Mob}{\Dir,\Eff[3]} \T \TU} {\Eff[1]} [\CSet[1]] \\
-  \CheckType {\E[2]} {\T} {\Eff[2]} [\CSet[2]]
+  \InferType [\CtxRestrict{\E[1]}] {\E[1]} {\TArr{\Mob}{\Dir,\Eff[3]} \T \TU} {\Eff[1]} [\CSet[1]] \\
+  \CheckType [\CtxRestrict{\E[2]}] {\E[2]} {\T} {\Eff[2]} [\CSet[2]]
 }{
-  \InferType {\E[1]\E[2]} {\TU} {\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]} [\CSet[1] \CUnion \CSet[2]]
+  \InferType {\E[1]\E[2]} {\TU} {\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]} [\CSet[1] \CSJoin \CSet[2]]
 }
 
 % A-Check
@@ -39,11 +42,31 @@
     \E
     {\T[2]}
     {\Eff*} \\
-  \Eff* \le \Eff
+  \Eff* \le \Eff \\
+  \Dir = \DirNone \implies \Unr \Ctx
 }{
   \CheckType
     {\EAbs\EVar\E}
     {\TArr{\Mob}{\Dir,\Eff}{\T[1]}{\T[2]}}
+    {\EffPure}
+}
+
+% A-AbsRec
+\DefRule {AbsRec} {
+  \CheckType[
+    \CtxVar f {\TArr{\Mob}{\DirNone,\Eff} \T \TU}
+      \CtxPar \CtxVar\EVar\T
+      \CtxPar \Ctx
+  ]
+    \E
+    \TU
+    {\Eff*} \\
+  \Eff* \le \Eff \\
+  \Unr\Ctx \\
+}{
+  \CheckType
+    {\EMu {\EAbs\EVar\E}}
+    {\TArr{\Mob}{\DirNone,\Eff} \T \TU}
     {\EffPure}
 }
 
@@ -83,7 +106,7 @@
 %       {\T[2]}
 %   }{
 %     \HasType[\Eff[1] \EffJoin \Eff[2]]
-%       {\CtxPar {\Ctx_1}{\Ctx_2}}
+%       {\Ctx[1] \CtxPar  \Ctx[2]}
 %       {\EPair{\E[1]}{\E[2]}}
 %       {\TPairUnord{\T[1]}{\T[2]}}
 %   }
@@ -102,7 +125,7 @@
 %       {\T[2]}
 %   }{
 %     \HasType[\Eff[1]]
-%       {\CtxSeq {\Ctx_1}{\Ctx_2}}
+%       {\Ctx[1] \CtxSeq  \Ctx[2]}
 %       {\EPair{\E[1]}{\E[2]}}
 %       {\TPairOrd{\T[1]}{\T[2]}}
 %   }
@@ -157,7 +180,7 @@
     {\Eff[1]}
     [\CSet[1]]
   \\
-  \InferType[\CtxSeq{(\CtxVar x {\T[1]} \CtxJoin \CtxVar y {\T[2]})}{\CtxRestrict{\E[2]}}]
+  \InferType[(\CtxVar x {\T[1]} \CtxJoin \CtxVar y {\T[2]}) \CtxSeq \CtxRestrict{\E[2]}]
     {\E[2]}
     {\TU}
     {\Eff[2]}
@@ -177,7 +200,7 @@
 %       {\E[1]}
 %       {\TPairUnord {\T[1]}{\T[2]}} \\
 %     \HasType[\Eff[2]]
-%       {\CtxExtUnord{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}} \CtxPatOp \Ctx[2]}
+%       {\CtxVar x{\T[1]} \CtxPar \CtxVar y{\T[2]} \CtxPatOp \Ctx[2]}
 %       {\E[2]}
 %       {\T[3]}
 %   }{
@@ -195,7 +218,7 @@
 %       {\E[1]}
 %       {\TPairOrd {\T[1]}{\T[2]}} \\
 %     \HasType[\Eff[2]]
-%       {\CtxExt{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}} \CtxPatOp \Ctx[2]}
+%       {\CtxVar x{\T[1]} \CtxSeq \CtxVar y{\T[2]} \CtxPatOp \Ctx[2]}
 %       {\E[2]}
 %       {\T[3]}
 %   }{
@@ -248,12 +271,12 @@
 %   \inferrule[T-WeakC]{
 %     \Unr\Ctx_2 \\
 %     \HasType[\Eff]
-%       {\CtxExt{\Ctx_1}{\Ctx_2}}
+%       {\Ctx[1] \CtxSeq \Ctx[2]}
 %       {\E}
 %       {\T}
 %   }{
 %     \HasType[\Eff]
-%       {\Ctx_1}
+%       {\Ctx[1]}
 %       {\E}
 %       {\T}
 %   }
@@ -304,7 +327,7 @@
 %       {\TArr{\Mob}{\Eff[\ell]}{\S_\ell}{\T}}
 %   }{
 %     \HasType[\Eff \EffJoin \EffJoin \{ \Eff[\ell] \}_{\ell\in L}]
-%       {\CtxSeq{\Ctx_1}{\Ctx_2}}
+%       {\Ctx[1] \CtxSeq \Ctx[2]}
 %       {\EMatch{\E}{\ell:\E_\ell}{\ell\in L}}
 %       {\T}
 %   }
@@ -323,7 +346,7 @@
 %       {\TArr{\Mob}{\Eff[\ell]}{\S_\ell}{\T}}
 %   }{
 %     \HasType[\Eff \EffJoin \EffJoin\{ \Eff[\ell]\}_{\ell\in L}]
-%       {\CtxPar{\Ctx_1}{\Ctx_2}}
+%       {\Ctx[1] \CtxPar \Ctx[2]}
 %       {\EMatch{\E}{\ell:\E_\ell}{\ell\in L}}
 %       {\T}
 %   }

@@ -8,11 +8,11 @@ constants (\cref{fig:constant-typing}); typing of expressions
 
 When talking about contexts we may use the operator $\ctxcolor{\Ctx[1]
 \CtxPatOp \Ctx[2]}$ as a metavariable for context formers
-$\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
+$\Ctx[1] \CtxSeq \Ctx[2]$ or $\Ctx[1] \CtxPar \Ctx[2]$.
 
 \begin{lemma}
   Every context $\Ctx$ can be separated into contexts $\Ctx[1], \Ctx[2]$ with
-  $\Ctx = \CtxPar{\Ctx[1]}{\Ctx[2]}$ such that $\Unr\Ctx[1]$ and $\Unr\T$ is
+  $\Ctx = \Ctx[1] \CtxPar \Ctx[2]$ such that $\Unr\Ctx[1]$ and $\Unr\T$ is
   not derivable for any $\CtxVar\EVar\T \in \Ctx[2]$.
 \end{lemma}
 \begin{proof}
@@ -53,7 +53,7 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
         \tag{Session types}
     \\
     \Ctx \grmeq
-      & \CtxEmpty \grmor \CtxVar \EVar\T \grmor \CtxExt\Ctx\Ctx \grmor \CtxExtUnord\Ctx\Ctx
+      & \CtxEmpty \grmor \CtxVar \EVar\T \grmor \Ctx\CtxSeq\Ctx \grmor \Ctx\CtxPar\Ctx
         \tag{Typing environments}
   \end{align*}
   % TODO: perhaps diff syntax for effects (not to be confounded with the
@@ -63,21 +63,19 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
   Equality of typing contexts is the equivalence closure of the following
   axioms
   \begin{mathpar}
-    %\CtxExt\CtxEmpty\Ctx = \Ctx \and
-    %\CtxExt\Ctx\CtxEmpty = \Ctx \and
-    \CtxExtUnord\CtxEmpty\Ctx = \Ctx \and
-    %\CtxExtUnord\Ctx\CtxEmpty = \Ctx \and
-    \CtxExtUnord{\Ctx[1]}{\Ctx[2]} = \CtxExtUnord{\Ctx[2]}{\Ctx[1]} \and
-    \CtxExt{\Ctx[1]}{(\CtxExt{\Ctx[2]}{\Ctx[3]})} =
-    \CtxExt{(\CtxExt{\Ctx[1]}{\Ctx[2]})}{\Ctx[3]} \and
-    \CtxExtUnord{\Ctx[1]}{(\CtxExtUnord{\Ctx[2]}{\Ctx[3]})} =
-    \CtxExtUnord{(\CtxExtUnord{\Ctx[1]}{\Ctx[2]})}{\Ctx[3]} \\
-    \inferrule{\Unr\Ctx}{\CtxPar \Ctx \Ctx = \Ctx} \and
-    %\inferrule{\Unr\Ctx}{\CtxSeq \Ctx \Ctx = \Ctx} \and
-    \inferrule{\Unr\Ctx[1]}{\CtxPar{\Ctx[1]}{\Ctx[2]}
-      = \CtxSeq{\Ctx[1]}{\Ctx[2]}} \and
-    \inferrule{\Unr\Ctx[2]}{\CtxPar{\Ctx[1]}{\Ctx[2]}
-      = \CtxSeq{\Ctx[1]}{\Ctx[2]}}
+    %\CtxEmpty\CtxSeq\Ctx = \Ctx \and
+    %\Ctx\CtxSeq\CtxEmpty = \Ctx \and
+    \CtxEmpty\CtxPar\Ctx = \Ctx \and
+    %\Ctx\CtxPar\CtxEmpty = \Ctx \and
+    \Ctx[1] \CtxPar \Ctx[2] = \Ctx[2] \CtxPar \Ctx[1] \and
+    \Ctx[1] \CtxSeq (\Ctx[2] \CtxSeq \Ctx[3]) = (\Ctx[1] \CtxSeq \Ctx[2]) \CtxSeq \Ctx[3] \and
+    \Ctx[1] \CtxPar (\Ctx[2] \CtxPar \Ctx[3]) = (\Ctx[1] \CtxPar \Ctx[2]) \CtxPar \Ctx[3] \\
+    \inferrule{\Unr\Ctx}{\Ctx \CtxPar \Ctx = \Ctx} \and
+    %\inferrule{\Unr\Ctx}{\Ctx \CtxSeq \Ctx = \Ctx} \and
+    \inferrule{\Unr\Ctx[1]}{\Ctx[1] \CtxPar \Ctx[2]
+      = \Ctx[1] \CtxSeq \Ctx[2]} \and
+    \inferrule{\Unr\Ctx[2]}{\Ctx[1] \CtxPar \Ctx[2]
+      = \Ctx[1] \CtxSeq \Ctx[2]}
   \end{mathpar}
 
   \medskip
@@ -85,9 +83,9 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
   to our earlier work. It now aligns better with direction of weakening rules
   and the exchange law of concurrent Kleene algebra. Keep or revert?}
   \begin{mathpar}
-    \CtxExt{(\CtxPar{\Ctx[1]}{\Ctx[3]})}{(\CtxPar{\Ctx[2]}{\Ctx[4]})}
+    (\Ctx[1] \CtxPar \Ctx[3]) \CtxSeq (\Ctx[2] \CtxPar \Ctx[4])
     \SubCtx
-    \CtxPar{(\CtxExt{\Ctx[1]}{\Ctx[2]})}{(\CtxExt{\Ctx[3]}{\Ctx[4]})}
+    (\Ctx[1] \CtxSeq \Ctx[2]) \CtxPar (\Ctx[3] \CtxSeq \Ctx[4])
 
     % TODO: how does weakening factor in here?
     \inferrule{
@@ -192,9 +190,9 @@ $\CtxSeq{\Ctx[1]}{\Ctx[2]}$ or $\CtxPar{\Ctx[1]}{\Ctx[2]}$.
   The context constructors satisfy the following properties with respect to
   context equality.
   \begin{itemize}
-    \item Sequential composition \textup{($\CtxSeq{\Ctx[1]}{\Ctx[2]}$)} forms a
+    \item Sequential composition \textup{($\Ctx[1] \CtxSeq \Ctx[2]$)} forms a
       monoid with identity $\CtxEmpty$.
-    \item Parallel composition \textup{($\CtxPar{\Ctx[1]}{\Ctx[2]}$)} forms a
+    \item Parallel composition \textup{($\Ctx[1] \CtxPar \Ctx[2]$)} forms a
       commutative monoid with identity $\CtxEmpty$.
   \end{itemize}
 \end{lemma}

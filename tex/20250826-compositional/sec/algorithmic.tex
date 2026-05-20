@@ -2,8 +2,8 @@
 
 Algorithmic typing (\cref{fig:typing-algorithmic}). In both algorithmic
 relations, $\InferType \E \T \Eff$ (inference) and $\CheckType \E \T \Eff$
-(checking), $\Ctx$, $\Eff$ and $\CSet$ are outputs. $\T$ is an output in the
-inference relation and an input in the checking relation.
+(checking), $\Ctx$, $\Eff$ and $\CSet$ are outputs. In the inference relation
+$\T$ is a further output but an input to the checking relation.
 
 Correctness of splitting is checked via constraints accumulated in a multi
 set-like structure $\CSet$. \[ \CSet \grmeq \CSEmpty \grmor \T \CEq \TU \grmor
@@ -12,16 +12,16 @@ set-like structure $\CSet$. \[ \CSet \grmeq \CSEmpty \grmor \T \CEq \TU \grmor
 We define the operator $\cdot \CtxJoin \cdot$ to join contexts according to the
 direction $\Dir$. \[
   \Ctx[1] \CtxJoin \Ctx[2] = \begin{cases}
-    \CtxPar{\Ctx[1]}{\Ctx[2]} & \text{if $\Dir \in \{ \DirUnord, \DirNone \}$} \\
-    \CtxSeq{\Ctx[1]}{\Ctx[2]} & \text{if $\Dir = \DirLeft$} \\
-    \CtxSeq{\Ctx[2]}{\Ctx[1]} & \text{if $\Dir = \DirRight$}
+    \Ctx[1] \CtxPar \Ctx[2] & \text{if $\Dir \in \{ \DirUnord, \DirNone \}$} \\
+    \Ctx[1] \CtxSeq \Ctx[2] & \text{if $\Dir = \DirLeft$} \\
+    \Ctx[2] \CtxSeq \Ctx[1] & \text{if $\Dir = \DirRight$}
   \end{cases}
 \]
 
 The operator $\cdot|_{\cdot}$ restricts a context to a set of variables. \[
   \CtxRestrict*{X} = \begin{cases}
-    \CtxPar{\CtxRestrict*[1]{X}}{\CtxRestrict*[2]{X}} & \text{if $\Ctx=\CtxPar{\Ctx[1]}{\Ctx[2]}$} \\
-    \CtxSeq{\CtxRestrict*[1]{X}}{\CtxRestrict*[2]{X}} & \text{if $\Ctx=\CtxSeq{\Ctx[1]}{\Ctx[2]}$} \\
+    \CtxRestrict*[1]{X} \CtxPar \CtxRestrict*[2]{X} & \text{if $\Ctx=\Ctx[1] \CtxPar \Ctx[2]$} \\
+    \CtxRestrict*[1]{X} \CtxSeq \CtxRestrict*[2]{X} & \text{if $\Ctx=\Ctx[1] \CtxSeq \Ctx[2]$} \\
     \CtxVar \EVar \T & \text{if $\Ctx=\CtxVar \EVar T$ and $\EVar \not\in X$} \\
     \CtxEmpty & \text{else}
   \end{cases}
@@ -37,6 +37,7 @@ The operator $\cdot|_{\cdot}$ restricts a context to a set of variables. \[
      \RuleAlgLetPair \and
      \RuleAlgApp \and
      \RuleAlgAbs \and
+     \RuleAlgAbsRec \and
      \RuleAlgPair \and
      \RuleAlgCheck
 %    \RuleTAppUnr \and

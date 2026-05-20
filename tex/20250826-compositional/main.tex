@@ -45,27 +45,27 @@ expression reduction preserves typing.
 \begin{lemma}[Substitution]\
   \begin{itemize}
     \item If $\HasType[\Eff[1]] {\Ctx[1]} {\V} {\T[1]}$ and
-    $\HasType[\Eff[2]] {\CtxExtUnord{\CtxVar x{\T[1]}}{\Ctx[2]}} {\E} {\T[2]}$
+    $\HasType[\Eff[2]] {\CtxVar x{\T[1]} \CtxPar \Ctx[2]} {\E} {\T[2]}$
     then 
-    $\HasType[\Eff[2]] {\CtxExtUnord{\Ctx[1]}{\Ctx[2]}} {\Subs\E\V x} {\T[2]}$
+    $\HasType[\Eff[2]] {\Ctx[1] \CtxPar \Ctx[2]} {\Subs\E\V x} {\T[2]}$
     \item If $\HasType[\Eff[1]] {\Ctx[1]} {\V} {\T[1]}$ and
-    $\HasType[\Eff[2]] {\CtxExt{\CtxVar x{\T[1]}}{\Ctx[2]}} {\E} {\T[2]}$
+    $\HasType[\Eff[2]] {\CtxVar x{\T[1]} \CtxSeq \Ctx[2]} {\E} {\T[2]}$
     then 
-    $\HasType[\Eff[2]] {\CtxExt{\Ctx[1]}{\Ctx[2]}} {\Subs\E\V x} {\T[2]}$
+    $\HasType[\Eff[2]] {\Ctx[1] \CtxSeq \Ctx[2]} {\Subs\E\V x} {\T[2]}$
     \item If $\HasType[\Eff[1]] {\Ctx[1]} {\V} {\T[1]}$
     and
     $\HasType[\Eff[1]]
-    {\CtxPattern{\CtxExtUnord{\CtxVar x{\T[1]}}{\Ctx[2]}}}
+    {\CtxPattern{\CtxVar x{\T[1]} \CtxPar \Ctx[2]}}
     {\E}
     {\T[2]}$ then 
-    $\HasType[\Eff[2]] {\CtxPattern{\CtxExtUnord{\Ctx[1]}{\Ctx[2]}}} {\Subs\E\V x} {\T[2]}$
+    $\HasType[\Eff[2]] {\CtxPattern{\Ctx[1] \CtxPar \Ctx[2]}} {\Subs\E\V x} {\T[2]}$
   \item If $\HasType[\Eff[1]] {\Ctx[1]} {\V} {\T[1]}$
     and
     $\HasType[\Eff[2]]
-    {\CtxPattern{\CtxExt{\CtxVar x{\T[1]}}{\Ctx[2]}}}
+    {\CtxPattern{\CtxVar x{\T[1]} \CtxSeq \Ctx[2]}}
     {\E}
     {\T[2]}$ then 
-    $\HasType[\Eff[2]] {\CtxPattern{\CtxExt{\Ctx[1]}{\Ctx[2]}}} {\Subs\E\V x} {\T[2]}$
+    $\HasType[\Eff[2]] {\CtxPattern{\Ctx[1] \CtxSeq \Ctx[2]}} {\Subs\E\V x} {\T[2]}$
   \end{itemize}
 \end{lemma}
 \begin{lemma}[Substitution]
@@ -96,7 +96,7 @@ expression reduction preserves typing.
   if $\Mob = \MobMobile$, then $\MobMobile (\T[0])$;
   by induction,
   $\HasType[\Eff]
-  {\CtxExtUnord{\CtxPattern[0]{{\Ctx[0]}}}{\CtxVar\EVar{\T[1]}}}
+  {\CtxPattern[0]{{\Ctx[0]}} \CtxPar \CtxVar\EVar{\T[1]}}
   {\Subs\E{\E[0]} y} {\T[2]}$;   if $\Mob = \MobMobile$, then, by assumption, $\MobMobile
   (\Ctx[0])$ which implies $\MobMobile (\CtxPattern[0]{{\Ctx[0]}})$; conclude
   by \TirName{T-AbsLin}.
@@ -196,7 +196,7 @@ process reduction preserves typing.
 
 \begin{lemma}
     $\HasType[\Eff[1]]
-      {\CtxExtUnord {\Ctx[1]}{\Ctx[2]}}
+      {\Ctx[1] \CtxPar \Ctx[2]}
       {\ECapp\E}
       {\T[1]}$
     if and only if
@@ -206,7 +206,7 @@ process reduction preserves typing.
       {\T[2]}$
     and 
     $\HasType[\Eff[1]]
-      {\CtxExtUnord {\CtxVar x{\T[2]}}{\Ctx[2]}}
+      {\CtxVar x{\T[2]} \CtxPar \Ctx[2]}
       {\ECapp x}
       {\T[1]}$
 \end{lemma}
@@ -249,18 +249,17 @@ process reduction preserves typing.
   $\HasType[\Eff]{\Ctx*}{\EApp \CNew \CUnit}{\T}$ (by Lemma~\ref{lemma:inversion-process-evaluation-context}). \\
   By inversion, we obtain $\Ctx* = \CtxEmpty$ and $\T =
   \TPairUnord{(\SSeq{\SAcq}{\S})}{(\SSeq{\SAcq}{\Dual~\S})}$. \\
-  Let $\Ctx** = \CtxPar{\CtxVar x{(\SSeq{\SAcq}{\S})} }{\CtxVar y
-    {\SSeq{\SAcq}{\Dual~\S}}}$. \\
+  Let $\Ctx** = \CtxVar x{(\SSeq{\SAcq}{\S})}  \CtxPar \CtxVar y {\SSeq{\SAcq}{\Dual~\S}}$. \\
   We have
   $\HasType{\Ctx**}{\EPair
     xy}{\TPairUnord{(\SSeq{\SAcq}{\S})}{(\SSeq{\SAcq}{\Dual~\S})}}{\EffPure}$.
   \\
   By lemma XXX, we have
-  $\ProcHasType{\CtxPar{\Ctx}{\Ctx**}}{\FCapp{\EPair xy}}$.
+  $\ProcHasType{\Ctx \CtxPar \Ctx**}{\FCapp{\EPair xy}}$.
   \\
   Let $\Ctx[1] =\CtxVar x{(\SSeq{\SAcq}{\S})}$ and $\Ctx[2] = \CtxVar
   y {\SSeq{\SAcq}{\Dual~\S}}$ so that $\Ctx** =
-  \CtxPar{\Ctx[1]}{\Ctx[2]}$.
+  \Ctx[1] \CtxPar \Ctx[2]$.
   \\
   Clearly, $\S \vdash {\BPar{\BEmp}{x}} \leadsto \Ctx[1]$ and
   $\Dual~\S \vdash {\BPar{\BEmp}{y}} \leadsto \Ctx[2]$ hold.
@@ -279,13 +278,13 @@ process reduction preserves typing.
   By inversion, we obtain
   $\HasType[\EffPure]{\Ctx*}\V{\TArr{\MobMobile}{\DirUnord,\EffImpure}\BUnit\BUnit}$,
   so that $\T = \BUnit$ and $\Eff = \EffImpure$ and $\Ctx =
-  \CtxPar{\Ctx*}{\Ctx**}$ (because the function is $\DirUnord$ its
+  \Ctx* \CtxPar \Ctx**$ (because the function is $\DirUnord$ its
   application must do a parallel split), for some $\Ctx**$.
   \\
   NEED A LEMMA to conclude $\ProcHasType{\Ctx**}{\FCapp{\CUnit}}$.
   \\
   Clearly, $\ProcHasType{\Ctx*}{\PExp {\EApp\V\CUnit}}$, so that
-  $\ProcHasType{\CtxPar{\Ctx*}{\Ctx**}}{\PPar{\FCapp{\CUnit}}{\PExp {\EApp\V\CUnit}}}$.
+  $\ProcHasType{\Ctx* \CtxPar \Ctx**}{\PPar{\FCapp{\CUnit}}{\PExp {\EApp\V\CUnit}}}$.
 
   Case \TirName{R-Com}.
 

@@ -19,7 +19,7 @@
     \ProcHasType{\Ctx[2]}{\Proc[2]}
   }{
     \ProcHasType
-    {\CtxExtUnord{\Ctx[1]}{\Ctx[2]}}
+    {\Ctx[1] \CtxPar \Ctx[2]}
     {\PPar{\Proc[1]}{\Proc[2]}}
   }
 }
@@ -27,9 +27,8 @@
 \newcommand*\RuleTRes{
   \inferrule[TP-Res]{
     \ProcHasType
-    { \CtxExtUnord\Ctx{\CtxExtUnord{\Ctx[1]}{\Ctx[2]}}
-    }
-    \Proc  \\
+      {\Ctx \CtxPar \Ctx[1] \CtxPar \Ctx[2]}
+      \Proc  \\
     \BindGivesCtx \S {\BindGroup[1]} {\Ctx[1]} \\
     \BindGivesCtx {\SDual\S} {\BindGroup[2]} {\Ctx[2]}
   }{
@@ -53,7 +52,7 @@
     \BindGivesCtx
       {\SSeq{\S[1]}{\S[2]}}
       {\BSeq{\BindGroup[1]}{\BindGroup[2]}}
-      {\CtxExt{\Ctx[1]}{\Ctx[2]}}
+      {\Ctx[1] \CtxSeq \Ctx[2]}
   }
 }
 
@@ -65,7 +64,7 @@
     \BindGivesCtx
       {\SSeq{\S[1]}{\S[2]}}
       {\BPar{\BindGroup[1]}{\BindGroup[2]}}
-      {\CtxExtUnord{\Ctx[1]}{\Ctx[2]}}
+      {\Ctx[1] \CtxPar \Ctx[2]}
   }
 }
 

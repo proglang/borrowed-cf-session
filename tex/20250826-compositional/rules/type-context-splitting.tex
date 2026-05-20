@@ -18,9 +18,9 @@
     \EVar \not\in \D
   }{
     \CtxSplit
-      {\CtxExt\Ctx\EVar{(\SSeq{\S_1}{\S_2})}{\D'}}
-      {\CtxExt{\Ctx_1}\EVar{\S_1}{\D'}}
-      {\CtxExt{\Ctx_2}\EVar{\S_2}{\D'}}
+      {\Ctx \CtxSeq \EVar{(\SSeq{\S_1}{\S_2})}{\D'}}
+      {\Ctx[1] \CtxSeq \EVar{\S_1}{\D'}}
+      {\Ctx[2] \CtxSeq \EVar{\S_2}{\D'}}
       {\D}
   }
 }
@@ -29,17 +29,16 @@
   \inferrule[CS-Left]{
     \CtxSplit
       {\Ctx}
-      {\Ctx_1}
-      {\Ctx_2}
+      {\Ctx[1]}
+      {\Ctx[2]}
       {\D}
     \\
     \EVar \not\in \D
   }{
     \CtxSplit
-      {\CtxExt\Ctx\EVar\T{\D'}}
-      {\CtxExt{\Ctx_1}\EVar\T{\D'}}
-      %{\CtxExtInactive{\Ctx_2}\EVar\T{\D'}}
-      {\Ctx_2}
+      {\Ctx \CtxSeq \EVar\T{\D'}}
+      {\Ctx[1] \CtxSeq \EVar\T{\D'}}
+      {\Ctx[2]}
       {\D}
   }
 }

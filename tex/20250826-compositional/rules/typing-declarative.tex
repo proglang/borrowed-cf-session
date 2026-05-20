@@ -26,10 +26,11 @@
 % T-AbsUnr
 \DefRule {AbsUnr} {
   \HasType
-    {\CtxPar\Ctx{\CtxPar
-      {\CtxVar f {\TArr{\MobMobile}{\DirNone,\Eff}{\T[1]}{\T[2]}}}
-      {\CtxVar\EVar{\T[1]}}
-    }}
+    {
+        \CtxVar f {\TArr{\MobMobile}{\DirNone,\Eff}{\T[1]}{\T[2]}}
+          \CtxPar \CtxVar \EVar{\T[1]}
+          \CtxPar \Ctx
+    }
     {\E}
     {\T[2]} \\
   \Unr\Ctx
@@ -43,7 +44,7 @@
 % T-AbsLin
 \DefRule {AbsLin} {
   \HasType
-    {\CtxExtUnord\Ctx{\CtxVar\EVar{\T[1]}}}
+    {\CtxVar\EVar{\T[1]} \CtxPar \Ctx}
     {\E}
     {\T[2]} \\
   \Mob (\Ctx)
@@ -57,7 +58,7 @@
 % T-AbsLeft
 \DefRule {AbsLeft} {
   \HasType
-    {\CtxExt{\CtxVar{\EVar}{\T[1]}}\Ctx}
+    {\CtxVar{\EVar}{\T[1]} \CtxSeq \Ctx}
     {\E}
     {\T[2]} \\
   \Mob (\Ctx)
@@ -71,7 +72,7 @@
 % T-AbsRight
 \DefRule {AbsRight} {
   \HasType
-    {\CtxExt\Ctx{\CtxVar{\EVar}{\T[1]}}}
+    {\Ctx \CtxSeq \CtxVar{\EVar}{\T[1]}}
     {\E}
     {\T[2]} \\
   \Mob (\Ctx)
@@ -94,7 +95,7 @@
     {\T[1]}
 }{
   \HasType
-    {\CtxSeq{\Ctx[1]}{\Ctx[2]}}
+    {\Ctx[1] \CtxSeq \Ctx[2]}
     {\E[1] \E[2]}
     {\T[2]}
 }
@@ -111,7 +112,7 @@
     {\T[1]}
 }{
   \HasType
-    {\CtxPar{\Ctx[1]}{\Ctx[2]}}
+    {\Ctx[1] \CtxPar \Ctx[2]}
     {\E[1] \E[2]}
     {\T[2]}
 }
@@ -129,7 +130,7 @@
     {\T[1]}
 }{
   \HasType
-    {\CtxSeq{\Ctx[2]}{\Ctx[1]}}
+    {\Ctx[2] \CtxSeq \Ctx[1]}
     {\E[1] \E[2]}
     {\T[2]}
 }
@@ -147,7 +148,7 @@
     {\T[1]}
 }{
   \HasType
-    {\CtxSeq {\Ctx[1]}{\Ctx[2]}}
+    {\Ctx[1] \CtxSeq  \Ctx[2]}
     {\E[1] \E[2]}
     {\T[2]}
 }
@@ -164,7 +165,7 @@
     {\T[2]}
 }{
   \HasType
-    {\CtxPar {\Ctx[1]}{\Ctx[2]}}
+    {\Ctx[1] \CtxPar  \Ctx[2]}
     {\EPair{\E[1]}{\E[2]}}
     {\TPairUnord{\T[1]}{\T[2]}}
 }
@@ -182,7 +183,7 @@
     {\T[2]}
 }{
   \HasType
-    {\CtxSeq {\Ctx[1]}{\Ctx[2]}}
+    {\Ctx[1] \CtxSeq  \Ctx[2]}
     {\EPair{\E[1]}{\E[2]}}
     {\TPairOrd{\T[1]}{\T[2]}}
 }
@@ -228,7 +229,7 @@
     {\E[1]}
     {\TPairUnord {\T[1]}{\T[2]}} \\\\
   \HasType
-    {\CtxExtUnord{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}} \CtxPatOp \Ctx[2]}
+    {\CtxVar x{\T[1]} \CtxPar \CtxVar y{\T[2]} \CtxPatOp \Ctx[2]}
     {\E[2]}
     {\T[3]}
 }{
@@ -245,7 +246,7 @@
     {\E[1]}
     {\TPairOrd {\T[1]}{\T[2]}} \\\\
   \HasType
-    {\CtxExt{\CtxVar x{\T[1]}}{\CtxVar y{\T[2]}} \CtxPatOp \Ctx[2]}
+    {\CtxVar x{\T[1]} \CtxSeq \CtxVar y{\T[2]} \CtxPatOp \Ctx[2]}
     {\E[2]}
     {\T[3]}
 }{
@@ -334,7 +335,7 @@
 %       {\TArr{\Mob}{\Eff[\ell]}{\S[\ell]}{\T}}
 %   }{
 %     \HasType[\Eff \EffJoin \EffJoin \{ \Eff[\ell] \}_{\ell\in L}]
-%       {\CtxSeq{\Ctx[1]}{\Ctx[2]}}
+%       {\Ctx[1] \CtxSeq \Ctx[2]}
 %       {\EMatch{\E}{\ell:\E[\ell]}{\ell\in L}}
 %       {\T}
 %   }
@@ -353,7 +354,7 @@
 %       {\TArr{\Mob}{\Eff[\ell]}{\S[\ell]}{\T}}
 %   }{
 %     \HasType[\Eff \EffJoin \EffJoin\{ \Eff[\ell]\}_{\ell\in L}]
-%       {\CtxPar{\Ctx[1]}{\Ctx[2]}}
+%       {\Ctx[1] \CtxPar \Ctx[2]}
 %       {\EMatch{\E}{\ell:\E[\ell]}{\ell\in L}}
 %       {\T}
 %   }
