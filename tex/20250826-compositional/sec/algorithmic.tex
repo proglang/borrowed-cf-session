@@ -29,41 +29,23 @@ The operator $\cdot|_{\cdot}$ restricts a context to a set of variables. \[
 
 \begin{figure}
   \hfill \fbox{$\InferType \E \T \Eff$}
-   \quad \fbox{$\CheckType \E \T \Eff$}
-   \begin{mathpar}
-     \RuleAlgConst \and
-     \RuleAlgVar \and
-     \RuleAlgLetUnit \and
-     \RuleAlgLetPair \and
-     \RuleAlgApp \and
-     \RuleAlgAbs \and
-     \RuleAlgAbsRec \and
-     \RuleAlgPair \and
-     \RuleAlgCheck
-%    \RuleTAppUnr \and
-%    \RuleTAbsLin \and
-%    \RuleTAppLin \and
-%    \RuleTAbsLeft \and
-%    \RuleTAppLeft \and
-%    \RuleTAbsRight \and
-%    \RuleTAppRight \and
-%    \RuleTPairUnord \and
-%    \RuleTPairOrd \and
-%    \RuleTLet \and
-%    \RuleTLetUnit \and
-%    \RuleTLetUnord \and
-%    \RuleTLetOrd \and
-%    \RuleTInj \and
-%    \RuleTCaseSum \and
-%    % \RuleTFork \and
-%    % \RuleTMatch \and
-%    % \RuleTMatchLin \and
-%    \RuleTWeakCE
-%    % \RuleTWeakC
-%    % \\
-%    % \Big(\RuleTWeakC
-%    % \and
-%    % \RuleTWeakE\Big)
+  \begin{mathpar}
+    \RuleAlgConst \and
+    \RuleAlgLSplit \and
+    \RuleAlgRSplit \and
+    \RuleAlgVar \and
+    \RuleAlgApp \and
+    \RuleAlgLetUnit \and
+    \RuleAlgLetPair \and
+  \end{mathpar}
+
+  \vspace{1em}
+  \hfill \fbox{$\CheckType \E \T \Eff$}
+  \begin{mathpar}
+    \RuleAlgAbs \and
+    \RuleAlgAbsRec \and
+    \RuleAlgPair \and
+    \RuleAlgCheck
   \end{mathpar}
   \caption{Algorithmic typing}
   \label{fig:typing-algorithmic}

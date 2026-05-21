@@ -6,9 +6,32 @@
 % A-Const
 \DefRule {Const} {
   \CtxEmpty \SubCtx \Ctx \\
-  \HasCType \C \T
+  \HasCType \C \T \\
+  \C \not\in \{\CSplit,\CSSplit\}
 }{
   \InferType \C \T \EffPure [\CSEmpty]
+}
+
+% A-LSplit
+\DefRule {LSplit} {
+  \CtxEmpty \SubCtx \Ctx \\
+  \TVar\ \text{fresh}
+}{
+  \InferType \CSplit
+  {\TArr{\MobMobile}{\DirUnord,\EffPure} \S {\TPairOrd{\S*}{\TVar}}}
+    \EffPure
+    [\S \CEq \SSeq{\S*}{\TVar}]
+}
+
+% A-RSplit
+\DefRule {RSplit} {
+  \CtxEmpty \SubCtx \Ctx \\
+  \TVar\ \text{fresh}
+}{
+  \InferType \CSSplit
+  {\TArr{\MobMobile}{\DirUnord,\EffPure} \S {\TPairOrd{\SSeq{\S*}{\SRet}}{\SSeq\SAcq\TVar}}}
+    \EffPure
+    [\S \CEq \SSeq{\S*}{\TVar}]
 }
 
 % A-Var
