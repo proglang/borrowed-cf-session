@@ -154,12 +154,37 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
     --------------------------------------------------------------------------
     Γ ; γ ⊢ μ (ƛ e) ∶ T ⟨ a ⟩→ U ∣ ℙ
 
-  T-App : ∀ {γ₁ γ₂} →
-    Arr.eff a ≡ ϵ →
+  T-AppUnr : ∀ {γ₁ γ₂} →
+    let ϵ = Arr.eff a in
+    Arr.Unr a →
     Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ →
     Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ →
-    --------------------------------------------
-    Γ ; join (Arr.dir a) γ₂ γ₁ ⊢ e₁ · e₂ ∶ U ∣ ϵ
+    --------------------------------
+    Γ ; γ₁ ∥ γ₂ ⊢ e₁ · e₂ ∶ U ∣ ϵ
+
+  T-AppLin : ∀ {γ₁ γ₂} →
+    let ϵ = Arr.eff a in
+    Arr.Par a →
+    Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ →
+    Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ →
+    -------------------------------
+    Γ ; γ₁ ∥ γ₂ ⊢ e₁ · e₂ ∶ U ∣ ϵ
+
+  T-AppLeft : ∀ {γ₁ γ₂} →
+    let ϵ = Arr.eff a in
+    Arr.IsL a →
+    Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ℙ →
+    Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ →
+    --------------------------------
+    Γ ; (γ₂ ; γ₁) ⊢ e₁ · e₂ ∶ U ∣ ϵ
+
+  T-AppRight : ∀ {γ₁ γ₂} →
+    let ϵ = Arr.eff a in
+    Arr.IsR a →
+    Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ →
+    Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ℙ →
+    --------------------------------
+    Γ ; (γ₁ ; γ₂) ⊢ e₁ · e₂ ∶ U ∣ ϵ
 
   T-Pair : (p/s : ParSeq) {γ₁ γ₂ : Struct n} →
     let d = biasedDir p/s in
@@ -277,9 +302,10 @@ _⊢⋯_ {γ = γ} (T-AbsRec Γ-unr a-unr x) ⊢ϕ =
   T-AbsRec (𝐂.allCx-⋯ (&-unr ⊢ϕ) Γ-unr) a-unr
     $ subst-γ (cong (_ ∥_) (sym eq))
     $ x ⊢⋯ ⊢↑ (⊢↑ ⊢ϕ)
-T-App {a = a} {γ₁ = γ₁} {γ₂} ϵ-eq e₁ e₂ ⊢⋯ ⊢ϕ =
-  subst-γ (sym (join-⋯ (Arr.dir a) γ₂ γ₁)) $
-    T-App ϵ-eq (e₁ ⊢⋯ ⊢ϕ) (e₂ ⊢⋯ ⊢ϕ)
+T-AppUnr   unr-a x₁ x₂ ⊢⋯ ⊢ϕ = T-AppUnr   unr-a (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ)
+T-AppLin   lin-a x₁ x₂ ⊢⋯ ⊢ϕ = T-AppLin   lin-a (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ)
+T-AppLeft  a-L   x₁ x₂ ⊢⋯ ⊢ϕ = T-AppLeft  a-L   (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ)
+T-AppRight a-R   x₁ x₂ ⊢⋯ ⊢ϕ = T-AppRight a-R   (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ)
 T-Pair p/s {γ₁} {γ₂} x₁ x₂ seq→ℙ ⊢⋯ ⊢ϕ =
   subst-γ (sym (join-⋯ p/s γ₁ γ₂)) $
     T-Pair p/s (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ) seq→ℙ

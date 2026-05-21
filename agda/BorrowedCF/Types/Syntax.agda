@@ -46,6 +46,9 @@ record Arr : Set where
   Unr = lin ≡ unr
   Par = dir ≡ 𝟙
 
+  IsL = dir ≡ L
+  IsR = dir ≡ R
+
   field
     ω⇒M : Unr → Mobile
     ω⇒𝟙 : Unr → Par

@@ -23,6 +23,14 @@ dom (` x)   = ⁅ x ⁆
 dom (α ∥ β) = dom α ∪ dom β
 dom (α ; β) = dom α ∪ dom β
 
+_↓_ : Struct n → Subset n → Struct n
+(` x)   ↓ X with V.lookup X x
+... | inside  = ` x
+... | outside = []
+[]      ↓ X = []
+(α ∥ β) ↓ X = α ↓ X ∥ β ↓ X
+(α ; β) ↓ X = α ↓ X ; β ↓ X
+
 {-
 infix 4 _≐_
 
