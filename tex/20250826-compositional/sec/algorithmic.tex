@@ -50,3 +50,16 @@ The operator $\cdot|_{\cdot}$ restricts a context to a set of variables. \[
   \caption{Algorithmic typing}
   \label{fig:typing-algorithmic}
 \end{figure}
+
+\begin{lemma}[Soundness]
+  If\/ $\CheckType \E \T \Eff$ and there is a closing substitution $\sigma$
+  such that all constraints in $\CSet$ are satisfied then $\HasType \Ctx \E
+  \T$.
+\end{lemma}
+
+\begin{lemma}[Completeness]
+  If\/ $\HasType \Ctx \E \T$ then $\CheckType \E {\T*} \Eff$ for some set of
+  constraints $\CSet$ and closing type variable substitution $\sigma$ such that $\T=\T*{[\sigma]}$ and
+  $\forall\csetcolor{\TU \mathrel{R} \TU*} \in \CSet.\ \TU{[\sigma]} \mathrel{R}
+  \TU*{[\sigma]}$.
+\end{lemma}
