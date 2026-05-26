@@ -65,6 +65,8 @@ record Syntax : Set₁ where
     (x/t ∷ₖ ϕ) _ zero     = x/t
     (x/t ∷ₖ ϕ) _ (suc x)  = ϕ _ x
 
+    infixl 17 _↑_
+
     _↑_ : S₁ →ₖ S₂ → ∀ s → (s ∷ S₁) →ₖ (s ∷ S₂)
     ϕ ↑ s = id/` zero ∷ₖ wkm s ϕ
 
@@ -77,6 +79,9 @@ record Syntax : Set₁ where
     weaken* : ∀ S {S′} → S′ →ₖ (S ++ S′)
     weaken* []      = id
     weaken* (s ∷ S) = wkm s (weaken* S)
+
+    wk[] : [] →ₖ S
+    wk[] _ ()
 
     infix 4 _∼_
 
@@ -93,7 +98,8 @@ record Syntax : Set₁ where
       id/` (suc x)       ≡⟨⟩
       id s (suc x)       ∎
 
-    -- only necessary for `Generics.agda`; not counted for line numbers
+    infixl 17 _↑*_
+
     _↑*_ : S₁ →ₖ S₂ → ∀ S → (S ++ S₁) →ₖ (S ++ S₂)
     ϕ ↑* []       = ϕ
     ϕ ↑* (s ∷ S)  = (ϕ ↑* S) ↑ s
@@ -117,7 +123,7 @@ record Syntax : Set₁ where
   open Kit ⦃ … ⦄ public
 
   record Traversal : Set₁ where
-    infixl 5 _⋯_ _⋯ᵣ_ _⋯ₛ_
+    infixl 15 _⋯_ _⋯ᵣ_ _⋯ₛ_
     field  _⋯_    : ∀ ⦃ K : Kit _∋/⊢_ ⦄ → S₁ ⊢ s → S₁ –[ K ]→ S₂ → S₂ ⊢ s
            ⋯-var  : ∀ ⦃ K : Kit _∋/⊢_ ⦄ (x : S₁ ∋ s) (ϕ : S₁ –[ K ]→ S₂) → (` x) ⋯ ϕ ≡ `/id (x & ϕ)
            ⋯-id   : ∀ ⦃ K : Kit _∋/⊢_ ⦄ (t : S ⊢ s) → t ⋯ id ⦃ K ⦄ ≡ t
@@ -151,9 +157,11 @@ record Syntax : Set₁ where
     _⋯ᵣ_ : S₁ ⊢ s → S₁ –[ Kᵣ ]→ S₂ → S₂ ⊢ s
     _⋯ᵣ_ = _⋯_
 
-
     _⋯ₛ_ : S₁ ⊢ s → S₁ –[ Kₛ ]→ S₂ → S₂ ⊢ s
     _⋯ₛ_ = _⋯_
+
+    open[_] : [] ⊢ s → S ⊢ s
+    open[ t ] = t ⋯ᵣ wk[]
 
     record WkKit (K : Kit _∋/⊢_): Set₁ where
       private instance _ = K
