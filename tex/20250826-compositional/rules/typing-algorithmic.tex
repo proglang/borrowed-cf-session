@@ -17,10 +17,10 @@
   \CtxEmpty \SubCtx \Ctx \\
   \TVar\ \text{fresh}
 }{
-  \InferType \CSplit
-  {\TArr{\MobMobile}{\DirUnord,\EffPure} \S {\TPairOrd{\S*}{\TVar}}}
+  \InferType {\CSplit_{\S}}
+  {\TArr{\MobMobile}{\DirUnord,\EffPure} {\SSeq\S\TVar} {\TPairOrd{\S}{\TVar}}}
     \EffPure
-    [\S \CEq \SSeq{\S*}{\TVar}]
+    [\CSEmpty]
 }
 
 % A-RSplit
@@ -28,10 +28,10 @@
   \CtxEmpty \SubCtx \Ctx \\
   \TVar\ \text{fresh}
 }{
-  \InferType \CSSplit
-  {\TArr{\MobMobile}{\DirUnord,\EffPure} \S {\TPairOrd{\SSeq{\S*}{\SRet}}{\SSeq\SAcq\TVar}}}
+  \InferType {\CSSplit_{\S}}
+  {\TArr{\MobMobile}{\DirUnord,\EffPure} {\SSeq\S\TVar} {\TPairUnord{\SSeq{\S}{\SRet}}{\SSeq\SAcq\TVar}}}
     \EffPure
-    [\S \CEq \SSeq{\S*}{\TVar}]
+    [\CSEmpty]
 }
 
 % A-Var
