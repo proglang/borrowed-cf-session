@@ -82,7 +82,7 @@
 \newcommand*\M{M}
 
 % Session Types
-\let\S=\undefined
+\let\S=\undefined % \S is already predefined and \NewMetaVar does not support \renewcommand.
 \NewMetaVar[\typecolor] \S S
 \NewMetaVar[\typecolor] \R R
 \newcommand*\SVar{\typecolor{X}}
@@ -103,7 +103,8 @@
 \newcommand*\SRet{\TypeKeyword{Ret}}
 \newcommand*\SAcq{\TypeKeyword{Acq}}
 
-\newcommand*\SComp[1]{{#1}\mathbin{\metacolor{\fatsemi}}}
+\NewMetaVar[\typecolor] \AS {{\S}^*}
+\NewMetaVar[\typecolor] \AT {{\T\mkern2mu}^{*\mkern-2mu}}
 
 \newcommand\SSeen{\ctxcolor{\Theta}}
 \newcommand\SeenEmpty{\ctxcolor{\emptyset}}

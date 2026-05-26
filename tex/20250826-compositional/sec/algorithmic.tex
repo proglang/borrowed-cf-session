@@ -1,39 +1,66 @@
 \section{Algorithmic typing}
 
-Algorithmic typing (\cref{fig:typing-algorithmic}). In both algorithmic
-relations, $\InferType \E \T \Eff$ (inference) and $\CheckType \E \T \Eff$
-(checking), $\Ctx$, $\Eff$ and $\CSet$ are outputs. In the inference relation
-$\T$ is a further output but an input to the checking relation.
+For the algorithmic typing we consider an extended grammar of session types
+$\AS$ that includes unification variables $\TVar$. $\AT$ is the set of types
+$\T$ but referring to $\AS$ instead of $\S$.
 
-Correctness of splitting is checked via constraints accumulated in a multi
-set-like structure $\CSet$. \[ \CSet \grmeq \CSEmpty \grmor \T \CEq \TU \grmor
-\T \CSub \TU \grmor \CSet\CSJoin\CSet \]
-
-We define the operator $\cdot \CtxJoin \cdot$ to join contexts according to the
-direction $\Dir$. \[
-  \Ctx[1] \CtxJoin \Ctx[2] = \begin{cases}
-    \Ctx[1] \CtxPar \Ctx[2] & \text{if $\Dir \in \{ \DirUnord, \DirNone \}$} \\
-    \Ctx[1] \CtxSeq \Ctx[2] & \text{if $\Dir = \DirLeft$} \\
-    \Ctx[2] \CtxSeq \Ctx[1] & \text{if $\Dir = \DirRight$}
-  \end{cases}
+Constraints imposed on unification variables are tracked in a multi set-like
+structure $\CSet$.
+%
+\[
+  \CSet \grmeq \CSEmpty
+        \grmor \T \CEq \TU
+        \grmor \T \CSub \TU
+        \grmor \CSet\CSJoin\CSet
 \]
+%
+\begin{definition}[Closing substitution]
+  In the context of a set of constraints $\CSet$ a substitution $\sigma$ is a
+  \emph{closing substitution} if every unification variable in $\CSet$ is
+  replaced by a concrete type such that all constraints are respected.
+\end{definition}
 
-The operator $\cdot|_{\cdot}$ restricts a context to a set of variables. \[
+\Cref{fig:typing-algorithmic} presents the algorithmic typing relations. The
+synthesis relation $\InferType \E \AT \Eff$ takes as input the context $\Ctx$
+and expression $\E$. It computes the expression's type $\AT$, its effect
+$\Eff$, and a set of constraints $\CSet$. The checking relation $\CheckType \E
+\T \Eff$ takes as input the context $\Ctx$, expression $\E$, and type $\AT$. It
+outputs the expression's effect $\Eff$ as well as a set of constraints $\CSet$.
+
+\begin{definition}[Context join]
+  The operator $\cdot \CtxJoin \cdot$ joins two contexts according to the
+  direction $\Dir$.
+  %
+  \[ \Ctx[1] \CtxJoin \Ctx[2] = \begin{cases}
+        \Ctx[1] \CtxPar \Ctx[2] & \text{if $\Dir \in \{ \DirUnord, \DirNone \}$} \\
+        \Ctx[1] \CtxSeq \Ctx[2] & \text{if $\Dir = \DirLeft$} \\
+        \Ctx[2] \CtxSeq \Ctx[1] & \text{if $\Dir = \DirRight$}
+     \end{cases}
+  \]
+  %
+\end{definition}
+
+\begin{definition}[Context restriction]
+The operator $\cdot|_{\cdot}$ restricts a context to a set of variables.
+%
+\[
   \CtxRestrict*{X} = \begin{cases}
     \CtxRestrict*[1]{X} \CtxPar \CtxRestrict*[2]{X} & \text{if $\Ctx=\Ctx[1] \CtxPar \Ctx[2]$} \\
     \CtxRestrict*[1]{X} \CtxSeq \CtxRestrict*[2]{X} & \text{if $\Ctx=\Ctx[1] \CtxSeq \Ctx[2]$} \\
-    \CtxVar \EVar \T & \text{if $\Ctx=\CtxVar \EVar T$ and $\EVar \not\in X$} \\
+    \CtxVar \EVar \T & \text{if $\Ctx=\CtxVar \EVar T$ and $\EVar \in X$} \\
     \CtxEmpty & \text{else}
   \end{cases}
 \]
+%
+\end{definition}
 
 \begin{figure}
   \hfill \fbox{$\InferType \E \T \Eff$}
   \begin{mathpar}
+    \RuleAlgVar \and
     \RuleAlgConst \and
     \RuleAlgLSplit \and
     \RuleAlgRSplit \and
-    \RuleAlgVar \and
     \RuleAlgApp \and
     \RuleAlgLetUnit \and
     \RuleAlgLetPair \and
@@ -52,14 +79,24 @@ The operator $\cdot|_{\cdot}$ restricts a context to a set of variables. \[
 \end{figure}
 
 \begin{lemma}[Soundness]
-  If\/ $\CheckType \E \T \Eff$ and there is a closing substitution $\sigma$
-  such that all constraints in $\CSet$ are satisfied then $\HasType \Ctx \E
-  \T$.
+  If\/ $\CheckType \E \AT \Eff$ and there is a closing substitution $\sigma$
+  such that $\Fv(\AT) \subseteq \dom(\sigma)$ then $\HasType \Ctx \E {\AT{[\sigma]}}$.
 \end{lemma}
 
 \begin{lemma}[Completeness]
-  If\/ $\HasType \Ctx \E \T$ then $\CheckType \E {\T*} \Eff$ for some set of
-  constraints $\CSet$ and closing type variable substitution $\sigma$ such that $\T=\T*{[\sigma]}$ and
-  $\forall\csetcolor{\TU \mathrel{R} \TU*} \in \CSet.\ \TU{[\sigma]} \mathrel{R}
-  \TU*{[\sigma]}$.
+  If\/ $\HasType \Ctx \E \T$ then $\CheckType \E \AT \Eff$ for some type $\AT$, set of
+  constraints $\CSet$, and closing substitution $\sigma$ such that $\T=\AT{[\sigma]}$.
 \end{lemma}
+
+
+\subsection{Constraint solving}
+
+Potential solutions can be checked by the equivalence and subtype algorithms
+for context free session types. However, the literature does not provide
+unification algorithms. Our approach is based on the fact that unification
+variables are only ever introduced for session types through split operations.
+
+\begin{enumerate}
+  \item Unification variables are only ever introduced for session types.
+  \item If the 
+\end{enumerate}

@@ -4,10 +4,9 @@
 \def\RuleCmdPrefix{RuleAlg}
 
 % A-Const
-\DefRule {Const} {
+\DefRule [(\C \not\in \{\CSplit,\CSSplit\})] {Const} {
   \CtxEmpty \SubCtx \Ctx \\
-  \HasCType \C \T \\
-  \C \not\in \{\CSplit,\CSSplit\}
+  \HasCType \C \T
 }{
   \InferType \C \T \EffPure [\CSEmpty]
 }
