@@ -27,6 +27,10 @@ data _≤ϵ_ : Rel Eff 0ℓ where
 ≤ϵ-refl {ℙ} = ℙ≤ϵ
 ≤ϵ-refl {𝕀} = 𝕀≤𝕀
 
+≤ϵ-trans : ϵ₁ ≤ϵ ϵ₂ → ϵ₂ ≤ϵ ϵ₃ → ϵ₁ ≤ϵ ϵ₃
+≤ϵ-trans ℙ≤ϵ ≤₂₃ = ℙ≤ϵ
+≤ϵ-trans 𝕀≤𝕀 ≤₂₃ = ≤₂₃
+
 data Lin : Set where
   𝟙 unr : Lin
 
@@ -83,8 +87,16 @@ data Ty where
   _;_ : (s₁ s₂ : 𝕊 n) → 𝕊 n
   skip ret acq : 𝕊 n
 
+  -- Unification variables
+  ``_ : (x : ℕ) → 𝕊 n
+
 pattern _⊗¹_ T U = T ⊗⟨ 𝟙 ⟩ U
 pattern _⊗ᴸ_ T U = T ⊗⟨ L ⟩ U
+
+infixr 15 _→1M_∣_
+
+_→1M_∣_ : 𝕋 → 𝕋 → Eff → 𝕋
+_→1M_∣_ T U e = T ⟨ arr unr 𝟙 M e (λ _ → refl) (λ _ → refl) ⟩→ U
 
 variable
   s s₁ s₂ s₃ s′ : 𝕊 n
@@ -134,6 +146,7 @@ skips? (s₁ ; s₂) = map′ (uncurry _;_) (λ{ (x ; y) → (x , y) }) (skip
 skips? skip = yes skip
 skips? ret = no λ()
 skips? acq = no λ()
+skips? (`` x) = no λ()
 
 unr? : Un.Decidable Unr
 unr? ⟨ s ⟩ = map′ ⟨_⟩ (λ{ ⟨ x ⟩ → x }) (skips? s)
@@ -157,6 +170,7 @@ dual (s₁ ; s₂) = dual s₁ ; dual s₂
 dual skip = skip
 dual ret = ret
 dual acq = acq
+dual (`` x) = `` x
 
 dualPol-involutive : dualPol ∘ dualPol ≗ id
 dualPol-involutive ‼ = refl
@@ -174,6 +188,7 @@ dual-involutive (s₁ ; s₂) = cong₂ _;_ (dual-involutive s₁) (dual-invol
 dual-involutive skip = refl
 dual-involutive ret = refl
 dual-involutive acq = refl
+dual-involutive (`` x) = refl
 
 {-# REWRITE dual-involutive #-}
 

@@ -20,7 +20,6 @@ data Sort : SortTy → Set where
   𝕜 : Sort NoVar
   𝕥 : Sort NoVar
   𝕤 : Sort Var
-  𝕔 : Sort NoVar
   𝕖 : Sort Var
   𝕡 : ProcKind → Sort NoVar
   𝕗 : Sort Var
@@ -105,49 +104,51 @@ infixr 12 _⟨_⟩→_ _⊗⟨_⟩_ _⊗¹_ _⊗ᴸ_ _⊗_ _→1𝓜_∣_ _`→_
 infixr 11 `let⊗_`in_
 infixl 10 _∥_
 
-data _⊢_ (S : Scope) : Sort st → Set where
-  `_ : 𝔰 ∈ S → S ⊢ 𝔰
+mutual
+  data Const : Set where
+    `unit `fork `send `recv `drop `acq : Const
+    `end : Pol → Const
+    `new : [] ⊢ 𝕤 → Const
+    `lsplit `rsplit : [] ⊢ 𝕤 → Const
 
-  ⋆ : S ⊢ 𝕜
+  data _⊢_ (S : Scope) : Sort st → Set where
+    `_ : 𝔰 ∈ S → S ⊢ 𝔰
 
-  ⟨_⟩ : (s : S ⊢ 𝕤) → S ⊢ 𝕥
-  `⊤  : S ⊢ 𝕥
-  _⟨_⟩→_ : (t : S ⊢ 𝕥) (a : Arr) (u : S ⊢ 𝕥) → S ⊢ 𝕥
-  _⊗⟨_⟩_ : (t : S ⊢ 𝕥) (d : Dir) (u : S ⊢ 𝕥) → S ⊢ 𝕥
+    ⋆ : S ⊢ 𝕜
 
-  end : (p : Pol) → S ⊢ 𝕤
-  msg : (p : Pol) (t : [] ⊢ 𝕥) → S ⊢ 𝕤
-  brn : (p : Pol) (s₁ s₂ : S ⊢ 𝕤) → S ⊢ 𝕤
-  skip ret acq : S ⊢ 𝕤
+    ⟨_⟩ : (s : S ⊢ 𝕤) → S ⊢ 𝕥
+    `⊤  : S ⊢ 𝕥
+    _⟨_⟩→_ : (t : S ⊢ 𝕥) (a : Arr) (u : S ⊢ 𝕥) → S ⊢ 𝕥
+    _⊗⟨_⟩_ : (t : S ⊢ 𝕥) (d : Dir) (u : S ⊢ 𝕥) → S ⊢ 𝕥
 
-  μ : .⦃ 𝕖⊎𝕤 𝔰 ⦄ → 𝔰 ∷ S ⊢ 𝔰 → S ⊢ 𝔰
-  _;_ : .⦃ 𝕖⊎𝕤 𝔰 ⦄ → (x₁ x₂ : S ⊢ 𝔰) → S ⊢ 𝔰
+    end : (p : Pol) → S ⊢ 𝕤
+    msg : (p : Pol) (t : [] ⊢ 𝕥) → S ⊢ 𝕤
+    brn : (p : Pol) (s₁ s₂ : S ⊢ 𝕤) → S ⊢ 𝕤
+    skip ret acq : S ⊢ 𝕤
 
-  K : (c : S ⊢ 𝕔) → S ⊢ 𝕖
-  ƛ : (e : 𝕖 ∷ S ⊢ 𝕖) → S ⊢ 𝕖
-  _⊗_ : (e₁ e₂ : S ⊢ 𝕖) → S ⊢ 𝕖
-  _·_ : (e₁ e₂ : S ⊢ 𝕖) → S ⊢ 𝕖
-  `let⊗_`in_ : (e₁ : S ⊢ 𝕖) (e₂ : 𝕖 ∷ 𝕖 ∷ S ⊢ 𝕖) → S ⊢ 𝕖
+    μ : .⦃ 𝕖⊎𝕤 𝔰 ⦄ → 𝔰 ∷ S ⊢ 𝔰 → S ⊢ 𝔰
+    _;_ : .⦃ 𝕖⊎𝕤 𝔰 ⦄ → (x₁ x₂ : S ⊢ 𝔰) → S ⊢ 𝔰
 
-  ⟪_⟫ : (e : S ⊢ 𝕖) → S ⊢ 𝕡 pk
-  _∥_ : (P Q : S ⊢ 𝕡 pk) → S ⊢ 𝕡 pk
+    K : (c : Const) → S ⊢ 𝕖
+    ƛ : (e : 𝕖 ∷ S ⊢ 𝕖) → S ⊢ 𝕖
+    _⊗_ : (e₁ e₂ : S ⊢ 𝕖) → S ⊢ 𝕖
+    _·_ : (e₁ e₂ : S ⊢ 𝕖) → S ⊢ 𝕖
+    `let⊗_`in_ : (e₁ : S ⊢ 𝕖) (e₂ : 𝕖 ∷ 𝕖 ∷ S ⊢ 𝕖) → S ⊢ 𝕖
 
-  ν[_][_] : (B₁ B₂ : List ℕ) (P : bgScope B₁ ++ bgScope B₂ ++ S ⊢ 𝕡 ty) → S ⊢ 𝕡 ty
+    ⟪_⟫ : (e : S ⊢ 𝕖) → S ⊢ 𝕡 pk
+    _∥_ : (P Q : S ⊢ 𝕡 pk) → S ⊢ 𝕡 pk
 
-  ν : (P : 𝕖 ∷ 𝕖 ∷ S ⊢ 𝕡 un) → S ⊢ 𝕡 un
-  φ : (P : 𝕗 ∷ S ⊢ 𝕡 un) → S ⊢ 𝕡 un
-  _↦_ : (x : S ⊢ 𝕗) (⁰/₁ : Flag) → S ⊢ 𝕡 un
+    ν[_][_] : (B₁ B₂ : List ℕ) (P : bgScope B₁ ++ bgScope B₂ ++ S ⊢ 𝕡 ty) → S ⊢ 𝕡 ty
 
-  `unit `fork `send `recv `drop `acq : S ⊢ 𝕔
-  `end : Pol → S ⊢ 𝕔
-  `new : [] ⊢ 𝕤 → S ⊢ 𝕔
-  `lsplit `rsplit : S ⊢ 𝕤 → S ⊢ 𝕔
+    ν : (P : 𝕖 ∷ 𝕖 ∷ S ⊢ 𝕡 un) → S ⊢ 𝕡 un
+    φ : (P : 𝕗 ∷ S ⊢ 𝕡 un) → S ⊢ 𝕡 un
+    _↦_ : (x : S ⊢ 𝕗) (⁰/₁ : Flag) → S ⊢ 𝕡 un
 
-pattern _⊗¹_ T U = T ⊗⟨ 𝟙 ⟩ U
-pattern _⊗ᴸ_ T U = T ⊗⟨ L ⟩ U
+  pattern _⊗¹_ T U = T ⊗⟨ 𝟙 ⟩ U
+  pattern _⊗ᴸ_ T U = T ⊗⟨ L ⟩ U
 
-_→1𝓜_∣_ : S ⊢ 𝕥 → S ⊢ 𝕥 → Eff → S ⊢ 𝕥
-_→1𝓜_∣_ T U e = T ⟨ arr unr 𝟙 𝓜 e (λ _ → refl) (λ _ → refl) ⟩→ U
+  _→1𝓜_∣_ : S ⊢ 𝕥 → S ⊢ 𝕥 → Eff → S ⊢ 𝕥
+  _→1𝓜_∣_ T U e = T ⟨ arr unr 𝟙 𝓜 e (λ _ → refl) (λ _ → refl) ⟩→ U
 
 variable
   s s₁ s₂ s₃ s′ : S ⊢ 𝕤
@@ -182,7 +183,7 @@ ret ⋯ ϕ = ret
 acq ⋯ ϕ = acq
 μ s ⋯ ϕ = μ (s ⋯ ϕ ↑ _)
 (x/t₁ ; x/t₂) ⋯ ϕ = (x/t₁ ⋯ ϕ) ; (x/t₂ ⋯ ϕ)
-K c ⋯ ϕ = K (c ⋯ ϕ)
+K c ⋯ ϕ = K c
 ƛ x/t ⋯ ϕ = ƛ (x/t ⋯ ϕ ↑ _)
 (x/t₁ ⊗ x/t₂) ⋯ ϕ = x/t₁ ⋯ ϕ ⊗ x/t₂ ⋯ ϕ
 (x/t₁ · x/t₂) ⋯ ϕ = x/t₁ ⋯ ϕ · x/t₂ ⋯ ϕ
@@ -193,16 +194,6 @@ K c ⋯ ϕ = K (c ⋯ ϕ)
 ν x/t ⋯ ϕ = ν (x/t ⋯ ϕ ↑ _ ↑ _)
 φ x/t ⋯ ϕ = φ (x/t ⋯ ϕ ↑ _)
 (x/t ↦ ⁰/₁) ⋯ ϕ = x/t ⋯ ϕ ↦ ⁰/₁
-`unit ⋯ ϕ = `unit
-`fork ⋯ ϕ = `fork
-`send ⋯ ϕ = `send
-`recv ⋯ ϕ = `recv
-`drop ⋯ ϕ = `drop
-`acq ⋯ ϕ = `acq
-`end p ⋯ ϕ = `end p
-`new s ⋯ ϕ = `new s
-`lsplit s ⋯ ϕ = `lsplit (s ⋯ ϕ)
-`rsplit s ⋯ ϕ = `rsplit (s ⋯ ϕ)
 
 ⋯-id : ⦃ K : Kit _∋/⊢_ ⦄ (x/t : S ⊢ 𝔰) → x/t ⋯ idₖ ≡ x/t
 ⋯-id (` x) = `/`-is-` x
@@ -219,7 +210,7 @@ K c ⋯ ϕ = K (c ⋯ ϕ)
 ⋯-id acq = refl
 ⋯-id (μ s) = cong μ (cong (s ⋯_) (∼-ext id↑∼id) ■ ⋯-id s)
 ⋯-id (x/t₁ ; x/t₂) = cong₂ _;_ (⋯-id x/t₁) (⋯-id x/t₂)
-⋯-id (K c) = cong K (⋯-id c)
+⋯-id (K c) = refl
 ⋯-id (ƛ x/t) = cong ƛ (cong (x/t ⋯_) (∼-ext id↑∼id) ■ ⋯-id x/t)
 ⋯-id (x/t₁ ⊗ x/t₂) = cong₂ _⊗_ (⋯-id x/t₁) (⋯-id x/t₂)
 ⋯-id (x/t₁ · x/t₂) = cong₂ _·_ (⋯-id x/t₁) (⋯-id x/t₂)
@@ -233,16 +224,6 @@ K c ⋯ ϕ = K (c ⋯ ϕ)
 ⋯-id (ν x/t) = cong ν (cong (x/t ⋯_) (∼-ext (id↑*∼id (_ ∷ L.[ _ ]))) ■ ⋯-id x/t)
 ⋯-id (φ x/t) = cong φ (cong (x/t ⋯_) (∼-ext id↑∼id) ■ ⋯-id x/t)
 ⋯-id (x/t ↦ ⁰/₁) = cong (_↦ ⁰/₁) (⋯-id x/t)
-⋯-id `unit = refl
-⋯-id `fork = refl
-⋯-id `send = refl
-⋯-id `recv = refl
-⋯-id `drop = refl
-⋯-id `acq = refl
-⋯-id (`end x) = refl
-⋯-id (`new s) = refl
-⋯-id (`lsplit s) = cong `lsplit (⋯-id s)
-⋯-id (`rsplit s) = cong `rsplit (⋯-id s)
 
 open module Traversal = Syntax.Traversal record
   { _⋯_ = _⋯_
@@ -272,7 +253,7 @@ fusion acq ϕ₁ ϕ₂ = refl
 fusion (μ x/t) ϕ₁ ϕ₂ = cong μ $
   fusion x/t (ϕ₁ ↑ _) (ϕ₂ ↑ _) ■ sym (⋯-cong x/t (dist-↑-· _ ϕ₁ ϕ₂))
 fusion (x/t ; x/t₁) ϕ₁ ϕ₂ = cong₂ _;_ (fusion x/t ϕ₁ ϕ₂) (fusion x/t₁ ϕ₁ ϕ₂)
-fusion (K c) ϕ₁ ϕ₂ = cong K (fusion c ϕ₁ ϕ₂)
+fusion (K c) ϕ₁ ϕ₂ = refl
 fusion (ƛ x/t) ϕ₁ ϕ₂ = cong ƛ $
   (fusion x/t (ϕ₁ ↑ _) (ϕ₂ ↑ _) ■ sym (⋯-cong x/t (dist-↑-· _ ϕ₁ ϕ₂)))
 fusion (x/t ⊗ x/t₁) ϕ₁ ϕ₂ = cong₂ _⊗_ (fusion x/t ϕ₁ ϕ₂) (fusion x/t₁ ϕ₁ ϕ₂)
@@ -290,16 +271,6 @@ fusion (ν x/t) ϕ₁ ϕ₂ = cong ν $
 fusion (φ x/t) ϕ₁ ϕ₂ = cong φ $
   fusion x/t (ϕ₁ ↑ _) (ϕ₂ ↑ _) ■ sym (⋯-cong x/t (dist-↑-· _ ϕ₁ ϕ₂))
 fusion (x/t ↦ ⁰/₁) ϕ₁ ϕ₂ = cong (_↦ _) (fusion x/t ϕ₁ ϕ₂)
-fusion `unit ϕ₁ ϕ₂ = refl
-fusion `fork ϕ₁ ϕ₂ = refl
-fusion `send ϕ₁ ϕ₂ = refl
-fusion `recv ϕ₁ ϕ₂ = refl
-fusion `drop ϕ₁ ϕ₂ = refl
-fusion `acq ϕ₁ ϕ₂ = refl
-fusion (`end x) ϕ₁ ϕ₂ = refl
-fusion (`new s) ϕ₁ ϕ₂ = refl
-fusion (`lsplit s) ϕ₁ ϕ₂ = cong `lsplit (fusion s ϕ₁ ϕ₂)
-fusion (`rsplit s) ϕ₁ ϕ₂ = cong `rsplit (fusion s ϕ₁ ϕ₂)
 
 open module CTraversal = Traversal.CTraversal record { fusion = fusion }
   hiding (fusion)
@@ -377,13 +348,13 @@ data New {S} : S ⊢ 𝕤 → Set where
 
 infix 4 ⊢_∶_
 
-data ⊢_∶_ {S} : S ⊢ 𝕔 → S ⊢ 𝕥 → Set where
+data ⊢_∶_ : Const → [] ⊢ 𝕥 → Set where
   `unit : ⊢ `unit ∶ `⊤
 
   `fork : ⊢ `fork ∶ (`⊤ →1𝓜 `⊤ ∣ 𝕀) →1𝓜 `⊤ ∣ ℙ
 
   `new  : New s → Bounded s →
-    ⊢ `new s ∶ `⊤ →1𝓜 ⟨ acq ; open[ s ] ⟩ ⊗¹ ⟨ acq ; dual open[ s ] ⟩ ∣ ℙ
+    ⊢ `new s ∶ `⊤ →1𝓜 ⟨ acq ; s ⟩ ⊗¹ ⟨ acq ; dual s ⟩ ∣ ℙ
 
   `lsplit : ⊢ `lsplit s ∶ ⟨ s ; s′ ⟩ →1𝓜 ⟨ s ⟩       ⊗ᴸ ⟨ s′ ⟩       ∣ ℙ
   `rsplit : ⊢ `rsplit s ∶ ⟨ s ; s′ ⟩ →1𝓜 ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; s′ ⟩ ∣ ℙ
@@ -391,8 +362,8 @@ data ⊢_∶_ {S} : S ⊢ 𝕔 → S ⊢ 𝕥 → Set where
   `drop : ⊢ `drop ∶ ⟨ ret ⟩     →1𝓜 `⊤    ∣ ℙ
   `acq  : ⊢ `acq  ∶ ⟨ acq ; s ⟩ →1𝓜 ⟨ s ⟩ ∣ ℙ
 
-  `send : Mobile T → ⊢ `send ∶ open[ T ] ⊗¹ ⟨ msg ‼ T ⟩ →1𝓜 `⊤ ∣ 𝕀
-  `recv : Mobile T → ⊢ `recv ∶ ⟨ msg ⁇ T ⟩ →1𝓜 open[ T ] ∣ 𝕀
+  `send : Mobile T → ⊢ `send ∶ T ⊗¹ ⟨ msg ‼ T ⟩ →1𝓜 `⊤ ∣ 𝕀
+  `recv : Mobile T → ⊢ `recv ∶ ⟨ msg ⁇ T ⟩ →1𝓜 T ∣ 𝕀
 
   `end  : ⊢ `end p ∶ ⟨ end p ⟩ →1𝓜 `⊤ ∣ 𝕀
 

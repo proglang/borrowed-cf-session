@@ -309,134 +309,133 @@ record Syntax : Set₁ where
         t ⋯ (ϕ ↑ ·ₖ ⦅ (x/t &/⋯ ϕ) ⦆)  ≡⟨ sym (fusion t (ϕ ↑) ⦅ x/t &/⋯ ϕ ⦆ ) ⟩
         t ⋯ ϕ ↑ ⋯ ⦅ (x/t &/⋯ ϕ) ⦆     ∎
 
-      -- record Types : Set₁ where
-      --   field ↑ᵗ : ∀ {st} → Sort st → ∃[ st' ] Sort st'
+      record Types : Set₁ where
+        -- field ↑ᵗ : ∀ {st} → Sort st → ∃[ st' ] Sort st'
 
-      --   _∶⊢_ : ∀ {t} → List (Sort Var) → Sort t → Set
-      --   S ∶⊢ s = S ⊢ proj₂ (↑ᵗ s)
+        -- _∶⊢_ : ∀ {t} → List (Sort Var) → Sort t → Set
+        -- S ∶⊢ s = S ⊢ proj₂ (↑ᵗ s)
 
-      --   infixr 5 _∷_ _++ᶜ_
+        -- infixr 5 _∷_ _++ᶜ_
+        --
+        -- data Ctx : List (Sort Var) → Set where
+        --   []   : Ctx []
+        --   _∷_  : S ∶⊢ s → Ctx S → Ctx (s ∷ S)
+        --
+        -- _++ᶜ_ : Ctx S₁ → Ctx S₂ → Ctx (S₁ ++ S₂)
+        -- [] ++ᶜ Γ′ = Γ′
+        -- _++ᶜ_ {S₂ = S₂} (t ∷ Γ) Γ′ = _⋯_ ⦃ Kᵣ ⦄ t (λ x → ∈-++⁺ˡ) ∷ (Γ ++ᶜ Γ′)
+        --
+        -- lookup : Ctx S → S ∋ s → S ∶⊢ s
+        -- lookup (t ∷ Γ) zero     = t ⋯ weaken ⦃ Kᵣ ⦄ _
+        -- lookup (t ∷ Γ) (suc x)  = lookup Γ x ⋯ weaken ⦃ Kᵣ ⦄ _
+        --
+        -- _∋_∶_ : Ctx S → S ∋ s → S ∶⊢ s → Set
+        -- Γ ∋ x ∶ t = lookup Γ x ≡ t
 
-      --   data Ctx : List (Sort Var) → Set where
-      --     []   : Ctx []
-      --     _∷_  : S ∶⊢ s → Ctx S → Ctx (s ∷ S)
+        record Typing : Set₁ where
+          infix 4 ⊢_
+          field  ⊢_ : Tm n → Set
+                 ⊢` : (x : Fin n) → ⊢ ` x
 
-      --   _++ᶜ_ : Ctx S₁ → Ctx S₂ → Ctx (S₁ ++ S₂)
-      --   [] ++ᶜ Γ′ = Γ′
-      --   _++ᶜ_ {S₂ = S₂} (t ∷ Γ) Γ′ = _⋯_ ⦃ Kᵣ ⦄ t (λ x → ∈-++⁺ˡ) ∷ (Γ ++ᶜ Γ′)
+          record TKit (K : Kit 𝓕) : Set₁ where
+            private instance _ = K
+            infix   4  𝓕∶_  _∶_⇒ₖ_
+            infixl  6  _⊢↑_
+            field  -- 𝓕∶_  : Ctx S → S ∋/⊢ s → S ∶⊢ s → Set
+                   id/⊢`    : ∀ {t : S ∶⊢ s} {Γ : Ctx S} → Γ ∋ x ∶ t → Γ ∋/⊢ id/` x ∶ t
+                   ⊢`/id    : ∀ {e : S ∋/⊢ s} {t : S ∶⊢ s} {Γ : Ctx S} → Γ ∋/⊢ e ∶ t → Γ ⊢ `/id e ∶ t
+                   ⊢wk      : ∀ (Γ : Ctx S) (t' : S ∶⊢ s) (e : S ∋/⊢ s') (t : S ∶⊢ s') →
+                              Γ ∋/⊢ e ∶ t → (t' ∷ Γ) ∋/⊢ wk _ e ∶ (t ⋯ weaken _)
 
-      --   lookup : Ctx S → S ∋ s → S ∶⊢ s
-      --   lookup (t ∷ Γ) zero     = t ⋯ weaken ⦃ Kᵣ ⦄ _
-      --   lookup (t ∷ Γ) (suc x)  = lookup Γ x ⋯ weaken ⦃ Kᵣ ⦄ _
+          --   _∶_⇒ₖ_ : S₁ –[ K ]→ S₂ → Ctx S₁ → Ctx S₂ → Set
+          --   _∶_⇒ₖ_ {S₁} {S₂} ϕ Γ₁ Γ₂ = ∀ {s₁} (x : S₁ ∋ s₁) (t : S₁ ∶⊢ s₁) →
+          --     Γ₁ ∋ x ∶ t → Γ₂ ∋/⊢ (x & ϕ) ∶ (t ⋯ ϕ)
 
-      --   _∋_∶_ : Ctx S → S ∋ s → S ∶⊢ s → Set
-      --   Γ ∋ x ∶ t = lookup Γ x ≡ t
+          --   _⊢↑_ :  ⦃ W : WkKit K ⦄ ⦃ C₁ : CKit K Kᵣ K ⦄ {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {ϕ : S₁ –[ K ]→ S₂}
+          --           → ϕ ∶ Γ₁ ⇒ₖ Γ₂ → (t : S₁ ∶⊢ s) → (ϕ ↑ s) ∶ (t ∷ Γ₁) ⇒ₖ ((t ⋯ ϕ) ∷ Γ₂)
+          --   _⊢↑_ {S₁} {S₂} {s} {Γ₁} {Γ₂} {ϕ} ⊢ϕ t {sx} x@zero _ refl =
+          --     subst (  ((t ⋯ ϕ) ∷ Γ₂) ∋/⊢ (zero & (ϕ ↑ s)) ∶_ )
+          --           (  t ⋯ ϕ ⋯ weaken s                 ≡⟨ ⋯-↑-wk t ϕ s ⟩
+          --              t ⋯ weaken s ⋯ (ϕ ↑ s)           ≡⟨⟩
+          --              lookup (t ∷ Γ₁) zero ⋯ (ϕ ↑ s)  ∎ )
+          --           (  id/⊢` {x = zero} {Γ = (t ⋯ ϕ) ∷ Γ₂} refl )
+          --   _⊢↑_ {S₁} {S₂} {s} {Γ₁} {Γ₂} {ϕ} ⊢ϕ t {sx} x@(suc y) _ refl =
+          --     subst (((t ⋯ ϕ) ∷ Γ₂) ∋/⊢ (suc y & (ϕ ↑ s)) ∶_)
+          --           (lookup Γ₁ y ⋯ ϕ ⋯ weaken s          ≡⟨ ⋯-↑-wk _ ϕ s ⟩
+          --            lookup Γ₁ y ⋯ weaken s ⋯ (ϕ ↑ s)    ≡⟨⟩
+          --            lookup (t ∷ Γ₁) (suc y) ⋯ (ϕ ↑ s)  ∎)
+          --           (⊢wk _ _ _ _ (⊢ϕ y _ refl))
 
-      --   record Typing : Set₁ where
-      --     field  _⊢_∶_  : ∀ {s : Sort st} → Ctx S → S ⊢ s → S ∶⊢ s → Set
-      --            ⊢`     : ∀ {Γ : Ctx S} {x : S ∋ s} {t} → Γ ∋ x ∶ t → Γ ⊢ ` x ∶ t
+          --   ⊢⦅_⦆ :  ∀ {s S} {Γ : Ctx S} {x/t : S ∋/⊢ s} {T : S ∶⊢ s} →
+          --           Γ ∋/⊢ x/t ∶ T → ⦅ x/t ⦆ ∶ (T ∷ Γ) ⇒ₖ Γ
+          --   ⊢⦅_⦆ {s} {S} {Γ} {t} {T} ⊢x/t x@zero _ refl =
+          --     subst (Γ ∋/⊢ t ∶_)
+          --           (T                            ≡⟨ sym (wk-cancels-⦅⦆-⋯ T t) ⟩
+          --            T ⋯ weaken _ ⋯ ⦅ t ⦆         ≡⟨⟩
+          --            lookup (T ∷ Γ) zero ⋯ ⦅ t ⦆  ∎)
+          --           ⊢x/t
+          --   ⊢⦅_⦆ {s} {S} {Γ} {t} {T} ⊢x/t x@(suc y) _ refl =
+          --     subst (Γ ∋/⊢ id/` y ∶_)
+          --           (lookup Γ y                      ≡⟨ sym (wk-cancels-⦅⦆-⋯ _ t) ⟩
+          --            lookup Γ y ⋯ weaken _ ⋯ ⦅ t ⦆   ≡⟨⟩
+          --            lookup (T ∷ Γ) (suc y) ⋯ ⦅ t ⦆  ∎)
+          --           (id/⊢` refl)
 
-      --     infix 4 _⊢_∶_
+          -- open TKit ⦃ … ⦄ public
 
-      --     record TKit (K : Kit 𝓕) : Set₁ where
-      --       private instance _ = K
-      --       infix   4  𝓕∶_  _∶_⇒ₖ_
-      --       infixl  6  _⊢↑_
-      --       field  𝓕∶_  : Ctx S → S ∋/⊢ s → S ∶⊢ s → Set
-      --              id/⊢`    : ∀ {t : S ∶⊢ s} {Γ : Ctx S} → Γ ∋ x ∶ t → Γ ∋/⊢ id/` x ∶ t
-      --              ⊢`/id    : ∀ {e : S ∋/⊢ s} {t : S ∶⊢ s} {Γ : Ctx S} → Γ ∋/⊢ e ∶ t → Γ ⊢ `/id e ∶ t
-      --              ⊢wk      : ∀ (Γ : Ctx S) (t' : S ∶⊢ s) (e : S ∋/⊢ s') (t : S ∶⊢ s') →
-      --                         Γ ∋/⊢ e ∶ t → (t' ∷ Γ) ∋/⊢ wk _ e ∶ (t ⋯ weaken _)
+          -- infixl  5  _∶_⇒[_]_
+          -- _∶_⇒[_]_ :
+          --   ∀ {K : Kit 𝓕} {S₁ S₂} →
+          --   S₁ –[ K ]→ S₂ → Ctx S₁ → TKit K → Ctx S₂ → Set
+          -- ϕ ∶ Γ₁ ⇒[ TK ] Γ₂ = ϕ ∶ Γ₁ ⇒ₖ Γ₂ where instance _ = TK
 
-      --       _∶_⇒ₖ_ : S₁ –[ K ]→ S₂ → Ctx S₁ → Ctx S₂ → Set
-      --       _∶_⇒ₖ_ {S₁} {S₂} ϕ Γ₁ Γ₂ = ∀ {s₁} (x : S₁ ∋ s₁) (t : S₁ ∶⊢ s₁) →
-      --         Γ₁ ∋ x ∶ t → Γ₂ ∋/⊢ (x & ϕ) ∶ (t ⋯ ϕ)
+          -- record TTraversal : Set₁ where
+          --   field _⊢⋯_ : ∀  ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ TK : TKit K ⦄
+          --                   ⦃ C₁ : CKit K Kᵣ K ⦄ ⦃ C₂ : CKit K K K ⦄ ⦃ C₃ : CKit K Kₛ Kₛ ⦄
+          --                   {S₁ S₂ st} {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st}
+          --                   {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} {ϕ : S₁ –[ K ]→ S₂} →
+          --                Γ₁ ⊢ e ∶ t →
+          --                ϕ ∶ Γ₁ ⇒ₖ Γ₂ →
+          --                Γ₂ ⊢ (e ⋯ ϕ) ∶ (t ⋯ ϕ)
 
-      --       _⊢↑_ :  ⦃ W : WkKit K ⦄ ⦃ C₁ : CKit K Kᵣ K ⦄ {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {ϕ : S₁ –[ K ]→ S₂}
-      --               → ϕ ∶ Γ₁ ⇒ₖ Γ₂ → (t : S₁ ∶⊢ s) → (ϕ ↑ s) ∶ (t ∷ Γ₁) ⇒ₖ ((t ⋯ ϕ) ∷ Γ₂)
-      --       _⊢↑_ {S₁} {S₂} {s} {Γ₁} {Γ₂} {ϕ} ⊢ϕ t {sx} x@zero _ refl =
-      --         subst (  ((t ⋯ ϕ) ∷ Γ₂) ∋/⊢ (zero & (ϕ ↑ s)) ∶_ )
-      --               (  t ⋯ ϕ ⋯ weaken s                 ≡⟨ ⋯-↑-wk t ϕ s ⟩
-      --                  t ⋯ weaken s ⋯ (ϕ ↑ s)           ≡⟨⟩
-      --                  lookup (t ∷ Γ₁) zero ⋯ (ϕ ↑ s)  ∎ )
-      --               (  id/⊢` {x = zero} {Γ = (t ⋯ ϕ) ∷ Γ₂} refl )
-      --       _⊢↑_ {S₁} {S₂} {s} {Γ₁} {Γ₂} {ϕ} ⊢ϕ t {sx} x@(suc y) _ refl =
-      --         subst (((t ⋯ ϕ) ∷ Γ₂) ∋/⊢ (suc y & (ϕ ↑ s)) ∶_)
-      --               (lookup Γ₁ y ⋯ ϕ ⋯ weaken s          ≡⟨ ⋯-↑-wk _ ϕ s ⟩
-      --                lookup Γ₁ y ⋯ weaken s ⋯ (ϕ ↑ s)    ≡⟨⟩
-      --                lookup (t ∷ Γ₁) (suc y) ⋯ (ϕ ↑ s)  ∎)
-      --               (⊢wk _ _ _ _ (⊢ϕ y _ refl))
+          --   infixl  5  _⊢⋯_  _⊢⋯ᵣ_  _⊢⋯ₛ_ _⊢⋯[_]_
 
-      --       ⊢⦅_⦆ :  ∀ {s S} {Γ : Ctx S} {x/t : S ∋/⊢ s} {T : S ∶⊢ s} →
-      --               Γ ∋/⊢ x/t ∶ T → ⦅ x/t ⦆ ∶ (T ∷ Γ) ⇒ₖ Γ
-      --       ⊢⦅_⦆ {s} {S} {Γ} {t} {T} ⊢x/t x@zero _ refl =
-      --         subst (Γ ∋/⊢ t ∶_)
-      --               (T                            ≡⟨ sym (wk-cancels-⦅⦆-⋯ T t) ⟩
-      --                T ⋯ weaken _ ⋯ ⦅ t ⦆         ≡⟨⟩
-      --                lookup (T ∷ Γ) zero ⋯ ⦅ t ⦆  ∎)
-      --               ⊢x/t
-      --       ⊢⦅_⦆ {s} {S} {Γ} {t} {T} ⊢x/t x@(suc y) _ refl =
-      --         subst (Γ ∋/⊢ id/` y ∶_)
-      --               (lookup Γ y                      ≡⟨ sym (wk-cancels-⦅⦆-⋯ _ t) ⟩
-      --                lookup Γ y ⋯ weaken _ ⋯ ⦅ t ⦆   ≡⟨⟩
-      --                lookup (T ∷ Γ) (suc y) ⋯ ⦅ t ⦆  ∎)
-      --               (id/⊢` refl)
+          --   instance
+          --     TKᵣ : TKit Kᵣ ; TKₛ : TKit Kₛ
+          --     TKᵣ = record  { 𝓕∶_  = _∋_∶_      ; ⊢`/id  = ⊢`
+          --                   ; id/⊢`    = λ ⊢x → ⊢x  ; ⊢wk    = λ { Γ t' x t refl → refl } }
+          --     TKₛ = record  { 𝓕∶_  = _⊢_∶_  ; ⊢`/id  = λ ⊢x → ⊢x
+          --                   ; id/⊢`    = ⊢`     ; ⊢wk    = λ Γ t' e t ⊢e → ⊢e ⊢⋯ ⊢wk Γ t' }
+          --   open TKit TKᵣ public using () renaming
+          --     (⊢wk to ⊢wkᵣ; _∶_⇒ₖ_ to _∶_⇒ᵣ_; ⊢⦅_⦆ to ⊢⦅_⦆ᵣ)
+          --   open TKit TKₛ public using () renaming
+          --     (⊢wk to ⊢wkₛ; _∶_⇒ₖ_ to _∶_⇒ₛ_; ⊢⦅_⦆ to ⊢⦅_⦆ₛ)
 
-      --     open TKit ⦃ … ⦄ public
+          --   _⊢⋯[_]_ :
+          --     {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st} {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} →
+          --     Γ₁ ⊢ e ∶ t →
+          --     {K : Kit 𝓕} ⦃ W : WkKit K ⦄ ⦃ C₁ : CKit K Kᵣ K ⦄ ⦃ C₂ : CKit K K K ⦄ ⦃ C₃ : CKit K Kₛ Kₛ ⦄
+          --     (TK : TKit K) →
+          --     {ϕ : S₁ –[ K ]→ S₂} →
+          --     ϕ ∶ Γ₁ ⇒[ TK ] Γ₂ →
+          --     let instance _ = K in
+          --     Γ₂ ⊢ (e ⋯ ϕ) ∶ (t ⋯ ϕ)
+          --   _⊢⋯[_]_ x {K} TK ⊢ϕ = x ⊢⋯ ⊢ϕ where instance _ = K; instance _ = TK
 
-      --     infixl  5  _∶_⇒[_]_
-      --     _∶_⇒[_]_ :
-      --       ∀ {K : Kit 𝓕} {S₁ S₂} →
-      --       S₁ –[ K ]→ S₂ → Ctx S₁ → TKit K → Ctx S₂ → Set
-      --     ϕ ∶ Γ₁ ⇒[ TK ] Γ₂ = ϕ ∶ Γ₁ ⇒ₖ Γ₂ where instance _ = TK
+          --   -- Renaming preserves typing
 
-      --     record TTraversal : Set₁ where
-      --       field _⊢⋯_ : ∀  ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ TK : TKit K ⦄
-      --                       ⦃ C₁ : CKit K Kᵣ K ⦄ ⦃ C₂ : CKit K K K ⦄ ⦃ C₃ : CKit K Kₛ Kₛ ⦄
-      --                       {S₁ S₂ st} {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st}
-      --                       {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} {ϕ : S₁ –[ K ]→ S₂} →
-      --                    Γ₁ ⊢ e ∶ t →
-      --                    ϕ ∶ Γ₁ ⇒ₖ Γ₂ →
-      --                    Γ₂ ⊢ (e ⋯ ϕ) ∶ (t ⋯ ϕ)
+          --   _⊢⋯ᵣ_ : ∀ {S₁ S₂ st} {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st}
+          --             {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} {ρ : S₁ →ᵣ S₂} →
+          --           Γ₁ ⊢ e ∶ t →
+          --           ρ ∶ Γ₁ ⇒ᵣ Γ₂ →
+          --           Γ₂ ⊢ e ⋯ ρ ∶ t ⋯ ρ
+          --   _⊢⋯ᵣ_ = _⊢⋯_
 
-      --       infixl  5  _⊢⋯_  _⊢⋯ᵣ_  _⊢⋯ₛ_ _⊢⋯[_]_
+          --   -- Substitution preserves typing
 
-      --       instance
-      --         TKᵣ : TKit Kᵣ ; TKₛ : TKit Kₛ
-      --         TKᵣ = record  { 𝓕∶_  = _∋_∶_      ; ⊢`/id  = ⊢`
-      --                       ; id/⊢`    = λ ⊢x → ⊢x  ; ⊢wk    = λ { Γ t' x t refl → refl } }
-      --         TKₛ = record  { 𝓕∶_  = _⊢_∶_  ; ⊢`/id  = λ ⊢x → ⊢x
-      --                       ; id/⊢`    = ⊢`     ; ⊢wk    = λ Γ t' e t ⊢e → ⊢e ⊢⋯ ⊢wk Γ t' }
-      --       open TKit TKᵣ public using () renaming
-      --         (⊢wk to ⊢wkᵣ; _∶_⇒ₖ_ to _∶_⇒ᵣ_; ⊢⦅_⦆ to ⊢⦅_⦆ᵣ)
-      --       open TKit TKₛ public using () renaming
-      --         (⊢wk to ⊢wkₛ; _∶_⇒ₖ_ to _∶_⇒ₛ_; ⊢⦅_⦆ to ⊢⦅_⦆ₛ)
-
-      --       _⊢⋯[_]_ :
-      --         {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st} {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} →
-      --         Γ₁ ⊢ e ∶ t →
-      --         {K : Kit 𝓕} ⦃ W : WkKit K ⦄ ⦃ C₁ : CKit K Kᵣ K ⦄ ⦃ C₂ : CKit K K K ⦄ ⦃ C₃ : CKit K Kₛ Kₛ ⦄
-      --         (TK : TKit K) →
-      --         {ϕ : S₁ –[ K ]→ S₂} →
-      --         ϕ ∶ Γ₁ ⇒[ TK ] Γ₂ →
-      --         let instance _ = K in
-      --         Γ₂ ⊢ (e ⋯ ϕ) ∶ (t ⋯ ϕ)
-      --       _⊢⋯[_]_ x {K} TK ⊢ϕ = x ⊢⋯ ⊢ϕ where instance _ = K; instance _ = TK
-
-      --       -- Renaming preserves typing
-
-      --       _⊢⋯ᵣ_ : ∀ {S₁ S₂ st} {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st}
-      --                 {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} {ρ : S₁ →ᵣ S₂} →
-      --               Γ₁ ⊢ e ∶ t →
-      --               ρ ∶ Γ₁ ⇒ᵣ Γ₂ →
-      --               Γ₂ ⊢ e ⋯ ρ ∶ t ⋯ ρ
-      --       _⊢⋯ᵣ_ = _⊢⋯_
-
-      --       -- Substitution preserves typing
-
-      --       _⊢⋯ₛ_ : ∀ {S₁ S₂ st} {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st}
-      --                 {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} {σ : S₁ →ₛ S₂} →
-      --               Γ₁ ⊢ e ∶ t →
-      --               σ ∶ Γ₁ ⇒ₛ Γ₂ →
-      --               Γ₂ ⊢ e ⋯ σ ∶ t ⋯ σ
-      --       _⊢⋯ₛ_ = _⊢⋯_
+          --   _⊢⋯ₛ_ : ∀ {S₁ S₂ st} {Γ₁ : Ctx S₁} {Γ₂ : Ctx S₂} {s : Sort st}
+          --             {e : S₁ ⊢ s} {t : S₁ ∶⊢ s} {σ : S₁ →ₛ S₂} →
+          --           Γ₁ ⊢ e ∶ t →
+          --           σ ∶ Γ₁ ⇒ₛ Γ₂ →
+          --           Γ₂ ⊢ e ⋯ σ ∶ t ⋯ σ
+          --   _⊢⋯ₛ_ = _⊢⋯_
