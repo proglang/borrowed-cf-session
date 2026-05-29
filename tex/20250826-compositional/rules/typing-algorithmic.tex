@@ -53,9 +53,9 @@
 
 % A-Check
 \DefRule {Check} {
-  \InferType \EVar {\T[2]} {\Eff} \\
+  \InferType \E {\T[2]} {\Eff} \\
 }{
-  \CheckType \EVar {\T[1]} {\Eff} [\CSet \CSJoin \T[2] \CSub \T[1]]
+  \CheckType \E {\T[1]} {\Eff} [\CSet \CSJoin \T[2] \CSub \T[1]]
 }
 
 % A-Abs

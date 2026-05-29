@@ -1,5 +1,7 @@
 \section{Algorithmic typing}
 
+\subsection{Typing relation}
+
 For the algorithmic typing we consider an extended grammar of session types
 $\AS$ that includes unification variables $\TVar$. $\AT$ is the set of types
 $\T$ but referring to $\AS$ instead of $\S$.
@@ -100,3 +102,31 @@ variables are only ever introduced for session types through split operations.
   \item Unification variables are only ever introduced for session types.
   \item If the 
 \end{enumerate}
+
+\begin{mathpar}
+  \inferrule[CS-Pair]{}{
+    \AT \TPair \ATU \CSub \AT* \TPair \ATU*
+    \csred
+    \AT \CSub \AT* \CSJoin \ATU \CSub \ATU*
+  }
+
+  \inferrule[CS-Arrow]{}{
+    \TArr{\Mob}{\Dir,\Eff}{\AT}{\ATU}
+    \CSub
+    \TArr{\Mob}{\Dir,\Eff*}{\AT*}{\ATU*}
+    \csred
+    \Eff \le \Eff*
+    \CSJoin
+    \AT* \CSub \AT
+    \CSJoin
+    \ATU \CSub \ATU*
+  }
+
+  \inferrule{
+    \CSet[1] \csred \CSet*[1]
+  }{
+    \CSet[1] \CSJoin \CSet[2]
+    \csred
+    \CSet*[1] \CSJoin \CSet[2]
+  }
+\end{mathpar}
