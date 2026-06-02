@@ -247,8 +247,6 @@ dual-involutive (`` x) = refl
 
 {-# REWRITE dual-involutive #-}
 
--- relaxEff : 𝕋 → Eff → 𝕋
--- relaxEff `⊤ _ = `⊤
--- relaxEff ⟨ s ⟩ _ = ⟨ s ⟩
--- relaxEff (t ⟨ a ⟩→ u) e′ = relaxEff t e′ ⟨ record a { eff = e′ } ⟩→ relaxEff u e′
--- relaxEff (t ⊗⟨ d ⟩ u) e′ = relaxEff t e′ ⊗⟨ d ⟩ relaxEff u e′
+μPrefix : ∀ {κ x} → Ty κ x → ℕ
+μPrefix (mu t)  = 1 + μPrefix t
+μPrefix _       = 0

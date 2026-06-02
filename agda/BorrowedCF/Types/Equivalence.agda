@@ -11,8 +11,10 @@ import Relation.Binary.Reasoning.Preorder as PreorderReasoning
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Types.Syntax
+open import BorrowedCF.Types.Substitution
 
 open Bin
+open Nat using (_≤_; s≤s; s≤s⁻¹; ≤-trans)
 open Nat.Variables
 
 infix 4 _≃𝕊_ _≃𝕋_
@@ -65,6 +67,9 @@ _≃_ {𝕥} = _≃𝕋_
 ≃-isEquivalence : ∀ κ x → IsEquivalence (_≃_ {κ} {x})
 ≃-isEquivalence _ _ = record { refl = ≃-refl; sym = ≃-sym; trans = ≃-trans }
 
+module _ {κ x} where
+  open IsEquivalence (≃-isEquivalence κ x) using () renaming (reflexive to ≃-reflexive) public
+
 ≃-setoid : ∀ κ x → Setoid _ _
 ≃-setoid κ x = record { isEquivalence = ≃-isEquivalence κ x }
 
@@ -73,109 +78,50 @@ module ≃-Reasoning {κ x} = SetoidReasoning (≃-setoid κ x)
 ≃-; : s₁ ≃ s₁′ → s₂ ≃ s₂′ → s₁ ; s₂ ≃ s₁′ ; s₂′
 ≃-; eq₁ eq₂ = Eq*.gmap (_; _) ≃𝕊-;₁ eq₁ ◅◅ Eq*.gmap (_ ;_) ≃𝕊-;₂ eq₂
 
+≃-μ : mu s ≃ unfold s
+≃-μ = Eq*.return ≃𝕊-μ
+
 ≃-skipˡ : skip ; s ≃ s
 ≃-skipˡ = fwd ≃𝕊-skipˡ ◅ refl
 
--- ≃-skips : Skips {n} Respects _≃_
--- ≃-skips refl s = s
--- ≃-skips (fwd x ◅ eq) s = ≃-skips eq (go x s) where
---   go : Skips {n} Respects _≃𝕊_
---   go (≃𝕊-;₁ eq) (s₁ ; s₂) = go eq s₁ ; s₂
---   go (≃𝕊-;₂ eq) (s₁ ; s₂) = s₁ ; go eq s₂
---   go ≃𝕊-skipˡ (s₁ ; s₂) = s₂
---   go ≃𝕊-skipʳ (s₁ ; s₂) = s₁
---   go ≃𝕊-assoc ((s₁ ; s₂) ; s₃) = s₁ ; (s₂ ; s₃)
---   go ≃𝕊-distr (() ; _)
--- ≃-skips (bwd x ◅ eq) s = ≃-skips eq (go x s) where
---   go : Skips {n} Respects (flip _≃𝕊_)
---   go (≃𝕊-;₁ eq) (s₁ ; s₂) = go eq s₁ ; s₂
---   go (≃𝕊-;₂ eq) (s₁ ; s₂) = s₁ ; go eq s₂
---   go ≃𝕊-skipˡ s = skip ; s
---   go ≃𝕊-skipʳ s = s ; skip
---   go ≃𝕊-assoc (s₁ ; (s₂ ; s₃)) = (s₁ ; s₂) ; s₃
+≃-skips : Skips {n} Respects _≃_
+≃-skips refl s = s
+≃-skips (fwd x ◅ eq) s = ≃-skips eq (go x s) where
+  go : Skips {n} Respects _≃𝕊_
+  go ≃𝕊-μ       (mu s)    = skips-⋯ s
+  go (≃𝕊-;₁ eq) (s₁ ; s₂) = go eq s₁ ; s₂
+  go (≃𝕊-;₂ eq) (s₁ ; s₂) = s₁ ; go eq s₂
+  go ≃𝕊-skipˡ   (s₁ ; s₂) = s₂
+  go ≃𝕊-skipʳ   (s₁ ; s₂) = s₁
+  go ≃𝕊-assoc   ((s₁ ; s₂) ; s₃) = s₁ ; (s₂ ; s₃)
+  go ≃𝕊-distr   (() ; _)
+≃-skips (bwd x ◅ eq) s = ≃-skips eq (go x s) where
+  go : Skips {n} Respects (flip _≃𝕊_)
+  go {y = mu s} ≃𝕊-μ ss
+    with skips? s
+  ... | yes ss′ = mu ss′
+  ... | no ¬ss′ = mu $ skips-⋯⁻¹ {s = s} {ϕ = ⦅ mu s ⦆ₛ} ss λ where
+    zero    (mu ss′) → ¬ss′ ss′
+    (suc z) ()
+  go (≃𝕊-;₁ eq) (s₁ ; s₂) = go eq s₁ ; s₂
+  go (≃𝕊-;₂ eq) (s₁ ; s₂) = s₁ ; go eq s₂
+  go ≃𝕊-skipˡ   s = skip ; s
+  go ≃𝕊-skipʳ   s = s ; skip
+  go ≃𝕊-assoc (s₁ ; (s₂ ; s₃)) = (s₁ ; s₂) ; s₃
 
--- ≃-unr : Unr Respects _≃_
--- ≃-unr `⊤ `⊤ = `⊤
--- ≃-unr (eq₁ ⊗ eq₂) (U₁ ⊗ U₂) = ≃-unr eq₁ U₁ ⊗ ≃-unr eq₂ U₂
--- ≃-unr (eq₁ `→ eq₂) (arr x) = arr x
--- ≃-unr ⟨ eq ⟩ ⟨ s ⟩ = ⟨ ≃-skips eq s ⟩
+skips⇒skip≃′ : (x : Skips s) → ∀ {n} → .(skipsSize x ≤ n) → skip ≃ s
+skips⇒skip≃′ skip {zero} ≤n = refl
+skips⇒skip≃′ skip {suc n} ≤n = refl
+skips⇒skip≃′ (x₁ ; x₂) {suc n} ≤n =
+  ≃-trans (≃-sym ≃-skipˡ)
+    (≃-; (skips⇒skip≃′ x₁ {n} (≤-trans (Nat.m≤m+n _ _) (s≤s⁻¹ ≤n)))
+         (skips⇒skip≃′ x₂ {n} (≤-trans (Nat.m≤n+m _ _) (s≤s⁻¹ ≤n))))
+skips⇒skip≃′ {s = mu s} (mu x) {suc n} ≤n =
+  ≃-trans (skips⇒skip≃′ (skips-⋯ {ϕ = ⦅ mu s ⦆ₛ} x) {n} (subst (_≤ n) (sym (skipsSize-⋯ x _)) (s≤s⁻¹ ≤n)))
+          (≃-sym ≃-μ)
 
--- ≃-mobile : Mobile Respects _≃_
--- ≃-mobile `⊤ `⊤ = `⊤
--- ≃-mobile (eq₁ ⊗ eq₂) (m₁ ⊗ m₂) = ≃-mobile eq₁ m₁ ⊗ ≃-mobile eq₂ m₂
--- ≃-mobile (eq₁ `→ eq₂) (arr x) = arr x
--- ≃-mobile ⟨ eq ⟩ (acq x₁) = {!acq!}
--- ≃-mobile ⟨ eq ⟩ (skip s) = skip (≃-skips eq s)
+skips⇒skip≃ : Skips s → skip ≃ s
+skips⇒skip≃ x = skips⇒skip≃′ x Nat.≤-refl
 
--- -- open Bin
-
--- -- infix 4 _≊_ _≲_
-
--- -- postulate
--- --   _≊_ : ∀ {κ x} → Rel (Ty κ x) 0ℓ
--- --   _≲_ : ∀ {κ x} → Rel (Ty κ x) 0ℓ
-
--- --   _≊?_ : ∀ {κ x} → Decidable (_≊_ {κ} {x})
--- --   _≲?_ : ∀ {κ x} (t u : Ty κ x) → Maybe (t ≲ u)
-
--- --   ≲-isPartialOrder : ∀ κ x → IsPartialOrder (_≊_ {κ} {x}) _≲_
-
--- -- ≊-isEquivalence : ∀ κ x → IsEquivalence (_≊_ {κ} {x})
--- -- ≊-isEquivalence = IsPartialOrder.isEquivalence ∘₂ ≲-isPartialOrder
-
--- -- ≊-setoid : ∀ κ x → Setoid _ _
--- -- ≊-setoid κ x = record { isEquivalence = ≊-isEquivalence κ x }
-
--- -- ≲-poset : ∀ κ x → Poset _ _ _
--- -- ≲-poset κ x = record { isPartialOrder = ≲-isPartialOrder κ x }
-
--- -- module ≊-Reasoning {κ x} = SetoidReasoning (≊-setoid κ x)
--- -- module ≲-Reasoning {κ x} = PreorderReasoning (Poset.preorder (≲-poset κ x))
-
--- -- module _ {κ x} where
--- --   open IsEquivalence (≊-isEquivalence κ x) using () renaming
--- --     ( refl to ≊-refl
--- --     ; reflexive to ≊-reflexive
--- --     ; sym to ≊-sym
--- --     ; trans to ≊-trans
--- --     ) public
-
--- --   open IsPartialOrder (≲-isPartialOrder κ x) using () renaming
--- --     ( refl to ≲-refl
--- --     ; reflexive to ≲-reflexive
--- --     ; trans to ≲-trans
--- --     ; antisym to ≲-antisym
--- --     ) public
-
-
--- -- infix 4 _≤⃗_
-
--- -- data _≤⃗_ (a : Arr) : Arr → Set where
--- --   arr : Arr.eff a ≤ϵ ϵ → a ≤⃗ record a { eff = ϵ }
-
--- -- ≤⃗-refl : a ≤⃗ a
--- -- ≤⃗-refl = arr ≤ϵ-refl
-
--- -- ≤⃗-trans : ∀ {x y z} → x ≤⃗ y → y ≤⃗ z → x ≤⃗ z
--- -- ≤⃗-trans (arr xy) (arr yz) = arr (≤ϵ-trans xy yz)
-
--- -- postulate
--- --   ≲⁻¹-`⊤ʳ : T ≲ `⊤ → T ≡ `⊤
--- --   ≲⁻¹-→ʳ : T ≲ U₁ ⟨ a ⟩→ U₂ → ∃[ T₁ ] ∃[ T₂ ] ∃[ a′ ] T ≡ T₁ ⟨ a′ ⟩→ T₂ × a′ ≤⃗ a × U₁ ≲ T₁ × T₂ ≲ U₂
--- --   ≲⁻¹-⊗ʳ : T ≲ U₁ ⊗⟨ d ⟩ U₂ → ∃[ T₁ ] ∃[ T₂ ] T ≡ T₁ ⊗⟨ d ⟩ T₂ × T₁ ≲ U₁ × T₂ ≲ U₂
--- --   ≲⁻¹-⟨⟩ʳ : T ≲ ⟨ s ⟩ → ∃[ s′ ] T ≡ ⟨ s′ ⟩ × s′ ≲ s
-
--- --   skips-respects-≳ : ∀ {n} → Skips {n} Respects flip _≲_
-
--- -- unr-respects-≳ : Unr Respects flip _≲_
--- -- unr-respects-≳ x `⊤ rewrite ≲⁻¹-`⊤ʳ x = `⊤
--- -- unr-respects-≳ x (u₁ ⊗ u₂) with _ , _ , refl , u₁≤ , u₂≤ ← ≲⁻¹-⊗ʳ x = unr-respects-≳ u₁≤ u₁ ⊗ unr-respects-≳ u₂≤ u₂
--- -- unr-respects-≳ x (arr eq) with _ , _ , _ , refl , arr _ , _ ← ≲⁻¹-→ʳ x = arr eq
--- -- unr-respects-≳ x ⟨ skips ⟩ with _ , refl , s≤ ← ≲⁻¹-⟨⟩ʳ x = ⟨ skips-respects-≳ s≤ skips ⟩
-
--- -- mobile-respects-≳ : Mobile Respects flip _≲_
--- -- mobile-respects-≳ x `⊤ rewrite ≲⁻¹-`⊤ʳ x = `⊤
--- -- mobile-respects-≳ x (arr x₁) with _ , _ , _ , refl , arr _ , _ ← ≲⁻¹-→ʳ x = arr x₁
--- -- mobile-respects-≳ x (acq x₁) = {!!}
--- -- mobile-respects-≳ x (skip x₁) = {!!}
--- -- mobile-respects-≳ x (m ⊗ m₁) = {!!}
+skip≃⇒skips : skip ≃ s → Skips s
+skip≃⇒skips eq = ≃-skips eq skip
