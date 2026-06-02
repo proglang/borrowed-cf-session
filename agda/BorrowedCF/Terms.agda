@@ -215,11 +215,12 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
     --------------------------------------------
     Γ ; join p/s γ₁ γ₂ ⊢ `let⊗ e₁ `in e₂ ∶ U ∣ ϵ
 
-  T-Eff :
+  T-Conv :
+    (T≃ : T ≃ U) →
     (ϵ≤ : ϵ₁ ≤ϵ ϵ₂) →
     Γ ; γ ⊢ e ∶ T ∣ ϵ₁ →
     --------------------
-    Γ ; γ ⊢ e ∶ T ∣ ϵ₂
+    Γ ; γ ⊢ e ∶ U ∣ ϵ₂
 
   T-Weaken :
     (γ≤ : Γ ∶ γ₁ ≼ γ₂) →
@@ -329,7 +330,7 @@ T-LetPair {d = d} p/s {γ₁} {γ₂} x x₁ ⊢⋯ ⊢ϕ  =
     $ T-LetPair p/s (x ⊢⋯ ⊢ϕ)
     $ subst-γ eq
     $ x₁ ⊢⋯ ⊢↑ (⊢↑ ⊢ϕ)
-T-Eff ϵ≤ x ⊢⋯ ⊢ϕ = T-Eff ϵ≤ (x ⊢⋯ ⊢ϕ)
+T-Conv eq ϵ≤ x ⊢⋯ ⊢ϕ = T-Conv eq ϵ≤ (x ⊢⋯ ⊢ϕ)
 T-Weaken γ≤ x ⊢⋯ ⊢ϕ = T-Weaken (𝐂.≼-⋯ (&-unr ⊢ϕ) γ≤) (x ⊢⋯ ⊢ϕ)
 
 instance
