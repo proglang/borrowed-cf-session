@@ -103,6 +103,114 @@ variable
   T T₁ T₂ T₃ T′ : 𝕋
   U U₁ U₂ U₃ U′ : 𝕋
 
+data Skips {n} : 𝕊 n → Set where
+  skip : Skips skip
+  _;_  : (S₁ : Skips s₁) (S₂ : Skips s₂) → Skips (s₁ ; s₂)
+  mu   : (S : Skips s) → Skips (mu s)
+
+skips-irr : (x y : Skips s) → x ≡ y
+skips-irr skip skip = refl
+skips-irr (x₁ ; x₂) (y₁ ; y₂) = cong₂ _;_ (skips-irr x₁ y₁) (skips-irr x₂ y₂)
+skips-irr (mu x) (mu y) = cong mu (skips-irr x y)
+
+skips? : Un.Decidable (Skips {n})
+skips? (` x) = no λ()
+skips? (end p) = no λ()
+skips? (msg p t) = no λ()
+skips? (brn p s₁ s₂) = no λ()
+skips? (mu s) = map′ mu (λ{ (mu ss) → ss }) (skips? s)
+skips? (s₁ ; s₂) with skips? s₁ | skips? s₂
+... | yes ss₁ | yes ss₂ = yes (ss₁ ; ss₂)
+... | no ¬ss₁ | _       = no λ{ (ss₁ ; ss₂) → ¬ss₁ ss₁ }
+... | yes _   | no ¬ss₂ = no λ{ (ss₁ ; ss₂) → ¬ss₂ ss₂ }
+skips? skip = yes skip
+skips? ret = no λ()
+skips? acq = no λ()
+skips? (`` x) = no λ()
+
+¬skips-` : {x : 𝔽 n} → ¬ Skips (` x)
+¬skips-` ()
+
+infix 4 𝓖_·_
+
+data 𝓖_·_ (x : 𝔽 n) : 𝕊 n → Set where
+  `_  : ∀ {y : 𝔽 n} → x ≢ y → 𝓖 x · ` y
+  end : 𝓖 x · end p
+  msg : 𝓖 x · msg p T
+  brn : 𝓖 x · brn p s₁ s₂
+  mu  : 𝓖 suc x · s → 𝓖 x · mu s
+  _;- : ¬ Skips s₁ × 𝓖 x · s₁ → 𝓖 x · s₁ ; s₂
+  _;_ : Skips s₁ → 𝓖 x · s₂ → 𝓖 x · s₁ ; s₂
+  acq : 𝓖 x · acq
+  ret : 𝓖 x · ret
+  skip : 𝓖 x · skip
+
+  ``_ : (y : ℕ) → 𝓖 x · `` y
+
+𝓖₀ : Pred (𝕊 (1 + n)) _
+𝓖₀ = 𝓖 zero ·_
+
+𝓖-irr : {z : 𝔽 n} → (x y : 𝓖 z · s) → x ≡ y
+𝓖-irr (` z≢₁) (` z≢₂) = refl
+𝓖-irr end end = refl
+𝓖-irr msg msg = refl
+𝓖-irr brn brn = refl
+𝓖-irr (mu x) (mu y) = cong mu (𝓖-irr x y)
+𝓖-irr ((_ , x) ;-) ((_ , y) ;-) = cong (λ g → (_ , g) ;-) (𝓖-irr x y)
+𝓖-irr ((¬s , _) ;-) (s ; _) = contradiction s ¬s
+𝓖-irr (s ; _) ((¬s , _) ;-) = contradiction s ¬s
+𝓖-irr (x₁ ; x₂) (y₁ ; y₂) = cong₂ _;_ (skips-irr x₁ y₁) (𝓖-irr x₂ y₂)
+𝓖-irr acq acq = refl
+𝓖-irr ret ret = refl
+𝓖-irr skip skip = refl
+𝓖-irr (`` α) (`` α) = refl
+
+infix 4 ⊢_
+
+data ⊢_ : ∀ {κ x} → Ty κ x → Set where
+  ⟨_⟩ : ⊢ s → ⊢ ⟨ s ⟩
+  `⊤  : ⊢ `⊤
+  _`→_ : ⊢ T → ⊢ U → ⊢ T ⟨ a ⟩→ U
+  _⊗_ : ⊢ T → ⊢ U → ⊢ T ⊗⟨ d ⟩ U
+
+  `_  : (x : 𝔽 n) → ⊢ ` x
+  end : ⊢ end {n} p
+  msg : ⊢ T → ⊢ msg {n} p T
+  brn : ⊢ s₁ → ⊢ s₂ → ⊢ brn p s₁ s₂
+  mu  : 𝓖₀ s → ⊢ s → ⊢ mu s
+  _;_ : ⊢ s₁ → ⊢ s₂ → ⊢ s₁ ; s₂
+  skip : ⊢ skip {n}
+  ret : ⊢ ret {n}
+  acq : ⊢ acq {n}
+
+  ``_ : (x : ℕ) → ⊢ ``_ {n} x
+
+⊢-irr : ∀ {κ x} {τ : Ty κ x} (t u : ⊢ τ) → t ≡ u
+⊢-irr ⟨ t ⟩ ⟨ u ⟩ = cong ⟨_⟩ (⊢-irr t u)
+⊢-irr `⊤ `⊤ = refl
+⊢-irr (t₁ `→ t₂) (u₁ `→ u₂) = cong₂ _`→_ (⊢-irr t₁ u₁) (⊢-irr t₂ u₂)
+⊢-irr (t₁ ⊗ t₂) (u₁ ⊗ u₂) = cong₂ _⊗_ (⊢-irr t₁ u₁) (⊢-irr t₂ u₂)
+⊢-irr (` x) (` x) = refl
+⊢-irr end end = refl
+⊢-irr (msg t) (msg u) = cong msg (⊢-irr t u)
+⊢-irr (brn t₁ t₂) (brn u₁ u₂) = cong₂ brn (⊢-irr t₁ u₁) (⊢-irr t₂ u₂)
+⊢-irr (mu x t) (mu y u) = cong₂ mu (𝓖-irr x y) (⊢-irr t u)
+⊢-irr (t₁ ; t₂) (u₁ ; u₂) = cong₂ _;_ (⊢-irr t₁ u₁) (⊢-irr t₂ u₂)
+⊢-irr skip skip = refl
+⊢-irr ret ret = refl
+⊢-irr acq acq = refl
+⊢-irr (`` α) (`` α) = refl
+
+skips⇒𝓖 : {x : 𝔽 n} → Skips s → 𝓖 x · s
+skips⇒𝓖 skip = skip
+skips⇒𝓖 (s₁ ; s₂) = s₁ ; skips⇒𝓖 s₂
+skips⇒𝓖 (mu s) = mu (skips⇒𝓖 s)
+
+skips⇒⊢ : Skips s → ⊢ s
+skips⇒⊢ skip = skip
+skips⇒⊢ (s₁ ; s₂) = skips⇒⊢ s₁ ; skips⇒⊢ s₂
+skips⇒⊢ (mu s) = mu (skips⇒𝓖 s) (skips⇒⊢ s)
+
 dualPol : Pol → Pol
 dualPol ‼ = ⁇
 dualPol ⁇ = ‼
@@ -138,13 +246,6 @@ dual-involutive acq = refl
 dual-involutive (`` x) = refl
 
 {-# REWRITE dual-involutive #-}
-
-data Skips {n} : 𝕊 n → Set where
-  skip : Skips skip
-  _;_  : (S₁ : Skips s₁) (S₂ : Skips s₂) → Skips (s₁ ; s₂)
-  mu   : (S : Skips s) → Skips (mu s)
-
---  open module Typing
 
 -- relaxEff : 𝕋 → Eff → 𝕋
 -- relaxEff `⊤ _ = `⊤

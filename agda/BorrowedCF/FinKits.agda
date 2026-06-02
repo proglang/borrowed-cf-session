@@ -5,7 +5,7 @@ open import Data.Fin as Fin using (Fin; zero; suc; _↑ˡ_; _↑ʳ_)
 open import Data.Sum as Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Sum.Properties as Sum using ([,]-∘; [,]-cong; [-,]-cong; [,-]-cong; [,]-map)
 open import Data.Nat using (ℕ; zero; suc; _+_)
-open import Data.Product using (∃-syntax; _,_; proj₁; proj₂)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Unit using (⊤)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; subst; _≗_; module ≡-Reasoning)
 open ≡-Reasoning
@@ -337,6 +337,16 @@ record Syntax : Set₁ where
           infix 4 ⊢_
           field  ⊢_ : Tm n → Set
                  ⊢` : (x : Fin n) → ⊢ ` x
+                 Pϕ : Tm n → Set
+                 Pϕ-`  : (x : Fin n) → Pϕ (` x)
+                 Pϕ-⋯ᵣ : {e : Tm m} {ϕ : m →ᵣ n} → Pϕ e → Pϕ (e ⋯ ϕ)
+
+
+          Pϕ-`/` : (K : Kit 𝓕) (x : Fin n) → Pϕ (`/id ⦃ K ⦄ (id/` ⦃ K ⦄ x))
+          Pϕ-`/` K = subst Pϕ (sym (`/`-is-` ⦃ K ⦄ _)) ∘ Pϕ-`
+
+          Pϕ-wk : (K : Kit 𝓕) ⦃ W : WkKit K ⦄ {e : 𝓕 n} → Pϕ (`/id ⦃ K ⦄ e) → Pϕ (`/id ⦃ K ⦄ (wk ⦃ K ⦄ e))
+          Pϕ-wk K = subst Pϕ (wk-`/id _) ∘ Pϕ-⋯ᵣ
 
           record TKit (K : Kit 𝓕) : Set₁ where
             private instance _ = K
@@ -349,16 +359,16 @@ record Syntax : Set₁ where
               ⊢wk : {e : 𝓕 n} → 𝓕⊢ e → 𝓕⊢ wk e
 
             Φ⊢_ : m –[ K ]→ n → Set
-            Φ⊢ ϕ = ∀ x → 𝓕⊢ ϕ x
+            Φ⊢ ϕ = ∀ x → 𝓕⊢ ϕ x × Pϕ (`/id (ϕ x))
 
             ⊢↑_ :  ⦃ W : WkKit K ⦄ ⦃ C₁ : CKit K Kᵣ K ⦄ {ϕ : m –[ K ]→ n}
                     → Φ⊢ ϕ → Φ⊢ ϕ ↑
-            ⊢↑_ ⊢ϕ zero = id/⊢` zero
-            ⊢↑_ ⊢ϕ (suc x) = ⊢wk (⊢ϕ x)
+            ⊢↑_ ⊢ϕ zero    = id/⊢` zero , Pϕ-`/` K zero
+            ⊢↑_ ⊢ϕ (suc x) = ⊢wk (⊢ϕ x .proj₁) , Pϕ-wk K (⊢ϕ x .proj₂)
 
-            ⊢⦅_⦆ : {x/t : 𝓕 n} → 𝓕⊢ x/t → Φ⊢ ⦅ x/t ⦆
+            ⊢⦅_⦆ : {x/t : 𝓕 n} → 𝓕⊢ x/t × Pϕ (`/id x/t) → Φ⊢ ⦅ x/t ⦆
             ⊢⦅ ⊢x/t ⦆ zero = ⊢x/t
-            ⊢⦅ ⊢x/t ⦆ (suc x) = id/⊢` x
+            ⊢⦅ ⊢x/t ⦆ (suc x) = id/⊢` x , Pϕ-`/` K x
 
           open TKit ⦃ … ⦄ public
 
@@ -376,10 +386,18 @@ record Syntax : Set₁ where
 
             instance
               TKᵣ : TKit Kᵣ
-              TKᵣ = record { 𝓕⊢_ = λ _ → ⊤ ; ⊢`/id = λ _ → ⊢` _ }
+              TKᵣ = record
+                { 𝓕⊢_ = λ _ → ⊤
+                ; ⊢`/id = λ _ → ⊢` _
+                }
 
               TKₛ : TKit Kₛ
-              TKₛ = record { 𝓕⊢_ = ⊢_ ; id/⊢` = ⊢` ; ⊢`/id = λ ⊢x → ⊢x ; ⊢wk = λ x → x ⊢⋯ λ _ → _ }
+              TKₛ = record
+                { 𝓕⊢_ = ⊢_
+                ; id/⊢` = ⊢`
+                ; ⊢`/id = λ ⊢x → ⊢x
+                ; ⊢wk = λ x → x ⊢⋯ λ z → _ , Pϕ-` _
+                }
 
             open TKit TKᵣ public using () renaming
               (⊢wk to ⊢wkᵣ; ⊢⦅_⦆ to ⊢⦅_⦆ᵣ)
