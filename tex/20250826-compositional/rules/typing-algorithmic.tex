@@ -161,44 +161,39 @@
      [\CSet[1] \CSJoin \CSet[2]]
 }
 
-% \newcommand*\RuleTInLeft{
-%   \inferrule[T-Inj]{
-%     \HasType[\Eff]
-%       {\Ctx}
-%       {\E}
-%       {\T[i]}
-%   }{
-%     \HasType[\Eff]
-%       {\Ctx}
-%       {\EInj{i} \E}
-%       {\TSum{\T[1]}{\T[2]}}
-%   }
-% }
-% 
-% \newcommand*\RuleTCaseSum{
-%   \inferrule[T-CaseSum]{
-%     \HasType[\Eff]
-%       {\Ctx[1]}
-%       {\E}
-%       {\TSum{\T[1]}{\T[2]}}
-%     \\
-%     \HasType[\Eff[1]]
-%       {\CtxVar{\EVar_1}{\T[1]} \CtxPatOp \Ctx[2]}
-%       {\E[1]}
-%       {\T}
-%     \\
-%     \HasType[\Eff[2]]
-%       {\CtxVar{\EVar_2}{\T[2]} \CtxPatOp \Ctx[2]}
-%       {\E[2]}
-%       {\T}
-%   }{
-%     \HasType[\Eff \EffJoin \Eff[1] \EffJoin \Eff[2]]
-%       {\CtxPat 1 2}
-%       {\ECase\E{x_1}{\E[1]}{x_2}{\E[2]}}
-%       {\T}
-%   }
-% }
-% 
+\DefRule {Inj} {
+  \CheckType
+    {\E}
+    {\T[i]}
+    {\Eff}
+}{
+  \CheckType
+    {\EInj i \E}
+    {\TSum{\T[1]}{\T[2]}}
+    {\Eff}
+}
+
+\DefRule {CaseSum} {
+  \CtxAlgSeqCheck{\E}{\E[i]}
+  \\
+  \InferType[\CtxRestrict{\E}]
+    {\E}
+    {\TSum{\T[1]}{\T[2]}}
+    {\Eff}
+  \\
+  \InferType[\CtxVar {\EVar[i]} {\T[i]} \CtxSeq \CtxRestrict{\E[i]}]
+    {\E[i]}
+    {\TU[i]}
+    {\Eff[i]}
+    [\CSet[i]]
+}{
+  \InferType
+    {\ECase\E{\EVar[1]}{\E[1]}{\EVar[2]}{\E[2]}}
+    {\TU[1]}
+    {\Eff \EffJoin \Eff[1] \EffJoin \Eff[2]}
+    [\CSet \CSJoin \CSet[1] \CSJoin \CSet[2] \CSJoin \TU[1] \CEq \TU[2]]
+}
+
 % \newcommand*\RuleTMatch{
 %   \inferrule[T-MatchLeft]{
 %     \HasType[\Eff]
