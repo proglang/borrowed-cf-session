@@ -109,6 +109,7 @@ data _;_⊢[_]_∶_∣_↑_ Γ γ where
 
   A-Abs :
     (Arr.Unr a → UnrCx Γ γ) →
+    (Arr.Mobile a → MobCx Γ γ) →
     ϵ ≤ϵ Arr.eff a →
     T ⸴ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) ⊢ e ⇐ U ∣ ϵ ↑ Δ →
     ------------------------------------------------------------

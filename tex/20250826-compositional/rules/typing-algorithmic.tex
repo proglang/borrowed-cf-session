@@ -53,30 +53,31 @@
 
 % A-Check
 \DefRule {Check} {
-  \InferType \E {\T[2]} {\Eff} \\
+  \InferType \E {\TU} {\Eff} \\
 }{
-  \CheckType \E {\T[1]} {\Eff} [\CSet \CSJoin \T[2] \CSub \T[1]]
+  \CheckType \E {\T} {\Eff} [\CSet \CSJoin \T \CEq \TU]
 }
 
 % A-Abs
 \DefRule {Abs} {
-  \CheckType[\CtxVar\EVar{\T[1]} \CtxJoin \Ctx]
+  \CheckType[\CtxVar\EVar\T \CtxJoin \Ctx]
     \E
-    {\T[2]}
+    \TU
     {\Eff*} \\
   \Eff* \le \Eff \\
-  \Dir = \DirNone \implies \Unr \Ctx
+  \Dir = \DirNone \implies \Unr \Ctx \wedge \Mob = \MobMobile \\
+  \Mob (\Ctx)
 }{
   \CheckType
     {\EAbs\EVar\E}
-    {\TArr{\Mob}{\Dir,\Eff}{\T[1]}{\T[2]}}
+    {\TArr{\Mob}{\Dir,\Eff}{\T}{\TU}}
     {\EffPure}
 }
 
 % A-AbsRec
 \DefRule {AbsRec} {
   \CheckType[
-    \CtxVar f {\TArr{\Mob}{\DirNone,\Eff} \T \TU}
+    \CtxVar f {\TArr{\MobMobile}{\DirNone,\Eff} \T \TU}
       \CtxPar \CtxVar\EVar\T
       \CtxPar \Ctx
   ]
@@ -88,7 +89,7 @@
 }{
   \CheckType
     {\EMu {\EAbs\EVar\E}}
-    {\TArr{\Mob}{\DirNone,\Eff} \T \TU}
+    {\TArr{\MobMobile}{\DirNone,\Eff} \T \TU}
     {\EffPure}
 }
 
@@ -112,46 +113,9 @@
   \CheckType
     {\EPair {\E[1]} {\E[2]}}
     {\T \TPair \TU}
-    {\Eff}
+    {\Eff[1] \EffJoin \Eff[2]}
     [\CSet[1] \CSJoin \CSet[2]]
 }
-
-% \newcommand*\RuleTPairUnord{
-%   \inferrule[T-PairUnord]{
-%     \HasType[\Eff[1]]
-%       {\Ctx_1}
-%       {\E[1]}
-%       {\T[1]} \\
-%     \HasType[\Eff[2]]
-%       {\Ctx_2}
-%       {\E[2]}
-%       {\T[2]}
-%   }{
-%     \HasType[\Eff[1] \EffJoin \Eff[2]]
-%       {\Ctx[1] \CtxPar  \Ctx[2]}
-%       {\EPair{\E[1]}{\E[2]}}
-%       {\TPairUnord{\T[1]}{\T[2]}}
-%   }
-% }
-% 
-% \newcommand*\RuleTPairOrd{
-%   \inferrule[T-PairOrd]{
-%     % \Unr{\Ctx_1} \vee \Unr {\T[1]} \vee \Eff[2] = \EffPure \\
-%     \HasType[\Eff[1]]
-%       {\Ctx_1}
-%       {\E[1]}
-%       {\T[1]} \\
-%     \HasType[\EffPure]
-%       {\Ctx_2}
-%       {\E[2]}
-%       {\T[2]}
-%   }{
-%     \HasType[\Eff[1]]
-%       {\Ctx[1] \CtxSeq  \Ctx[2]}
-%       {\EPair{\E[1]}{\E[2]}}
-%       {\TPairOrd{\T[1]}{\T[2]}}
-%   }
-% }
 
 % A-LetUnit
 \DefRule {LetUnit} {
@@ -175,24 +139,6 @@
     [\CSet[1] \CSJoin \CSet[2]]
 }
 
-% \newcommand*\RuleTLet{
-%   \inferrule[T-Let]{
-%     \HasType[\Eff[1]]
-%       {\Ctx[1]}
-%       {\E[1]}
-%       {\T[1]} \\
-%     \HasType[\Eff[2]]
-%       {\CtxVar x {{\T[1]}} \CtxPatOp \Ctx[2]}
-%       {\E[2]}
-%       {\T[2]}
-%   }{
-%     \HasType[\Eff[1] \EffJoin \Eff[2]]
-%       {\CtxPat 1 2}
-%       {\ELet x{\E[1]}{\E[2]}}
-%       {\T[2]}
-%   }
-% }
-
 % A-LetPair
 \DefRule {LetPair} {
   \CtxAlgSeqCheck{\E[1]}{\E[2]} \\
@@ -215,42 +161,6 @@
      [\CSet[1] \CSJoin \CSet[2]]
 }
 
-% \newcommand*\RuleTLetUnord{
-%   \inferrule[T-LetUnord]{
-%     \HasType[\Eff[1]]
-%       {\Ctx[1]}
-%       {\E[1]}
-%       {\TPairUnord {\T[1]}{\T[2]}} \\
-%     \HasType[\Eff[2]]
-%       {\CtxVar x{\T[1]} \CtxPar \CtxVar y{\T[2]} \CtxPatOp \Ctx[2]}
-%       {\E[2]}
-%       {\T[3]}
-%   }{
-%     \HasType[\Eff[1] \EffJoin \Eff[2]]
-%       {\CtxPat 1 2}
-%       {\ELetPair xy{\E[1]}{\E[2]}}
-%       {\T[3]}
-%   }
-% }
-% 
-% \newcommand*\RuleTLetOrd{
-%   \inferrule[T-LetOrd]{
-%     \HasType[\Eff[1]]
-%       {\Ctx[1]}
-%       {\E[1]}
-%       {\TPairOrd {\T[1]}{\T[2]}} \\
-%     \HasType[\Eff[2]]
-%       {\CtxVar x{\T[1]} \CtxSeq \CtxVar y{\T[2]} \CtxPatOp \Ctx[2]}
-%       {\E[2]}
-%       {\T[3]}
-%   }{
-%     \HasType[\Eff[1] \EffJoin \Eff[2]]
-%       {\CtxPat 1 2}
-%       {\ELetPair xy{\E[1]}{\E[2]}}
-%       {\T[3]}
-%   }
-% }
-% 
 % \newcommand*\RuleTInLeft{
 %   \inferrule[T-Inj]{
 %     \HasType[\Eff]
@@ -285,53 +195,6 @@
 %     \HasType[\Eff \EffJoin \Eff[1] \EffJoin \Eff[2]]
 %       {\CtxPat 1 2}
 %       {\ECase\E{x_1}{\E[1]}{x_2}{\E[2]}}
-%       {\T}
-%   }
-% }
-% 
-% \newcommand*\RuleTWeakC{
-%   \inferrule[T-WeakC]{
-%     \Unr\Ctx_2 \\
-%     \HasType[\Eff]
-%       {\Ctx[1] \CtxSeq \Ctx[2]}
-%       {\E}
-%       {\T}
-%   }{
-%     \HasType[\Eff]
-%       {\Ctx[1]}
-%       {\E}
-%       {\T}
-%   }
-% }
-% 
-% \newcommand*\RuleTWeakE{
-%   \inferrule[T-WeakE]{
-%     \HasType[\EffPure]
-%       {\Ctx}
-%       {\E}
-%       {\T}
-%   }{
-%     \HasType[\EffPure]
-%       {\Ctx}
-%       {\E}
-%       {\T}
-%   }
-% }
-% 
-% \newcommand*\RuleTWeakCE{
-%   \inferrule[T-WeakCE]{
-%     \Ctx[2] \preccurlyeq \Ctx[1]
-%     \\
-%     \Eff[1] \le \Eff[2]
-%     \\
-%     \HasType[\Eff[1]]
-%       {\Ctx_1}
-%       {\E}
-%       {\T}
-%   }{
-%     \HasType[\Eff[2]]
-%       {\Ctx_2}
-%       {\E}
 %       {\T}
 %   }
 % }

@@ -27,60 +27,60 @@
 \DefRule {AbsUnr} {
   \HasType
     {
-        \CtxVar f {\TArr{\MobMobile}{\DirNone,\Eff}{\T[1]}{\T[2]}}
-          \CtxPar \CtxVar \EVar{\T[1]}
+        \CtxVar f {\TArr{\MobMobile}{\DirNone,\Eff}{\T}{\TU}}
+          \CtxPar \CtxVar \EVar{\T}
           \CtxPar \Ctx
     }
     {\E}
-    {\T[2]} \\
+    {\TU} \\
   \Unr\Ctx
 }{
   \HasType[\EffPure]
     \Ctx
     {\EMu {\EAbs\EVar\E}}
-    {\TArr{\MobMobile}{\DirNone,\Eff}{\T[1]}{\T[2]}}
+    {\TArr{\MobMobile}{\DirNone,\Eff} \T \TU}
 }
 
 % T-AbsLin
 \DefRule {AbsLin} {
   \HasType
-    {\CtxVar\EVar{\T[1]} \CtxPar \Ctx}
+    {\CtxVar\EVar{\T} \CtxPar \Ctx}
     {\E}
-    {\T[2]} \\
+    {\TU} \\
   \Mob (\Ctx)
 }{
   \HasType[\EffPure]
     \Ctx
     {\EAbs\EVar\E}
-    {\TArr{\Mob}{\DirUnord,\Eff}{\T[1]}{\T[2]}}
+    {\TArr{\Mob}{\DirUnord,\Eff} \T \TU}
 }
 
 % T-AbsLeft
 \DefRule {AbsLeft} {
   \HasType
-    {\CtxVar{\EVar}{\T[1]} \CtxSeq \Ctx}
+    {\CtxVar{\EVar}{\T} \CtxSeq \Ctx}
     {\E}
-    {\T[2]} \\
+    {\TU} \\
   \Mob (\Ctx)
 }{
   \HasType[\EffPure]
     \Ctx
     {\EAbs\EVar\E}
-    {\TArr{\Mob}{\DirLeft,\Eff}{\T[1]}{\T[2]}}
+    {\TArr{\Mob}{\DirLeft,\Eff} \T \TU}
 }
 
 % T-AbsRight
 \DefRule {AbsRight} {
   \HasType
-    {\Ctx \CtxSeq \CtxVar{\EVar}{\T[1]}}
+    {\Ctx \CtxSeq \CtxVar{\EVar}{\T}}
     {\E}
-    {\T[2]} \\
+    {\TU} \\
   \Mob (\Ctx)
 }{
   \HasType[\EffPure]
     \Ctx
     {\EAbs\EVar\E}
-    {\TArr{\Mob}{\DirRight,\Eff}{\T[1]}{\T[2]}}
+    {\TArr{\Mob}{\DirRight,\Eff} \T \TU}
 }
 
 % T-AppUnr
@@ -88,16 +88,16 @@
   \HasType
     {\Ctx[1]}
     {\E[1]}
-    {\TArr{\Mob}{\DirNone,\Eff}{\T[1]}{\T[2]}} \\
+    {\TArr{\Mob}{\DirNone,\Eff} \T \TU} \\
   \HasType
     {\Ctx[2]}
     {\E[2]}
-    {\T[1]}
+    {\T}
 }{
   \HasType
     {\Ctx[1] \CtxSeq \Ctx[2]}
     {\E[1] \E[2]}
-    {\T[2]}
+    {\TU}
 }
 
 % T-AppLine
@@ -105,16 +105,16 @@
   \HasType
     {\Ctx[1]}
     {\E[1]}
-    {\TArr{\Mob}{\DirUnord,\Eff}{\T[1]}{\T[2]}} \\
+    {\TArr{\Mob}{\DirUnord,\Eff} \T \TU} \\
   \HasType
     {\Ctx[2]}
     {\E[2]}
-    {\T[1]}
+    {\T}
 }{
   \HasType
     {\Ctx[1] \CtxPar \Ctx[2]}
     {\E[1] \E[2]}
-    {\T[2]}
+    {\TU}
 }
 
 % T-AppLeft
@@ -122,17 +122,17 @@
   \HasType[\EffPure]
     {\Ctx[1]}
     {\E[1]}
-    {\TArr{\Mob}{\DirLeft,\Eff}{\T[1]}{\T[2]}}
+    {\TArr{\Mob}{\DirLeft,\Eff} \T \TU}
   \\
   \HasType
     {\Ctx[2]}
     {\E[2]}
-    {\T[1]}
+    {\T}
 }{
   \HasType
     {\Ctx[2] \CtxSeq \Ctx[1]}
     {\E[1] \E[2]}
-    {\T[2]}
+    {\TU}
 }
 
 % T-AppRight
@@ -140,17 +140,17 @@
   \HasType
     {\Ctx[1]}
     {\E[1]}
-    {\TArr{\Mob}{\DirRight,\Eff}{\T[1]}{\T[2]}}
+    {\TArr{\Mob}{\DirRight,\Eff} \T \TU}
     \\
   \HasType[\EffPure]
     {\Ctx[2]}
     {\E[2]}
-    {\T[1]}
+    {\T}
 }{
   \HasType
     {\Ctx[1] \CtxSeq  \Ctx[2]}
     {\E[1] \E[2]}
-    {\T[2]}
+    {\TU}
 }
 
 % T-PairUnord
@@ -158,16 +158,16 @@
   \HasType
     {\Ctx[1]}
     {\E[1]}
-    {\T[1]} \\
+    {\T} \\
   \HasType
     {\Ctx[2]}
     {\E[2]}
-    {\T[2]}
+    {\TU}
 }{
   \HasType
     {\Ctx[1] \CtxPar  \Ctx[2]}
     {\EPair{\E[1]}{\E[2]}}
-    {\TPairUnord{\T[1]}{\T[2]}}
+    {\TPairUnord{\T}{\TU}}
 }
 
 % T-PairOrd
@@ -176,16 +176,16 @@
   \HasType
     {\Ctx[1]}
     {\E[1]}
-    {\T[1]} \\
+    {\T} \\
   \HasType[\EffPure]
     {\Ctx[2]}
     {\E[2]}
-    {\T[2]}
+    {\TU}
 }{
   \HasType
     {\Ctx[1] \CtxSeq  \Ctx[2]}
     {\EPair{\E[1]}{\E[2]}}
-    {\TPairOrd{\T[1]}{\T[2]}}
+    {\TPairOrd{\T}{\TU}}
 }
 
 % T-LetUnit
@@ -231,12 +231,12 @@
   \HasType
     {\CtxVar x{\T[1]} \CtxPar \CtxVar y{\T[2]} \CtxPatOp \Ctx[2]}
     {\E[2]}
-    {\T[3]}
+    {\TU}
 }{
   \HasType
     {\CtxPat 1 2}
     {\ELetPair xy{\E[1]}{\E[2]}}
-    {\T[3]}
+    {\TU}
 }
 
 % T-LetOrd
@@ -248,12 +248,12 @@
   \HasType
     {\CtxVar x{\T[1]} \CtxSeq \CtxVar y{\T[2]} \CtxPatOp \Ctx[2]}
     {\E[2]}
-    {\T[3]}
+    {\TU}
 }{
   \HasType
     {\CtxPat 1 2}
     {\ELetPair xy{\E[1]}{\E[2]}}
-    {\T[3]}
+    {\TU}
 }
 
 % T-Inj
@@ -307,19 +307,21 @@
     {\T}
 }
 
-% T-Effect
-\DefRule {Effect} {
+% T-Conv
+\DefRule {Conv} {
   \Eff[1] \le \Eff[2]
   \\
   \HasType[\Eff[1]]
     {\Ctx}
     {\E}
     {\T}
+  \\
+  \T \simeq \TU
 }{
   \HasType[\Eff[2]]
     {\Ctx}
     {\E}
-    {\T}
+    {\TU}
 }
 
 % \newcommand*\RuleTMatch{
