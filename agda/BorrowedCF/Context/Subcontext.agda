@@ -54,16 +54,25 @@ module ≼-Reasoning {n} {Γ : Ctx n} = PreorderReasoning (≼-preorder Γ)
 
 module _ where
   open Un using (_⊆_)
-  allCx-≼ : ∀ {ℓ} {P : Pred 𝕋 ℓ} → (Unr ⊆ P) → AllCx P Γ α → Γ ∶ α ≼ β → AllCx P Γ β
-  allCx-≼ f C (≼-refl eq) = allCx-≈ eq C
-  allCx-≼ f C (≼-∅ U) = allCx-map f U
-  allCx-≼ f ((C₁ ∥ C₂) ; (C₁′ ∥ C₂′)) ≼-wk = (C₁ ; C₁′) ∥ (C₂ ; C₂′)
-  allCx-≼ f C (≼-trans x y) = allCx-≼ f (allCx-≼ f C x) y
-  allCx-≼ f (C₁ ; C₂) (≼-cong-; x y) = allCx-≼ f C₁ x ; allCx-≼ f C₂ y
-  allCx-≼ f (C₁ ∥ C₂) (≼-cong-∥ x y) = allCx-≼ f C₁ x ∥ allCx-≼ f C₂ y
 
-unrCx-≼ : UnrCx Γ α → Γ ∶ α ≼ β → UnrCx Γ β
-unrCx-≼ = allCx-≼ id
+  allCx-strengthen : ∀ {ℓ} {P : Pred 𝕋 ℓ} → Γ ∶ α ≼ β → AllCx P Γ β → AllCx P Γ α
+  allCx-strengthen (≼-refl eq)    C         = allCx-≈ (≈-sym eq) C
+  allCx-strengthen (≼-∅ x)        C         = []
+  allCx-strengthen (≼-trans  x y) C         = allCx-strengthen x (allCx-strengthen y C)
+  allCx-strengthen (≼-cong-; x y) (C₁ ; C₂) = allCx-strengthen x C₁ ; allCx-strengthen y C₂
+  allCx-strengthen (≼-cong-∥ x y) (C₁ ∥ C₂) = allCx-strengthen x C₁ ∥ allCx-strengthen y C₂
+  allCx-strengthen ≼-wk ((C₁ ; C₂) ∥ (C₁′ ; C₂′)) = (C₁ ∥ C₁′) ; (C₂ ∥ C₂′)
+
+  allCx-weaken : ∀ {ℓ} {P : Pred 𝕋 ℓ} → (Unr ⊆ P) → Γ ∶ α ≼ β → AllCx P Γ α → AllCx P Γ β
+  allCx-weaken f (≼-refl eq) C = allCx-≈ eq C
+  allCx-weaken f (≼-∅ U)     C = allCx-map f U
+  allCx-weaken f ≼-wk ((C₁ ∥ C₂) ; (C₁′ ∥ C₂′)) = (C₁ ; C₁′) ∥ (C₂ ; C₂′)
+  allCx-weaken f (≼-trans x y) C = allCx-weaken f y (allCx-weaken f x C)
+  allCx-weaken f (≼-cong-; x y) (C₁ ; C₂) = allCx-weaken f x C₁ ; allCx-weaken f y C₂
+  allCx-weaken f (≼-cong-∥ x y) (C₁ ∥ C₂) = allCx-weaken f x C₁ ∥ allCx-weaken f y C₂
+
+unrCx-weaken : Γ ∶ α ≼ β → UnrCx Γ α → UnrCx Γ β
+unrCx-weaken = allCx-weaken id
 
 module _ where
   open import Data.Fin.Subset

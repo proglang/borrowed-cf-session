@@ -31,6 +31,7 @@ data Value {n} : Tm n → Set where
   V-K : ∀ {c} → Value (K c)
   V-λ : Value (ƛ e)
   V-⊗ : Value e₁ → Value e₂ → Value (e₁ ⊗ e₂)
+  V-⊕ : ∀ {i} → Value e → Value (`inj i e)
 
 vTm : {e : Tm n} → Value e → Tm n
 vTm {e = e} _ = e
@@ -40,6 +41,7 @@ Value-irr {U = V-`} {V-`} = refl
 Value-irr {U = V-K} {V-K} = refl
 Value-irr {U = V-λ} {V-λ} = refl
 Value-irr {U = V-⊗ U₁ U₂} {V-⊗ V₁ V₂} = cong₂ V-⊗ Value-irr Value-irr
+Value-irr {U = V-⊕ U} {V-⊕ V} = cong V-⊕ Value-irr
 
 {-
 data Blocked {n} : Tm n → Set where
@@ -65,6 +67,8 @@ data Frame n : Set where
   □;_ : (e₂ : Tm n) → Frame n
   `let-`in_ : (e′ : Tm (1 + n)) → Frame n
   `let⊗-`in_ : (e′ : Tm (2 + n)) → Frame n
+  `inj□      : (i : Side) → Frame n
+  `case□`of⟨_;_⟩ : (e₁ e₂ : Tm (suc n)) → Frame n
 
 infixl 4.5 _[_]
 
@@ -76,8 +80,8 @@ _[_] : Frame n → Tm n → Tm n
 (□; e) [ e₀ ] = e₀ ; e
 (`let-`in e) [ e₀ ] = `let e₀ `in e
 (`let⊗-`in e) [ e₀ ] = `let⊗ e₀ `in e
-
---data EvCx
+`inj□ i [ e₀ ] = `inj i e₀
+`case□`of⟨ e₁ ; e₂ ⟩ [ e₀ ] = `case e₀ `of⟨ e₁ ; e₂ ⟩
 
 VSub : ⦃ K : Kit 𝓕 ⦄ → m –[ K ]→ n → Set
 VSub ϕ = ∀ x → Value (`/id (ϕ x))
@@ -87,6 +91,7 @@ value-⋯ V-` ϕ Vϕ = Vϕ _
 value-⋯ V-K ϕ Vϕ = V-K
 value-⋯ V-λ ϕ Vϕ = V-λ
 value-⋯ (V-⊗ V₁ V₂) ϕ Vϕ = V-⊗ (value-⋯ V₁ ϕ Vϕ) (value-⋯ V₂ ϕ Vϕ)
+value-⋯ (V-⊕ V) ϕ Vϕ = V-⊕ (value-⋯ V ϕ Vϕ)
 
 frame-⋯ : ⦃ K : Kit 𝓕 ⦄ → Frame m → (ϕ : m –[ K ]→ n) → VSub ϕ → Frame n
 frame-⋯ (□· e₂) ϕ Vϕ = □· (e₂ ⋯ ϕ)
@@ -96,6 +101,8 @@ frame-⋯ (V₁ ⊗□) ϕ Vϕ = (value-⋯ V₁ ϕ Vϕ) ⊗□
 frame-⋯ (□; e₂) ϕ Vϕ = □; (e₂ ⋯ ϕ)
 frame-⋯ (`let-`in e′) ϕ Vϕ = `let-`in (e′ ⋯ ϕ ↑)
 frame-⋯ (`let⊗-`in e′) ϕ Vϕ = `let⊗-`in (e′ ⋯ ϕ ↑ ↑)
+frame-⋯ (`inj□ i) ϕ Vϕ = `inj□ i
+frame-⋯ (`case□`of⟨ e₁ ; e₂ ⟩) ϕ Vϕ = `case□`of⟨ (e₁ ⋯ ϕ ↑) ; (e₂ ⋯ ϕ ↑) ⟩
 
 infixl 5 _⋯ᵛ_ _⋯ᶠ_
 
@@ -137,3 +144,5 @@ unique-frame (V₁ ⊗□) (V₂ ⊗□) ¬V ¬V′ refl = cong _⊗□ Value-ir
 unique-frame (□; e₂) (□; e₃) ¬V ¬V′ refl = refl , refl
 unique-frame (`let-`in e′) (`let-`in e′₁) ¬V ¬V′ refl = refl , refl
 unique-frame (`let⊗-`in e′) (`let⊗-`in e′₁) ¬V ¬V′ refl = refl , refl
+unique-frame (`inj□ i) (`inj□ i) ¬V ¬V′ refl = refl , refl
+unique-frame `case□`of⟨ _ ; _ ⟩ `case□`of⟨ _ ; _ ⟩ _ _ refl = refl , refl

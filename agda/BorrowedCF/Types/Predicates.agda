@@ -101,12 +101,13 @@ module _ (PA : Arr → Set) (PS : 𝕊 0 → Set) where
     `⊤  : TPred `⊤
     arr : PA a → TPred (T ⟨ a ⟩→ U)
     _⊗_ : TPred T → TPred U → TPred (T ⊗⟨ d ⟩ U)
---    _⊕_ : TPred T → TPred U → TPred (T ⊕ U)
+    _⊕_ : TPred T → TPred U → TPred (T ⊕ U)
     ⟨_⟩ : PS s → TPred ⟨ s ⟩
 
 tpred-≃ : {PA : Arr → Set} {PS : 𝕊 0 → Set} → PS Respects _≃_ → TPred PA PS Respects _≃_
 tpred-≃ ps≃ `⊤ `⊤ = `⊤
 tpred-≃ ps≃ (eq₁ ⊗ eq₂) (px ⊗ py) = tpred-≃ ps≃ eq₁ px ⊗ tpred-≃ ps≃ eq₂ py
+tpred-≃ ps≃ (eq₁ ⊕ eq₂) (px ⊕ py) = tpred-≃ ps≃ eq₁ px ⊕ tpred-≃ ps≃ eq₂ py
 tpred-≃ ps≃ (eq₁ `→ eq₂) (arr pa) = arr pa
 tpred-≃ ps≃ ⟨ eq ⟩ ⟨ ps ⟩ = ⟨ ps≃ eq ps ⟩
 
@@ -114,6 +115,7 @@ tpred-map : {PA₁ PA₂ : Arr → Set} {PS₁ PS₂ : 𝕊 0 → Set} → PA₁
 tpred-map pa⊆ ps⊆ `⊤ = `⊤
 tpred-map pa⊆ ps⊆ (arr pa) = arr (pa⊆ pa)
 tpred-map pa⊆ ps⊆ (px ⊗ py) = tpred-map pa⊆ ps⊆ px ⊗ tpred-map pa⊆ ps⊆ py
+tpred-map pa⊆ ps⊆ (px ⊕ py) = tpred-map pa⊆ ps⊆ px ⊕ tpred-map pa⊆ ps⊆ py
 tpred-map pa⊆ ps⊆ ⟨ s ⟩ = ⟨ ps⊆ s ⟩
 
 tpred? : {PA : Arr → Set} {PS : 𝕊 0 → Set} → Decidable PA → Decidable PS → Decidable (TPred PA PS)
@@ -121,6 +123,7 @@ tpred? pa? ps? ⟨ s ⟩ = map′ ⟨_⟩ (λ{ ⟨ ps ⟩ → ps }) (ps? s)
 tpred? pa? ps? `⊤ = yes `⊤
 tpred? pa? ps? (t ⟨ a ⟩→ u) = map′ arr (λ{ (arr pa) → pa }) (pa? a)
 tpred? pa? ps? (t ⊗⟨ d ⟩ u) = map′ (uncurry _⊗_) (λ{ (pt ⊗ pu) → pt , pu }) (tpred? pa? ps? t ×-dec tpred? pa? ps? u)
+tpred? pa? ps? (t ⊕ u) = map′ (uncurry _⊕_) (λ{ (pt ⊕ pu) → pt , pu }) (tpred? pa? ps? t ×-dec tpred? pa? ps? u)
 
 Mobile = TPred Arr.Mobile (Skips ∪ λ s → ∃[ s′ ] Bounded s′ × s ≃ acq ; s′)
 

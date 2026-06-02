@@ -144,5 +144,9 @@ open module Un = Relation.Unary
   using (Pred)
   public
 
-open import Data.Bool using (true; false) public
+open import Data.Bool using (if_then_else_; Bool; true; false) public
 open import Relation.Nullary public
+
+if[_]_then_else_ : ∀ {a p} {A : Set a} (P : A → Set p) (b : Bool) {a₁ a₂} → P a₁ → P a₂ → P (if b then a₁ else a₂)
+if[ P ] true  then x else y = x
+if[ P ] false then x else y = y

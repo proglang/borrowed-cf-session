@@ -34,6 +34,7 @@ data _≃𝕊_ {n} : Rel (𝕊 n) 0ℓ where
 data _≃𝕋_ : Rel 𝕋 0ℓ where
   `⊤ : `⊤ ≃𝕋 `⊤
   _⊗_ : T₁ ≃𝕋 T₂ → U₁ ≃𝕋 U₂ → T₁ ⊗⟨ d ⟩ U₁ ≃𝕋 T₂ ⊗⟨ d ⟩ U₂
+  _⊕_ : T₁ ≃𝕋 T₂ → U₁ ≃𝕋 U₂ → T₁ ⊕ U₁ ≃𝕋 T₂ ⊕ U₂
   _`→_ : T₁ ≃𝕋 T₂ → U₁ ≃𝕋 U₂ → T₁ ⟨ a ⟩→ U₁ ≃𝕋 T₂ ⟨ a ⟩→ U₂
   ⟨_⟩ : EqClosure _≃𝕊_ s₁ s₂ → ⟨ s₁ ⟩ ≃𝕋 ⟨ s₂ ⟩
 
@@ -49,11 +50,13 @@ _≃_ {𝕥} = _≃𝕋_
 ≃-refl {𝕥} {t = `⊤} = `⊤
 ≃-refl {𝕥} {t = t ⟨ a ⟩→ u} = ≃-refl `→ ≃-refl
 ≃-refl {𝕥} {t = t ⊗⟨ d ⟩ u} = ≃-refl ⊗ ≃-refl
+≃-refl {𝕥} {t = t ⊕ u} = ≃-refl ⊕ ≃-refl
 
 ≃-sym : ∀ {κ x} {t u : Ty κ x} → t ≃ u → u ≃ t
 ≃-sym {𝕤} eq = Eq*.symmetric _≃𝕊_ eq
 ≃-sym {𝕥} `⊤ = `⊤
 ≃-sym {𝕥} (eq₁ ⊗ eq₂) = ≃-sym eq₁ ⊗ ≃-sym eq₂
+≃-sym {𝕥} (eq₁ ⊕ eq₂) = ≃-sym eq₁ ⊕ ≃-sym eq₂
 ≃-sym {𝕥} (eq₁ `→ eq₂) = ≃-sym eq₁ `→ ≃-sym eq₂
 ≃-sym {𝕥} ⟨ eq ⟩ = ⟨ ≃-sym eq ⟩
 
@@ -61,6 +64,7 @@ _≃_ {𝕥} = _≃𝕋_
 ≃-trans {𝕤} uv vw = uv ◅◅ vw
 ≃-trans {𝕥} `⊤ `⊤ = `⊤
 ≃-trans {𝕥} (uv ⊗ uv₁) (vw ⊗ vw₁) = ≃-trans uv vw ⊗ ≃-trans uv₁ vw₁
+≃-trans {𝕥} (uv ⊕ uv₁) (vw ⊕ vw₁) = ≃-trans uv vw ⊕ ≃-trans uv₁ vw₁
 ≃-trans {𝕥} (uv `→ uv₁) (vw `→ vw₁) = ≃-trans uv vw `→ ≃-trans uv₁ vw₁
 ≃-trans {𝕥} ⟨ uv ⟩ ⟨ vw ⟩ = ⟨ ≃-trans uv vw ⟩
 
