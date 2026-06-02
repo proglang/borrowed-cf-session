@@ -1,6 +1,10 @@
 {-# OPTIONS --rewriting #-}
 module BorrowedCF.Types.Syntax where
 
+open import Algebra.Construct.NaturalChoice.Base
+
+import Relation.Binary.Reasoning.PartialOrder as PO-Reasoning
+
 open import BorrowedCF.Prelude
 
 open Nat.Variables
@@ -30,6 +34,77 @@ data _≤ϵ_ : Rel Eff 0ℓ where
 ≤ϵ-trans : ϵ₁ ≤ϵ ϵ₂ → ϵ₂ ≤ϵ ϵ₃ → ϵ₁ ≤ϵ ϵ₃
 ≤ϵ-trans ℙ≤ϵ ≤₂₃ = ℙ≤ϵ
 ≤ϵ-trans 𝕀≤𝕀 ≤₂₃ = ≤₂₃
+
+infixl 5 _⊔ϵ_ _⊓ϵ_
+
+_⊔ϵ_ : Eff → Eff → Eff
+ℙ ⊔ϵ ϵ = ϵ
+𝕀 ⊔ϵ _ = 𝕀
+
+_⊓ϵ_ : Eff → Eff → Eff
+ℙ ⊓ϵ _ = ℙ
+𝕀 ⊓ϵ ϵ = ϵ
+
+module EffProperties where
+  open Bin
+
+  ≤-isPreorder : IsPreorder _≡_ _≤ϵ_
+  ≤-isPreorder = record
+    { isEquivalence = ≡.isEquivalence
+    ; reflexive = λ{ refl → ≤ϵ-refl }
+    ; trans = ≤ϵ-trans
+    }
+
+  ≤-isTotalPreorder : IsTotalPreorder _≡_ _≤ϵ_
+  ≤-isTotalPreorder = record
+    { isPreorder = ≤-isPreorder
+    ; total = λ where
+        ℙ _ → inj₁ ℙ≤ϵ
+        𝕀 ℙ → inj₂ ℙ≤ϵ
+        𝕀 𝕀 → inj₁ 𝕀≤𝕀
+    }
+
+  ≤-isPartialOrder : IsPartialOrder _≡_ _≤ϵ_
+  ≤-isPartialOrder = record
+    { isPreorder = ≤-isPreorder
+    ; antisym = λ{ ℙ≤ϵ ℙ≤ϵ → refl ; 𝕀≤𝕀 _ → refl }
+    }
+
+  ≤-isTotalOrder : IsTotalOrder _≡_ _≤ϵ_
+  ≤-isTotalOrder = record
+    { isPartialOrder = ≤-isPartialOrder
+    ; total = IsTotalPreorder.total ≤-isTotalPreorder
+    }
+
+  ≤-totalOrder : TotalOrder _ _ _
+  ≤-totalOrder = record { isTotalOrder = ≤-isTotalOrder }
+
+  open TotalOrder ≤-totalOrder
+    using ()
+    renaming ( totalPreorder to ≤-totalPreorder
+             ; preorder to ≤-preorder
+             ; poset to ≤-poset
+             )
+    public
+
+  ⊔-MaxOperator : MaxOperator ≤-totalPreorder
+  ⊔-MaxOperator = record
+    { _⊔_ = _⊔ϵ_
+    ; x≤y⇒x⊔y≈y = λ{ ℙ≤ϵ → refl ; 𝕀≤𝕀 → refl }
+    ; x≥y⇒x⊔y≈x = λ{ {ℙ} ℙ≤ϵ → refl ; {𝕀} y≤x → refl }
+    }
+
+  ⊓-MinOperator : MinOperator ≤-totalPreorder
+  ⊓-MinOperator = record
+    { _⊓_ = _⊓ϵ_
+    ; x≤y⇒x⊓y≈x = λ{ ℙ≤ϵ → refl ; 𝕀≤𝕀 → refl }
+    ; x≥y⇒x⊓y≈y = λ{ {ℙ} ℙ≤ϵ → refl ; {𝕀} y≤x → refl }
+    }
+
+  open import Algebra.Construct.NaturalChoice.MinMaxOp ⊓-MinOperator ⊔-MaxOperator public
+
+module ≤ϵ-Reasoning = PO-Reasoning EffProperties.≤-poset
+
 
 data Lin : Set where
   𝟙 unr : Lin
