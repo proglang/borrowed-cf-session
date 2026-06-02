@@ -139,84 +139,12 @@ dual-involutive (`` x) = refl
 
 {-# REWRITE dual-involutive #-}
 
-module Sub where
-  open import BorrowedCF.FinKits as Kits hiding (Syntax) public
+data Skips {n} : 𝕊 n → Set where
+  skip : Skips skip
+  _;_  : (S₁ : Skips s₁) (S₂ : Skips s₂) → Skips (s₁ ; s₂)
+  mu   : (S : Skips s) → Skips (mu s)
 
-  open module Syntax = Kits.Syntax record
-    { Tm = 𝕊
-    ; `_ = `_
-    ; `-injective = λ{ refl → refl }
-    }
-    hiding (Traversal; Tm; `_)
-    renaming (id to idₖ)
-    public
-
-  infixl 5 _⋯_
-
-  _⋯_ : ⦃ K : Kit 𝓕 ⦄ → 𝕊 m → m –[ K ]→ n → 𝕊 n
-  (` x) ⋯ ϕ = `/id (ϕ x)
-  end p ⋯ ϕ = end p
-  msg p t ⋯ ϕ = msg p t
-  brn p s₁ s₂ ⋯ ϕ = brn p (s₁ ⋯ ϕ) (s₂ ⋯ ϕ)
-  mu s ⋯ ϕ = mu (s ⋯ ϕ ↑)
-  (s₁ ; s₂) ⋯ ϕ = (s₁ ⋯ ϕ) ; (s₂ ⋯ ϕ) 
-  skip ⋯ ϕ = skip
-  ret ⋯ ϕ = ret
-  acq ⋯ ϕ = acq
-  (`` x) ⋯ ϕ = `` x
-
-  ⋯-id : ⦃ K : Kit 𝓕 ⦄ (s : 𝕊 n) {ϕ : n –[ K ]→ n} → ϕ ≗ idₖ → s ⋯ ϕ ≡ s
-  ⋯-id (` x) eq = cong `/id (eq x) ■ `/`-is-` x
-  ⋯-id (end p) eq = refl
-  ⋯-id (msg p t) eq = refl
-  ⋯-id (brn p s₁ s₂) eq = cong₂ (brn p) (⋯-id s₁ eq) (⋯-id s₂ eq)
-  ⋯-id (mu s) eq = cong mu (⋯-id s (id↑ eq))
-  ⋯-id (s₁ ; s₂) eq = cong₂ _;_ (⋯-id s₁ eq) (⋯-id s₂ eq)
-  ⋯-id skip eq = refl
-  ⋯-id ret eq = refl
-  ⋯-id acq eq = refl
-  ⋯-id (`` x) eq = refl
-
-  ⋯-cong : ⦃ K : Kit 𝓕 ⦄ (s : 𝕊 m) {ϕ₁ ϕ₂ : m –[ K ]→ n} → ϕ₁ ≗ ϕ₂ → s ⋯ ϕ₁ ≡ s ⋯ ϕ₂
-  ⋯-cong (` x) eq = cong `/id (eq x)
-  ⋯-cong (end p) eq = refl
-  ⋯-cong (msg p t) eq = refl
-  ⋯-cong (brn p s₁ s₂) eq = cong₂ (brn p) (⋯-cong s₁ eq) (⋯-cong s₂ eq)
-  ⋯-cong (mu s) eq = cong mu (⋯-cong s (eq ~↑))
-  ⋯-cong (s₁ ; s₂) eq = cong₂ _;_ (⋯-cong s₁ eq) (⋯-cong s₂ eq)
-  ⋯-cong skip eq = refl
-  ⋯-cong ret eq = refl
-  ⋯-cong acq eq = refl
-  ⋯-cong (`` x) eq = refl
-
-  open module Traversal = Syntax.Traversal record
-    { _⋯_ = _⋯_
-    ; ⋯-var = λ x ϕ → refl
-    ; ⋯-id = ⋯-id
-    ; ⋯-cong = ⋯-cong
-    }
-    hiding (_⋯_; ⋯-id; ⋯-cong; CTraversal)
-    public
-
-  fusion :
-    ⦃ K₁ : Kit 𝓕₁ ⦄ ⦃ K₂ : Kit 𝓕₂ ⦄ ⦃ K : Kit 𝓕 ⦄ ⦃ W₁ : WkKit K₁ ⦄ ⦃ C : CKit K₁ K₂ K ⦄
-    (s : 𝕊 n₁) (ϕ₁ : n₁ –[ K₁ ]→ n₂) (ϕ₂ : n₂ –[ K₂ ]→ n₃) → s ⋯ ϕ₁ ⋯ ϕ₂ ≡ s ⋯ ϕ₁ ·ₖ ϕ₂
-  fusion (` x) ϕ₁ ϕ₂ = sym (&/⋯-⋯ (ϕ₁ x) ϕ₂)
-  fusion (end p) ϕ₁ ϕ₂ = refl
-  fusion (msg p t) ϕ₁ ϕ₂ = refl
-  fusion (brn p s₁ s₂) ϕ₁ ϕ₂ = cong₂ (brn p) (fusion s₁ ϕ₁ ϕ₂) (fusion s₂ ϕ₁ ϕ₂)
-  fusion (mu s) ϕ₁ ϕ₂ = cong mu $
-    fusion s (ϕ₁ ↑) (ϕ₂ ↑) ■ ⋯-cong s (sym ∘ dist-↑-· ϕ₁ ϕ₂)
-  fusion (s₁ ; s₂) ϕ₁ ϕ₂ = cong₂ _;_ (fusion s₁ ϕ₁ ϕ₂) (fusion s₂ ϕ₁ ϕ₂)
-  fusion skip ϕ₁ ϕ₂ = refl
-  fusion ret ϕ₁ ϕ₂ = refl
-  fusion acq ϕ₁ ϕ₂ = refl
-  fusion (`` x) ϕ₁ ϕ₂ = refl
-
-  open module CTraversal = Traversal.CTraversal record { fusion = fusion }
-    hiding (fusion)
-    public
-
+--  open module Typing
 
 -- relaxEff : 𝕋 → Eff → 𝕋
 -- relaxEff `⊤ _ = `⊤

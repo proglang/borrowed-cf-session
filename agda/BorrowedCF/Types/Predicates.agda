@@ -12,11 +12,6 @@ open import BorrowedCF.Types.Equivalence
 open Bin using (_Respects_)
 open Nat.Variables
 
-data Skips {n} : 𝕊 n → Set where
-  skip : Skips skip
-  _;_  : (S₁ : Skips s₁) (S₂ : Skips s₂) → Skips (s₁ ; s₂)
-  mu   : (S : Skips s) → Skips (mu s)
-
 ≃-skips : Skips {n} Respects _≃_
 ≃-skips refl = id
 ≃-skips (x ◅ xs) = ≃-skips xs ∘ go x where
