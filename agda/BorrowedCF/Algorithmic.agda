@@ -29,6 +29,8 @@ fv (e₁ ; e₂) = fv e₁ ∪ fv e₂
 fv (e₁ ⊗ e₂) = fv e₁ ∪ fv e₂ 
 fv (`let e₁ `in e₂) = fv e₁ ∪ fvClose (fv e₂)
 fv (`let⊗ e₁ `in e₂) = fv e₁ ∪ fvClose (fvClose (fv e₂))
+fv (`inj i e) = fv e
+fv (`case e `of⟨ e₁ ; e₂ ⟩) = fv e ∪ fvClose (fv e₁) ∪ fvClose (fv e₂)
 
 _∣fv[_] : Struct n → Tm n → Struct n
 γ ∣fv[ e ] = γ ↓ fv e
@@ -107,6 +109,18 @@ data _;_⊢[_]_∶_∣_↑_ Γ γ where
     --------------------------------------------------------------------------
     Γ ; γ ⊢ `let⊗ e₁ `in e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₁ ++ Δ₂
 
+  A-Case :
+    let γ′ = γ ∣fv[ e ] in
+    let γ₁ = γ ↓ V.tail (fv e₁) in
+    let γ₂ = γ ↓ V.tail (fv e₂) in
+    (≤γ₁ : Γ ∶ γ′ ; γ₁ ≼ γ) →
+    (≤γ₂ : Γ ∶ γ′ ; γ₂ ≼ γ) →
+    Γ ; γ ∣fv[ e ] ⊢ e ⇒ T₁ ⊕ T₂ ∣ ϵ ↑ Δ →
+    T₁ ⸴ Γ ; (` zero ; 𝐂.wk γ₁) ⊢ e₁ ⇒ U₁ ∣ ϵ₁ ↑ Δ₁ →
+    T₂ ⸴ Γ ; (` zero ; 𝐂.wk γ₂) ⊢ e₂ ⇒ U₂ ∣ ϵ₂ ↑ Δ₂ →
+    -------------------------------------------------------------------------------
+    Γ ; γ ⊢ `case e `of⟨ e₁ ; e₂ ⟩ ⇒ U₁ ∣ ϵ ⊔ϵ ϵ₁ ⊔ϵ ϵ₂ ↑ (U₁ , U₂) ∷ Δ ++ Δ₁ ++ Δ₂
+
   A-Abs :
     (Arr.Unr a → UnrCx Γ γ) →
     (Arr.Mobile a → MobCx Γ γ) →
@@ -133,6 +147,10 @@ data _;_⊢[_]_∶_∣_↑_ Γ γ where
     --------------------------------------------------
     Γ ; γ ⊢ e₁ ⊗ e₂ ⇐ T ⊗⟨ d ⟩ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₁ ++ Δ₂
 
+  A-Inj : ∀ {i} →
+    Γ ; γ ⊢ e ⇐ if i then T₁ else T₂ ∣ ϵ ↑ Δ →
+    ------------------------------------------
+    Γ ; γ ⊢ `inj i e ⇐ T₁ ⊕ T₂ ∣ ϵ ↑ Δ
 
   A-Check :
     Γ ; γ ⊢ e ⇒ U ∣ ϵ ↑ Δ →
