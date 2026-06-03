@@ -71,8 +71,16 @@ module _ where
   allCx-weaken f (≼-cong-; x y) (C₁ ; C₂) = allCx-weaken f x C₁ ; allCx-weaken f y C₂
   allCx-weaken f (≼-cong-∥ x y) (C₁ ∥ C₂) = allCx-weaken f x C₁ ∥ allCx-weaken f y C₂
 
-unrCx-weaken : Γ ∶ α ≼ β → UnrCx Γ α → UnrCx Γ β
-unrCx-weaken = allCx-weaken id
+  unrCx-weaken : Γ ∶ α ≼ β → UnrCx Γ α → UnrCx Γ β
+  unrCx-weaken = allCx-weaken id
+
+  ≼-map⁺ : {f : 𝕋 → 𝕋} → (Unr ⊆ Unr ∘ f) → Γ ∶ α ≼ β → f ∘ Γ ∶ α ≼ β
+  ≼-map⁺ Uf (≼-refl x) = ≼-refl (≈-map⁺ Uf x)
+  ≼-map⁺ Uf (≼-∅ x) = ≼-∅ (allCx-gmap Uf x)
+  ≼-map⁺ Uf ≼-wk = ≼-wk
+  ≼-map⁺ Uf (≼-trans x x₁) = ≼-trans (≼-map⁺ Uf x) (≼-map⁺ Uf x₁)
+  ≼-map⁺ Uf (≼-cong-; x x₁) = ≼-cong-; (≼-map⁺ Uf x) (≼-map⁺ Uf x₁)
+  ≼-map⁺ Uf (≼-cong-∥ x x₁) = ≼-cong-∥ (≼-map⁺ Uf x) (≼-map⁺ Uf x₁)
 
 module _ where
   open import Data.Fin.Subset

@@ -16,6 +16,7 @@ open import BorrowedCF.Types
 
 open Nat.Variables
 open Bin
+open Un using (_⊆_)
 
 open Variables
 
@@ -91,6 +92,20 @@ open ≈-Equivalence
 
 
 module ≈-Reasoning {n} {Γ : Ctx n} = SetoidReasoning (≈-setoid Γ)
+
+≈-map⁺ : {f : 𝕋 → 𝕋} → (Unr ⊆ Unr ∘ f) → Γ ∶ α ≈ β → f ∘ Γ ∶ α ≈ β
+≈-map⁺ {f = f} Uf = Eq*.map go
+  where
+  go : (Γ ∶_≈′_) ⇒ (f ∘ Γ ∶_≈′_)
+  go ;′-assoc = ;′-assoc
+  go (;′-cong₁ x) = ;′-cong₁ (go x)
+  go (;′-cong₂ x) = ;′-cong₂ (go x)
+  go ∥′-unit = ∥′-unit
+  go ∥′-assoc = ∥′-assoc
+  go ∥′-comm = ∥′-comm
+  go (∥′-cong₁ x) = ∥′-cong₁ (go x)
+  go (∥′-dup U) = ∥′-dup (allCx-gmap Uf U)
+  go (∥′-tm-; U) = ∥′-tm-; (Sum.map (allCx-gmap Uf) (allCx-gmap Uf) U)
 
 ≈⇒dom≡ : Γ ∶ α ≈ β → dom α ≡ dom β
 ≈⇒dom≡ = Eq*.gfold isEquivalence dom ≈′⇒dom≡

@@ -100,11 +100,14 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} {Γ : Ctx n} where
   allCx? P? (α ; β) = map′ (uncurry _;_) allCx-;⁻¹ (allCx? P? α ×-dec allCx? P? β)
 
 module _ {p q} {P : Pred 𝕋 p} {Q : Pred 𝕋 q} where
+  allCx-gmap : {f : 𝕋 → 𝕋} → P ⊆ Q ∘ f → AllCx P Γ ⊆ AllCx Q (f ∘ Γ)
+  allCx-gmap p⊆q [] = []
+  allCx-gmap p⊆q (x ∥ y) = allCx-gmap p⊆q x ∥ allCx-gmap p⊆q y
+  allCx-gmap p⊆q (x ; y) = allCx-gmap p⊆q x ; allCx-gmap p⊆q y
+  allCx-gmap p⊆q (` x) = ` p⊆q x
+
   allCx-map : (P ⊆ Q) → AllCx P Γ ⊆ AllCx Q Γ
-  allCx-map f [] = []
-  allCx-map f (x ∥ y) = allCx-map f x ∥ allCx-map f y
-  allCx-map f (x ; y) = allCx-map f x ; allCx-map f y
-  allCx-map f (` x) = ` f x
+  allCx-map = allCx-gmap {f = id}
 
 UnrCx : REL (Ctx n) (Struct n) _
 UnrCx = AllCx Unr

@@ -65,6 +65,18 @@ open module Traversal = Syntax.Traversal record
   hiding (_⋯_; ⋯-id; ⋯-cong; CTraversal)
   public
 
+⋯ᵣ-dual : (s : 𝕊 m) {ϕ : m →ᵣ n} → dual (s ⋯ ϕ) ≡ dual s ⋯ ϕ
+⋯ᵣ-dual (` x) = refl
+⋯ᵣ-dual (end p) = refl
+⋯ᵣ-dual (msg p t) = refl
+⋯ᵣ-dual (brn p s₁ s₂) = cong₂ (brn _) (⋯ᵣ-dual s₁) (⋯ᵣ-dual s₂)
+⋯ᵣ-dual (mu s) = cong mu (⋯ᵣ-dual s)
+⋯ᵣ-dual (s₁ ; s₂) = cong₂ _;_ (⋯ᵣ-dual s₁) (⋯ᵣ-dual s₂)
+⋯ᵣ-dual skip = refl
+⋯ᵣ-dual ret = refl
+⋯ᵣ-dual acq = refl
+⋯ᵣ-dual (`` x) = refl
+
 fusion :
   ⦃ K₁ : Kit 𝓕₁ ⦄ ⦃ K₂ : Kit 𝓕₂ ⦄ ⦃ K : Kit 𝓕 ⦄ ⦃ W₁ : WkKit K₁ ⦄ ⦃ C : CKit K₁ K₂ K ⦄
   (s : 𝕊 n₁) (ϕ₁ : n₁ –[ K₁ ]→ n₂) (ϕ₂ : n₂ –[ K₂ ]→ n₃) → s ⋯ ϕ₁ ⋯ ϕ₂ ≡ s ⋯ ϕ₁ ·ₖ ϕ₂

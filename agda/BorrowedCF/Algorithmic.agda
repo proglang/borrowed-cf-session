@@ -2,13 +2,19 @@
 module BorrowedCF.Algorithmic where
 
 open import Data.Fin.Subset using (Subset; ⁅_⁆; _∪_) renaming (⊥ to ⁅⁆)
+open import Data.List.Relation.Unary.All as All using (All; []; _∷_)
+
+import Data.List.Relation.Unary.All.Properties as All
 
 open import BorrowedCF.Context
 open import BorrowedCF.Context.Domain
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms hiding (_↑)
-open import BorrowedCF.Types
+open import BorrowedCF.Types renaming (Solved to SolvedTy)
 
+open import BorrowedCF.Algorithmic.Solved
+
+import BorrowedCF.Types.Substitution as 𝐓
 import BorrowedCF.Context.Substitution as 𝐂
 
 open Nat.Variables
@@ -157,17 +163,65 @@ data _;_⊢[_]_∶_∣_↑_ Γ γ where
     -------------------------------
     Γ ; γ ⊢ e ⇐ T ∣ ϵ ↑ (T , U) ∷ Δ
 
+sound :
+  Γ ; γ ⊢[ ξ ] e ∶ T ∣ ϵ ↑ Δ →
+  (∀ x → SolvedTy (subTy (Γ x) σ)) →
+  SolvedTy (subTy T σ) →
+  SolvedTm (subTm e σ) →
+  All (λ (U₁ , U₂) → subTy U₁ σ ≃ subTy U₂ σ) Δ →
+  flip subTy σ ∘ Γ ; γ ⊢ subTm e σ ∶ subTy T σ ∣ ϵ
+sound {σ = σ} (A-Var ≤γ) SΓ ST Se SΔ = T-Weaken (≼-map⁺ subTy-unr ≤γ) (T-Var _ refl)
+sound (A-Const ≤γ ≢lsplit ≢rsplit ⊢c) SΓ ST Se SΔ = T-Weaken (≼-map⁺ subTy-unr ≤γ) (T-Const {!⊢c!})
+sound (A-LSplit ≤γ) SΓ ST Se SΔ = {!!}
+sound (A-RSplit ≤γ) SΓ ST Se SΔ = {!!}
+sound (A-App ≤γ L⇒pure₁ R⇒pure₂ x x₁) SΓ ST Se SΔ = {!!}
+sound (A-LetUnit ≤γ x x₁) SΓ ST Se SΔ = {!!}
+sound (A-LetPair ≤γ x x₁) SΓ ST Se SΔ = {!!}
+sound (A-Case ≤γ₁ ≤γ₂ x x₁ x₂) SΓ ST Se SΔ = {!!}
+sound (A-Abs x x₁ x₂ x₃) SΓ ST Se SΔ = {!!}
+sound (A-AbsRec x x₁ x₂ x₃) SΓ ST Se SΔ = {!!}
+sound (A-Pair ≤γ L⇒pure₁ R⇒pure₂ x x₁) SΓ ST Se SΔ = {!!}
+sound (A-Inj x) SΓ ST Se SΔ = {!!}
+sound (A-Check x) SΓ ST Se SΔ = {!sound x!}
 
--- sound : Γ ; γ ⊢[ ξ ] e ∶ T ∣ ϵ ↑ Δ → Γ ; γ ⊢ e ∶ T ∣ ϵ
--- sound (A-Var ≤γ) = T-Weaken ≤γ (T-Var _ refl)
--- sound (A-Const ≤γ ≢lsplit ≢rsplit x) = T-Weaken ≤γ (T-Const x)
--- sound (A-LSplit ≤γ) = T-Weaken ≤γ (T-Const `lsplit)
--- sound (A-RSplit ≤γ) = T-Weaken ≤γ (T-Const `rsplit)
--- sound (A-App ≤γ L⇒pure₁ R⇒pure₂ x x₁) = {!!}
--- sound (A-Abs x x₁ x₂) = {!!}
--- sound (A-LetUnit ≤γ x x₁) = {!!}
--- sound (A-LetPair ≤γ x x₁) = {!!}
--- sound (A-Check x) = {!!}
-
--- complete : Γ ; γ ⊢ e ∶ T ∣ ϵ → ∃[ Δ ] (Γ ; γ ⊢ e ⇐ T ∣ ϵ ↑ Δ)
--- complete = {!!}
+{-
+complete :
+  Γ ; γ ⊢ e ∶ T ∣ ϵ →
+  SolvedTm e →
+  SolvedTy T →
+  ∃[ Δ ] ∃[ σ ]
+    All (λ (T , U) → SolvedTy (subTy T σ) × SolvedTy (subTy U σ) × subTy T σ ≃ subTy U σ) Δ
+      × Γ ; γ ⊢ e ⇐ T ∣ ϵ ↑ Δ
+complete (T-Const {c = c} ⊢c) Se ST with isSplit? c
+complete (T-Const {c = _} (`lsplit s s′)) Se ST@(⟨ Ss ; Ss′ ⟩ ⟨ _ ⟩→ Sc) | yes (_ , inj₁ refl) =
+  let Sσs  = subTy-solved Ss in
+  let Sσs′ = subst SolvedTy (sym (𝐓.⋯-id s′ λ())) Ss′ in
+  let σ[s′]≃wk[s′] = ≃-reflexive (subTy-id Ss′ ■ sym (𝐓.⋯-id s′ λ())) in
+  _ , const s′
+    , (subTy-solved ST , ⟨ Sσs ; Sσs′ ⟩ ⟨ _ ⟩→ ⟨ Sσs ⟩ ⊗⟨ L ⟩ ⟨ Sσs′ ⟩ ,
+        ⟨ ≃-; ≃-refl σ[s′]≃wk[s′] ⟩ `→ (≃-refl ⊗ ⟨ σ[s′]≃wk[s′] ⟩)) ∷ []
+    , A-Check (A-LSplit (≼-refl refl))
+complete (T-Const {c = _} (`rsplit s s′)) Se ST | yes (_ , inj₂ refl) = {!!}
+... | no no-split =
+  _ , const skip
+    , (subTy-solved ST , subTy-solved ST , ≃-refl) ∷ []
+    , A-Check (A-Const (≼-refl refl) (λ s z → no-split (s , inj₁ z)) (λ s z → no-split (s , inj₂ z)) ⊢c)
+complete (T-Var x T-eq) Se ST = {!!}
+complete (T-Abs Γ-unr Γ-mob e) Se ST = {!!}
+complete (T-AbsRec x x₁ e) Se ST = {!!}
+complete (T-AppUnr x f e) S[fe] ST =
+  let _ , σf , Sf , Af = complete f {!!} {!!} in
+  _ , {!!} , {!!}
+    , A-Check (A-App {!!} {!!} {!!} {!Af!} {!!})
+complete (T-AppLin x e e₁) Se ST = {!!}
+complete (T-AppLeft x e e₁) Se ST = {!!}
+complete (T-AppRight x e e₁) Se ST = {!!}
+complete (T-Pair p/s e e₁ x) Se ST = {!!}
+complete (T-Let p/s e e₁) Se ST = {!!}
+complete (T-LetUnit p/s e e₁) Se ST = {!!}
+complete (T-LetPair p/s e e₁) Se ST = {!!}
+complete (T-Inj e) Se ST = {!!}
+complete (T-Case p/s e e₁ e₂) Se ST = {!!}
+complete (T-Conv T≃ ϵ≤ e) Se ST = {!!}
+complete (T-Weaken γ≤ e) Se ST = {!!}
+-}

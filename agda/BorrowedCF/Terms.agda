@@ -19,6 +19,18 @@ data Const : Set where
   `new : 𝕊 0 → Const
   `lsplit `rsplit : 𝕊 0 → Const
 
+isSplit? : (c : Const) → Dec (∃[ s ] (c ≡ `lsplit s ⊎ c ≡ `rsplit s))
+isSplit? `unit = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
+isSplit? `fork = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
+isSplit? `send = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
+isSplit? `recv = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
+isSplit? `drop = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
+isSplit? `acq = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
+isSplit? (`end x) = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
+isSplit? (`new x) = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
+isSplit? (`lsplit x) = yes (x , inj₁ refl)
+isSplit? (`rsplit x) = yes (x , inj₂ refl)
+
 data Tm (n : ℕ) : Set where
   `_ : 𝔽 n → Tm n
   K : (c : Const) → Tm n
@@ -134,8 +146,10 @@ data ⊢_∶_ : Const → 𝕋 → Set where
 
   `new  : ⊢ `new s ∶ `⊤ →1M ⟨ acq ; s ⟩ ⊗¹ ⟨ acq ; dual s ⟩ ∣ ℙ
 
-  `lsplit : ¬ Skips s → ⊢ `lsplit s ∶ ⟨ s ; s′ ⟩ →1M ⟨ s ⟩       ⊗ᴸ ⟨ s′ ⟩       ∣ ℙ
-  `rsplit : ⊢ `rsplit s ∶ ⟨ s ; s′ ⟩ →1M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; s′ ⟩ ∣ ℙ
+  `lsplit : ¬ Skips s → (s′ : 𝕊 0) →
+    ⊢ `lsplit s ∶ ⟨ s ; s′ ⟩ →1M ⟨ s ⟩       ⊗ᴸ ⟨ s′ ⟩       ∣ ℙ
+  `rsplit : (s s′ : 𝕊 0) →
+    ⊢ `rsplit s ∶ ⟨ s ; s′ ⟩ →1M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; s′ ⟩ ∣ ℙ
 
   `drop : ⊢ `drop ∶ ⟨ ret ⟩     →1M `⊤    ∣ ℙ
   `acq  : ⊢ `acq  ∶ ⟨ acq ; s ⟩ →1M ⟨ s ⟩ ∣ ℙ

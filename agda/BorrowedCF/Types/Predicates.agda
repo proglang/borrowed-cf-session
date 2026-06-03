@@ -144,3 +144,81 @@ unr? = tpred? lin? skips?
         lin? a with Arr.lin a
         ... | 𝟙 = no λ()
         ... | unr = yes refl
+
+data Solved : ∀ {κ x} → Ty κ x → Set where
+  ⟨_⟩ : Solved s → Solved ⟨ s ⟩
+  `⊤ : Solved `⊤
+  _⟨_⟩→_ : Solved T → (a : Arr) → Solved U → Solved (T ⟨ a ⟩→ U)
+  _⊗⟨_⟩_ : Solved T → (d : Dir) → Solved U → Solved (T ⊗⟨ d ⟩ U)
+  _⊕_ : Solved T → Solved U → Solved (T ⊕ U)
+
+  `_ : (x : 𝔽 n) → Solved (` x)
+  end : Solved (end {n} p)
+  msg : Solved T → Solved (msg {n} p T)
+  brn : Solved s₁ → Solved s₂ → Solved (brn p s₁ s₂)
+  mu : Solved s → Solved (mu s)
+  _;_ : Solved s₁ → Solved s₂ → Solved (s₁ ; s₂)
+  skip : Solved {x = n} skip
+  acq : Solved {x = n} acq
+  ret : Solved {x = n} ret
+
+solved-⋯ᵣ : Solved s → {ρ : m →ᵣ n} → Solved (s ⋯ ρ)
+solved-⋯ᵣ (` x) = ` _
+solved-⋯ᵣ end = end
+solved-⋯ᵣ (msg x) = msg x
+solved-⋯ᵣ (brn x x₁) = brn (solved-⋯ᵣ x) (solved-⋯ᵣ x₁)
+solved-⋯ᵣ (mu x) = mu (solved-⋯ᵣ x)
+solved-⋯ᵣ (x ; x₁) = solved-⋯ᵣ x ; solved-⋯ᵣ x₁
+solved-⋯ᵣ skip = skip
+solved-⋯ᵣ acq = acq
+solved-⋯ᵣ ret = ret
+
+solved-⋯ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ → Solved s → {ϕ : m –[ K ]→ n} → (∀ x → Solved (`/id (ϕ x))) → Solved (s ⋯ ϕ)
+solved-⋯ (` x) ∀solved = ∀solved x
+solved-⋯ end ∀solved = end
+solved-⋯ (msg x) ∀solved = msg x
+solved-⋯ (brn x₁ x₂) ∀solved = brn (solved-⋯ x₁ ∀solved) (solved-⋯ x₂ ∀solved)
+solved-⋯ ⦃ K ⦄ (mu x) ∀solved = Solved.mu $ solved-⋯ x λ where
+  zero → subst Solved (sym (`/`-is-` ⦃ K ⦄ _)) (` zero)
+  (suc y) → subst Solved (wk-`/id _) (solved-⋯ᵣ (∀solved y))
+solved-⋯ (x ; x₁) ∀solved = solved-⋯ x ∀solved ; solved-⋯ x₁ ∀solved
+solved-⋯ skip ∀solved = skip
+solved-⋯ acq ∀solved = acq
+solved-⋯ ret ∀solved = ret
+
+solved-⋯⁻¹ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ {ϕ : m –[ K ]→ n} → Solved (s ⋯ ϕ) → Solved s
+solved-⋯⁻¹ {s = ` x₁} x = ` x₁
+solved-⋯⁻¹ {s = end p} x = end
+solved-⋯⁻¹ {s = msg p t} (msg x) = msg x
+solved-⋯⁻¹ {s = brn p s₁ s₂} (brn x x₁) = brn (solved-⋯⁻¹ x) (solved-⋯⁻¹ x₁)
+solved-⋯⁻¹ {s = mu s} (mu x) = mu (solved-⋯⁻¹ x)
+solved-⋯⁻¹ {s = s₁ ; s₂} (x ; x₁) = solved-⋯⁻¹ x ; solved-⋯⁻¹ x₁
+solved-⋯⁻¹ {s = skip} x = skip
+solved-⋯⁻¹ {s = ret} x = ret
+solved-⋯⁻¹ {s = acq} x = acq
+
+≃-solved : ∀ {κ x} → Solved {κ} {x} Respects _≃_
+≃-solved {𝕤} refl x = x
+≃-solved {𝕤} {n} (x ◅ xs) = ≃-solved xs ∘ go x where
+  go : Solved {𝕤} {n} Respects SymClosure _≃𝕊_
+  go (fwd (≃𝕊-;₁ eq)) (x₁ ; x₂) = go (fwd eq) x₁ ; x₂
+  go (fwd (≃𝕊-;₂ eq)) (x₁ ; x₂) = x₁ ; go (fwd eq) x₂
+  go (fwd ≃𝕊-skipˡ) (x₁ ; x₂) = x₂
+  go (fwd ≃𝕊-skipʳ) (x₁ ; x₂) = x₁
+  go (fwd ≃𝕊-μ) (mu x) = solved-⋯ x λ where
+    zero → mu x
+    (suc y) → ` y
+  go (fwd ≃𝕊-assoc) ((x ; y) ; z) = x ; (y ; z)
+  go (fwd ≃𝕊-distr) (brn x₁ x₂ ; y) = brn (x₁ ; y) (x₂ ; y)
+  go (bwd (≃𝕊-;₁ eq)) (x₁ ; x₂) = go (bwd eq) x₁ ; x₂
+  go (bwd (≃𝕊-;₂ eq)) (x₁ ; x₂) = x₁ ; go (bwd eq) x₂
+  go (bwd ≃𝕊-skipˡ) x = skip ; x
+  go (bwd ≃𝕊-skipʳ) x = x ; skip
+  go (bwd ≃𝕊-μ) x = mu (solved-⋯⁻¹ x)
+  go (bwd ≃𝕊-assoc) (x ; (y ; z)) = (x ; y) ; z
+  go (bwd ≃𝕊-distr) (brn (x₁ ; y) (x₂ ; _)) = brn x₁ x₂ ; y
+≃-solved {𝕥} `⊤ x = x
+≃-solved {𝕥} (eq ⊗ eq₁) (x ⊗⟨ d ⟩ x₁) = ≃-solved eq x ⊗⟨ d ⟩ ≃-solved eq₁ x₁
+≃-solved {𝕥} (eq ⊕ eq₁) (x ⊕ x₁) = ≃-solved eq x ⊕ ≃-solved eq₁ x₁
+≃-solved {𝕥} (eq `→ eq₁) (x ⟨ a ⟩→ x₁) = ≃-solved eq x ⟨ a ⟩→ ≃-solved eq₁ x₁
+≃-solved {𝕥} ⟨ eq ⟩ ⟨ x ⟩ = ⟨ ≃-solved eq x ⟩
