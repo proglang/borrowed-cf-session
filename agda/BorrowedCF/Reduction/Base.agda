@@ -87,7 +87,7 @@ frame-⋯ : ⦃ K : Kit 𝓕 ⦄ → Frame m → (ϕ : m –[ K ]→ n) → VSub
 frame-⋯ (□· e₂) ϕ Vϕ = □· (e₂ ⋯ ϕ)
 frame-⋯ (V₁ ·□) ϕ Vϕ = (value-⋯ V₁ ϕ Vϕ) ·□
 frame-⋯ (□⊗ e₂) ϕ Vϕ = □⊗ (e₂ ⋯ ϕ)
-frame-⋯ (V₁ ⊗□) ϕ Vϕ = (value-⋯ V₁ ϕ Vϕ) ·□
+frame-⋯ (V₁ ⊗□) ϕ Vϕ = (value-⋯ V₁ ϕ Vϕ) ⊗□
 frame-⋯ (□; e₂) ϕ Vϕ = □; (e₂ ⋯ ϕ)
 frame-⋯ (`let-`in e′) ϕ Vϕ = `let-`in (e′ ⋯ ϕ ↑)
 frame-⋯ (`let⊗-`in e′) ϕ Vϕ = `let⊗-`in (e′ ⋯ ϕ ↑ ↑)
@@ -99,6 +99,20 @@ V ⋯ᵛ ϕ = value-⋯ V ϕ λ x → V-`
 
 _⋯ᶠ_ : Frame m → (ϕ : m →ᵣ n) → Frame n
 E ⋯ᶠ ϕ = frame-⋯ E ϕ λ x → V-`
+
+Frame* : ℕ → Set
+Frame* n = List (Frame n)
+
+infixl 4.5 _[_]*
+
+_[_]* : Frame* n → Tm n → Tm n
+[] [ e ]* = e
+(E ∷ E*) [ e ]* = E [ E* [ e ]* ]
+
+infixl 5 _⋯ᶠ*_
+
+_⋯ᶠ*_ : Frame* m → (ϕ : m →ᵣ n) → Frame* n
+E* ⋯ᶠ* ϕ = L.map (_⋯ᶠ ϕ) E*
 
 FullBlocked : Tm n → Set
 FullBlocked {n} e = ∀ E (e′ : Tm n) → e ≡ E [ e′ ] → Blocked e′

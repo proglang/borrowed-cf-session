@@ -38,28 +38,67 @@ P ∥ Q   ⋯ₚ ρ = (P ⋯ₚ ρ) ∥ (Q ⋯ₚ ρ)
 φ P     ⋯ₚ ρ = φ (P ⋯ₚ ρ ↑)
 (x ↦ ϕ) ⋯ₚ ρ = ρ x ↦ ϕ
 
--- ⋯ₚ-cong : ⦃ K : Kit 𝓕 ⦄ (P : Proc m) {ϕ₁ ϕ₂ : m –[ K ]→ n} → ϕ₁ ≗ ϕ₂ → P ⋯ₚ ϕ₁ ≡ P ⋯ₚ ϕ₂
--- ⋯ₚ-cong ⟪ e ⟫ eq = cong ⟪_⟫ (⋯-cong e eq)
--- ⋯ₚ-cong (P ∥ Q) eq = cong₂ _∥_ (⋯ₚ-cong P eq) (⋯ₚ-cong Q eq)
--- ⋯ₚ-cong (ν P) eq = cong ν (⋯ₚ-cong P (eq ~↑* _))
--- ⋯ₚ-cong (φ P) eq = {!!}
--- ⋯ₚ-cong (x ↦ ⁰/₁) eq = {!!}
+⋯ₚ-cong : (P : Proc m) {ρ₁ ρ₂ : m →ᵣ n} → ρ₁ ≗ ρ₂ → P ⋯ₚ ρ₁ ≡ P ⋯ₚ ρ₂
+⋯ₚ-cong ⟪ e ⟫   eq = cong ⟪_⟫ (⋯-cong e eq)
+⋯ₚ-cong (P ∥ Q) eq = cong₂ _∥_ (⋯ₚ-cong P eq) (⋯ₚ-cong Q eq)
+⋯ₚ-cong (ν P)   eq = cong ν (⋯ₚ-cong P (eq ~↑* 2))
+⋯ₚ-cong (φ P)   eq = cong φ (⋯ₚ-cong P (eq ~↑))
+⋯ₚ-cong (x ↦ ϕ) eq = cong (_↦ ϕ) (eq x)
 
--- {-
--- fusionₚ : ⦃ K₁ : Kit 𝓕₁ ⦄ ⦃ K₂ : Kit 𝓕₂ ⦄ ⦃ K : Kit 𝓕 ⦄ ⦃ W₁ : WkKit K₁ ⦄
---           ⦃ C : CKit K₁ K₂ K ⦄ (P : Proc n₁) (ϕ₁ : n₁ –[ K₁ ]→ n₂) (ϕ₂ : n₂ –[ K₂ ]→ n₃) →
---           P ⋯ₚ ϕ₁ ⋯ₚ ϕ₂ ≡ P ⋯ₚ ϕ₁ ·ₖ ϕ₂
--- fusionₚ ⟪ e ⟫ ϕ₁ ϕ₂ = cong ⟪_⟫ (fusion e ϕ₁ ϕ₂)
--- fusionₚ (P ∥ Q) ϕ₁ ϕ₂ = cong₂ _∥_ (fusionₚ P ϕ₁ ϕ₂) (fusionₚ Q ϕ₁ ϕ₂)
--- fusionₚ (ν P) ϕ₁ ϕ₂ = cong ν (fusionₚ P (ϕ₁ ↑* _) (ϕ₂ ↑* _) ■ sym (⋯ₚ-cong P (dist-↑*-· _ ϕ₁ ϕ₂)))
--- fusionₚ (φ P) ϕ₁ ϕ₂ = {!!}
--- fusionₚ (x ↦ ⁰/₁) ϕ₁ ϕ₂ = {!!}
+fusionₚ : (P : Proc n₁) (ρ₁ : n₁ →ᵣ n₂) (ρ₂ : n₂ →ᵣ n₃) →
+          P ⋯ₚ ρ₁ ⋯ₚ ρ₂ ≡ P ⋯ₚ (ρ₁ ·ₖ ρ₂)
+fusionₚ ⟪ e ⟫   ρ₁ ρ₂ = cong ⟪_⟫ (fusion e ρ₁ ρ₂)
+fusionₚ (P ∥ Q) ρ₁ ρ₂ = cong₂ _∥_ (fusionₚ P ρ₁ ρ₂) (fusionₚ Q ρ₁ ρ₂)
+fusionₚ (ν P)   ρ₁ ρ₂ = cong ν (fusionₚ P (ρ₁ ↑* 2) (ρ₂ ↑* 2) ■ sym (⋯ₚ-cong P (dist-↑*-· 2 ρ₁ ρ₂)))
+fusionₚ (φ P)   ρ₁ ρ₂ = cong φ (fusionₚ P (ρ₁ ↑) (ρ₂ ↑) ■ sym (⋯ₚ-cong P (dist-↑-· ρ₁ ρ₂)))
+fusionₚ (x ↦ ϕ) ρ₁ ρ₂ = refl
 
--- ≡-fusedₚ : ∀ {𝓕₁ 𝓕₂ 𝓕₃ 𝓕₄ : Scoped} {a b} →
---   ⦃ K₁ : Kit 𝓕₁ ⦄ ⦃ K₂ : Kit 𝓕₂ ⦄ ⦃ K₃ : Kit 𝓕₃ ⦄ ⦃ K₄ : Kit 𝓕₄ ⦄ ⦃ K : Kit 𝓕 ⦄ →
---   ⦃ W₁ : WkKit K₁ ⦄ ⦃ W₃ : WkKit K₃ ⦄ ⦃ Ca : CKit K₁ K₂ K ⦄ ⦃ Cb : CKit K₃ K₄ K ⦄ →
---   (P : Proc m) (ϕ₁ : m –[ K₁ ]→ a) (ϕ₂ : a –[ K₂ ]→ n) (ϕ₃ : m –[ K₃ ]→ b) (ϕ₄ : b –[ K₄ ]→ n) →
---   ϕ₁ ·[ Ca ] ϕ₂ ≗ ϕ₃ ·[ Cb ] ϕ₄ →
---   P ⋯ₚ ϕ₁ ⋯ₚ ϕ₂ ≡ P ⋯ₚ ϕ₃ ⋯ₚ ϕ₄
--- ≡-fusedₚ P ϕ₁ ϕ₂ ϕ₃ ϕ₄ eq = fusionₚ P ϕ₁ ϕ₂ ■ ⋯ₚ-cong P eq ■ sym (fusionₚ P ϕ₃ ϕ₄)
--- -}
+≡-fusedₚ : (P : Proc m) (ρ₁ : m →ᵣ n₁) (ρ₂ : n₁ →ᵣ n) (ρ₃ : m →ᵣ n₂) (ρ₄ : n₂ →ᵣ n) →
+           ρ₁ ·ₖ ρ₂ ≗ ρ₃ ·ₖ ρ₄ →
+           P ⋯ₚ ρ₁ ⋯ₚ ρ₂ ≡ P ⋯ₚ ρ₃ ⋯ₚ ρ₄
+≡-fusedₚ P ρ₁ ρ₂ ρ₃ ρ₄ eq = fusionₚ P ρ₁ ρ₂ ■ ⋯ₚ-cong P eq ■ sym (fusionₚ P ρ₃ ρ₄)
+
+infix 4 _≋′_
+
+data _≋′_ {n} : Rel (Proc n) 0ℓ where
+  ∥-comm′  : P ∥ Q ≋′ Q ∥ P
+  ∥-assoc′ : P₁ ∥ (P₂ ∥ P₃) ≋′ (P₁ ∥ P₂) ∥ P₃
+  ∥-unit′  : ⟪ K `unit ⟫ ∥ P ≋′ P
+  ν-swap′  : ν P ≋′ ν (P ⋯ₚ swapᵣ 1 1)
+  ν-comm′  : ν (ν P) ≋′ ν (ν (P ⋯ₚ assocSwapᵣ 2 2))
+  φ-comm′  : φ (φ P) ≋′ φ (φ (P ⋯ₚ assocSwapᵣ 1 1))
+  νφ-comm′ : ν (φ P) ≋′ φ (ν (P ⋯ₚ assocSwapᵣ 1 2))
+  ν-ext′   : P ∥ ν Q ≋′ ν ((P ⋯ₚ weaken* ⦃ Kᵣ ⦄ 2) ∥ Q)
+  φ-ext′   : P ∥ φ Q ≋′ φ ((P ⋯ₚ weaken* ⦃ Kᵣ ⦄ 1) ∥ Q)
+  ∥-cong′  : P₁ ≋′ P₂ → P₁ ∥ Q ≋′ P₂ ∥ Q
+  ν-cong′  : P ≋′ Q → ν P ≋′ ν Q
+  φ-cong′  : P ≋′ Q → φ P ≋′ φ Q
+
+module _ where
+  open Eq*
+
+  infix 4 _≋_
+
+  _≋_ : Rel (Proc n) _
+  _≋_ = EqClosure _≋′_
+
+  ∥-comm : P ∥ Q ≋ Q ∥ P
+  ∥-comm = return ∥-comm′
+
+  ∥-unitˡ : ⟪ K `unit ⟫ ∥ P ≋ P
+  ∥-unitˡ = return ∥-unit′
+
+  ∥-unitʳ : P ∥ ⟪ K `unit ⟫ ≋ P
+  ∥-unitʳ = ∥-comm ◅◅ ∥-unitˡ
+
+  ∥-assoc : P₁ ∥ (P₂ ∥ P₃) ≋ (P₁ ∥ P₂) ∥ P₃
+  ∥-assoc = return ∥-assoc′
+
+  ∥-cong : P₁ ≋ P₂ → Q₁ ≋ Q₂ → P₁ ∥ Q₁ ≋ P₂ ∥ Q₂
+  ∥-cong ps qs = gmap (_∥ _) ∥-cong′ ps ◅◅ ∥-comm ◅◅ gmap (_∥ _) ∥-cong′ qs ◅◅ ∥-comm
+
+  ν-cong : P ≋ Q → ν P ≋ ν Q
+  ν-cong = gmap ν ν-cong′
+
+  φ-cong : P ≋ Q → φ P ≋ φ Q
+  φ-cong = gmap φ φ-cong′
