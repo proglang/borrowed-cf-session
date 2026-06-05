@@ -30,10 +30,10 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
       ∥ ⟪ (F ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4)
             [ (((` 1F) ⊗ (` 2F)) ⊗ K `unit) ⊗ (((` 0F) ⊗ (` 3F)) ⊗ K `unit) ]* ⟫ )))
 
-  RU-LSplit : (F : Frame* n) {x : 𝔽 n} →
-    ⟪ F [ K (`lsplit s) · (((e₁ ⊗ (` x)) ⊗ e₂)) ]* ⟫
+  RU-LSplit : (F : Frame* (2 + n)) {x : 𝔽 (2 + n)} →
+    ν ( ⟪ F [ K (`lsplit s) · (((e₁ ⊗ (` x)) ⊗ e₂)) ]* ⟫ ∥ P )
       ─→ₚ
-    ⟪ F [ (((e₁ ⊗ (` x)) ⊗ K `unit) ⊗ ((K `unit ⊗ (` x)) ⊗ e₂)) ]* ⟫
+    ν ( ⟪ F [ (((e₁ ⊗ (` x)) ⊗ K `unit) ⊗ ((K `unit ⊗ (` x)) ⊗ e₂)) ]* ⟫ ∥ P )
 
   RU-RSplit : (F : Frame* (2 + n)) {x : 𝔽 (2 + n)} →
     ν (⟪ F [ K (`rsplit s) · ((e₁ ⊗ (` x)) ⊗ e₂) ]* ⟫ ∥ P)
