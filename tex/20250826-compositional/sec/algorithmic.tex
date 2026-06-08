@@ -6,20 +6,15 @@ For the algorithmic typing we consider an extended grammar of session types
 $\AS$ that includes unification variables $\TVar$. $\AT$ is the set of types
 $\T$ but referring to $\AS$ instead of $\S$.
 
-Constraints imposed on unification variables are tracked in a multi set-like
-structure $\CSet$.
-%
-\[
-  \CSet \grmeq \CSEmpty
-        \grmor \T \CEq \TU
-        \grmor \T \CSub \TU
-        \grmor \CSet\CSJoin\CSet
-\]
-%
+The algorithmic typing collects a set of constraints. Each constraint is an
+equality requirement between two types $\AT \CEq \ATU$. We use the metavariable
+$\CSet$ to denote a set of constraints.
+
 \begin{definition}[Closing substitution]
-  In the context of a set of constraints $\CSet$ a substitution $\sigma$ is a
-  \emph{closing substitution} if every unification variable in $\CSet$ is
-  replaced by a concrete type such that all constraints are respected.
+  In the context of a set of constraints $\CSet$ a substitution $\sigma$ that
+  replaces unification variables is a \emph{closing substitution} if every
+  unification variable in $\CSet$ is replaced by a concrete type such that all
+  constraints are respected.
 \end{definition}
 
 \Cref{fig:typing-algorithmic} presents the algorithmic typing relations. The
@@ -95,40 +90,57 @@ The operator $\cdot|_{\cdot}$ restricts a context to a set of variables.
 
 \subsection{Constraint solving}
 
-Potential solutions can be checked by the equivalence and subtype algorithms
-for context free session types. However, the literature does not provide
-unification algorithms. Our approach is based on the fact that unification
-variables are only ever introduced for session types through split operations.
-
-\begin{enumerate}
-  \item Unification variables are only ever introduced for session types.
-  \item If the 
-\end{enumerate}
+Potential solutions can be checked by the equivalence algorithm for context
+free session types. However, the literature does not provide unification
+algorithms. Our approach is based on the fact that unification variables are
+only ever introduced for session types through split operations. Every session
+type---excluding $\SSkip$ and its compositions---must be used linearly. Thus,
+if a term with type $\TVar$ is not used the only viable solution for $\TVar$ is
+$\SSkip$. Otherwise, we can infer the concrete type for $\TVar$ the terms use.
+Multiple uses in different branches of the program must yield equivalent types.
+If there are no solutions, the program is ill-typed.
 
 \begin{mathpar}
   \inferrule[CS-Pair]{}{
-    \AT \TPair \ATU \CSub \AT* \TPair \ATU*
+    \AT \TPair \ATU \CEq \AT* \TPair \ATU*
     \csred
-    \AT \CSub \AT* \CSJoin \ATU \CSub \ATU*
+    \left\{
+      \AT \CEq \AT*\!,
+      \ATU \CEq \ATU*
+    \right\}
+  }
+
+  \inferrule[CS-Sum]{}{
+    \TSum {\AT} {\ATU} \CEq \TSum {\AT*} {\ATU*}
+    \csred
+    \left\{
+      \AT \CEq \AT*\!,
+      \ATU \CEq \ATU*
+    \right\}
+  }
+
+  \inferrule[CS-Unit]{}{
+    \BUnit \CEq \BUnit
+    \csred
+    \emptyset
   }
 
   \inferrule[CS-Arrow]{}{
     \TArr{\Mob}{\Dir,\Eff}{\AT}{\ATU}
-    \CSub
-    \TArr{\Mob}{\Dir,\Eff*}{\AT*}{\ATU*}
+    \CEq
+    \TArr{\Mob}{\Dir,\Eff}{\AT*}{\ATU*}
     \csred
-    \Eff \le \Eff*
-    \CSJoin
-    \AT* \CSub \AT
-    \CSJoin
-    \ATU \CSub \ATU*
+    \left\{
+      \AT* \CEq \AT\!,
+      \ATU \CEq \ATU*
+    \right\}
   }
 
-  \inferrule{
-    \CSet[1] \csred \CSet*[1]
+  \inferrule[CS-Context]{
+    \AT \CEq \ATU \csred \CSet*
   }{
-    \CSet[1] \CSJoin \CSet[2]
+    \CSet \cup \{ \AT\CEq\ATU \}
     \csred
-    \CSet*[1] \CSJoin \CSet[2]
+    \CSet \cup \CSet*
   }
 \end{mathpar}
