@@ -61,7 +61,7 @@ module _ (Γ-S : ChanCx Γ) where
   ... | _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₁ x
     = _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₁ x
   ... | _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₂ (_ , eq , x)
-    = _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₂ (_ , eq , T-Weaken (≼-join (Arr.dir a) (≼-refl refl) (𝐂.≼-𝐂wk γ≤)) x)
+    = _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₂ (_ , eq , T-Weaken (≼-join (Arr.dir a) (≼-refl refl) (𝐂.≼-⋯ 𝐂.wk-preserves γ≤)) x)
 
   inv-⊗ : Value e → Γ ; γ ⊢ e ∶ T ⊗⟨ d ⟩ U ∣ ℙ →
     ∃[ α ] ∃[ β ] ∃[ e₁ ] ∃[ e₂ ]
@@ -113,34 +113,34 @@ module _ (Γ-S : ChanCx Γ) where
     with (_ , _ , _ , T≃ , U≃ , ϵ≤ , inj₂ (_ , refl , f′)) ← inv-arr V-λ f
     rewrite Arr.ω⇒𝟙 a unr-a
     = T-Conv (≃-sym U≃) ϵ≤
-        $ T-Weaken (≼-refl (≈-trans (≈-reflexive (cong (_ ∥_) (_ 𝐂.⋯-wk-cancels-⦅ _ ⦆))) ∥-comm))
+        $ T-Weaken (≼-refl (≈-trans (≈-reflexive (cong (_ ∥_) (𝐂.wk-cancels-⦅⦆-⋯ _ _))) ∥-comm))
         $ f′ ⊢⋯ₛ ⊢subₛ (value⇒pure V (T-Conv T≃ ≤ϵ-refl e))
                        (λ U → Unr×Value⇒UnrCx (unr-≃ (≃-sym T≃) U) V e)
                        (λ m → Mobile×Value⇒MobCx (mobile-≃ (≃-sym T≃) m) V e)
   preservation′ (T-AppLin refl f e) (E-App V)
     with (_ , _ , _ , T≃ , U≃ , ϵ≤ , inj₂ (_ , refl , f′)) ← inv-arr V-λ f
     = T-Conv (≃-sym U≃) ϵ≤
-        $ T-Weaken (≼-refl (≈-trans (≈-reflexive (cong (_ ∥_) (_ 𝐂.⋯-wk-cancels-⦅ _ ⦆))) ∥-comm))
+        $ T-Weaken (≼-refl (≈-trans (≈-reflexive (cong (_ ∥_) (𝐂.wk-cancels-⦅⦆-⋯ _ _))) ∥-comm))
         $ f′ ⊢⋯ₛ ⊢subₛ (value⇒pure V (T-Conv T≃ ≤ϵ-refl e))
                        (λ U → Unr×Value⇒UnrCx (unr-≃ (≃-sym T≃) U) V e)
                        (λ m → Mobile×Value⇒MobCx (mobile-≃ (≃-sym T≃) m) V e)
   preservation′ (T-AppLeft refl f e) (E-App V)
     with (_ , _ , _ , T≃ , U≃ , ϵ≤ , inj₂ (_ , refl , f′)) ← inv-arr V-λ f
     = T-Conv (≃-sym U≃) ϵ≤
-        $ T-Weaken (≼-refl (≈-reflexive (cong (_ ;_) (_ 𝐂.⋯-wk-cancels-⦅ _ ⦆))))
+        $ T-Weaken (≼-refl (≈-reflexive (cong (_ ;_) (𝐂.wk-cancels-⦅⦆-⋯ _ _))))
         $ f′ ⊢⋯ₛ ⊢subₛ (value⇒pure V (T-Conv T≃ ≤ϵ-refl e))
                        (λ U → Unr×Value⇒UnrCx (unr-≃ (≃-sym T≃) U) V e)
                        (λ m → Mobile×Value⇒MobCx (mobile-≃ (≃-sym T≃) m) V e)
   preservation′ (T-AppRight refl f e) (E-App V)
     with (_ , _ , _ , T≃ , U≃ , ϵ≤ , inj₂ (_ , refl , f′)) ← inv-arr V-λ f
     = T-Conv (≃-sym U≃) ϵ≤
-        $ T-Weaken (≼-refl (≈-reflexive (cong (_; _) (_ 𝐂.⋯-wk-cancels-⦅ _ ⦆))))
+        $ T-Weaken (≼-refl (≈-reflexive (cong (_; _) (𝐂.wk-cancels-⦅⦆-⋯ _ _))))
         $ f′ ⊢⋯ₛ ⊢subₛ (value⇒pure V (T-Conv T≃ ≤ϵ-refl e))
                        (λ U → Unr×Value⇒UnrCx (unr-≃ (≃-sym T≃) U) V e)
                        (λ m → Mobile×Value⇒MobCx (mobile-≃ (≃-sym T≃) m) V e)
   preservation′ (T-Let p/s {γ₁} {γ₂} e₁ e₂) (E-Let V-e₁) =
-    let eq = join-⋯ {σ = 𝐂.⦅ γ₁ ⦆} p/s (` zero) (𝐂.wk γ₂)
-               ■ cong (join p/s γ₁) (γ₂ 𝐂.⋯-wk-cancels-⦅ γ₁ ⦆)
+    let eq = join-⋯ {ϕ = 𝐂.⦅ γ₁ ⦆} p/s (` zero) (𝐂.wk γ₂)
+               ■ cong (join p/s γ₁) (𝐂.wk-cancels-⦅⦆-⋯ γ₂ γ₁)
     in
     subst-γ eq (e₂ ⊢⋯ₛ ⊢subₛ (value⇒pure V-e₁ e₁) (λ U → Unr×Value⇒UnrCx U V-e₁ e₁) (λ m → Mobile×Value⇒MobCx m V-e₁ e₁))
   preservation′ (T-LetUnit p/s e₁ e₂) E-Seq =
@@ -160,13 +160,15 @@ module _ (Γ-S : ChanCx Γ) where
                 join p/s (join d (` 0F) (` 1F) 𝐂.⋯ 𝐂.⦅ α 𝐂.⋯ 𝐂.weaken ⦆) (𝐂.wk (𝐂.wk γ₂) 𝐂.⋯ 𝐂.⦅ α 𝐂.⋯ 𝐂.weaken ⦆) 𝐂.⋯ 𝐂.⦅ β ⦆
               ≡⟨ cong₂ (λ x y → join p/s x y 𝐂.⋯ 𝐂.⦅ β ⦆)
                        (join-⋯ d _ _)
-                       (𝐂.wk γ₂ 𝐂.⋯-wk-cancels-⦅ _ ⦆) ⟩
+                       (𝐂.wk-cancels-⦅⦆-⋯ (γ₂ 𝐂.⋯ 𝐂.weaken) _) ⟩
                 join p/s (join d (α 𝐂.⋯ 𝐂.weaken) (` 0F)) (𝐂.wk γ₂) 𝐂.⋯ 𝐂.⦅ β ⦆
               ≡⟨ join-⋯ p/s _ _ ⟩
                 join p/s (join d (α 𝐂.⋯ 𝐂.weaken) (` 0F) 𝐂.⋯ 𝐂.⦅ β ⦆) (𝐂.wk γ₂ 𝐂.⋯ 𝐂.⦅ β ⦆)
-              ≡⟨ cong₂ (join p/s) (join-⋯ d _ _) (γ₂ 𝐂.⋯-wk-cancels-⦅ _ ⦆) ⟩
-                join p/s (join d (α 𝐂.⋯ 𝐂.weaken 𝐂.⋯ 𝐂.⦅ β ⦆) β) γ₂
-              ≡⟨ cong (λ x → join p/s (join d x β) γ₂) (α 𝐂.⋯-weaken-cancels-⦅ β ⦆) ⟩
+              ≡⟨ cong₂ (join p/s) (join-⋯ d _ _) (𝐂.wk-cancels-⦅⦆-⋯ _ _) ⟩
+                join p/s (join d (α 𝐂.⋯ 𝐂.weakenₛ 𝐂.⋯ 𝐂.⦅ β ⦆) β) γ₂
+              ≡⟨ cong (λ x → join p/s (join d (x 𝐂.⋯ 𝐂.⦅ β ⦆) β) γ₂) (𝐂.⋯-congᶜ α {𝐂.weakenₛ} {𝐂.weakenᵣ} λ x → refl) ⟩
+                join p/s (join d (α 𝐂.⋯ 𝐂.weakenᵣ 𝐂.⋯ 𝐂.⦅ β ⦆) β) γ₂
+              ≡⟨ cong (λ x → join p/s (join d x β) γ₂) (𝐂.wk-cancels-⦅⦆-⋯ α β) ⟩
                 join p/s (join d α β) γ₂
               ≲⟨ ≼-join p/s γ≤ (≼-refl refl) ⟩
                 join p/s γ₁ γ₂
@@ -181,14 +183,14 @@ module _ (Γ-S : ChanCx Γ) where
     let open Fin.Patterns in
     let open ≼-Reasoning in
     let γ≤ = begin
-               (` 0F) ∥ (` 1F) ∥ 𝐂.wk (𝐂.wk γ) 𝐂.⋯ 𝐂.⦅ γ ⦆ 𝐂.↑    ≡⟨⟩
-               (` 0F) ∥ 𝐂.wk γ ∥ (𝐂.wk (𝐂.wk γ) 𝐂.⋯ 𝐂.⦅ γ ⦆ 𝐂.↑)  ≡⟨ cong ((` 0F) ∥ 𝐂.wk γ ∥_) (𝐂.⋯-↑-wk (𝐂.wk γ) _) ⟨
-               (` 0F) ∥ 𝐂.wk γ ∥ 𝐂.wk (𝐂.wk γ 𝐂.⋯ 𝐂.⦅ γ ⦆)        ≡⟨ cong ((` 0F) ∥ 𝐂.wk γ ∥_) (cong 𝐂.wk (γ 𝐂.⋯-wk-cancels-⦅ γ ⦆)) ⟩
-               (` 0F) ∥ 𝐂.wk γ ∥ 𝐂.wk γ                           ≈⟨ ∥-assoc ⟩
-               (` 0F) ∥ (𝐂.wk γ ∥ 𝐂.wk γ)                         ≈⟨ ∥-cong ≈-refl (∥-dup (𝐂.allCx-wk Γ-unr)) ⟨
-               (` 0F) ∥ 𝐂.wk γ                                    ≡⟨⟩
-               join 𝟙 (` 0F) (𝐂.wk γ)                             ≡⟨ cong (λ d → join d _ _) (Arr.ω⇒𝟙 a a-unr) ⟨
-               join (Arr.dir a) (` 0F) (𝐂.wk γ)                   ∎
+           (` 0F) ∥ (` 1F) ∥ 𝐂.wk (𝐂.wk γ) 𝐂.⋯ 𝐂.⦅ γ ⦆ 𝐂.↑    ≡⟨⟩
+           (` 0F) ∥ 𝐂.wk γ ∥ (𝐂.wk (𝐂.wk γ) 𝐂.⋯ 𝐂.⦅ γ ⦆ 𝐂.↑)  ≡⟨ cong ((` 0F) ∥ 𝐂.wk γ ∥_) (𝐂.⋯-↑-wk (𝐂.wk γ) 𝐂.⦅ γ ⦆ₛ) ⟨
+           (` 0F) ∥ 𝐂.wk γ ∥ 𝐂.wk (𝐂.wk γ 𝐂.⋯ 𝐂.⦅ γ ⦆)        ≡⟨ cong ((` 0F) ∥ 𝐂.wk γ ∥_) (cong 𝐂.wk (𝐂.wk-cancels-⦅⦆-⋯ γ γ)) ⟩
+           (` 0F) ∥ 𝐂.wk γ ∥ 𝐂.wk γ                           ≈⟨ ∥-assoc ⟩
+           (` 0F) ∥ (𝐂.wk γ ∥ 𝐂.wk γ)                         ≈⟨ ∥-cong ≈-refl (∥-dup (𝐂.allCx-wk Γ-unr)) ⟨
+           (` 0F) ∥ 𝐂.wk γ                                    ≡⟨⟩
+           join 𝟙 (` 0F) (𝐂.wk γ)                             ≡⟨ cong (λ d → join d _ _) (Arr.ω⇒𝟙 a a-unr) ⟨
+           join (Arr.dir a) (` 0F) (𝐂.wk γ) ∎
     in
     T-Abs {a = a} (const Γ-unr) (const (UnrCx⇒MobCx Γ-unr))
       $ T-Weaken γ≤

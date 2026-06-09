@@ -71,7 +71,7 @@ record Join (A : Set) : Set where
   ... | L = ;-unit₂
   ... | R = ;-unit₁
 
-  join-⋯ : ∀ a (α β : Struct n) → join a α β ⋯ σ ≡ join a (α ⋯ σ) (β ⋯ σ)
+  join-⋯ : ∀ ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} a (α β : Struct m) → join a α β ⋯ ϕ ≡ join a (α ⋯ ϕ) (β ⋯ ϕ)
   join-⋯ a α β with joinDir a
   ... | L = refl
   ... | R = refl

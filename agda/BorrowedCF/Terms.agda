@@ -301,17 +301,17 @@ T-Const x ⊢⋯ ⊢ϕ = T-Const x
 _⊢⋯_ {γ = γ} (T-Var x T-eq) ⊢ϕ =
   let open ≈-Reasoning in
   ⊢`/id (subst 𝓕[ _ ; _ ⊢ _ ∶_] T-eq (⊢ϕ & x))
-_⊢⋯_ {γ = γ} (T-Abs {a = a} Γ-unr Γ-mob x) ⊢ϕ =
+_⊢⋯_ {γ = γ} {σ = σ} (T-Abs {a = a} Γ-unr Γ-mob x) ⊢ϕ =
   let open Fin.Patterns in
-  let eq = join-⋯ (Arr.dir a) (` 0F) _
-             ■ cong (join (Arr.dir a) (` 0F)) (sym (𝐂.⋯-↑-wk γ _))
+  let eq′ = join-⋯ (Arr.dir a) (` 0F) _
+             ■ cong (join (Arr.dir a) (` 0F)) (sym (𝐂.⋯-↑-wk γ σ))
   in
   T-Abs (𝐂.allCx-⋯ (&-unr ⊢ϕ) ∘ Γ-unr) (𝐂.allCx-⋯ (&-mob ⊢ϕ) ∘ Γ-mob)
-    $ subst-γ eq
+    $ subst-γ eq′
     $ x ⊢⋯ ⊢↑ ⊢ϕ
-_⊢⋯_ {γ = γ} (T-AbsRec Γ-unr a-unr x) ⊢ϕ =
+_⊢⋯_ {γ = γ} {σ = σ} (T-AbsRec Γ-unr a-unr x) ⊢ϕ =
   let open Fin.Patterns in
-  let eq = cong 𝐂.wk (𝐂.⋯-↑-wk γ _) ■ 𝐂.⋯-↑-wk (𝐂.wk γ) _ in
+  let eq = cong 𝐂.wk (𝐂.⋯-↑-wk γ σ) ■ 𝐂.⋯-↑-wk (𝐂.wk γ) (σ 𝐂.↑) in
   T-AbsRec (𝐂.allCx-⋯ (&-unr ⊢ϕ) Γ-unr) a-unr
     $ subst-γ (cong (_ ∥_) (sym eq))
     $ x ⊢⋯ ⊢↑ (⊢↑ ⊢ϕ)
@@ -322,9 +322,9 @@ T-AppRight a-R   x₁ x₂ ⊢⋯ ⊢ϕ = T-AppRight a-R   (x₁ ⊢⋯ ⊢ϕ) (
 T-Pair p/s {γ₁} {γ₂} x₁ x₂ seq→ℙ ⊢⋯ ⊢ϕ =
   subst-γ (sym (join-⋯ p/s γ₁ γ₂)) $
     T-Pair p/s (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ) seq→ℙ
-T-Let p/s {γ₁} {γ₂} x₁ x₂ ⊢⋯ ⊢ϕ =
+_⊢⋯_ {σ = σ} (T-Let p/s {γ₁} {γ₂} x₁ x₂) ⊢ϕ =
   let open Fin.Patterns in
-  let eq = join-⋯ p/s (` 0F) (𝐂.wk γ₂) ■ cong (join p/s (` 0F)) (sym (𝐂.⋯-↑-wk γ₂ _)) in
+  let eq = join-⋯ p/s (` 0F) (𝐂.wk γ₂) ■ cong (join p/s (` 0F)) (sym (𝐂.⋯-↑-wk γ₂ σ)) in
   subst-γ (sym (join-⋯ p/s γ₁ γ₂))
     $ T-Let p/s (x₁ ⊢⋯ ⊢ϕ)
     $ subst-γ eq
@@ -332,11 +332,11 @@ T-Let p/s {γ₁} {γ₂} x₁ x₂ ⊢⋯ ⊢ϕ =
 T-LetUnit p/s {γ₁} {γ₂} x x₁ ⊢⋯ ⊢ϕ =
   subst-γ (sym (join-⋯ p/s γ₁ γ₂)) $
     T-LetUnit p/s (x ⊢⋯ ⊢ϕ) (x₁ ⊢⋯ ⊢ϕ)
-T-LetPair {d = d} p/s {γ₁} {γ₂} x x₁ ⊢⋯ ⊢ϕ  =
+_⊢⋯_ {σ = σ} (T-LetPair {d = d} p/s {γ₁} {γ₂} x x₁) ⊢ϕ  =
   let open Fin.Patterns in
   let eq = join-⋯ p/s (join d (` 0F) (` 1F)) _
              ■ cong₂ (join p/s) (join-⋯ d _ _)
-                     (sym (cong 𝐂.wk (𝐂.⋯-↑-wk γ₂ _) ■ 𝐂.⋯-↑-wk (𝐂.wk γ₂) _))
+                     (sym (cong 𝐂.wk (𝐂.⋯-↑-wk γ₂ σ) ■ 𝐂.⋯-↑-wk (𝐂.wk γ₂) (σ 𝐂.↑)))
   in
   subst-γ (sym (join-⋯ p/s γ₁ γ₂))
     $ T-LetPair p/s (x ⊢⋯ ⊢ϕ)
