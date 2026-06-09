@@ -45,6 +45,12 @@ module _ {ℓ} (P : Pred 𝕋 ℓ) (Γ : Ctx n) where
     _;_ : AllCx α → AllCx β → AllCx (α ; β)
     `_  : ∀ {x} → P (Γ x) → AllCx (` x)
 
+allCx-≗ : ∀ {ℓ} {P : Pred 𝕋 ℓ} → Γ ≗ Γ′ → AllCx P Γ γ → AllCx P Γ′ γ
+allCx-≗ eq [] = []
+allCx-≗ eq (x ∥ y) = allCx-≗ eq x ∥ allCx-≗ eq y
+allCx-≗ eq (x ; y) = allCx-≗ eq x ; allCx-≗ eq y
+allCx-≗ eq (`_ {x} px) rewrite eq x = ` px
+
 module _ {ℓ} {P : Pred 𝕋 ℓ} {Γ : Ctx n} where
   allCx-∥⁻¹ : AllCx P Γ (α ∥ β) → AllCx P Γ α × AllCx P Γ β
   allCx-∥⁻¹ (x ∥ y) = x , y
@@ -75,4 +81,4 @@ unrCx? : Un.Decidable (UnrCx Γ)
 unrCx? = allCx? unr?
 
 UnrCx⇒MobCx : UnrCx Γ ⊆ MobCx Γ
-UnrCx⇒MobCx = allCx-map Unr⇒Mobile
+UnrCx⇒MobCx = allCx-map unr⇒mobile

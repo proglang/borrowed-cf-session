@@ -97,7 +97,7 @@ module _ (Γ-S : ChanCx Γ) where
   Unr×Value⇒UnrCx (U₁ ⊗ U₂) (V-⊗ V₁ V₂) (T-Pair p/s e₁ e₂ seq⇒p) =
     allCx-join⁺ p/s (Unr×Value⇒UnrCx U₁ V₁ e₁) (Unr×Value⇒UnrCx U₂ V₂ e₂)
   Unr×Value⇒UnrCx U V (T-Weaken γ≤ e) = allCx-≼ id (Unr×Value⇒UnrCx U V e) γ≤
-  Unr×Value⇒UnrCx U V (T-Conv eq ϵ≤ e) = Unr×Value⇒UnrCx (≃-unr (≃-sym eq) U) V e
+  Unr×Value⇒UnrCx U V (T-Conv eq ϵ≤ e) = Unr×Value⇒UnrCx (unr-≃ (≃-sym eq) U) V e
 
   Mobile×Value⇒MobCx : Mobile T → Value e → Γ ; γ ⊢ e ∶ T ∣ ϵ → MobCx Γ γ
   Mobile×Value⇒MobCx m V (T-Const x) = []
@@ -105,8 +105,8 @@ module _ (Γ-S : ChanCx Γ) where
   Mobile×Value⇒MobCx (arr m) V (T-Abs Γ-unr Γ-mob x) = Γ-mob m
   Mobile×Value⇒MobCx (m₁ ⊗ m₂) (V-⊗ V₁ V₂) (T-Pair p/s e₁ e₂ seq⇒p) =
     allCx-join⁺ p/s (Mobile×Value⇒MobCx m₁ V₁ e₁) (Mobile×Value⇒MobCx m₂ V₂ e₂)
-  Mobile×Value⇒MobCx m V (T-Weaken γ≤ e) = allCx-≼ Unr⇒Mobile (Mobile×Value⇒MobCx m V e) γ≤
-  Mobile×Value⇒MobCx m V (T-Conv eq ϵ≤ e) = Mobile×Value⇒MobCx (≃-mobile (≃-sym eq) m) V e
+  Mobile×Value⇒MobCx m V (T-Weaken γ≤ e) = allCx-≼ unr⇒mobile (Mobile×Value⇒MobCx m V e) γ≤
+  Mobile×Value⇒MobCx m V (T-Conv eq ϵ≤ e) = Mobile×Value⇒MobCx (mobile-≃ (≃-sym eq) m) V e
 
   preservation′ : Γ ; γ ⊢ e ∶ T ∣ ϵ → e ─→ e′ → Γ ; γ ⊢ e′ ∶ T ∣ ϵ
   preservation′ (T-AppUnr {a = a} unr-a f e) (E-App V)
@@ -115,29 +115,29 @@ module _ (Γ-S : ChanCx Γ) where
     = T-Conv (≃-sym U≃) ϵ≤
         $ T-Weaken (≼-refl (≈-trans (≈-reflexive (cong (_ ∥_) (_ 𝐂.⋯-wk-cancels-⦅ _ ⦆))) ∥-comm))
         $ f′ ⊢⋯ₛ ⊢subₛ (value⇒pure V (T-Conv T≃ ≤ϵ-refl e))
-                       (λ U → Unr×Value⇒UnrCx (≃-unr (≃-sym T≃) U) V e)
-                       (λ m → Mobile×Value⇒MobCx (≃-mobile (≃-sym T≃) m) V e)
+                       (λ U → Unr×Value⇒UnrCx (unr-≃ (≃-sym T≃) U) V e)
+                       (λ m → Mobile×Value⇒MobCx (mobile-≃ (≃-sym T≃) m) V e)
   preservation′ (T-AppLin refl f e) (E-App V)
     with (_ , _ , _ , T≃ , U≃ , ϵ≤ , inj₂ (_ , refl , f′)) ← inv-arr V-λ f
     = T-Conv (≃-sym U≃) ϵ≤
         $ T-Weaken (≼-refl (≈-trans (≈-reflexive (cong (_ ∥_) (_ 𝐂.⋯-wk-cancels-⦅ _ ⦆))) ∥-comm))
         $ f′ ⊢⋯ₛ ⊢subₛ (value⇒pure V (T-Conv T≃ ≤ϵ-refl e))
-                       (λ U → Unr×Value⇒UnrCx (≃-unr (≃-sym T≃) U) V e)
-                       (λ m → Mobile×Value⇒MobCx (≃-mobile (≃-sym T≃) m) V e)
+                       (λ U → Unr×Value⇒UnrCx (unr-≃ (≃-sym T≃) U) V e)
+                       (λ m → Mobile×Value⇒MobCx (mobile-≃ (≃-sym T≃) m) V e)
   preservation′ (T-AppLeft refl f e) (E-App V)
     with (_ , _ , _ , T≃ , U≃ , ϵ≤ , inj₂ (_ , refl , f′)) ← inv-arr V-λ f
     = T-Conv (≃-sym U≃) ϵ≤
         $ T-Weaken (≼-refl (≈-reflexive (cong (_ ;_) (_ 𝐂.⋯-wk-cancels-⦅ _ ⦆))))
         $ f′ ⊢⋯ₛ ⊢subₛ (value⇒pure V (T-Conv T≃ ≤ϵ-refl e))
-                       (λ U → Unr×Value⇒UnrCx (≃-unr (≃-sym T≃) U) V e)
-                       (λ m → Mobile×Value⇒MobCx (≃-mobile (≃-sym T≃) m) V e)
+                       (λ U → Unr×Value⇒UnrCx (unr-≃ (≃-sym T≃) U) V e)
+                       (λ m → Mobile×Value⇒MobCx (mobile-≃ (≃-sym T≃) m) V e)
   preservation′ (T-AppRight refl f e) (E-App V)
     with (_ , _ , _ , T≃ , U≃ , ϵ≤ , inj₂ (_ , refl , f′)) ← inv-arr V-λ f
     = T-Conv (≃-sym U≃) ϵ≤
         $ T-Weaken (≼-refl (≈-reflexive (cong (_; _) (_ 𝐂.⋯-wk-cancels-⦅ _ ⦆))))
         $ f′ ⊢⋯ₛ ⊢subₛ (value⇒pure V (T-Conv T≃ ≤ϵ-refl e))
-                       (λ U → Unr×Value⇒UnrCx (≃-unr (≃-sym T≃) U) V e)
-                       (λ m → Mobile×Value⇒MobCx (≃-mobile (≃-sym T≃) m) V e)
+                       (λ U → Unr×Value⇒UnrCx (unr-≃ (≃-sym T≃) U) V e)
+                       (λ m → Mobile×Value⇒MobCx (mobile-≃ (≃-sym T≃) m) V e)
   preservation′ (T-Let p/s {γ₁} {γ₂} e₁ e₂) (E-Let V-e₁) =
     let eq = join-⋯ {σ = 𝐂.⦅ γ₁ ⦆} p/s (` zero) (𝐂.wk γ₂)
                ■ cong (join p/s γ₁) (γ₂ 𝐂.⋯-wk-cancels-⦅ γ₁ ⦆)

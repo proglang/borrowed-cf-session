@@ -10,6 +10,7 @@ open import BorrowedCF.Types.Equivalence
 open import BorrowedCF.Types.Substitution
 open import BorrowedCF.Types.Syntax
 
+open Un hiding (U)
 open Bin using (_Respects_)
 open Nat.Variables
 
@@ -95,42 +96,48 @@ bounded-⋯⁻¹ {s = ret} b ∀¬S = ret
   go (bwd ≃𝕊-distr) (brn (b ;₁ x) (-;₂ b₁)) = -;₂ b₁
   go (bwd ≃𝕊-distr) (brn (-;₂ b) b₁) = -;₂ b
 
-data Mobile : 𝕋 → Set where
-  `⊤  : Mobile `⊤
-  arr : Arr.Mobile a → Mobile (T ⟨ a ⟩→ U)
-  acq : Bounded s → acq ; s ≃ s′ → Mobile ⟨ s′ ⟩
-  skip : Skips s → Mobile ⟨ s ⟩
-  _⊗_ : Mobile T → Mobile U → Mobile (T ⊗⟨ d ⟩ U)
+module _ (PA : Arr → Set) (PS : 𝕊 0 → Set) where
+  data TPred : 𝕋 → Set where
+    `⊤  : TPred `⊤
+    arr : PA a → TPred (T ⟨ a ⟩→ U)
+    _⊗_ : TPred T → TPred U → TPred (T ⊗⟨ d ⟩ U)
+--    _⊕_ : TPred T → TPred U → TPred (T ⊕ U)
+    ⟨_⟩ : PS s → TPred ⟨ s ⟩
 
-≃-mobile : Mobile Respects _≃_
-≃-mobile `⊤ `⊤ = `⊤
-≃-mobile (eq ⊗ eq₁) (m ⊗ m₁) = (≃-mobile eq m) ⊗ (≃-mobile eq₁ m₁)
-≃-mobile (eq `→ eq₁) (arr x) = arr x
-≃-mobile ⟨ x ⟩ (acq b eq) = acq b (≃-trans eq x)
-≃-mobile ⟨ x ⟩ (skip s) = skip (≃-skips x s)
+tpred-≃ : {PA : Arr → Set} {PS : 𝕊 0 → Set} → PS Respects _≃_ → TPred PA PS Respects _≃_
+tpred-≃ ps≃ `⊤ `⊤ = `⊤
+tpred-≃ ps≃ (eq₁ ⊗ eq₂) (px ⊗ py) = tpred-≃ ps≃ eq₁ px ⊗ tpred-≃ ps≃ eq₂ py
+tpred-≃ ps≃ (eq₁ `→ eq₂) (arr pa) = arr pa
+tpred-≃ ps≃ ⟨ eq ⟩ ⟨ ps ⟩ = ⟨ ps≃ eq ps ⟩
 
-data Unr : 𝕋 → Set where
-  `⊤   : Unr `⊤
-  _⊗_  : Unr T → Unr U → Unr (T ⊗⟨ d ⟩ U)
-  arr  : Arr.Unr a → Unr (T ⟨ a ⟩→ U)
-  ⟨_⟩  : Skips s → Unr ⟨ s ⟩
+tpred-map : {PA₁ PA₂ : Arr → Set} {PS₁ PS₂ : 𝕊 0 → Set} → PA₁ ⊆ PA₂ → PS₁ ⊆ PS₂ → TPred PA₁ PS₁ ⊆ TPred PA₂ PS₂
+tpred-map pa⊆ ps⊆ `⊤ = `⊤
+tpred-map pa⊆ ps⊆ (arr pa) = arr (pa⊆ pa)
+tpred-map pa⊆ ps⊆ (px ⊗ py) = tpred-map pa⊆ ps⊆ px ⊗ tpred-map pa⊆ ps⊆ py
+tpred-map pa⊆ ps⊆ ⟨ s ⟩ = ⟨ ps⊆ s ⟩
 
-Unr⇒Mobile : Unr T → Mobile T
-Unr⇒Mobile `⊤ = `⊤
-Unr⇒Mobile (T ⊗ U) = Unr⇒Mobile T ⊗ Unr⇒Mobile U
-Unr⇒Mobile (arr {a} U) = arr (Arr.ω⇒M a U)
-Unr⇒Mobile ⟨ s ⟩   = skip s
+tpred? : {PA : Arr → Set} {PS : 𝕊 0 → Set} → Decidable PA → Decidable PS → Decidable (TPred PA PS)
+tpred? pa? ps? ⟨ s ⟩ = map′ ⟨_⟩ (λ{ ⟨ ps ⟩ → ps }) (ps? s)
+tpred? pa? ps? `⊤ = yes `⊤
+tpred? pa? ps? (t ⟨ a ⟩→ u) = map′ arr (λ{ (arr pa) → pa }) (pa? a)
+tpred? pa? ps? (t ⊗⟨ d ⟩ u) = map′ (uncurry _⊗_) (λ{ (pt ⊗ pu) → pt , pu }) (tpred? pa? ps? t ×-dec tpred? pa? ps? u)
 
-≃-unr : Unr Respects _≃_
-≃-unr `⊤ `⊤ = `⊤
-≃-unr (eq ⊗ eq₁) (U ⊗ U₁) = (≃-unr eq U) ⊗ (≃-unr eq₁ U₁)
-≃-unr (eq `→ eq₁) (arr x) = arr x
-≃-unr ⟨ x ⟩ ⟨ x₁ ⟩ = ⟨ ≃-skips x x₁ ⟩
+Mobile = TPred Arr.Mobile (Skips ∪ λ s → ∃[ s′ ] Bounded s′ × s ≃ acq ; s′)
+
+Unr = TPred Arr.Unr Skips
+
+unr⇒mobile : Unr ⊆ Mobile
+unr⇒mobile = tpred-map (λ {a} → Arr.ω⇒M a) inj₁
+
+mobile-≃ : Mobile Respects _≃_
+mobile-≃ = tpred-≃ λ eq → Sum.map (≃-skips eq) (Π.map₂ (Π.map₂ (≃-trans (≃-sym eq))))
+
+unr-≃ : Unr Respects _≃_
+unr-≃ = tpred-≃ ≃-skips
 
 unr? : Un.Decidable Unr
-unr? ⟨ s ⟩ = map′ ⟨_⟩ (λ{ ⟨ x ⟩ → x }) (skips? s)
-unr? `⊤ = yes `⊤
-unr? (t ⟨ a ⟩→ u) with Arr.lin a in eq
-... | 𝟙   = no λ{ (arr eq′) → case sym eq ■ eq′ of λ() }
-... | unr = yes (arr eq)
-unr? (t ⊗⟨ d ⟩ u) = map′ (uncurry _⊗_) (λ{ (unrT ⊗ unrU) → unrT , unrU }) (unr? t ×-dec unr? u)
+unr? = tpred? lin? skips?
+  where lin? : ∀ a → Dec (Arr.Unr a)
+        lin? a with Arr.lin a
+        ... | 𝟙 = no λ()
+        ... | unr = yes refl
