@@ -69,7 +69,9 @@
   \inferrule[CT-Send]{
     \Mobile \T
   }{
-    \HasCType\CSend{\TArr{\MobMobile}{\DirUnord,\EffImpure}{\TPairUnord{\T}{\SSend\T}}\BUnit}
+    \HasCType
+      {\CSend_{\T}}
+      {\TArr{\MobMobile}{\DirUnord,\EffImpure}{\TPairUnord{\T}{\SSend\T}}\BUnit}
   }
 }
 
@@ -77,7 +79,9 @@
   \inferrule[CT-Recv]{
     \Mobile \T
   }{
-    \HasCType\CRecv{\TArr{\MobMobile}{\DirUnord,\EffImpure}{\SRecv\T}\T}
+    \HasCType
+      {\CRecv_{\T}}
+      {\TArr{\MobMobile}{\DirUnord,\EffImpure}{\SRecv\T}\T}
   }
 }
 
