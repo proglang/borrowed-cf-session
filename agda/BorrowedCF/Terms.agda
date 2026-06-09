@@ -148,15 +148,15 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
 
   T-AbsRec :
     let open Fin.Patterns in
-    UnrCx Γ γ →
-    Arr.Unr a →
+    (Γ-unr : UnrCx Γ γ) →
+    (a-unr : Arr.Unr a) →
     T ⸴ T ⟨ a ⟩→ U ⸴ Γ ; (` 0F) ∥ (` 1F) ∥ 𝐂.wk (𝐂.wk γ) ⊢ e ∶ U ∣ Arr.eff a →
     --------------------------------------------------------------------------
     Γ ; γ ⊢ μ (ƛ e) ∶ T ⟨ a ⟩→ U ∣ ℙ
 
   T-AppUnr : ∀ {γ₁ γ₂} →
     let ϵ = Arr.eff a in
-    Arr.Unr a →
+    (a-unr : Arr.Unr a) →
     Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ →
     Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ →
     --------------------------------
@@ -164,7 +164,7 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
 
   T-AppLin : ∀ {γ₁ γ₂} →
     let ϵ = Arr.eff a in
-    Arr.Par a →
+    (a-par : Arr.Par a) →
     Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ →
     Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ →
     -------------------------------
@@ -172,7 +172,7 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
 
   T-AppLeft : ∀ {γ₁ γ₂} →
     let ϵ = Arr.eff a in
-    Arr.IsL a →
+    (aL : Arr.IsL a) →
     Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ℙ →
     Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ →
     --------------------------------
@@ -180,7 +180,7 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
 
   T-AppRight : ∀ {γ₁ γ₂} →
     let ϵ = Arr.eff a in
-    Arr.IsR a →
+    (aR : Arr.IsR a) →
     Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ →
     Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ℙ →
     --------------------------------
@@ -236,6 +236,7 @@ record TKit (K : Kit 𝓕) : Set₁ where
     ⊢id/` : (x : 𝔽 n) → 𝓕[ Γ ; ` x ⊢ id/` x ∶ Γ x ]
     ⊢`/id : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ T ] → Γ ; γ ⊢ `/id x/t ∶ T ∣ ℙ
     ⊢wk : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ U ] → 𝓕[ T ⸴ Γ ; 𝐂.wk γ ⊢ wk x/t ∶ U ]
+    ⊢𝓕-≗ : {x : 𝓕 n} → Γ₁ ≗ Γ₂ → 𝓕[ Γ₁ ; γ ⊢ x ∶ T ] → 𝓕[ Γ₂ ; γ ⊢ x ∶ T ]
 
   infix 4 _∶_⊢_⇒_
 
@@ -247,6 +248,13 @@ record TKit (K : Kit 𝓕) : Set₁ where
 
   open _∶_⊢_⇒_ public
 
+  ⊢⇒-≗ : {ϕ : m –[ K ]→ n} {σ : m 𝐂.→ₛ n} {Γ₁ Γ₁′ : Ctx m} {Γ₂ Γ₂′ : Ctx n} → Γ₁ ≗ Γ₁′ → Γ₂ ≗ Γ₂′ → ϕ ∶ σ ⊢ Γ₁ ⇒ Γ₂ → ϕ ∶ σ ⊢ Γ₁′ ⇒ Γ₂′
+  ⊢⇒-≗ eq₁ eq₂ ⊢ϕ = record
+    { _&_ = λ x → subst 𝓕[ _ ; _ ⊢ _ ∶_] (eq₁ x) (⊢𝓕-≗ eq₂ (⊢ϕ & x))
+    ; &-unr = λ x → allCx-≗ eq₂ (&-unr ⊢ϕ (subst Unr (sym (eq₁ _)) x))
+    ; &-mob = λ x → allCx-≗ eq₂ (&-mob ⊢ϕ (subst Mobile (sym (eq₁ _)) x))
+    }
+
   ⊢id : {Γ : Ctx n} → idₖ ∶ 𝐂.idₛ ⊢ Γ ⇒ Γ
   ⊢id = record { _&_ = ⊢id/` ; &-unr = `_ ; &-mob = `_ }
 
@@ -256,6 +264,10 @@ record TKit (K : Kit 𝓕) : Set₁ where
     ; &-unr = λ {x} → 𝐂.↑-preserves (&-unr ⊢ϕ) {x}
     ; &-mob = λ {x} → 𝐂.↑-preserves (&-mob ⊢ϕ) {x}
     }
+
+  ⊢↑* : ∀ (Γ : Ctx m) {ϕ : n₁ –[ K ]→ n₂} {σ} → ϕ ∶ σ ⊢ Γ₁ ⇒ Γ₂ → ϕ ↑* m ∶ σ 𝐂.↑* m ⊢ Γ ⸴* Γ₁ ⇒ Γ ⸴* Γ₂
+  ⊢↑* {zero} Γ ⊢ϕ = ⊢ϕ
+  ⊢↑* {suc m} Γ ⊢ϕ = ⊢⇒-≗ ⸴-⸴*-cons ⸴-⸴*-cons (⊢↑ (⊢↑* (Γ ∘ suc) ⊢ϕ))
 
   ⊢sub : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ T ] → (Unr T → UnrCx Γ γ) → (Mobile T → MobCx Γ γ) → ⦅ x/t ⦆ ∶ 𝐂.⦅ γ ⦆ ⊢ T ⸴ Γ ⇒ Γ
   ⊢sub ⊢x/t γ-unr γ-mob = record
@@ -333,6 +345,28 @@ T-LetPair {d = d} p/s {γ₁} {γ₂} x x₁ ⊢⋯ ⊢ϕ  =
 T-Conv eq ϵ≤ x ⊢⋯ ⊢ϕ = T-Conv eq ϵ≤ (x ⊢⋯ ⊢ϕ)
 T-Weaken γ≤ x ⊢⋯ ⊢ϕ = T-Weaken (𝐂.≼-⋯ (&-unr ⊢ϕ) γ≤) (x ⊢⋯ ⊢ϕ)
 
+_⊢≗_ : Γ₁ ; γ ⊢ e ∶ T ∣ ϵ → Γ₁ ≗ Γ₂ → Γ₂ ; γ ⊢ e ∶ T ∣ ϵ
+T-Const x ⊢≗ eq = T-Const x
+T-Var x T-eq ⊢≗ eq = T-Var x (sym (eq _) ■ T-eq)
+T-Abs Γ-unr Γ-mob x ⊢≗ eq =
+  let open Fin.Patterns in
+  T-Abs (allCx-≗ eq ∘ Γ-unr) (allCx-≗ eq ∘ Γ-mob) (x ⊢≗ λ{ 0F → refl; (suc x) → eq x })
+T-AbsRec Γ-unr a-unr x ⊢≗ eq =
+  let open Fin.Patterns in
+  T-AbsRec (allCx-≗ eq Γ-unr) a-unr $ x ⊢≗ λ{ 0F → refl; 1F → refl; (suc (suc x)) → eq x }
+T-AppUnr a-unr x₁ x₂ ⊢≗ eq = T-AppUnr a-unr (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
+T-AppLin a-lin x₁ x₂ ⊢≗ eq = T-AppLin a-lin (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
+T-AppLeft aL x₁ x₂ ⊢≗ eq = T-AppLeft aL (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
+T-AppRight aR x₁ x₂ ⊢≗ eq = T-AppRight aR (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
+T-Pair p/s x₁ x₂ seq⇒pure ⊢≗ eq = T-Pair p/s (x₁ ⊢≗ eq) (x₂ ⊢≗ eq) seq⇒pure
+T-Let p/s x₁ x₂ ⊢≗ eq = T-Let p/s (x₁ ⊢≗ eq) (x₂ ⊢≗ λ{ zero → refl; (suc x) → eq x })
+T-LetUnit p/s x₁ x₂ ⊢≗ eq = T-LetUnit p/s (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
+T-LetPair p/s x₁ x₂ ⊢≗ eq =
+  let open Fin.Patterns in
+  T-LetPair p/s (x₁ ⊢≗ eq) $ x₂ ⊢≗ λ{ 0F → refl; 1F → refl; (suc (suc x)) → eq x }
+T-Conv T≃ ϵ≤ x ⊢≗ eq = T-Conv T≃ ϵ≤ (x ⊢≗ eq)
+T-Weaken γ≤ x ⊢≗ eq = T-Weaken (≼-≗ eq γ≤) (x ⊢≗ eq)
+
 instance
   TKᵣ : TKit Kᵣ
   TKᵣ = record
@@ -340,6 +374,7 @@ instance
     ; ⊢id/` = λ x → refl , refl
     ; ⊢`/id = λ{ (refl , T-eq) → T-Var _ T-eq }
     ; ⊢wk   = λ{ (refl , T-eq) → refl , T-eq }
+    ; ⊢𝓕-≗  = λ{ Γ-eq (γ-eq , T-eq) → γ-eq , (sym (Γ-eq _) ■ T-eq) }
     }
 
   TKₛ : TKit Kₛ
@@ -347,8 +382,9 @@ instance
     { 𝓕[_;_⊢_∶_] = λ Γ γ x T → Γ ; γ ⊢ x ∶ T ∣ ℙ
     ; ⊢id/` = λ x → T-Var _ refl
     ; ⊢`/id = λ x → x
-    ; ⊢wk   = λ {_} {Γ} {γ} {T} {U} x → subst (_ ;_⊢ _ ∶ _ ∣ _) (𝐂.weaken/wk γ) $
+    ; ⊢wk   = λ {_} {Γ} {γ} {T} {U} x → subst (_ ;_⊢ _ ∶ _ ∣ _) (𝐂.⋯-congᶜ γ λ _ → refl) $
                 x ⊢⋯ ⊢weaken ⦃ TKᵣ ⦄ {T = U} Γ
+    ; ⊢𝓕-≗  = λ Γ-eq x → x ⊢≗ Γ-eq
     }
 
 open TKit TKᵣ using () renaming (⊢weaken to ⊢weakenᵣ) public

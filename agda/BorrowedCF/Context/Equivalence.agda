@@ -109,6 +109,19 @@ module ≈-Reasoning {n} {Γ : Ctx n} = SetoidReasoning (≈-setoid Γ)
   ≈′⇒dom≡ (∥′-dup U) = sym (∪-idem _)
   ≈′⇒dom≡ (∥′-tm-; U) = refl
 
+≈-≗ : Γ₁ ≗ Γ₂ → Γ₁ ∶ α ≈ β → Γ₂ ∶ α ≈ β
+≈-≗ {Γ₁ = Γ₁} {Γ₂ = Γ₂} eq = Eq*.map go where
+  go : Γ₁ ∶ α ≈′ β → Γ₂ ∶ α ≈′ β
+  go ;′-assoc = ;′-assoc
+  go (;′-cong₁ x) = ;′-cong₁ (go x)
+  go (;′-cong₂ x) = ;′-cong₂ (go x)
+  go ∥′-unit = ∥′-unit
+  go ∥′-assoc = ∥′-assoc
+  go ∥′-comm = ∥′-comm
+  go (∥′-cong₁ x) = ∥′-cong₁ (go x)
+  go (∥′-dup U) = ∥′-dup (allCx-≗ eq U)
+  go (∥′-tm-; U) = ∥′-tm-; (Sum.map (allCx-≗ eq) (allCx-≗ eq) U)
+
 dom≢⇒≉ : dom α ≢ dom β → ¬ Γ ∶ α ≈ β
 dom≢⇒≉ dom≢ a≈b = dom≢ (≈⇒dom≡ a≈b)
 
