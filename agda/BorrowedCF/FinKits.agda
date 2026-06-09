@@ -236,6 +236,22 @@ record Syntax : Set₁ where
                      ; &/⋯-⋯     = λ t ϕ → refl
                      ; &/⋯-wk-↑  = λ t ϕ → ⋯-↑-wk t ϕ }
 
+      ⋯-congᶜ : ⦃ K₁ : Kit 𝓕₁ ⦄ ⦃ K₂ : Kit 𝓕₂ ⦄ ⦃ W₁ : WkKit K₁ ⦄ ⦃ W₂ : WkKit K₂ ⦄
+        ⦃ C₁ₛ : CKit K₁ Kₛ Kₛ ⦄ ⦃ C₂ₛ : CKit K₂ Kₛ Kₛ ⦄ ⦃ C₁ᵣ : CKit K₁ Kᵣ K₁ ⦄ ⦃ C₂ᵣ : CKit K₂ Kᵣ K₂ ⦄
+        (t : Tm m) {ϕ₁ : m –[ K₁ ]→ n} {ϕ₂ : m –[ K₂ ]→ n} → `/id ∘ ϕ₁ ≗ `/id ∘ ϕ₂ → t ⋯ ϕ₁ ≡ t ⋯ ϕ₂
+      ⋯-congᶜ ⦃ K₁ ⦄ ⦃ K₂ ⦄ t {ϕ₁} {ϕ₂} eq =
+        t ⋯ ϕ₁         ≡⟨ ⋯-id _ (λ _ → refl) ⟨
+        t ⋯ ϕ₁ ⋯ idₛ   ≡⟨ fusion t ϕ₁ id ⟩
+        t ⋯ ϕ₁ ·ₖ idₛ  ≡⟨ ⋯-cong t (λ x → trans (&/⋯-⋯ (ϕ₁ x) `_)
+                                        $ trans (sym (trans (⋯-var ⦃ K₁ ⦄ x ϕ₁) (sym (⋯-id (`/id (ϕ₁ x)) (λ _ → refl)))))
+                                        $ &/⋯-& ⦃ Cₛ ⦄ x ϕ₁) ⟩
+        t ⋯ `/id ∘ ϕ₁  ≡⟨ ⋯-cong t eq ⟩
+        t ⋯ `/id ∘ ϕ₂  ≡⟨ ⋯-cong t (λ x → trans (&/⋯-⋯ (ϕ₂ x) `_)
+                                        $ trans (sym (trans (⋯-var ⦃ K₂ ⦄ x ϕ₂) (sym (⋯-id (`/id (ϕ₂ x)) (λ _ → refl)))))
+                                        $ &/⋯-& ⦃ Cₛ ⦄ x ϕ₂) ⟨
+        t ⋯ ϕ₂ ·ₖ idₛ  ≡⟨ fusion t ϕ₂ idₛ ⟨
+        t ⋯ ϕ₂ ⋯ idₛ   ≡⟨ ⋯-id _ (λ _ → refl) ⟩
+        t ⋯ ϕ₂         ∎
 
       ↑*-wk : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄
               (ϕ : n₁ –[ K ]→ n₂) (m : ℕ) → ϕ ·ₖ weaken* m ≗ weaken* m ·ₖ ϕ ↑* m
