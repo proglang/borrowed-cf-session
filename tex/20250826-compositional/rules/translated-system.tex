@@ -159,7 +159,7 @@
 
 % RU-LSplit
 \DefRule {LSplit} {} {
-    \TPNew {(
+    \TPNew {(  % [MW] can remove binder in formalisation when intrinsically scoped + use congruence rules?
       \TPPar {\TFCapp{\EApp \CSplit {(\TEChan [e_1] x [e_2])}}} \TProc
     )}
     \Reduces
@@ -191,7 +191,7 @@
 
 % RU-Drop
 \DefRule {Drop} {} {
-    \TPNew {(
+    \TPNew {(  % [MW] should be \varphi (\TPSync z)?
       \TPPar {\TPFlag z \FlagUnset} {
         \TPPar {\TFCapp{\EApp \CDrop {(\TEChan x [z])}}} \TProc
       }

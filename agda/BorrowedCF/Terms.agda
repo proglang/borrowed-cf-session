@@ -511,9 +511,61 @@ module _ ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ C : CKit K Kᵣ K ⦄ wher
     `/id ⦃ K ⦄ ((ϕ ↑* (m₁ + m₂)) x &/⋯ swapᵣ m₁ m₂) ≡⟨⟩
     `/id ⦃ K ⦄ ((ϕ ↑* (m₁ + m₂) ·ₖ swapᵣ m₁ m₂) x) ∎
 
-  postulate
-    dist-↑*-assocSwap : ∀ a b {m n} (ϕ : m –[ K ]→ n) →
-      assocSwapᵣ a b {m} ·[ Cᵣ ] ϕ ↑* a ↑* b ≗ ϕ ↑* b ↑* a ·ₖ assocSwapᵣ a b {n}
+  ↑-subst₂ : ∀ {m₁ m₂ n₁ n₂} (p : m₁ ≡ m₂) (q : n₁ ≡ n₂) (ψ : m₁ –[ K ]→ n₁) →
+             subst₂ (λ p q → p –[ K ]→ q) p q ψ ↑ ≡ subst₂ (λ p q → p –[ K ]→ q) (cong suc p) (cong suc q) (ψ ↑)
+  ↑-subst₂ refl refl ψ = refl
+
+  ↑*-assoc : ∀ a b {m n} (ϕ : m –[ K ]→ n) →
+             ϕ ↑* a ↑* b ≡ subst₂ (λ p q → p –[ K ]→ q) (+-assoc b a m) (+-assoc b a n) (ϕ ↑* (b + a))
+  ↑*-assoc a zero ϕ = refl
+  ↑*-assoc a (suc b) {m} {n} ϕ =
+    cong _↑ (↑*-assoc a b ϕ) ■ ↑-subst₂ (+-assoc b a m) (+-assoc b a n) (ϕ ↑* (b + a))
+
+  subst₂-app : ∀ {m₁ m₂ n₁ n₂} (p : m₁ ≡ m₂) (q : n₁ ≡ n₂) (ψ : m₁ –[ K ]→ n₁) (z : 𝔽 m₂) →
+               subst₂ (λ p q → p –[ K ]→ q) p q ψ z ≡ subst 𝓕[ K ] q (ψ (Fin.cast (sym p) z))
+  subst₂-app refl refl ψ z = cong ψ (sym (Fin.cast-is-id refl z))
+
+  `/id-subst : ∀ {a b} (eq : a ≡ b) (w : 𝓕[ K ] a) →
+               `/id ⦃ K ⦄ (subst 𝓕[ K ] eq w) ≡ subst Tm eq (`/id ⦃ K ⦄ w)
+  `/id-subst refl w = refl
+
+  subst-Tm-cast : ∀ {a b} (eq : a ≡ b) (t : Tm a) → subst Tm eq t ≡ t ⋯ Fin.cast eq
+  subst-Tm-cast refl t = sym (⋯-id t (Fin.cast-is-id refl))
+
+  cast·assocSwap : ∀ a b {n} (z : 𝔽 (a + b + n)) →
+                   assocSwapᵣ a b {n} (Fin.cast (+-assoc a b n) z) ≡ Fin.cast (+-assoc b a n) (swapᵣ a b z)
+  cast·assocSwap a b {n} z =
+    cong (λ w → Fin.cast (+-assoc b a n) (swapᵣ a b w))
+         (Fin.cast-trans (+-assoc a b n) (sym (+-assoc a b n)) z ■ Fin.cast-is-id _ z)
+
+  dist-↑*-assocSwap : ∀ a b {m n} (ϕ : m –[ K ]→ n) →
+    assocSwapᵣ a b {m} ·[ Cᵣ ] ϕ ↑* a ↑* b ≗ ϕ ↑* b ↑* a ·ₖ assocSwapᵣ a b {n}
+  dist-↑*-assocSwap a b {m} {n} ϕ x =
+      cong (λ f → f (assocSwapᵣ a b x)) (↑*-assoc a b ϕ)
+    ■ subst₂-app (+-assoc b a m) (+-assoc b a n) (ϕ ↑* (b + a)) (assocSwapᵣ a b x)
+    ■ cong (λ z → subst 𝓕[ K ] (+-assoc b a n) ((ϕ ↑* (b + a)) z))
+           (Fin.cast-trans (+-assoc b a m) (sym (+-assoc b a m)) (swapᵣ a b (Fin.cast (sym (+-assoc a b m)) x))
+            ■ Fin.cast-is-id _ (swapᵣ a b (Fin.cast (sym (+-assoc a b m)) x)))
+    ■ cong (subst 𝓕[ K ] (+-assoc b a n))
+           (dist-↑*-swap a b ϕ (Fin.cast (sym (+-assoc a b m)) x))
+    ■ value-eq ((ϕ ↑* (a + b)) (Fin.cast (sym (+-assoc a b m)) x))
+    ■ sym (cong (λ w → w &/⋯ assocSwapᵣ a b {n})
+                (cong (λ f → f x) (↑*-assoc b a ϕ)
+                 ■ subst₂-app (+-assoc a b m) (+-assoc a b n) (ϕ ↑* (a + b)) x))
+    where
+      value-eq : (v : 𝓕[ K ] (a + b + n)) →
+                 subst 𝓕[ K ] (+-assoc b a n) (v &/⋯ swapᵣ a b {n})
+                 ≡ (subst 𝓕[ K ] (+-assoc a b n) v) &/⋯ assocSwapᵣ a b {n}
+      value-eq v = `/id-injective (
+          `/id-subst (+-assoc b a n) (v &/⋯ swapᵣ a b {n})
+        ■ cong (subst Tm (+-assoc b a n)) (&/⋯-⋯ v (swapᵣ a b {n}))
+        ■ subst-Tm-cast (+-assoc b a n) (`/id ⦃ K ⦄ v ⋯ swapᵣ a b {n})
+        ■ fusion (`/id ⦃ K ⦄ v) (swapᵣ a b {n}) (Fin.cast (+-assoc b a n))
+        ■ ⋯-cong (`/id ⦃ K ⦄ v) (λ z → sym (cast·assocSwap a b z))
+        ■ sym (fusion (`/id ⦃ K ⦄ v) (Fin.cast (+-assoc a b n)) (assocSwapᵣ a b {n}))
+        ■ cong (_⋯ assocSwapᵣ a b {n}) (sym (subst-Tm-cast (+-assoc a b n) (`/id ⦃ K ⦄ v)))
+        ■ cong (_⋯ assocSwapᵣ a b {n}) (sym (`/id-subst (+-assoc a b n) v))
+        ■ sym (&/⋯-⋯ (subst 𝓕[ K ] (+-assoc a b n) v) (assocSwapᵣ a b {n})))
   -- dist-↑*-assocSwap a b {m} {n} ϕ x = `/id-injective $
   --   `/id ⦃ K ⦄ ((ϕ ↑* a ↑* b) (assocSwapᵣ a b x)) ≡⟨ {!!} ⟩
   --   `/id ⦃ K ⦄ ((ϕ ↑* b ↑* a) x &/⋯ assocSwapᵣ a b) ∎

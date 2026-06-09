@@ -1,4 +1,4 @@
-{-# OPTIONS --rewriting #-}
+{-# OPTIONS --rewriting --allow-unsolved-metas #-}
 
 module BorrowedCF.Processes.Typed where
 
