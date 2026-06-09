@@ -3,7 +3,7 @@
 module BorrowedCF.Context.Base where
 
 open import BorrowedCF.Prelude
-open import BorrowedCF.Types hiding (s; s₁; s₂; s₃; s′)
+open import BorrowedCF.Types hiding (α; α₁; α₂; α₃; α′)
 
 open Nat.Variables
 

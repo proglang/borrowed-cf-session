@@ -110,7 +110,6 @@ data Lin : Set where
   𝟙 unr : Lin
 
 record Arr : Set where
-  constructor arr
   field
     lin : Lin
     dir : Dir
@@ -128,6 +127,14 @@ record Arr : Set where
     ω⇒M : Unr → Mobile
     ω⇒𝟙 : Unr → Par
 
+record UVar : Set where
+  field
+    var : ℕ
+    mob : Mob
+    pol : Pol
+
+  Mobile = mob ≡ M
+
 data Kind : Set where
   𝕤 𝕥 : Kind
 
@@ -137,6 +144,7 @@ variable
   d d₁ d₂ d₃ d′ : Dir
   𝓂 𝓂₁ 𝓂₂ 𝓂₃ 𝓂′ : Mob
   κ κ₁ κ₂ κ₃ κ′ : Kind
+  α α₁ α₂ α₃ α′ : UVar
 
 ⟦_⟧κ : Kind → Set
 ⟦ 𝕤 ⟧κ = ℕ
@@ -167,7 +175,7 @@ data Ty where
   skip ret acq : 𝕊 n
 
   -- Unification variables
-  ``_ : (x : ℕ) → 𝕊 n
+  ``_ : (α : UVar) → 𝕊 n
 
 pattern _⊗¹_ T U = T ⊗⟨ 𝟙 ⟩ U
 pattern _⊗ᴸ_ T U = T ⊗⟨ L ⟩ U
@@ -175,7 +183,9 @@ pattern _⊗ᴸ_ T U = T ⊗⟨ L ⟩ U
 infixr 15 _→1M_∣_
 
 _→1M_∣_ : 𝕋 → 𝕋 → Eff → 𝕋
-_→1M_∣_ T U e = T ⟨ arr unr 𝟙 M e (λ _ → refl) (λ _ → refl) ⟩→ U
+_→1M_∣_ T U e =
+  let a = record { lin = unr; eff = e ; ω⇒M = λ _ → refl; ω⇒𝟙 = λ _ → refl } in
+  T ⟨ a ⟩→ U
 
 variable
   s s₁ s₂ s₃ s′ s₁′ s₂′ : 𝕊 n
@@ -205,7 +215,7 @@ skips? (s₁ ; s₂) with skips? s₁ | skips? s₂
 skips? skip = yes skip
 skips? ret = no λ()
 skips? acq = no λ()
-skips? (`` x) = no λ()
+skips? (`` α) = no λ()
 
 ¬skips-` : {x : 𝔽 n} → ¬ Skips (` x)
 ¬skips-` ()
@@ -224,7 +234,7 @@ data 𝓖_·_ (x : 𝔽 n) : 𝕊 n → Set where
   ret : 𝓖 x · ret
   skip : 𝓖 x · skip
 
-  ``_ : (y : ℕ) → 𝓖 x · `` y
+  ``- : 𝓖 x · `` α
 
 𝓖₀ : Pred (𝕊 (1 + n)) _
 𝓖₀ = 𝓖 zero ·_
@@ -242,7 +252,7 @@ data 𝓖_·_ (x : 𝔽 n) : 𝕊 n → Set where
 𝓖-irr acq acq = refl
 𝓖-irr ret ret = refl
 𝓖-irr skip skip = refl
-𝓖-irr (`` α) (`` α) = refl
+𝓖-irr ``- ``- = refl
 
 infix 4 ⊢_
 
@@ -262,7 +272,7 @@ data ⊢_ : ∀ {κ x} → Ty κ x → Set where
   ret : ⊢ ret {n}
   acq : ⊢ acq {n}
 
-  ``_ : (x : ℕ) → ⊢ ``_ {n} x
+  ``- : ⊢ ``_ {n} α
 
 ⊢-irr : ∀ {κ x} {τ : Ty κ x} (t u : ⊢ τ) → t ≡ u
 ⊢-irr ⟨ t ⟩ ⟨ u ⟩ = cong ⟨_⟩ (⊢-irr t u)
@@ -278,7 +288,7 @@ data ⊢_ : ∀ {κ x} → Ty κ x → Set where
 ⊢-irr skip skip = refl
 ⊢-irr ret ret = refl
 ⊢-irr acq acq = refl
-⊢-irr (`` α) (`` α) = refl
+⊢-irr ``- ``- = refl
 
 skips⇒𝓖 : {x : 𝔽 n} → Skips s → 𝓖 x · s
 skips⇒𝓖 skip = skip
@@ -304,7 +314,7 @@ dual (s₁ ; s₂) = dual s₁ ; dual s₂
 dual skip = skip
 dual ret = ret
 dual acq = acq
-dual (`` x) = `` x
+dual (`` α) = `` record α { pol = dualPol (UVar.pol α) }
 
 dualPol-involutive : dualPol ∘ dualPol ≗ id
 dualPol-involutive ‼ = refl
@@ -322,7 +332,7 @@ dual-involutive (s₁ ; s₂) = cong₂ _;_ (dual-involutive s₁) (dual-invol
 dual-involutive skip = refl
 dual-involutive ret = refl
 dual-involutive acq = refl
-dual-involutive (`` x) = refl
+dual-involutive (`` α) = refl
 
 {-# REWRITE dual-involutive #-}
 

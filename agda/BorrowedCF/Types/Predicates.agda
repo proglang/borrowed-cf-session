@@ -197,6 +197,17 @@ solved-⋯⁻¹ {s = skip} x = skip
 solved-⋯⁻¹ {s = ret} x = ret
 solved-⋯⁻¹ {s = acq} x = acq
 
+solved-dual : Solved s → Solved (dual s)
+solved-dual (` x) = ` x
+solved-dual end = end
+solved-dual (msg s) = msg s
+solved-dual (brn s s₁) = brn (solved-dual s) (solved-dual s₁)
+solved-dual (mu s) = mu (solved-dual s)
+solved-dual (s ; s₁) = solved-dual s ; solved-dual s₁
+solved-dual skip = skip
+solved-dual acq = acq
+solved-dual ret = ret
+
 ≃-solved : ∀ {κ x} → Solved {κ} {x} Respects _≃_
 ≃-solved {𝕤} refl x = x
 ≃-solved {𝕤} {n} (x ◅ xs) = ≃-solved xs ∘ go x where

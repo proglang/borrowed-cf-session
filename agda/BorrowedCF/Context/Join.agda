@@ -3,7 +3,7 @@
 module BorrowedCF.Context.Join where
 
 open import BorrowedCF.Prelude
-open import BorrowedCF.Types
+open import BorrowedCF.Types hiding (α; α₁; α₂; α₃; α′)
 open import BorrowedCF.Context.Base
 open import BorrowedCF.Context.Domain
 open import BorrowedCF.Context.Equivalence

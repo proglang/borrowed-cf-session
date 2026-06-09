@@ -12,7 +12,7 @@ import Relation.Binary.Reasoning.Setoid as SetoidReasoning
 open import BorrowedCF.Prelude hiding (_⟶_)
 open import BorrowedCF.Context.Base
 open import BorrowedCF.Context.Domain
-open import BorrowedCF.Types
+open import BorrowedCF.Types hiding (α; α₁; α₂; α₃; α′)
 
 open Nat.Variables
 open Bin

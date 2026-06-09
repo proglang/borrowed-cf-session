@@ -135,7 +135,6 @@ fusion (`case e `of⟨ e₁ ; e₂ ⟩) ϕ₁ ϕ₂ rewrite fusion e ϕ₁ ϕ�
 open module CTraversal = Traversal.CTraversal record { fusion = fusion }
   hiding (fusion)
   public
-                 --Γ ∋ x ∶ t → Γ ⊢ ` x ∶ t
 
 infix 4 ⊢_∶_
 

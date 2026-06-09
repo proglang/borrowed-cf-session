@@ -5,7 +5,7 @@ module BorrowedCF.Context.Substitution where
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
 
 open import BorrowedCF.Prelude
-open import BorrowedCF.Types
+open import BorrowedCF.Types hiding (α; α₁; α₂; α₃; α′)
 open import BorrowedCF.Context.Base
 open import BorrowedCF.Context.Equivalence
 open import BorrowedCF.Context.Subcontext

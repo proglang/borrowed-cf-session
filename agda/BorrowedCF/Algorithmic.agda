@@ -171,7 +171,9 @@ sound :
   All (λ (U₁ , U₂) → subTy U₁ σ ≃ subTy U₂ σ) Δ →
   flip subTy σ ∘ Γ ; γ ⊢ subTm e σ ∶ subTy T σ ∣ ϵ
 sound {σ = σ} (A-Var ≤γ) SΓ ST Se SΔ = T-Weaken (≼-map⁺ subTy-unr ≤γ) (T-Var _ refl)
-sound (A-Const ≤γ ≢lsplit ≢rsplit ⊢c) SΓ ST Se SΔ = T-Weaken (≼-map⁺ subTy-unr ≤γ) (T-Const {!⊢c!})
+sound (A-Const ≤γ ≢lsplit ≢rsplit ⊢c) SΓ ST (K Sc) SΔ =
+  T-Weaken (≼-map⁺ subTy-unr ≤γ)
+           (T-Const {!!})
 sound (A-LSplit ≤γ) SΓ ST Se SΔ = {!!}
 sound (A-RSplit ≤γ) SΓ ST Se SΔ = {!!}
 sound (A-App ≤γ L⇒pure₁ R⇒pure₂ x x₁) SΓ ST Se SΔ = {!!}
