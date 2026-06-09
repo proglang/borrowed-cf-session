@@ -9,12 +9,24 @@ open Nat.Variables
 
 import Data.Vec.Functional
 open Data.Vec.Functional using (Vector)
-open Data.Vec.Functional using () renaming (_∷_ to _⸴_) public
+open Data.Vec.Functional using () renaming (_∷_ to _⸴_; _++_ to _⸴*_) public
 
 Ctx = Vector 𝕋
 
 variable
   Γ Γ₁ Γ₂ Γ₃ Γ′ : Ctx n
+
+⸴-cons : Γ zero ⸴ Γ ∘ suc ≗ Γ
+⸴-cons zero = refl
+⸴-cons (suc x) = refl
+
+⸴-⸴*-assoc : (T : 𝕋) (Γ₁ : Ctx m) (Γ₂ : Ctx n) → (T ⸴ Γ₁) ⸴* Γ₂ ≗ T ⸴ (Γ₁ ⸴* Γ₂)
+⸴-⸴*-assoc _ _ _ zero = refl
+⸴-⸴*-assoc {m} _ _ _ (suc x) = [,]-map (splitAt m x)
+
+⸴-⸴*-cons : Γ₁ zero ⸴ Γ₁ ∘ suc ⸴* Γ₂ ≗ Γ₁ ⸴* Γ₂
+⸴-⸴*-cons zero = refl
+⸴-⸴*-cons {m} (suc x) = sym ([,]-map (splitAt m x))
 
 data ParSeq : Set where
   par seq : ParSeq
@@ -37,6 +49,29 @@ module Variables where
 
 open Variables
 open Un
+
+cast : .(m ≡ n) → Struct m → Struct n
+cast eq (` x) = ` Fin.cast eq x
+cast eq [] = []
+cast eq (α ∥ β) = cast eq α ∥ cast eq β
+cast eq (α ; β) = cast eq α ; cast eq β
+
+cast-trans : .(eq₁ : n₁ ≡ n₂) .(eq₂ : n₂ ≡ n₃) →
+  cast eq₂ ∘ cast eq₁ ≗ cast (eq₁ ■ eq₂)
+cast-trans eq₁ eq₂ (` x) = cong `_ (Fin.cast-trans eq₁ eq₂ x)
+cast-trans eq₁ eq₂ [] = refl
+cast-trans eq₁ eq₂ (α ∥ β) = cong₂ _∥_ (cast-trans _ _ α) (cast-trans _ _ β)
+cast-trans eq₁ eq₂ (α ; β) = cong₂ _;_ (cast-trans _ _ α) (cast-trans _ _ β)
+
+cast-is-id : .{eq : n ≡ n} → cast eq ≗ id
+cast-is-id (` x) = cong `_ (Fin.cast-is-id _ x)
+cast-is-id [] = refl
+cast-is-id (α ∥ β) = cong₂ _∥_ (cast-is-id α) (cast-is-id β)
+cast-is-id (α ; β) = cong₂ _;_ (cast-is-id α) (cast-is-id β)
+
+cast-involutive : .(eq₁ : m ≡ n) .(eq₂ : n ≡ m) →
+  cast eq₁ ∘ cast eq₂ ≗ id
+cast-involutive eq₁ eq₂ x = cast-trans eq₂ eq₁ x ■ cast-is-id x
 
 module _ {ℓ} (P : Pred 𝕋 ℓ) (Γ : Ctx n) where
   data AllCx : Struct n → Set ℓ where

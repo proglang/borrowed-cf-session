@@ -21,6 +21,11 @@ open Variables
 ChanCx : Ctx n → Set
 ChanCx Γ = ∀ x → ∃ λ s → Γ x ≡ ⟨ s ⟩
 
+chanCx-⸴* : ChanCx Γ₁ → ChanCx Γ₂ → ChanCx (Γ₁ ⸴* Γ₂)
+chanCx-⸴* {m} Γ₁-S Γ₂-S i with splitAt m i
+... | inj₁ i₁ = Γ₁-S i₁
+... | inj₂ i₂ = Γ₂-S i₂
+
 data Value {n} : Tm n → Set where
   V-` : ∀ {x} → Value (` x)
   V-K : ∀ {c} → Value (K c)
