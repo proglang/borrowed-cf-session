@@ -29,6 +29,13 @@
   \Unr\ \TSum{\T[1]}{\T[2]}
 }
 
+% U-Variant
+\DefRule {Variant} {
+  \forall\ell. \Unr \T[\ell] \\
+} {
+  \Unr\ \TVariant{\ell:\T[\ell]}
+}
+
 % U-Arr
 \DefRule {Arr} {} {
   \Unr \TArr{\MobMobile}{\DirNone,\Eff}{\T[1]}{\T[2]}

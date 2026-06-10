@@ -161,37 +161,39 @@
      [\CSet[1] \CSJoin \CSet[2]]
 }
 
+% A-Inj
 \DefRule {Inj} {
   \CheckType
     {\E}
-    {\T[i]}
+    {\T[\ell]}
     {\Eff}
 }{
   \CheckType
-    {\EInj i \E}
-    {\TSum{\T[1]}{\T[2]}}
+    {\EInj k \E}
+    {\TVariant{\ell:\T[\ell]}}
     {\Eff}
 }
 
-\DefRule {CaseSum} {
-  \CtxAlgSeqCheck{\E}{\E[i]}
+% A-Case
+\DefRule {Case} {
+  \forall\ell.\CtxAlgSeqCheck{\E}{\E[\ell]}
   \\
   \InferType[\CtxRestrict{\E}]
     {\E}
-    {\TSum{\T[1]}{\T[2]}}
+    {\TVariant{\ell:\T[\ell]}}
     {\Eff}
   \\
-  \InferType[\CtxVar {\EVar[i]} {\T[i]} \CtxSeq \CtxRestrict{\E[i]}]
-    {\E[i]}
-    {\TU[i]}
-    {\Eff[i]}
-    [\CSet[i]]
+  \InferType[\CtxVar {\EVar[\ell]} {\T[\ell]} \CtxSeq \CtxRestrict{\E[\ell]}]
+    {\E[\ell]}
+    {\TU[\ell]}
+    {\Eff[\ell]}
+    [\CSet[\ell]]
 }{
   \InferType
-    {\ECase\E{\EVar[1]}{\E[1]}{\EVar[2]}{\E[2]}}
+    {\ECase[\ell\in L] \E \ECaseBranchDef}
     {\TU[1]}
     {\Eff \EffJoin \Eff[1] \EffJoin \Eff[2]}
-    [\CSet \CSJoin \CSet[1] \CSJoin \CSet[2] \CSJoin \TU[1] \CEq \TU[2]]
+    [\CSet \CSJoin \bigcup_{\ell\in L} \CSet[\ell] \CSJoin \left\{\TU[k] \CEq \TU[k'] \mid k,k' \in L \right\}]
 }
 
 % \newcommand*\RuleTMatch{

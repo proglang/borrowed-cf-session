@@ -18,6 +18,8 @@ process congruence (\cref{fig:configuration-congruence}).
     \\&
     \grmor \CSplit \grmor \CSSplit
     \grmor \CDrop \grmor \CAcq
+        \grmor \CSelect k
+        \grmor \CBranch
         \tag{Constants} \\
     \E \grmeq
       & \C \grmor \EVar \grmor \EAbs\EVar\E \grmor \EApp\E\E 
@@ -25,7 +27,8 @@ process congruence (\cref{fig:configuration-congruence}).
         \grmor \EPair\E\E
         \grmor \ELetPair{\EVar}{\EVar}{\E}{\E} \\
       &  \grmor \EInj i \E 
-        \grmor \ECase\E{\EVar}{\E}{\EVar}{\E}
+        %\grmor \ECase\E{\EVar}{\E}{\EVar}{\E}
+        \grmor \ECase \E {\ECaseBranch* i \EVar \E}
         \grmor \EMu[\EVar] \E
       % & \grmor \EMatch{\E}{\ell:\E_\ell}{\ell\in L}
       % \grmor \EFork\E \grmor \ELet\EVar\E\E
@@ -56,9 +59,7 @@ process congruence (\cref{fig:configuration-congruence}).
               \grmor \EInj{i}\EC
               \grmor \\
     & \ELet {\EPair \EVar\EVar}\EC\E
-              \grmor 
-      \ECase{\EC}{\EVar}{\E}{\EVar}{\E}
-      % \EMatch{E}{\ell : \E_\ell}{\ell\in L}
+              \grmor \ECase \E {\ECaseBranch* i \EVar \E}
               \tag{Evaluation contexts}
     \\
     \Bind \grmeq&
@@ -107,10 +108,9 @@ process congruence (\cref{fig:configuration-congruence}).
   \begin{mathpar}
     \RuleExpRedApp \and
     \RuleExpRedSeq \and
-    \RuleExpRedLet \and
+    \RuleExpRedPairElim \and
     \RuleExpRedUnfold \and
-    \RuleExpRedCaseLeft \and
-    % \RuleExpRedCaseRight \and
+    \RuleExpRedVariantElim \and
     \RuleExpRedCtx
   \end{mathpar}
   \caption{Expression reduction ($\E \Reduces \E$)}
@@ -138,12 +138,12 @@ process congruence (\cref{fig:configuration-congruence}).
     \RuleProcRedNew \and
     \RuleProcRedFork \and
     \RuleProcRedCom \and
-    \RuleProcRedSplit \and
-    \RuleProcRedSplitLocal \and
+    \RuleProcRedLSplit \and
+    \RuleProcRedRSplit \and
     \RuleProcRedDrop \and
     \RuleProcRedAcquire \and
     \RuleProcRedClose \and
-    % \RuleProcRedChoice \and
+    \RuleProcRedChoice \and
     \RuleProcRedPar \and
     \RuleProcRedBind \and
     \RuleProcRedStruct

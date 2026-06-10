@@ -269,27 +269,22 @@
     {\TSum{\T[1]}{\T[2]}}
 }
 
-% T-CaseSum
-\DefRule {CaseSum} {
+% T-Case
+\DefRule {Case} {
   \HasType
     {\Ctx[1]}
     {\E}
-    {\TSum{\T[1]}{\T[2]}}
+    {\TVariant{\ell:\T[\ell]}}
   \\
   \HasType
-    {\CtxVar{\EVar[1]}{\T[1]} \CtxPatOp \Ctx[2]}
-    {\E[1]}
-    {\T}
-  \\
-  \HasType
-    {\CtxVar{\EVar[2]}{\T[2]} \CtxPatOp \Ctx[2]}
-    {\E[2]}
-    {\T}
+    {\CtxVar{\EVar[\ell]}{\T[\ell]} \CtxPatOp \Ctx[2]}
+    {\E[\ell]}
+    {\TU}
 }{
   \HasType
     {\CtxPat 1 2}
-    {\ECase\E{x_1}{\E[1]}{x_2}{\E[2]}}
-    {\T}
+    {\ECase [\ell\in L] \E \ECaseBranchDef}
+    {\TU}
 }
 
 % T-Weaken

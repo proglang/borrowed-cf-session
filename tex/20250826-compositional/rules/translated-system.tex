@@ -124,18 +124,21 @@
 \def\RuleCmdPrefix{RuleUProcRed}
 \def\RuleNamePrefix{RU-}
 
+% RU-Exp
 \DefRule {Exp} {
   \E[1]  \Reduces \E[2]
 }{
   \TFCapp{\E[1]} \Reduces \TFCapp{\E[2]}
 }
 
+% RU-Fork
 \DefRule {Fork} {} {
   \TFCapp{\EApp \CFork \V}
   \Reduces
   \TPPar{\TFCapp\CUnit}{\TPExp{\EApp\V\CUnit}}
 }
 
+% RU-New
 \DefRule {New} {} {
   \TFCapp{\EApp \CNew \CUnit}
   \Reduces
@@ -146,17 +149,18 @@
                {\TPFlag {z_2} \FlagSet}
       }{
         \TFCapp{\EPair
-          {(\TEChan [z_1]x)}
-          {(\TEChan [z_2]y)}
+          {(\TEChan [z_1] x)}
+          {(\TEChan [z_2] y)}
         }
       }
     )}}
   }
 }
 
+% RU-LSplit
 \DefRule {LSplit} {} {
     \TPNew {(
-      \TPPar {\TFCapp{\EApp \CSplit {(\TEChan [e_1]x[e_2])}}} \TProc
+      \TPPar {\TFCapp{\EApp \CSplit {(\TEChan [e_1] x [e_2])}}} \TProc
     )}
     \Reduces
     \TPNew {(
@@ -167,9 +171,10 @@
     )}
 }
 
+% RU-RSplit
 \DefRule {RSplit} {} {
     \TPNew {(
-      \TPPar {\TFCapp{\EApp \CSSplit {(\TEChan [e_1]x[e_2])}}} \TProc
+      \TPPar {\TFCapp{\EApp \CSSplit {(\TEChan [e_1] x [e_2])}}} \TProc
     )}
     \Reduces
     \TPNew {
@@ -184,10 +189,11 @@
     }
 }
 
+% RU-Drop
 \DefRule {Drop} {} {
     \TPNew {(
       \TPPar {\TPFlag z \FlagUnset} {
-        \TPPar {\TFCapp{\EApp \CDrop {(\TEChan x[z])}}} \TProc
+        \TPPar {\TFCapp{\EApp \CDrop {(\TEChan x [z])}}} \TProc
       }
     )}
     \Reduces 
@@ -198,11 +204,12 @@
     )}
 }
 
+% RU-Acquire
 \DefRule {Acquire} {} {
     \TPNew {
       \TPSync z {(
         \TPPar {\TPFlag z \FlagSet} {
-          \TPPar {\TFCapp{\EApp \CAcq {(\TEChan [z]x[e])}}} \TProc
+          \TPPar {\TFCapp{\EApp \CAcq {(\TEChan [z] x [e])}}} \TProc
         }
       )}
     }
@@ -212,6 +219,7 @@
     )}
 }
 
+% RU-Close
 \DefRule {Close} {} {
     \TPNew {(
       \TPPar {\TFCapp[1]{\EApp\CTerm {(\TEChan x)}}}
@@ -221,14 +229,28 @@
     \TPPar {\TFCapp[1]{\CUnit}} {\TFCapp[2]{\CUnit}}
 }
 
+% RU-Com
 \DefRule {Com} {} {
   \TPNew {(
-    \TPPar {\TFCapp[1]{\EApp {\CSend} {(\EPair \TV {(\TEChan x[e_1])}}}} {
-    \TPPar {\TFCapp[2]{\EApp {\CRecv} {(\TEChan y[e_2])}}} {\TProc}}
+    \TPPar {\TFCapp[1]{\EApp {\CSend} {(\EPair \TV {(\TEChan x [e_1])}}}} {
+    \TPPar {\TFCapp[2]{\EApp {\CRecv} {(\TEChan y [e_2])}}} {\TProc}}
   )}
   \Reduces
   \TPNew {(
     \TPPar {\TFCapp[1]{\CUnit}} {
     \TPPar {\TFCapp[2]{\TV}} {\TProc}}
+  )}
+}
+
+% RU-Choice
+\DefRule {Choice} {} {
+  \TPNew {(
+    \TPPar {\TFCapp[1]{\EApp {\CSelect k} {(\TEChan x [e_1])}}} {
+    \TPPar {\TFCapp[2]{\EApp {\CBranch}   {(\TEChan y [e_2])}}} {\TProc}}
+  )}
+  \Reduces\\\\
+  \TPNew {(
+    \TPPar {\TFCapp[1]{\TEChan x [e_1]}} {
+    \TPPar {\TFCapp[2]{\EInj k {(\TEChan y [e_2])}}} {\TProc}}
   )}
 }

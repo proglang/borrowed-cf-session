@@ -24,7 +24,7 @@ $\Ctx[1] \CtxSeq \Ctx[2]$ or $\Ctx[1] \CtxPar \Ctx[2]$.
   \begin{align*}
     \Mob \grmeq
       & \MobMobile \grmor \MobStationary
-        \tag{Mobility with $\MobMobile < \MobStationary$} \\
+        \tag{Mobilities} \\
     \Dir \grmeq
       & \DirLeft \grmor \DirRight \grmor \DirUnord \grmor \DirNone
         % \grmor \DirNone
@@ -32,12 +32,12 @@ $\Ctx[1] \CtxSeq \Ctx[2]$ or $\Ctx[1] \CtxPar \Ctx[2]$.
     \Eff \grmeq
       & \EffPure \grmor \EffImpure
         \tag{Effects with $\EffPure < \EffImpure$} \\
-    \T \grmeq
-      &
-        \BUnit \grmor
-        % \B \grmor % Let us use Unit as a representative of all base types
-        \TArr{\Mob}{\Dir,\Eff}\T\T \grmor \T \TPair \T \grmor \TSum\T\T \grmor \S 
-        \tag{Types} \\
+    \T \grmeq & \BUnit
+      \grmor \TArr{\Mob}{\Dir,\Eff}\T\T
+      \grmor \T \TPair \T
+      \grmor \TVariant{\ell : \T[\ell]}
+      \grmor \S
+      \tag{Types} \\
     \S \grmeq
       & \SSkip \grmor \SSeq\S\S \grmor \STerm \grmor \SWait \grmor
         \SSend\T \grmor \SRecv\T
@@ -120,7 +120,7 @@ $\Ctx[1] \CtxSeq \Ctx[2]$ or $\Ctx[1] \CtxPar \Ctx[2]$.
     \RuleUUnit \and
     \RuleUArr \and
     \RuleUProd \and
-    \RuleUSum \and
+    \RuleUVariant \and
     \RuleUSession \\
     \RuleUCtxEmpty \and
     \RuleUCtxVar \and
@@ -210,16 +210,17 @@ $\Ctx[1] \CtxSeq \Ctx[2]$ or $\Ctx[1] \CtxPar \Ctx[2]$.
   \begin{mathpar}
     \RuleCTUnit \and
     \RuleCTNew \and
-    \RuleCTSplit \and
-    \RuleCTSSplit \and
+    \RuleCTFork \and
+    \RuleCTLSplit \and
+    \RuleCTRSplit \and
     \RuleCTDrop \and
     \RuleCTAcquire \and
-    \RuleCTFork \and
-    \RuleCTSend \and
-    \RuleCTRecv \and
     \RuleCTTerm \and
     \RuleCTWait \and
-    % \RuleCTSelect \and
+    \RuleCTSend \and
+    \RuleCTRecv \and
+    \RuleCTSelect \and
+    \RuleCTBranch
   \end{mathpar}
   \caption{Constant Typing ($\HasCType\C\T$)}
   \label{fig:constant-typing}
@@ -250,7 +251,7 @@ $\Ctx[1] \CtxSeq \Ctx[2]$ or $\Ctx[1] \CtxPar \Ctx[2]$.
     \RuleTLetUnord \and
     \RuleTLetOrd \and
     \RuleTInj \and
-    \RuleTCaseSum \and
+    \RuleTCase \and
     % \RuleTFork \and
     % \RuleTMatch \and
     % \RuleTMatchLin \and
