@@ -129,30 +129,13 @@ module _ where
 open import BorrowedCF.Context as 𝐂
 import BorrowedCF.Context.Substitution as 𝐂
 
-structNSeq : ∀ m → Struct (m + n)
+structNSeq : ∀ m → Struct m
 structNSeq zero    = []
 structNSeq (suc m) = ` zero ; 𝐂.wk (structNSeq m)
 
-structBinder  : (B : BindGroup) → Struct (sum B + n)
-structBinder+² : ∀ m {n} (B : BindGroup) → Struct (sum B + m + n)
-structBinderWk : ∀ m {n} (B : BindGroup) → Struct (m + sum B + n)
-
+structBinder : (B : BindGroup) → Struct (sum B)
 structBinder [] = []
-structBinder (b ∷ B) =
-  𝐂.cast (sym (+-assoc b (sum B) _)) (structNSeq b)
-    ∥ structBinderWk b B
-
-structBinder+² m B = 𝐂.cast (sym (+-assoc (sum B) m _)) (structBinder B)
-
-structBinderWk m B = 𝐂.cast (sym (+-assoc m (sum B) _)) (structBinder B 𝐂.⋯ᵣ 𝐂.weaken* m)
-
-structBinder+²-⋯-↑* : ∀ ⦃ K : 𝐂.Kit 𝓕 ⦄ m B {σ : n₁ 𝐂.–[ K ]→ n₂} → structBinder+² m B 𝐂.⋯ σ 𝐂.↑* (sum B + m) ≡ structBinder+² m B
-structBinder+²-⋯-↑* m [] = refl
-structBinder+²-⋯-↑* {n₂ = n₂} m (b ∷ B) {σ} = cong₂ _∥_
-  (cong (𝐂._⋯ σ 𝐂.↑* (sum (b ∷ B) + m)) (cast-trans _ _ (structNSeq b))
-    ■ {!!}
-    ■ sym (cast-trans _ _ (structNSeq b)))
-  {!!}
+structBinder (b ∷ B) = (structNSeq b 𝐂.⋯ᵣ 𝐂.wkʳ (sum B)) ∥ (structBinder B 𝐂.⋯ᵣ 𝐂.wkˡ b)
 
 data BindCtx : 𝕊 0 → Ctx n → Set where
   []  : BindCtx skip F.[]
@@ -177,8 +160,9 @@ data _;_⊢ₚ_ (Γ : Ctx n) : Struct n → Proc n → Set where
   TP-Res :
     (C : BindCtx {sum B₁} s Γ₁) →
     (C′ : BindCtx {sum B₂} (dual s) Γ₂) →
-    (Γ₁ ⸴* Γ₂) ⸴* Γ ; structBinder+² (sum B₂) B₁ ∥ structBinderWk (sum B₁) B₂
-                       ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
+    (Γ₁ ⸴* Γ₂) ⸴* Γ ; (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n)
+                    ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n)
+                    ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
       ⊢ₚ P →
     Γ ; γ ⊢ₚ ν B₁ B₂ P
 
@@ -208,9 +192,10 @@ inv-ν : {Γ : Ctx n} → Γ ; γ ⊢ₚ ν B₁ B₂ P →
   ∃[ Γ₁ ] ∃[ Γ₂ ] ∃[ s ]
      BindCtx {sum B₁} s Γ₁
       × BindCtx {sum B₂} (dual s) Γ₂
-      × (Γ₁ ⸴* Γ₂) ⸴* Γ ;
-            structBinder+² (sum B₂) B₁ ∥ structBinderWk (sum B₁) B₂
-              ∥ (γ 𝐂.⋯ 𝐂.weaken* _) ⊢ₚ P
+      × (Γ₁ ⸴* Γ₂) ⸴* Γ ; (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n)
+                        ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n)
+                        ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
+                        ⊢ₚ P
 inv-ν (TP-Res C C′ p) = _ , _ , _ , C , C′ , p
 inv-ν (TP-Weaken γ≤ p) =
   let Γ₁ , Γ₂ , _ , C , C′ , p′ = inv-ν p in
@@ -228,7 +213,14 @@ TP-Expr e ⊢⋯ₚ ⊢ϕ = TP-Expr (e ⊢⋯ ⊢ϕ)
 TP-Par p q ⊢⋯ₚ ⊢ϕ = TP-Par (p ⊢⋯ₚ ⊢ϕ) (q ⊢⋯ₚ ⊢ϕ)
 _⊢⋯ₚ_ {γ = γ} {σ = σ} (TP-Res {B₁ = B₁} {B₂ = B₂} C C′ p) ⊢ϕ =
   TP-Res C C′
-    $ subst-γₚ (cong₂ _∥_ (cong₂ _∥_ (structBinder+²-⋯-↑* (sum B₂) B₁) {!!}) (sym (𝐂.⋯-↑*-wk γ σ (sum B₁ + sum B₂))))
+    $ subst-γₚ (cong₂ _∥_ (cong₂ _∥_
+        (𝐂.fusion (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂)) (𝐂.wkʳ _) (σ 𝐂.↑* (sum B₁ + sum B₂))
+          ■ 𝐂.⋯-cong (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂)) (𝐂.wkʳ-cancels-↑* ⦃ 𝐂.Kᵣ ⦄ (sum B₁ + sum B₂) σ)
+          ■ 𝐂.conv-⋯ᵣₛ (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂)))
+        (𝐂.fusion (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁)) (𝐂.wkʳ _) (σ 𝐂.↑* (sum B₁ + sum B₂))
+          ■ 𝐂.⋯-cong (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁)) (𝐂.wkʳ-cancels-↑* ⦃ 𝐂.Kᵣ ⦄ (sum B₁ + sum B₂) σ)
+          ■ 𝐂.conv-⋯ᵣₛ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁))))
+        (sym (𝐂.⋯-↑*-wk γ σ (sum B₁ + sum B₂))))
     $ p ⊢⋯ₚ ⊢↑* _ ⊢ϕ
 TP-Weaken γ≤ p ⊢⋯ₚ ⊢ϕ = TP-Weaken (𝐂.≼-⋯ (&-unr ⊢ϕ) γ≤) (p ⊢⋯ₚ ⊢ϕ)
 
@@ -257,9 +249,15 @@ TP-Weaken γ≤ p ⊢⋯ₚ ⊢ϕ = TP-Weaken (𝐂.≼-⋯ (&-unr ⊢ϕ) γ≤)
                      γ₁ ∥ γ₂  ≲⟨ ≤γ ⟩
                      _        ∎
       in TP-Weaken ≤γ q
-  go Γ-S (fwd ν-swap′) p₀
-    with _ , _ , _ , C , C′ , p ← inv-ν p₀
-    = TP-Res C′ C (subst-γₚ {!!} (p ⊢⋯ₚ {!swapᵣ _ _!}))
+  go {n} {γ = γ} Γ-S (fwd (ν-swap′ {B₁ = B₁} {B₂})) p₀
+    with Γ₁ , Γ₂ , _ , C , C′ , p ← inv-ν p₀
+    = let eq₁ = {!!} in
+      let eq₂ = {!!} in
+      let eq = 𝐂.∥-cong
+                 (≈-trans 𝐂.∥-comm (𝐂.∥-cong (≈-reflexive eq₁) (≈-reflexive eq₂)))
+                 (≈-reflexive (𝐂.conv-⋯ᵣₛ (γ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂)) ■ 𝐂.wk-swap-⋯ (sum B₁) (sum B₂) {n} γ))
+      in
+      TP-Res C′ C $ TP-Weaken (≼-refl eq) $ p ⊢⋯ₚ ⊢swapᵣ Γ₁ Γ₂
   go Γ-S (fwd ν-comm′) p₀
     with _ , _ , _ , X , X′ , pˣ ← inv-ν p₀
     with _ , _ , _ , Y , Y′ , pʸ ← inv-ν pˣ

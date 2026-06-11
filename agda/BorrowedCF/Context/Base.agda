@@ -73,6 +73,12 @@ cast-involutive : .(eq₁ : m ≡ n) .(eq₂ : n ≡ m) →
   cast eq₁ ∘ cast eq₂ ≗ id
 cast-involutive eq₁ eq₂ x = cast-trans eq₂ eq₁ x ■ cast-is-id x
 
+subst-is-cast : (eq : m ≡ n) → subst Struct eq ≗ cast eq
+subst-is-cast refl (` x) = cong `_ (sym (Fin.cast-is-id refl x))
+subst-is-cast refl [] = refl
+subst-is-cast refl (x ∥ y) = cong₂ _∥_ (subst-is-cast refl x) (subst-is-cast refl y)
+subst-is-cast refl (x ; y) = cong₂ _;_ (subst-is-cast refl x) (subst-is-cast refl y)
+
 module _ {ℓ} (P : Pred 𝕋 ℓ) (Γ : Ctx n) where
   data AllCx : Struct n → Set ℓ where
     []  : AllCx []

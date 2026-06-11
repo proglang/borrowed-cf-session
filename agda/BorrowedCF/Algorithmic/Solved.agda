@@ -127,6 +127,7 @@ subTy-unr (U ⊕ U₁) = subTy-unr U ⊕ subTy-unr U₁
 subTy-unr (arr x) = arr x
 subTy-unr ⟨ x ⟩ = ⟨ subTy-skips x ⟩
 
+{-
 subTy-mobile : Mobile T → Mobile (subTy T σ)
 subTy-mobile `⊤ = `⊤
 subTy-mobile (arr x) = arr x
@@ -134,6 +135,7 @@ subTy-mobile (acq x eq) = acq {!!} (subTy-≃ eq)
 subTy-mobile (skip x) = skip (subTy-skips x)
 subTy-mobile (m ⊗ m₁) = subTy-mobile m ⊗ subTy-mobile m₁
 subTy-mobile (m ⊕ m₁) = subTy-mobile m ⊕ subTy-mobile m₁
+-}
 
 open import BorrowedCF.Terms
 

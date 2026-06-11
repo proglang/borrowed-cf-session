@@ -63,97 +63,6 @@ fusion (α ; β) ϕ₁ ϕ₂ = cong₂ _;_ (fusion α _ _) (fusion β _ _)
 
 open CTraversal record { fusion = fusion } hiding (fusion) public
 
-{-
-_→ₛ_ : ℕ → ℕ → Set
-m →ₛ n = 𝔽 m → Struct n
-
-idₛ : n →ₛ n
-idₛ x = ` x
-
-infixr 6 _∷ₛ_
-
-_∷ₛ_ : Struct n → m →ₛ n → suc m →ₛ n
-(α ∷ₛ σ) zero    = α
-(α ∷ₛ σ) (suc x) = σ x
-
-wk : Struct n → Struct (suc n)
-wk (` x)   = ` suc x
-wk []      = []
-wk (α ∥ β) = wk α ∥ wk β
-wk (α ; β) = wk α ; wk β
-
-wkₛ : m →ₛ n → m →ₛ suc n
-wkₛ σ x = wk (σ x)
-
-weaken : n →ₛ suc n
-weaken = wkₛ idₛ
-
-weaken* : ∀ m → n →ₛ (m + n)
-weaken* zero = idₛ
-weaken* (suc m) = wkₛ (weaken* m)
-
-wkʳ : ∀ n → m →ₛ (m + n)
-wkʳ n x = ` (x ↑ˡ n)
-
-_↑ : m →ₛ n → suc m →ₛ suc n
-σ ↑ = ` zero ∷ₛ wkₛ σ
-
-_↑*_ : n₁ →ₛ n₂ → ∀ m → (m + n₁) →ₛ (m + n₂)
-σ ↑* zero  = σ
-σ ↑* suc m = (σ ↑* m) ↑
-
-⦅_⦆ : Struct n → suc n →ₛ n
-⦅ α ⦆ = α ∷ₛ idₛ
-
-weaken/wk : (γ : Struct n) → γ ⋯ weaken ≡ wk γ
-weaken/wk (` x) = refl
-weaken/wk [] = refl
-weaken/wk (γ ∥ γ₁) = cong₂ _∥_ (weaken/wk γ) (weaken/wk γ₁)
-weaken/wk (γ ; γ₁) = cong₂ _;_ (weaken/wk γ) (weaken/wk γ₁)
-
-⋯-↑-weaken : (γ : Struct m) (σ : m →ₛ n) → γ ⋯ σ ⋯ weaken ≡ γ ⋯ weaken ⋯ σ ↑
-⋯-↑-weaken (` x) σ = weaken/wk (σ x)
-⋯-↑-weaken [] σ = refl
-⋯-↑-weaken (α ∥ β) σ = cong₂ _∥_ (⋯-↑-weaken α σ) (⋯-↑-weaken β σ)
-⋯-↑-weaken (α ; β) σ = cong₂ _;_ (⋯-↑-weaken α σ) (⋯-↑-weaken β σ)
-
-⋯-↑-wk : (γ : Struct m) (σ : m →ₛ n) → wk (γ ⋯ σ) ≡ wk γ ⋯ σ ↑
-⋯-↑-wk γ σ rewrite sym (weaken/wk γ) | sym (weaken/wk (γ ⋯ σ)) = ⋯-↑-weaken γ σ
-
-wk-⋯ : (γ : Struct m) (σ : m →ₛ n) → wk (γ ⋯ σ) ≡ γ ⋯ wk ∘ σ
-wk-⋯ (` x) σ = refl
-wk-⋯ [] σ = refl
-wk-⋯ (α ∥ β) σ = cong₂ _∥_ (wk-⋯ α σ) (wk-⋯ β σ)
-wk-⋯ (α ; β) σ = cong₂ _;_ (wk-⋯ α σ) (wk-⋯ β σ)
-
-⋯-↑-weaken* : ∀ m (γ : Struct n₁) (σ : n₁ →ₛ n₂) → γ ⋯ weaken* m ⋯ σ ↑* m ≡ γ ⋯ σ ⋯ weaken* m
-⋯-↑-weaken* m [] σ = refl
-⋯-↑-weaken* m (α ∥ β) σ = cong₂ _∥_ (⋯-↑-weaken* m α σ) (⋯-↑-weaken* m β σ)
-⋯-↑-weaken* m (α ; β) σ = cong₂ _;_ (⋯-↑-weaken* m α σ) (⋯-↑-weaken* m β σ)
-⋯-↑-weaken* zero (` x) σ = sym (⋯-id (λ _ → refl) (σ x))
-⋯-↑-weaken* (suc m) (` x) σ =
-  let open ≡-Reasoning in
-  (` x) ⋯ weaken* (suc m) ⋯ (σ ↑* suc m) ≡⟨⟩
-  wk (weaken* m x) ⋯ (σ ↑* m) ↑ ≡⟨ cong (λ γ → γ ⋯ (σ ↑* m) ↑) (weaken/wk (weaken* m x)) ⟨
-  weaken* m x ⋯ weaken ⋯ (σ ↑* m) ↑ ≡⟨ ⋯-↑-weaken (weaken* m x) (σ ↑* m) ⟨
-  weaken* m x ⋯ σ ↑* m ⋯ weaken ≡⟨ cong (λ γ → γ ⋯ weaken) (⋯-↑-weaken* m (` x) σ) ⟩
-  σ x ⋯ weaken* m ⋯ weaken ≡⟨ weaken/wk (σ x ⋯ weaken* m) ⟩
-  wk (σ x ⋯ weaken* m) ≡⟨ wk-⋯ (σ x) (weaken* m) ⟩
-  σ x ⋯ wk ∘ weaken* m ≡⟨⟩
-  (` x) ⋯ σ ⋯ weaken* (suc m) ∎
-
-_⋯-weaken-cancels-⦅_⦆ : (α : Struct n) (γ : Struct n) → α ⋯ weaken ⋯ ⦅ γ ⦆ ≡ α
-(` x) ⋯-weaken-cancels-⦅ γ ⦆ = refl
-[] ⋯-weaken-cancels-⦅ γ ⦆ = refl
-(α ∥ β) ⋯-weaken-cancels-⦅ γ ⦆ = cong₂ _∥_ (α ⋯-weaken-cancels-⦅ γ ⦆) (β ⋯-weaken-cancels-⦅ γ ⦆)
-(α ; β) ⋯-weaken-cancels-⦅ γ ⦆ = cong₂ _;_ (α ⋯-weaken-cancels-⦅ γ ⦆) (β ⋯-weaken-cancels-⦅ γ ⦆)
-
-_⋯-wk-cancels-⦅_⦆ : (α : Struct n) (γ : Struct n) → wk α ⋯ ⦅ γ ⦆ ≡ α
-(` x) ⋯-wk-cancels-⦅ γ ⦆ = refl
-[] ⋯-wk-cancels-⦅ γ ⦆ = refl
-(α ∥ β) ⋯-wk-cancels-⦅ γ ⦆ = cong₂ _∥_ (α ⋯-wk-cancels-⦅ γ ⦆) (β ⋯-wk-cancels-⦅ γ ⦆)
-(α ; β) ⋯-wk-cancels-⦅ γ ⦆ = cong₂ _;_ (α ⋯-wk-cancels-⦅ γ ⦆) (β ⋯-wk-cancels-⦅ γ ⦆)
--}
 
 _Preserves[_]_⇒_ : ∀ {ℓ} ⦃ K : Kit 𝓕 ⦄ → m –[ K ]→ n → Pred 𝕋 ℓ → Ctx m → Ctx n → Set _
 σ Preserves[ P ] Γ₁ ⇒ Γ₂ = ∀ {x} → P (Γ₁ x) → AllCx P Γ₂ (`/id (σ x))
@@ -179,6 +88,12 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
   ↑-preserves ⦃ K ⦄ p⇒ {zero}  px = subst (AllCx P _) (sym (`/`-is-` ⦃ K ⦄ zero)) (` px)
   ↑-preserves ⦃ K ⦄ p⇒ {suc x} px = subst (AllCx P _) (wk-`/id _) (allCx-wk (p⇒ px))
 
+  `ρ-preserves : {ρ : m →ᵣ n} {Γ₁ : Ctx m} {Γ₂ : Ctx n} → ρ Preserves[ P ] Γ₁ ⇒ Γ₂ → (`_ ∘ ρ) Preserves[ P ] Γ₁ ⇒ Γ₂
+  `ρ-preserves ρΓ₁Γ₂ px = ρΓ₁Γ₂ px
+
+  swapᵣ-preserves : (Γ₁ : Ctx m₁) (Γ₂ : Ctx m₂) {Γ : Ctx n} → swapᵣ m₁ m₂ Preserves[ P ] (Γ₁ ⸴* Γ₂) ⸴* Γ ⇒ ((Γ₂ ⸴* Γ₁) ⸴* Γ)
+  swapᵣ-preserves {m₁} {m₂} Γ₁ Γ₂ {Γ} {x = x} px = ` subst P (sym (++-swapᵣ Γ₁ Γ₂ x)) px
+
 ≈′-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} → ϕ Preserves[ Unr ] Γ₁ ⇒ Γ₂ → Γ₁ ∶ α ≈′ β → Γ₂ ∶ α ⋯ ϕ ≈′ β ⋯ ϕ
 ≈′-⋯ σ-unr ;′-assoc = ;′-assoc
 ≈′-⋯ σ-unr (;′-cong₁ x) = ;′-cong₁ (≈′-⋯ σ-unr x)
@@ -200,3 +115,9 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
 ≼-⋯ σ-unr (≼-trans  x y) = ≼-trans (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
 ≼-⋯ σ-unr (≼-cong-; x y) = ≼-cong-; (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
 ≼-⋯ σ-unr (≼-cong-∥ x y) = ≼-cong-∥ (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
+
+{-
+weakenˡ-swap/weakenʳ : ∀ m₁ m₂ {n} (γ : Struct (m₂ + n)) →
+  cast (sym (+-assoc m₁ m₂ n)) (γ ⋯ᵣ weaken* m₁) ⋯ swapᵣ m₁ m₂ {n} ≡ {!γ!}
+weakenˡ-swap/weakenʳ = {!!}
+-}
