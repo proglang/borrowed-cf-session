@@ -1,0 +1,51 @@
+
+\section{Introduction}
+\label{sec:introduction}
+
+Session types
+
+Borrowing
+
+\citet{DBLP:journals/pacmpl/SaffrichS0V25} present a session type
+system with a notion of borrowing. Their calculus BGV is based on regular
+session types \cite{DBLP:conf/esop/LindleyM15} and its semantics is
+given by a translation to a calculus from the literature
+\cite{DBLP:journals/lmcs/KokkeD23}. The approach of the BGV paper has a number of
+drawbacks. As the source calculus has no direct semantics, it is
+difficult to perform optimizations at the source level. Moreover, the
+translation is uniform in the sense that it does not distinguish
+between local borrows that remain in the same process and remote
+borrows that are passed to other processes. This uniformity leads to
+inefficiency because local borrows can elide the synchronization
+machinery needed for remote borrows. 
+
+Context-free session types \cite{DBLP:conf/icfp/ThiemannV16,DBLP:journals/iandc/AlmeidaMTV22}
+
+\subsection*{Contributions}
+
+\begin{itemize}
+\item A new design of session types with borrowing, simpler than previous work.
+\item Based on context-free session types, rather than regular session types.
+\item Splitting for context-free session types.
+\end{itemize}
+
+Technical contributions
+\begin{itemize}
+\item Source language with direct operational semantics, rather than translational. The
+  operational semantics serves as an abstract specification of
+  borrowing for session types.
+\item New intermediate language that makes channel handling explicit
+  and efficient.
+\item Translation from source language to intermediate language: maps
+  specification to implementation.
+\item Source language: Type system with effects based on BI-contexts.
+\item Metatheory: type soundness wrt.\ operational semantics,
+  simulation for the translation.
+\item Implementation: type checker leveraging the implementation of
+  FreeST \cite{almeida26:_frees_concur_progr_languag_with,DBLP:journals/corr/abs-1904-01284}
+\end{itemize}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../popl2027.tex"
+%%% End:

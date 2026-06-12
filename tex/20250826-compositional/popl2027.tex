@@ -1,0 +1,155 @@
+\PassOptionsToPackage{dvipsnames}{xcolor}
+\documentclass[acmsmall,screen,review,anonymous,nonacm]{acmart}
+\citestyle{acmauthoryear}
+\bibliographystyle{ACM-Reference-Format}
+
+\usepackage{mathpartir}
+\usepackage{stmaryrd}
+\usepackage{placeins}
+\usepackage{mathtools}
+\usepackage{cleveref}
+\usepackage{listings}
+\usepackage{xspace}
+
+\definecolor{verylightgray}{rgb}{0.9,0.9,0.9}
+\definecolor{verylightred}{rgb}{1,0.9,0.9}
+\definecolor{darkgold}{rgb}{0.7,0.5.4,0}
+\definecolor{darkviolet}{rgb}{0.5,0,0.4}
+\definecolor{darkgreen}{rgb}{0,0.4,0.2}
+\definecolor{darkblue}{rgb}{0.1,0.1,0.9}
+\definecolor{darkgrey}{rgb}{0.5,0.5,0.5}
+\definecolor{lightblue}{rgb}{0.4,0.4,1}
+
+\lstdefinestyle{eclipse}{
+  breaklines=true,
+  basicstyle=\sffamily\small,
+  emphstyle=\color{red}\bfseries,
+  keywordstyle=\color{darkviolet}\bfseries,
+  commentstyle=\color{darkgreen},
+  stringstyle=\color{darkblue},
+  numberstyle=\color{darkgrey},%\lstfontfamily,
+  emphstyle=\color{red},
+  showstringspaces=false,
+}
+
+\lstdefinestyle{eclipse-new}{
+  backgroundcolor=\color{verylightgray},
+  breaklines=true,
+  basicstyle=\sffamily\small,
+  emphstyle=\color{red}\bfseries,
+  keywordstyle=\color{darkgold}\bfseries,
+  commentstyle=\color{darkgreen},
+  stringstyle=\color{darkblue},
+  numberstyle=\color{darkgrey},%\lstfontfamily,
+  emphstyle=\color{red},
+  showstringspaces=false,
+}
+
+\lstdefinestyle{eclipse-error}{
+  backgroundcolor=\color{verylightred},
+  breaklines=true,
+  basicstyle=\sffamily\small,
+  emphstyle=\color{red}\bfseries,
+  keywordstyle=\color{darkgold}\bfseries,
+  commentstyle=\color{darkgreen},
+  stringstyle=\color{darkblue},
+  numberstyle=\color{darkgrey},%\lstfontfamily,
+  emphstyle=\color{red},
+  showstringspaces=false,
+}
+
+\lstset{
+  language=[Objective]Caml,
+  style=eclipse,
+  morekeywords=[1]{Int, Char, Bool, Str, String, Close, Wait, Return, Unit, Skip, Chan, Ref, void, type, dualof, rec, let, in, if, then,
+    else, new, send, recv, select, fork, close, wait, print, branch, offer,
+    pure, full, drop, case, of, data, match, with,
+    read, write, free, split, send_borrow, recv_borrow, True,
+    False}, %  MU, ML, SU, SL, TU, TL
+  % sensitive=true,
+  literate=
+  {>>}{>>}1
+  {|>}{$\rhd$}1
+  {->}{$\rightarrow$}2
+  {-R>}{${\rightarrow_{\textsc r}}$}3
+  {-L>}{${\rightarrow_{\textsc l}}$}3
+  {-o}{$\multimap$}2
+  {.o}{$\odot$}2
+  {ox}{$\otimes$}2
+  {=>}{$\Rightarrow$}2
+  {forall}{$\forall$}1
+  {Lambda}{$\Lambda$}1
+  {lambda}{$\lambda$}1
+  {mu}{$\mu$}1
+  {alpha}{$\alpha$}1
+  {sigma}{$\sigma$}1
+  {oplus}{$\oplus$}1
+  {+\{}{$\oplus$\{}2
+  {\\le}{$\le$}1
+  {elll}{$\ell$}1
+  {_1}{${}_1$}1
+  {_n}{${}_n$}1
+  ,
+  morecomment=[l]{\#},
+  breaklines=true,
+  tabsize=2
+}
+
+\input{symbols}
+\input{rules}
+
+\title{Context-Free Session Types with Borrowing}
+\author{Janek Spaderna}
+\email{spadernj@cs.uni-freiburg.de}
+\orcid{0000-0002-9000-1239}
+
+\author{Onur Sahin}
+\email{sahino@cs.uni-freiburg.de}
+\orcid{XXXX-YYYY-ZZZZ-WWWW}
+
+\author{Peter Thiemann}
+\email{thiemann@acm.org}
+\orcid{0000-0002-9000-1239}
+
+\author{Marius Weidner}
+\email{weidner@cs.uni-freiburg.de}
+\affiliation{%
+  \institution{University of Freiburg}
+  % \city{Hekla}
+  \country{Germany}}
+\orcid{0009-0008-1152-165X}
+
+% \authorrunning{J. Spaderna, O. Sahin, P. Thiemann, and M. Weidner}
+
+% \institute{University of Freiburg, Freiburg, Germany}
+
+\begin{document}
+\begin{abstract}
+  Abstract: TBD
+\end{abstract}
+\maketitle
+
+\input{sec/introduction}
+\input{sec/motivation}
+
+
+\clearpage
+\input{sec/expressions}
+\clearpage
+\input{sec/types}
+\clearpage
+\input{sec/algorithmic}
+\clearpage
+\input{sec/translation}
+\clearpage
+\input{sec/related}
+\input{sec/conclusion}
+
+\bibliography{popl2027}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

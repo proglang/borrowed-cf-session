@@ -1,0 +1,140 @@
+
+\section{Motivation}
+\label{sec:motivation}
+
+\subsection{Borrowing from Context-Free Session Types}
+\label{sec:borr-from-cont}
+
+
+Context-free session types enable writing elegant code for, e.g., serializing tree structures.
+Consider an example from \citet{DBLP:conf/icfp/ThiemannV16} for serializing binary trees of type \lstinline{Tree}:
+\begin{lstlisting}
+type Tree = Leaf
+          | Node int Tree Tree
+\end{lstlisting}
+The corresponding session type \lstinline{TreeChannel} is context-free:
+\begin{lstlisting}
+type TreeChannel = oplus{
+  Leaf: skip,
+  Node: !int; TreeChannel; TreeChannel
+}
+\end{lstlisting}
+The type \lstinline{TreeChannel} is called context-free because it is
+recursively defined and the recursion is not restricted to tail
+positions. The \lstinline{Node} alternative is an example where the
+\lstinline{TreeChannel} type refers two times in a row to itself. This
+type would be illegal in regular session type systems (e.g., \cite{DBLP:journals/jfp/GayV10,DBLP:conf/esop/LindleyM15}).
+
+The serialization function looks straightforward:
+\begin{lstlisting}[numbers=left]
+sendTree : Tree -> forallalpha.TreeChannel;alpha -> alpha
+sendTree Leaf c =
+  select Leaf c
+sendTree (Node x l r) c =
+  let c1 = select Node c   (* c1 : !int; TreeChannel; TreeChannel; alpha *)
+      c2 = send x c1       (* c2 : TreeChannel; TreeChannel; alpha *)
+      c3 = sendTree l c2   (* c3 : TreeChannel; alpha *)
+      c4 = sendTree r c3   (* c4 : alpha *)
+  in  c4
+\end{lstlisting}
+However, there are several catches. First, the channel \lstinline{c}
+is passed explicitly throughout the code; a pattern we call
+\emph{resource-passing style}. This style forces the programmer to
+make the function polymorphic on the continuation type of the channel,
+which is \lstinline{alpha} in this example.
+Second, the \lstinline{Node} branch of \lstinline{sendTree} relies on
+polymorphic recursion. To see this, consider the type of
+\lstinline{c2} in line 6--7. To invoke \lstinline{sendTree}
+recursively, we need to instantiate the type argument
+\lstinline{alpha} with \lstinline{TreeChannel; alpha}, which is the
+telltale for polymorphic recursion. Finally, recall that channel types
+are linear in CFST, that is, each session-typed variable must be used
+exactly once.
+
+Our new language {\thecalculus} can amend both problems. The type
+definitions remain unchanged, only the implementation of
+\lstinline{sendTree} changes.
+\begin{lstlisting}[numbers=left]
+sendTree' : Tree -> TreeChannel; Ret -> Unit
+sendTree' Leaf c =
+  select Leaf c
+sendTree' (Node x l r) c =
+  select Node &c;    (* c : !Int; TreeChannel; TreeChannel; Ret *)
+  send x &c;         (* c : TreeChannel; TreeChannel; Ret *)
+  sendTree l &c;     (* c : TreeChannel; Ret *)
+  sendTree r c
+\end{lstlisting}
+What has changed? First, the type is no longer polymorphic over the
+continuation type. Instead, the channel argument \lstinline{c} starts
+out at type \lstinline{TreeChannel; Ret} which indicates that it is a borrow from
+a (larger) session type. Each use of the borrow notation
+\lstinline{&c} splits off an initial segment of the session type
+according to the function argument and updates \lstinline{c} to the
+remainder. To see this, consider the type of \lstinline{c}---after
+splitting off the borrow in the corresponding line---shown in the
+comments. Before the \lstinline{send} operation (line 5--6), the type
+of \lstinline{c} starts with \lstinline{!Int; ...}. ``Taking the
+borrow'' splits off the borrowed type \lstinline{!Int; Ret}---the
+argument type of \lstinline{send x}---and
+updates \lstinline{c} to the type shown in line 6. As the type of
+\lstinline{c} is itself a borrowed type, one could speak of a
+reborrow. On the last line~8, the type of \lstinline{c} already
+matches the type expected by \lstinline{sendTree}, so no extra borrow
+needs to be taken. 
+
+Second, as there is no polymorphism, there is no polymorphic
+recursion, either.
+
+Finally, the channel variable \lstinline{c} can be used in a
+non-linear way, as long as the uses are under borrows, as in
+\lstinline{&c}. The understanding is that the borrows are taken and
+processed according to the evaluation order of the program. 
+
+\subsection{Local and Remote Borrowing}
+\label{sec:local-remote-borr}
+
+We call the style of borrowing demonstrated in
+\cref{sec:borr-from-cont} \emph{local borrowing}, as the borrows remain in the same
+thread and are processed sequentially, following the evaluation order.
+
+In this local setting, we expect the operations on borrows to be
+implemented in an imperative style. That is, the channel is
+represented by a single reference and each channel operation updates
+the reference. This implementation is safe because the soundness of
+the type system ensures that the type updates match the real updates
+in the implementation.
+
+However, there may be situations where we want to send a borrow to
+another process. Suppose, we wanted to serialize the trees
+produced by two processes into a single output channel.
+\begin{lstlisting}[numbers=left]
+combineTrees : (Int -> Tree) -> (Int -> Tree) -> TreeChannel; Ret -> Unit
+combineTrees mkTree1 mkTree2 c =
+  select Node &c;
+  send 0 &c;
+  fork (lambda () -> sendTree' (mkTree1 0) &c)
+  sendTree' (mkTree2 42) (acquire c)
+\end{lstlisting}
+The function accepts two functions that produce \lstinline{Tree}
+values and a \lstinline{TreeChannel}. It first initializes
+serialization with a dummy node. Next, it passes a borrow to a new
+process that sends a freshly constructed tree as the left subtree of the
+dummy node. In the continuation, it constructs another tree and
+serializes it on the same channel as the right subtree of the dummy
+node.
+
+In this case, the borrow under the fork in line~5 is a \emph{remote
+  borrow}. Such a borrow \emph{cannot} be handled imperatively, but we
+have to insert some synchronization mechanism for the
+\lstinline{sendTree'} in the continuation (line~6) to start before the
+other process has finished. This synchronization is implemented with
+the \lstinline{acquire} function. It blocks until the borrow created
+in line~5 is completed, i.e., the \lstinline{sendTree'} operation in
+line~5 has finished sending on the channel. Once it is unblocked, the
+\lstinline{acquire} operation returns the current channel end for
+further operations. 
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../popl2027.tex"
+%%% End:
