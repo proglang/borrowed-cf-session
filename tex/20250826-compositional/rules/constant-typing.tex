@@ -18,8 +18,18 @@
 }
 
 % CT-New
-\DefRule {New} {} {
-  \HasCType{\CNew_{\S}}{\TArr{\MobMobile}{\DirUnord,\EffPure}{\BUnit}{\TPairUnord{(\SSeq{\SAcq}{\S})}{(\SSeq{\SAcq}{\Dual~\S})}}}
+\DefRule {New} {
+  \SNew \S
+} {
+  \HasCType
+    {\CNew_{\S}}
+    {\TArr{\MobMobile}{\DirUnord,\EffPure}
+      {\BUnit}
+      {\TPairUnord
+        {(\SSeq{\SAcq}{\SSeq\S\SWait})}
+        {(\SSeq{\SAcq}{\SSeq{\Dual~\S}{\STerm}})}
+      }
+    }
 }
 
 % CT-Drop
@@ -35,7 +45,9 @@
 }
 
 % CT-LSplit
-\DefRule {LSplit} {} {
+\DefRule {LSplit} {
+  \neg \Skips {\S[1]}
+} {
   \HasCType
     {\CSplit_{\S[1],\S[2]}}
     {\TArr{\MobMobile}{\DirUnord,\EffPure}{\SSeq {\S[1]}{\S[2]}}{\TPairOrd{\S[1]}{\S[2]}}}

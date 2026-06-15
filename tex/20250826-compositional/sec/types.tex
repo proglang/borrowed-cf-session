@@ -186,6 +186,21 @@ $\Ctx[1] \CtxSeq \Ctx[2]$ or $\Ctx[1] \CtxPar \Ctx[2]$.
   \label{fig:bounded-session-types}
 \end{figure}
 
+\begin{figure}
+  \begin{mathpar}
+    \RuleSNewSkip \and
+    \RuleSNewSend \and
+    \RuleSNewRecv \and
+    \RuleSNewVar \\
+    \RuleSNewSeq \and
+    \RuleSNewBranch \and
+    \RuleSNewChoice \and
+    \RuleSNewRec
+  \end{mathpar}
+  \caption{Session types that are valid for $\CNew$}
+  \label{fig:new-session-types}
+\end{figure}
+
 \begin{lemma}%[Monoidal properties of contexts]
   The context constructors satisfy the following properties with respect to
   context equality.

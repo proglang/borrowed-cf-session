@@ -14,7 +14,8 @@
 % A-LSplit
 \DefRule {LSplit} {
   \CtxEmpty \SubCtx \Ctx \\
-  \TVar\ \text{fresh}
+  \TVar\ \text{fresh} \\
+  \neg \Skips \S
 }{
   \InferType {\CSplit_{\S}}
   {\TArr{\MobMobile}{\DirUnord,\EffPure} {\SSeq\S\TVar} {\TPairOrd{\S}{\TVar}}}

@@ -1,0 +1,53 @@
+% Predicate for session types creatable by `new`.
+
+\def\RuleCmdPrefix{RuleSNew}
+\def\RuleNamePrefix{TN-}
+
+% TN-Skip
+\DefRule {Skip} {} {
+  \SNew \SSkip
+}
+
+% TN-Seq
+\DefRule {Seq} {
+  \SNew {\S[1]} \\
+  \SNew {\S[2]}
+} {
+  \SNew {\SSeq{\S[1]}{\S[2]}}
+}
+
+% TN-Rec
+\DefRule {Rec} {
+  \SNew {\S}
+} {
+  \SNew {\SRec X \S}
+}
+
+% TN-Var
+\DefRule {Var} {} {
+  \SNew {X}
+}
+
+% TN-Branch
+\DefRule {Branch} {
+  \forall \ell.\ \SNew {\S[\ell]}
+} {
+  \SNew {\SBranch{\ell:\S[\ell]}{\ell\in L}}
+}
+
+% TN-Choice
+\DefRule {Choice} {
+  \forall \ell.\ \SNew {\S[\ell]}
+} {
+  \SNew {\SChoice{\ell:\S[\ell]}{\ell\in L}}
+}
+
+% TN-Send
+\DefRule {Send} {} {
+  \SNew {\SSend \T}
+}
+
+% TN-Recv
+\DefRule {Recv} {} {
+  \SNew {\SRecv \T}
+}

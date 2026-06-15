@@ -356,6 +356,9 @@
 % Unrestricted Types
 \newcommand*\Unr{\operatorname{\mathsf{unr}}}
 
+% New Types
+\NewDocumentCommand \SNew {s} {\operatorname{\mathsf{new}\IfBooleanT{#1}{'}}}
+
 % Terminated Session Types
 \newcommand*\Bounded{\operatorname{\mathsf{bounded}}}
 \newcommand*\Mobile{\operatorname{\mathsf{mobile}}}
