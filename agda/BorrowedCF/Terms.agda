@@ -115,7 +115,7 @@ data ⊢_∶_ : Const → 𝕋 → Set where
 
   `new  : ⊢ `new s ∶ `⊤ →1M ⟨ acq ; s ⟩ ⊗¹ ⟨ acq ; dual s ⟩ ∣ ℙ
 
-  `lsplit : ⊢ `lsplit s ∶ ⟨ s ; s′ ⟩ →1M ⟨ s ⟩       ⊗ᴸ ⟨ s′ ⟩       ∣ ℙ
+  `lsplit : ¬ Skips s → ⊢ `lsplit s ∶ ⟨ s ; s′ ⟩ →1M ⟨ s ⟩       ⊗ᴸ ⟨ s′ ⟩       ∣ ℙ
   `rsplit : ⊢ `rsplit s ∶ ⟨ s ; s′ ⟩ →1M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; s′ ⟩ ∣ ℙ
 
   `drop : ⊢ `drop ∶ ⟨ ret ⟩     →1M `⊤    ∣ ℙ

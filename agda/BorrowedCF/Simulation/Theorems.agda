@@ -56,6 +56,9 @@ open import Data.Nat.Solver using (module +-*-Solver)
 open import BorrowedCF.Simulation.Theorems.Toolkit
 open import BorrowedCF.Simulation.Theorems.NuSwap
 open import BorrowedCF.Simulation.Theorems.NuComm
+open import BorrowedCF.Simulation.Theorems.LSplit using (U-lsplit)
+open import BorrowedCF.Context using (Ctx; Struct)
+open 𝐓 using (_;_⊢ₚ_; inv-∥; inv-ν; ⊢-≋; bindCtx⇒chanCtx)
 
 
 U-≋′ : (σ : m →ₛ n) {P Q : 𝐓.Proc m} → P 𝐓.≋′ Q → U[ P ] σ 𝐔.≋ U[ Q ] σ
@@ -75,11 +78,30 @@ U-≋ σ = kleisliStar (λ P → U[ P ] σ)
 
 -- Value-carrying frame congruences (the Value witnesses are irrelevant).
 
-sim→ : (σ : m →ₛ n) → VSub σ → {P P′ : 𝐓.Proc m} → P 𝐓R.─→ₚ P′ → U[ P ] σ 𝐔R.─→ₚ U[ P′ ] σ
-sim→ σ Vσ (𝐓R.R-Exp x)         = 𝐔R.RU-Exp (⋯→-⋯ₛ σ Vσ x)
-sim→ σ Vσ (𝐓R.R-Par red)       = 𝐔R.RU-Par (sim→ σ Vσ red)
-sim→ σ Vσ (𝐓R.R-Struct e r e′) = 𝐔R.RU-Struct (U-≋ σ e) (sim→ σ Vσ r) (U-≋ σ e′)
-sim→ {m = m} {n = n} σ Vσ (𝐓R.R-New E) =
+-- Confinement of the lsplit redex (foundational; proof supplied separately).
+-- The consumed handle 𝐒.inj 0F is linear, so the frame E and parallel P both
+-- factor through a renaming ρ⁻ whose image avoids it — exactly U-lsplit's hyps.
+lsplit-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
+  {B₁ B₂ B : 𝐓.BindGroup} {b₁ : ℕ} {s : 𝕊 0}
+  {E : Frame* (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)}
+  {P : 𝐓.Proc (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)} →
+  let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ B in
+  Γ ; γ ⊢ₚ 𝐓.ν (B₁ ++ suc b₁ ∷ B₂) B
+            (𝐓.⟪ E [ K (`lsplit s) · (` 𝐒.inj 0F) ]* ⟫ 𝐓.∥ P) →
+  Σ ℕ λ k → Σ (k →ᵣ (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)) λ ρ⁻ →
+    (∀ y → ρ⁻ y ≢ 𝐒.inj {suc b₁ ∷ []} {m} 0F)
+    × Σ (Frame* k) λ E₀ → (E ≡ E₀ ⋯ᶠ* ρ⁻)
+        × Σ (𝐓.Proc k) λ P₀ → P ≡ P₀ 𝐓.⋯ₚ ρ⁻
+lsplit-confine Γ-S ⊢P = {!   !}
+
+sim→ : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+     → {γ : Struct m} {P : 𝐓.Proc m} → Γ ; γ ⊢ₚ P
+     → {P′ : 𝐓.Proc m} → P 𝐓R.─→ₚ P′ → U[ P ] σ 𝐔R.─→ₚ U[ P′ ] σ
+sim→ σ Vσ Γ-S ⊢P (𝐓R.R-Exp x)         = 𝐔R.RU-Exp (⋯→-⋯ₛ σ Vσ x)
+sim→ σ Vσ Γ-S ⊢P (𝐓R.R-Par red)
+  with _ , _ , _ , p , _ ← inv-∥ ⊢P     = 𝐔R.RU-Par (sim→ σ Vσ Γ-S p red)
+sim→ σ Vσ Γ-S ⊢P (𝐓R.R-Struct e r e′) = 𝐔R.RU-Struct (U-≋ σ e) (sim→ σ Vσ Γ-S (⊢-≋ Γ-S e ⊢P) r) (U-≋ σ e′)
+sim→ {m = m} {n = n} σ Vσ Γ-S ⊢P (𝐓R.R-New E) =
   𝐔R.RU-Struct (≡→≋ (cong 𝐔.⟪_⟫ (frame-plug* E σ Vσ)))
                (𝐔R.RU-New (frame*-⋯ E σ Vσ))
                (Eq*.symmetric _
@@ -126,7 +148,7 @@ sim→ {m = m} {n = n} σ Vσ (𝐓R.R-New E) =
     frameEqA (F ∷ E*) = cong₂ _∷_ (perF F) (frameEqA E*)
     leafEq = cong 𝐔.⟪_⟫ (frame-plug* (E ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) σ′ Vσ′
                         ■ cong (_[ ((` 0F) ⊗ (` 1F)) ⋯ σ′ ]*) (frameEqA E))
-sim→ σ Vσ (𝐓R.R-Fork E V) =
+sim→ σ Vσ Γ-S ⊢P (𝐓R.R-Fork E V) =
   subst₂ 𝐔R._─→ₚ_ (sym (cong 𝐔.⟪_⟫ (frame-plug* E σ Vσ)))
                   (cong₂ 𝐔._∥_ (sym (cong 𝐔.⟪_⟫ (frame-plug* E σ Vσ))) refl)
                   (𝐔R.RU-Fork (frame*-⋯ E σ Vσ) (value-⋯ V σ Vσ))
@@ -234,12 +256,15 @@ sim→ σ Vσ (𝐓R.R-Fork E V) =
 --   (the dual endpoint), value e transferred across the ν.  Both endpoints' front
 --   borrows decrease.  Do this LAST.
 -- ════════════════════════════════════════════════════════════════════════════
-sim→ σ Vσ (𝐓R.R-Com _)       = {!   !}
-sim→ σ Vσ 𝐓R.R-LSplit        = {!   !}
-sim→ σ Vσ 𝐓R.R-RSplit        = {!   !}
-sim→ σ Vσ 𝐓R.R-Drop          = {!    !}
-sim→ σ Vσ 𝐓R.R-Acq           = {!   !}
-sim→ {m = m} {n = n} σ Vσ (𝐓R.R-Close {E₁ = E₁} {E₂ = E₂}) =
+sim→ σ Vσ Γ-S ⊢P (𝐓R.R-Com _)       = {!   !}
+sim→ σ Vσ Γ-S ⊢P (𝐓R.R-LSplit {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {s = s} {E = E})
+  with _ , ρ⁻ , ρ⁻-skip , _ , Eeq , _ , Peq
+       ← lsplit-confine Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {s = s} {E = E} ⊢P
+    = U-lsplit σ Vσ {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {s = s} {E = E} ρ⁻ ρ⁻-skip Eeq Peq
+sim→ σ Vσ Γ-S ⊢P 𝐓R.R-RSplit        = {!   !}
+sim→ σ Vσ Γ-S ⊢P 𝐓R.R-Drop          = {!    !}
+sim→ σ Vσ Γ-S ⊢P 𝐓R.R-Acq           = {!   !}
+sim→ {m = m} {n = n} σ Vσ Γ-S ⊢P (𝐓R.R-Close {E₁ = E₁} {E₂ = E₂}) =
   𝐔R.RU-Struct
     (≡→≋ (cong 𝐔.ν (cong₂ 𝐔._∥_ (thr ‼ E₁ 0F t₁ (⋯-id t₁ {ϕ = weaken* ⦃ Kᵣ ⦄ 0} (λ _ → refl))) (thr ⁇ E₂ 1F t₂ refl))))
     (𝐔R.RU-Close (frame*-⋯ E₁ σ Vσ) (frame*-⋯ E₂ σ Vσ))
@@ -285,10 +310,12 @@ sim→ {m = m} {n = n} σ Vσ (𝐓R.R-Close {E₁ = E₁} {E₂ = E₂}) =
     thr pol E* x t eq =
       cong 𝐔.⟪_⟫ (frame-plug* (E* ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) σ′ Vσ′
                  ■ cong₂ _[_]* (frameEqA E*) (cong (K (`end pol) ·_) eq))
-sim→ σ Vσ (𝐓R.R-Bind {B₁} {B₂} red) =
+sim→ σ Vσ Γ-S ⊢P (𝐓R.R-Bind {B₁} {B₂} red)
+  with _ , _ , _ , C , C′ , ⊢Q ← inv-ν ⊢P =
   𝐔R.RU-Res (UB-cong-─→ B₁ (K `unit , 0F , K `unit) (V-K , V-K)
     (λ σ₁ Vσ₁ → UB-cong-─→ B₂ (K `unit , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , K `unit) (V-K , V-K)
       (λ σ₂ Vσ₂ → sim→ _
         (++ₛ-VSub (++ₛ-VSub (weaken-VSub (syncs B₂) Vσ₁) Vσ₂)
                   (weaken-VSub (syncs B₂) (weaken-VSub (syncs B₁) (weaken-VSub 2 Vσ))))
+        (chanCx-⸴* (chanCx-⸴* (bindCtx⇒chanCtx C) (bindCtx⇒chanCtx C′)) Γ-S) ⊢Q
         red)))
