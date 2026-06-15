@@ -38,11 +38,14 @@ data _≃𝕋_ : Rel 𝕋 0ℓ where
   _`→_ : T₁ ≃𝕋 T₂ → U₁ ≃𝕋 U₂ → T₁ ⟨ a ⟩→ U₁ ≃𝕋 T₂ ⟨ a ⟩→ U₂
   ⟨_⟩ : EqClosure _≃𝕊_ s₁ s₂ → ⟨ s₁ ⟩ ≃𝕋 ⟨ s₂ ⟩
 
-infix 4 _≃_
+infix 4 _≃_ _≄_
 
 _≃_ : ∀ {κ x} → Rel (Ty κ x) 0ℓ
 _≃_ {𝕤} = EqClosure _≃𝕊_
 _≃_ {𝕥} = _≃𝕋_
+
+_≄_ : ∀ {κ x} → Rel (Ty κ x) 0ℓ
+t ≄ u = ¬ t ≃ u
 
 ≃-refl : ∀ {κ x} {t : Ty κ x} → t ≃ t
 ≃-refl {𝕤} = refl

@@ -127,13 +127,16 @@ record Arr : Set where
     ω⇒M : Unr → Mobile
     ω⇒𝟙 : Unr → Par
 
+  wk : eff ≤ϵ ϵ → Arr
+  wk {ϵ} _ = record { eff = ϵ; ω⇒M = ω⇒M; ω⇒𝟙 = ω⇒𝟙 }
+
 record UVar : Set where
   field
     var : ℕ
-    mob : Mob
     pol : Pol
 
-  Mobile = mob ≡ M
+  wk : ℕ → UVar
+  wk n = record { var = n + var; pol = pol }
 
 data Kind : Set where
   𝕤 𝕥 : Kind

@@ -1,13 +1,14 @@
 {-# OPTIONS --rewriting #-}
-{-# OPTIONS --allow-unsolved-metas #-}
 module BorrowedCF.Algorithmic.Solved where
 
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (fwd; bwd)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (_◅_; _◅◅_) renaming (ε to refl)
 open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosure)
+open import Data.List.Relation.Unary.All as All using (All)
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Types renaming (Solved to SolvedTy)
+open import BorrowedCF.Types.Unification
 
 import BorrowedCF.Types.Substitution as 𝐓
 
@@ -30,7 +31,7 @@ subTy (s₁ ; s₂) σ = subTy s₁ σ ; subTy s₂ σ
 subTy skip σ = skip
 subTy ret σ = ret
 subTy acq σ = acq
-subTy (`` α) σ = UV.ap α σ 𝐓.⋯ᵣ λ()
+subTy (`` α) σ = UV.ap σ α 𝐓.⋯ᵣ λ()
 
 subTy-id : ∀ {κ x} {t : Ty κ x} → SolvedTy t → ∀ {σ} → subTy t σ ≡ t
 subTy-id ⟨ t ⟩ = cong ⟨_⟩ (subTy-id t)
@@ -61,7 +62,7 @@ subTy-dual (s₁ ; s₂) = cong₂ _;_ (subTy-dual s₁) (subTy-dual s₂)
 subTy-dual skip = refl
 subTy-dual ret = refl
 subTy-dual acq = refl
-subTy-dual {σ = σ} (`` α) = dual-⋯ᵣ (UV.ap α σ) ■ cong (𝐓._⋯ᵣ λ()) (UV.dual/dual α σ)
+subTy-dual {σ = σ} (`` α) = dual-⋯ᵣ (UV.ap σ α) ■ cong (𝐓._⋯ᵣ λ()) (UV.ap-dual/dual σ α)
 
 module _ where
   open 𝐓
@@ -76,7 +77,7 @@ module _ where
   subTy-⋯ᵣ skip = refl
   subTy-⋯ᵣ ret = refl
   subTy-⋯ᵣ acq = refl
-  subTy-⋯ᵣ {σ = σ} (`` α) = fusion (UV.ap α σ) _ _ ■ ⋯-cong (UV.ap α σ) λ()
+  subTy-⋯ᵣ {σ = σ} (`` α) = fusion (UV.ap σ α) _ _ ■ ⋯-cong (UV.ap σ α) λ()
 
   subTy-⋯ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ (s : 𝕊 m) {ϕ : m –[ K ]→ n} →
     subTy s σ ⋯ (λ x → subTy (`/id (ϕ x)) σ) ≡ subTy (s ⋯ ϕ) σ
@@ -95,11 +96,11 @@ module _ where
   subTy-⋯ acq = refl
   subTy-⋯ {σ = σ} ⦃ K ⦄ (`` α) =
     let open ≡-Reasoning in
-    UV.ap α σ ⋯ _ ⋯ _    ≡⟨ fusion (UV.ap α σ) _ _ ⟩
-    UV.ap α σ ⋯ _        ≡⟨ ⋯-cong (UV.ap α σ) (λ()) ⟩
-    UV.ap α σ ⋯ _        ≡⟨ fusion (UV.ap α σ) _ _ ⟨
-    UV.ap α σ ⋯ _ ⋯ idₖ  ≡⟨ ⋯-id ⦃ Kₛ ⦄ (UV.ap α σ ⋯ᵣ λ()) (λ x → refl) ⟩
-    UV.ap α σ ⋯ _ ∎
+    UV.ap σ α ⋯ _ ⋯ _    ≡⟨ fusion (UV.ap σ α) _ _ ⟩
+    UV.ap σ α ⋯ _        ≡⟨ ⋯-cong (UV.ap σ α) (λ()) ⟩
+    UV.ap σ α ⋯ _        ≡⟨ fusion (UV.ap σ α) _ _ ⟨
+    UV.ap σ α ⋯ _ ⋯ idₖ  ≡⟨ ⋯-id ⦃ Kₛ ⦄ (UV.ap σ α ⋯ᵣ λ()) (λ x → refl) ⟩
+    UV.ap σ α ⋯ _ ∎
 
   subTy-unfold : (s : 𝕊 (suc n)) → unfold (subTy s σ) ≡ subTy (unfold s) σ
   subTy-unfold {σ = σ} s = ⋯-cong (subTy s σ) (λ{ zero → refl ; (suc x) → refl }) ■ subTy-⋯ s
@@ -120,6 +121,12 @@ subTy-skips skip = skip
 subTy-skips (s ; s₁) = subTy-skips s ; subTy-skips s₁
 subTy-skips (mu s) = mu (subTy-skips s)
 
+subTy-skips⁻¹ : Skips (subTy s σ) → Skips s
+subTy-skips⁻¹ {s = mu s} (mu x) = mu (subTy-skips⁻¹ x)
+subTy-skips⁻¹ {s = s₁ ; s₂} (x₁ ; x₂) = subTy-skips⁻¹ x₁ ; subTy-skips⁻¹ x₂
+subTy-skips⁻¹ {s = skip} x = x
+subTy-skips⁻¹ {s = `` α} {σ = σ} x = contradiction (skips-⋯ᵣ⁻¹ x) (UV.ap-¬skips σ α)
+
 subTy-unr : Unr T → Unr (subTy T σ)
 subTy-unr `⊤ = `⊤
 subTy-unr (U ⊗ U₁) = subTy-unr U ⊗ subTy-unr U₁
@@ -127,15 +134,22 @@ subTy-unr (U ⊕ U₁) = subTy-unr U ⊕ subTy-unr U₁
 subTy-unr (arr x) = arr x
 subTy-unr ⟨ x ⟩ = ⟨ subTy-skips x ⟩
 
-{-
+subTy-bounded : Bounded s → Bounded (subTy s σ)
+subTy-bounded (` x) = ` x
+subTy-bounded end = end
+subTy-bounded ret = ret
+subTy-bounded (b ;₁ sk) = subTy-bounded b ;₁ subTy-skips sk
+subTy-bounded (-;₂ b) = -;₂ subTy-bounded b
+subTy-bounded (mu x) = mu (subTy-bounded x)
+subTy-bounded (brn x x₁) = brn (subTy-bounded x) (subTy-bounded x₁)
+
 subTy-mobile : Mobile T → Mobile (subTy T σ)
 subTy-mobile `⊤ = `⊤
 subTy-mobile (arr x) = arr x
-subTy-mobile (acq x eq) = acq {!!} (subTy-≃ eq)
-subTy-mobile (skip x) = skip (subTy-skips x)
-subTy-mobile (m ⊗ m₁) = subTy-mobile m ⊗ subTy-mobile m₁
-subTy-mobile (m ⊕ m₁) = subTy-mobile m ⊕ subTy-mobile m₁
--}
+subTy-mobile (m₁ ⊗ m₂) = subTy-mobile m₁ ⊗ subTy-mobile m₂
+subTy-mobile (m₁ ⊕ m₂) = subTy-mobile m₁ ⊕ subTy-mobile m₂
+subTy-mobile ⟨ inj₁ skips ⟩ = ⟨ inj₁ (subTy-skips skips) ⟩
+subTy-mobile ⟨ inj₂ (s , Bs , eq) ⟩ = ⟨ inj₂ (_ , subTy-bounded Bs , subTy-≃ eq) ⟩
 
 open import BorrowedCF.Terms
 
@@ -206,14 +220,12 @@ subConst-⊢ `fork = `fork
 subConst-⊢ {σ = σ} (`new {s})
   rewrite sym (subTy-dual {σ = σ} s)
   = `new
-subConst-⊢ (`lsplit s s′) = `lsplit (subTy s _) (subTy s′ _)
+subConst-⊢ (`lsplit ¬skipₛ s′) = `lsplit (¬skipₛ ∘ subTy-skips⁻¹) (subTy s′ _)
 subConst-⊢ (`rsplit s s′) = `rsplit (subTy s _) (subTy s′ _)
 subConst-⊢ `drop = `drop
 subConst-⊢ `acq = `acq
-subConst-⊢ {σ = σ} (`send m)
-  = `send {!!}
-subConst-⊢ {σ = σ} (`recv m)
-  = `recv {!!}
+subConst-⊢ (`send m) = `send (subTy-mobile m)
+subConst-⊢ (`recv m) = `recv (subTy-mobile m)
 subConst-⊢ `end = `end
 
 subTm : Tm n → UV.Sub → Tm n
@@ -252,3 +264,7 @@ subTm-id (e ⊗ e₁) = cong₂ _⊗_ (subTm-id e) (subTm-id e₁)
 subTm-id (`let⊗ e `in e₁) = cong₂ `let⊗_`in_ (subTm-id e) (subTm-id e₁)
 subTm-id (`inj e) = cong (`inj _) (subTm-id e)
 subTm-id {σ = σ} `case e `of⟨ e₁ ; e₂ ⟩ rewrite subTm-id {σ = σ} e = cong₂ `case _ `of⟨_;_⟩ (subTm-id e₁) (subTm-id e₂)
+
+SolvedΔ : CSet → UV.Sub → Set
+SolvedΔ Δ σ = flip All Δ λ (T₁ , T₂) →
+  SolvedTy (subTy T₁ σ) × SolvedTy (subTy T₂ σ) × subTy T₁ σ ≃ subTy T₂ σ
