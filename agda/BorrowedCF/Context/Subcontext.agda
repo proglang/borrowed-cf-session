@@ -44,6 +44,15 @@ module _ {Γ : Ctx n} where
 
 module ≼-Reasoning {n} {Γ : Ctx n} = PreorderReasoning (≼-preorder Γ)
 
+;-≼-∥ : Γ ∶ α ; β ≼ α ∥ β
+;-≼-∥ {α = α} {β} =
+  let open ≼-Reasoning in
+  begin α        ; β         ≈⟨ ;-cong ∥-unit₂ ∥-unit₁ ⟨
+        (α ∥ []) ; ([] ∥ β)  ≲⟨ ≼-wk ⟩
+        (α ; []) ∥ ([] ; β)  ≈⟨ ∥-cong ;-unit₂ ;-unit₁ ⟩
+        α        ∥ β         ∎
+
+
 ≼-≗ : Γ₁ ≗ Γ₂ → Γ₁ ∶ α ≼ β → Γ₂ ∶ α ≼ β
 ≼-≗ eq (≼-refl x) = ≼-refl (≈-≗ eq x)
 ≼-≗ eq (≼-∅ x) = ≼-∅ (allCx-≗ eq x)

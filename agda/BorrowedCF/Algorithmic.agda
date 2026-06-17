@@ -23,11 +23,7 @@ open EffProperties
 private variable
   e e₁ e₂ e₃ e′ e₁′ e₂′ : Tm n
 
-fvClose : Subset (suc n) → Subset n
-fvClose = V.tail
-
-fvClose* : (m : ℕ) → Subset (m + n) → Subset n
-fvClose* m = V.drop m
+open V using () renaming (tail to fvClose; drop to fvClose*) public
 
 fv : Tm n → Subset n
 fv (` x) = ⁅ x ⁆ 
@@ -134,6 +130,7 @@ data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
   A-LSplit :
     let α = record { var = m; pol = ‼ } in
     (≤γ : Γ ∶ [] ≼ γ) →
+    ¬ Skips s →
     -----------------------------------------------------------------------------------
     Γ ; γ / m ⊢ K (`lsplit s) ⇒ ⟨ s ; `` α ⟩ →1M ⟨ s ⟩ ⊗ᴸ ⟨ `` α ⟩ ∣ ℙ ∣ ℙ ↑ [] / suc m
 
@@ -162,7 +159,7 @@ data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
   A-LetPair :
     let open Fin.Patterns in
     let γ₁ = γ ∣fv[ e₁ ] in
-    let γ₂ = γ ↓ V.drop 2 (fv e₂) in
+    let γ₂ = γ ↓ fvClose* 2 (fv e₂) in
     (≤γ : Γ ∶ γ₁ ; γ₂ ≼ γ) →
     Γ ; γ₁ / m ⊢ e₁ ⇒ T₁ ⊗⟨ d ⟩ T₂ ∣ ϵ₁ ↑ Δ₁ / m′ →
     T₁ ⸴ T₂ ⸴ Γ ; (join d (` 0F) (` 1F) ; 𝐂.wk (𝐂.wk γ₂)) / m′ ⊢ e₂ ⇒ U ∣ ϵ₂ ↑ Δ₂ / n →
@@ -261,9 +258,9 @@ sound {σ = σ} (A-Var ≤γ) SΓ SΔ =
 sound (A-Const ≤γ ≢lsplit ≢rsplit ⊢c) SΓ SΔ =
   T-Weaken (≼-map⁺ subTy-unr ≤γ)
            (T-Const (subConst-⊢ ⊢c))
-sound (A-LSplit ≤γ) SΓ SΔ =
+sound {σ = σ} (A-LSplit ≤γ ¬skips) SΓ SΔ =
   T-Weaken (≼-map⁺ subTy-unr ≤γ)
-           (T-Const (`lsplit _ _))
+           (T-Const (`lsplit (¬skips ∘ subTy-skips⁻¹) _))
 sound (A-RSplit ≤γ) SΓ SΔ =
   T-Weaken (≼-map⁺ subTy-unr ≤γ)
            (T-Const (`rsplit _ _))
@@ -274,15 +271,18 @@ sound (A-LetUnit {Δ₁ = Δ₁} ≤γ x y) SΓ SΔ =
   T-Weaken (≼-map⁺ subTy-unr ≤γ)
            (T-LetUnit (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ SΔ )))
                       (T-Conv ≃-refl (x≤y⊔x _ _) (sound y SΓ (All.++⁻ʳ Δ₁ SΔ ))))
-sound (A-LetPair ≤γ x y) SΓ SΔ =
-  T-Weaken (≼-map⁺ subTy-unr ≤γ)
-           (T-LetPair {!!} {!!} {!!})
-sound (A-Case {Δ = Δ} {Δ₁ = Δ₁} ≤γ₁ ≤γ₂ x y₁ y₂) SΓ ((SU₁ , SU₂ , U≃) ∷ SΔ) =
+sound {σ = σ} (A-LetPair {Δ₁ = Δ₁} ≤γ x y) SΓ SΔ =
+  let p/s , join≼ = parOrSeq? ≤γ in
+  T-Weaken (≼-map⁺ subTy-unr join≼)
+           (T-LetPair p/s (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ SΔ)))
+                          (T-Weaken (;-≼-join p/s) (T-Conv ≃-refl (x≤y⊔x _ _) (sound y {!f!} (All.++⁻ʳ Δ₁ SΔ)
+                            ⊢≗ λ z → ⸴-dist (flip subTy σ) z ■ ⸴-cong refl (⸴-dist (flip subTy σ)) z))))
+sound {σ = σ} (A-Case {Δ = Δ} {Δ₁ = Δ₁} ≤γ₁ ≤γ₂ x y₁ y₂) SΓ ((SU₁ , SU₂ , U≃) ∷ SΔ) =
   let SΔ₁ , SΔ₂ = All.++⁻ Δ₁ (All.++⁻ʳ Δ SΔ) in
-  T-Weaken {!!} $ T-Case {!!}
+  T-Weaken {!!} $ T-Case seq
     (T-Conv ≃-refl {!!} (sound x SΓ (All.++⁻ˡ Δ SΔ)))
-    (T-Conv ≃-refl {!!} (sound y₁ (λ{ zero → {!!}; (suc x) → SΓ x }) SΔ₁ ⊢≗ λ{ zero → refl; (suc z) → refl }))
-    (T-Conv (≃-sym U≃) {!!} (sound y₂ (λ{ zero → {!SU₂!}; (suc x) → SΓ x }) SΔ₂ ⊢≗ λ{ zero → refl; (suc z) → refl }))
+    (T-Conv ≃-refl {!!} (sound y₁ (λ{ zero → {!!}; (suc x) → SΓ x }) SΔ₁ ⊢≗ ⸴-dist (flip subTy σ)))
+    (T-Conv (≃-sym U≃) {!!} (sound y₂ (λ{ zero → {!SU₂!}; (suc x) → SΓ x }) SΔ₂ ⊢≗ ⸴-dist (flip subTy σ)))
 sound (A-Abs x x₁ x₂ x₃) SΓ SΔ = {!!}
 sound (A-AbsRec x x₁ x₂ x₃) SΓ SΔ = {!!}
 sound (A-Pair ≤γ L⇒pure₁ R⇒pure₂ x x₁) SΓ SΔ = {!!}

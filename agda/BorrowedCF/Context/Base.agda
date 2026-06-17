@@ -28,6 +28,14 @@ variable
 ⸴-⸴*-cons zero = refl
 ⸴-⸴*-cons {m} (suc x) = sym ([,]-map (splitAt m x))
 
+⸴-dist : ∀ {a} {A : Set a} (f : 𝕋 → A) {T : 𝕋} {Γ : Ctx m} → f ∘ (T ⸴ Γ) ≗ f T ⸴ f ∘ Γ
+⸴-dist f zero = refl
+⸴-dist f (suc x) = refl
+
+⸴-cong : T ≡ U → Γ₁ ≗ Γ₂ → T ⸴ Γ₁ ≗ U ⸴ Γ₂
+⸴-cong eq eqs zero = eq
+⸴-cong eq eqs (suc x) = eqs x
+
 data ParSeq : Set where
   par seq : ParSeq
 
