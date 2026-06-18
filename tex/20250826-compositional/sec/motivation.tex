@@ -6,13 +6,17 @@
 \label{sec:borr-from-cont}
 
 
-Context-free session types enable writing elegant code for, e.g., serializing tree structures.
-Consider an example from \citet{DBLP:conf/icfp/ThiemannV16} for serializing binary trees of type \lstinline{Tree}:
+Context-free session types enable writing elegant code for, e.g.,
+serializing tree structures.%
+\footnote{We assume session-typed communication over a network
+  or between sandboxed processes, where only primitive data can be
+  passed, but no pointers.}
+Consider an example from \citet{DBLP:conf/icfp/ThiemannV16} for serializing binary trees of type \lstinline{Tree}.
 \begin{lstlisting}
 type Tree = Leaf
           | Node int Tree Tree
 \end{lstlisting}
-The corresponding session type \lstinline{TreeChannel} is context-free:
+Here is the corresponding session type \lstinline{TreeChannel}:
 \begin{lstlisting}
 type TreeChannel = oplus{
   Leaf: skip,
@@ -23,9 +27,17 @@ The type \lstinline{TreeChannel} is called context-free because it is
 recursively defined and the recursion is not restricted to tail
 positions. The \lstinline{Node} alternative is an example where the
 \lstinline{TreeChannel} type refers two times in a row to itself. This
-type would be illegal in regular session type systems (e.g., \cite{DBLP:journals/jfp/GayV10,DBLP:conf/esop/LindleyM15}).
+type would be illegal in regular session type systems (e.g.,
+\cite{DBLP:journals/jfp/GayV10,DBLP:conf/esop/LindleyM15}) because
+they syntactically restrict recursion to tail position. Context-free
+session types lift this restriction as their composition operator $S_1;S_2$ composes
+two session types sequentially: the composed session comprises the
+actions of $S_1$ first, then followed by the actions of $S_2$.\footnote{One
+  might argue that CFST are close to Honda's original vision for
+  sesssion types \cite{DBLP:conf/concur/Honda93}, which also features
+  symmetric composition.}
 
-The serialization function looks straightforward:
+Given these types, the serialization function looks straightforward:
 \begin{lstlisting}[numbers=left]
 sendTree : Tree -> forallalpha.TreeChannel;alpha -> alpha
 sendTree Leaf c =
@@ -46,13 +58,14 @@ Second, the \lstinline{Node} branch of \lstinline{sendTree} relies on
 polymorphic recursion. To see this, consider the type of
 \lstinline{c2} in line 6--7. To invoke \lstinline{sendTree}
 recursively, we need to instantiate the type argument
-\lstinline{alpha} with \lstinline{TreeChannel; alpha}, which is the
+\lstinline{alpha} with \lstinline{TreeChannel; alpha} rather than just
+\lstinline{alpha}, which is the
 telltale for polymorphic recursion. Finally, recall that channel types
 are linear in CFST, that is, each session-typed variable must be used
 exactly once.
 
-Our new language {\thecalculus} can amend both problems. The type
-definitions remain unchanged, only the implementation of
+Our new language {\thecalculus} amends both problems. The type
+definitions remain unchanged, but the implementation of
 \lstinline{sendTree} changes.
 \begin{lstlisting}[numbers=left]
 sendTree' : Tree -> TreeChannel; Ret -> Unit
@@ -67,8 +80,9 @@ sendTree' (Node x l r) c =
 What has changed? First, the type is no longer polymorphic over the
 continuation type. Instead, the channel argument \lstinline{c} starts
 out at type \lstinline{TreeChannel; Ret} which indicates that it is a borrow from
-a (larger) session type. Each use of the borrow notation
-\lstinline{&c} splits off an initial segment of the session type
+a (larger) session type. Second, there is no explicit resource
+passing. Each use of the borrow notation
+\lstinline{&c} implicitly splits off an initial segment of the session type
 according to the function argument and updates \lstinline{c} to the
 remainder. To see this, consider the type of \lstinline{c}---after
 splitting off the borrow in the corresponding line---shown in the
@@ -78,15 +92,15 @@ borrow'' splits off the borrowed type \lstinline{!Int; Ret}---the
 argument type of \lstinline{send x}---and
 updates \lstinline{c} to the type shown in line 6. As the type of
 \lstinline{c} is itself a borrowed type, one could speak of a
-reborrow. On the last line~8, the type of \lstinline{c} already
+\emph{reborrow}. On the last line~8, the type of \lstinline{c} already
 matches the type expected by \lstinline{sendTree}, so no extra borrow
 needs to be taken. 
 
-Second, as there is no polymorphism, there is no polymorphic
+Third, as there is no polymorphism, there is no polymorphic
 recursion, either.
 
 Finally, the channel variable \lstinline{c} can be used in a
-non-linear way, as long as the uses are under borrows, as in
+non-linear way, as long as its uses are under borrows, as in
 \lstinline{&c}. The understanding is that the borrows are taken and
 processed according to the evaluation order of the program. 
 
@@ -98,41 +112,152 @@ We call the style of borrowing demonstrated in
 thread and are processed sequentially, following the evaluation order.
 
 In this local setting, we expect the operations on borrows to be
-implemented in an imperative style. That is, the channel is
-represented by a single reference and each channel operation updates
-the reference. This implementation is safe because the soundness of
+implemented efficiently in an imperative style. That is, the channel is
+represented by a reference to some data structure (e.g., a file
+descriptor) and each channel operation updates 
+the data structure. This implementation of local borrows is safe because the soundness of
 the type system ensures that the type updates match the real updates
 in the implementation.
 
 However, there may be situations where we want to send a borrow to
-another process. Suppose, we wanted to serialize the trees
-produced by two processes into a single output channel.
-\begin{lstlisting}[numbers=left]
-combineTrees : (Int -> Tree) -> (Int -> Tree) -> TreeChannel; Ret -> Unit
-combineTrees mkTree1 mkTree2 c =
-  select Node &c;
-  send 0 &c;
-  fork (lambda () -> sendTree' (mkTree1 0) &c)
-  sendTree' (mkTree2 42) (acquire c)
-\end{lstlisting}
-The function accepts two functions that produce \lstinline{Tree}
-values and a \lstinline{TreeChannel}. It first initializes
-serialization with a dummy node. Next, it passes a borrow to a new
-process that sends a freshly constructed tree as the left subtree of the
-dummy node. In the continuation, it constructs another tree and
-serializes it on the same channel as the right subtree of the dummy
-node.
+another process. Suppose, for example, a server-side renderer streams
+HTML nodes to a client instead of constructing a complete DOM tree in
+memory first. A small protocol for such a renderer is as follows.
+\begin{lstlisting}
+type HtmlChannel = oplus{
+  Text: !String,
+  Elem: !String; ChildrenChannel
+}
 
-In this case, the borrow under the fork in line~5 is a \emph{remote
-  borrow}. Such a borrow \emph{cannot} be handled imperatively, but we
-have to insert some synchronization mechanism for the
-\lstinline{sendTree'} in the continuation (line~6) to start before the
-other process has finished. This synchronization is implemented with
-the \lstinline{acquire} function. It blocks until the borrow created
-in line~5 is completed, i.e., the \lstinline{sendTree'} operation in
-line~5 has finished sending on the channel. Once it is unblocked, the
-\lstinline{acquire} operation returns the current channel end for
-further operations. 
+type ChildrenChannel = oplus{
+  Done: skip,
+  Child: HtmlChannel; ChildrenChannel
+}
+\end{lstlisting}
+The \lstinline{Elem} alternative first sends a tag name, and then a sequence of children. The 
+\lstinline{Child} alternative is context-free in the same sense as the
+\lstinline{Node} alternative of \lstinline{TreeChannel}: rendering one
+child consumes an \lstinline{HtmlChannel} prefix and then continues with
+the rest of the child stream.
+
+Now consider a renderer that emits a user panel whose first child is
+computed by another process. We assume that
+\lstinline{renderProfile} and \lstinline{renderPermissions} both render
+one HTML node on a channel of type \lstinline{HtmlChannel; Ret}.
+\begin{lstlisting}[numbers=left]
+renderUser : User -> HtmlChannel; Ret -> Unit
+renderUser user c =
+  select Elem &c;
+  send "section" &c;
+  select Child &c;
+  fork (lambda () -> renderProfile user &c);
+  renderUserRest user (acquire c)
+
+renderUserRest : User -> ChildrenChannel; Ret -> Unit
+renderUserRest user c =
+  select Child &c;
+  renderPermissions user &c;
+  select Done c
+\end{lstlisting}
+The function \lstinline{renderUser} starts an HTML element and then
+opens the child stream. It passes a borrow of the
+first child position to a new process, which renders the user's profile.
+The continuation renders the remaining children, here a permissions
+view, and then closes the child stream.
+
+In this case, the borrow under the \lstinline{fork} is a \emph{remote
+  borrow}. Such a borrow \emph{cannot} be handled imperatively: the
+continuation must not start emitting the second child before the
+forked renderer has finished the first child. This synchronization is
+implemented with the \lstinline{acquire} function. It blocks until the
+borrow created by the fork is completed, i.e., until
+\lstinline{renderProfile} has finished sending on the borrowed prefix
+of the channel. Once it is unblocked, the \lstinline{acquire}
+operation returns the current channel end for further operations.
+
+\subsection{A Direct Semantics for Channel Borrowing}
+\label{sec:direct-semant-chann}
+
+\Cref{sec:borr-from-cont} already suggests an implementation strategy
+for local borrowing. However, we would like to start with an abstract
+specification that we can easily prove correct, before moving on to
+the implementation level. The first step translates the surface
+language with borrowing operators into our formal calculus
+\thecalculus, which replaces borrowing with explicit functional splitting
+operators. There are two splitting operators, one for local borrows and
+one for remote ones. Our discussion starts with the local variant and
+we show the translation of \lstinline{renderUserRest} in
+\thecalculus. This translation is part of our implementation, as
+well.
+
+As an example, we use the local part of
+\lstinline{renderUserRest} extended with closing the channel shown in
+\cref{fig:local-split-program}.  
+Execution proceeds by repeatedly exposing the next local prefix of the
+channel sequence. \Cref{fig:local-split-trace} shows a suffix of its reduction
+sequence. To keep the trace short, the
+reduction starts after the initial local splits and the selection of
+\lstinline{Child}; the omitted steps only expose the prefix consumed by
+\lstinline{renderPermissions}.
+\begin{figure}
+\begin{subfigure}[t]{0.49\linewidth}
+\begin{lstlisting}[numbers=left]
+K(c) =
+  let c1, c2 = lsplit c in
+  select Child c1;
+  let c3, c4 = lsplit c2 in
+  renderPermissions user c3;
+  let c5, c6 = lsplit c4 in
+  select Done c5;
+  close c6
+\end{lstlisting}
+\caption{Translated program.}
+\label{fig:local-split-program}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\linewidth}
+\begin{lstlisting}
+nu[c3,c4][d..] in
+  (P_d ||
+   renderPermissions user c3;
+   let c5,c6 = lsplit c4 in
+   select Done c5;
+   close c6)
+~> nu[c4][d..] in
+  (P_d ||
+   let c5,c6 = lsplit c4 in
+   select Done c5;
+   close c6)
+~> nu[c5,c6][d..] in
+  (P_d ||
+   select Done c5;
+   close c6)
+~> nu[c6][d3] in
+  (P_d'[wait d3] || close c6)
+~> (P_d'[*] || *)
+\end{lstlisting}
+\caption{Reduction suffix.}
+\label{fig:local-split-trace}
+\end{subfigure}
+\caption{Local splitting in the suffix of \lstinline{renderUserRest}.
+The processes $P_d$, $P_d'$, and $P_d''$ abbreviate client-side
+computation on the other endpoint.}
+\label{fig:local-split-reduction}
+\end{figure}
+In the omitted prefix, the split on \lstinline{c} \emph{replaces} the
+binder for \lstinline{c} with two fresh channel names \lstinline{c1}
+and \lstinline{c2}. That is, each binding compartment of the
+\lstinline{nu} contains a \emph{list} of binders and the operations
+work on these channel names from left to right. In consequence, the
+semantics does not allow any action on \lstinline{c2} before
+\lstinline{c1} has been consumed.
+
+On the client side, in the process $P_d$ that hangs on to \lstinline{d},
+splitting can be performed on \lstinline{d} independently of
+the splitting on \lstinline{c}. The only constraint is that, in the
+end, when \lstinline{close} and \lstinline{wait} calls match, the
+reduction requires that only one channel name is left in each
+compartment. Under this condition, the channel can be closed and
+eliminated. The figure does not show the transitions of the client $P_d$.
 
 %%% Local Variables:
 %%% mode: latex
