@@ -99,6 +99,17 @@ module Fin where
       ≡⟨ join-splitAt m n x ⟩
     x ∎
 
+{-
+  assocˡ : ∀ n₁ n₂ {n₃} → Fin (n₁ +ℕ (n₂ +ℕ n₃)) → Fin ((n₁ +ℕ n₂) +ℕ n₃)
+  assocˡ n₁ n₂ = [ {!!} ∘ {!!} , join (n₁ +ℕ n₂) _ ∘ Sum.map₁ (n₁ ↑ʳ_) ∘ splitAt n₂ ]′ ∘ splitAt n₁
+
+  assocʳ : ∀ n₁ n₂ {n₃} → Fin ((n₁ +ℕ n₂) +ℕ n₃) → Fin (n₁ +ℕ (n₂ +ℕ n₃))
+  assocʳ = {!!}
+
+  assocˡʳ-id : ∀ n₁ n₂ {n₃} → assocˡ n₁ n₂ {n₃} ∘ assocʳ n₁ n₂ ≗ id
+  assocˡʳ-id = {!!}
+-}
+
 open Fin
   using ( zero; suc; _↑ˡ_; _↑ʳ_; ↑ˡ≢↑ʳ
         ; ↑ˡ-injective; ↑ʳ-injective

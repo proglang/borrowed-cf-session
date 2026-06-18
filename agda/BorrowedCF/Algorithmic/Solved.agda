@@ -9,6 +9,7 @@ open import Data.List.Relation.Unary.All as All using (All)
 open import BorrowedCF.Prelude
 open import BorrowedCF.Types renaming (Solved to SolvedTy)
 open import BorrowedCF.Types.Unification
+open import BorrowedCF.Context.Base
 
 import BorrowedCF.Types.Substitution as 𝐓
 
@@ -268,3 +269,11 @@ subTm-id {σ = σ} `case e `of⟨ e₁ ; e₂ ⟩ rewrite subTm-id {σ = σ} e 
 SolvedΔ : CSet → UV.Sub → Set
 SolvedΔ Δ σ = flip All Δ λ (T₁ , T₂) →
   SolvedTy (subTy T₁ σ) × SolvedTy (subTy T₂ σ) × subTy T₁ σ ≃ subTy T₂ σ
+
+SolvedΓ : Ctx n → UV.Sub → Set
+SolvedΓ Γ σ = ∀ x →
+  SolvedTy (subTy (Γ x) σ)
+
+solved-⸴ : SolvedTy (subTy T σ) → SolvedΓ Γ σ → SolvedΓ (T ⸴ Γ) σ
+solved-⸴ ST SΓ zero = ST
+solved-⸴ ST SΓ (suc x) = SΓ x

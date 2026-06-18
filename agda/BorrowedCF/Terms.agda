@@ -372,7 +372,17 @@ record TKit (K : Kit 𝓕) : Set₁ where
     }
 
   ⊢weaken : (Γ : Ctx n) → weaken ∶ 𝐂.weaken ⊢ Γ ⇒ T ⸴ Γ
-  ⊢weaken Γ = record { _&_ = ⊢wk ∘ ⊢id/` ; &-unr = `_ ; &-mob = `_}
+  ⊢weaken Γ = record { _&_ = ⊢wk ∘ ⊢id/` ; &-unr = `_ ; &-mob = `_ }
+
+  ⊢weaken* : (Γ : Ctx m) (Γ′ : Ctx n) → weaken* m ∶ 𝐂.weaken* m ⊢ Γ′ ⇒ Γ ⸴* Γ′
+  ⊢weaken* {m} Γ Γ′ = record
+    { _&_   = go Γ
+    ; &-unr = subst (UnrCx (Γ ⸴* Γ′)) (cong `_ (𝐂.weaken*~wkˡ m _) ■ sym (𝐂.weaken*~wkˡ m _)) ∘ 𝐂.wk*-preserves Γ {Γ′}
+    ; &-mob = subst (MobCx (Γ ⸴* Γ′)) (cong `_ (𝐂.weaken*~wkˡ m _) ■ sym (𝐂.weaken*~wkˡ m _)) ∘ 𝐂.wk*-preserves Γ {Γ′}
+    }
+    where go : ∀ {m} (Γ : Ctx m) x → 𝓕[ Γ ⸴* Γ′ ; 𝐂.weaken* m x ⊢ weaken* m x ∶ Γ′ x ]
+          go {zero}  Γ = ⊢id/`
+          go {suc m} Γ = ⊢𝓕-≗ ⸴-⸴*-cons ∘ ⊢wk ∘ go (Γ ∘ suc)
 
 infix 4 _∶_⊢[_]_⇒_
 
@@ -497,6 +507,49 @@ _⊢⋯ₛ_ = _⊢⋯_ ⦃ TK = TKₛ ⦄
 ⊢swapᵣ : (Γ₁ : Ctx m₁) (Γ₂ : Ctx m₂) {Γ : Ctx n} → swapᵣ m₁ m₂ ∶ `_ ∘ 𝐂.swapᵣ m₁ m₂ {n} ⊢[ TKᵣ ] (Γ₁ ⸴* Γ₂) ⸴* Γ ⇒ (Γ₂ ⸴* Γ₁) ⸴* Γ
 ⊢swapᵣ Γ₁ Γ₂ = record
   { _&_ = λ x → refl , ++-swapᵣ Γ₁ Γ₂ x
-  ; &-unr = 𝐂.swapᵣ-preserves Γ₁ Γ₂
-  ; &-mob = 𝐂.swapᵣ-preserves Γ₁ Γ₂
+  ; &-unr = `_ ∘ subst Unr (sym (++-swapᵣ Γ₁ Γ₂ _))
+  ; &-mob = `_ ∘ subst Mobile (sym (++-swapᵣ Γ₁ Γ₂ _))
   }
+
+⊢assocSwapᵣ : (Γ₁ : Ctx m₁) (Γ₂ : Ctx m₂) {Γ : Ctx n} →
+  assocSwapᵣ m₁ m₂ ∶ `_ ∘ 𝐂.assocSwapᵣ m₁ m₂ {n} ⊢[ TKᵣ ] Γ₁ ⸴* (Γ₂ ⸴* Γ) ⇒ Γ₂ ⸴* (Γ₁ ⸴* Γ)
+⊢assocSwapᵣ Γ₁ Γ₂ = record
+  { _&_ = λ x → refl , ++-assocSwapᵣ Γ₁ Γ₂ x
+  ; &-unr = `_ ∘ subst Unr (sym (++-assocSwapᵣ Γ₁ Γ₂ _))
+  ; &-mob = `_ ∘ subst Mobile (sym (++-assocSwapᵣ Γ₁ Γ₂ _))
+  }
+
+inv-` : ∀ {x} → Γ ; γ ⊢ ` x ∶ T ∣ ϵ → T ≃ Γ x × Γ ∶ ` x ≼ γ
+inv-` (T-Var x T-eq) = ≃-reflexive (sym T-eq) , ≼-refl refl
+inv-` (T-Conv T≃ ϵ≤ x) = Π.map₁ (λ T≃′ → ≃-trans (≃-sym T≃) T≃′) (inv-` x)
+inv-` (T-Weaken γ≤ x) = inv-` x .proj₁ , ≼-trans (inv-` x .proj₂) γ≤
+
+inv-K : ∀ {c} → Γ ; γ ⊢ K c ∶ T ∣ ϵ → ∃[ U ] U ≃ T × Γ ∶ [] ≼ γ × ⊢ c ∶ U
+inv-K (T-Const ⊢c) = _ , ≃-refl , ≼-∅ [] , ⊢c
+inv-K (T-Conv T≃ ϵ≤ x) =
+  let _ , U≃ , x′ = inv-K x in
+  _ , ≃-trans U≃ T≃ , x′
+inv-K (T-Weaken γ≤ x) =
+  let _ , U≃ , ≤γ , x′ = inv-K x in
+  _ , U≃ , ≼-trans ≤γ γ≤ , x′
+
+postulate
+  _⊢⋯⁻¹_ : {ϕ : m →ᵣ n} {σ : _} → Γ₂ ; γ ⊢ e ⋯ ϕ ∶ T ∣ ϵ → ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ →
+    ∃[ γ′ ] Γ₂ ∶ γ′ 𝐂.⋯ σ ≼ γ × Γ₁ ; γ′ ⊢ e ∶ T ∣ ϵ
+
+-- _⊢⋯⁻¹_ {e = ` _} x ⊢ϕ =
+--   let T≃ , ≼γ = inv-` x in
+--   _ , ≼-respˡ-≈ (≈-reflexive (sym (proj₁ (⊢ϕ & _)))) ≼γ
+--     , T-Conv (≃-trans (≃-reflexive (sym (proj₂ (⊢ϕ & _)))) (≃-sym T≃)) ℙ≤ϵ (T-Var _ refl)
+-- _⊢⋯⁻¹_ {e = K c} x ⊢ϕ =
+--   let _ , T≃ , ≼γ , ⊢c = inv-K x in
+--   _ , ≼γ , T-Conv T≃ ℙ≤ϵ (T-Const ⊢c)
+-- _⊢⋯⁻¹_ {e = ƛ e} x ⊢ϕ = {!!}
+-- _⊢⋯⁻¹_ {e = μ e} x ⊢ϕ = {!!}
+-- _⊢⋯⁻¹_ {e = e · e₁} x ⊢ϕ = {!!}
+-- _⊢⋯⁻¹_ {e = e ; e₁} x ⊢ϕ = {!!}
+-- _⊢⋯⁻¹_ {e = e ⊗ e₁} x ⊢ϕ = {!!}
+-- _⊢⋯⁻¹_ {e = `let e `in e₁} x ⊢ϕ = {!!}
+-- _⊢⋯⁻¹_ {e = `let⊗ e `in e₁} x ⊢ϕ = {!!}
+-- _⊢⋯⁻¹_ {e = `inj i e} x ⊢ϕ = {!!}
+-- _⊢⋯⁻¹_ {e = `case e `of⟨ e₁ ; e₂ ⟩} x ⊢ϕ = {!!}
