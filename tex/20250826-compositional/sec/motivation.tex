@@ -2,6 +2,8 @@
 \section{Motivation}
 \label{sec:motivation}
 
+TODO: explain \lstinline{drop}
+
 \subsection{Borrowing from Context-Free Session Types}
 \label{sec:borr-from-cont}
 
@@ -69,19 +71,19 @@ definitions remain unchanged, but the implementation of
 \lstinline{sendTree} changes.
 \begin{lstlisting}[numbers=left]
 sendTree' : Tree -> TreeChannel; Ret -> Unit
-sendTree' Leaf c =
-  select Leaf c
+sendTree' Leaf c =          (* c : TreeChannel; Ret *)
+  drop (select Leaf c)      (* ... : Ret *)
 sendTree' (Node x l r) c =
-  select Node &c;    (* c : !Int; TreeChannel; TreeChannel; Ret *)
-  send x &c;         (* c : TreeChannel; TreeChannel; Ret *)
-  sendTree l &c;     (* c : TreeChannel; Ret *)
+  let c = select Node c in  (* c : !Int; TreeChannel; TreeChannel; Ret *)
+  send x &c;                (* c : TreeChannel; TreeChannel; Ret *)
+  sendTree l &c;            (* c : TreeChannel; Ret *)
   sendTree r c
 \end{lstlisting}
 What has changed? First, the type is no longer polymorphic over the
 continuation type. Instead, the channel argument \lstinline{c} starts
 out at type \lstinline{TreeChannel; Ret} which indicates that it is a borrow from
 a (larger) session type. Second, there is no explicit resource
-passing. Each use of the borrow notation
+passing, except for \lstinline{select}. Each use of the borrow notation
 \lstinline{&c} implicitly splits off an initial segment of the session type
 according to the function argument and updates \lstinline{c} to the
 remainder. To see this, consider the type of \lstinline{c}---after
@@ -103,6 +105,12 @@ Finally, the channel variable \lstinline{c} can be used in a
 non-linear way, as long as its uses are under borrows, as in
 \lstinline{&c}. The understanding is that the borrows are taken and
 processed according to the evaluation order of the program. 
+
+The reader may ask why \lstinline{select} still adheres to
+resource passing style. The answer is simplicity of our system. While it
+is possible to define \lstinline{select} with a borrowing-based
+interface, supporting it requires subtyping of session types, which is
+undecidable for CFST. 
 
 \subsection{Local and Remote Borrowing}
 \label{sec:local-remote-borr}
@@ -128,7 +136,6 @@ type HtmlChannel = oplus{
   Text: !String,
   Elem: !String; ChildrenChannel
 }
-
 type ChildrenChannel = oplus{
   Done: skip,
   Child: HtmlChannel; ChildrenChannel
@@ -142,22 +149,23 @@ the rest of the child stream.
 
 Now consider a renderer that emits a user panel whose first child is
 computed by another process. We assume that
-\lstinline{renderProfile} and \lstinline{renderPermissions} both render
-one HTML node on a channel of type \lstinline{HtmlChannel; Ret}.
-\begin{lstlisting}[numbers=left]
-renderUser : User -> HtmlChannel; Ret -> Unit
+\lstinline{renderProfile} and \lstinline{renderSwiper} both render
+one HTML node on a channel of type \lstinline{HtmlChannel; End}.
+\Cref{listing:rendering-example} contains the code.
+\begin{lstlisting}[numbers=left,float,caption={Rendering example},captionpos=b,label=listing:rendering-example]
+renderUser : User -> HtmlChannel; End -> Unit
 renderUser user c =
-  select Elem &c;
+  let c = select Elem c in
   send "section" &c;
-  select Child &c;
-  fork (lambda () -> renderProfile user &c);
+  let c = select Child c in
+  fork (lambda() -> renderProfile user &c);
   renderUserRest user (acquire c)
 
-renderUserRest : User -> ChildrenChannel; Ret -> Unit
+renderUserRest : User -> ChildrenChannel; End -> Unit
 renderUserRest user c =
-  select Child &c;
-  renderPermissions user &c;
-  select Done c
+  let c = select Child c in
+  renderSwiper user &c;
+  close (select Done c)
 \end{lstlisting}
 The function \lstinline{renderUser} starts an HTML element and then
 opens the child stream. It passes a borrow of the
@@ -174,65 +182,74 @@ borrow created by the fork is completed, i.e., until
 \lstinline{renderProfile} has finished sending on the borrowed prefix
 of the channel. Once it is unblocked, the \lstinline{acquire}
 operation returns the current channel end for further operations.
+Next, we a direct operational semantics of local and remote borrowing
+before we discuss the low level implementation of the two concepts in
+\cref{sec:impl-local-remote}.
 
 \subsection{A Direct Semantics for Channel Borrowing}
 \label{sec:direct-semant-chann}
 
 \Cref{sec:borr-from-cont} already suggests an implementation strategy
 for local borrowing. However, we would like to start with an abstract
-specification that we can easily prove correct, before moving on to
+specification that is easier to handle in a correctness proof, before moving on to
 the implementation level. The first step translates the surface
 language with borrowing operators into our formal calculus
 \thecalculus, which replaces borrowing with explicit functional splitting
-operators. There are two splitting operators, one for local borrows and
+operators. This translation is taken from previous work
+\cite{DBLP:journals/pacmpl/SaffrichS0V25}, which gives a formal
+presentation along with a correctness proof. The novelty in our work
+is the presence of \emph{two} splitting operators, one for local borrows and
 one for remote ones. Our discussion starts with the local variant and
 we show the translation of \lstinline{renderUserRest} in
-\thecalculus. This translation is part of our implementation, as
-well.
+\thecalculus. The translation is part of our implementation.
 
 As an example, we use the local part of
-\lstinline{renderUserRest} extended with closing the channel shown in
+\lstinline{renderUserRest} as shown in
 \cref{fig:local-split-program}.  
 Execution proceeds by repeatedly exposing the next local prefix of the
 channel sequence. \Cref{fig:local-split-trace} shows a suffix of its reduction
 sequence. To keep the trace short, the
 reduction starts after the initial local splits and the selection of
 \lstinline{Child}; the omitted steps only expose the prefix consumed by
-\lstinline{renderPermissions}.
+\lstinline{renderSwiper}.
 \begin{figure}
 \begin{subfigure}[t]{0.49\linewidth}
 \begin{lstlisting}[numbers=left]
 K(c) =
-  let c1, c2 = lsplit c in
-  select Child c1;
+  let c2 = select Child c in
   let c3, c4 = lsplit c2 in
-  renderPermissions user c3;
-  let c5, c6 = lsplit c4 in
-  select Done c5;
-  close c6
+  renderSwiper user c3;
+  close (select Done c4)
 \end{lstlisting}
 \caption{Translated program.}
 \label{fig:local-split-program}
 \end{subfigure}\hfill
 \begin{subfigure}[t]{0.49\linewidth}
 \begin{lstlisting}
-nu[c3,c4][d..] in
+nu[c][d..] in
   (P_d ||
-   renderPermissions user c3;
-   let c5,c6 = lsplit c4 in
-   select Done c5;
-   close c6)
+   let c2 = select Child c in
+   let c3, c4 = lsplit c2 in
+   renderSwiper used c3;
+   close (select Done c4)
+~> nu[c2][d..] in
+  (P_d ||
+   let c3, c4 = lsplit c2 in
+   renderSwiper user c3;
+   close (select Done c4)
+~> nu[c3,c4][d..] in
+  (P_d ||
+   renderSwiper user c3;
+   close (select Done c4)
 ~> nu[c4][d..] in
   (P_d ||
-   let c5,c6 = lsplit c4 in
-   select Done c5;
-   close c6)
-~> nu[c5,c6][d..] in
+   close (select Done c4)
+~> nu[c4][d..] in
   (P_d ||
-   select Done c5;
-   close c6)
-~> nu[c6][d3] in
-  (P_d'[wait d3] || close c6)
+   close c4
+~> nu[c4][d3] in
+  (P_d'[wait d3] ||
+   close c4)
 ~> (P_d'[*] || *)
 \end{lstlisting}
 \caption{Reduction suffix.}
@@ -243,21 +260,84 @@ The processes $P_d$, $P_d'$, and $P_d''$ abbreviate client-side
 computation on the other endpoint.}
 \label{fig:local-split-reduction}
 \end{figure}
-In the omitted prefix, the split on \lstinline{c} \emph{replaces} the
-binder for \lstinline{c} with two fresh channel names \lstinline{c1}
-and \lstinline{c2}. That is, each binding compartment of the
-\lstinline{nu} contains a \emph{list} of binders and the operations
-work on these channel names from left to right. In consequence, the
-semantics does not allow any action on \lstinline{c2} before
-\lstinline{c1} has been consumed.
+In the omitted prefix, the split on \lstinline{c2} \emph{replaces} the
+binder for \lstinline{c2} with two fresh channel names \lstinline{c3}
+and \lstinline{c4}. That is, both binding compartments of the
+\lstinline{nu} contain a \emph{list} of binders and the operations
+work on these channel names from left to right. To ensure the correct
+sequencing, the semantics does not allow any action on \lstinline{c4} before
+\lstinline{c3} has been consumed. This restriction is supported by
+typing: the \lstinline{lsplit} operation returns an \emph{ordered
+  pair}, whose components must be processed and consumed in
+left-to-right order.
 
-On the client side, in the process $P_d$ that hangs on to \lstinline{d},
+On the client side, in the process $P_d$ that holds the other
+channel end \lstinline{d}, 
 splitting can be performed on \lstinline{d} independently of
 the splitting on \lstinline{c}. The only constraint is that, in the
 end, when \lstinline{close} and \lstinline{wait} calls match, the
 reduction requires that only one channel name is left in each
 compartment. Under this condition, the channel can be closed and
 eliminated. The figure does not show the transitions of the client $P_d$.
+
+In principle, this semantics would also work for remote
+borrowing. However, to connect to the \lstinline{drop}
+\lstinline{acquire} primitives, we indicate a remote split with the
+symbol ``\lstinline{|}''. As an example, we consider the translation of
+lines 5--7:
+\begin{lstlisting}
+  fork (lambda() -> renderProfile user &c);
+  renderUserRest user (acquire c)
+\end{lstlisting}
+It translates to the following \thecalculus code.
+\begin{lstlisting}
+(* initially                  c : HtmlChannel; ChildrenChannel; End *)
+let c1, c2 = rsplit c in   (* c1 : HtmlChannel; Ret *)
+                           (* c2 : Acquire; ChildrenChannel; End *)
+fork (lambda() -> renderProfile user c1);
+renderUserRest user (acquire c2)
+\end{lstlisting}
+The translation inserts an \lstinline{rsplit} because \lstinline{c1}
+and \lstinline{c2} are used in different processes. As their uses are
+explicitly synchronized, the \lstinline{rsplit} returns a normal
+(linear) pair of channels. The type of the second channel
+\lstinline{c2} starts with an \lstinline{Acquire} type, a special form
+of session type that indicates the requirement for explicit
+synchronization.
+Executing this code takes the following steps (ignoring the activity
+at the other end of the channel).
+%     nu[c][...]
+%     let c = select Child c in
+%     let c1, c2 = rsplit c in
+%     fork (lambda() -> renderProfile user c1);
+%     renderUserRest user (acquire c2)
+% ~>
+
+\begin{lstlisting}
+    nu[c][...]
+    let c1, c2 = rsplit c in
+    fork (lambda() -> renderProfile user c1);
+    renderUserRest user (acquire c2)
+~>
+    nu[c1|c2][...]
+    fork (lambda() -> renderProfile user c1);
+    renderUserRest user (acquire c2)
+~>
+    nu[|c2][...]
+    renderUserRest user (acquire c2)
+~>
+    nu[c2][...]
+    renderUserRest user c2
+\end{lstlisting}
+In summary, the \lstinline{rsplit} inserts a new binding group \lstinline{[c1|c2]}
+demarkated by ``\lstinline{|}''. The \lstinline{acquire} is only
+enables if the preceding binding group has been processed as in
+\lstinline{[|c2]}. Executing the \lstinline{acquire} removes the
+exhausted binding group as in \lstinline{[c2]}.
+
+\subsection{Implementing Local and Remote Borrowing}
+\label{sec:impl-local-remote}
+
 
 %%% Local Variables:
 %%% mode: latex
