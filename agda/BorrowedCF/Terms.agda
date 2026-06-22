@@ -18,6 +18,8 @@ data Const : Set where
   `end : Pol → Const
   `new : 𝕊 0 → Const
   `lsplit `rsplit : 𝕊 0 → Const
+  `select : Bool → Const
+  `branch : Const
 
 isSplit? : (c : Const) → Dec (∃[ s ] (c ≡ `lsplit s ⊎ c ≡ `rsplit s))
 isSplit? `unit = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
@@ -28,6 +30,8 @@ isSplit? `drop = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
 isSplit? `acq = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
 isSplit? (`end x) = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
 isSplit? (`new x) = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
+isSplit? (`select x) = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
+isSplit? (`branch) = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
 isSplit? (`lsplit x) = yes (x , inj₁ refl)
 isSplit? (`rsplit x) = yes (x , inj₂ refl)
 
@@ -155,6 +159,11 @@ data ⊢_∶_ : Const → 𝕋 → Set where
 
   `send : Mobile T → ⊢ `send ∶ T ⊗¹ ⟨ msg ‼ T ⟩ →1M `⊤ ∣ 𝕀
   `recv : Mobile T → ⊢ `recv ∶      ⟨ msg ⁇ T ⟩ →1M  T ∣ 𝕀
+
+  `select : ∀ {i} →
+    ⊢ `select i ∶ ⟨ brn ‼ s₁ s₂ ⟩ →1M ⟨ if i then s₁ else s₂ ⟩ ∣ 𝕀
+  `branch :
+    ⊢ `branch ∶ ⟨ brn ⁇ s₁ s₂ ⟩ →1M ⟨ s₁ ⟩ ⊕ ⟨ s₂ ⟩ ∣ 𝕀
 
   `end  : ⊢ `end p ∶ ⟨ end p ⟩ →1M `⊤ ∣ 𝕀
 

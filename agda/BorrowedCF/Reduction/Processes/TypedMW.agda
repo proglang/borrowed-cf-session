@@ -88,10 +88,23 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
     let wkρ = wkₚ (b₁ + sum B₁) (b₂ + sum B₂) in
     ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
       ((⟪ E₁ ⋯ᶠ* wkρ [ K `send · ((` 0F) ⊗ (e ⋯ wkρ)) ]* ⟫
-        ∥ ⟪ E₂ ⋯ᶠ* wkρ [ K `recv · (` Fin.cast (sym (+-assoc (sum (suc b₁ ∷ B₁)) (sum (suc b₂ ∷ B₂)) n)) (sum (suc b₁ ∷ B₁) ↑ʳ 0F)) ]* ⟫)
+        ∥ ⟪ E₂ ⋯ᶠ* wkρ [ K `recv · (` wkʳ n (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
         ∥ (P ⋯ₚ wkρ))
       ─→ₚ
     ν (b₁ ∷ B₁) (b₂ ∷ B₂) ((⟪ E₁ [ K `unit ]* ⟫ ∥ ⟪ E₂ [ e ]* ⟫) ∥ P)
+
+  R-Choice : ∀ {E₁ E₂ i} →
+    let x = 0F in
+    let y = wkʳ n (wkˡ (suc b₁ + sum B₁) 0F) in
+    ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
+      ((⟪ E₁ [ K (`select i) · (` x) ]* ⟫
+        ∥ ⟪ E₂ [ K `branch · (` y) ]* ⟫)
+        ∥ P)
+      ─→ₚ
+    ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
+      ((⟪ E₁ [ ` 0F ]* ⟫
+        ∥ ⟪ E₂ [ `inj i (` y) ]* ⟫)
+        ∥ P)
 
   R-LSplit : ∀ {E} →
     let module 𝐒 = SplitRenamings B₁ B₂ B in
