@@ -1,7 +1,8 @@
 {-# OPTIONS --rewriting #-}
 module BorrowedCF.Algorithmic where
 
-open import Data.Fin.Subset using (Subset; ⁅_⁆; _∪_) renaming (⊥ to ⁅⁆)
+open import Data.Fin.Subset renaming (⊥ to ⁅⁆)
+import Data.Fin.Subset.Properties as S
 open import Data.List.Relation.Unary.All as All using (All; []; _∷_)
 
 import Data.List.Relation.Unary.All.Properties as All
@@ -51,265 +52,387 @@ fv-subTm (`let⊗ e `in e₁) = cong₂ _∪_ (fv-subTm e) (cong (fvClose* 2) (f
 fv-subTm (`inj i e) = fv-subTm e
 fv-subTm `case e `of⟨ e₁ ; e₂ ⟩ = cong₂ _∪_ (fv-subTm e) (cong₂ _∪_ (cong fvClose (fv-subTm e₁)) (cong fvClose (fv-subTm e₂)))
 
+postulate
+  fv-wk : (e : Tm n) → fv (wk e) ≡ outside ∷ fv e
+{-
+fv[wk ` x ] = refl
+fv[wk K c ] = refl
+fv[wk ƛ e ] = {!!}
+fv[wk μ e ] = {!!}
+fv[wk e₁ · e₂ ] rewrite fv[wk e₁ ] | fv[wk e₂ ] = refl
+fv[wk e₁ ; e₂ ] rewrite fv[wk e₁ ] | fv[wk e₂ ] = refl
+fv[wk e₁ ⊗ e₂ ] rewrite fv[wk e₁ ] | fv[wk e₂ ] = refl
+fv[wk `let e `in e₁ ] = {!!}
+fv[wk `let⊗ e `in e₁ ] = {!!}
+fv[wk `inj i e ] = fv[wk e ]
+fv[wk `case e `of⟨ e₁ ; e₂ ⟩ ] = {!!}
+-}
+
 _∣fv[_] : Struct n → Tm n → Struct n
 γ ∣fv[ e ] = γ ↓ fv e
 
-data Mode : Set where
-  chk inf : Mode
+_∣∁fv[_] : Struct n → Tm n → Struct n
+γ ∣∁fv[ e ] = γ ↓ ∁ (fv e)
 
-private variable ξ : Mode
+↓;↓≼⇒≼∁ : ∀ {γ : Struct n} {γ₁ X₁ γ₂ X₂} →
+  γ₁ ≡ γ ↓ X₁ →
+  γ₂ ≡ γ ↓ X₂ →
+  Γ ∶ γ₁ ; γ₂ ≼ γ →
+  Γ ; γ₁ ⊢ e₁ ∶ T ∣ ϵ₁ →
+  Γ ; γ₂ ⊢ e₂ ∶ U ∣ ϵ₂ →
+  Γ ∶ γ₁ ≼ γ ↓ ∁ X₂ × Γ ∶ γ₂ ≼ γ ↓ ∁ X₁
+↓;↓≼⇒≼∁ {γ = γ} {γ₁} {X₁} eq₁ eq₂ ≤γ (T-Const ⊢c) y =
+  {!↓-empty⁻¹ γ X₁ (≈-reflexive (sym eq₁)) !}
+    , {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-Var x T-eq) y = {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-Abs Γ-unr Γ-mob x) y = {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-AbsRec Γ-unr a-unr x) y = {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-AppUnr a-unr ≤ₐ x x₁) y = {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-AppLin a-par ≤ₐ x x₁) y = {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-AppLeft aL ≤ₐ x x₁) y = {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-AppRight aR ≤ₐ x x₁) y = {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-Pair p/s seq⇒p x x₁) y = {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-Let p/s x x₁) y = {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-LetUnit x x₁) y = {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-LetPair p/s x x₁) y = {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-Inj x) y = {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-Case p/s x x₁ x₂) y = {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-Conv T≃ ϵ≤ x) y = {!!}
+↓;↓≼⇒≼∁ eq₁ eq₂ ≤γ (T-Weaken γ≤ x) y = {!!}
 
-countSplitsC : Const → ℕ
-countSplitsC `unit = 0
-countSplitsC `fork = 0
-countSplitsC `send = 0
-countSplitsC `recv = 0
-countSplitsC `drop = 0
-countSplitsC `acq = 0
-countSplitsC (`end x) = 0
-countSplitsC (`new x) = 0
-countSplitsC (`lsplit x) = 1
-countSplitsC (`rsplit x) = 1
+fv;∁fv≼ :
+  γ ∣fv[ e ] ≡ γ′ →
+  Γ ; γ′ ⊢ e ∶ T ∣ ϵ →
+  Γ ∶ γ′ ; γ ∣∁fv[ e ] ≈ γ
+fv;∁fv≼ {n} {γ = γ} eq (T-Const ⊢c) =
+  ≈-trans ;-unit₁ $ ≈-reflexive $
+    cong (γ ↓_) (S.∣p∣≡n⇒p≡⊤ (S.∣∁p∣≡n∸∣p∣ {n} ⁅⁆ ■ cong (n Nat.∸_) (S.∣⊥∣≡0 n)))
+      ■ ↓-identity _
+fv;∁fv≼ eq (T-Var x T-eq) = {!!}
+fv;∁fv≼ eq (T-Abs Γ-unr Γ-mob x) = {!!}
+fv;∁fv≼ eq (T-AbsRec Γ-unr a-unr x) = {!!}
+fv;∁fv≼ eq (T-AppUnr a-unr ≤ₐ x x₁) = {!!}
+fv;∁fv≼ eq (T-AppLin a-par ≤ₐ x x₁) = {!!}
+fv;∁fv≼ eq (T-AppLeft aL ≤ₐ x x₁) = {!!}
+fv;∁fv≼ eq (T-AppRight aR ≤ₐ x x₁) = {!!}
+fv;∁fv≼ eq (T-Pair p/s seq⇒p x x₁) = {!!}
+fv;∁fv≼ eq (T-Let p/s x x₁) = {!!}
+fv;∁fv≼ eq (T-LetUnit x x₁) = {!!}
+fv;∁fv≼ eq (T-LetPair p/s x x₁) = {!!}
+fv;∁fv≼ eq (T-Inj x) = {!!}
+fv;∁fv≼ eq (T-Case p/s x x₁ x₂) = {!!}
+fv;∁fv≼ eq (T-Conv T≃ ϵ≤ x) = {!!}
+fv;∁fv≼ eq (T-Weaken γ≤ x) = {!!}
 
-countSplits : Tm n → ℕ
-countSplits (` x) = 0
-countSplits (K c) = countSplitsC c
-countSplits (ƛ e) = countSplits e
-countSplits (μ e) = countSplits e
-countSplits (e₁ · e₂) = countSplits e₁ + countSplits e₂
-countSplits (e₁ ; e₂) = countSplits e₁ + countSplits e₂
-countSplits (e₁ ⊗ e₂) = countSplits e₁ + countSplits e₂
-countSplits (`let e `in e′) = countSplits e + countSplits e′
-countSplits (`let⊗ e `in e′) = countSplits e + countSplits e′
-countSplits (`inj i e) = countSplits e
-countSplits `case e `of⟨ e₁ ; e₂ ⟩ = countSplits e + countSplits e₁ + countSplits e₂
 
-liftUVars : ℕ → Tm n → Tm n
-liftUVars n e = subTm e (UV.weaken n)
+-- data Mode : Set where
+--   chk inf : Mode
 
-{-
-infix 4 _─→η_
+-- private variable ξ : Mode
 
-data _─→η_ {n} : Tm n → Tm n → Set where
-  refl : e ─→η e
-  here : e ─→η e′ → e ─→η ƛ (wk e′ · (` zero))
-  ƛ : e ─→η e′ → ƛ e ─→η ƛ e′
-  μ : e ─→η e′ → μ e ─→η μ e′
-  _·_ : e₁ ─→η e₁′ → e₂ ─→η e₂′ → e₁ · e₂ ─→η e₁′ · e₂′
-  _;_ : e₁ ─→η e₁′ → e₂ ─→η e₂′ → e₁ ; e₂ ─→η e₁′ ; e₂′
-  _⊗_ : e₁ ─→η e₁′ → e₂ ─→η e₂′ → e₁ ⊗ e₂ ─→η e₁′ ⊗ e₂′
-  `let⊗_`in_ : e₁ ─→η e₁′ → e₂ ─→η e₂′ → `let⊗ e₁ `in e₂ ─→η `let⊗ e₁′ `in e₂′
-  `inj : ∀ {i} → e ─→η e′ → `inj i e ─→η `inj i e′
-  `case_`of⟨_;_⟩ : e ─→η e′ → e₁ ─→η e₁′ → e₂ ─→η e₂′ → `case e `of⟨ e₁ ; e₂ ⟩ ─→η `case e′ `of⟨ e₁′ ; e₂′ ⟩
--}
+-- countSplitsC : Const → ℕ
+-- countSplitsC `unit = 0
+-- countSplitsC `fork = 0
+-- countSplitsC `send = 0
+-- countSplitsC `recv = 0
+-- countSplitsC `drop = 0
+-- countSplitsC `acq = 0
+-- countSplitsC (`end x) = 0
+-- countSplitsC (`new x) = 0
+-- countSplitsC (`lsplit x) = 1
+-- countSplitsC (`rsplit x) = 1
 
-infix 4 _;_/_⊢[_]_∶_∣_↑_/_ _;_/_⊢_⇐_∣_↑_/_ _;_/_⊢_⇒_∣_↑_/_
+-- countSplits : Tm n → ℕ
+-- countSplits (` x) = 0
+-- countSplits (K c) = countSplitsC c
+-- countSplits (ƛ e) = countSplits e
+-- countSplits (μ e) = countSplits e
+-- countSplits (e₁ · e₂) = countSplits e₁ + countSplits e₂
+-- countSplits (e₁ ; e₂) = countSplits e₁ + countSplits e₂
+-- countSplits (e₁ ⊗ e₂) = countSplits e₁ + countSplits e₂
+-- countSplits (`let e `in e′) = countSplits e + countSplits e′
+-- countSplits (`let⊗ e `in e′) = countSplits e + countSplits e′
+-- countSplits (`inj i e) = countSplits e
+-- countSplits `case e `of⟨ e₁ ; e₂ ⟩ = countSplits e + countSplits e₁ + countSplits e₂
 
-data _;_/_⊢[_]_∶_∣_↑_/_ (Γ : Ctx n) (γ : Struct n) (m : ℕ) : Mode → Tm n → 𝕋 → Eff → CSet → ℕ → Set
+-- liftUVars : ℕ → Tm n → Tm n
+-- liftUVars n e = subTm e (UV.weaken n)
 
-_;_/_⊢_⇒_∣_↑_/_ : Ctx n → Struct n → ℕ → _
-_;_/_⊢_⇒_∣_↑_/_ Γ γ m = _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m inf
+-- {-
+-- infix 4 _─→η_
 
-_;_/_⊢_⇐_∣_↑_/_ : Ctx n → Struct n → ℕ → _
-_;_/_⊢_⇐_∣_↑_/_ Γ γ m = _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m chk
+-- data _─→η_ {n} : Tm n → Tm n → Set where
+--   refl : e ─→η e
+--   here : e ─→η e′ → e ─→η ƛ (wk e′ · (` zero))
+--   ƛ : e ─→η e′ → ƛ e ─→η ƛ e′
+--   μ : e ─→η e′ → μ e ─→η μ e′
+--   _·_ : e₁ ─→η e₁′ → e₂ ─→η e₂′ → e₁ · e₂ ─→η e₁′ · e₂′
+--   _;_ : e₁ ─→η e₁′ → e₂ ─→η e₂′ → e₁ ; e₂ ─→η e₁′ ; e₂′
+--   _⊗_ : e₁ ─→η e₁′ → e₂ ─→η e₂′ → e₁ ⊗ e₂ ─→η e₁′ ⊗ e₂′
+--   `let⊗_`in_ : e₁ ─→η e₁′ → e₂ ─→η e₂′ → `let⊗ e₁ `in e₂ ─→η `let⊗ e₁′ `in e₂′
+--   `inj : ∀ {i} → e ─→η e′ → `inj i e ─→η `inj i e′
+--   `case_`of⟨_;_⟩ : e ─→η e′ → e₁ ─→η e₁′ → e₂ ─→η e₂′ → `case e `of⟨ e₁ ; e₂ ⟩ ─→η `case e′ `of⟨ e₁′ ; e₂′ ⟩
+-- -}
 
-data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
-  A-Var : ∀ {x} →
-    (≤γ : Γ ∶ ` x ≼ γ) →
-    ----------------------------------
-    Γ ; γ / m ⊢ ` x ⇒ Γ x ∣ ℙ ↑ [] / m
+-- infix 4 _;_/_⊢[_]_∶_∣_↑_/_ _;_/_⊢_⇐_∣_↑_/_ _;_/_⊢_⇒_∣_↑_/_
 
-  A-Const : ∀ {c} →
-    (≤γ : Γ ∶ [] ≼ γ) →
-    (≢lsplit : ∀ s → c ≢ `lsplit s) →
-    (≢rsplit : ∀ s → c ≢ `rsplit s) →
-    ⊢ c ∶ T →
-    --------------------------------
-    Γ ; γ / m ⊢ K c ⇒ T ∣ ℙ ↑ [] / m
+-- data _;_/_⊢[_]_∶_∣_↑_/_ (Γ : Ctx n) (γ : Struct n) (m : ℕ) : Mode → Tm n → 𝕋 → Eff → CSet → ℕ → Set
 
-  A-LSplit :
-    let α = record { var = m; pol = ‼ } in
-    (≤γ : Γ ∶ [] ≼ γ) →
-    ¬ Skips s →
-    -----------------------------------------------------------------------------------
-    Γ ; γ / m ⊢ K (`lsplit s) ⇒ ⟨ s ; `` α ⟩ →1M ⟨ s ⟩ ⊗ᴸ ⟨ `` α ⟩ ∣ ℙ ∣ ℙ ↑ [] / suc m
+-- _;_/_⊢_⇒_∣_↑_/_ : Ctx n → Struct n → ℕ → _
+-- _;_/_⊢_⇒_∣_↑_/_ Γ γ m = _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m inf
 
-  A-RSplit :
-    let α = record { var = m; pol = ‼ } in
-    (≤γ : Γ ∶ [] ≼ γ) →
-    -----------------------------------------------------------------------------------------------
-    Γ ; γ / m ⊢ K (`rsplit s) ⇒ ⟨ s ; `` α ⟩ →1M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; `` α ⟩ ∣ ℙ ∣ ℙ ↑ [] / suc m
+-- _;_/_⊢_⇐_∣_↑_/_ : Ctx n → Struct n → ℕ → _
+-- _;_/_⊢_⇐_∣_↑_/_ Γ γ m = _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m chk
 
-  A-App :
-    (≤γ : Γ ∶ join (Arr.dir a) (γ ∣fv[ e₂ ]) (γ ∣fv[ e₁ ]) ≼ γ) →
-    (L⇒pure₁ : Arr.dir a ≡ L → ϵ₁ ≡ ℙ) →
-    (R⇒pure₂ : Arr.dir a ≡ R → ϵ₂ ≡ ℙ) →
-    Γ ; γ ∣fv[ e₁ ] / m  ⊢ e₁ ⇒ T ⟨ a ⟩→ U ∣ ϵ₁ ↑ Δ₁ / m′ →
-    Γ ; γ ∣fv[ e₂ ] / m′ ⊢ e₂ ⇐ T ∣ ϵ₂ ↑ Δ₂ / n →
-    --------------------------------------------------------------
-    Γ ; γ / m ⊢ e₁ · e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ⊔ϵ Arr.eff a ↑ Δ₁ ++ Δ₂ / n
+-- data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
+--   A-Var : ∀ {x} →
+--     (≤γ : Γ ∶ ` x ≼ γ) →
+--     ----------------------------------
+--     Γ ; γ / m ⊢ ` x ⇒ Γ x ∣ ℙ ↑ [] / m
 
-  A-LetUnit :
-    (≤γ : Γ ∶ γ ∣fv[ e₁ ] ; γ ∣fv[ e₂ ] ≼ γ) →
-    Γ ; γ ∣fv[ e₁ ] / m  ⊢ e₁ ⇐ `⊤ ∣ ϵ₁ ↑ Δ₁ / m′ →
-    Γ ; γ ∣fv[ e₂ ] / m′ ⊢ e₂ ⇒ T  ∣ ϵ₂ ↑ Δ₂ / n  →
-    -------------------------------------------------
-    Γ ; γ / m ⊢ e₁ ; e₂ ⇒ T ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₁ ++ Δ₂ / n
+--   A-Const : ∀ {c} →
+--     (≤γ : Γ ∶ [] ≼ γ) →
+--     (≢lsplit : ∀ s → c ≢ `lsplit s) →
+--     (≢rsplit : ∀ s → c ≢ `rsplit s) →
+--     ⊢ c ∶ T →
+--     --------------------------------
+--     Γ ; γ / m ⊢ K c ⇒ T ∣ ℙ ↑ [] / m
 
-  A-LetPair :
-    let open Fin.Patterns in
-    let γ₁ = γ ∣fv[ e₁ ] in
-    let γ₂ = γ ↓ fvClose* 2 (fv e₂) in
-    (≤γ : Γ ∶ γ₁ ; γ₂ ≼ γ) →
-    Γ ; γ₁ / m ⊢ e₁ ⇒ T₁ ⊗⟨ d ⟩ T₂ ∣ ϵ₁ ↑ Δ₁ / m′ →
-    T₁ ⸴ T₂ ⸴ Γ ; (join d (` 0F) (` 1F) ; 𝐂.wk (𝐂.wk γ₂)) / m′ ⊢ e₂ ⇒ U ∣ ϵ₂ ↑ Δ₂ / n →
-    -----------------------------------------------------------------------------------
-    Γ ; γ / m ⊢ `let⊗ e₁ `in e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₁ ++ Δ₂ / n
+--   A-LSplit :
+--     let α = UV.fresh m in
+--     (≤γ : Γ ∶ [] ≼ γ) →
+--     ¬ Skips s →
+--     -----------------------------------------------------------------------------------
+--     Γ ; γ / m ⊢ K (`lsplit s) ⇒ ⟨ s ; `` α ⟩ →1M ⟨ s ⟩ ⊗ᴸ ⟨ `` α ⟩ ∣ ℙ ∣ ℙ ↑ [] / suc m
 
-  A-Case :
-    let γ′ = γ ∣fv[ e ] in
-    let γ₁ = γ ↓ V.tail (fv e₁) in
-    let γ₂ = γ ↓ V.tail (fv e₂) in
-    (≤γ₁ : Γ ∶ γ′ ; γ₁ ≼ γ) →
-    (≤γ₂ : Γ ∶ γ′ ; γ₂ ≼ γ) →
-    Γ ; γ ∣fv[ e ] / m ⊢ e ⇒ T₁ ⊕ T₂ ∣ ϵ ↑ Δ / m₁ →
-    T₁ ⸴ Γ ; (` zero ; 𝐂.wk γ₁) / m₁ ⊢ e₁ ⇒ U₁ ∣ ϵ₁ ↑ Δ₁ / m₂ →
-    T₂ ⸴ Γ ; (` zero ; 𝐂.wk γ₂) / m₂ ⊢ e₂ ⇒ U₂ ∣ ϵ₂ ↑ Δ₂ / n  →
-    ---------------------------------------------------------------------------------------
-    Γ ; γ / m ⊢ `case e `of⟨ e₁ ; e₂ ⟩ ⇒ U₁ ∣ ϵ ⊔ϵ ϵ₁ ⊔ϵ ϵ₂ ↑ (U₁ , U₂) ∷ Δ ++ Δ₁ ++ Δ₂ / n
+--   A-RSplit :
+--     let α = record { var = m; pol = ‼ } in
+--     (≤γ : Γ ∶ [] ≼ γ) →
+--     -----------------------------------------------------------------------------------------------
+--     Γ ; γ / m ⊢ K (`rsplit s) ⇒ ⟨ s ; `` α ⟩ →1M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; `` α ⟩ ∣ ℙ ∣ ℙ ↑ [] / suc m
 
-  A-Abs :
-    (Arr.Unr a → UnrCx Γ γ) →
-    (Arr.Mobile a → MobCx Γ γ) →
-    ϵ ≤ϵ Arr.eff a →
-    T ⸴ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) / m ⊢ e ⇐ U ∣ ϵ ↑ Δ / n →
-    --------------------------------------------------------------------
-    Γ ; γ / m ⊢ ƛ e ⇐ T ⟨ a ⟩→ U ∣ ℙ ↑ Δ / n
+--   A-App :
+--     (≤γ : Γ ∶ join (Arr.dir a) (γ ∣fv[ e₂ ]) (γ ∣fv[ e₁ ]) ≼ γ) →
+--     (L⇒pure₁ : Arr.dir a ≡ L → ϵ₁ ≡ ℙ) →
+--     (R⇒pure₂ : Arr.dir a ≡ R → ϵ₂ ≡ ℙ) →
+--     Γ ; γ ∣fv[ e₁ ] / m  ⊢ e₁ ⇒ T ⟨ a ⟩→ U ∣ ϵ₁ ↑ Δ₁ / m′ →
+--     Γ ; γ ∣fv[ e₂ ] / m′ ⊢ e₂ ⇐ T ∣ ϵ₂ ↑ Δ₂ / n →
+--     --------------------------------------------------------------
+--     Γ ; γ / m ⊢ e₁ · e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ⊔ϵ Arr.eff a ↑ Δ₁ ++ Δ₂ / n
 
-  A-AbsRec :
-    let open Fin.Patterns in
-    UnrCx Γ γ →
-    Arr.Unr a →
-    ϵ ≤ϵ Arr.eff a →
-    T ⸴ T ⟨ a ⟩→ U ⸴ Γ ; (` 0F) ∥ (` 1F) ∥ 𝐂.wk (𝐂.wk γ) / m ⊢ e ⇐ U ∣ ϵ ↑ Δ / n →
-    ------------------------------------------------------------------------------
-    Γ ; γ / m ⊢ μ (ƛ e) ⇐ T ⟨ a ⟩→ U ∣ ℙ ↑ Δ / n
+--   A-LetUnit :
+--     (≤γ : Γ ∶ γ ∣fv[ e₁ ] ; γ ∣fv[ e₂ ] ≼ γ) →
+--     Γ ; γ ∣fv[ e₁ ] / m  ⊢ e₁ ⇐ `⊤ ∣ ϵ₁ ↑ Δ₁ / m′ →
+--     Γ ; γ ∣fv[ e₂ ] / m′ ⊢ e₂ ⇒ T  ∣ ϵ₂ ↑ Δ₂ / n  →
+--     -------------------------------------------------
+--     Γ ; γ / m ⊢ e₁ ; e₂ ⇒ T ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₁ ++ Δ₂ / n
 
-  A-Pair :
-    (≤γ : Γ ∶ join d (γ ∣fv[ e₁ ]) (γ ∣fv[ e₂ ]) ≼ γ) →
-    (L⇒pure₁ : d ≡ L → ϵ₂ ≡ ℙ) →
-    (R⇒pure₂ : d ≡ R → ϵ₁ ≡ ℙ) →
-    Γ ; γ ∣fv[ e₁ ] / m  ⊢ e₁ ⇐ T ∣ ϵ₁ ↑ Δ₁ / m′ →
-    Γ ; γ ∣fv[ e₂ ] / m′ ⊢ e₂ ⇐ T ∣ ϵ₂ ↑ Δ₂ / n  →
-    ----------------------------------------------------------
-    Γ ; γ / m ⊢ e₁ ⊗ e₂ ⇐ T ⊗⟨ d ⟩ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₁ ++ Δ₂ / n
+--   A-LetPair :
+--     let open Fin.Patterns in
+--     let γ₁ = γ ∣fv[ e₁ ] in
+--     let γ₂ = γ ↓ fvClose* 2 (fv e₂) in
+--     (≤γ : Γ ∶ γ₁ ; γ₂ ≼ γ) →
+--     Γ ; γ₁ / m ⊢ e₁ ⇒ T₁ ⊗⟨ d ⟩ T₂ ∣ ϵ₁ ↑ Δ₁ / m′ →
+--     T₁ ⸴ T₂ ⸴ Γ ; (join d (` 0F) (` 1F) ; 𝐂.wk (𝐂.wk γ₂)) / m′ ⊢ e₂ ⇒ U ∣ ϵ₂ ↑ Δ₂ / n →
+--     -----------------------------------------------------------------------------------
+--     Γ ; γ / m ⊢ `let⊗ e₁ `in e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₁ ++ Δ₂ / n
 
-  A-Inj : ∀ {i} →
-    Γ ; γ / m ⊢ e ⇐ if i then T₁ else T₂ ∣ ϵ ↑ Δ / n →
-    --------------------------------------------------
-    Γ ; γ / m ⊢ `inj i e ⇐ T₁ ⊕ T₂ ∣ ϵ ↑ Δ / n
+--   A-Case :
+--     let γ′ = γ ∣fv[ e ] in
+--     let γ₁ = γ ↓ V.tail (fv e₁) in
+--     let γ₂ = γ ↓ V.tail (fv e₂) in
+--     (≤γ₁ : Γ ∶ γ′ ; γ₁ ≼ γ) →
+--     (≤γ₂ : Γ ∶ γ′ ; γ₂ ≼ γ) →
+--     ∀ {ϵ ϵ₁ ϵ₂ T₁ T₂ Δ Δ₁ Δ₂} →
+--     Γ ; γ ∣fv[ e ] / m ⊢ e ⇒ T₁ ⊕ T₂ ∣ ϵ ↑ Δ / m₁ →
+--     T₁ ⸴ Γ ; (` zero ; 𝐂.wk γ₁) / m₁ ⊢ e₁ ⇒ U₁ ∣ ϵ₁ ↑ Δ₁ / m₂ →
+--     T₂ ⸴ Γ ; (` zero ; 𝐂.wk γ₂) / m₂ ⊢ e₂ ⇒ U₂ ∣ ϵ₂ ↑ Δ₂ / n  →
+--     ---------------------------------------------------------------------------------------
+--     Γ ; γ / m ⊢ `case e `of⟨ e₁ ; e₂ ⟩ ⇒ U₁ ∣ ϵ ⊔ϵ ϵ₁ ⊔ϵ ϵ₂ ↑ (U₁ , U₂) ∷ Δ ++ Δ₁ ++ Δ₂ / n
 
-  A-Check :
-    Γ ; γ / m ⊢ e ⇒ U ∣ ϵ ↑ Δ / n →
-    ---------------------------------------
-    Γ ; γ / m ⊢ e ⇐ T ∣ ϵ ↑ (T , U) ∷ Δ / n
+--   A-Abs :
+--     (Arr.Unr a → UnrCx Γ γ) →
+--     (Arr.Mobile a → MobCx Γ γ) →
+--     ϵ ≤ϵ Arr.eff a →
+--     T ⸴ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) / m ⊢ e ⇐ U ∣ ϵ ↑ Δ / n →
+--     --------------------------------------------------------------------
+--     Γ ; γ / m ⊢ ƛ e ⇐ T ⟨ a ⟩→ U ∣ ℙ ↑ Δ / n
 
-solvedTy⇒solvedTm :
-  SolvedΓ Γ σ →
-  SolvedΔ Δ σ →
-  SolvedTy (subTy T σ) →
-  Γ ; γ / m ⊢[ ξ ] e ∶ T ∣ ϵ ↑ Δ / n →
-  SolvedTm (subTm e σ)
+--   A-AbsRec :
+--     let open Fin.Patterns in
+--     UnrCx Γ γ →
+--     Arr.Unr a →
+--     ϵ ≤ϵ Arr.eff a →
+--     T ⸴ T ⟨ a ⟩→ U ⸴ Γ ; (` 0F) ∥ (` 1F) ∥ 𝐂.wk (𝐂.wk γ) / m ⊢ e ⇐ U ∣ ϵ ↑ Δ / n →
+--     ------------------------------------------------------------------------------
+--     Γ ; γ / m ⊢ μ (ƛ e) ⇐ T ⟨ a ⟩→ U ∣ ℙ ↑ Δ / n
 
-solvedTy⇒solvedTm SΓ SΔ ST (A-Var ≤γ) = ` _
-solvedTy⇒solvedTm SΓ SΔ ST (A-Const ≤γ ≢lsplit ≢rsplit x) = {!!}
-solvedTy⇒solvedTm SΓ SΔ (_ ⟨ a ⟩→ (⟨ Sα ⟩ ⊗⟨ d ⟩ _)) (A-LSplit ≤γ x) = K (`lsplit Sα)
-solvedTy⇒solvedTm SΓ SΔ (_ ⟨ a ⟩→ (⟨ Sα ; _ ⟩ ⊗⟨ d ⟩ _)) (A-RSplit ≤γ) = K (`rsplit Sα)
-solvedTy⇒solvedTm SΓ SΔ ST (A-App ≤γ L⇒pure₁ R⇒pure₂ x y) = solvedTy⇒solvedTm SΓ {!!} ({!!} ⟨ _ ⟩→ ST) x · solvedTy⇒solvedTm SΓ {!!} {!ST!} y
-solvedTy⇒solvedTm SΓ SΔ ST (A-LetUnit ≤γ x x₁) = {!!}
-solvedTy⇒solvedTm SΓ SΔ ST (A-LetPair ≤γ x x₁) = {!!}
-solvedTy⇒solvedTm SΓ SΔ ST (A-Case ≤γ₁ ≤γ₂ x x₁ x₂) = {!!}
-solvedTy⇒solvedTm SΓ SΔ ST (A-Abs x x₁ x₂ x₃) = {!!}
-solvedTy⇒solvedTm SΓ SΔ ST (A-AbsRec x x₁ x₂ x₃) = {!!}
-solvedTy⇒solvedTm SΓ SΔ ST (A-Pair ≤γ L⇒pure₁ R⇒pure₂ x x₁) = {!!}
-solvedTy⇒solvedTm SΓ SΔ ST (A-Inj x) = {!!}
-solvedTy⇒solvedTm SΓ SΔ ST (A-Check x) = {!!}
+--   A-Pair :
+--     (≤γ : Γ ∶ join d (γ ∣fv[ e₁ ]) (γ ∣fv[ e₂ ]) ≼ γ) →
+--     (L⇒pure₁ : d ≡ L → ϵ₂ ≡ ℙ) →
+--     (R⇒pure₂ : d ≡ R → ϵ₁ ≡ ℙ) →
+--     Γ ; γ ∣fv[ e₁ ] / m  ⊢ e₁ ⇐ T ∣ ϵ₁ ↑ Δ₁ / m′ →
+--     Γ ; γ ∣fv[ e₂ ] / m′ ⊢ e₂ ⇐ T ∣ ϵ₂ ↑ Δ₂ / n  →
+--     ----------------------------------------------------------
+--     Γ ; γ / m ⊢ e₁ ⊗ e₂ ⇐ T ⊗⟨ d ⟩ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₁ ++ Δ₂ / n
 
--- sound :
---   Γ ; γ / m ⊢[ ξ ] e ∶ T ∣ ϵ ↑ Δ / n →
---   (∀ x → SolvedTy (subTy (Γ x) σ)) →
+--   A-Inj : ∀ {i} →
+--     Γ ; γ / m ⊢ e ⇐ if i then T₁ else T₂ ∣ ϵ ↑ Δ / n →
+--     --------------------------------------------------
+--     Γ ; γ / m ⊢ `inj i e ⇐ T₁ ⊕ T₂ ∣ ϵ ↑ Δ / n
+
+--   A-Check :
+--     Γ ; γ / m ⊢ e ⇒ U ∣ ϵ ↑ Δ / n →
+--     ---------------------------------------
+--     Γ ; γ / m ⊢ e ⇐ T ∣ ϵ ↑ (T , U) ∷ Δ / n
+
+-- {-
+-- solvedTy⇒solvedTm :
+--   SolvedΓ Γ σ →
 --   SolvedΔ Δ σ →
---   -- ∃[ e′ ] e ─→η e′ ×
---   flip subTy σ ∘ Γ ; γ ⊢ subTm e σ ∶ subTy T σ ∣ ϵ
+--   SolvedTy (subTy T σ) →
+--   Γ ; γ / m ⊢[ ξ ] e ∶ T ∣ ϵ ↑ Δ / n →
+--   SolvedTm (subTm e σ)
 
--- sound-app :
---   (Arr.dir a ≡ L → ϵ₁ ≡ ℙ) →
---   (Arr.dir a ≡ R → ϵ₂ ≡ ℙ) →
---   Γ ; γ₁ / m  ⊢ e₁ ⇒ T ⟨ a ⟩→ U ∣ ϵ₁ ↑ Δ₁ / m′ →
---   Γ ; γ₂ / m′ ⊢ e₂ ⇐ T          ∣ ϵ₂ ↑ Δ₂ / n  →
---   (∀ x → SolvedTy (subTy (Γ x) σ)) →
---   SolvedΔ Δ₁ σ →
---   SolvedΔ Δ₂ σ →
--- --  ∃[ e₁′ ] ∃[ e₂′ ]
--- --    e₁ ─→η e₁′ × e₂ ─→η e₂′ ×
---       flip subTy σ ∘ Γ ; join (Arr.dir a) γ₂ γ₁
---         ⊢ subTm (e₁ · e₂) σ ∶ subTy U σ ∣ ϵ₁ ⊔ϵ ϵ₂ ⊔ϵ Arr.eff a
+-- solvedTy⇒solvedTm SΓ SΔ ST (A-Var ≤γ) = ` _
+-- solvedTy⇒solvedTm SΓ SΔ ST (A-Const ≤γ ≢lsplit ≢rsplit x) = {!!}
+-- solvedTy⇒solvedTm SΓ SΔ (_ ⟨ a ⟩→ (⟨ Sα ⟩ ⊗⟨ d ⟩ _)) (A-LSplit ≤γ x) = K (`lsplit Sα)
+-- solvedTy⇒solvedTm SΓ SΔ (_ ⟨ a ⟩→ (⟨ Sα ; _ ⟩ ⊗⟨ d ⟩ _)) (A-RSplit ≤γ) = K (`rsplit Sα)
+-- solvedTy⇒solvedTm SΓ SΔ ST (A-App ≤γ L⇒pure₁ R⇒pure₂ x y) = solvedTy⇒solvedTm SΓ {!!} ({!!} ⟨ _ ⟩→ ST) x · solvedTy⇒solvedTm SΓ {!!} {!ST!} y
+-- solvedTy⇒solvedTm SΓ SΔ ST (A-LetUnit ≤γ x x₁) = {!!}
+-- solvedTy⇒solvedTm SΓ SΔ ST (A-LetPair ≤γ x x₁) = {!!}
+-- solvedTy⇒solvedTm SΓ SΔ ST (A-Case ≤γ₁ ≤γ₂ x x₁ x₂) = {!!}
+-- solvedTy⇒solvedTm SΓ SΔ ST (A-Abs x x₁ x₂ x₃) = {!!}
+-- solvedTy⇒solvedTm SΓ SΔ ST (A-AbsRec x x₁ x₂ x₃) = {!!}
+-- solvedTy⇒solvedTm SΓ SΔ ST (A-Pair ≤γ L⇒pure₁ R⇒pure₂ x x₁) = {!!}
+-- solvedTy⇒solvedTm SΓ SΔ ST (A-Inj x) = {!!}
+-- solvedTy⇒solvedTm SΓ SΔ ST (A-Check x) = {!!}
+-- -}
 
--- sound-app {a = a} L⇒pure₁ R⇒pure₂ x y SΓ SΔ₁ SΔ₂
---   with Arr.lin a in a-lin-eq
--- ... | unr rewrite Arr.ω⇒𝟙 a a-lin-eq =
---   T-Weaken (≼-refl ∥-comm)
---     $ T-AppUnr a-lin-eq
---         (x≤y⇒x≤y⊔z (Arr.eff a) (x≤x⊔y _ _)) (x≤y⇒x≤y⊔z (Arr.eff a) (x≤y⊔x _ _)) (x≤y⊔x _ _)
---         (sound x SΓ SΔ₁) (sound y SΓ SΔ₂)
--- ... | 𝟙
---   with Arr.dir a in a-dir-eq
--- ... | 𝟙 =
---   T-Weaken (≼-refl ∥-comm)
---     $ T-AppLin a-dir-eq
---         (x≤y⇒x≤y⊔z (Arr.eff a) (x≤x⊔y _ _)) (x≤y⇒x≤y⊔z (Arr.eff a) (x≤y⊔x _ _)) (x≤y⊔x _ _)
---         (sound x SΓ SΔ₁) (sound y SΓ SΔ₂)
--- ... | L = T-AppLeft a-dir-eq (x≤y⇒x≤y⊔z (Arr.eff a) (x≤y⊔x _ _)) (x≤y⊔x _ _)
---             (subst-ϵ (L⇒pure₁ refl) (sound x SΓ SΔ₁)) (sound y SΓ SΔ₂)
--- ... | R = T-AppRight a-dir-eq (x≤y⇒x≤y⊔z (Arr.eff a) (x≤x⊔y _ _)) (x≤y⊔x _ _)
---             (sound x SΓ SΔ₁) (subst-ϵ (R⇒pure₂ refl) (sound y SΓ SΔ₂))
+-- private
+--   ty : Γ ; γ / m ⊢[ ξ ] e ∶ T ∣ ϵ ↑ Δ / n → 𝕋
+--   ty {T = T} _ = T
 
--- sound {σ = σ} (A-Var ≤γ) SΓ SΔ =
---   T-Weaken (≼-map⁺ subTy-unr ≤γ) (T-Var _ refl)
--- sound (A-Const ≤γ ≢lsplit ≢rsplit ⊢c) SΓ SΔ =
---   T-Weaken (≼-map⁺ subTy-unr ≤γ)
---            (T-Const (subConst-⊢ ⊢c))
--- sound {σ = σ} (A-LSplit ≤γ ¬skips) SΓ SΔ =
---   T-Weaken (≼-map⁺ subTy-unr ≤γ)
---            (T-Const (`lsplit (¬skips ∘ subTy-skips⁻¹) _))
--- sound (A-RSplit ≤γ) SΓ SΔ =
---   T-Weaken (≼-map⁺ subTy-unr ≤γ)
---            (T-Const (`rsplit _ _))
--- sound (A-App {Δ₁ = Δ₁} ≤γ L⇒pure₁ R⇒pure₂ x y) SΓ SΔ =
---   T-Weaken (≼-map⁺ subTy-unr ≤γ)
---            (sound-app L⇒pure₁ R⇒pure₂ x y SΓ (All.++⁻ˡ Δ₁ SΔ ) (All.++⁻ʳ Δ₁ SΔ))
--- sound (A-LetUnit {Δ₁ = Δ₁} ≤γ x y) SΓ SΔ =
---   T-Weaken (≼-map⁺ subTy-unr ≤γ)
---            (T-LetUnit (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ SΔ )))
---                       (T-Conv ≃-refl (x≤y⊔x _ _) (sound y SΓ (All.++⁻ʳ Δ₁ SΔ ))))
--- sound {σ = σ} (A-LetPair {Δ₁ = Δ₁} ≤γ x y) SΓ SΔ =
---   let p/s , join≼ = parOrSeq? ≤γ in
---   T-Weaken (≼-map⁺ subTy-unr join≼)
---            (T-LetPair p/s (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ SΔ)))
---                           (T-Weaken (;-≼-join p/s) (T-Conv ≃-refl (x≤y⊔x _ _)
---                             (sound y (solved-⸴ {!!} (solved-⸴ {!!} SΓ)) (All.++⁻ʳ Δ₁ SΔ)
---                               ⊢≗ λ z → ⸴-dist (flip subTy σ) z ■ ⸴-cong refl (⸴-dist (flip subTy σ)) z))))
--- sound {σ = σ} (A-Case {Δ = Δ} {Δ₁ = Δ₁} ≤γ₁ ≤γ₂ x y₁ y₂) SΓ ((SU₁ , SU₂ , U≃) ∷ SΔ) =
---   let SΔ₁ , SΔ₂ = All.++⁻ Δ₁ (All.++⁻ʳ Δ SΔ) in
---   T-Weaken {!!} $ T-Case seq
---     (T-Conv ≃-refl {!!} (sound x SΓ (All.++⁻ˡ Δ SΔ)))
---     (T-Conv ≃-refl {!!} (sound y₁ (λ{ zero → {!!}; (suc x) → SΓ x }) SΔ₁ ⊢≗ ⸴-dist (flip subTy σ)))
---     (T-Conv (≃-sym U≃) {!!} (sound y₂ (λ{ zero → {!SU₂!}; (suc x) → SΓ x }) SΔ₂ ⊢≗ ⸴-dist (flip subTy σ)))
--- sound (A-Abs x x₁ x₂ x₃) SΓ SΔ = {!!}
--- sound (A-AbsRec x x₁ x₂ x₃) SΓ SΔ = {!!}
--- sound (A-Pair ≤γ L⇒pure₁ R⇒pure₂ x x₁) SΓ SΔ = {!!}
--- sound (A-Inj x) SΓ SΔ = {!!}
--- sound (A-Check x) SΓ SΔ = {!sound x!}
+
+-- module _ {σ : UV.Sub} (Sσ : Solving σ) where
+--   open EffProperties
+
+--   sound :
+--     Γ ; γ / m ⊢[ ξ ] e ∶ T ∣ ϵ ↑ Δ / n →
+--     SolvedΓ Γ σ →
+--     SolvedΔ Δ σ →
+--     subCtx Γ σ ; γ ⊢ subTm e σ ∶ subTy T σ ∣ ϵ
+
+--   sound-app :
+--     (Arr.dir a ≡ L → ϵ₁ ≡ ℙ) →
+--     (Arr.dir a ≡ R → ϵ₂ ≡ ℙ) →
+--     Γ ; γ₁ / m  ⊢ e₁ ⇒ T ⟨ a ⟩→ U ∣ ϵ₁ ↑ Δ₁ / m′ →
+--     Γ ; γ₂ / m′ ⊢ e₂ ⇐ T          ∣ ϵ₂ ↑ Δ₂ / n  →
+--     SolvedΓ Γ σ →
+--     SolvedΔ Δ₁ σ →
+--     SolvedΔ Δ₂ σ →
+--     subCtx Γ σ ; join (Arr.dir a) γ₂ γ₁
+--       ⊢ subTm (e₁ · e₂) σ ∶ subTy U σ ∣ ϵ₁ ⊔ϵ ϵ₂ ⊔ϵ Arr.eff a
+
+--   sound-app {a = a} L⇒pure₁ R⇒pure₂ x y SΓ SΔ₁ SΔ₂
+--     with Arr.lin a in a-lin-eq
+--   ... | unr rewrite Arr.ω⇒𝟙 a a-lin-eq =
+--     T-Weaken (≼-refl ∥-comm) {!!}
+--     {-
+--       $ T-AppUnr a-lin-eq
+--           (x≤y⇒x≤y⊔z (Arr.eff a) (x≤x⊔y _ _)) (x≤y⇒x≤y⊔z (Arr.eff a) (x≤y⊔x _ _)) (x≤y⊔x _ _)
+--           (sound x SΓ SΔ₁) (sound y SΓ SΔ₂)
+--     -}
+--   ... | 𝟙
+--     with Arr.dir a in a-dir-eq
+--   ... | 𝟙 =
+--     T-Weaken (≼-refl ∥-comm) {!!}
+--     {-
+--       $ T-AppLin a-dir-eq
+--           (x≤y⇒x≤y⊔z (Arr.eff a) (x≤x⊔y _ _)) (x≤y⇒x≤y⊔z (Arr.eff a) (x≤y⊔x _ _)) (x≤y⊔x _ _)
+--           (sound x SΓ SΔ₁) (sound y SΓ SΔ₂)
+--     -}
+--   ... | L = {!!}
+--     --T-AppLeft a-dir-eq (x≤y⇒x≤y⊔z (Arr.eff a) (x≤y⊔x _ _)) (x≤y⊔x _ _)
+--     --        (subst-ϵ (L⇒pure₁ refl) (sound x SΓ SΔ₁)) (sound y SΓ SΔ₂)
+--   ... | R = {!!}
+--     --T-AppRight a-dir-eq (x≤y⇒x≤y⊔z (Arr.eff a) (x≤x⊔y _ _)) (x≤y⊔x _ _)
+--     --        (sound x SΓ SΔ₁) (subst-ϵ (R⇒pure₂ refl) (sound y SΓ SΔ₂))
+
+--   sound (A-Var ≤γ) SΓ SΔ =
+--     T-Weaken (≼-map⁺ subTy-unr ≤γ) (T-Var _ refl)
+--   sound (A-Const ≤γ ≢lsplit ≢rsplit ⊢c) SΓ SΔ =
+--     T-Weaken (≼-map⁺ subTy-unr ≤γ)
+--              (T-Const (subConst-⊢ ⊢c))
+--   sound (A-LSplit ≤γ ¬skips) SΓ SΔ =
+--     T-Weaken (≼-map⁺ subTy-unr ≤γ)
+--              (T-Const (`lsplit (¬skips ∘ subTy-skips⁻¹) _))
+--   sound (A-RSplit ≤γ) SΓ SΔ =
+--     T-Weaken (≼-map⁺ subTy-unr ≤γ)
+--              (T-Const (`rsplit _ _))
+--   sound (A-App {Δ₁ = Δ₁} ≤γ L⇒pure₁ R⇒pure₂ x y) SΓ SΔ =
+--     T-Weaken (≼-map⁺ subTy-unr ≤γ)
+--              (sound-app L⇒pure₁ R⇒pure₂ x y SΓ (All.++⁻ˡ Δ₁ SΔ ) (All.++⁻ʳ Δ₁ SΔ))
+--   sound (A-LetUnit {Δ₁ = Δ₁} ≤γ x y) SΓ SΔ =
+--     T-Weaken (≼-map⁺ subTy-unr ≤γ)
+--              (T-LetUnit (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ SΔ )))
+--                         (T-Conv ≃-refl (x≤y⊔x _ _) (sound y SΓ (All.++⁻ʳ Δ₁ SΔ ))))
+--   sound (A-LetPair {T₁ = T₁} {T₂ = T₂} {Δ₁ = Δ₁} ≤γ x y) SΓ SΔ =
+--     let p/s , join≼ = parOrSeq? ≤γ in
+--     T-Weaken (≼-map⁺ subTy-unr join≼)
+--              (T-LetPair p/s (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ SΔ)))
+--                             (T-Weaken (;-≼-join p/s) (T-Conv ≃-refl (x≤y⊔x _ _)
+--                               (sound y (solved-⸴ (subTy-solved T₁ Sσ) (solved-⸴ (subTy-solved T₂ Sσ) SΓ)) (All.++⁻ʳ Δ₁ SΔ)
+--                                 ⊢≗ λ z → ⸴-dist (flip subTy σ) z ■ ⸴-cong refl (⸴-dist (flip subTy σ)) z))))
+--   sound {Γ = Γ} {γ} (A-Case {e} {e₁} {e₂} ≤₁ ≤₂ {ϵ} {ϵ₁} {ϵ₂} {T₁} {T₂} {Δ} {Δ₁} {Δ₂} x y₁ y₂) SΓ ((SU₁ , SU₂ , U≃) ∷ SΔ)
+--     using SΔ₁ , SΔ₂ ← All.++⁻ Δ₁ (All.++⁻ʳ Δ SΔ)
+--     using x′  ← sound x SΓ (All.++⁻ˡ Δ SΔ)
+--     using y₁′ ← sound y₁ (solved-⸴ (subTy-solved T₁ Sσ) SΓ) SΔ₁ ⊢≗ ⸴-dist (flip subTy σ)
+--     using y₂′ ← sound y₂ (solved-⸴ (subTy-solved T₂ Sσ) SΓ) SΔ₂ ⊢≗ ⸴-dist (flip subTy σ)
+--     =
+--     let open ≼-Reasoning in
+--     let γˣ , γʸ , γˣʸ≈γₑ , γˣ-U , γʸ-¬U = unjoinUnr Γ (γ ∣fv[ e ]) in
+--     let γₑ;Uγₑ;∁γₑ≼γ = begin
+--           γ ∣fv[ e ] ; (γˣ ; γ ∣∁fv[ e ]) ≡⟨ {!γˣʸ≈γₑ!} ⟩
+--           γ ∎
+--     in
+--     {-
+--     let zz = ↓;↓≼⇒≼∁ {γ = (` zero) ; 𝐂.wk (γ ↓ fvClose (fv e₁))}
+--                      {X₁ = fv (wk e)}
+--                      {X₂ = inside ∷ fvClose (fv e₁)}
+--                      (begin (` zero ↓ fv (wk e))
+--                               ; 𝐂.wk (γ ↓ fvClose (fv e₁)) ↓ fv (wk e)
+--                               ; ((` zero) ; 𝐂.wk (γ ↓ fvClose (fv e₁)) ↓ (inside ∷ fvClose (fv e₁)))
+--                        ≡⟨ cong₂ _;_
+--                             (cong₂ _;_
+--                               (cong ((` zero) ↓_) (fv-wk e))
+--                               (cong (𝐂.wk (γ ↓ fvClose (fv e₁)) ↓_) (fv-wk e) ■ 𝐂.↓-dist-wk (γ ↓ fvClose (fv e₁))))
+--                             (cong (_ ;_) (𝐂.↓-dist-wk (γ ↓ fvClose (fv e₁)) ■ cong 𝐂.wk (↓-idempotent γ _))) ⟩
+--                          [] ; 𝐂.wk (γ ↓ fvClose (fv e₁) ↓ fv e) ; ((` zero) ; 𝐂.wk (γ ↓ fvClose (fv e₁)))
+--                        ≈⟨ ;-cong ;-unit₁ refl ⟩
+--                          𝐂.wk (γ ↓ fvClose (fv e₁) ↓ fv e) ; ((` zero) ; 𝐂.wk (γ ↓ fvClose (fv e₁)))
+--                        ≲⟨ ≼-cong-; {!≼-∅!} (≼-refl refl) ⟩
+--                          [] ; ((` zero) ; 𝐂.wk (γ ↓ fvClose (fv e₁)))
+--                        ≈⟨ ;-unit₁ ⟩
+--                          (` zero) ; 𝐂.wk (γ ↓ fvClose (fv e₁)) ∎)
+--                      (T-Weaken {!!} $ x′ ⊢⋯ ⊢weakenᵣ {T = subTy T₁ σ} (subCtx Γ σ) ⊢≗ ⸴-cons)
+--                      (subst-γ (cong (_ ;_) (sym (cong 𝐂.wk (↓-idempotent γ _)) ■ sym (𝐂.↓-dist-wk (γ ↓ fvClose (fv e₁))))) y₁′)
+--     in
+--     -}
+--     -- ≼-refl $ subst (λ fv[e] → _ ∶ γ ↓ fv[e] ; γ ↓ ∁ fv[e] ≈ _) (fv-subTm e)
+--     --        $ fv;∁fv≼ {γ = γ} $ subst-γ (cong (γ ↓_) (sym (fv-subTm e))) x′
+--     T-Weaken γₑ;Uγₑ;∁γₑ≼γ
+--       $ T-Case seq
+--          (T-Conv ≃-refl (x≤y⇒x≤y⊔z ϵ₂ (x≤x⊔y ϵ ϵ₁)) x′)
+--          (T-Conv ≃-refl (x≤y⇒x≤y⊔z ϵ₂ (x≤y⊔x ϵ ϵ₁)) $
+--            T-Weaken ((≼-cong-; (≼-refl refl) {!zz!})) y₁′)
+--          (T-Conv (≃-sym U≃) (x≤y⊔x _ ϵ₂) $
+--            T-Weaken {!!} y₂′)
+--   sound (A-Abs x x₁ x₂ x₃) SΓ SΔ = {!!}
+--   sound (A-AbsRec x x₁ x₂ x₃) SΓ SΔ = {!!}
+--   sound (A-Pair ≤γ L⇒pure₁ R⇒pure₂ x x₁) SΓ SΔ = {!!}
+--   sound (A-Inj x) SΓ SΔ = {!!}
+--   sound (A-Check x) SΓ SΔ = {!sound x!}
 
 -- {-
 -- complete :

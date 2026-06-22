@@ -11,8 +11,7 @@ import Relation.Binary.Reasoning.Setoid as SetoidReasoning
 
 open import BorrowedCF.Prelude hiding (_⟶_)
 open import BorrowedCF.Context.Base
-open import BorrowedCF.Context.Domain
-open import BorrowedCF.Types hiding (α; α₁; α₂; α₃; α′)
+open import BorrowedCF.Types
 
 open Nat.Variables
 open Bin
@@ -90,7 +89,6 @@ open ≈-Equivalence
 ;-cong : Γ ∶ α ≈ α′ → Γ ∶ β ≈ β′ → Γ ∶ α ; β ≈ α′ ; β′
 ;-cong xs ys = Eq*.gmap (_; _) ;′-cong₁ xs ◅◅ Eq*.gmap (_ ;_) ;′-cong₂ ys
 
-
 module ≈-Reasoning {n} {Γ : Ctx n} = SetoidReasoning (≈-setoid Γ)
 
 ≈-map⁺ : {f : 𝕋 → 𝕋} → (Unr ⊆ Unr ∘ f) → Γ ∶ α ≈ β → f ∘ Γ ∶ α ≈ β
@@ -107,23 +105,6 @@ module ≈-Reasoning {n} {Γ : Ctx n} = SetoidReasoning (≈-setoid Γ)
   go (∥′-dup U) = ∥′-dup (allCx-gmap Uf U)
   go (∥′-tm-; U) = ∥′-tm-; (Sum.map (allCx-gmap Uf) (allCx-gmap Uf) U)
 
-≈⇒dom≡ : Γ ∶ α ≈ β → dom α ≡ dom β
-≈⇒dom≡ = Eq*.gfold isEquivalence dom ≈′⇒dom≡
-  where
-  open import Data.Fin.Subset
-  open import Data.Fin.Subset.Properties
-
-  ≈′⇒dom≡ : Γ ∶ α ≈′ β → dom α ≡ dom β
-  ≈′⇒dom≡ ;′-assoc = ∪-assoc _ _ _
-  ≈′⇒dom≡ (;′-cong₁ x) = cong (_∪ _) (≈′⇒dom≡ x)
-  ≈′⇒dom≡ (;′-cong₂ x) = cong (_ ∪_) (≈′⇒dom≡ x)
-  ≈′⇒dom≡ ∥′-unit = ∪-identityʳ _
-  ≈′⇒dom≡ ∥′-assoc = ∪-assoc _ _ _
-  ≈′⇒dom≡ ∥′-comm = ∪-comm _ _
-  ≈′⇒dom≡ (∥′-cong₁ x) = cong (_∪ _) (≈′⇒dom≡ x)
-  ≈′⇒dom≡ (∥′-dup U) = sym (∪-idem _)
-  ≈′⇒dom≡ (∥′-tm-; U) = refl
-
 ≈-≗ : Γ₁ ≗ Γ₂ → Γ₁ ∶ α ≈ β → Γ₂ ∶ α ≈ β
 ≈-≗ {Γ₁ = Γ₁} {Γ₂ = Γ₂} eq = Eq*.map go where
   go : Γ₁ ∶ α ≈′ β → Γ₂ ∶ α ≈′ β
@@ -136,15 +117,6 @@ module ≈-Reasoning {n} {Γ : Ctx n} = SetoidReasoning (≈-setoid Γ)
   go (∥′-cong₁ x) = ∥′-cong₁ (go x)
   go (∥′-dup U) = ∥′-dup (allCx-≗ eq U)
   go (∥′-tm-; U) = ∥′-tm-; (Sum.map (allCx-≗ eq) (allCx-≗ eq) U)
-
-dom≢⇒≉ : dom α ≢ dom β → ¬ Γ ∶ α ≈ β
-dom≢⇒≉ dom≢ a≈b = dom≢ (≈⇒dom≡ a≈b)
-
-`x≉[] : ∀ {x} → ¬ Γ ∶ ` x ≈ []
-`x≉[] {x = x} = dom≢⇒≉ λ ⁅x⁆≡⁅⁆ → ∉⊥ (subst (x ∈_) ⁅x⁆≡⁅⁆ (x∈⁅x⁆ x))
-  where
-  open import Data.Fin.Subset
-  open import Data.Fin.Subset.Properties
 
 ∥-isCommutativeMonoid : (Γ : Ctx n) → IsCommutativeMonoid (Γ ∶_≈_) _∥_ []
 ∥-isCommutativeMonoid Γ = record

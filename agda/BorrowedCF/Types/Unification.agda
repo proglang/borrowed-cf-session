@@ -27,12 +27,12 @@ module UV where
 
   open Sub public
 
-  fresh : UVar
-  fresh = record { var = 0; pol = ‼ }
+  fresh : ℕ → UVar
+  fresh k = uvar ‼ k
 
   weaken : ℕ → Sub
   weaken n = record
-    { ap = λ α → `` wk α n
+    { ap = λ α → `` uvar (pol α) (n + var α)
     ; ap-¬skips = λ α ()
     ; ap-dual/dual = λ α → refl
     }

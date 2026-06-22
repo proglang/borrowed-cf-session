@@ -133,7 +133,7 @@ module _ (Γ-S : ChanCx Γ) where
     (tpred-map (λ {a} → Arr.ω⇒M a) inj₁)
 
   preservation′ : Γ ; γ ⊢ e ∶ T ∣ ϵ → e ─→ e′ → Γ ; γ ⊢ e′ ∶ T ∣ ϵ
-  preservation′ (T-AppUnr {a = a} unr-a ≤₁ ≤₂ ≤ₐ f e) (E-App V)
+  preservation′ (T-AppUnr {a = a} unr-a ≤ₐ f e) (E-App V)
     with (_ , _ , _ , T≃ , U≃ , ϵ≤ , inj₂ (_ , refl , f′)) ← inv-arr V-λ f
     rewrite Arr.ω⇒𝟙 a unr-a
     = T-Conv (≃-sym U≃) (≤ϵ-trans ϵ≤ ≤ₐ)
@@ -141,21 +141,21 @@ module _ (Γ-S : ChanCx Γ) where
         $ f′ ⊢⋯ₛ ⊢subₛ (value⇒pure V (T-Conv T≃ ≤ϵ-refl e))
                        (λ U → unr×value⇒unrCx (unr-≃ (≃-sym T≃) U) V e)
                        (λ m → mobile×value⇒mobCx (mobile-≃ (≃-sym T≃) m) V e)
-  preservation′ (T-AppLin refl ≤₁ ≤₂ ≤ₐ f e) (E-App V)
+  preservation′ (T-AppLin refl ≤ₐ f e) (E-App V)
     with (_ , _ , _ , T≃ , U≃ , ϵ≤ , inj₂ (_ , refl , f′)) ← inv-arr V-λ f
     = T-Conv (≃-sym U≃) (≤ϵ-trans ϵ≤ ≤ₐ)
         $ T-Weaken (≼-refl (≈-trans (≈-reflexive (cong (_ ∥_) (𝐂.wk-cancels-⦅⦆-⋯ _ _))) ∥-comm))
         $ f′ ⊢⋯ₛ ⊢subₛ (value⇒pure V (T-Conv T≃ ≤ϵ-refl e))
                        (λ U → unr×value⇒unrCx (unr-≃ (≃-sym T≃) U) V e)
                        (λ m → mobile×value⇒mobCx (mobile-≃ (≃-sym T≃) m) V e)
-  preservation′ (T-AppLeft refl ≤₂ ≤ₐ f e) (E-App V)
+  preservation′ (T-AppLeft refl ≤ₐ f e) (E-App V)
     with (_ , _ , _ , T≃ , U≃ , ϵ≤ , inj₂ (_ , refl , f′)) ← inv-arr V-λ f
     = T-Conv (≃-sym U≃) (≤ϵ-trans ϵ≤ ≤ₐ)
         $ T-Weaken (≼-refl (≈-reflexive (cong (_ ;_) (𝐂.wk-cancels-⦅⦆-⋯ _ _))))
         $ f′ ⊢⋯ₛ ⊢subₛ (value⇒pure V (T-Conv T≃ ≤ϵ-refl e))
                        (λ U → unr×value⇒unrCx (unr-≃ (≃-sym T≃) U) V e)
                        (λ m → mobile×value⇒mobCx (mobile-≃ (≃-sym T≃) m) V e)
-  preservation′ (T-AppRight refl ≤₁ ≤ₐ f e) (E-App V)
+  preservation′ (T-AppRight refl ≤ₐ f e) (E-App V)
     with (_ , _ , _ , T≃ , U≃ , ϵ≤ , inj₂ (_ , refl , f′)) ← inv-arr V-λ f
     = T-Conv (≃-sym U≃) (≤ϵ-trans ϵ≤ ≤ₐ)
         $ T-Weaken (≼-refl (≈-reflexive (cong (_; _) (𝐂.wk-cancels-⦅⦆-⋯ _ _))))
@@ -245,17 +245,17 @@ module _ (Γ-S : ChanCx Γ) where
   preservation : Γ ; γ ⊢ e ∶ T ∣ ϵ → e ⋯→ e′ → Γ ; γ ⊢ e′ ∶ T ∣ ϵ
   preservation e (E-□ x) = preservation′ e x
   preservation e E@(E-Ctx (□· _) E₁) with e
-  ... | T-AppUnr   x ≤₁ ≤₂ ≤ₐ e₁ e₂  = T-AppUnr   x ≤₁ ≤₂ ≤ₐ (preservation e₁ E₁) e₂
-  ... | T-AppLin   x ≤₁ ≤₂ ≤ₐ e₁ e₂  = T-AppLin   x ≤₁ ≤₂ ≤ₐ (preservation e₁ E₁) e₂
-  ... | T-AppLeft  x    ≤₂ ≤ₐ e₁ e₂  = T-AppLeft  x    ≤₂ ≤ₐ (preservation e₁ E₁) e₂
-  ... | T-AppRight x ≤₁    ≤ₐ e₁ e₂  = T-AppRight x ≤₁    ≤ₐ (preservation e₁ E₁) e₂
+  ... | T-AppUnr   x ≤ₐ e₁ e₂  = T-AppUnr   x ≤ₐ (preservation e₁ E₁) e₂
+  ... | T-AppLin   x ≤ₐ e₁ e₂  = T-AppLin   x ≤ₐ (preservation e₁ E₁) e₂
+  ... | T-AppLeft  x ≤ₐ e₁ e₂  = T-AppLeft  x ≤ₐ (preservation e₁ E₁) e₂
+  ... | T-AppRight x ≤ₐ e₁ e₂  = T-AppRight x ≤ₐ (preservation e₁ E₁) e₂
   ... | T-Weaken   γ≤ e′    = T-Weaken  γ≤ (preservation e′ E)
   ... | T-Conv     eq ϵ≤ e′ = T-Conv    eq ϵ≤ (preservation e′ E)
   preservation e E@(E-Ctx (V₁ ·□) E₂) with e
-  ... | T-AppUnr   x ≤₁ ≤₂ ≤ₐ e₁ e₂  = T-AppUnr   x ≤₁ ≤₂ ≤ₐ e₁ (preservation e₂ E₂)
-  ... | T-AppLin   x ≤₁ ≤₂ ≤ₐ e₁ e₂  = T-AppLin   x ≤₁ ≤₂ ≤ₐ e₁ (preservation e₂ E₂)
-  ... | T-AppLeft  x    ≤₂ ≤ₐ e₁ e₂  = T-AppLeft  x    ≤₂ ≤ₐ e₁ (preservation e₂ E₂)
-  ... | T-AppRight x ≤₁    ≤ₐ e₁ e₂  = T-AppRight x ≤₁    ≤ₐ e₁ (preservation e₂ E₂)
+  ... | T-AppUnr   x ≤ₐ e₁ e₂  = T-AppUnr   x ≤ₐ e₁ (preservation e₂ E₂)
+  ... | T-AppLin   x ≤ₐ e₁ e₂  = T-AppLin   x ≤ₐ e₁ (preservation e₂ E₂)
+  ... | T-AppLeft  x ≤ₐ e₁ e₂  = T-AppLeft  x ≤ₐ e₁ (preservation e₂ E₂)
+  ... | T-AppRight x ≤ₐ e₁ e₂  = T-AppRight x ≤ₐ e₁ (preservation e₂ E₂)
   ... | T-Weaken   γ≤ e′    = T-Weaken  γ≤ (preservation e′ E)
   ... | T-Conv     eq ϵ≤ e′ = T-Conv    eq ϵ≤ (preservation e′ E)
   preservation e E@(E-Ctx (□⊗ _) E₁) with e
@@ -292,7 +292,7 @@ module _ (Γ-S : ChanCx Γ) where
   progress (T-Var x T-eq) = inj₁ V-`
   progress (T-Abs Γ-unr Γ-mob e) = inj₁ V-λ
   progress (T-AbsRec Γ-unr a-unr e) = inj₂ (inj₂ (_ , E-□ E-Unfold))
-  progress (T-AppUnr unr-a ≤₁ ≤₂ ≤ₐ e₁ e₂)
+  progress (T-AppUnr unr-a ≤ₐ e₁ e₂)
     with progress e₁
   ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (□· _) e₁↛))
   ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (□· _) e₁→))
@@ -304,7 +304,7 @@ module _ (Γ-S : ChanCx Γ) where
     with inv-arr V-e₁ e₁
   ... | (_ , _ , _ , _ , _ , _ , inj₁ (c , refl , x)) = inj₂ (inj₁ (E-□ (_ , _ , V-e₂ , refl)))
   ... | (_ , _ , _ , _ , _ , _ , inj₂ (e , refl , x)) = inj₂ (inj₂ (_ , E-□ (E-App V-e₂)))
-  progress (T-AppLin lin-a ≤₁ ≤₂ ≤ₐ e₁ e₂)
+  progress (T-AppLin lin-a ≤ₐ e₁ e₂)
     with progress e₁
   ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (□· _) e₁↛))
   ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (□· _) e₁→))
@@ -316,7 +316,7 @@ module _ (Γ-S : ChanCx Γ) where
     with inv-arr V-e₁ e₁
   ... | (_ , _ , _ , _ , _ , _ , inj₁ (c , refl , x)) = inj₂ (inj₁ (E-□ (_ , _ , V-e₂ , refl)))
   ... | (_ , _ , _ , _ , _ , _ , inj₂ (e , refl , x)) = inj₂ (inj₂ (_ , E-□ (E-App V-e₂)))
-  progress (T-AppLeft a-L ≤₂ ≤ₐ e₁ e₂)
+  progress (T-AppLeft a-L ≤ₐ e₁ e₂)
     with progress e₁
   ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (□· _) e₁↛))
   ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (□· _) e₁→))
@@ -328,7 +328,7 @@ module _ (Γ-S : ChanCx Γ) where
     with inv-arr V-e₁ e₁
   ... | (_ , _ , _ , _ , _ , _ , inj₁ (c , refl , x)) = inj₂ (inj₁ (E-□ (_ , _ , V-e₂ , refl)))
   ... | (_ , _ , _ , _ , _ , _ , inj₂ (e , refl , x)) = inj₂ (inj₂ (_ , E-□ (E-App V-e₂)))
-  progress (T-AppRight a-R ≤₁ ≤ₐ e₁ e₂)
+  progress (T-AppRight a-R ≤ₐ e₁ e₂)
     with progress e₁
   ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (□· _) e₁↛))
   ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (□· _) e₁→))

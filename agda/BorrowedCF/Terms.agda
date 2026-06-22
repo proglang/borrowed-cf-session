@@ -188,45 +188,38 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
 
   T-AppUnr :
     (a-unr : Arr.Unr a) →
-    (≤₁ : ϵ₁ ≤ϵ ϵ) →
-    (≤₂ : ϵ₂ ≤ϵ ϵ) →
     (≤ₐ : Arr.eff a ≤ϵ ϵ) →
-    Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ₁ →
-    Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ₂ →
+    Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ →
+    Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ →
     -------------------------------
     Γ ; γ₁ ∥ γ₂ ⊢ e₁ · e₂ ∶ U ∣ ϵ
 
   T-AppLin :
     (a-par : Arr.Par a) →
-    (≤₁ : ϵ₁ ≤ϵ ϵ) →
-    (≤₂ : ϵ₂ ≤ϵ ϵ) →
     (≤ₐ : Arr.eff a ≤ϵ ϵ) →
-    Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ₁ →
-    Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ₂ →
+    Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ →
+    Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ →
     ------------------------------
     Γ ; γ₁ ∥ γ₂ ⊢ e₁ · e₂ ∶ U ∣ ϵ
 
   T-AppLeft :
     (aL : Arr.IsL a) →
-    (≤₂ : ϵ₂ ≤ϵ ϵ) →
     (≤ₐ : Arr.eff a ≤ϵ ϵ) →
-    Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ℙ  →
-    Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ₂ →
+    Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ℙ →
+    Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ →
     -------------------------------
     Γ ; (γ₂ ; γ₁) ⊢ e₁ · e₂ ∶ U ∣ ϵ
 
   T-AppRight :
     (aR : Arr.IsR a) →
-    (≤₁ : ϵ₁ ≤ϵ ϵ) →
     (≤ₐ : Arr.eff a ≤ϵ ϵ) →
-    Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ₁ →
-    Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ℙ  →
+    Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ →
+    Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ℙ →
     -------------------------------
     Γ ; (γ₁ ; γ₂) ⊢ e₁ · e₂ ∶ U ∣ ϵ
 
   T-Pair : (p/s : ParSeq) {γ₁ γ₂ : Struct n} →
     let d = biasedDir p/s in
-    --(≤₁ : ϵ₁ ≤ϵ ϵ) →
     (seq⇒p : Seq⇒Pure p/s ϵ₁ ϵ₂) →
     Γ ; γ₁ ⊢ e₁ ∶ T ∣ ϵ₁ →
     Γ ; γ₂ ⊢ e₂ ∶ U ∣ ϵ₂ →
@@ -234,24 +227,18 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
     Γ ; join d γ₁ γ₂ ⊢ e₁ ⊗ e₂ ∶ T ⊗⟨ d ⟩ U ∣ ϵ₁
 
   T-Let : (p/s : ParSeq) {γ₁ γ₂ : Struct n} →
-    --(≤₁ : ϵ₁ ≤ϵ ϵ) →
-    --(≤₂ : ϵ₂ ≤ϵ ϵ) →
     Γ ; γ₁ ⊢ e₁ ∶ T ∣ ϵ →
     T ⸴ Γ ; join p/s (` zero) (𝐂.wk γ₂) ⊢ e₂ ∶ U ∣ ϵ →
     --------------------------------------------------
     Γ ; join p/s γ₁ γ₂ ⊢ `let e₁ `in e₂ ∶ U ∣ ϵ
 
   T-LetUnit : {γ₁ γ₂ : Struct n} →
-    --(≤₁ : ϵ₁ ≤ϵ ϵ) →
-    --(≤₂ : ϵ₂ ≤ϵ ϵ) →
     Γ ; γ₁ ⊢ e₁ ∶ `⊤ ∣ ϵ →
     Γ ; γ₂ ⊢ e₂ ∶ T  ∣ ϵ →
     -----------------------------
     Γ ; (γ₁ ; γ₂) ⊢ e₁ ; e₂ ∶ T ∣ ϵ
 
   T-LetPair : (p/s : ParSeq) {γ₁ γ₂ : Struct n} →
-    --(≤₁ : ϵ₁ ≤ϵ ϵ) →
-    --(≤₂ : ϵ₂ ≤ϵ ϵ) →
     Γ ; γ₁ ⊢ e₁ ∶ T₁ ⊗⟨ d ⟩ T₂ ∣ ϵ →
     T₁ ⸴ T₂ ⸴ Γ ;
       join p/s (join d (` zero) (` suc zero))
@@ -266,9 +253,6 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
     Γ ; γ ⊢ `inj i e ∶ T ⊕ U ∣ ϵ
 
   T-Case : (p/s : ParSeq) {γ₁ γ₂ : Struct n} →
-    --(≤′ : ϵ′ ≤ϵ ϵ) →
-    --(≤₁ : ϵ₁ ≤ϵ ϵ) →
-    --(≤₂ : ϵ₂ ≤ϵ ϵ) →
     let γ₂′ = join p/s (` zero) (𝐂.wk γ₂) in
     Γ      ; γ₁  ⊢ e  ∶ T₁ ⊕ T₂ ∣ ϵ →
     T₁ ⸴ Γ ; γ₂′ ⊢ e₁ ∶ U       ∣ ϵ →
@@ -417,10 +401,10 @@ _⊢⋯_ {γ = γ} {σ = σ} (T-AbsRec Γ-unr a-unr x) ⊢ϕ =
   T-AbsRec (𝐂.allCx-⋯ (&-unr ⊢ϕ) Γ-unr) a-unr
     $ subst-γ (cong (_ ∥_) (sym eq))
     $ x ⊢⋯ ⊢↑ (⊢↑ ⊢ϕ)
-T-AppUnr   unr-a ≤₁ ≤₂ ≤ₐ x₁ x₂ ⊢⋯ ⊢ϕ = T-AppUnr   unr-a ≤₁ ≤₂ ≤ₐ (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ)
-T-AppLin   lin-a ≤₁ ≤₂ ≤ₐ x₁ x₂ ⊢⋯ ⊢ϕ = T-AppLin   lin-a ≤₁ ≤₂ ≤ₐ (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ)
-T-AppLeft  a-L      ≤₂ ≤ₐ x₁ x₂ ⊢⋯ ⊢ϕ = T-AppLeft  a-L      ≤₂ ≤ₐ (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ)
-T-AppRight a-R   ≤₁    ≤ₐ x₁ x₂ ⊢⋯ ⊢ϕ = T-AppRight a-R   ≤₁    ≤ₐ (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ)
+T-AppUnr   unr-a ≤ₐ x₁ x₂ ⊢⋯ ⊢ϕ = T-AppUnr   unr-a ≤ₐ (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ)
+T-AppLin   lin-a ≤ₐ x₁ x₂ ⊢⋯ ⊢ϕ = T-AppLin   lin-a ≤ₐ (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ)
+T-AppLeft  a-L   ≤ₐ x₁ x₂ ⊢⋯ ⊢ϕ = T-AppLeft  a-L   ≤ₐ (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ)
+T-AppRight a-R   ≤ₐ x₁ x₂ ⊢⋯ ⊢ϕ = T-AppRight a-R   ≤ₐ (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ)
 T-Pair p/s {γ₁} {γ₂}  seq→ℙ x₁ x₂ ⊢⋯ ⊢ϕ =
   subst-γ (sym (join-⋯ p/s γ₁ γ₂)) $
     T-Pair p/s seq→ℙ (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ)
@@ -450,6 +434,8 @@ _⊢⋯_ {σ = σ} (T-Case p/s {γ₁} {γ₂} x x₁ x₂) ⊢ϕ =
 T-Conv eq ϵ≤ x ⊢⋯ ⊢ϕ = T-Conv eq ϵ≤ (x ⊢⋯ ⊢ϕ)
 T-Weaken γ≤ x ⊢⋯ ⊢ϕ = T-Weaken (𝐂.≼-⋯ (&-unr ⊢ϕ) γ≤) (x ⊢⋯ ⊢ϕ)
 
+infixl 5 _⊢≗_
+
 _⊢≗_ : Γ₁ ; γ ⊢ e ∶ T ∣ ϵ → Γ₁ ≗ Γ₂ → Γ₂ ; γ ⊢ e ∶ T ∣ ϵ
 T-Const x ⊢≗ eq = T-Const x
 T-Var x T-eq ⊢≗ eq = T-Var x (sym (eq _) ■ T-eq)
@@ -459,10 +445,10 @@ T-Abs Γ-unr Γ-mob x ⊢≗ eq =
 T-AbsRec Γ-unr a-unr x ⊢≗ eq =
   let open Fin.Patterns in
   T-AbsRec (allCx-≗ eq Γ-unr) a-unr $ x ⊢≗ λ{ 0F → refl; 1F → refl; (suc (suc x)) → eq x }
-T-AppUnr a-unr ≤₁ ≤₂ ≤ₐ x₁ x₂ ⊢≗ eq = T-AppUnr a-unr ≤₁ ≤₂ ≤ₐ (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
-T-AppLin a-lin ≤₁ ≤₂ ≤ₐ x₁ x₂ ⊢≗ eq = T-AppLin a-lin ≤₁ ≤₂ ≤ₐ (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
-T-AppLeft aL ≤₂ ≤ₐ x₁ x₂ ⊢≗ eq = T-AppLeft aL ≤₂ ≤ₐ (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
-T-AppRight aR ≤₁ ≤ₐ x₁ x₂ ⊢≗ eq = T-AppRight aR ≤₁ ≤ₐ (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
+T-AppUnr   a-unr ≤ₐ x₁ x₂ ⊢≗ eq = T-AppUnr   a-unr ≤ₐ (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
+T-AppLin   a-lin ≤ₐ x₁ x₂ ⊢≗ eq = T-AppLin   a-lin ≤ₐ (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
+T-AppLeft  aL    ≤ₐ x₁ x₂ ⊢≗ eq = T-AppLeft  aL    ≤ₐ (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
+T-AppRight aR    ≤ₐ x₁ x₂ ⊢≗ eq = T-AppRight aR    ≤ₐ (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
 T-Pair p/s seq⇒pure x₁ x₂ ⊢≗ eq = T-Pair p/s seq⇒pure (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
 T-Let p/s x₁ x₂ ⊢≗ eq = T-Let p/s (x₁ ⊢≗ eq) (x₂ ⊢≗ λ{ zero → refl; (suc x) → eq x })
 T-LetUnit x₁ x₂ ⊢≗ eq = T-LetUnit (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)

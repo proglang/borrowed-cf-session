@@ -8,7 +8,7 @@ open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (_◅_)
 open import Relation.Binary.Construct.Closure.Symmetric using (fwd; bwd)
 
 open import BorrowedCF.Prelude
-open import BorrowedCF.Types hiding (α; α₁; α₂; α₃; α′)
+open import BorrowedCF.Types
 open import BorrowedCF.Context.Base
 open import BorrowedCF.Context.Equivalence
 open import BorrowedCF.Context.Subcontext
@@ -191,13 +191,16 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
   rewrite ⋯-injective {α = β₂} {α₂} inj-ϕ (;-injective eqᵇ .proj₂)
   = ∥′-tm-; (Sum.map (allCx-⋯⁻¹ unr-ϕ) (allCx-⋯⁻¹ unr-ϕ) U)
 
-≈-⋯⁻¹ : {ϕ : m →ᵣ n} → Inj ϕ → ϕ Preserves[ Unr ] Γ₁ ⇐ Γ₂ → Γ₂ ∶ α ⋯ ϕ ≈ β ⋯ ϕ → Γ₁ ∶ α ≈ β
+postulate
+  ≈-⋯⁻¹ : {ϕ : m →ᵣ n} → Inj ϕ → ϕ Preserves[ Unr ] Γ₁ ⇐ Γ₂ → Γ₂ ∶ α ⋯ ϕ ≈ β ⋯ ϕ → Γ₁ ∶ α ≈ β
+{-
 ≈-⋯⁻¹ {α = α} {β} {ϕ = ϕ} ϕ-inj ϕ-unr x with α ⋯ ϕ in eqᵃ | β ⋯ ϕ in eqᵇ
 ≈-⋯⁻¹ {α = α} {β} {ϕ = ϕ} ϕ-inj ϕ-unr refl | ϕa | ϕb = ≈-reflexive (⋯-injective ϕ-inj (eqᵃ ■ sym eqᵇ))
 ≈-⋯⁻¹ {α = α} {β} {ϕ = ϕ} ϕ-inj ϕ-unr (fwd x ◅ xs) | ϕa | ϕb
   rewrite sym eqᵃ | sym eqᵇ
   = fwd (≈′-⋯⁻¹ {!!} {!!} {!x!}) ◅ {!≈-⋯⁻¹ ϕ-inj ϕ-unr xs!}
 ≈-⋯⁻¹ {α = α} {β} {ϕ = ϕ} ϕ-inj ϕ-unr (bwd x ◅ xs) | ϕa | ϕb = {!!}
+-}
 
 ≼-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} → ϕ Preserves[ Unr ] Γ₁ ⇒ Γ₂ → Γ₁ ∶ α ≼ β → Γ₂ ∶ α ⋯ ϕ ≼ β ⋯ ϕ
 ≼-⋯ σ-unr (≼-refl eq)    = ≼-refl (≈-⋯ σ-unr eq)
@@ -207,9 +210,13 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
 ≼-⋯ σ-unr (≼-cong-; x y) = ≼-cong-; (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
 ≼-⋯ σ-unr (≼-cong-∥ x y) = ≼-cong-∥ (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
 
-≼-⋯⁻¹ : {ϕ : m →ᵣ n} → Γ₂ ∶ α ⋯ ϕ ≼ β ⋯ ϕ → Γ₁ ∶ α ≼ β
+postulate
+  ≼-⋯⁻¹ : {ϕ : m →ᵣ n} → Γ₂ ∶ α ⋯ ϕ ≼ β ⋯ ϕ → Γ₁ ∶ α ≼ β
+
+{-
 ≼-⋯⁻¹ {α = ` _} {β} (≼-refl eq) = {!!}
 ≼-⋯⁻¹ {α = ` _} {β} (≼-trans x x₂) = {!!}
 ≼-⋯⁻¹ {α = []} {β} x = {!!}
 ≼-⋯⁻¹ {α = α ∥ α₁} {β} x = {!!}
 ≼-⋯⁻¹ {α = α ; α₁} {β} x = {!!}
+-}

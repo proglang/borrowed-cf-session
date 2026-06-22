@@ -6,9 +6,8 @@ import Relation.Binary.Reasoning.Preorder as PreorderReasoning
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Context.Base
-open import BorrowedCF.Context.Domain
 open import BorrowedCF.Context.Equivalence
-open import BorrowedCF.Types hiding (α; α₁; α₂; α₃; α′)
+open import BorrowedCF.Types
 
 open Nat.Variables
 open Variables
@@ -90,33 +89,6 @@ module _ where
   ≼-map⁺ Uf (≼-trans x x₁) = ≼-trans (≼-map⁺ Uf x) (≼-map⁺ Uf x₁)
   ≼-map⁺ Uf (≼-cong-; x x₁) = ≼-cong-; (≼-map⁺ Uf x) (≼-map⁺ Uf x₁)
   ≼-map⁺ Uf (≼-cong-∥ x x₁) = ≼-cong-∥ (≼-map⁺ Uf x) (≼-map⁺ Uf x₁)
-
-module _ where
-  open import Data.Fin.Subset
-  open import Data.Fin.Subset.Properties
-  open ≡-Reasoning
-
-  ≼⇒dom⊆ : Γ ∶ α ≼ β → dom α ⊆ dom β
-  ≼⇒dom⊆ (≼-refl x) = ⊆-reflexive (≈⇒dom≡ x)
-  ≼⇒dom⊆ (≼-∅ x) = ⊥-elim ∘ ∉⊥
-  ≼⇒dom⊆ (≼-wk {α₁} {α₂} {β₁} {β₂}) = ⊆-reflexive $
-    dom ((α₁ ∥ α₂) ; (β₁ ∥ β₂)) ≡⟨⟩
-    (dom α₁ ∪ dom α₂) ∪ (dom β₁ ∪ dom β₂)  ≡⟨ ∪-assoc (dom α₁ ∪ dom α₂) (dom β₁) (dom β₂) ⟨
-    ((dom α₁ ∪ dom α₂) ∪ dom β₁) ∪ dom β₂  ≡⟨ cong (_∪ dom β₂) (∪-assoc (dom α₁) (dom α₂) (dom β₁)) ⟩
-    (dom α₁ ∪ dom α₂ ∪ dom β₁) ∪ dom β₂    ≡⟨ cong (λ X → (dom α₁ ∪ X) ∪ dom β₂) (∪-comm (dom α₂) (dom β₁)) ⟩
-    (dom α₁ ∪ dom β₁ ∪ dom α₂) ∪ dom β₂    ≡⟨ cong (_∪ dom β₂) (∪-assoc (dom α₁) (dom β₁) (dom α₂)) ⟨
-    ((dom α₁ ∪ dom β₁) ∪ dom α₂) ∪ dom β₂  ≡⟨ ∪-assoc (dom α₁ ∪ dom β₁) (dom α₂) (dom β₂) ⟩
-    (dom α₁ ∪ dom β₁) ∪ (dom α₂ ∪ dom β₂)  ≡⟨⟩
-    dom ((α₁ ; β₁) ∥ (α₂ ; β₂)) ∎
-  ≼⇒dom⊆ (≼-trans x y) = ⊆-trans (≼⇒dom⊆ x) (≼⇒dom⊆ y)
-  ≼⇒dom⊆ (≼-cong-; x y) = x∈p∪q⁺ ∘ Sum.map (≼⇒dom⊆ x) (≼⇒dom⊆ y) ∘ x∈p∪q⁻ _ _
-  ≼⇒dom⊆ (≼-cong-∥ x y) = x∈p∪q⁺ ∘ Sum.map (≼⇒dom⊆ x) (≼⇒dom⊆ y) ∘ x∈p∪q⁻ _ _
-
-  dom⊈⇒⋠ : dom α ⊈ dom β → ¬ Γ ∶ α ≼ β
-  dom⊈⇒⋠ dom⊈ α≼β = dom⊈ (≼⇒dom⊆ α≼β)
-
-  `x⋠[] : ∀ {x} → ¬ Γ ∶ ` x ≼ []
-  `x⋠[] {x = x} = dom⊈⇒⋠ λ ⁅x⁆⊆⁅⁆ → ∉⊥ (⁅x⁆⊆⁅⁆ (x∈⁅x⁆ x))
 
 {-
 _≼?_ : Bin.Decidable (Γ ∶_≼_)

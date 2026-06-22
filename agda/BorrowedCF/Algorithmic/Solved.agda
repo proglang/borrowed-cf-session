@@ -17,6 +17,9 @@ open Nat.Variables
 
 variable σ σ₁ σ₂ : UV.Sub
 
+Solving : UV.Sub → Set
+Solving σ = ∀ u → SolvedTy (UV.ap σ u)
+
 subTy : ∀ {κ x} → Ty κ x → UV.Sub → Ty κ x
 subTy ⟨ s ⟩ σ = ⟨ subTy s σ ⟩
 subTy `⊤ σ = `⊤
@@ -34,6 +37,23 @@ subTy ret σ = ret
 subTy acq σ = acq
 subTy (`` α) σ = UV.ap σ α 𝐓.⋯ᵣ λ()
 
+subTy-solved : ∀ {κ x} (t : Ty κ x) → Solving σ → SolvedTy (subTy t σ)
+subTy-solved ⟨ s ⟩ Sσ = ⟨ subTy-solved s Sσ ⟩
+subTy-solved `⊤ Sσ = `⊤
+subTy-solved (t ⟨ a ⟩→ u) Sσ = subTy-solved t Sσ ⟨ a ⟩→ subTy-solved u Sσ
+subTy-solved (t ⊗⟨ d ⟩ u) Sσ = subTy-solved t Sσ ⊗⟨ d ⟩ subTy-solved u Sσ
+subTy-solved (t ⊕ u) Sσ = subTy-solved t Sσ ⊕ subTy-solved u Sσ
+subTy-solved (` x) Sσ = ` x
+subTy-solved (end p) Sσ = end
+subTy-solved (msg p t) Sσ = msg (subTy-solved t Sσ)
+subTy-solved (brn p s₁ s₂) Sσ = brn (subTy-solved s₁ Sσ) (subTy-solved s₂ Sσ)
+subTy-solved (mu s) Sσ = mu (subTy-solved s Sσ)
+subTy-solved (s₁ ; s₂) Sσ = subTy-solved s₁ Sσ ; subTy-solved s₂ Sσ
+subTy-solved skip Sσ = skip
+subTy-solved ret Sσ = ret
+subTy-solved acq Sσ = acq
+subTy-solved (`` α) Sσ = solved-⋯ (Sσ α) λ()
+
 subTy-id : ∀ {κ x} {t : Ty κ x} → SolvedTy t → ∀ {σ} → subTy t σ ≡ t
 subTy-id ⟨ t ⟩ = cong ⟨_⟩ (subTy-id t)
 subTy-id `⊤ = refl
@@ -49,9 +69,6 @@ subTy-id (t ; t₁) = cong₂ _;_ (subTy-id t) (subTy-id t₁)
 subTy-id skip = refl
 subTy-id acq = refl
 subTy-id ret = refl
-
-subTy-solved : ∀ {κ x} {t : Ty κ x} → SolvedTy t → SolvedTy (subTy t σ)
-subTy-solved St = subst SolvedTy (sym (subTy-id St)) St
 
 subTy-dual : (s : 𝕊 n) → dual (subTy s σ) ≡ subTy (dual s) σ
 subTy-dual (` x) = refl
@@ -199,9 +216,9 @@ subConst-solved `recv = `recv
 subConst-solved `drop = `drop
 subConst-solved `acq = `acq
 subConst-solved `end = `end
-subConst-solved (`new s) = `new (subTy-solved s)
-subConst-solved (`lsplit s) = `lsplit (subTy-solved s)
-subConst-solved (`rsplit s) = `rsplit (subTy-solved s)
+subConst-solved {σ} (`new s) rewrite subTy-id s {σ} = `new s
+subConst-solved {σ} (`lsplit s) rewrite subTy-id s {σ} = `lsplit s
+subConst-solved {σ} (`rsplit s) rewrite subTy-id s {σ} = `rsplit s
 
 subConst-id : {c : Const} → SolvedC c → subConst c σ ≡ c
 subConst-id `unit = refl
@@ -265,6 +282,9 @@ subTm-id (e ⊗ e₁) = cong₂ _⊗_ (subTm-id e) (subTm-id e₁)
 subTm-id (`let⊗ e `in e₁) = cong₂ `let⊗_`in_ (subTm-id e) (subTm-id e₁)
 subTm-id (`inj e) = cong (`inj _) (subTm-id e)
 subTm-id {σ = σ} `case e `of⟨ e₁ ; e₂ ⟩ rewrite subTm-id {σ = σ} e = cong₂ `case _ `of⟨_;_⟩ (subTm-id e₁) (subTm-id e₂)
+
+subCtx : Ctx n → UV.Sub → Ctx n
+subCtx Γ σ k = subTy (Γ k) σ
 
 SolvedΔ : CSet → UV.Sub → Set
 SolvedΔ Δ σ = flip All Δ λ (T₁ , T₂) →

@@ -131,12 +131,10 @@ record Arr : Set where
   wk {ϵ} _ = record { eff = ϵ; ω⇒M = ω⇒M; ω⇒𝟙 = ω⇒𝟙 }
 
 record UVar : Set where
+  constructor uvar
   field
-    var : ℕ
     pol : Pol
-
-  wk : ℕ → UVar
-  wk n = record { var = n + var; pol = pol }
+    var : ℕ
 
 data Kind : Set where
   𝕤 𝕥 : Kind
@@ -147,7 +145,6 @@ variable
   d d₁ d₂ d₃ d′ : Dir
   𝓂 𝓂₁ 𝓂₂ 𝓂₃ 𝓂′ : Mob
   κ κ₁ κ₂ κ₃ κ′ : Kind
-  α α₁ α₂ α₃ α′ : UVar
 
 ⟦_⟧κ : Kind → Set
 ⟦ 𝕤 ⟧κ = ℕ
@@ -237,7 +234,7 @@ data 𝓖_·_ (x : 𝔽 n) : 𝕊 n → Set where
   ret : 𝓖 x · ret
   skip : 𝓖 x · skip
 
-  ``- : 𝓖 x · `` α
+  ``- : ∀ {α} → 𝓖 x · `` α
 
 𝓖₀ : Pred (𝕊 (1 + n)) _
 𝓖₀ = 𝓖 zero ·_
@@ -275,7 +272,7 @@ data ⊢_ : ∀ {κ x} → Ty κ x → Set where
   ret : ⊢ ret {n}
   acq : ⊢ acq {n}
 
-  ``- : ⊢ ``_ {n} α
+  ``- : ∀ {α} → ⊢ ``_ {n} α
 
 ⊢-irr : ∀ {κ x} {τ : Ty κ x} (t u : ⊢ τ) → t ≡ u
 ⊢-irr ⟨ t ⟩ ⟨ u ⟩ = cong ⟨_⟩ (⊢-irr t u)
