@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Kits where
 
 open import Data.List using (List; []; _∷_; _++_)

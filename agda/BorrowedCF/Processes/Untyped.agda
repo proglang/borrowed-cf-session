@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Processes.Untyped where
 
 open import Data.Bool using () renaming (Bool to Flag; true to set; false to unset) public

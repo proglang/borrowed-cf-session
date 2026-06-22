@@ -1,4 +1,3 @@
-{-# OPTIONS --rewriting #-}
 module BorrowedCF.Types.Predicates where
 
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (SymClosure; fwd; bwd)

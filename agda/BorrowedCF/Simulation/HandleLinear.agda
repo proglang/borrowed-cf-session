@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 -- The fact the new `lsplit : ¬ Skips s → …` premise gives us: a lsplit'd
 -- channel ⟨ s ; s′ ⟩ is never unrestricted.  This is what discharges the
 -- `¬ Unr (handle)` hypothesis of `≼⇒count≤` in the confinement proof.

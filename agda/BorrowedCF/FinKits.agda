@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.FinKits where
 
 open import BorrowedCF.Prelude hiding (id; _++_) renaming (_■_ to trans)

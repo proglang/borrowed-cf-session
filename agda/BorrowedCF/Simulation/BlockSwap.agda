@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.BlockSwap where
 
 -- | The block-swap renaming theory: swapᵣ / assocSwapᵣ identities, their toℕ

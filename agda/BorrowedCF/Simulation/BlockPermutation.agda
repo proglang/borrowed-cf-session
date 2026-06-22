@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.BlockPermutation where
 
 -- | Permutation of φ^ binder blocks: φ-past-block and

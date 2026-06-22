@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Context.Substitution where
 
 import Relation.Binary.Construct.Closure.Equivalence as Eq*

@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Terms where
 
 open import Data.Bool using () renaming (Bool to Side; true to L; false to R) public

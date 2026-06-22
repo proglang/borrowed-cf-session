@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 -- Inversion helpers for the R-Acq redex, mirroring InvFrame's lsplit/rsplit ones.
 -- acq's domain is the session  acq ; s  (no ¬Skips premise — Skips has no acq case),
 -- so the consumed handle is non-Unr directly.

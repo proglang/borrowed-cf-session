@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.Theorems.NuSwap where
 
 open import BorrowedCF.Simulation.Base

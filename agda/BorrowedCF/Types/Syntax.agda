@@ -1,4 +1,3 @@
-{-# OPTIONS --rewriting #-}
 module BorrowedCF.Types.Syntax where
 
 open import Algebra.Construct.NaturalChoice.Base
@@ -320,21 +319,17 @@ dualPol-involutive : dualPol ∘ dualPol ≗ id
 dualPol-involutive ‼ = refl
 dualPol-involutive ⁇ = refl
 
-{-# REWRITE dualPol-involutive #-}
-
 dual-involutive : dual {n} ∘ dual ≗ id
 dual-involutive (` x) = refl
-dual-involutive (end p) = refl
-dual-involutive (msg p t) = refl
-dual-involutive (brn p s₁ s₂) = cong₂ (brn p) (dual-involutive s₁) (dual-involutive s₂)
+dual-involutive (end p) = cong end (dualPol-involutive _)
+dual-involutive (msg p t) = cong (flip msg t) (dualPol-involutive _)
+dual-involutive (brn p s₁ s₂) rewrite dualPol-involutive p = cong₂ (brn p) (dual-involutive s₁) (dual-involutive s₂)
 dual-involutive (mu s) = cong mu (dual-involutive s)
 dual-involutive (s₁ ; s₂) = cong₂ _;_ (dual-involutive s₁) (dual-involutive s₂)
 dual-involutive skip = refl
 dual-involutive ret = refl
 dual-involutive acq = refl
-dual-involutive (`` α) = refl
-
-{-# REWRITE dual-involutive #-}
+dual-involutive (`` α) rewrite dualPol-involutive (UVar.pol α) = refl
 
 μPrefix : ∀ {κ x} → Ty κ x → ℕ
 μPrefix (mu t)  = 1 + μPrefix t

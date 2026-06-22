@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.Frames where
 
 -- | Expression-level evaluation contexts under substitution: single-/multi-frame

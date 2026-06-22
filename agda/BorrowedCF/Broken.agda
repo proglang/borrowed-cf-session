@@ -1,4 +1,3 @@
-{-# OPTIONS --rewriting #-}
 
 -- A machine-checked witness that the translation breaks the forward simulation
 -- for `lsplit` under the current (liberal) typing.

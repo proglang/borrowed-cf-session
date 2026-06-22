@@ -1,4 +1,3 @@
-{-# OPTIONS --rewriting #-}
 module BorrowedCF.Types where
 
 open import BorrowedCF.Types.Syntax public

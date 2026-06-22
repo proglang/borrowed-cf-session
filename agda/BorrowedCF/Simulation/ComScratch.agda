@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 -- COUNTEREXAMPLE: sim→ R-Com is FALSE at front-borrow b₁ = 0 with a non-empty tail.
 --
 -- The typed R-Com decrements the front chain's borrow count (suc b₁ ∷ B₁ → b₁ ∷ B₁).

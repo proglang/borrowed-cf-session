@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 -- Fix B proof-of-concept: decoupling the borrow-obligation flag from the count.
 --
 -- ROOT CAUSE (current code): Bisim.ϕ[_] : ℕ → Flag with ϕ[zero]=set, ϕ[suc _]=unset

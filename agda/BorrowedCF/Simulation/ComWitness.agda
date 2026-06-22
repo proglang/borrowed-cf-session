@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.ComWitness where
 
 open import Data.Nat.ListAction using (sum)

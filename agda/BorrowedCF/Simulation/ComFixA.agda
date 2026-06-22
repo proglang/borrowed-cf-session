@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 -- Fix A validation: swapping the R-Com send pair to  (message ⊗ channel)  with the
 -- channel endpoint 0F in the CHANNEL slot makes the send thread TYPABLE — the Mobile
 -- demand falls on the message (⊤, which IS Mobile), not the channel (⟨msg ‼ ⊤⟩, which

@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.TranslationProperties where
 
 -- | Properties of the translation U[_] / UB[_] / Ub[_]: congruence in the

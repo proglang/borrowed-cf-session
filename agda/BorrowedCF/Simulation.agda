@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 -- Barrel: re-exports the whole Simulation development.
 module BorrowedCF.Simulation where
 

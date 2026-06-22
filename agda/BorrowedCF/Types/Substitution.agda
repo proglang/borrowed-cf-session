@@ -1,4 +1,3 @@
-{-# OPTIONS --rewriting #-}
 module BorrowedCF.Types.Substitution where
 
 open import BorrowedCF.Prelude

@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.Theorems.CleanT where
 
 open import BorrowedCF.Simulation.Base

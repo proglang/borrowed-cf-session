@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.Theorems.RSplit where
 
 open import BorrowedCF.Simulation.Base

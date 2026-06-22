@@ -1,4 +1,3 @@
-{-# OPTIONS --rewriting #-}
 module BorrowedCF.Algorithmic.Solved where
 
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (fwd; bwd)

@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Processes.Bisim where
 
 open import Data.Nat.ListAction using (sum)

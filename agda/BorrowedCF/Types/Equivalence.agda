@@ -1,4 +1,3 @@
-{-# OPTIONS --rewriting #-}
 module BorrowedCF.Types.Equivalence where
 
 open import Data.Maybe using (Maybe)

@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.SubstLemmas where
 
 -- | Generic transport/coercion plumbing: subst commutes with (process) renaming,

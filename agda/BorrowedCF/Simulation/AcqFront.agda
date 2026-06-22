@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 -- Crux helper for U-acq (O1 analogue): the acq redex's channel argument.
 -- leafσ 0F = canonₛ (zero ∷ suc b₁ ∷ B₁) (K`unit,0F,K`unit) 0F ⋯ weaken*(syncs B₂).
 -- The leading zero chain has 0 handles, so position 0F peels into

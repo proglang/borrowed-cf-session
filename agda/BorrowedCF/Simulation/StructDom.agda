@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.StructDom where
 
 open import BorrowedCF.Prelude

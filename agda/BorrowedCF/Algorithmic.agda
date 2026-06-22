@@ -1,4 +1,3 @@
-{-# OPTIONS --rewriting #-}
 module BorrowedCF.Algorithmic where
 
 open import Data.Bool.Properties

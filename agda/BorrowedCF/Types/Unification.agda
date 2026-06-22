@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Types.Unification where
 
 open import BorrowedCF.Prelude

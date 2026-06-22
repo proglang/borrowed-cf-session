@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 -- HandleCount analogues for R-Acq: the consumed handle is 0F (position 0) of the
 -- front bind group  zero @ suc b1 @ B1 , the simplest case of the split bookkeeping.
 

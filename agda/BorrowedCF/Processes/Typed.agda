@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting --allow-unsolved-metas #-}
-
 module BorrowedCF.Processes.Typed where
 
 open import Data.Nat.ListAction using (sum)

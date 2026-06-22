@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.Confine where
 
 open import Relation.Binary.Construct.Closure.Symmetric using (fwd; bwd)

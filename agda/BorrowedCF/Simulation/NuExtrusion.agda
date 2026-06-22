@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.NuExtrusion where
 
 -- | Translation of ν scope-extrusion: U[_] commutes with pushing a parallel

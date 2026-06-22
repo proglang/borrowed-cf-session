@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 -- Shared preamble for the Simulation development: re-exports the base modules
 -- and the (sanctioned) function-extensionality postulate.
 module BorrowedCF.Simulation.Base where

@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 -- A machine-checked witness that the translation breaks the forward simulation
 -- for `rsplit` under the current (liberal) typing — i.e. WITHOUT a `¬ Skips s`
 -- premise on the `rsplit` constant.  This is the exact analogue of `Broken.agda`

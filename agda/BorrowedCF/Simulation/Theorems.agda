@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.Theorems where
 
 -- | Main results of the simulation development (goal: the paper's Bisimulation

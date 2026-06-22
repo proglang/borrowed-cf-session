@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Reduction.Base where
 
 open import BorrowedCF.Prelude

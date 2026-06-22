@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.HandleCount where
 
 open import BorrowedCF.Prelude

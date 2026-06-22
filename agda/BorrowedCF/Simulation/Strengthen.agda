@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.Strengthen where
 
 open import BorrowedCF.Prelude

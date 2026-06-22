@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.InvFrame where
 
 open import BorrowedCF.Prelude

@@ -1,5 +1,3 @@
-{-# OPTIONS --rewriting #-}
-
 module BorrowedCF.Simulation.Flatten where
 
 -- | Flattening of UB[_] blocks. φ^ is the iterated async-channel (φ) binder; UB-flat
