@@ -232,3 +232,64 @@ solved-dual ret = ret
 ≃-solved {𝕥} (eq ⊕ eq₁) (x ⊕ x₁) = ≃-solved eq x ⊕ ≃-solved eq₁ x₁
 ≃-solved {𝕥} (eq `→ eq₁) (x ⟨ a ⟩→ x₁) = ≃-solved eq x ⟨ a ⟩→ ≃-solved eq₁ x₁
 ≃-solved {𝕥} ⟨ eq ⟩ ⟨ x ⟩ = ⟨ ≃-solved eq x ⟩
+
+data New {n} : 𝕊 n → Set where
+  `-  : ∀ {x} → New (` x)
+  msg : New (msg p T)
+  brn : New s₁ → New s₂ → New (brn p s₁ s₂)
+  mu : New s → New (mu s)
+  _;_ : New s₁ → New s₂ → New (s₁ ; s₂)
+  skip : New skip
+
+new-⋯ᵣ : New s → {ρ : m →ᵣ n} → New (s ⋯ ρ)
+new-⋯ᵣ `- = `-
+new-⋯ᵣ msg = msg
+new-⋯ᵣ (brn x x₁) = brn (new-⋯ᵣ x) (new-⋯ᵣ x₁)
+new-⋯ᵣ (mu x) = mu (new-⋯ᵣ x)
+new-⋯ᵣ (x ; x₁) = new-⋯ᵣ x ; new-⋯ᵣ x₁
+new-⋯ᵣ skip = skip
+
+new-⋯ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ → New s → {ϕ : m –[ K ]→ n} → (∀ x → New (`/id (ϕ x))) → New (s ⋯ ϕ)
+new-⋯ `- ∀ϕ-new = ∀ϕ-new _
+new-⋯ msg ∀ϕ-new = msg
+new-⋯ (brn x y) ∀ϕ-new = brn (new-⋯ x ∀ϕ-new) (new-⋯ y ∀ϕ-new)
+new-⋯ ⦃ K ⦄ (mu x) ∀ϕ-new = New.mu $ new-⋯ x λ where
+  zero → subst New (sym (`/`-is-` ⦃ K ⦄ _)) `-
+  (suc z) → subst New (wk-`/id _) (new-⋯ᵣ (∀ϕ-new z))
+new-⋯ (x ; y) ∀ϕ-new = new-⋯ x ∀ϕ-new ; new-⋯ y ∀ϕ-new
+new-⋯ skip ∀ϕ-new = skip
+
+new-⋯⁻¹ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ {ϕ : m –[ K ]→ n} → New (s ⋯ ϕ) → New s
+new-⋯⁻¹ {s = ` _} x = `-
+new-⋯⁻¹ {s = msg p t} x = msg
+new-⋯⁻¹ {s = brn p _ _} (brn x y) = brn (new-⋯⁻¹ x) (new-⋯⁻¹ y)
+new-⋯⁻¹ {s = mu s} (mu x) = mu (new-⋯⁻¹ x)
+new-⋯⁻¹ {s = _ ; _} (x ; y) = new-⋯⁻¹ x ; new-⋯⁻¹ y
+new-⋯⁻¹ {s = skip} skip = skip
+
+new-≃ : New {n} Respects _≃_
+new-≃ refl = id
+new-≃ (x ◅ xs) = new-≃ xs ∘ go x where
+  go : New {n} Respects SymClosure _≃𝕊_
+  go (fwd (≃𝕊-;₁ eq)) (x ; y) = go (fwd eq) x ; y
+  go (fwd (≃𝕊-;₂ eq)) (x ; y) = x ; go (fwd eq) y
+  go (fwd ≃𝕊-skipˡ) (x ; y) = y
+  go (fwd ≃𝕊-skipʳ) (x ; y) = x
+  go (fwd ≃𝕊-μ) (mu x) = new-⋯ x λ{ zero → mu x; (suc z) → `- }
+  go (fwd ≃𝕊-assoc) ((x ; y) ; z) = x ; (y ; z)
+  go (fwd ≃𝕊-distr) (brn x₁ x₂ ; y) = brn (x₁ ; y) (x₂ ; y)
+  go (bwd (≃𝕊-;₁ eq)) (x ; y) = go (bwd eq) x ; y
+  go (bwd (≃𝕊-;₂ eq)) (x ; y) = x ; go (bwd eq) y
+  go (bwd ≃𝕊-skipˡ) x = skip ; x
+  go (bwd ≃𝕊-skipʳ) x = x ; skip
+  go (bwd ≃𝕊-μ) x = mu (new-⋯⁻¹ x)
+  go (bwd ≃𝕊-assoc) (x ; (y ; z)) = (x ; y) ; z
+  go (bwd ≃𝕊-distr) (brn (x₁ ; y) (x₂ ; _)) = brn x₁ x₂ ; y
+
+new-dual : New s → New (dual s)
+new-dual `- = `-
+new-dual msg = msg
+new-dual (brn x y) = brn (new-dual x) (new-dual y)
+new-dual (mu x) = mu (new-dual x)
+new-dual (x ; y) = new-dual x ; new-dual y
+new-dual skip = skip

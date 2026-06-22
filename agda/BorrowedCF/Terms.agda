@@ -145,7 +145,7 @@ data ⊢_∶_ : Const → 𝕋 → Set where
 
   `fork : ⊢ `fork ∶ (`⊤ →1M `⊤ ∣ 𝕀) →1M `⊤ ∣ ℙ
 
-  `new  : ⊢ `new s ∶ `⊤ →1M ⟨ acq ; s ; end ⁇ ⟩ ⊗¹ ⟨ acq ; dual s ; end ‼ ⟩ ∣ ℙ
+  `new  : New s → ⊢ `new s ∶ `⊤ →1M ⟨ acq ; s ; end ⁇ ⟩ ⊗¹ ⟨ acq ; dual s ; end ‼ ⟩ ∣ ℙ
 
   `lsplit : ¬ Skips s → (s′ : 𝕊 0) →
     ⊢ `lsplit s ∶ ⟨ s ; s′ ⟩ →1M ⟨ s ⟩       ⊗ᴸ ⟨ s′ ⟩       ∣ ℙ
