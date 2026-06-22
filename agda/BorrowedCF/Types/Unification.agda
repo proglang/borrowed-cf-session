@@ -37,6 +37,9 @@ module UV where
     ; ap-dual/dual = λ α → refl
     }
 
+  someSub : Sub
+  someSub = record { ap = end ∘ pol ; ap-¬skips = λ _ () ; ap-dual/dual = λ _ → refl }
+
 Constraint = 𝕋 × 𝕋
 
 CSet : Set

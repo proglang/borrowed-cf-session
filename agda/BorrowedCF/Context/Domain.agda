@@ -32,93 +32,35 @@ infixl 18 _↓_
 
 _↓_ : Struct n → Subset n → Struct n
 (` x)   ↓ X = if does (x ∈? X) then ` x else []
-{-with V.lookup X x
-... | inside  = ` x
-... | outside = [] -}
 []      ↓ X = []
 (α ∥ β) ↓ X = α ↓ X ∥ β ↓ X
 (α ; β) ↓ X = α ↓ X ; β ↓ X
 
+↓-dom : (γ : Struct n) (X : Subset n) → dom (γ ↓ X) ⊆ X
+↓-dom (` x) X z∈ with x ∈? X
+... | yes x∈ rewrite x∈⁅y⁆⇒x≡y _ z∈ = x∈
+... | no  x∉ = ⁅⁆⊆ z∈
+↓-dom []      X = ⁅⁆⊆
+↓-dom (α ∥ β) X = [ ↓-dom α X , ↓-dom β X ]′ ∘ x∈p∪q⁻ _ _
+↓-dom (α ; β) X = [ ↓-dom α X , ↓-dom β X ]′ ∘ x∈p∪q⁻ _ _
+
+↓-identity-⊆ : (γ : Struct n) {X : Subset n} → dom γ ⊆ X → γ ↓ X ≡ γ
+↓-identity-⊆ (` x) {X} ⊆X rewrite dec-true (x ∈? X) (⊆X (x∈⁅x⁆ x)) = refl
+↓-identity-⊆ [] ⊆X = refl
+↓-identity-⊆ (α ∥ β) ⊆X = cong₂ _∥_ (↓-identity-⊆ α (⊆-trans (p⊆p∪q _) ⊆X)) (↓-identity-⊆ β (⊆-trans (q⊆p∪q _ _) ⊆X))
+↓-identity-⊆ (α ; β) ⊆X = cong₂ _;_ (↓-identity-⊆ α (⊆-trans (p⊆p∪q _) ⊆X)) (↓-identity-⊆ β (⊆-trans (q⊆p∪q _ _) ⊆X))
+
 ↓-identity : (γ : Struct n) → γ ↓ S.⊤ ≡ γ
-↓-identity (` x) rewrite dec-true (x ∈? S.⊤) ∈⊤ = refl
-↓-identity [] = refl
-↓-identity (α ∥ β) = cong₂ _∥_ (↓-identity α) (↓-identity β)
-↓-identity (α ; β) = cong₂ _;_ (↓-identity α) (↓-identity β)
+↓-identity γ = ↓-identity-⊆ γ ⊆⊤
 
 ↓-idempotent : (γ : Struct n) (X : Subset n) → γ ↓ X ↓ X ≡ γ ↓ X
-↓-idempotent (` x) X with x ∈? X
-... | yes x∈ rewrite dec-true (x ∈? X) x∈ = refl
-... | no  x∉ = refl
-↓-idempotent []      X = refl
-↓-idempotent (α ∥ β) X = cong₂ _∥_ (↓-idempotent α X) (↓-idempotent β X)
-↓-idempotent (α ; β) X = cong₂ _;_ (↓-idempotent α X) (↓-idempotent β X)
+↓-idempotent γ X = ↓-identity-⊆ (γ ↓ X) {X} (↓-dom γ X)
 
 ↓-empty : (γ : Struct n) → Γ ∶ γ ↓ ⁅⁆ ≈ []
 ↓-empty (` x) rewrite dec-false (x ∈? ⁅⁆) ∉⁅⁆ = refl
 ↓-empty [] = refl
 ↓-empty (α ∥ β) = ≈-trans (∥-cong (↓-empty α) (↓-empty β)) ∥-unit₂
 ↓-empty (α ; β) = ≈-trans (;-cong (↓-empty α) (↓-empty β)) ;-unit₂
-
-{-
-infix 4 _≐_
-
-_≐_ : Rel (Subset n) _
-X ≐ Y = X ⊆ Y × Y ⊆ X
-
-≐-isEquivalence : ∀ n → IsEquivalence (_≐_ {n})
-≐-isEquivalence _ = record
-  { refl  = id , id
-  ; sym   = Π.swap
-  ; trans = λ (ij , ji) (jk , kj) → ⊆-trans ij jk , ⊆-trans kj ji
-  }
-
-≐-setoid : ∀ n → Setoid _ _
-≐-setoid n = record { isEquivalence = ≐-isEquivalence n }
-
-module _ {n : ℕ} where
-  open IsEquivalence (≐-isEquivalence n)
-    using ()
-    renaming (refl to ≐-refl; reflexive to ≐-reflexive; sym to ≐-sym; trans to ≐-trans)
-    public
-
-module ≐-Reasoning {n} = SetoidReasoning (≐-setoid n)
--}
-
-⊆⁅⁆⇒Empty : X ⊆ ⁅⁆ → Empty X
-⊆⁅⁆⇒Empty X⊆ (_ , x∈) = ∉⁅⁆ (X⊆ x∈)
-
-⊆⁅⁆⇒≡⁅⁆ : X ⊆ ⁅⁆ → X ≡ ⁅⁆
-⊆⁅⁆⇒≡⁅⁆ = Empty-unique ∘ ⊆⁅⁆⇒Empty
-
-⊆⁅x⁆×y∈⇒≡⁅x⁆ : ∀ {x y} → X ⊆ ⁅ x ⁆ → y ∈ X → X ≡ ⁅ x ⁆
-⊆⁅x⁆×y∈⇒≡⁅x⁆ X⊆ y∈ = ⊆-antisym X⊆ (λ x′∈⁅x⁆ → subst (_∈ _) (x∈⁅y⁆⇒x≡y _ (X⊆ y∈) ■ sym (x∈⁅y⁆⇒x≡y _ x′∈⁅x⁆)) y∈)
-
-⊆⁅x⁆×x∉⇒Empty : ∀ {x} → X ⊆ ⁅ x ⁆ → x ∉ X → Empty X
-⊆⁅x⁆×x∉⇒Empty X⊆ x∉ (y , y∈) = x∉ (subst (_∈ _) (x∈⁅y⁆⇒x≡y _ (X⊆ y∈)) y∈)
-
-Empty-∩₁ : Empty X → (Y : Subset n) → Empty (X ∩ Y)
-Empty-∩₁ {X = X} ⁅⁆≐X Y (x , x∈) = ⁅⁆≐X (_ , p∩q⊆p X Y x∈)
-
-Empty-∩₂ : (X : Subset n) {Y : Subset n} → Empty Y → Empty (X ∩ Y)
-Empty-∩₂ X {Y} ⁅⁆≐Y (x , x∈) = ⁅⁆≐Y (_ , p∩q⊆q X Y x∈)
-
-Empty-⁅⁆ : Empty {n} ⁅⁆
-Empty-⁅⁆ (_ , x∈) = ∉⁅⁆ x∈
-
-Disjoint : Rel (Struct n) _
-Disjoint α β = Empty (dom α ∩ dom β)
-
-∪-mono-⊆ : Bin.Monotonic₂ (_⊆_ {n}) _⊆_ _⊆_ _∪_
-∪-mono-⊆ p⊆q u⊆v x∈ = x∈p∪q⁺ (Sum.map p⊆q u⊆v (x∈p∪q⁻ _ _ x∈))
-
-∩-mono-⊆ : Bin.Monotonic₂ (_⊆_ {n}) _⊆_ _⊆_ _∩_
-∩-mono-⊆ p⊆q u⊆v x∈ = x∈p∩q⁺ (p⊆q (x∈p∩q⁻ _ _ x∈ .proj₁) , u⊆v (x∈p∩q⁻ _ _ x∈ .proj₂))
-
-∩-identityˡ-⊆ : {X : Subset n} (Y : Subset n) → Y ⊆ X → X ∩ Y ≡ Y
-∩-identityˡ-⊆ Y Y⊆X = ⊆-antisym (λ x∈ → x∈p∩q⁻ _ _ x∈ .proj₂) (λ x∈ → x∈p∩q⁺ (Y⊆X x∈ , x∈))
-
-∩-identityʳ-⊆ : (X : Subset n) {Y : Subset n} → X ⊆ Y → X ∩ Y ≡ X
-∩-identityʳ-⊆ X X⊆Y = ⊆-antisym (λ x∈ → x∈p∩q⁻ _ _ x∈ .proj₁) (λ x∈ → x∈p∩q⁺ (x∈ , X⊆Y x∈))
 
 ≈⇒dom≡ : Γ ∶ α ≈ β → dom α ≡ dom β
 ≈⇒dom≡ = Eq*.gfold isEquivalence dom ≈′⇒dom≡
@@ -203,3 +145,47 @@ dom⊈⇒⋠ dom⊈ α≼β = dom⊈ (≼⇒dom⊆ α≼β)
 ↓-dist-wk []      = refl
 ↓-dist-wk (α ∥ β) = cong₂ _∥_ (↓-dist-wk α) (↓-dist-wk β)
 ↓-dist-wk (α ; β) = cong₂ _;_ (↓-dist-wk α) (↓-dist-wk β)
+
+postulate
+  ∩-∁ : (p q : Subset n) → p ∩ q ≡ ⁅⁆ → p ∩ ∁ q ≡ p
+
+
+
+
+{-
+⊆⁅⁆⇒Empty : X ⊆ ⁅⁆ → Empty X
+⊆⁅⁆⇒Empty X⊆ (_ , x∈) = ∉⁅⁆ (X⊆ x∈)
+
+⊆⁅⁆⇒≡⁅⁆ : X ⊆ ⁅⁆ → X ≡ ⁅⁆
+⊆⁅⁆⇒≡⁅⁆ = Empty-unique ∘ ⊆⁅⁆⇒Empty
+
+⊆⁅x⁆×y∈⇒≡⁅x⁆ : ∀ {x y} → X ⊆ ⁅ x ⁆ → y ∈ X → X ≡ ⁅ x ⁆
+⊆⁅x⁆×y∈⇒≡⁅x⁆ X⊆ y∈ = ⊆-antisym X⊆ (λ x′∈⁅x⁆ → subst (_∈ _) (x∈⁅y⁆⇒x≡y _ (X⊆ y∈) ■ sym (x∈⁅y⁆⇒x≡y _ x′∈⁅x⁆)) y∈)
+
+⊆⁅x⁆×x∉⇒Empty : ∀ {x} → X ⊆ ⁅ x ⁆ → x ∉ X → Empty X
+⊆⁅x⁆×x∉⇒Empty X⊆ x∉ (y , y∈) = x∉ (subst (_∈ _) (x∈⁅y⁆⇒x≡y _ (X⊆ y∈)) y∈)
+
+Empty-∩₁ : Empty X → (Y : Subset n) → Empty (X ∩ Y)
+Empty-∩₁ {X = X} ⁅⁆≐X Y (x , x∈) = ⁅⁆≐X (_ , p∩q⊆p X Y x∈)
+
+Empty-∩₂ : (X : Subset n) {Y : Subset n} → Empty Y → Empty (X ∩ Y)
+Empty-∩₂ X {Y} ⁅⁆≐Y (x , x∈) = ⁅⁆≐Y (_ , p∩q⊆q X Y x∈)
+
+Empty-⁅⁆ : Empty {n} ⁅⁆
+Empty-⁅⁆ (_ , x∈) = ∉⁅⁆ x∈
+
+Disjoint : Rel (Struct n) _
+Disjoint α β = Empty (dom α ∩ dom β)
+
+∪-mono-⊆ : Bin.Monotonic₂ (_⊆_ {n}) _⊆_ _⊆_ _∪_
+∪-mono-⊆ p⊆q u⊆v x∈ = x∈p∪q⁺ (Sum.map p⊆q u⊆v (x∈p∪q⁻ _ _ x∈))
+
+∩-mono-⊆ : Bin.Monotonic₂ (_⊆_ {n}) _⊆_ _⊆_ _∩_
+∩-mono-⊆ p⊆q u⊆v x∈ = x∈p∩q⁺ (p⊆q (x∈p∩q⁻ _ _ x∈ .proj₁) , u⊆v (x∈p∩q⁻ _ _ x∈ .proj₂))
+
+∩-identityˡ-⊆ : {X : Subset n} (Y : Subset n) → Y ⊆ X → X ∩ Y ≡ Y
+∩-identityˡ-⊆ Y Y⊆X = ⊆-antisym (λ x∈ → x∈p∩q⁻ _ _ x∈ .proj₂) (λ x∈ → x∈p∩q⁺ (Y⊆X x∈ , x∈))
+
+∩-identityʳ-⊆ : (X : Subset n) {Y : Subset n} → X ⊆ Y → X ∩ Y ≡ X
+∩-identityʳ-⊆ X X⊆Y = ⊆-antisym (λ x∈ → x∈p∩q⁻ _ _ x∈ .proj₁) (λ x∈ → x∈p∩q⁺ (x∈ , X⊆Y x∈))
+-}

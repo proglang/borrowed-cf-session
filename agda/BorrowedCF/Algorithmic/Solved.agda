@@ -287,8 +287,7 @@ subCtx : Ctx n → UV.Sub → Ctx n
 subCtx Γ σ k = subTy (Γ k) σ
 
 SolvedΔ : CSet → UV.Sub → Set
-SolvedΔ Δ σ = flip All Δ λ (T₁ , T₂) →
-  SolvedTy (subTy T₁ σ) × SolvedTy (subTy T₂ σ) × subTy T₁ σ ≃ subTy T₂ σ
+SolvedΔ Δ σ = flip All Δ λ (T₁ , T₂) → subTy T₁ σ ≃ subTy T₂ σ
 
 SolvedΓ : Ctx n → UV.Sub → Set
 SolvedΓ Γ σ = ∀ x →
