@@ -6,7 +6,6 @@ import Relation.Binary.Reasoning.Preorder as PreorderReasoning
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Context.Base
-open import BorrowedCF.Context.Domain
 open import BorrowedCF.Context.Equivalence
 open import BorrowedCF.Types
 
@@ -44,6 +43,15 @@ module _ {Γ : Ctx n} where
 
 module ≼-Reasoning {n} {Γ : Ctx n} = PreorderReasoning (≼-preorder Γ)
 
+;-≼-∥ : Γ ∶ α ; β ≼ α ∥ β
+;-≼-∥ {α = α} {β} =
+  let open ≼-Reasoning in
+  begin α        ; β         ≈⟨ ;-cong ∥-unit₂ ∥-unit₁ ⟨
+        (α ∥ []) ; ([] ∥ β)  ≲⟨ ≼-wk ⟩
+        (α ; []) ∥ ([] ; β)  ≈⟨ ∥-cong ;-unit₂ ;-unit₁ ⟩
+        α        ∥ β         ∎
+
+
 ≼-≗ : Γ₁ ≗ Γ₂ → Γ₁ ∶ α ≼ β → Γ₂ ∶ α ≼ β
 ≼-≗ eq (≼-refl x) = ≼-refl (≈-≗ eq x)
 ≼-≗ eq (≼-∅ x) = ≼-∅ (allCx-≗ eq x)
@@ -54,43 +62,33 @@ module ≼-Reasoning {n} {Γ : Ctx n} = PreorderReasoning (≼-preorder Γ)
 
 module _ where
   open Un using (_⊆_)
-  allCx-≼ : ∀ {ℓ} {P : Pred 𝕋 ℓ} → (Unr ⊆ P) → AllCx P Γ α → Γ ∶ α ≼ β → AllCx P Γ β
-  allCx-≼ f C (≼-refl eq) = allCx-≈ eq C
-  allCx-≼ f C (≼-∅ U) = allCx-map f U
-  allCx-≼ f ((C₁ ∥ C₂) ; (C₁′ ∥ C₂′)) ≼-wk = (C₁ ; C₁′) ∥ (C₂ ; C₂′)
-  allCx-≼ f C (≼-trans x y) = allCx-≼ f (allCx-≼ f C x) y
-  allCx-≼ f (C₁ ; C₂) (≼-cong-; x y) = allCx-≼ f C₁ x ; allCx-≼ f C₂ y
-  allCx-≼ f (C₁ ∥ C₂) (≼-cong-∥ x y) = allCx-≼ f C₁ x ∥ allCx-≼ f C₂ y
 
-unrCx-≼ : UnrCx Γ α → Γ ∶ α ≼ β → UnrCx Γ β
-unrCx-≼ = allCx-≼ id
+  allCx-strengthen : ∀ {ℓ} {P : Pred 𝕋 ℓ} → Γ ∶ α ≼ β → AllCx P Γ β → AllCx P Γ α
+  allCx-strengthen (≼-refl eq)    C         = allCx-≈ (≈-sym eq) C
+  allCx-strengthen (≼-∅ x)        C         = []
+  allCx-strengthen (≼-trans  x y) C         = allCx-strengthen x (allCx-strengthen y C)
+  allCx-strengthen (≼-cong-; x y) (C₁ ; C₂) = allCx-strengthen x C₁ ; allCx-strengthen y C₂
+  allCx-strengthen (≼-cong-∥ x y) (C₁ ∥ C₂) = allCx-strengthen x C₁ ∥ allCx-strengthen y C₂
+  allCx-strengthen ≼-wk ((C₁ ; C₂) ∥ (C₁′ ; C₂′)) = (C₁ ∥ C₁′) ; (C₂ ∥ C₂′)
 
-module _ where
-  open import Data.Fin.Subset
-  open import Data.Fin.Subset.Properties
-  open ≡-Reasoning
+  allCx-weaken : ∀ {ℓ} {P : Pred 𝕋 ℓ} → (Unr ⊆ P) → Γ ∶ α ≼ β → AllCx P Γ α → AllCx P Γ β
+  allCx-weaken f (≼-refl eq) C = allCx-≈ eq C
+  allCx-weaken f (≼-∅ U)     C = allCx-map f U
+  allCx-weaken f ≼-wk ((C₁ ∥ C₂) ; (C₁′ ∥ C₂′)) = (C₁ ; C₁′) ∥ (C₂ ; C₂′)
+  allCx-weaken f (≼-trans x y) C = allCx-weaken f y (allCx-weaken f x C)
+  allCx-weaken f (≼-cong-; x y) (C₁ ; C₂) = allCx-weaken f x C₁ ; allCx-weaken f y C₂
+  allCx-weaken f (≼-cong-∥ x y) (C₁ ∥ C₂) = allCx-weaken f x C₁ ∥ allCx-weaken f y C₂
 
-  ≼⇒dom⊆ : Γ ∶ α ≼ β → dom α ⊆ dom β
-  ≼⇒dom⊆ (≼-refl x) = ⊆-reflexive (≈⇒dom≡ x)
-  ≼⇒dom⊆ (≼-∅ x) = ⊥-elim ∘ ∉⊥
-  ≼⇒dom⊆ (≼-wk {α₁} {α₂} {β₁} {β₂}) = ⊆-reflexive $
-    dom ((α₁ ∥ α₂) ; (β₁ ∥ β₂)) ≡⟨⟩
-    (dom α₁ ∪ dom α₂) ∪ (dom β₁ ∪ dom β₂)  ≡⟨ ∪-assoc (dom α₁ ∪ dom α₂) (dom β₁) (dom β₂) ⟨
-    ((dom α₁ ∪ dom α₂) ∪ dom β₁) ∪ dom β₂  ≡⟨ cong (_∪ dom β₂) (∪-assoc (dom α₁) (dom α₂) (dom β₁)) ⟩
-    (dom α₁ ∪ dom α₂ ∪ dom β₁) ∪ dom β₂    ≡⟨ cong (λ X → (dom α₁ ∪ X) ∪ dom β₂) (∪-comm (dom α₂) (dom β₁)) ⟩
-    (dom α₁ ∪ dom β₁ ∪ dom α₂) ∪ dom β₂    ≡⟨ cong (_∪ dom β₂) (∪-assoc (dom α₁) (dom β₁) (dom α₂)) ⟨
-    ((dom α₁ ∪ dom β₁) ∪ dom α₂) ∪ dom β₂  ≡⟨ ∪-assoc (dom α₁ ∪ dom β₁) (dom α₂) (dom β₂) ⟩
-    (dom α₁ ∪ dom β₁) ∪ (dom α₂ ∪ dom β₂)  ≡⟨⟩
-    dom ((α₁ ; β₁) ∥ (α₂ ; β₂)) ∎
-  ≼⇒dom⊆ (≼-trans x y) = ⊆-trans (≼⇒dom⊆ x) (≼⇒dom⊆ y)
-  ≼⇒dom⊆ (≼-cong-; x y) = x∈p∪q⁺ ∘ Sum.map (≼⇒dom⊆ x) (≼⇒dom⊆ y) ∘ x∈p∪q⁻ _ _
-  ≼⇒dom⊆ (≼-cong-∥ x y) = x∈p∪q⁺ ∘ Sum.map (≼⇒dom⊆ x) (≼⇒dom⊆ y) ∘ x∈p∪q⁻ _ _
+  unrCx-weaken : Γ ∶ α ≼ β → UnrCx Γ α → UnrCx Γ β
+  unrCx-weaken = allCx-weaken id
 
-  dom⊈⇒⋠ : dom α ⊈ dom β → ¬ Γ ∶ α ≼ β
-  dom⊈⇒⋠ dom⊈ α≼β = dom⊈ (≼⇒dom⊆ α≼β)
-
-  `x⋠[] : ∀ {x} → ¬ Γ ∶ ` x ≼ []
-  `x⋠[] {x = x} = dom⊈⇒⋠ λ ⁅x⁆⊆⁅⁆ → ∉⊥ (⁅x⁆⊆⁅⁆ (x∈⁅x⁆ x))
+  ≼-map⁺ : {f : 𝕋 → 𝕋} → (Unr ⊆ Unr ∘ f) → Γ ∶ α ≼ β → f ∘ Γ ∶ α ≼ β
+  ≼-map⁺ Uf (≼-refl x) = ≼-refl (≈-map⁺ Uf x)
+  ≼-map⁺ Uf (≼-∅ x) = ≼-∅ (allCx-gmap Uf x)
+  ≼-map⁺ Uf ≼-wk = ≼-wk
+  ≼-map⁺ Uf (≼-trans x x₁) = ≼-trans (≼-map⁺ Uf x) (≼-map⁺ Uf x₁)
+  ≼-map⁺ Uf (≼-cong-; x x₁) = ≼-cong-; (≼-map⁺ Uf x) (≼-map⁺ Uf x₁)
+  ≼-map⁺ Uf (≼-cong-∥ x x₁) = ≼-cong-∥ (≼-map⁺ Uf x) (≼-map⁺ Uf x₁)
 
 {-
 _≼?_ : Bin.Decidable (Γ ∶_≼_)

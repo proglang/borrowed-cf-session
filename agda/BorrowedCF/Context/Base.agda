@@ -3,7 +3,7 @@
 module BorrowedCF.Context.Base where
 
 open import BorrowedCF.Prelude
-open import BorrowedCF.Types hiding (s; s₁; s₂; s₃; s′)
+open import BorrowedCF.Types
 
 open Nat.Variables
 
@@ -27,6 +27,14 @@ variable
 ⸴-⸴*-cons : Γ₁ zero ⸴ Γ₁ ∘ suc ⸴* Γ₂ ≗ Γ₁ ⸴* Γ₂
 ⸴-⸴*-cons zero = refl
 ⸴-⸴*-cons {m} (suc x) = sym ([,]-map (splitAt m x))
+
+⸴-dist : ∀ {a} {A : Set a} (f : 𝕋 → A) {T : 𝕋} {Γ : Ctx m} → f ∘ (T ⸴ Γ) ≗ f T ⸴ f ∘ Γ
+⸴-dist f zero = refl
+⸴-dist f (suc x) = refl
+
+⸴-cong : T ≡ U → Γ₁ ≗ Γ₂ → T ⸴ Γ₁ ≗ U ⸴ Γ₂
+⸴-cong eq eqs zero = eq
+⸴-cong eq eqs (suc x) = eqs x
 
 data ParSeq : Set where
   par seq : ParSeq
@@ -73,6 +81,12 @@ cast-involutive : .(eq₁ : m ≡ n) .(eq₂ : n ≡ m) →
   cast eq₁ ∘ cast eq₂ ≗ id
 cast-involutive eq₁ eq₂ x = cast-trans eq₂ eq₁ x ■ cast-is-id x
 
+subst-is-cast : (eq : m ≡ n) → subst Struct eq ≗ cast eq
+subst-is-cast refl (` x) = cong `_ (sym (Fin.cast-is-id refl x))
+subst-is-cast refl [] = refl
+subst-is-cast refl (x ∥ y) = cong₂ _∥_ (subst-is-cast refl x) (subst-is-cast refl y)
+subst-is-cast refl (x ; y) = cong₂ _;_ (subst-is-cast refl x) (subst-is-cast refl y)
+
 module _ {ℓ} (P : Pred 𝕋 ℓ) (Γ : Ctx n) where
   data AllCx : Struct n → Set ℓ where
     []  : AllCx []
@@ -100,11 +114,14 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} {Γ : Ctx n} where
   allCx? P? (α ; β) = map′ (uncurry _;_) allCx-;⁻¹ (allCx? P? α ×-dec allCx? P? β)
 
 module _ {p q} {P : Pred 𝕋 p} {Q : Pred 𝕋 q} where
+  allCx-gmap : {f : 𝕋 → 𝕋} → P ⊆ Q ∘ f → AllCx P Γ ⊆ AllCx Q (f ∘ Γ)
+  allCx-gmap p⊆q [] = []
+  allCx-gmap p⊆q (x ∥ y) = allCx-gmap p⊆q x ∥ allCx-gmap p⊆q y
+  allCx-gmap p⊆q (x ; y) = allCx-gmap p⊆q x ; allCx-gmap p⊆q y
+  allCx-gmap p⊆q (` x) = ` p⊆q x
+
   allCx-map : (P ⊆ Q) → AllCx P Γ ⊆ AllCx Q Γ
-  allCx-map f [] = []
-  allCx-map f (x ∥ y) = allCx-map f x ∥ allCx-map f y
-  allCx-map f (x ; y) = allCx-map f x ; allCx-map f y
-  allCx-map f (` x) = ` f x
+  allCx-map = allCx-gmap {f = id}
 
 UnrCx : REL (Ctx n) (Struct n) _
 UnrCx = AllCx Unr

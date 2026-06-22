@@ -3,7 +3,7 @@
 module BorrowedCF.Processes.Typed where
 
 open import Data.Nat.ListAction using (sum)
-open import Data.Vec.Functional as F using () renaming (_∷_ to _⸴_; _++_ to _⸴*_)
+open import Data.Vec.Functional as F using ()
 open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosure)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (Star; _◅_; _◅◅_; kleisliStar) renaming (ε to refl)
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (SymClosure; fwd; bwd; symmetric)
@@ -129,30 +129,13 @@ module _ where
 open import BorrowedCF.Context as 𝐂
 import BorrowedCF.Context.Substitution as 𝐂
 
-structNSeq : ∀ m → Struct (m + n)
+structNSeq : ∀ m → Struct m
 structNSeq zero    = []
 structNSeq (suc m) = ` zero ; 𝐂.wk (structNSeq m)
 
-structBinder  : (B : BindGroup) → Struct (sum B + n)
-structBinder+² : ∀ m {n} (B : BindGroup) → Struct (sum B + m + n)
-structBinderWk : ∀ m {n} (B : BindGroup) → Struct (m + sum B + n)
-
+structBinder : (B : BindGroup) → Struct (sum B)
 structBinder [] = []
-structBinder (b ∷ B) =
-  𝐂.cast (sym (+-assoc b (sum B) _)) (structNSeq b)
-    ∥ structBinderWk b B
-
-structBinder+² m B = 𝐂.cast (sym (+-assoc (sum B) m _)) (structBinder B)
-
-structBinderWk m B = 𝐂.cast (sym (+-assoc m (sum B) _)) (structBinder B 𝐂.⋯ᵣ 𝐂.weaken* m)
-
-structBinder+²-⋯-↑* : ∀ ⦃ K : 𝐂.Kit 𝓕 ⦄ m B {σ : n₁ 𝐂.–[ K ]→ n₂} → structBinder+² m B 𝐂.⋯ σ 𝐂.↑* (sum B + m) ≡ structBinder+² m B
-structBinder+²-⋯-↑* m [] = refl
-structBinder+²-⋯-↑* {n₂ = n₂} m (b ∷ B) {σ} = cong₂ _∥_
-  (cong (𝐂._⋯ σ 𝐂.↑* (sum (b ∷ B) + m)) (cast-trans _ _ (structNSeq b))
-    ■ {!!}
-    ■ sym (cast-trans _ _ (structNSeq b)))
-  {!!}
+structBinder (b ∷ B) = (structNSeq b 𝐂.⋯ᵣ 𝐂.wkʳ (sum B)) ∥ (structBinder B 𝐂.⋯ᵣ 𝐂.wkˡ b)
 
 data BindCtx : 𝕊 0 → Ctx n → Set where
   []  : BindCtx skip F.[]
@@ -177,8 +160,9 @@ data _;_⊢ₚ_ (Γ : Ctx n) : Struct n → Proc n → Set where
   TP-Res :
     (C : BindCtx {sum B₁} s Γ₁) →
     (C′ : BindCtx {sum B₂} (dual s) Γ₂) →
-    (Γ₁ ⸴* Γ₂) ⸴* Γ ; structBinder+² (sum B₂) B₁ ∥ structBinderWk (sum B₁) B₂
-                       ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
+    (Γ₁ ⸴* Γ₂) ⸴* Γ ; (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n)
+                    ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n)
+                    ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
       ⊢ₚ P →
     Γ ; γ ⊢ₚ ν B₁ B₂ P
 
@@ -208,9 +192,10 @@ inv-ν : {Γ : Ctx n} → Γ ; γ ⊢ₚ ν B₁ B₂ P →
   ∃[ Γ₁ ] ∃[ Γ₂ ] ∃[ s ]
      BindCtx {sum B₁} s Γ₁
       × BindCtx {sum B₂} (dual s) Γ₂
-      × (Γ₁ ⸴* Γ₂) ⸴* Γ ;
-            structBinder+² (sum B₂) B₁ ∥ structBinderWk (sum B₁) B₂
-              ∥ (γ 𝐂.⋯ 𝐂.weaken* _) ⊢ₚ P
+      × (Γ₁ ⸴* Γ₂) ⸴* Γ ; (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n)
+                        ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n)
+                        ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
+                        ⊢ₚ P
 inv-ν (TP-Res C C′ p) = _ , _ , _ , C , C′ , p
 inv-ν (TP-Weaken γ≤ p) =
   let Γ₁ , Γ₂ , _ , C , C′ , p′ = inv-ν p in
@@ -228,11 +213,41 @@ TP-Expr e ⊢⋯ₚ ⊢ϕ = TP-Expr (e ⊢⋯ ⊢ϕ)
 TP-Par p q ⊢⋯ₚ ⊢ϕ = TP-Par (p ⊢⋯ₚ ⊢ϕ) (q ⊢⋯ₚ ⊢ϕ)
 _⊢⋯ₚ_ {γ = γ} {σ = σ} (TP-Res {B₁ = B₁} {B₂ = B₂} C C′ p) ⊢ϕ =
   TP-Res C C′
-    $ subst-γₚ (cong₂ _∥_ (cong₂ _∥_ (structBinder+²-⋯-↑* (sum B₂) B₁) {!!}) (sym (𝐂.⋯-↑*-wk γ σ (sum B₁ + sum B₂))))
+    $ subst-γₚ (cong₂ _∥_ (cong₂ _∥_
+        (𝐂.fusion (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂)) (𝐂.wkʳ _) (σ 𝐂.↑* (sum B₁ + sum B₂))
+          ■ 𝐂.⋯-cong (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂)) (𝐂.wkʳ-cancels-↑* ⦃ 𝐂.Kᵣ ⦄ (sum B₁ + sum B₂) σ)
+          ■ 𝐂.conv-⋯ᵣₛ (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂)))
+        (𝐂.fusion (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁)) (𝐂.wkʳ _) (σ 𝐂.↑* (sum B₁ + sum B₂))
+          ■ 𝐂.⋯-cong (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁)) (𝐂.wkʳ-cancels-↑* ⦃ 𝐂.Kᵣ ⦄ (sum B₁ + sum B₂) σ)
+          ■ 𝐂.conv-⋯ᵣₛ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁))))
+        (sym (𝐂.⋯-↑*-wk γ σ (sum B₁ + sum B₂))))
     $ p ⊢⋯ₚ ⊢↑* _ ⊢ϕ
 TP-Weaken γ≤ p ⊢⋯ₚ ⊢ϕ = TP-Weaken (𝐂.≼-⋯ (&-unr ⊢ϕ) γ≤) (p ⊢⋯ₚ ⊢ϕ)
 
-⊢-≋ : ChanCx Γ → P ≋ Q → Γ ; γ ⊢ₚ P → Γ ; γ ⊢ₚ Q
+postulate
+  _⊢⋯ₚ⁻¹_ : {ϕ : m →ᵣ n} {σ : _} → Γ₂ ; γ ⊢ₚ P ⋯ₚ ϕ → ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ →
+    ∃[ γ′ ] Γ₂ ∶ γ′ 𝐂.⋯ σ ≼ γ × Γ₁ ; γ′ ⊢ₚ P
+
+{-
+_⊢⋯ₚ⁻¹_ {P = ⟪ e ⟫} p ⊢ϕ
+  with ⊢e ← inv-⟪⟫ p
+  with γ′ , ≤γ , ⊢e′ ← ⊢e ⊢⋯⁻¹ ⊢ϕ
+  = γ′ , ≤γ , TP-Expr ⊢e′
+_⊢⋯ₚ⁻¹_ {P = P ∥ P₁} p ⊢ϕ
+  with α , β , ≤ , p₁ , p₂ ← inv-∥ p
+  with α′ , ≤α , p₁′ ← p₁ ⊢⋯ₚ⁻¹ ⊢ϕ
+  with β′ , ≤β , p₂′ ← p₂ ⊢⋯ₚ⁻¹ ⊢ϕ
+  = α′ ∥ β′ , ≼-trans (≼-cong-∥ ≤α ≤β) ≤ , TP-Par p₁′ p₂′
+_⊢⋯ₚ⁻¹_ {γ = γ} {P = ν B₁ B₂ P} p ⊢ϕ
+  with Γ₁ , Γ₂ , _ , C , C′ , p′ ← inv-ν p
+  with γ′ , ≤γ , p″ ← p′ ⊢⋯ₚ⁻¹ ⊢↑* (Γ₁ ⸴* Γ₂) ⊢ϕ
+  = {!γ!} , {!!} , TP-Res C C′ (TP-Weaken {!≤γ!} p″)
+-}
+
+postulate
+  ⊢-≋ : ChanCx Γ → P ≋ Q → Γ ; γ ⊢ₚ P → Γ ; γ ⊢ₚ Q
+
+{-
 ⊢-≋ Γ-S refl     = id
 ⊢-≋ Γ-S (x ◅ xs) = ⊢-≋ Γ-S xs ∘ go Γ-S x where
   go : ChanCx Γ → SymClosure _≋′_ P Q → Γ ; γ ⊢ₚ P → Γ ; γ ⊢ₚ Q
@@ -257,14 +272,78 @@ TP-Weaken γ≤ p ⊢⋯ₚ ⊢ϕ = TP-Weaken (𝐂.≼-⋯ (&-unr ⊢ϕ) γ≤)
                      γ₁ ∥ γ₂  ≲⟨ ≤γ ⟩
                      _        ∎
       in TP-Weaken ≤γ q
-  go Γ-S (fwd ν-swap′) p₀
-    with _ , _ , _ , C , C′ , p ← inv-ν p₀
-    = TP-Res C′ C (subst-γₚ {!!} (p ⊢⋯ₚ {!swapᵣ _ _!}))
+  go {n} {γ = γ} Γ-S (fwd (ν-swap′ {B₁ = B₁} {B₂})) p₀
+    with Γ₁ , Γ₂ , _ , C , C′ , p ← inv-ν p₀ =
+    let open ≡-Reasoning in
+    let eq₁ =
+          structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n 𝐂.⋯ₛ `_ ∘ 𝐂.swapᵣ (sum B₁) (sum B₂)
+            ≡⟨ 𝐂.⋯-congᶜ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n) (λ _ → refl) ⟩
+          structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n 𝐂.⋯ᵣ 𝐂.swapᵣ (sum B₁) (sum B₂)
+            ≡⟨ (cong (𝐂._⋯ᵣ 𝐂.swapᵣ (sum B₁) (sum B₂)) (𝐂.fusion (structBinder B₂) _ _) ■ 𝐂.fusion (structBinder B₂) _ _) ⟩
+          structBinder B₂ 𝐂.⋯ᵣ (𝐂.wkˡ (sum B₁) ·ₖ 𝐂.wkʳ n) ·ₖ 𝐂.swapᵣ (sum B₁) (sum B₂)
+            ≡⟨ 𝐂.⋯-cong (structBinder B₂) (𝐂.wkˡ-swap≗wkʳ (sum B₁) (sum B₂)) ⟩
+          structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₁) ·ₖ 𝐂.wkʳ n
+            ≡⟨ 𝐂.fusion (structBinder B₂) _ _ ⟨
+          structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n ∎
+        eq₂ =
+          structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n 𝐂.⋯ₛ `_ ∘ 𝐂.swapᵣ (sum B₁) (sum B₂)
+            ≡⟨ 𝐂.⋯-congᶜ (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n) (λ _ → refl) ⟩
+          structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n 𝐂.⋯ᵣ 𝐂.swapᵣ (sum B₁) (sum B₂)
+            ≡⟨ (cong (𝐂._⋯ᵣ 𝐂.swapᵣ (sum B₁) (sum B₂)) (𝐂.fusion (structBinder B₁) _ _) ■ 𝐂.fusion (structBinder B₁) _ _) ⟩
+          structBinder B₁ 𝐂.⋯ᵣ (𝐂.wkʳ (sum B₂) ·ₖ 𝐂.wkʳ n) ·ₖ 𝐂.swapᵣ (sum B₁) (sum B₂)
+            ≡⟨ 𝐂.⋯-cong (structBinder B₁) (𝐂.wkʳ-swap≗wkˡ (sum B₁) (sum B₂)) ⟩
+          structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₂) ·ₖ 𝐂.wkʳ n
+            ≡⟨ 𝐂.fusion (structBinder B₁) _ _ ⟨
+          structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n ∎
+        eq = 𝐂.∥-cong
+               (≈-trans 𝐂.∥-comm (𝐂.∥-cong (≈-reflexive eq₁) (≈-reflexive eq₂)))
+               (≈-reflexive (𝐂.conv-⋯ᵣₛ (γ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂)) ■ 𝐂.weaken*-swap-⋯ γ (sum B₁) (sum B₂)))
+    in TP-Res C′ C $ TP-Weaken (≼-refl eq) $ p ⊢⋯ₚ ⊢swapᵣ Γ₁ Γ₂
   go Γ-S (fwd ν-comm′) p₀
-    with _ , _ , _ , X , X′ , pˣ ← inv-ν p₀
-    with _ , _ , _ , Y , Y′ , pʸ ← inv-ν pˣ
-    = TP-Res Y Y′ (TP-Res X X′ {!!})
-  go Γ-S (fwd ν-ext′) p₀ = {!!}
+    with Γ₁ , Γ₂ , _ , X , X′ , pˣ ← inv-ν p₀
+    with Γ₃ , Γ₄ , _ , Y , Y′ , pʸ ← inv-ν pˣ
+    = let
+      open ≈-Reasoning
+      eq = ≈-trans (≈-sym 𝐂.∥-assoc)
+             $ ≈-trans (𝐂.∥-cong 𝐂.∥-comm ≈-refl)
+             $ ≈-trans (𝐂.∥-cong (𝐂.∥-cong (𝐂.∥-cong {!!} {!!}) (𝐂.∥-cong {!!} {!!})) {!!})
+             𝐂.∥-assoc
+    in TP-Res Y Y′ $ TP-Res X X′ $ TP-Weaken (≼-refl eq) $ pʸ ⊢⋯ₚ ⊢assocSwapᵣ (Γ₃ ⸴* Γ₄) (Γ₁ ⸴* Γ₂)
+  go {γ = γ} Γ-S (fwd (ν-ext′ {B₁ = B₁} {B₂})) p₀
+    with γ₁ , γ₂ , ≤γ , p₁ , p′ ← inv-∥ p₀
+    with Γ₁ , Γ₂ , _ , C , C′ , p₂ ← inv-ν p′
+    = let
+      open ≼-Reasoning
+      ≤ = begin
+            (γ₁ 𝐂.⋯ₛ 𝐂.weaken* (sum B₁ + sum B₂))
+              ∥ ((structBinder B₁ 𝐂.⋯ 𝐂.wkʳ (sum B₂) 𝐂.⋯ 𝐂.wkʳ _)
+                   ∥ (structBinder B₂ 𝐂.⋯ 𝐂.wkˡ (sum B₁) 𝐂.⋯ 𝐂.wkʳ _)
+                   ∥ (γ₂ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂)))
+          ≡⟨ cong (_∥ _) (𝐂.⋯-congᶜ ⦃ 𝐂.Kₛ ⦄ ⦃ 𝐂.Kᵣ ⦄ γ₁ λ y → 𝐂.weaken*~wkˡ _ y ■ cong `_ (sym (𝐂.weaken*~wkˡ _ y))) ⟩
+            (γ₁ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂))
+             ∥ ((structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ _)
+                  ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ _)
+                  ∥ (γ₂ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂)))
+          ≈⟨ 𝐂.∥-assoc ⟨
+            (γ₁ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂))
+             ∥ ((structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ _)
+                  ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ _))
+             ∥ (γ₂ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂))
+          ≈⟨ 𝐂.∥-cong 𝐂.∥-comm ≈-refl ⟩
+            (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ _)
+              ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ _)
+              ∥ (γ₁ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂))
+              ∥ (γ₂ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂))
+          ≈⟨ 𝐂.∥-assoc ⟩
+            (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ _)
+              ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ _)
+              ∥ ((γ₁ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂)) ∥ (γ₂ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂)))
+          ≲⟨ ≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.wk*-preserves (Γ₁ ⸴* Γ₂)) ≤γ) ⟩
+            (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ _)
+              ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ _)
+              ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂))
+          ∎
+    in TP-Res C C′ $ TP-Weaken ≤ $ TP-Par (p₁ ⊢⋯ₚ ⊢weaken* _ _) p₂
   go Γ-S (fwd (∥-cong′ eq)) p₀
     with γ₁ , γ₂ , ≤γ , p , q ← inv-∥ p₀
     = TP-Weaken ≤γ (TP-Par (go Γ-S (fwd eq) p) q)
@@ -286,10 +365,15 @@ TP-Weaken γ≤ p ⊢⋯ₚ ⊢ϕ = TP-Weaken (𝐂.≼-⋯ (&-unr ⊢ϕ) γ≤)
   go Γ-S (bwd ∥-unit′) p₀ = TP-Weaken (≼-refl 𝐂.∥-unit₁) (TP-Par (TP-Expr (T-Conv `⊤ ℙ≤ϵ (T-Const `unit))) p₀)
   go Γ-S (bwd ν-swap′) p₀ = {!!}
   go Γ-S (bwd ν-comm′) p₀ = {!!}
-  go Γ-S (bwd ν-ext′) p₀ = {!!}
+  go Γ-S (bwd (ν-ext′ {B₁ = B₁} {B₂})) p₀
+    with Γ₁ , Γ₂ , _ , C , C′ , p′ ← inv-ν p₀
+    with γ₁ , γ₂ , ≤ , p₁ , p₂ ← inv-∥ p′
+    with γ₁′ , γ₁≡ , p₁′ ← p₁ ⊢⋯ₚ⁻¹ ⊢weaken* (Γ₁ ⸴* Γ₂) _
+    = TP-Weaken {!≤γ!} $ TP-Par p₁′ (TP-Res C C′ (TP-Weaken {!!} p₂))
   go Γ-S (bwd (∥-cong′ eq)) p₀
     with γ₁ , γ₂ , ≤γ , p , q ← inv-∥ p₀
     = TP-Weaken ≤γ (TP-Par (go Γ-S (bwd eq) p) q)
   go Γ-S (bwd (ν-cong′ eq)) p₀
     with _ , _ , _ , C , C′ , p ← inv-ν p₀
     = TP-Res C C′ (go (chanCx-⸴* (chanCx-⸴* (bindCtx⇒chanCtx C) (bindCtx⇒chanCtx C′)) Γ-S) (bwd eq) p)
+-}

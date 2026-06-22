@@ -30,7 +30,7 @@ mu s ⋯ ϕ = mu (s ⋯ ϕ ↑)
 skip ⋯ ϕ = skip
 ret ⋯ ϕ = ret
 acq ⋯ ϕ = acq
-(`` x) ⋯ ϕ = `` x
+`` α ⋯ ϕ = `` α
 
 ⋯-id : ⦃ K : Kit 𝓕 ⦄ (s : 𝕊 n) {ϕ : n –[ K ]→ n} → ϕ ≗ idₖ → s ⋯ ϕ ≡ s
 ⋯-id (` x) eq = cong `/id (eq x) ■ `/`-is-` x
@@ -42,7 +42,7 @@ acq ⋯ ϕ = acq
 ⋯-id skip eq = refl
 ⋯-id ret eq = refl
 ⋯-id acq eq = refl
-⋯-id (`` x) eq = refl
+⋯-id (`` α) eq = refl
 
 ⋯-cong : ⦃ K : Kit 𝓕 ⦄ (s : 𝕊 m) {ϕ₁ ϕ₂ : m –[ K ]→ n} → ϕ₁ ≗ ϕ₂ → s ⋯ ϕ₁ ≡ s ⋯ ϕ₂
 ⋯-cong (` x) eq = cong `/id (eq x)
@@ -54,7 +54,7 @@ acq ⋯ ϕ = acq
 ⋯-cong skip eq = refl
 ⋯-cong ret eq = refl
 ⋯-cong acq eq = refl
-⋯-cong (`` x) eq = refl
+⋯-cong (`` α) eq = refl
 
 open module Traversal = Syntax.Traversal record
   { _⋯_ = _⋯_
@@ -64,6 +64,18 @@ open module Traversal = Syntax.Traversal record
   }
   hiding (_⋯_; ⋯-id; ⋯-cong; CTraversal)
   public
+
+dual-⋯ᵣ : (s : 𝕊 m) {ϕ : m →ᵣ n} → dual (s ⋯ ϕ) ≡ dual s ⋯ ϕ
+dual-⋯ᵣ (` x) = refl
+dual-⋯ᵣ (end p) = refl
+dual-⋯ᵣ (msg p t) = refl
+dual-⋯ᵣ (brn p s₁ s₂) = cong₂ (brn _) (dual-⋯ᵣ s₁) (dual-⋯ᵣ s₂)
+dual-⋯ᵣ (mu s) = cong mu (dual-⋯ᵣ s)
+dual-⋯ᵣ (s₁ ; s₂) = cong₂ _;_ (dual-⋯ᵣ s₁) (dual-⋯ᵣ s₂)
+dual-⋯ᵣ skip = refl
+dual-⋯ᵣ ret = refl
+dual-⋯ᵣ acq = refl
+dual-⋯ᵣ (`` α) = refl
 
 fusion :
   ⦃ K₁ : Kit 𝓕₁ ⦄ ⦃ K₂ : Kit 𝓕₂ ⦄ ⦃ K : Kit 𝓕 ⦄ ⦃ W₁ : WkKit K₁ ⦄ ⦃ C : CKit K₁ K₂ K ⦄
@@ -78,7 +90,7 @@ fusion (s₁ ; s₂) ϕ₁ ϕ₂ = cong₂ _;_ (fusion s₁ ϕ₁ ϕ₂) (fusi
 fusion skip ϕ₁ ϕ₂ = refl
 fusion ret ϕ₁ ϕ₂ = refl
 fusion acq ϕ₁ ϕ₂ = refl
-fusion (`` x) ϕ₁ ϕ₂ = refl
+fusion (`` α) ϕ₁ ϕ₂ = refl
 
 open module CTraversal = Traversal.CTraversal record { fusion = fusion }
   hiding (fusion)
@@ -131,7 +143,7 @@ open module Typing = Types.Typing record
 𝓖-wk* m skip = skip
 𝓖-wk* m ((¬s , g) ;-) = (¬s ∘ skips-⋯ᵣ⁻¹ , 𝓖-wk* m g) ;-
 𝓖-wk* m (s ; g) = skips-⋯ s ; 𝓖-wk* m g
-𝓖-wk* m (`` y) = `` y
+𝓖-wk* m ``- = ``-
 𝓖-wk* m (mu g) = mu (𝓖-wk* (suc m) g)
 𝓖-wk* zero (` x≢y) = ` λ{ refl → x≢y refl }
 𝓖-wk* (suc m) (`_ {zero} x≢y) = ` λ()
@@ -153,7 +165,7 @@ open module Typing = Types.Typing record
 𝓖₀-↑wk m skip = skip
 𝓖₀-↑wk m ret = ret
 𝓖₀-↑wk m acq = acq
-𝓖₀-↑wk m (`` x) = `` x
+𝓖₀-↑wk m (`` α) = ``-
 𝓖₀-↑wk zero (` x) = ` λ()
 𝓖₀-↑wk (suc m) (` zero) = ` λ()
 𝓖₀-↑wk (suc m) (` suc x) = 𝓖-wk (𝓖₀-↑wk m (` x))
@@ -176,7 +188,7 @@ open module Typing = Types.Typing record
 𝓖-⋯ acq _ _ _ = acq
 𝓖-⋯ ret _ _ _ = ret
 𝓖-⋯ skip _ _ _ = skip
-𝓖-⋯ (`` y) _ _ _ = `` y
+𝓖-⋯ ``- _ _ _ = ``-
 𝓖-⋯ ⦃ K ⦄ (mu x) eq ∀𝓖 ∀¬s = mu $ 𝓖-⋯ x (sym (wk-`/id _) ■ cong wk eq)
   (λ where zero    x≢ → subst (𝓖 _ ·_) (sym (`/`-is-` ⦃ K ⦄ zero)) (` λ())
            (suc z) x≢ → subst (𝓖 _ ·_) (wk-`/id _) (𝓖-wk (∀𝓖 z λ{ refl → x≢ refl })))
@@ -208,7 +220,7 @@ mu g x ⊢⋯ ⊢ϕ = mu (𝓖-⋯↑ (λ z → ⊢ϕ z .proj₂) g) (x ⊢⋯ (
 skip ⊢⋯ ⊢ϕ = skip
 ret ⊢⋯ ⊢ϕ = ret
 acq ⊢⋯ ⊢ϕ = acq
-(`` x) ⊢⋯ ⊢ϕ = `` x
+``- ⊢⋯ ⊢ϕ = ``-
 
 open module TTraversal = Typing.TTraversal record { _⊢⋯_ = _⊢⋯_ }
   hiding (_⊢⋯_)
@@ -233,7 +245,7 @@ unfold s = s ⋯ ⦅ mu s ⦆ₛ
 μPrefix-⋯ᵣ skip ρ = refl
 μPrefix-⋯ᵣ ret ρ = refl
 μPrefix-⋯ᵣ acq ρ = refl
-μPrefix-⋯ᵣ (`` x) ρ = refl
+μPrefix-⋯ᵣ (`` α) ρ = refl
 
 -- The μPrefix never decreases through substitution.
 μPrefix-≤-⋯ : ⦃ K : Kit 𝓕 ⦄ (s : 𝕊 m) {ϕ : m –[ K ]→ n} → μPrefix s ≤ μPrefix (s ⋯ ϕ)
@@ -246,7 +258,7 @@ unfold s = s ⋯ ⦅ mu s ⦆ₛ
 μPrefix-≤-⋯ skip = z≤n
 μPrefix-≤-⋯ ret = z≤n
 μPrefix-≤-⋯ acq = z≤n
-μPrefix-≤-⋯ (`` x) = z≤n
+μPrefix-≤-⋯ (`` α) = z≤n
 
 -- Any other kit preserves the μPrefix if it preserves variables.
 μPrefix-⋯ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ →
@@ -262,7 +274,7 @@ unfold s = s ⋯ ⦅ mu s ⦆ₛ
 ... | skip = refl
 ... | ret = refl
 ... | acq = refl
-... | `` y = refl
+... | `` α = refl
 ... | mu s with ∀𝓖⊎` x
 ... | inj₁ (` x≢x) = ⊥-elim (x≢x refl)
 ... | inj₂ (y , ϕx≡′) = case sym ϕx≡ ■ ϕx≡′ of λ()
@@ -273,7 +285,7 @@ unfold s = s ⋯ ⦅ mu s ⦆ₛ
 μPrefix-⋯ skip ϕ ∀𝓖⊎` = refl
 μPrefix-⋯ ret ϕ ∀𝓖⊎` = refl
 μPrefix-⋯ acq ϕ ∀𝓖⊎` = refl
-μPrefix-⋯ (`` x) ϕ ∀𝓖⊎` = refl
+μPrefix-⋯ ``- ϕ ∀𝓖⊎` = refl
 μPrefix-⋯ (mu g ⊢s) ϕ ∀𝓖⊎` = cong suc $ μPrefix-⋯ ⊢s (ϕ ↑) λ where
   zero → inj₁ g
   (suc x) → case ∀𝓖⊎` x of λ where

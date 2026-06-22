@@ -4,6 +4,9 @@ module BorrowedCF.Context.Substitution where
 
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
 
+open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (_◅_)
+open import Relation.Binary.Construct.Closure.Symmetric using (fwd; bwd)
+
 open import BorrowedCF.Prelude
 open import BorrowedCF.Types
 open import BorrowedCF.Context.Base
@@ -63,100 +66,26 @@ fusion (α ; β) ϕ₁ ϕ₂ = cong₂ _;_ (fusion α _ _) (fusion β _ _)
 
 open CTraversal record { fusion = fusion } hiding (fusion) public
 
-{-
-_→ₛ_ : ℕ → ℕ → Set
-m →ₛ n = 𝔽 m → Struct n
+Inj : m →ᵣ n → Set
+Inj = Injective _≡_ _≡_
 
-idₛ : n →ₛ n
-idₛ x = ` x
+∥-injective : α₁ ∥ α₂ ≡ β₁ ∥ β₂ → α₁ ≡ β₁ × α₂ ≡ β₂
+∥-injective refl = refl , refl
 
-infixr 6 _∷ₛ_
+;-injective : α₁ ; α₂ ≡ β₁ ; β₂ → α₁ ≡ β₁ × α₂ ≡ β₂
+;-injective refl = refl , refl
 
-_∷ₛ_ : Struct n → m →ₛ n → suc m →ₛ n
-(α ∷ₛ σ) zero    = α
-(α ∷ₛ σ) (suc x) = σ x
-
-wk : Struct n → Struct (suc n)
-wk (` x)   = ` suc x
-wk []      = []
-wk (α ∥ β) = wk α ∥ wk β
-wk (α ; β) = wk α ; wk β
-
-wkₛ : m →ₛ n → m →ₛ suc n
-wkₛ σ x = wk (σ x)
-
-weaken : n →ₛ suc n
-weaken = wkₛ idₛ
-
-weaken* : ∀ m → n →ₛ (m + n)
-weaken* zero = idₛ
-weaken* (suc m) = wkₛ (weaken* m)
-
-wkʳ : ∀ n → m →ₛ (m + n)
-wkʳ n x = ` (x ↑ˡ n)
-
-_↑ : m →ₛ n → suc m →ₛ suc n
-σ ↑ = ` zero ∷ₛ wkₛ σ
-
-_↑*_ : n₁ →ₛ n₂ → ∀ m → (m + n₁) →ₛ (m + n₂)
-σ ↑* zero  = σ
-σ ↑* suc m = (σ ↑* m) ↑
-
-⦅_⦆ : Struct n → suc n →ₛ n
-⦅ α ⦆ = α ∷ₛ idₛ
-
-weaken/wk : (γ : Struct n) → γ ⋯ weaken ≡ wk γ
-weaken/wk (` x) = refl
-weaken/wk [] = refl
-weaken/wk (γ ∥ γ₁) = cong₂ _∥_ (weaken/wk γ) (weaken/wk γ₁)
-weaken/wk (γ ; γ₁) = cong₂ _;_ (weaken/wk γ) (weaken/wk γ₁)
-
-⋯-↑-weaken : (γ : Struct m) (σ : m →ₛ n) → γ ⋯ σ ⋯ weaken ≡ γ ⋯ weaken ⋯ σ ↑
-⋯-↑-weaken (` x) σ = weaken/wk (σ x)
-⋯-↑-weaken [] σ = refl
-⋯-↑-weaken (α ∥ β) σ = cong₂ _∥_ (⋯-↑-weaken α σ) (⋯-↑-weaken β σ)
-⋯-↑-weaken (α ; β) σ = cong₂ _;_ (⋯-↑-weaken α σ) (⋯-↑-weaken β σ)
-
-⋯-↑-wk : (γ : Struct m) (σ : m →ₛ n) → wk (γ ⋯ σ) ≡ wk γ ⋯ σ ↑
-⋯-↑-wk γ σ rewrite sym (weaken/wk γ) | sym (weaken/wk (γ ⋯ σ)) = ⋯-↑-weaken γ σ
-
-wk-⋯ : (γ : Struct m) (σ : m →ₛ n) → wk (γ ⋯ σ) ≡ γ ⋯ wk ∘ σ
-wk-⋯ (` x) σ = refl
-wk-⋯ [] σ = refl
-wk-⋯ (α ∥ β) σ = cong₂ _∥_ (wk-⋯ α σ) (wk-⋯ β σ)
-wk-⋯ (α ; β) σ = cong₂ _;_ (wk-⋯ α σ) (wk-⋯ β σ)
-
-⋯-↑-weaken* : ∀ m (γ : Struct n₁) (σ : n₁ →ₛ n₂) → γ ⋯ weaken* m ⋯ σ ↑* m ≡ γ ⋯ σ ⋯ weaken* m
-⋯-↑-weaken* m [] σ = refl
-⋯-↑-weaken* m (α ∥ β) σ = cong₂ _∥_ (⋯-↑-weaken* m α σ) (⋯-↑-weaken* m β σ)
-⋯-↑-weaken* m (α ; β) σ = cong₂ _;_ (⋯-↑-weaken* m α σ) (⋯-↑-weaken* m β σ)
-⋯-↑-weaken* zero (` x) σ = sym (⋯-id (λ _ → refl) (σ x))
-⋯-↑-weaken* (suc m) (` x) σ =
-  let open ≡-Reasoning in
-  (` x) ⋯ weaken* (suc m) ⋯ (σ ↑* suc m) ≡⟨⟩
-  wk (weaken* m x) ⋯ (σ ↑* m) ↑ ≡⟨ cong (λ γ → γ ⋯ (σ ↑* m) ↑) (weaken/wk (weaken* m x)) ⟨
-  weaken* m x ⋯ weaken ⋯ (σ ↑* m) ↑ ≡⟨ ⋯-↑-weaken (weaken* m x) (σ ↑* m) ⟨
-  weaken* m x ⋯ σ ↑* m ⋯ weaken ≡⟨ cong (λ γ → γ ⋯ weaken) (⋯-↑-weaken* m (` x) σ) ⟩
-  σ x ⋯ weaken* m ⋯ weaken ≡⟨ weaken/wk (σ x ⋯ weaken* m) ⟩
-  wk (σ x ⋯ weaken* m) ≡⟨ wk-⋯ (σ x) (weaken* m) ⟩
-  σ x ⋯ wk ∘ weaken* m ≡⟨⟩
-  (` x) ⋯ σ ⋯ weaken* (suc m) ∎
-
-_⋯-weaken-cancels-⦅_⦆ : (α : Struct n) (γ : Struct n) → α ⋯ weaken ⋯ ⦅ γ ⦆ ≡ α
-(` x) ⋯-weaken-cancels-⦅ γ ⦆ = refl
-[] ⋯-weaken-cancels-⦅ γ ⦆ = refl
-(α ∥ β) ⋯-weaken-cancels-⦅ γ ⦆ = cong₂ _∥_ (α ⋯-weaken-cancels-⦅ γ ⦆) (β ⋯-weaken-cancels-⦅ γ ⦆)
-(α ; β) ⋯-weaken-cancels-⦅ γ ⦆ = cong₂ _;_ (α ⋯-weaken-cancels-⦅ γ ⦆) (β ⋯-weaken-cancels-⦅ γ ⦆)
-
-_⋯-wk-cancels-⦅_⦆ : (α : Struct n) (γ : Struct n) → wk α ⋯ ⦅ γ ⦆ ≡ α
-(` x) ⋯-wk-cancels-⦅ γ ⦆ = refl
-[] ⋯-wk-cancels-⦅ γ ⦆ = refl
-(α ∥ β) ⋯-wk-cancels-⦅ γ ⦆ = cong₂ _∥_ (α ⋯-wk-cancels-⦅ γ ⦆) (β ⋯-wk-cancels-⦅ γ ⦆)
-(α ; β) ⋯-wk-cancels-⦅ γ ⦆ = cong₂ _;_ (α ⋯-wk-cancels-⦅ γ ⦆) (β ⋯-wk-cancels-⦅ γ ⦆)
--}
+⋯-injective : {ϕ : m →ᵣ n} → Inj ϕ → α ⋯ ϕ ≡ β ⋯ ϕ → α ≡ β
+⋯-injective {α = ` x} {` y} ϕ-inj eq = cong `_ (ϕ-inj (`-injective eq))
+⋯-injective {α = []} {[]} ϕ-inj eq = refl
+⋯-injective {α = _ ∥ _} {_ ∥ _} ϕ-inj eq = cong₂ _∥_ (⋯-injective ϕ-inj (∥-injective eq .proj₁)) (⋯-injective ϕ-inj (∥-injective eq .proj₂))
+⋯-injective {α = _ ; _} {_ ; _} ϕ-inj eq = cong₂ _;_ (⋯-injective ϕ-inj (;-injective eq .proj₁)) (⋯-injective ϕ-inj (;-injective eq .proj₂))
 
 _Preserves[_]_⇒_ : ∀ {ℓ} ⦃ K : Kit 𝓕 ⦄ → m –[ K ]→ n → Pred 𝕋 ℓ → Ctx m → Ctx n → Set _
 σ Preserves[ P ] Γ₁ ⇒ Γ₂ = ∀ {x} → P (Γ₁ x) → AllCx P Γ₂ (`/id (σ x))
+
+_Preserves[_]_⇐_ : ∀ {ℓ} ⦃ K : Kit 𝓕 ⦄ → m –[ K ]→ n → Pred 𝕋 ℓ → Ctx m → Ctx n → Set _
+σ Preserves[ P ] Γ₁ ⇐ Γ₂ = ∀ {x} → AllCx P Γ₂ (`/id (σ x)) → P (Γ₁ x)
 
 module _ {ℓ} {P : Pred 𝕋 ℓ} where
   allCx-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} → ϕ Preserves[ P ] Γ₁ ⇒ Γ₂ → AllCx P Γ₁ γ → AllCx P Γ₂ (γ ⋯ ϕ)
@@ -164,6 +93,12 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
   allCx-⋯ P⇒ΠP (x ∥ y) = allCx-⋯ P⇒ΠP x ∥ allCx-⋯ P⇒ΠP y
   allCx-⋯ P⇒ΠP (x ; y) = allCx-⋯ P⇒ΠP x ; allCx-⋯ P⇒ΠP y
   allCx-⋯ P⇒ΠP (` Px)  = P⇒ΠP Px
+
+  allCx-⋯⁻¹ : {ϕ : m →ᵣ n} → ϕ Preserves[ P ] Γ₁ ⇐ Γ₂ → AllCx P Γ₂ (γ ⋯ ϕ) → AllCx P Γ₁ γ
+  allCx-⋯⁻¹ {γ = ` _} Pϕ⇒P x = ` Pϕ⇒P x
+  allCx-⋯⁻¹ {γ = []} Pϕ⇒P x = []
+  allCx-⋯⁻¹ {γ = α ∥ β} Pϕ⇒P (x ∥ y) = allCx-⋯⁻¹ Pϕ⇒P x ∥ allCx-⋯⁻¹ Pϕ⇒P y
+  allCx-⋯⁻¹ {γ = α ; β} Pϕ⇒P (x ; y) = allCx-⋯⁻¹ Pϕ⇒P x ; allCx-⋯⁻¹ Pϕ⇒P y
 
   wk-preserves : {Γ : Ctx n} → weakenᵣ Preserves[ P ] Γ ⇒ (T ⸴ Γ)
   wk-preserves px = ` px
@@ -193,6 +128,80 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
 ≈-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} → ϕ Preserves[ Unr ] Γ₁ ⇒ Γ₂ → Γ₁ ∶ α ≈ β → Γ₂ ∶ α ⋯ ϕ ≈ β ⋯ ϕ
 ≈-⋯ ϕ-unr = Eq*.gmap _ (≈′-⋯ ϕ-unr)
 
+≈′-inv-[] : Γ ∶ α ∥ β ≈′ [] → Γ ∶ α ≈ [] × Γ ∶ β ≈ []
+≈′-inv-[] ∥′-unit = refl , refl
+
+∥′-unit⁻¹ : ∀ {x y} → Γ ∶ (` x) ∥ [] ≈′ (` y) → x ≡ y
+∥′-unit⁻¹ ∥′-unit = refl
+
+∥′-dup⁻¹ : ∀ {x y z} → Γ ∶ ` x ≈′ (` y) ∥ (` z) → x ≡ y × x ≡ z × Unr (Γ x)
+∥′-dup⁻¹ (∥′-dup (` U)) = refl , refl , U
+
+≈′-⋯⁻¹ : {ϕ : m →ᵣ n} → Inj ϕ → ϕ Preserves[ Unr ] Γ₁ ⇐ Γ₂ → Γ₂ ∶ α ⋯ ϕ ≈′ β ⋯ ϕ → Γ₁ ∶ α ≈′ β
+≈′-⋯⁻¹ {α = α} {β} {ϕ = ϕ} inj-ϕ unr-ϕ x with α ⋯ ϕ in eqᵃ | β ⋯ ϕ in eqᵇ
+
+≈′-⋯⁻¹ {α = α₁ ; α₂} {β₁ ; β₂} inj-ϕ unr-ϕ (;′-cong₁ x) | ϕα | ϕβ
+  rewrite ⋯-injective {α = α₂} {β₂} inj-ϕ (;-injective eqᵃ .proj₂ ■ sym (;-injective eqᵇ .proj₂))
+  = ;′-cong₁ (≈′-⋯⁻¹ inj-ϕ unr-ϕ (subst₂ (_ ∶_≈′_) (sym (;-injective eqᵃ .proj₁)) (sym (;-injective eqᵇ .proj₁)) x))
+
+≈′-⋯⁻¹ {α = α₁ ; α₂} {β₁ ; β₂} inj-ϕ unr-ϕ (;′-cong₂ x) | ϕα | ϕβ
+  rewrite ⋯-injective {α = α₁} {β₁} inj-ϕ (;-injective eqᵃ .proj₁ ■ sym (;-injective eqᵇ .proj₁))
+  = ;′-cong₂ (≈′-⋯⁻¹ inj-ϕ unr-ϕ (subst₂ (_ ∶_≈′_) (sym (;-injective eqᵃ .proj₂)) (sym (;-injective eqᵇ .proj₂)) x))
+
+≈′-⋯⁻¹ {α = (α₁ ; β₁) ; γ₁} {α₂ ; (β₂ ; γ₂)} inj-ϕ unr-ϕ ;′-assoc | ϕα | ϕβ
+  with eqᵃ′ , refl ← ;-injective eqᵃ
+  with refl , refl ← ;-injective eqᵃ′
+  rewrite ⋯-injective {α = α₂} {α₁} inj-ϕ (;-injective eqᵇ .proj₁)
+  rewrite ⋯-injective {α = β₂} {β₁} inj-ϕ (;-injective (;-injective eqᵇ .proj₂) .proj₁)
+  rewrite ⋯-injective {α = γ₂} {γ₁} inj-ϕ (;-injective (;-injective eqᵇ .proj₂) .proj₂)
+  = ;′-assoc
+
+≈′-⋯⁻¹ {α = α ∥ []} {β} inj-ϕ unr-ϕ ∥′-unit | ϕα | ϕβ
+  rewrite ⋯-injective {α = α} {β} inj-ϕ (∥-injective eqᵃ .proj₁ ■ sym eqᵇ)
+  = ∥′-unit
+
+≈′-⋯⁻¹ {α = (α₁ ∥ β₁) ∥ γ₁} {α₂ ∥ (β₂ ∥ γ₂)} inj-ϕ unr-ϕ ∥′-assoc | ϕα | ϕβ
+  with eqᵃ′ , refl ← ∥-injective eqᵃ
+  with refl , refl ← ∥-injective eqᵃ′
+  rewrite ⋯-injective {α = α₂} {α₁} inj-ϕ (∥-injective eqᵇ .proj₁)
+  rewrite ⋯-injective {α = β₂} {β₁} inj-ϕ (∥-injective (∥-injective eqᵇ .proj₂) .proj₁)
+  rewrite ⋯-injective {α = γ₂} {γ₁} inj-ϕ (∥-injective (∥-injective eqᵇ .proj₂) .proj₂)
+  = ∥′-assoc
+
+≈′-⋯⁻¹ {α = α₁ ∥ α₂} {β₁ ∥ β₂} inj-ϕ unr-ϕ ∥′-comm | ϕα | ϕβ
+  using α₁≡α , α₂≡β ← ∥-injective eqᵃ
+  using β₁≡β , β₂≡α ← ∥-injective eqᵇ
+  rewrite ⋯-injective {α = α₁} {β₂} inj-ϕ (α₁≡α ■ sym β₂≡α)
+  rewrite ⋯-injective {α = α₂} {β₁} inj-ϕ (α₂≡β ■ sym β₁≡β)
+  = ∥′-comm
+
+≈′-⋯⁻¹ {α = α₁ ∥ α₂} {β₁ ∥ β₂} inj-ϕ unr-ϕ (∥′-cong₁ x) | ϕα | ϕβ
+  rewrite ⋯-injective {α = α₂} {β₂} inj-ϕ (∥-injective eqᵃ .proj₂ ■ sym (∥-injective eqᵇ .proj₂))
+  = ∥′-cong₁ (≈′-⋯⁻¹ inj-ϕ unr-ϕ (subst₂ (_ ∶_≈′_) (sym (∥-injective eqᵃ .proj₁)) (sym (∥-injective eqᵇ .proj₁)) x))
+
+≈′-⋯⁻¹ {α = α} {β₁ ∥ β₂} {ϕ = ϕ} inj-ϕ unr-ϕ (∥′-dup U) | ϕα | ϕβ
+  rewrite sym eqᵃ
+  rewrite ⋯-injective {α = β₁} {α} inj-ϕ (∥-injective eqᵇ .proj₁)
+  rewrite ⋯-injective {α = β₂} {α} inj-ϕ (∥-injective eqᵇ .proj₂)
+  = ∥′-dup (allCx-⋯⁻¹ unr-ϕ U)
+
+≈′-⋯⁻¹ {α = α₁ ∥ α₂} {β₁ ; β₂} {ϕ = ϕ} inj-ϕ unr-ϕ (∥′-tm-; U) | ϕα | ϕβ
+  with refl , refl ← ∥-injective eqᵃ
+  rewrite ⋯-injective {α = β₁} {α₁} inj-ϕ (;-injective eqᵇ .proj₁)
+  rewrite ⋯-injective {α = β₂} {α₂} inj-ϕ (;-injective eqᵇ .proj₂)
+  = ∥′-tm-; (Sum.map (allCx-⋯⁻¹ unr-ϕ) (allCx-⋯⁻¹ unr-ϕ) U)
+
+postulate
+  ≈-⋯⁻¹ : {ϕ : m →ᵣ n} → Inj ϕ → ϕ Preserves[ Unr ] Γ₁ ⇐ Γ₂ → Γ₂ ∶ α ⋯ ϕ ≈ β ⋯ ϕ → Γ₁ ∶ α ≈ β
+{-
+≈-⋯⁻¹ {α = α} {β} {ϕ = ϕ} ϕ-inj ϕ-unr x with α ⋯ ϕ in eqᵃ | β ⋯ ϕ in eqᵇ
+≈-⋯⁻¹ {α = α} {β} {ϕ = ϕ} ϕ-inj ϕ-unr refl | ϕa | ϕb = ≈-reflexive (⋯-injective ϕ-inj (eqᵃ ■ sym eqᵇ))
+≈-⋯⁻¹ {α = α} {β} {ϕ = ϕ} ϕ-inj ϕ-unr (fwd x ◅ xs) | ϕa | ϕb
+  rewrite sym eqᵃ | sym eqᵇ
+  = fwd (≈′-⋯⁻¹ {!!} {!!} {!x!}) ◅ {!≈-⋯⁻¹ ϕ-inj ϕ-unr xs!}
+≈-⋯⁻¹ {α = α} {β} {ϕ = ϕ} ϕ-inj ϕ-unr (bwd x ◅ xs) | ϕa | ϕb = {!!}
+-}
+
 ≼-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} → ϕ Preserves[ Unr ] Γ₁ ⇒ Γ₂ → Γ₁ ∶ α ≼ β → Γ₂ ∶ α ⋯ ϕ ≼ β ⋯ ϕ
 ≼-⋯ σ-unr (≼-refl eq)    = ≼-refl (≈-⋯ σ-unr eq)
 ≼-⋯ σ-unr ≼-wk           = ≼-wk
@@ -200,3 +209,14 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
 ≼-⋯ σ-unr (≼-trans  x y) = ≼-trans (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
 ≼-⋯ σ-unr (≼-cong-; x y) = ≼-cong-; (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
 ≼-⋯ σ-unr (≼-cong-∥ x y) = ≼-cong-∥ (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
+
+postulate
+  ≼-⋯⁻¹ : {ϕ : m →ᵣ n} → Γ₂ ∶ α ⋯ ϕ ≼ β ⋯ ϕ → Γ₁ ∶ α ≼ β
+
+{-
+≼-⋯⁻¹ {α = ` _} {β} (≼-refl eq) = {!!}
+≼-⋯⁻¹ {α = ` _} {β} (≼-trans x x₂) = {!!}
+≼-⋯⁻¹ {α = []} {β} x = {!!}
+≼-⋯⁻¹ {α = α ∥ α₁} {β} x = {!!}
+≼-⋯⁻¹ {α = α ; α₁} {β} x = {!!}
+-}

@@ -5,7 +5,6 @@ module BorrowedCF.Context.Join where
 open import BorrowedCF.Prelude
 open import BorrowedCF.Types
 open import BorrowedCF.Context.Base
-open import BorrowedCF.Context.Domain
 open import BorrowedCF.Context.Equivalence
 open import BorrowedCF.Context.Subcontext
 open import BorrowedCF.Context.Substitution
@@ -132,3 +131,13 @@ instance
 
   join-p/s : Join ParSeq
   join-p/s = record { joinDir = biasedDir }
+
+postulate parOrSeq? : Γ ∶ α ; β ≼ γ → Σ[ p/s ∈ ParSeq ] Γ ∶ join p/s α β ≼ γ
+
+;-≼-join : (p/s : ParSeq) → Γ ∶ α ; β ≼ join p/s α β
+;-≼-join par = ;-≼-∥
+;-≼-join seq = ≼-refl refl
+
+join-≼-∥ : (p/s : ParSeq) → Γ ∶ join p/s α β ≼ α ∥ β
+join-≼-∥ par = ≼-refl refl
+join-≼-∥ seq = ;-≼-∥

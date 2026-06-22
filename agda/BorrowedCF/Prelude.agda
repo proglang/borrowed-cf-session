@@ -99,6 +99,17 @@ module Fin where
       ≡⟨ join-splitAt m n x ⟩
     x ∎
 
+{-
+  assocˡ : ∀ n₁ n₂ {n₃} → Fin (n₁ +ℕ (n₂ +ℕ n₃)) → Fin ((n₁ +ℕ n₂) +ℕ n₃)
+  assocˡ n₁ n₂ = [ {!!} ∘ {!!} , join (n₁ +ℕ n₂) _ ∘ Sum.map₁ (n₁ ↑ʳ_) ∘ splitAt n₂ ]′ ∘ splitAt n₁
+
+  assocʳ : ∀ n₁ n₂ {n₃} → Fin ((n₁ +ℕ n₂) +ℕ n₃) → Fin (n₁ +ℕ (n₂ +ℕ n₃))
+  assocʳ = {!!}
+
+  assocˡʳ-id : ∀ n₁ n₂ {n₃} → assocˡ n₁ n₂ {n₃} ∘ assocʳ n₁ n₂ ≗ id
+  assocˡʳ-id = {!!}
+-}
+
 open Fin
   using ( zero; suc; _↑ˡ_; _↑ʳ_; ↑ˡ≢↑ʳ
         ; ↑ˡ-injective; ↑ʳ-injective
@@ -144,5 +155,9 @@ open module Un = Relation.Unary
   using (Pred)
   public
 
-open import Data.Bool using (true; false) public
+open import Data.Bool using (if_then_else_; Bool; true; false) public
 open import Relation.Nullary public
+
+if[_]_then_else_ : ∀ {a p} {A : Set a} (P : A → Set p) (b : Bool) {a₁ a₂} → P a₁ → P a₂ → P (if b then a₁ else a₂)
+if[ P ] true  then x else y = x
+if[ P ] false then x else y = y
