@@ -9,7 +9,7 @@ open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
 open import BorrowedCF.Processes.Typed
   using (BindGroup; structBinder; structBinderWk; structBinder+²)
-import BorrowedCF.Reduction.Processes.TypedMW as 𝐓R
+import BorrowedCF.Reduction.Processes.Typed as 𝐓R
 open import BorrowedCF.Simulation.Confine using (count)
 open import BorrowedCF.Simulation.StructDom
   using (count-cast; count-structBinder-lt; count-weaken*-lo)

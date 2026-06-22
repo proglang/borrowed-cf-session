@@ -16,7 +16,7 @@ module BorrowedCF.Simulation.ComScratch where
 open import BorrowedCF.Simulation.Base
 import BorrowedCF.Processes.Typed as 𝐓
 import BorrowedCF.Processes.Untyped as 𝐔
-import BorrowedCF.Reduction.Processes.TypedMW as 𝐓R
+import BorrowedCF.Reduction.Processes.Typed as 𝐓R
 open import Data.List using (List; []; _∷_)
 
 -- b₁ = b₂ = 0, B₁ = B₂ = (0 ∷ []): front chain has 1 borrow, one junction to a 0-chain.

@@ -43,7 +43,7 @@ open import BorrowedCF.Simulation.Base
 import BorrowedCF.Processes.Typed as 𝐓
 import BorrowedCF.Processes.Untyped as 𝐔
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
-import BorrowedCF.Reduction.Processes.TypedMW as 𝐓R
+import BorrowedCF.Reduction.Processes.Typed as 𝐓R
 import BorrowedCF.Reduction.Processes.Untyped as 𝐔R
 open import BorrowedCF.Simulation.SubstLemmas
 open import BorrowedCF.Simulation.BlockSwap
@@ -255,7 +255,7 @@ sim→ σ Vσ Γ-S ⊢P (𝐓R.R-Fork E V) =
                   (𝐔R.RU-Fork (frame*-⋯ E σ Vσ) (value-⋯ V σ Vσ))
 -- ════════════════════════════════════════════════════════════════════════════
 -- OPEN OBLIGATION 2/2: the 5 channel-operation cases of the forward simulation.
--- sim→ relates typed reduction 𝐓R (= Reduction.Processes.TypedMW) to untyped 𝐔R
+-- sim→ relates typed reduction 𝐓R (= Reduction.Processes.Typed) to untyped 𝐔R
 -- (= Reduction.Processes.Untyped) through the translation U[_].  R-Exp/Par/Struct/
 -- Fork/New/Close are DONE (above) and are the TEMPLATE; copy their shape.
 --
@@ -309,7 +309,7 @@ sim→ σ Vσ Γ-S ⊢P (𝐓R.R-Fork E V) =
 --     lives in the *innermost* leaf.  ϕ[zero]=set, ϕ[suc _]=unset (Bisim:32-34).
 --   • UB[ c ∷ [] ] = Ub[c] …  — a single chain has NO φ (syncs=0).
 --
--- PER-OP GUIDANCE (typed rule = TypedMW, untyped = Untyped reduction):
+-- PER-OP GUIDANCE (typed rule = Typed, untyped = Untyped reduction):
 --
 -- R-Drop  (𝐓R.R-Drop, ν (suc b₁∷B₁) B₂ (⟪E⋯weakenᵣ[drop·(`0F)]⟫ ∥ P⋯weakenᵣ)
 --          ─→ ν (b₁∷B₁) B₂ (⟪E[unit]⟫ ∥ P)) ↦ 𝐔R.RU-Drop
@@ -324,7 +324,7 @@ sim→ σ Vσ Γ-S ⊢P (𝐓R.R-Fork E V) =
 --       in the paper (sec/translation.tex, rules/translated-system.tex) what drop means
 --       with borrows remaining; it likely shortens the front Ub-chain WITHOUT a flag
 --       flip, which may need a different reconciliation (or the typed R-Drop is only
---       ever applied at the last borrow — check TypedMW typing).  DO NOT GUESS the
+--       ever applied at the last borrow — check Typed typing).  DO NOT GUESS the
 --       paper semantics — confirm first.
 --   (c) CASE ON B₁ empty/non-empty (B₁=[] ⇒ no φ ⇒ no flag ⇒ separate handling).
 --
@@ -341,7 +341,7 @@ sim→ σ Vσ Γ-S ⊢P (𝐓R.R-Fork E V) =
 --           ─→ ν (B₁++suc(suc b₁)∷B₂) B (⟪E⋯𝐒.lwk[(`𝐒.inj 0F)⊗(`𝐒.inj 1F)]⟫ ∥ P⋯𝐒.lwk))
 --   ↦ 𝐔R.RU-LSplit (NOW has its ν binder restored: ν(⟪F[lsplit·((e₁⊗x)⊗e₂)]⟫ ∥ P)
 --   ─→ ν(⟪F[((e₁⊗x)⊗unit)⊗((unit⊗x)⊗e₂)]⟫ ∥ P)).  syncs preserved (chain count same,
---   borrow grows).  Work: the SplitRenamings 𝐒.inj/𝐒.lwk are Fin.cast-heavy (TypedMW
+--   borrow grows).  Work: the SplitRenamings 𝐒.inj/𝐒.lwk are Fin.cast-heavy (Typed
 --   SplitRenamings module); reconcile the φ-nest locally (the split chain) + the cast
 --   bookkeeping.  Medium-high effort.
 --

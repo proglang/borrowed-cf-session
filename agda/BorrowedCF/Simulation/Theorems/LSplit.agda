@@ -6,7 +6,7 @@ open import BorrowedCF.Simulation.Base
 import BorrowedCF.Processes.Typed as 𝐓
 import BorrowedCF.Processes.Untyped as 𝐔
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
-import BorrowedCF.Reduction.Processes.TypedMW as 𝐓R
+import BorrowedCF.Reduction.Processes.Typed as 𝐓R
 import BorrowedCF.Reduction.Processes.Untyped as 𝐔R
 open import BorrowedCF.Simulation.SubstLemmas
 open import BorrowedCF.Simulation.BlockSwap

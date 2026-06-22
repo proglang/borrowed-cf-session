@@ -12,7 +12,7 @@ open import BorrowedCF.Context
 open import BorrowedCF.Reduction.Base
 open import BorrowedCF.Reduction.Expressions
 open import BorrowedCF.Processes.Typed
-import BorrowedCF.Reduction.Processes.TypedMW as RR
+import BorrowedCF.Reduction.Processes.Typed as RR
 
 open Fin.Patterns
 open Nat.Variables
