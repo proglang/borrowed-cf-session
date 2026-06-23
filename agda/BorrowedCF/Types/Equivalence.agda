@@ -88,7 +88,10 @@ module ≃-Reasoning {κ x} = SetoidReasoning (≃-setoid κ x)
 ≃-μ = Eq*.return ≃𝕊-μ
 
 ≃-skipˡ : skip ; s ≃ s
-≃-skipˡ = fwd ≃𝕊-skipˡ ◅ refl
+≃-skipˡ = Eq*.return ≃𝕊-skipˡ
+
+≃-skipʳ : s ; skip ≃ s
+≃-skipʳ = Eq*.return ≃𝕊-skipʳ
 
 ≃-skips : Skips {n} Respects _≃_
 ≃-skips refl s = s
