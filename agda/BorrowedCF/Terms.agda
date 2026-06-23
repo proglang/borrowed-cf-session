@@ -526,6 +526,52 @@ inv-K (T-Weaken γ≤ x) =
   let _ , U≃ , ≤γ , x′ = inv-K x in
   _ , U≃ , ≼-trans ≤γ γ≤ , x′
 
+module _ (Γ : Ctx n) (α β : Struct n) (e₁ e₂ : Tm n) (a : Arr) (T U : 𝕋) (ϵ : Eff) where
+  data InvApp : Set where
+    T-AppUnr   : (a-unr : Arr.Unr a) → Γ ; α ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ → Γ ; β ⊢ e₂ ∶ T ∣ ϵ → InvApp
+    T-AppLin   : (a-par : Arr.Par a) → Γ ; α ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ → Γ ; β ⊢ e₂ ∶ T ∣ ϵ → InvApp
+    T-AppLeft  : (aL : Arr.IsL a) → Γ ; α ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ℙ → Γ ; β ⊢ e₂ ∶ T ∣ ϵ → InvApp
+    T-AppRight : (aR : Arr.IsR a) → Γ ; α ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ → Γ ; β ⊢ e₂ ∶ T ∣ ℙ → InvApp
+
+invApp-conv : T ≃ T′ → U ≃ U′ → ϵ ≤ϵ ϵ′ → InvApp Γ γ₁ γ₂ e₁ e₂ a T U ϵ → InvApp Γ γ₁ γ₂ e₁ e₂ a T′ U′ ϵ′
+invApp-conv t-eq u-eq ≤ (T-AppUnr   a x y) = T-AppUnr   a (T-Conv (t-eq `→ u-eq) ≤ x)   (T-Conv t-eq ≤ y)
+invApp-conv t-eq u-eq ≤ (T-AppLin   a x y) = T-AppLin   a (T-Conv (t-eq `→ u-eq) ≤ x)   (T-Conv t-eq ≤ y)
+invApp-conv t-eq u-eq ≤ (T-AppLeft  a x y) = T-AppLeft  a (T-Conv (t-eq `→ u-eq) ℙ≤ϵ x) (T-Conv t-eq ≤ y)
+invApp-conv t-eq u-eq ≤ (T-AppRight a x y) = T-AppRight a (T-Conv (t-eq `→ u-eq) ≤ x)   (T-Conv t-eq ℙ≤ϵ y)
+
+inv-· : Γ ; γ ⊢ e₁ · e₂ ∶ U ∣ ϵ →
+  ∃[ a ] ∃[ α ] ∃[ β ] ∃[ T ]
+    Γ ∶ join (Arr.dir a) β α ≼ γ × Arr.eff a ≤ϵ ϵ × InvApp Γ α β e₁ e₂ a T U ϵ
+inv-· (T-AppUnr {a = a} {γ₁ = γ₁} {γ₂ = γ₂} a-unr ≤ₐ x y) =
+  a , _ , _ , _
+    , ≼-refl (≈-trans (≈-reflexive (cong (λ d → join d γ₂ γ₁) (Arr.ω⇒𝟙 a a-unr))) ∥-comm)
+    , ≤ₐ
+    , T-AppUnr a-unr x y
+inv-· (T-AppLin {a = a} {γ₁ = γ₁} {γ₂ = γ₂} a-par ≤ₐ x y) =
+  a , _ , _ , _
+    , ≼-refl (≈-trans (≈-reflexive (cong (λ d → join d γ₂ γ₁) a-par)) ∥-comm)
+    , ≤ₐ
+    , T-AppLin a-par x y
+inv-· (T-AppLeft {a = a} {γ₁ = γ₁} {γ₂ = γ₂} aL ≤ₐ x y) =
+    a , _ , _ , _
+    , ≼-refl (≈-reflexive (cong (λ d → join d γ₂ γ₁) aL))
+    , ≤ₐ
+    , T-AppLeft aL x y
+inv-· (T-AppRight {a = a} {γ₁ = γ₁} {γ₂ = γ₂} aR ≤ₐ x y) =
+    a , _ , _ , _
+    , ≼-refl (≈-reflexive (cong (λ d → join d γ₂ γ₁) aR))
+    , ≤ₐ
+    , T-AppRight aR x y
+inv-· (T-Conv T≃ ϵ≤ x) =
+  let _ , _ , _ , _ , ≤γ , ≤ₐ , xy = inv-· x
+   in _ , _ , _ , _ , ≤γ , ≤ϵ-trans ≤ₐ ϵ≤ , invApp-conv ≃-refl T≃ ϵ≤ xy
+inv-· (T-Weaken ≤₁ x) =
+  let _ , _ , _ , _ , ≤₂ , xy = inv-· x
+   in _ , _ , _ , _ , ≼-trans ≤₂ ≤₁ , xy
+
+postulate
+  ⊢-det : Γ ; γ ⊢ e ∶ T ∣ ϵ → Γ ; γ ⊢ e ∶ U ∣ ϵ → T ≃ U
+
 postulate
   _⊢⋯⁻¹_ : {ϕ : m →ᵣ n} {σ : _} → Γ₂ ; γ ⊢ e ⋯ ϕ ∶ T ∣ ϵ → ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ →
     ∃[ γ′ ] Γ₂ ∶ γ′ 𝐂.⋯ σ ≼ γ × Γ₁ ; γ′ ⊢ e ∶ T ∣ ϵ
