@@ -136,13 +136,24 @@ structBinder : (B : BindGroup) → Struct (sum B)
 structBinder [] = []
 structBinder (b ∷ B) = (structNSeq b 𝐂.⋯ᵣ 𝐂.wkʳ (sum B)) ∥ (structBinder B 𝐂.⋯ᵣ 𝐂.wkˡ b)
 
-data BindCtx : 𝕊 0 → Ctx n → Set where
-  []  : BindCtx skip F.[]
-  -∷_ : BindCtx s₂ Γ → BindCtx (s₁ ; s₂) (⟨ s₁ ⟩ ⸴ Γ)
+data BindCtx′ (s : 𝕊 0) : ∀ n → Ctx n → Set where
+  nil : Skips s → BindCtx′ s 0 Γ
+  cons : ∀ {b} {Γ Γ′} (s≃ : s₁ ; s₂ ≃ s) (Γ≗ : ⟨ s₁ ⟩ ⸴ Γ′ ≗ Γ) →
+    BindCtx′ s₂ b Γ′ → BindCtx′ s (suc b) Γ
 
-bindCtx⇒chanCtx : BindCtx s Γ → ChanCx Γ
-bindCtx⇒chanCtx (-∷ C) zero    = _ , refl
-bindCtx⇒chanCtx (-∷ C) (suc x) = bindCtx⇒chanCtx C x
+data BindCtx (s : 𝕊 0) : (B : BindGroup) (Γ : Ctx (sum B)) → Set where
+  nil  : Skips s → BindCtx s [] Γ
+  cons : ∀ {b} {Γ₁ Γ₂ Γ} (s≃ : s₁ ; s₂ ≃ s) (Γ≗ : Γ₁ ⸴* Γ₂ ≗ Γ) →
+    BindCtx′ (s₁ ; ret) b Γ₁ → BindCtx  (acq ; s₂) B Γ₂ → BindCtx s (b ∷ B) Γ
+
+bindCtx′⇒chanCtx : BindCtx′ s n Γ → ChanCx Γ
+bindCtx′⇒chanCtx (cons s≃ Γ≗ b) zero = _ , sym (Γ≗ zero)
+bindCtx′⇒chanCtx (cons s≃ Γ≗ b) (suc x) = Π.map₂ (sym (Γ≗ (suc x)) ■_) (bindCtx′⇒chanCtx b x)
+
+bindCtx⇒chanCtx : ∀ {B Γ} → BindCtx s B Γ → ChanCx Γ
+bindCtx⇒chanCtx {B = b ∷ B} (cons {Γ₁ = Γ₁} {Γ₂} s≃ Γ≗ b₁ b₂) x with splitAt b x in eq
+... | inj₁ x₁ = Π.map₂ (λ eq′ → sym (Γ≗ x) ■ cong [ Γ₁ , Γ₂ ] eq ■ eq′) (bindCtx′⇒chanCtx b₁ x₁)
+... | inj₂ x₂ = Π.map₂ (λ eq′ → sym (Γ≗ x) ■ cong [ Γ₁ , Γ₂ ] eq ■ eq′) (bindCtx⇒chanCtx b₂ x₂)
 
 ⊢ᴮ_ : Pred BindGroup _
 ⊢ᴮ B = All NonZero (L.drop 1 B)
@@ -160,9 +171,10 @@ data _;_⊢ₚ_ (Γ : Ctx n) : Struct n → Proc n → Set where
     Γ ; γ₁ ∥ γ₂ ⊢ₚ P ∥ Q
 
   TP-Res :
+    (N : New s) →
     (⊢B₁ : ⊢ᴮ B₁) (⊢B₂ : ⊢ᴮ B₂) →
-    (C : BindCtx {sum B₁} s Γ₁) →
-    (C′ : BindCtx {sum B₂} (dual s) Γ₂) →
+    (C  : BindCtx s        B₁ Γ₁) →
+    (C′ : BindCtx (dual s) B₂ Γ₂) →
     (Γ₁ ⸴* Γ₂) ⸴* Γ ; (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n)
                     ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n)
                     ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
@@ -193,17 +205,17 @@ inv-∥ (TP-Weaken γ≤ p) =
 
 inv-ν : {Γ : Ctx n} → Γ ; γ ⊢ₚ ν B₁ B₂ P →
   ∃[ Γ₁ ] ∃[ Γ₂ ] ∃[ s ]
-    ⊢ᴮ B₁ × ⊢ᴮ B₂
-      × BindCtx {sum B₁} s Γ₁
-      × BindCtx {sum B₂} (dual s) Γ₂
+    New s × ⊢ᴮ B₁ × ⊢ᴮ B₂
+      × BindCtx s        B₁ Γ₁
+      × BindCtx (dual s) B₂ Γ₂
       × (Γ₁ ⸴* Γ₂) ⸴* Γ ; (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n)
                         ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n)
                         ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
                         ⊢ₚ P
-inv-ν (TP-Res ⊢B₁ ⊢B₂ C C′ p) = _ , _ , _ , ⊢B₁ , ⊢B₂ , C , C′ , p
+inv-ν (TP-Res N ⊢B₁ ⊢B₂ C C′ p) = _ , _ , _ , N , ⊢B₁ , ⊢B₂ , C , C′ , p
 inv-ν (TP-Weaken γ≤ p) =
-  let Γ₁ , Γ₂ , _ , ⊢B₁ , ⊢B₂ , C , C′ , p′ = inv-ν p in
-  _ , _ , _ , ⊢B₁ , ⊢B₂ , C , C′ , TP-Weaken (≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.wk*-preserves (Γ₁ ⸴* Γ₂)) γ≤)) p′
+  let Γ₁ , Γ₂ , _ , N , ⊢B₁ , ⊢B₂ , C , C′ , p′ = inv-ν p in
+  _ , _ , _ , N , ⊢B₁ , ⊢B₂ , C , C′ , TP-Weaken (≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.wk*-preserves (Γ₁ ⸴* Γ₂)) γ≤)) p′
 
 infixl 5 _⊢⋯ₚ_
 
@@ -215,8 +227,8 @@ _⊢⋯ₚ_ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ TK : TKit K ⦄ →
         Γ₂ ; γ 𝐂.⋯ σ ⊢ₚ P ⋯ₚ ϕ
 TP-Expr e ⊢⋯ₚ ⊢ϕ = TP-Expr (e ⊢⋯ ⊢ϕ)
 TP-Par p q ⊢⋯ₚ ⊢ϕ = TP-Par (p ⊢⋯ₚ ⊢ϕ) (q ⊢⋯ₚ ⊢ϕ)
-_⊢⋯ₚ_ {γ = γ} {σ = σ} (TP-Res {B₁ = B₁} {B₂ = B₂} ⊢B₁ ⊢B₂ C C′ p) ⊢ϕ =
-  TP-Res ⊢B₁ ⊢B₂ C C′
+_⊢⋯ₚ_ {γ = γ} {σ = σ} (TP-Res {B₁ = B₁} {B₂ = B₂} N ⊢B₁ ⊢B₂ C C′ p) ⊢ϕ =
+  TP-Res N ⊢B₁ ⊢B₂ C C′
     $ subst-γₚ (cong₂ _∥_ (cong₂ _∥_
         (𝐂.fusion (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂)) (𝐂.wkʳ _) (σ 𝐂.↑* (sum B₁ + sum B₂))
           ■ 𝐂.⋯-cong (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂)) (𝐂.wkʳ-cancels-↑* ⦃ 𝐂.Kᵣ ⦄ (sum B₁ + sum B₂) σ)
