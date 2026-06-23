@@ -142,7 +142,8 @@ data BindCtx′ (s : 𝕊 0) : ∀ n → Ctx n → Set where
     BindCtx′ s₂ b Γ′ → BindCtx′ s (suc b) Γ
 
 data BindCtx (s : 𝕊 0) : (B : BindGroup) (Γ : Ctx (sum B)) → Set where
-  nil  : Skips s → BindCtx s [] Γ
+  last : ∀ {b} {Γ} →
+    BindCtx′ s b (Γ ∘ (_↑ˡ 0)) → BindCtx s L.[ b ] Γ
   cons : ∀ {b} {Γ₁ Γ₂ Γ} (s≃ : s₁ ; s₂ ≃ s) (Γ≗ : Γ₁ ⸴* Γ₂ ≗ Γ) →
     BindCtx′ (s₁ ; ret) b Γ₁ → BindCtx  (acq ; s₂) B Γ₂ → BindCtx s (b ∷ B) Γ
 
@@ -151,6 +152,11 @@ bindCtx′⇒chanCtx (cons s≃ Γ≗ b) zero = _ , sym (Γ≗ zero)
 bindCtx′⇒chanCtx (cons s≃ Γ≗ b) (suc x) = Π.map₂ (sym (Γ≗ (suc x)) ■_) (bindCtx′⇒chanCtx b x)
 
 bindCtx⇒chanCtx : ∀ {B Γ} → BindCtx s B Γ → ChanCx Γ
+bindCtx⇒chanCtx {B = b ∷ _} {Γ} (last b′) x =
+  Π.map₂ (λ eq → cong Γ (sym (Fin.join-splitAt b 0 x) ■ [,-]-cong (λ()) (splitAt b x) ■ sym ([,]-∘ (_↑ˡ 0) (splitAt b x))) ■ eq)
+    $ bindCtx′⇒chanCtx b′
+    $ Sum.fromInj₁ (λ())
+    $ splitAt b x
 bindCtx⇒chanCtx {B = b ∷ B} (cons {Γ₁ = Γ₁} {Γ₂} s≃ Γ≗ b₁ b₂) x with splitAt b x in eq
 ... | inj₁ x₁ = Π.map₂ (λ eq′ → sym (Γ≗ x) ■ cong [ Γ₁ , Γ₂ ] eq ■ eq′) (bindCtx′⇒chanCtx b₁ x₁)
 ... | inj₂ x₂ = Π.map₂ (λ eq′ → sym (Γ≗ x) ■ cong [ Γ₁ , Γ₂ ] eq ■ eq′) (bindCtx⇒chanCtx b₂ x₂)
@@ -173,8 +179,8 @@ data _;_⊢ₚ_ (Γ : Ctx n) : Struct n → Proc n → Set where
   TP-Res :
     (N : New s) →
     (⊢B₁ : ⊢ᴮ B₁) (⊢B₂ : ⊢ᴮ B₂) →
-    (C  : BindCtx s        B₁ Γ₁) →
-    (C′ : BindCtx (dual s) B₂ Γ₂) →
+    (C  : BindCtx (s      ; end ⁇) B₁ Γ₁) →
+    (C′ : BindCtx (dual s ; end ‼) B₂ Γ₂) →
     (Γ₁ ⸴* Γ₂) ⸴* Γ ; (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n)
                     ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n)
                     ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
@@ -206,8 +212,8 @@ inv-∥ (TP-Weaken γ≤ p) =
 inv-ν : {Γ : Ctx n} → Γ ; γ ⊢ₚ ν B₁ B₂ P →
   ∃[ Γ₁ ] ∃[ Γ₂ ] ∃[ s ]
     New s × ⊢ᴮ B₁ × ⊢ᴮ B₂
-      × BindCtx s        B₁ Γ₁
-      × BindCtx (dual s) B₂ Γ₂
+      × BindCtx (s      ; end ⁇) B₁ Γ₁
+      × BindCtx (dual s ; end ‼) B₂ Γ₂
       × (Γ₁ ⸴* Γ₂) ⸴* Γ ; (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n)
                         ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n)
                         ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
