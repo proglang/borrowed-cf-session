@@ -1,6 +1,7 @@
 module BorrowedCF.Processes.Typed where
 
 open import Data.Nat.ListAction using (sum)
+open import Data.List.Relation.Unary.All as All using (All)
 open import Data.Vec.Functional as F using ()
 open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosure)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (Star; _◅_; _◅◅_; kleisliStar) renaming (ε to refl)
@@ -143,6 +144,9 @@ bindCtx⇒chanCtx : BindCtx s Γ → ChanCx Γ
 bindCtx⇒chanCtx (-∷ C) zero    = _ , refl
 bindCtx⇒chanCtx (-∷ C) (suc x) = bindCtx⇒chanCtx C x
 
+⊢ᴮ_ : Pred BindGroup _
+⊢ᴮ B = All NonZero (L.drop 1 B)
+
 infix 4 _;_⊢ₚ_
 
 data _;_⊢ₚ_ (Γ : Ctx n) : Struct n → Proc n → Set where
@@ -156,6 +160,7 @@ data _;_⊢ₚ_ (Γ : Ctx n) : Struct n → Proc n → Set where
     Γ ; γ₁ ∥ γ₂ ⊢ₚ P ∥ Q
 
   TP-Res :
+    (⊢B₁ : ⊢ᴮ B₁) (⊢B₂ : ⊢ᴮ B₂) →
     (C : BindCtx {sum B₁} s Γ₁) →
     (C′ : BindCtx {sum B₂} (dual s) Γ₂) →
     (Γ₁ ⸴* Γ₂) ⸴* Γ ; (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n)
@@ -188,16 +193,17 @@ inv-∥ (TP-Weaken γ≤ p) =
 
 inv-ν : {Γ : Ctx n} → Γ ; γ ⊢ₚ ν B₁ B₂ P →
   ∃[ Γ₁ ] ∃[ Γ₂ ] ∃[ s ]
-     BindCtx {sum B₁} s Γ₁
+    ⊢ᴮ B₁ × ⊢ᴮ B₂
+      × BindCtx {sum B₁} s Γ₁
       × BindCtx {sum B₂} (dual s) Γ₂
       × (Γ₁ ⸴* Γ₂) ⸴* Γ ; (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n)
                         ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n)
                         ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
                         ⊢ₚ P
-inv-ν (TP-Res C C′ p) = _ , _ , _ , C , C′ , p
+inv-ν (TP-Res ⊢B₁ ⊢B₂ C C′ p) = _ , _ , _ , ⊢B₁ , ⊢B₂ , C , C′ , p
 inv-ν (TP-Weaken γ≤ p) =
-  let Γ₁ , Γ₂ , _ , C , C′ , p′ = inv-ν p in
-  _ , _ , _ , C , C′ , TP-Weaken (≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.wk*-preserves (Γ₁ ⸴* Γ₂)) γ≤)) p′
+  let Γ₁ , Γ₂ , _ , ⊢B₁ , ⊢B₂ , C , C′ , p′ = inv-ν p in
+  _ , _ , _ , ⊢B₁ , ⊢B₂ , C , C′ , TP-Weaken (≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.wk*-preserves (Γ₁ ⸴* Γ₂)) γ≤)) p′
 
 infixl 5 _⊢⋯ₚ_
 
@@ -209,8 +215,8 @@ _⊢⋯ₚ_ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ ⦃ TK : TKit K ⦄ →
         Γ₂ ; γ 𝐂.⋯ σ ⊢ₚ P ⋯ₚ ϕ
 TP-Expr e ⊢⋯ₚ ⊢ϕ = TP-Expr (e ⊢⋯ ⊢ϕ)
 TP-Par p q ⊢⋯ₚ ⊢ϕ = TP-Par (p ⊢⋯ₚ ⊢ϕ) (q ⊢⋯ₚ ⊢ϕ)
-_⊢⋯ₚ_ {γ = γ} {σ = σ} (TP-Res {B₁ = B₁} {B₂ = B₂} C C′ p) ⊢ϕ =
-  TP-Res C C′
+_⊢⋯ₚ_ {γ = γ} {σ = σ} (TP-Res {B₁ = B₁} {B₂ = B₂} ⊢B₁ ⊢B₂ C C′ p) ⊢ϕ =
+  TP-Res ⊢B₁ ⊢B₂ C C′
     $ subst-γₚ (cong₂ _∥_ (cong₂ _∥_
         (𝐂.fusion (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂)) (𝐂.wkʳ _) (σ 𝐂.↑* (sum B₁ + sum B₂))
           ■ 𝐂.⋯-cong (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂)) (𝐂.wkʳ-cancels-↑* ⦃ 𝐂.Kᵣ ⦄ (sum B₁ + sum B₂) σ)

@@ -44,7 +44,7 @@ module Nat where
     variable m m₁ m₂ m₃ n n₁ n₂ n₃ k k₁ k₂ m′ n′ : ℕ
 
 open Nat
-  using (ℕ; zero; suc; _+_; +-identityʳ; +-suc; +-assoc)
+  using (ℕ; zero; suc; _+_; +-identityʳ; +-suc; +-assoc; NonZero)
   renaming (suc-injective to suc⁻¹)
   public
 
