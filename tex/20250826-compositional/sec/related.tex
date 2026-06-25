@@ -2,7 +2,21 @@
 \section{Related Work}
 \label{sec:related-work}
 
-
+The most closely related work is by \cite{DBLP:journals/pacmpl/SaffrichS0V25}.
+They present a similar approach to borrowing, but for regular session types, rather than CFST.
+Our type system is heavily inspired from theirs, as it also relies on
+BI-contexts that enforce a run-time ordering on operations.
+We do rely on their translation from the borrowing notation to
+explicit splits.
+However, our work differs in a number of significant aspects.
+We present a direct operational semantics for \thecalculus,
+whereas their system's semantics is defined by translation.
+We distinguish local and remote borrows, for efficiency, whereas their
+borrows are all remote. We adopt their representation of remote
+borrows. Our translation from \thecalculus to a low
+level calculus serves as a blueprint for an implementation and we
+present a simulation result.
+All metatheoretical results are mechanized using the Agda proof assistant.
 
 %%% Local Variables:
 %%% mode: latex

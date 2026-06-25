@@ -48,8 +48,8 @@
 \lstset{
   language=[Objective]Caml,
   style=eclipse,
-  morekeywords=[1]{Int, Char, Bool, Str, String, Close, Wait, Return, Unit, Skip, Chan, Ret, void, type, dualof, rec, let, in, if, then,
-    else, new, send, recv, select, fork, close, wait, print, branch, offer,
+  morekeywords=[1]{Int, Char, Bool, Str, String, Close, Wait, Return, Unit, Skip, Chan, Ret, Acquire, void, type, dualof, rec, let, in, if, then,
+    else, new, send, recv, acquire, select, fork, close, wait, print, branch, offer,
     pure, full, drop, case, of, data, match, with,
     read, write, free, split, send_borrow, recv_borrow, True,
     False}, %  MU, ML, SU, SL, TU, TL
@@ -74,6 +74,8 @@
   {oplus}{$\oplus$}1
   {+\{}{$\oplus$\{}2
   {\\le}{$\le$}1
+  {elli}{{\ensuremath{\ell_i}}}2
+  {ellj}{{\ensuremath{\ell_j}}}2
   {elll}{$\ell$}1
   {_1}{${}_1$}1
   {_n}{${}_n$}1
@@ -82,6 +84,18 @@
   breaklines=true,
   tabsize=2
 }
+
+\newtcblisting{oldlisting}{
+  colback=yellow!10,
+  colframe=black!50,
+  boxrule=0.5pt,
+  arc=2mm,
+  listing only,
+  listing options={
+    basicstyle=\ttfamily,
+  }
+}
+
 
 %%% Local Variables:
 %%% mode: latex

@@ -290,6 +290,7 @@ TSWLatexianTemp*
 # emacs
 \#*
 .\#*
+*~
 
 # expex forward references with \gathertags
 *-tags.tex
