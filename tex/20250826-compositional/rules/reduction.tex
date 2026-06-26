@@ -48,6 +48,15 @@
   \FCapp {\E[1]} \Reduces \FCapp{\E[2]}
 }
 
+% R-Discard
+\DefRule {Discard} {
+  \EVar \not\in \Fv(\Proc)
+} {
+  \PNew {\BSeq{\EVar}{\BindGroup[1]}} {\BindGroup[2]} \Proc
+  \Reduces
+  \PNew {\BindGroup[1]} {\BindGroup[2]} \Proc
+}
+
 % R-Close
 \DefRule {Close} {} {
   \PNew xy {(\PPar { {\FCapp[1]{\EApp\CTerm x}}} { {\FCapp[2]{\EApp\CWait y}}})} 
