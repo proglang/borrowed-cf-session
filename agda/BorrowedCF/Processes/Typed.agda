@@ -143,7 +143,7 @@ data BindCtx′ (s : 𝕊 0) : ∀ n → Ctx n → Set where
 
 data BindCtx (s : 𝕊 0) : (B : BindGroup) (Γ : Ctx (sum B)) → Set where
   last : ∀ {b} {Γ} →
-    BindCtx′ s b (Γ ∘ (_↑ˡ 0)) → BindCtx s L.[ b ] Γ
+    BindCtx′ s b (Γ ∘ wkʳ 0) → BindCtx s L.[ b ] Γ
   cons-ret/acq : ∀ {b} {Γ₁ Γ₂ Γ} (s≃ : s₁ ; s₂ ≃ s) (Γ≗ : Γ₁ ⸴* Γ₂ ≗ Γ) →
     BindCtx′ (s₁ ; ret) b Γ₁ → BindCtx  (acq ; s₂) B Γ₂ → BindCtx s (b ∷ B) Γ
   cons-acq :
