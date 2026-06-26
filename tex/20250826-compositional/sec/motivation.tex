@@ -2,6 +2,7 @@
 \section{Motivation}
 \label{sec:motivation}
 
+TODO: linearity
 
 \subsection{Borrowing from Context-Free Session Types}
 \label{sec:borr-from-cont}
@@ -215,17 +216,19 @@ The continuation renders the remaining children, here a messaging
 area, and then closes the child stream. 
 
 In this case, the borrow under the \lstinline{fork} is a \emph{remote
-  borrow}. Such a borrow \emph{cannot} be handled imperatively: the
-continuation must not start emitting the second child before the
+  borrow}. Such a borrow must be handled differently: the
+continuation must \emph{not} start emitting the second child before the
 forked renderer has finished the first child. This synchronization is
 implemented with the \lstinline{acquire} operation. It blocks until the
 borrow created by the fork is completed, i.e., until
 \lstinline{renderUserProfile} finishes sending on the borrowed prefix
 of the channel. The function indicates this situation by calling
-\lstinline{drop} on the channel, which synchronizes with the
-\lstinline{acquire} on the suffix of the channel.
+\lstinline{drop} on the channel, which sets a flag which unblocks a
+waiting \lstinline{acquire} on the suffix of the channel.
 Once it is unblocked, the \lstinline{acquire}
-operation returns the current channel end for further operations.
+operation returns the current channel end for further operations. The
+communication between \lstinline{drop} and \lstinline{acquire} is
+\emph{asynchronous} whereas normal communication is synchronous in \thecalculus.
 
 This setup is also reflected in the types that result from a remote
 borrow. Line~7 shows the type of \lstinline{c}'s suffix, which starts
@@ -243,10 +246,10 @@ before we move on to a low level implementation of the two concepts in
 \subsection{A Direct Semantics for Channel Borrowing}
 \label{sec:direct-semant-chann}
 
-\Cref{sec:borr-from-cont} suggests an implementation strategy
+\Cref{sec:borr-from-cont} already suggests an implementation strategy
 for local borrowing. However, we start with an abstract
-specification because it is easier to handle in a correctness proof, before moving on to
-the implementation level. The first step translates the surface
+specification because it is easier to handle in a correctness
+proof. The first step translates the surface 
 language with borrowing operators into our formal calculus
 \thecalculus, which replaces borrowing with explicit functional splitting
 operators. This translation is taken from previous work
@@ -259,10 +262,18 @@ we show the translation of \lstinline{renderUserRest} in
 
 As an example, we use the local part of
 \lstinline{renderUserRest} shown in
-\cref{fig:local-split-program}.  
+\cref{fig:local-split-program}.
 Execution proceeds by repeatedly exposing the next local prefix of the
 channel sequence. \Cref{fig:local-split-trace} shows a suffix of its reduction
-sequence. To keep the trace short, the
+sequence.
+The \lstinline{nu[c][d] in ...} operator is a channel abstraction as known
+from session calculi \cite{Gay_Vasconcelos_2025}. It introduces a
+communication channel with endpoint names \lstinline{c} and 
+\lstinline{d}. We generalize channel abstraction so that each
+compartment \lstinline{[c]} and \lstinline{[d]} contains a
+\emph{binding group}, which binds one or more names.
+
+ To keep the trace short, the
 reduction starts after the initial local splits and the selection of
 \lstinline{Child}; the omitted steps only expose the prefix consumed by
 \lstinline{renderMsgArea}.
@@ -291,7 +302,7 @@ nu[c][d..] in
    let c3, c4 = lsplit c2 in
    renderMsgArea user c3;
    close (select Done c4)
-~> nu[c3,c4][d..] in
+~> nu[c3;c4][d..] in
   (P_d ||
    renderMsgArea user c3;
    close (select Done c4)
@@ -314,7 +325,7 @@ The processes $P_d$, $P_d'$, and $P_d''$ abbreviate client-side
 computation on the other endpoint.}
 \label{fig:local-split-reduction}
 \end{figure}
-The initial split on \lstinline{c2} \emph{replaces} the
+The split on \lstinline{c2} following the \lstinline{select} \emph{replaces} the
 binder for \lstinline{c2} with two fresh channel names \lstinline{c3}
 and \lstinline{c4}. That is, both binding compartments of the
 \lstinline{nu} contain a \emph{list} of binders and all operations
@@ -323,9 +334,10 @@ sequencing, the semantics does not allow any action on \lstinline{c4} before
 \lstinline{c3} has been consumed. This restriction is supported by
 typing: the \lstinline{lsplit} operation returns an \emph{ordered
   pair}, whose components must be processed and consumed in
-left-to-right order. The \lstinline{drop} operation (not used in this
-example) applied to some \lstinline{c} just discards \lstinline{c} if
-it is the first channel name in the compartment.
+left-to-right order.
+% The \lstinline{drop} operation (not used in this
+% example) applied to some \lstinline{c} just discards \lstinline{c} if
+% it is the first channel name in the compartment.
 
 On the client side, in the process $P_d$ that holds the other
 channel end \lstinline{d}, 
@@ -378,7 +390,7 @@ at the other end of the channel).
     nu[c1|c2][...]
     fork (lambda() -> renderProfile user c1);
     renderUserRest user (acquire c2)
-~>
+~>*  [ drop c1 ]
     nu[|c2][...]
     renderUserRest user (acquire c2)
 ~>
@@ -386,7 +398,9 @@ at the other end of the channel).
     renderUserRest user c2
 \end{lstlisting}
 In summary, the \lstinline{rsplit} inserts a new binding group \lstinline{[c1|c2]}
-demarcated by ``\lstinline{|}''. The \lstinline{acquire} is only
+demarcated by ``\lstinline{|}''. The \lstinline{drop} is only enabled
+if its argument is the last name in a group directly before a
+``\lstinline{|}''. The \lstinline{acquire} is only
 enabled if the preceding binding group has been processed as in
 \lstinline{[|c2]}. Executing the \lstinline{acquire} in the last step removes the
 exhausted binding group as in \lstinline{[c2]}.
@@ -399,15 +413,26 @@ a low-level run-time calculus, \thertcalculus. The run-time calculus
 is a concurrent 
 lambda calculus with the usual session-style communication
 primitives. However, \thertcalculus is untyped and it comes equipped with
-signalling primitives for implementing \lstinline{acquire}.
+signaling primitives for implementing \lstinline{drop}/\lstinline{acquire}.
 
 Specifically, a channel is represented by a triple
-$in \otimes c \otimes out$, where $c$ is a primitive channel and $in$
-and $out$ are optional synchronization channels. These synchronization
-channels carry only a single bit.
+$in \otimes c \otimes out$, where $c$ is a primitive channel name and $in$
+and $out$ point to  optional synchronization processes, for incoming and
+outgoing synchronizations. A synchronization
+process carries one of three different values AA, BB, and CC.
+EXPLAIN.
+
+The incoming synchronization process indicates whether the channel has to
+be acquired before using it. The outgoing synchronization process
+tells us whether the channel must be dropped after use.
 
 Allocating a channel creates a primitive channel and one
-synchronization channel for each channel end.
+synchronization channel for each channel end. Channel ends start out
+in state BB, which means they are enabled for an \lstinline{acquire}
+operation. Hence, before running a protocol on a channel, we first
+have to \lstinline{acquire} it. Acquiring a channel sets its incoming
+synchronization flag to a ready state CC, which is expected by all
+normal operations. 
 
 \subsection{Remarks}
 \label{sec:remarks}
