@@ -17,6 +17,10 @@
   \inferrule[Te-Acq]{\Bounded\S}{\Mobile{(\SSeq\SAcq\S)}}
 }
 
+\newcommand*\RuleTeSkips{
+  \inferrule[Te-Skips]{\Skips\S}{\Mobile\S}
+}
+
 \newcommand*\RuleTeTerm{
   \inferrule[Te-Close]{}{
     \Bounded\STerm
