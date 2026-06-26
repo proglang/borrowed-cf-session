@@ -379,6 +379,20 @@ exhausted binding group as in \lstinline{[c2]}.
 \subsection{Implementing Local and Remote Borrowing}
 \label{sec:impl-local-remote}
 
+We implement the high-level calculus shown so far by translation into
+a low-level run-time calculus, \thertcalculus. The run-time calculus
+is a concurrent 
+lambda calculus with the usual session-style communication
+primitives. However, \thertcalculus is untyped and it comes equipped with
+signalling primitives for implementing \lstinline{acquire}.
+
+Specifically, a channel is represented by a triple
+$in \otimes c \otimes out$, where $c$ is a primitive channel and $in$
+and $out$ are optional synchronization channels. These synchronization
+channels carry only a single bit.
+
+Allocating a channel creates a primitive channel and one
+synchronization channel for each channel end.
 
 %%% Local Variables:
 %%% mode: latex
