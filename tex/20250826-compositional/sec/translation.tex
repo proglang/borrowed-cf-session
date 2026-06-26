@@ -14,45 +14,21 @@ expressive type system from before.
   \setlength{\abovedisplayskip}{0pt}%
   \setlength{\belowdisplayskip}{0pt}%
   \begin{align*}
-    % \TC \grmeq
-    %   & \TCUnit
-    %     \grmor \TCNew
-    %     \grmor \TCFork
-    %     \grmor \TCTerm 
-    %     \grmor \TCWait
-    %     \grmor \TCSend_{\TT}
-    %     \grmor \TCRecv_{\TT}
-    % \\&
-    %     \grmor \TCSplit
-    %     \grmor \TCSSplit
-    %     \grmor \TCDrop \grmor \TCAcq
-    %     \tag{Constants} \\
-    % \TT \grmeq
-    %     & \TBUnit \grmor \TTArr\TT\TT \grmor \TTProd\TT\TT
-    %               \grmor \TTSum\TT\TT \grmor \TBChanD \grmor \TBChanF
-    %       \tag{Types}
-    % \\
-    % \TCtx \grmeq
-    %     & \TCtxEmpty \grmor \TCtxExt{\TCtx}{\TCtxVar\TEVar\TT}
-    %       \tag{Contexts}
-    % \\
     \TProc \grmeq
         & \TPExp\E
           \grmor \TPPar\TProc\TProc
           \grmor \TPNew[xx] \TProc
-          \grmor \TPSync x \TProc
-          \grmor \TPFlag x \Flag
-          %\grmor \TPSync* x \TProc
+          \grmor \TPSync \Flag \TProc
       \tag{Configurations}
     \\
     \TCC
       \grmeq& \TCCEmpty
       \grmor \TPPar \TCC \TProc
       \grmor \TPNew[xx] \TCC
-      \grmor \TPSync x \TCC
+      \grmor \TPSync \Flag \TCC
       \tag{Configuration contexts}
     \\
-    \Flag \grmeq & \FlagUnset \grmor \FlagSet
+    \Flag \grmeq & \FlagInit \grmor \FlagDropped \grmor \FlagAcquired
       \tag{Synchronization flags}
   \end{align*}
   \caption{Untyped run-time syntax}
@@ -115,9 +91,14 @@ $\CAcq$.
     \RuleUProcRedRSplit   \and
     \RuleUProcRedDrop     \and
     \RuleUProcRedAcquire  \and
+    \RuleUProcRedCleanup  \and
     \RuleUProcRedClose    \and
     \RuleUProcRedCom      \and
-    \RuleUProcRedChoice
+    \RuleUProcRedChoice   \and
+    \RuleUProcRedStruct   \and
+    \RuleUProcRedPar      \and
+    \RuleUProcRedBind     \and
+    \RuleUProcRedSync
   \end{mathpar}
   \caption{Reduction of translated processes}
   \label{fig:unr-process-reduction}
@@ -126,111 +107,38 @@ $\CAcq$.
 The reduction behaviour of translated expressions is the same as their
 untranslated counterpart (\cref{fig:expression-reduction}).
 \Cref{fig:unr-process-reduction} defines the reduction relation for translated
-processes.
-
-% \begin{figure}
-%   \begin{mathpar}
-%     \RuleCUUnit \and
-%     \RuleCUNew  \and
-%     \RuleCUFork \and
-%     \RuleCUClose\and
-%     \RuleCUWait \and
-%     \RuleCUSend \and
-%     \RuleCURecv \and
-%     \RuleCULSplit\and
-%     \RuleCURSplit\and
-%     \RuleCUDrop \and
-%     \RuleCUAcquire
-%     \\
-%     \RuleTUConst \and
-%     \RuleTUVar \and
-%     \RuleTUAbs
-%   \end{mathpar}
-%   etc.---system is standard (no linearity/ordering)
-%   \begin{mathpar}
-%     \RuleTProcExpr    \and
-%     \RuleTProcPar     \and
-%     \RuleTProcRes     \and
-%     \RuleTProcSync
-%   \end{mathpar}
-%   \caption{Typing of constants, expressions and processes}
-%   \label{fig:unr-typing}
-% \end{figure}
-%
-% \Cref{fig:unr-typing} shows the typing rules for constants, expressions and processes.
-
-% \begin{figure}
-%   \begin{align*}
-%     \TrT{\BUnit} &= \TBUnit &
-%     \TrT{\TArr {\Mob} {\Dir,\Eff} {\T[1]} {\T[2]}} &= \TTArr {\TrT{\T[1]}} {\TrT{\T[2]}} \\
-%     \TrT{\S} &= \TBChan &
-%     \TrT{{\T[1]} \TPair {\T[2]}} &= \TTProd {\TrT{\T[1]}} {\TrT{\T[2]}} \\
-%     && \TrT{\TSum {\T[1]} {\T[2]}} &= \TTSum {\TrT{\T[1]}} {\TrT{\T[2]}}
-%     \\[\smallskipamount]
-%     \TrCtx{\CtxEmpty} &= \TCtxEmpty &
-%     \TrCtx{\Ctx[1] \CtxSeq \Ctx[2]} &= \TCtxApp{\TrCtx{\Ctx[1]}}{\TrCtx{\Ctx[2]}} \\
-%     \TrCtx{\CtxVar\EVar\T} &= \TCtxExt{\TCtxEmpty}{\TCtxVar\EVar{\TrT\T}} &
-%     \TrCtx{\Ctx[1] \CtxPar \Ctx[2]} &= \TCtxApp{\TrCtx{\Ctx[1]}}{\TrCtx{\Ctx[2]}}
-%   \end{align*}
-%   \caption{Translation of types and contexts}
-% \end{figure}
+processes. It uses $\ChanPat\E$ as an abbreviation for channels
+$\TEChan [\E[1]] \E [\E[2]]$.
 
 \begin{figure}
   \begin{mathpar}
-%   \RuleTransExpSubVar   \and
-%   \RuleTransExpCtxVar   \and
-%   \RuleTransExpAbsLin   \and
-%   \RuleTransExpSend     \and
-%   \RuleTransExpRecv     \and
     \RuleTransProcExp   \and
     \RuleTransProcPar   \and
     \RuleTransProcBind  \\
     \RuleTransBindPar   \and
-    \RuleTransBindSeq   \and
-    \RuleTransBindVar   \and
-    \RuleTransBindNil
+    \RuleTransBindChannels
   \end{mathpar}
   \begin{align*}
-    \BindFlag{\BPar{\BindGroup[1]}{\BindGroup[2]}} &= \BindFlag{\BindGroup[2]}
-      & \BindFlag{\EVar} &= \FlagUnset \\
-    \BindFlag{\BSeq{\Bind[1]}{\Bind[2]}} &= \BindFlag{\Bind[1]} \sqcup \BindFlag{\Bind[2]}
-      & \BindFlag{\BEmp} &= \FlagSet
+    \BindFlag{\BPar{\BindGroup[1]}{\BindGroup[2]}} &= \BindFlag{\BindGroup[2]} &
+    \BindFlag{\Bind} &= \begin{cases}
+      \FlagDropped & \text{if $\Fv(\Bind) = \emptyset$} \\
+      \FlagInit & \text{otherwise}
+    \end{cases}
   \end{align*}
   \caption{Translation of
     processes ($\Proc \TransProc \TProc*$)
-    and bind groups ($\BindGroup \TransBind \TCC \Sub$)}
+    and bind groups ($\BindGroup \TransBind \TCC \Sub$) with $\BindFlag{}$
+    mapping bind groups $\BindGroup$ to synchronization flags $\Flag$.}
   \label{fig:translation}
 \end{figure}
-
-% \begin{lemma}[Translation preserves typing]
-%   \label{lemma:translation-preserves-typing}
-% %
-%   For any context $\Ctx$ and substitution $\Sub$ with
-%   $\TCtx*=\TrCtx\Ctx\setminus\dom\Sub$
-% %
-%   \begin{enumerate}
-%     \item
-%       If $\HasType[\Eff] \Ctx \E \T$
-%       and $\HasType \Ctx \E \T \TransExp \TE*$
-%       then $\HasType {\TCtx*} {\TE*} {\TrT\T}$.
-%     \item
-%       If $\ProcHasType \Ctx \Proc$
-%       and $\ProcHasType \Ctx \Proc \TransProc \TProc*$
-%       then $\ProcHasType {\TCtx*} {\TProc*}$.
-%   \end{enumerate}
-% \end{lemma}
-
-% If \cref{lemma:translation-preserves-typing} holds it will also hold for
-% $\TCtx*=\TrCtx\Ctx$ since the target type system contains rules for weakening.
-% As written, it guarantees that $\Sub$ has been applied wherever possible.
 
 \begin{lemma}[Bisimulation]
   \label{lemma:translation-bisimulation}
 %
-  For any context $\Ctx$, process $\Proc$, and substitution $\Sub$ if
+  For any context $\Ctx$, process $\Proc$\!, and substitution $\Sub$ if\/
     $\ProcHasType \Ctx \Proc$
   and
-    $\Proc \TransProc \TProc*$,
+    $\Proc \TransProc \TProc*$\!,
   then for all
     $\ProcQ$
   where

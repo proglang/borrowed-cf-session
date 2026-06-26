@@ -1,44 +1,4 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Translation of expressions
-
-\def\RuleCmdPrefix{RuleTransExp}
-\def\RuleNamePrefix{Tr-Exp-}
-
-\DefRule {SubVar} {
-  \EVar \in \Sub
-} {
-  \HasType {\Ctx} \EVar \T \TransExp \Sub(\EVar)
-}
-
-\DefRule {CtxVar} {
-  \EVar \notin \Sub
-} {
-  \HasType {\Ctx} \EVar \T \TransExp \EVar
-}
-
-\DefRule {AbsLin} {
-  \HasType {\CtxExtUnord\Ctx{\CtxVar\EVar{\T[1]}}} \E {\T[2]}
-    \TransExp \TE*
-} {
-  \HasType \Ctx {(\EAbs\EVar\E)} {(\TArr{\Mob}{\DirUnord,\Eff}{\T[1]}{\T[2]})}
-    \TransExp \TEAbs\TEVar{\TE*}
-}
-
-\DefRule {Send} {} {
-  \HasType {\Ctx} \CSend
-    {\TArr \MobMobile {\DirUnord,\EffImpure} {\T\PairUnord{\SSend\T}} \BUnit}
-  \TransExp
-  \TCSend_{\TrT\T}
-}
-
-\DefRule {Recv} {} {
-  \HasType {\Ctx} \CRecv
-    {\TArr \MobMobile {\DirUnord,\EffImpure} {\SRecv\T} \T}
-  \TransExp
-  \TCRecv_{\TrT\T}
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Translation of processes
 
 \def\RuleCmdPrefix{RuleTransProc}
@@ -78,25 +38,6 @@
 \def\RuleCmdPrefix{RuleTransBind}
 \def\RuleNamePrefix{Tr-Bind}
 
-% Tr-BindVar
-\DefRule {Var} {} {
-  \procbindcolor{\EVar} \TransBind \TCCEmpty {\SubSingle \EVar \E}
-}
-
-% Tr-BindNil
-\DefRule {Nil} {} {
-  \BEmp \TransBind \TCCEmpty \emptyset
-}
-
-% Tr-BindSeq
-\DefRule {Seq} {
-  \Bind[1] \TransBind[{\TEChan[\E[1]] \TEVar}] {\TCC[1]} {\Sub[1]} \\
-  \Bind[2] \TransBind[{\TEChan \TEVar [\E[2]]}] {\TCC[2]} {\Sub[2]} \\
-}{
-  \BSeq {\Bind[1]} {\Bind[2]} \TransBind[{\TEChan[\E[1]] \TEVar [\E[2]]}]
-    \TCCEmpty {\Sub[1] \cup \Sub[2]}
-}
-
 % Tr-BindPar
 \DefRule {Par} {
   \BindGroup[1] \TransBind[{\TEChan[\E[1]] \TEVar [\TEVarz]}] {\TCC[1]} {\Sub[1]} \\
@@ -104,6 +45,10 @@
   \BindFlag{\BindGroup[1]} = \Flag
 }{
   \BPar {\BindGroup[1]} {\BindGroup[2]} \TransBind[{\TEChan[\E[1]] \TEVar [\E[2]]}]
-    {\TPSync {z} {(\TPPar {\TPFlag z \Flag} {\TCC[1][\TCC[2]]})}}
+    {\TPSync {z} \Flag \targetproccolor{(\TCC[1][\TCC[2]])}}
     {\Sub[1] \cup \Sub[2]}
+}
+
+\DefRule {Channels} {}{
+  \Bind \TransBind \TCCEmpty \{ \EVar\mapsto\E \mathrel{|} \EVar \in \Fv(\Bind) \}
 }

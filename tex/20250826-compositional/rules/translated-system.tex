@@ -1,124 +1,4 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Typing rules for expressions
-
-\def\RuleCmdPrefix{RuleTU}
-\def\RuleNamePrefix{TU-}
-
-\DefRule {Const} {
-  \HasCType \TC \TT
-}{
-  \HasType \TCtx \TC \TT
-}
-
-\DefRule {Var} {
-  \TCtxVar \TEVar \TT \in \TCtx
-}{
-  \HasType \TCtx \TEVar \TT
-}
-
-\DefRule {Abs} {
-  \HasType {\TCtxExt{\TCtx}{\TCtxVar\TEVar{\TT[1]}}}
-    {\TE}
-    {\TT[2]}
-}{
-  \HasType \TCtx
-    {\TEAbs \TEVar \TE}
-    {\TTArr{\TT[1]}{\TT[2]}}
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Typing rules for constants
-
-\def\RuleCmdPrefix{RuleCU}
-\def\RuleNamePrefix{CU-}
-
-\DefRule {Unit} {} {
-  \HasCType \TCUnit
-    {\TBUnit}
-}
-
-\DefRule {New} {} {
-  \HasCType \TCNew
-    {\TTArr \TBUnit {\TTProd\TBChan\TBChan}}
-}
-
-\DefRule {Fork} {} {
-  \HasCType \TCFork
-    {\TTArr{(\TTArr \TBUnit \TBUnit)}{\TBUnit}}
-}
-
-\DefRule {Close} {} {
-  \HasCType \TCTerm
-    {\TTArr \TBChan \TBUnit}
-}
-
-\DefRule {Wait} {} {
-  \HasCType \TCWait
-    {\TTArr \TBChan \TBUnit}
-}
-
-\DefRule {Send} {} {
-  \HasCType {{\TCSend}_{\TT}}
-    {\TTArr {\TTProd \TT \TBChan} \TBUnit}
-}
-
-\DefRule {Recv} {} {
-  \HasCType {{\TCRecv}_{\TT}}
-    {\TTArr \TBChan \TT}
-}
-
-\DefRule {LSplit} {} {
-  \HasCType {\TCSplit}
-    {\TTArr \TBChan {\TTProd \TBChan \TBChan}}
-}
-
-\DefRule {RSplit} {} {
-  \HasCType {\TCSSplit}
-    {\TTArr \TBChan {\TTProd \TBChan \TBChan}}
-}
-
-\DefRule {Drop} {} {
-  \HasCType {\TCDrop}
-    {\TTArr \TBChan \TBUnit}
-}
-
-\DefRule {Acquire} {} {
-  \HasCType {\TCAcq}
-    {\TTArr \TBChan \TBChan}
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Typing rules for processes
-
-\def\RuleCmdPrefix{RuleTProc}
-\def\RuleNamePrefix{TU-Proc-}
-
-\DefRule {Expr} {
-  \HasType \TCtx \TE \TBUnit
-} {
-  \ProcHasType \TCtx {\TPExp\TE}
-}
-
-\DefRule {Par} {
-  \ProcHasType \TCtx {\TProc[1]} \\
-  \ProcHasType \TCtx {\TProc[2]}
-} {
-  \ProcHasType \TCtx {\TPPar{\TProc[1]}{\TProc[2]}}
-}
-
-\DefRule {Res} {
-  \ProcHasType {\TCtxExt{\TCtxExt \TCtx {\TCtxVar x \TBChanD}}{\TCtxVar y \TBChanD}} \TProc \\
-} {
-  \ProcHasType \TCtx {\TPNew{\TProc}}
-}
-
-\DefRule {Sync} {
-  \ProcHasType {\TCtxExt \TCtx {\TCtxVar x \TBChanF}} \TProc \\
-} {
-  \ProcHasType \TCtx {\TPSync x{\TProc}}
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Reduction rules
 
 \def\RuleCmdPrefix{RuleUProcRed}
@@ -143,87 +23,84 @@
   \TFCapp{\EApp \CNew \CUnit}
   \Reduces
   \TPNew {
-    \TPSync {z_1} {\TPSync {z_2} {(
-      \TPPar{
-        \TPPar {\TPFlag {z_1} \FlagSet}
-               {\TPFlag {z_2} \FlagSet}
-      }{
-        \TFCapp{\EPair
-          {(\TEChan [z_1] x)}
-          {(\TEChan [z_2] y)}
-        }
+    \TPSync [z_1] \FlagDropped
+    \TPSync [z_2] \FlagDropped
+    (
+      \TFCapp{\EPair
+        {(\TEChan [\TEVarz[1]] \TEVar)}
+        {(\TEChan [\TEVarz[2]] \TEVary)}
       }
-    )}}
+    )
   }
 }
 
 % RU-LSplit
 \DefRule {LSplit} {} {
-    \TPNew {(  % [MW] can remove binder in formalisation when intrinsically scoped + use congruence rules?
-      \TPPar {\TFCapp{\EApp \CSplit {(\TEChan [e_1] x [e_2])}}} \TProc
+    \TPNew {(
+      \TPPar {\TFCapp{\EApp \CSplit {\ChanPat\TEVar}}} \TProc
     )}
     \Reduces
     \TPNew {(
-      \TPPar {\TFCapp{\EPair
-        {(\TEChan [e_1] x   )}
-        {(\TEChan       x [e_2] )}
-      }} \TProc
+      \TPPar
+        {\TFCapp{\EPair{\ChanPat\TEVar}{\ChanPat\TEVar}}}
+        \TProc
     )}
 }
 
 % RU-RSplit
 \DefRule {RSplit} {} {
-    \TPNew {(
-      \TPPar {\TFCapp{\EApp \CSSplit {(\TEChan [e_1] x [e_2])}}} \TProc
-    )}
-    \Reduces
-    \TPNew {
-      \TPSync z {(
-        \TPPar {\TPFlag z \FlagUnset} {
-          \TPPar {\TFCapp{\EPair
-            {(\TEChan [e_1] x [z]   )}
-            {(\TEChan [z]   x [e_2] )}
-          }} \TProc
+  \TPNew {(
+    \TPPar {\TFCapp{\EApp \CSSplit {(\TEChan [e_1] \TEVar [e_2])}}} \TProc
+  )}
+  \Reduces
+  \TPNew {
+    \TPSync \FlagInit (
+      \TPPar {
+        \TFCapp{\EPair
+          {(\TEChan [e_1]     \TEVar [\TEVarz])}
+          {(\TEChan [\TEVarz] \TEVar [e_2])}
         }
-      )} 
-    }
+      } \TProc
+    )
+  }
+}
+
+% RU-Cleanup
+\DefRule {Cleanup} {} {
+  \TPSync \FlagAcquired \TProc
+  \Reduces
+  \Subs \TProc \TEVarz \CUnit
 }
 
 % RU-Drop
 \DefRule {Drop} {} {
-    \TPNew {(  % [MW] should be \varphi (\TPSync z)?
-      \TPPar {\TPFlag z \FlagUnset} {
-        \TPPar {\TFCapp{\EApp \CDrop {(\TEChan x [z])}}} \TProc
-      }
+    \TPNew {\TPSync \FlagInit (
+      \TPPar {\TFCapp{\EApp \CDrop {(\TEChan [\E] \TEVar [\TEVarz])}}} \TProc
     )}
     \Reduces 
-    \TPNew {(
-      \TPPar {\TPFlag z \FlagSet} {
-        \TPPar {\TFCapp{\CUnit}} \TProc
-      }
+    \TPNew {\TPSync \FlagDropped (
+      \TPPar {\TFCapp{\CUnit}} \TProc
     )}
 }
 
 % RU-Acquire
 \DefRule {Acquire} {} {
     \TPNew {
-      \TPSync z {(
-        \TPPar {\TPFlag z \FlagSet} {
-          \TPPar {\TFCapp{\EApp \CAcq {(\TEChan [z] x [e])}}} \TProc
-        }
-      )}
+      \TPSync \FlagDropped 
+        (\TPPar {\TFCapp{\EApp \CAcq {(\TEChan [\TEVarz] \TEVar [e])}}} \TProc)
     }
     \Reduces 
-    \TPNew {(
-      \TPPar {\TFCapp{\TEChan x[e]}} \TProc
-    )}
+    \TPNew {
+      \TPSync \FlagAcquired 
+        (\TPPar {\TFCapp{\TEChan \TEVar[e]}} \TProc)
+    }
 }
 
 % RU-Close
 \DefRule {Close} {} {
     \TPNew {(
-      \TPPar {\TFCapp[1]{\EApp\CTerm {(\TEChan x)}}}
-             {\TFCapp[2]{\EApp\CWait {(\TEChan y)}}}
+      \TPPar {\TFCapp[1]{\EApp\CTerm {\ChanPat[1]\TEVar}}}
+             {\TFCapp[2]{\EApp\CWait {\ChanPat[2]\TEVary}}}
     )}
     \Reduces 
     \TPPar {\TFCapp[1]{\CUnit}} {\TFCapp[2]{\CUnit}}
@@ -232,8 +109,8 @@
 % RU-Com
 \DefRule {Com} {} {
   \TPNew {(
-    \TPPar {\TFCapp[1]{\EApp {\CSend} {(\EPair \TV {(\TEChan x [e_1])}}}} {
-    \TPPar {\TFCapp[2]{\EApp {\CRecv} {(\TEChan y [e_2])}}} {\TProc}}
+    \TPPar {\TFCapp[1]{\EApp {\CSend} {(\EPair \TV {\ChanPat[1]\TEVar})}}} {
+    \TPPar {\TFCapp[2]{\EApp {\CRecv} {\ChanPat[1]\TEVary}}} {\TProc}}
   )}
   \Reduces
   \TPNew {(
@@ -245,12 +122,43 @@
 % RU-Choice
 \DefRule {Choice} {} {
   \TPNew {(
-    \TPPar {\TFCapp[1]{\EApp {\CSelect k} {(\TEChan x [e_1])}}} {
-    \TPPar {\TFCapp[2]{\EApp {\CBranch}   {(\TEChan y [e_2])}}} {\TProc}}
+    \TPPar {\TFCapp[1]{\EApp {\CSelect k} {\ChanPat[1] \TEVar}}} {
+    \TPPar {\TFCapp[2]{\EApp {\CBranch}   {\ChanPat[2] \TEVary}}} {\TProc}}
   )}
   \Reduces\\\\
   \TPNew {(
-    \TPPar {\TFCapp[1]{\TEChan x [e_1]}} {
-    \TPPar {\TFCapp[2]{\EInj k {(\TEChan y [e_2])}}} {\TProc}}
+    \TPPar {\TFCapp[1]{\ChanPat[1] \TEVar}} {
+    \TPPar {\TFCapp[2]{\EInj k {\ChanPat[2] \TEVary}}} {\TProc}}
   )}
 }
+
+% RU-Struct
+\DefRule {Struct} {
+  \TProc[1] \equiv \TProc*[1] \\
+  \TProc*[1] \Reduces \TProc*[2] \\
+  \TProc*[2] \equiv \TProc[2]
+}{
+  \TProc[1] \Reduces \TProc[2]
+}
+
+% RU-Par
+\DefRule {Par} {
+  \TProc[1] \Reduces \TProc[2]
+}{
+  \TPPar {\TProc[1]}{\TProcQ} \Reduces \TPPar {\TProc[2]}{\TProcQ}
+}
+
+% RU-Bind
+\DefRule {Bind} {
+  \TProc[1] \Reduces \TProc[2]
+}{
+  \TPNew {\TProc[1]} \Reduces \TPNew {\TProc[2]}
+}
+
+% RU-Sync
+\DefRule {Sync} {
+  \TProc[1] \Reduces \TProc[2]
+}{
+  \TPSync \Flag {\TProc[1]} \Reduces \TPSync \Flag {\TProc[2]}
+}
+

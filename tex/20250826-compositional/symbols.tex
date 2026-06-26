@@ -249,6 +249,10 @@
   {
     \EPair {\EPair {#1} {#2}} {#3}
   }
+
+\NewDocumentCommand \ChanPat {O{} m} {
+  \termcolor{\mathcal{C}_{#1}[#2]}
+}
     
 % target contexts
 \NewMetaVar[\targetctxcolor] \TCtx \Gamma
@@ -296,7 +300,7 @@
 
 % Processes
 \NewMetaVar[\proccolor] \Proc  P
-\NewMetaVar[\proccolor] \ProcQ P
+\NewMetaVar[\proccolor] \ProcQ Q
 \newcommand*\PExp[2][{}]{\proccolor{{}^{#1}\langle{#2}\rangle}}
 \newcommand*\PNew[3]{\proccolor{(\nu [{#1}][{#2}]){#3}}}
 \newcommand*\PPar[2]{\proccolor{{#1} \,\|\, {#2}}}
@@ -307,17 +311,18 @@
 \newcommand*\TPExp[1]{\targetproccolor{\langle{#1}\rangle}}
 \newcommand*\TPNew[2][xy]{\targetproccolor{(\TBindNu #1){#2}}}
 \newcommand*\TPPar[2]{\targetproccolor{{#1} \,\|\, {#2}}}
-\NewDocumentCommand\TPFlag{m m}{\targetproccolor{#1 \mapsto #2}}
-\NewDocumentCommand\TPSync{s m m}{\targetproccolor{(\TBindSync[#1]#2){#3}}}
+\newcommand*\TPFlag[2]{\targetproccolor{#1 \mapsto #2}}
+\newcommand*\TPSync[2][\TEVarz]{\targetproccolor{(\TBindSync\TPFlag{#1}{#2})}}
 
-\newcommand*\TBindNu{\nu}
-\NewDocumentCommand\TBindSync{s O{#1}}{\IfBooleanTF{#2}{\varphi^*}{\varphi}}
+\newcommand* \TBindNu   {\nu}
+\newcommand* \TBindSync {\varphi}
 
 \NewMetaVar[\targetproccolor] \Flag \phi
-\newcommand*\FlagSet{\targetproccolor 1}
-\newcommand*\FlagUnset{\targetproccolor 0}
+\newcommand*\FlagInit{\targetproccolor{\textsf{drop}}}
+\newcommand*\FlagDropped{\targetproccolor{\textsf{acq}}}
+\newcommand*\FlagAcquired{\targetproccolor{\textsf{done}}}
 
-\newcommand*\BindFlag[1]{\metacolor{\phi\ifstrempty{#1}{}{(#1)}}}
+\newcommand*\BindFlag[1]{\metacolor{\operatorname{flag}\ifstrempty{#1}{}{(#1)}}}
 
 % Variable Sets ("Dependencies")
 \newcommand*\D{\Delta}
@@ -435,6 +440,13 @@
 
 \newcommand*\TransProc[1][\Sub]{\stackrel{#1}{\TrRel{}}}
 \newcommand*\TransBind[3][\E]{\stackrel{\targettermcolor{#1}}{\TrRel{}} #2 \mid #3}
+
+\NewDocumentCommand\TyTransProc{O{\Ctx} m O{\Sub} m}{
+  #1 \vdash \proccolor{#2} \TransProc[#3] \targetproccolor{#4}
+}
+\NewDocumentCommand\TyTransBind{O{\Ctx} m m m m}{
+  #1 \vdash \proccolor{#2} \TransBind[#3]{#4}{#5}
+}
 
 \newcommand*\TA[2]{\metacolor{\llbracket #1;#2 \rrbracket_{\Gamma}}}
 % \newcommand*\TA[2]{\metacolor{\llbracket #2 \rrbracket_{\Gamma} ({#1})}}

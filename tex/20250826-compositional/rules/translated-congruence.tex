@@ -50,20 +50,20 @@
 
 % TrC-FlagComm
 \DefRule {FlagComm} {
-  \TEVar \neq \TEVary
+  \TEVarz[1] \neq \TEVarz[2]
 }{
-  \TPSync \TEVar {\TPSync \TEVary \TProc}
+  \TPSync [{\TEVarz[1]}] {\Flag[1]} \TPSync [{\TEVarz[2]}] {\Flag[2]} \TProc
   \Congruent
-  \TPSync \TEVary {\TPSync \TEVar \TProc} 
+  \TPSync [{\TEVarz[2]}] {\Flag[2]} \TPSync [{\TEVarz[1]}] {\Flag[1]} \TProc 
 }
 
 % TrC-ResFlagComm
 \DefRule {ResFlagComm} {
   \TEVarz \not\in \{\TEVar,\TEVary\}
 }{
-  \TPNew {\TPSync \TEVarz \TProc}
+  \TPNew {\TPSync \Flag \TProc}
   \Congruent
-  \TPSync \TEVarz {\TPNew \TProc} 
+  \TPSync \Flag {\TPNew \TProc} 
 }
 
 
@@ -78,11 +78,11 @@
 
 % TrC-FlagExtend
 \DefRule {FlagExtend} {
-  \TEVar \not\in \Fv(\TProc[1])
+  \TEVarz \not\in \Fv(\TProc[1])
 }{
-  \TPPar{\TProc[1]}{\TPSync \TEVar {\TProc[2]}}
+  \TPPar{\TProc[1]}{\TPSync \Flag {\TProc[2]}}
   \Congruent
-  {\TPSync \TEVar {(\TPPar{\TProc[1]}{\TProc[2]})}}
+  {\TPSync \Flag {(\TPPar{\TProc[1]}{\TProc[2]})}}
 }
 
 
