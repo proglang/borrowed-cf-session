@@ -118,24 +118,26 @@
     [\CSet[1] \CSJoin \CSet[2]]
 }
 
-% A-LetUnit
-\DefRule {LetUnit} {
+% A-Seq
+\DefRule {Seq} {
   \CtxAlgSeqCheck{\E[1]}{\E[2]} \\
-  \CheckType[\CtxRestrict{\E[1]}]
+  \InferType[\CtxRestrict{\E[1]}]
     {\E[1]}
-    {\BUnit}
+    {\T}
     {\Eff[1]}
     [\CSet[1]]
   \\
   \InferType[\CtxRestrict{\E[2]}]
     {\E[2]}
-    {\T}
+    {\TU}
     {\Eff[2]}
     [\CSet[2]]
+  \\
+  \Unr \T
 }{
   \InferType
     {\ESeq{\E[1]}{\E[2]}}
-    {\T}
+    {\TU}
     {\Eff[1] \EffJoin \Eff[2]}
     [\CSet[1] \CSJoin \CSet[2]]
 }

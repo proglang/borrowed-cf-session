@@ -14,7 +14,7 @@ infix 4 _─→_ _⋯→_
 
 data _─→_ {n} : Tm n → Tm n → Set where
   E-App : (V : Value e₂) → (ƛ e₁) · e₂ ─→ e₁ ⋯ ⦅ e₂ ⦆
-  E-Seq : K `unit ; e ─→ e
+  E-Seq : (V : Value e₁) → e₁ ; e₂ ─→ e₂
   E-Let : Value e₁ → `let e₁ `in e₂ ─→ e₂ ⋯ ⦅ e₁ ⦆
   E-PairElim : (V₁ : Value e₁) (V₂ : Value e₂) → `let⊗ (e₁ ⊗ e₂) `in e ─→ e ⋯ ⦅ wk e₁ ⦆ ⋯ ⦅ e₂ ⦆
   E-SumElim : ∀ {i} (V : Value e) → `case `inj i e `of⟨ e₁ ; e₂ ⟩ ─→ (if i then e₁ else e₂) ⋯ ⦅ e ⦆
@@ -45,6 +45,15 @@ module _ (Γ-S : ChanCx Γ) where
   inv-`⊤ V (T-Conv `⊤ ϵ≤ e) = inv-`⊤ V e
   inv-`⊤ V (T-Weaken γ≤ e)  = Π.map₂ (λ z → ≼-trans z γ≤) (inv-`⊤ V e)
   inv-`⊤ V (T-Var x T-eq)   = case sym T-eq ■ Γ-S x .proj₂ of λ()
+
+  inv-unr : Value e → Unr T → Γ ; γ ⊢ e ∶ T ∣ ϵ → UnrCx Γ γ
+  inv-unr V U (T-Const ⊢c) = []
+  inv-unr V U (T-Var x refl) = ` U
+  inv-unr V-λ (arr Ua) (T-Abs Γ-unr Γ-mob e) = Γ-unr Ua
+  inv-unr (V-⊗ V₁ V₂) (U₁ ⊗ U₂) (T-Pair p/s seq⇒p e₁ e₂) = allCx-join⁺ p/s (inv-unr V₁ U₁ e₁) (inv-unr V₂ U₂ e₂)
+  inv-unr (V-⊕ V) (U₁ ⊕ U₂) (T-Inj {i = i} e) = inv-unr V (if[ Unr ] i then U₁ else U₂) e
+  inv-unr V U (T-Conv T≃ ϵ≤ e) = inv-unr V (unr-≃ (≃-sym T≃) U) e
+  inv-unr V U (T-Weaken γ≤ e) = unrCx-weaken γ≤ (inv-unr V U e)
 
   inv-arr : Value e → Γ ; γ ⊢ e ∶ T ⟨ a ⟩→ U ∣ ϵ →
     ∃[ T′ ] ∃[ U′ ] ∃[ ϵ ] T ≃ T′ × U ≃ U′ × ϵ ≤ϵ Arr.eff a ×
@@ -165,10 +174,10 @@ module _ (Γ-S : ChanCx Γ) where
                ■ cong (join p/s γ₁) (𝐂.wk-cancels-⦅⦆-⋯ γ₂ γ₁)
     in
     subst-γ eq (e₂ ⊢⋯ₛ ⊢subₛ (value⇒pure V-e₁ e₁) (λ U → unr×value⇒unrCx U V-e₁ e₁) (λ m → mobile×value⇒mobCx m V-e₁ e₁))
-  preservation′ (T-LetUnit {γ₁ = γ₁} {γ₂} e₁ e₂) E-Seq =
+  preservation′ (T-Seq {γ₁ = γ₁} {γ₂} unr-T e₁ e₂) (E-Seq V) =
     let open ≼-Reasoning in
     let γ≤ = begin  γ₂       ≈⟨ ;-unit₁ ⟨
-                    [] ; γ₂  ≲⟨ ≼-cong-; (inv-`⊤ V-K e₁ .proj₂) (≼-refl refl) ⟩
+                    [] ; γ₂  ≲⟨ ≼-cong-; (≼-∅ (inv-unr V unr-T e₁)) (≼-refl refl) ⟩
                     γ₁ ; γ₂  ∎
     in
     T-Weaken γ≤ e₂
@@ -265,7 +274,7 @@ module _ (Γ-S : ChanCx Γ) where
   ... | T-Weaken γ≤ e′  = T-Weaken γ≤ (preservation e′ E)
   ... | T-Conv eq ϵ≤ e′ = T-Conv eq ϵ≤ (preservation e′ E)
   preservation e E@(E-Ctx (□; _) E₁) with e
-  ... | T-LetUnit e₁ e₂ = T-LetUnit (preservation e₁ E₁) e₂
+  ... | T-Seq unr-T e₁ e₂ = T-Seq unr-T (preservation e₁ E₁) e₂
   ... | T-Weaken γ≤ e′  = T-Weaken γ≤ (preservation e′ E)
   ... | T-Conv eq ϵ≤ e′ = T-Conv eq ϵ≤ (preservation e′ E)
   preservation e E@(E-Ctx (`let-`in _) E₁) with e
@@ -352,11 +361,11 @@ module _ (Γ-S : ChanCx Γ) where
   ... | inj₁ V-e              = inj₂ (inj₂ (_ , E-□ (E-Let V-e)))
   ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (`let-`in _) e₁↛))
   ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (`let-`in _) e₁→))
-  progress (T-LetUnit e e′)
+  progress (T-Seq unr-T e e′)
     with progress e
   ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (□; _) e₁↛))
   ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (□; _) e₁→))
-  ... | inj₁ V-e rewrite inv-`⊤ V-e e .proj₁ = inj₂ (inj₂ (_ , E-□ E-Seq))
+  ... | inj₁ V-e              = inj₂ (inj₂ (_ , E-□ (E-Seq V-e)))
   progress (T-LetPair p/s e e′)
     with progress e
   ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (`let⊗-`in _) e₁↛))

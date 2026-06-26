@@ -188,21 +188,22 @@
     {\TPairOrd{\T}{\TU}}
 }
 
-% T-LetUnit
-\DefRule {LetUnit} {
+% T-Seq
+\DefRule {Seq} {
   \HasType
     {\Ctx[1]}
     {\E[1]}
-    {\BUnit} \\
+    {\T} \\
   \HasType
     {\Ctx[2]}
     {\E[2]}
-    {\T}
+    {\TU} \\
+  \Unr \T
 }{
   \HasType
     {\CtxPat 1 2}
     {\ESeq{\E[1]}{\E[2]}}
-    {\T}
+    {\TU}
 }
 
 % T-Let

@@ -138,7 +138,7 @@ expression reduction preserves typing.
   $\IsLeftPat$ property is not affected as it refers to the position
   of $x$ in the context.
 
-  \textbf{Case} $\RuleTLetUnit$.
+  \textbf{Case} $\RuleTSeq$.
 
   Either $y \in \E[1]$ or $y \in \E[2]$.
 
@@ -149,11 +149,11 @@ expression reduction preserves typing.
   some 2-hole pattern $\CtxPatternRaw_0$. By induction using the
   pattern $\CtxPattern[0]{\CtxVar y {\T[0]}}[\CtxEmpty]$, we
   obtain a judgment in context $\CtxPattern[0]{\Ctx[0]}[\CtxEmpty]$
- and applying \TirName{T-LetUnit}
+ and applying \TirName{T-Seq}
  we obtain a typing in context $\CtxPattern[0]{\Ctx[0]}[{\Ctx}]$.
 
- \textbf{Case} \TirName{T-LetUnit} and \TirName{T-LetOrd} are analogous
- to \TirName{T-Let} and \TirName{T-LetUnit}.
+ \textbf{Case} \TirName{T-Seq} and \TirName{T-LetOrd} are analogous
+ to \TirName{T-Let} and \TirName{T-Seq}.
 
  \textbf{Case} \TirName{T-Inj}. Immediate by induction.
 
