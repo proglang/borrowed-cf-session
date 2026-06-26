@@ -147,3 +147,34 @@ If there are no solutions, the program is ill-typed.
     \CSet \cup \CSet*
   }
 \end{mathpar}
+
+\subsection{Type Normalisation}
+
+\begin{figure}
+  \small
+  \hfill \fbox{$\ConcatType {\T[in]} {\T[in]} = \T[out]$}
+  \begin{mathpar}
+    \TypeConcatenationSkip
+
+    \TypeConcatenationSemiDist
+
+    \TypeConcatenationNonSemi
+  \end{mathpar}
+
+  \hfill \fbox{$\NormaliseType {\T[in]} {\T[out]}$}
+  \begin{mathpar}
+    \TypeNormalisationSemiTerminated
+    
+    \TypeNormalisationSemiNonTerminated
+
+    \TypeNormalisationMu
+
+    \TypeNormalisationChoiceSemiDist
+
+    \TypeNormalisationIdentity
+  \end{mathpar}
+  \caption{Type Normalisation}
+  \label{fig:typing-normalisation}
+\end{figure}
+
+Type normalisation, denoted as $\NormaliseType {\T[in]} {\T[out]}$ in \Cref{fig:typing-normalisation}, is used in the elimination rules for algorithmic rules to expose the top-level type constructor \cite{DBLP:journals/iandc/AlmeidaMTV22}.

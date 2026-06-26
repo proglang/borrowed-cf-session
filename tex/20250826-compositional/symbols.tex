@@ -395,6 +395,28 @@
     \ctxcolor{#1} \vdash #2 \Leftarrow #3 \mid #4 \uparrow {#5}
   }
 
+% Terminated types
+\NewDocumentCommand \TerminatedType {m}
+  {
+    \vdash #1 \checkmark
+  }
+
+\NewDocumentCommand \NonTerminatedType {m}
+  {
+    \nvdash #1 \checkmark
+  }
+
+% Type Normalisation
+\NewDocumentCommand \ConcatType {m m}
+  {
+    #1 \mathbin{\text{\ttfamily\upshape ++}} #2
+  }
+
+\NewDocumentCommand \NormaliseType {m m}
+  {
+    #1 \Downarrow #2
+  }
+
 % Constant Typing
 \newcommand*\HasCType[2]{{#1}:{#2}}
 

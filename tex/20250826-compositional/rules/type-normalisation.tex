@@ -1,0 +1,56 @@
+% Type Concatenation
+
+\def\RuleNamePrefix{TC-}
+\def\RuleCmdPrefix{TypeConcatenation}
+
+\DefRule {Skip} { } {
+    \ConcatType {\T} {\SSkip} = \T
+}
+
+\DefRule {SemiDist} {
+    V \neq \SSkip
+}{
+    \ConcatType {(\SSeq {\T}{\TU})} {V} = \SSeq {\T} {(\ConcatType {\TU} {V})}
+}
+
+\DefRule {NonSemi} {
+    \T \neq \SSeq {V} {W} \\
+    \TU \neq \SSkip
+}{
+    \ConcatType {\T} {\TU} = \SSeq {\T} {\TU}
+}
+
+% Type Normalisation
+
+\def\RuleNamePrefix{TN-}
+\def\RuleCmdPrefix{TypeNormalisation}
+
+\DefRule {SemiTerminated} {
+    \TerminatedType {\T} \\
+    \NormaliseType {\TU} {\TU'}
+}{
+    \NormaliseType {\SSeq \T \TU} {\TU'}
+}
+
+\DefRule {SemiNonTerminated} {
+    \NonTerminatedType {\T} \\
+    \NormaliseType {\T} {\T'}
+}{
+    \NormaliseType {\SSeq {\T} \TU} {\ConcatType {\T'} {\TU}}
+}
+
+\DefRule {Mu} {
+    \NormaliseType \S {\S'}
+}{
+    \NormaliseType {\SRec \SVar \S} {{\S'} [{\SRec \SVar {\S'}} / \SVar]}
+}
+
+\DefRule {ChoiceSemiDist} { }{
+    \NormaliseType  {\SSeq {\SChoice {\ell:\S[\ell]} {\ell\in L}} {\T}} {\SChoice {\ell: \SSeq {\S[\ell]} {\T}} {\ell\in L}}
+}
+
+\DefRule {Identity} {
+    \T \neq (\SSeq {\TU} {\T}, \SRec {\SVar} {\S}, \SChoice {\ell:\S[\ell]} {\ell\in L})
+}{
+    \NormaliseType {\T} {\T}
+}
