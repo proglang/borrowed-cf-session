@@ -295,13 +295,15 @@
 \newcommand*\TCCEmpty{\targetproccolor{\Box}}
 
 % Processes
-\NewMetaVar[\proccolor] \Proc P
+\NewMetaVar[\proccolor] \Proc  P
+\NewMetaVar[\proccolor] \ProcQ P
 \newcommand*\PExp[2][{}]{\proccolor{{}^{#1}\langle{#2}\rangle}}
 \newcommand*\PNew[3]{\proccolor{(\nu [{#1}][{#2}]){#3}}}
 \newcommand*\PPar[2]{\proccolor{{#1} \,\|\, {#2}}}
 
 % Target Processes
-\NewMetaVar[\targetproccolor] \TProc P
+\NewMetaVar[\targetproccolor] \TProc  P
+\NewMetaVar[\targetproccolor] \TProcQ Q
 \newcommand*\TPExp[1]{\targetproccolor{\langle{#1}\rangle}}
 \newcommand*\TPNew[2][xy]{\targetproccolor{(\TBindNu #1){#2}}}
 \newcommand*\TPPar[2]{\targetproccolor{{#1} \,\|\, {#2}}}

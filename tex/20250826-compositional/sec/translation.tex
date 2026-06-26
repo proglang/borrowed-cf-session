@@ -232,13 +232,13 @@ processes.
   and
     $\Proc \TransProc \TProc*$,
   then for all
-    $\Proc[i]$
+    $\ProcQ$
   where
-    $\Proc[i] \TransProc \TProc*[i]$,
+    $\ProcQ \TransProc \TProcQ*$,
   it holds
-    $\Proc \Reduces \Proc[i]$
+    $\Proc \Reduces \ProcQ$
   iff
-    $\TProc* \Reduces \TProc*[i]$.
+    $\TProc* \Reduces \TProcQ*$.
 
   {\upshape \js{$\Sub$ needs to be restricted: should only substitute channel
   variables with values. Do we need to impose requirements on the inserted
