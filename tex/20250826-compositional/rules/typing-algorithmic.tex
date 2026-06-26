@@ -4,7 +4,7 @@
 \def\RuleCmdPrefix{RuleAlg}
 
 % A-Const
-\DefRule [(\C \not\in \{\CSplit,\CSSplit\})] {Const} {
+\DefRule [(\not\exists k.~\C \in \{\CSplit,\CSSplit,\CSelect k,\CBranch\})] {Const} {
   \CtxEmpty \SubCtx \Ctx \\
   \HasCType \C \T
 }{
@@ -26,12 +26,39 @@
 % A-RSplit
 \DefRule {RSplit} {
   \CtxEmpty \SubCtx \Ctx \\
-  \TVar\ \text{fresh}
+  \TVar\ \text{fresh} \\
+  \neg \Skips \S
 }{
   \InferType {\CSSplit_{\S}}
   {\TArr{\MobMobile}{\DirUnord,\EffPure} {\SSeq\S\TVar} {\TPairUnord{\SSeq{\S}{\SRet}}{\SSeq\SAcq\TVar}}}
     \EffPure
     [\CSEmpty]
+}
+
+% A-Select
+\DefRule {Select} {
+  \InferType
+    \E
+    {\SChoice{\ell:\S[\ell]}{\ell\in L}}
+    \Eff
+}{
+  \InferType
+    {\EApp{\CSelect k}{\E}}
+    {\S[k]}
+    {\EffImpure}
+}
+
+% A-Branch
+\DefRule {Branch} {
+  \InferType
+    \E
+    {\SBranch{\ell:\S[\ell]}{\ell\in L}}
+    \Eff
+}{
+  \InferType
+    {\EApp{\CBranch}{\E}}
+    {\SVariant{\ell:\S[\ell]}{\ell\in L}}
+    {\EffImpure}
 }
 
 % A-Var
@@ -191,10 +218,12 @@
     {\TU[\ell]}
     {\Eff[\ell]}
     [\CSet[\ell]]
+  \\
+  \ell' \in L
 }{
   \InferType
     {\ECase[\ell\in L] \E \ECaseBranchDef}
-    {\TU[1]}
+    {\TU[\ell']}
     {\Eff \EffJoin \Eff[1] \EffJoin \Eff[2]}
     [\CSet \CSJoin \bigcup_{\ell\in L} \CSet[\ell] \CSJoin \left\{\TU[k] \CEq \TU[k'] \mid k,k' \in L \right\}]
 }

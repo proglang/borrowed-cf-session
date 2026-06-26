@@ -148,6 +148,7 @@ data Mode : Set where
 
 private variable ξ : Mode
 
+{-
 countSplitsC : Const → ℕ
 countSplitsC `unit = 0
 countSplitsC `fork = 0
@@ -175,6 +176,7 @@ countSplits `case e `of⟨ e₁ ; e₂ ⟩ = countSplits e + countSplits e₁ +
 
 liftUVars : ℕ → Tm n → Tm n
 liftUVars n e = subTm e (UV.weaken n)
+-}
 
 {-
 infix 4 _─→η_
@@ -191,6 +193,29 @@ data _─→η_ {n} : Tm n → Tm n → Set where
   `inj : ∀ {i} → e ─→η e′ → `inj i e ─→η `inj i e′
   `case_`of⟨_;_⟩ : e ─→η e′ → e₁ ─→η e₁′ → e₂ ─→η e₂′ → `case e `of⟨ e₁ ; e₂ ⟩ ─→η `case e′ `of⟨ e₁′ ; e₂′ ⟩
 -}
+
+data ¬AlgConst : Const → Set where
+  `lsplit : ¬AlgConst (`lsplit s)
+  `rsplit : ¬AlgConst (`rsplit s)
+  `select : ∀ {k} → ¬AlgConst (`select k)
+  `branch : ¬AlgConst `branch
+
+AlgConst : Pred Const _
+AlgConst = Un.∁ ¬AlgConst
+
+algConst? : ∀ c → AlgConst c ⊎ ¬AlgConst c
+algConst? `unit = inj₁ λ()
+algConst? `fork = inj₁ λ()
+algConst? `send = inj₁ λ()
+algConst? `recv = inj₁ λ()
+algConst? `drop = inj₁ λ()
+algConst? `acq = inj₁ λ()
+algConst? (`end x) = inj₁ λ()
+algConst? (`new x) = inj₁ λ()
+algConst? (`lsplit x) = inj₂ `lsplit
+algConst? (`rsplit x) = inj₂ `rsplit
+algConst? (`select x) = inj₂ `select
+algConst? `branch     = inj₂ `branch
 
 infix 4 _;_/_⊢[_]_∶_∣_↑_/_ _;_/_⊢_⇐_∣_↑_/_ _;_/_⊢_⇒_∣_↑_/_
 
@@ -210,8 +235,7 @@ data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
 
   A-Const : ∀ {c} →
     (≤γ : Γ ∶ [] ≼ γ) →
-    (≢lsplit : ∀ s → c ≢ `lsplit s) →
-    (≢rsplit : ∀ s → c ≢ `rsplit s) →
+    (Ac : AlgConst c) →
     ⊢ c ∶ T →
     --------------------------------
     Γ ; γ / m ⊢ K c ⇒ T ∣ ℙ ↑ [] / m
@@ -226,6 +250,7 @@ data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
   A-RSplit :
     let α = record { var = m; pol = ‼ } in
     (≤γ : Γ ∶ [] ≼ γ) →
+    ¬ Skips s →
     -----------------------------------------------------------------------------------------------
     Γ ; γ / m ⊢ K (`rsplit s) ⇒ ⟨ s ; `` α ⟩ →1M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; `` α ⟩ ∣ ℙ ∣ ℙ ↑ [] / suc m
 
@@ -238,12 +263,13 @@ data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
     --------------------------------------------------------------
     Γ ; γ / m ⊢ e₁ · e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ⊔ϵ Arr.eff a ↑ Δ₁ ++ Δ₂ / n
 
-  A-LetUnit :
+  A-Seq :
+    Unr T →
     (≤γ : Γ ∶ γ ∣fv[ e₁ ] ; γ ∣fv[ e₂ ] ≼ γ) →
-    Γ ; γ ∣fv[ e₁ ] / m  ⊢ e₁ ⇐ `⊤ ∣ ϵ₁ ↑ Δ₁ / m′ →
-    Γ ; γ ∣fv[ e₂ ] / m′ ⊢ e₂ ⇒ T  ∣ ϵ₂ ↑ Δ₂ / n  →
+    Γ ; γ ∣fv[ e₁ ] / m  ⊢ e₁ ⇒ T ∣ ϵ₁ ↑ Δ₁ / m′ →
+    Γ ; γ ∣fv[ e₂ ] / m′ ⊢ e₂ ⇒ U ∣ ϵ₂ ↑ Δ₂ / n  →
     -------------------------------------------------
-    Γ ; γ / m ⊢ e₁ ; e₂ ⇒ T ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₁ ++ Δ₂ / n
+    Γ ; γ / m ⊢ e₁ ; e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₁ ++ Δ₂ / n
 
   A-LetPair :
     let open Fin.Patterns in
@@ -370,22 +396,23 @@ module _ {σ : UV.Sub} (Sσ : Solving σ) where
 
   sound (A-Var ≤γ) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr ≤γ) (T-Var _ refl)
-  sound (A-Const ≤γ ≢lsplit ≢rsplit ⊢c) SΓ SΔ =
+  sound (A-Const ≤γ Ac ⊢c) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr ≤γ)
              (T-Const (subConst-⊢ ⊢c))
   sound (A-LSplit ≤γ ¬skips) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr ≤γ)
              (T-Const (`lsplit (¬skips ∘ subTy-skips⁻¹) _))
-  sound (A-RSplit ≤γ) SΓ SΔ =
+  sound (A-RSplit ≤γ ¬skips) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr ≤γ)
-             (T-Const (`rsplit _ _))
+             (T-Const (`rsplit (¬skips ∘ subTy-skips⁻¹) _))
   sound (A-App {Δ₁ = Δ₁} ≤γ L⇒pure₁ R⇒pure₂ x y) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr ≤γ)
              (sound-app L⇒pure₁ R⇒pure₂ x y SΓ (All.++⁻ˡ Δ₁ SΔ ) (All.++⁻ʳ Δ₁ SΔ))
-  sound (A-LetUnit {Δ₁ = Δ₁} ≤γ x y) SΓ SΔ =
+  sound (A-Seq {Δ₁ = Δ₁} unr-T ≤γ x y) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr ≤γ)
-             (T-LetUnit (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ SΔ )))
-                        (T-Conv ≃-refl (x≤y⊔x _ _) (sound y SΓ (All.++⁻ʳ Δ₁ SΔ ))))
+             (T-Seq (subTy-unr unr-T)
+                    (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ SΔ)))
+                    (T-Conv ≃-refl (x≤y⊔x _ _) (sound y SΓ (All.++⁻ʳ Δ₁ SΔ))))
   sound (A-LetPair {T₁ = T₁} {T₂ = T₂} {Δ₁ = Δ₁} ≤γ x y) SΓ SΔ =
     let p/s , join≼ = parOrSeq? ≤γ in
     T-Weaken (≼-map⁺ subTy-unr join≼)
@@ -495,14 +522,15 @@ complete :
   Γ ; γ ⊢ e ∶ T ∣ ϵ →
   ∃[ σ ] ∃[ Δ ] ∃[ n ]
      Solving σ × SolvedΔ Δ σ × Γ ; γ / m ⊢ e ⇐ T ∣ ϵ ↑ Δ / n
-complete SΓ Se ST (T-Const {c = c} ⊢c) with isSplit? c
-... | no c≠split =
+complete SΓ Se ST (T-Const {c = c} ⊢c) with algConst? c
+... | inj₁ Ac =
   UV.someSub , _ , _ , (λ _ → end) , ≃-refl ∷ []
-    , A-Check (A-Const (≼-∅ []) (λ s z → c≠split (s , inj₁ z)) (λ s z → c≠split (s , inj₂ z)) ⊢c)
-... | yes (_ , inj₁ refl) =
-  record { ap = {!!} ; ap-¬skips = {!!} ; ap-dual/dual = {!!} }
-    , {!!} , {!!} , {!!} , {!!} , A-Check (A-LSplit (≼-∅ []) {!!})
-... | yes (_ , inj₂ refl) = {!!}
+    , A-Check (A-Const (≼-∅ []) Ac ⊢c)
+... | inj₂ ¬Ac = {!¬Ac!}
+-- ... | yes (_ , inj₁ refl) =
+--   record { ap = {!!} ; ap-¬skips = {!!} ; ap-dual/dual = {!!} }
+--     , {!!} , {!!} , {!!} , {!!} , A-Check (A-LSplit (≼-∅ []) {!!})
+-- ... | yes (_ , inj₂ refl) = {!!}
 complete SΓ Se ST (T-Var x T-eq) = {!!}
 complete SΓ Se ST (T-Abs Γ-unr Γ-mob x) = {!!}
 complete SΓ Se ST (T-AbsRec Γ-unr a-unr x) = {!!}
@@ -511,10 +539,10 @@ complete SΓ Se ST (T-AppLin a-par ≤ₐ x x₁) = {!!}
 complete SΓ Se ST (T-AppLeft aL ≤ₐ x x₁) = {!!}
 complete SΓ Se ST (T-AppRight aR ≤ₐ x x₁) = {!!}
 complete SΓ Se ST (T-Pair p/s seq⇒p x x₁) = {!!}
-complete SΓ Se ST (T-LetUnit x x₁) = {!!}
-complete SΓ Se ST (T-LetPair p/s x x₁) = {!!}
+complete SΓ Se ST (T-Seq unr-T x y) = {!!}
+complete SΓ Se ST (T-LetPair p/s x y) = {!!}
 complete SΓ Se ST (T-Inj x) = {!!}
-complete SΓ Se ST (T-Case p/s x x₁ x₂) = {!!}
+complete SΓ Se ST (T-Case p/s x y₁ y₂) = {!!}
 complete SΓ Se ST (T-Conv T≃ ϵ≤ x) = {!!}
 complete SΓ Se ST (T-Weaken γ≤ x) = {!!}
 -- complete (T-Const {c = c} ⊢c) Se ST with isSplit? c

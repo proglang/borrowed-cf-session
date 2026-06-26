@@ -1,5 +1,6 @@
 module BorrowedCF.Algorithmic.Solved where
 
+open import Data.Bool.Properties
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (fwd; bwd)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (_◅_; _◅◅_) renaming (ε to refl)
 open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosure)
@@ -168,6 +169,14 @@ subTy-mobile (m₁ ⊕ m₂) = subTy-mobile m₁ ⊕ subTy-mobile m₂
 subTy-mobile ⟨ inj₁ skips ⟩ = ⟨ inj₁ (subTy-skips skips) ⟩
 subTy-mobile ⟨ inj₂ (s , Bs , eq) ⟩ = ⟨ inj₂ (_ , subTy-bounded Bs , subTy-≃ eq) ⟩
 
+subTy-new : New s → New (subTy s σ)
+subTy-new `- = `-
+subTy-new msg = msg
+subTy-new (brn x x₁) = brn (subTy-new x) (subTy-new x₁)
+subTy-new (mu x) = mu (subTy-new x)
+subTy-new (x ; x₁) = subTy-new x ; subTy-new x₁
+subTy-new skip = skip
+
 open import BorrowedCF.Terms
 
 data SolvedC : Const → Set where
@@ -206,6 +215,8 @@ subConst (`end p) σ = `end p
 subConst (`new s) σ = `new (subTy s σ)
 subConst (`lsplit s) σ = `lsplit (subTy s σ)
 subConst (`rsplit s) σ = `rsplit (subTy s σ)
+subConst (`select k) σ = `select k
+subConst `branch σ = `branch
 
 subConst-solved : {c : Const} → SolvedC c → SolvedC (subConst c σ)
 subConst-solved `unit = `unit
@@ -234,15 +245,19 @@ subConst-id (`rsplit s) = cong `rsplit (subTy-id s)
 subConst-⊢ : ∀ {c} → ⊢ c ∶ T → ⊢ subConst c σ ∶ subTy T σ
 subConst-⊢ `unit = `unit
 subConst-⊢ `fork = `fork
-subConst-⊢ {σ = σ} (`new {s})
+subConst-⊢ {σ = σ} (`new {s = s} N)
   rewrite sym (subTy-dual {σ = σ} s)
-  = `new
+  = `new (subTy-new N)
 subConst-⊢ (`lsplit ¬skipₛ s′) = `lsplit (¬skipₛ ∘ subTy-skips⁻¹) (subTy s′ _)
 subConst-⊢ (`rsplit ¬skipₛ s′) = `rsplit (¬skipₛ ∘ subTy-skips⁻¹) (subTy s′ _)
 subConst-⊢ `drop = `drop
 subConst-⊢ `acq = `acq
 subConst-⊢ (`send m) = `send (subTy-mobile m)
 subConst-⊢ (`recv m) = `recv (subTy-mobile m)
+subConst-⊢ {σ = σ} (`select {s₁} {s₂} {k})
+  rewrite if-float (flip subTy σ) k {s₁} {s₂}
+  = `select
+subConst-⊢ `branch = `branch
 subConst-⊢ `end = `end
 
 subTm : Tm n → UV.Sub → Tm n
