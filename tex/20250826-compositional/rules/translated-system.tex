@@ -92,7 +92,7 @@
     \Reduces 
     \TPNew {
       \TPSync \FlagAcquired 
-        (\TPPar {\TFCapp{\TEChan \TEVar[e]}} \TProc)
+        (\TPPar {\TFCapp{\TEChan [\TEVarz] \TEVar[e]}} \TProc)
     }
 }
 
@@ -110,7 +110,7 @@
 \DefRule {Com} {} {
   \TPNew {(
     \TPPar {\TFCapp[1]{\EApp {\CSend} {(\EPair \TV {\ChanPat[1]\TEVar})}}} {
-    \TPPar {\TFCapp[2]{\EApp {\CRecv} {\ChanPat[1]\TEVary}}} {\TProc}}
+    \TPPar {\TFCapp[2]{\EApp {\CRecv} {\ChanPat[2]\TEVary}}} {\TProc}}
   )}
   \Reduces
   \TPNew {(

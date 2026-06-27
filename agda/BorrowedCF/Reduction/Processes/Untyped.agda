@@ -10,6 +10,8 @@ open import BorrowedCF.Reduction.Expressions
 open Variables
 open Fin.Patterns
 
+pattern 𝓒[_×_×_] e₁ x e₂ = (e₁ ⊗ (` x)) ⊗ e₂
+
 infix 4 _─→ₚ_
 
 data _─→ₚ_ {n} : Proc n → Proc n → Set where
@@ -18,59 +20,73 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
   RU-Fork : (F : Frame* n) (V : Value e) →
     ⟪ F [ K `fork · e ]* ⟫
       ─→ₚ
-    ⟪ F [ K `unit ]* ⟫ ∥ ⟪ e · K `unit ⟫
+    ⟪ F [ * ]* ⟫ ∥ ⟪ e · * ⟫
 
   RU-New : (F : Frame* n) →
-    ⟪ F [ K (`new s) · K `unit ]* ⟫
+    ⟪ F [ K (`new s) · * ]* ⟫
       ─→ₚ
-    ν (φ (φ
-      ( ((1F ↦ set) ∥ (0F ↦ set))
-      ∥ ⟪ (F ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4)
-            [ (((` 1F) ⊗ (` 2F)) ⊗ K `unit) ⊗ (((` 0F) ⊗ (` 3F)) ⊗ K `unit) ]* ⟫ )))
+    ν (φ acq (φ acq ⟪
+      (F ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [
+         𝓒[ ` 0F × 3F × * ] ⊗ 𝓒[ ` 1F × 2F × * ]
+      ]*
+    ⟫ ))
 
-  RU-LSplit : (F : Frame* (2 + n)) {x : 𝔽 (2 + n)} →
-    ν ( ⟪ F [ K (`lsplit s) · (((e₁ ⊗ (` x)) ⊗ e₂)) ]* ⟫ ∥ P )
+  RU-LSplit : (F : Frame* (2 + n)) →
+    ν ( ⟪ F [ K (`lsplit s) · 𝓒[ e₁ × 0F × e₂ ] ]* ⟫ ∥ P )
       ─→ₚ
-    ν ( ⟪ F [ (((e₁ ⊗ (` x)) ⊗ K `unit) ⊗ ((K `unit ⊗ (` x)) ⊗ e₂)) ]* ⟫ ∥ P )
+    ν ( ⟪ F [ 𝓒[ e₁ × 0F × e₂ ] ⊗ 𝓒[ e₁ × 0F × e₂ ] ]* ⟫ ∥ P )
 
-  RU-RSplit : (F : Frame* (2 + n)) {x : 𝔽 (2 + n)} →
-    ν (⟪ F [ K (`rsplit s) · ((e₁ ⊗ (` x)) ⊗ e₂) ]* ⟫ ∥ P)
+  RU-RSplit : (F : Frame* (2 + n)) →
+    ν (⟪ F [ K (`rsplit s) · 𝓒[ e₁ × 0F × e₂ ] ]* ⟫ ∥ P)
       ─→ₚ
-    ν (φ ( (0F ↦ unset)
-         ∥ ( ⟪ (F ⋯ᶠ* weakenᵣ)
-                 [ (((e₁ ⋯ weakenᵣ) ⊗ (` suc x)) ⊗ (` 0F))
-                 ⊗ (((` 0F) ⊗ (` suc x)) ⊗ (e₂ ⋯ weakenᵣ)) ]* ⟫
-           ∥ (P ⋯ₚ weakenᵣ) ) ))
+    ν (φ drop (
+      ⟪ (F ⋯ᶠ* weakenᵣ) [
+           𝓒[ wk e₁ × 1F × ` 0F ]
+             ⊗
+           𝓒[ ` 0F × 1F × wk e₂ ]
+        ]*
+      ⟫ ∥ (P ⋯ₚ weakenᵣ)
+    ))
 
-  RU-Drop : (F : Frame* (1 + n)) {x : 𝔽 (1 + n)} →
-    φ ( (0F ↦ unset) ∥ (⟪ F [ K `drop · ((K `unit ⊗ (` x)) ⊗ (` 0F)) ]* ⟫ ∥ P) )
+  RU-Drop : (F : Frame* (1 + n)) {x : 𝔽 n} →
+    φ drop (⟪ F [ K `drop · 𝓒[ e × suc x × ` 0F ] ]* ⟫ ∥ P)
       ─→ₚ
-    φ ( (0F ↦ set) ∥ (⟪ F [ K `unit ]* ⟫ ∥ P) )
+    φ acq (⟪ F [ * ]* ⟫ ∥ P)
 
-  RU-Acquire : (F : Frame* (2 + n)) {x : 𝔽 (2 + n)} →
-    ν (φ ( (0F ↦ set)
-         ∥ ( ⟪ (F ⋯ᶠ* weakenᵣ) [ K `acq · (((` 0F) ⊗ (` suc x)) ⊗ (e ⋯ weakenᵣ)) ]* ⟫
-           ∥ (P ⋯ₚ weakenᵣ) ) ))
+  RU-Acquire : (F : Frame* (3 + n)) →
+    ν (φ acq (
+      ⟪ F [ K `acq · 𝓒[ ` 0F × 1F × e ] ]* ⟫ ∥ P
+    ))
       ─→ₚ
-    ν (⟪ F [ (K `unit ⊗ (` x)) ⊗ e ]* ⟫ ∥ P)
+    ν (φ done (
+      ⟪ F [ 𝓒[ ` 0F × 1F × e ] ]* ⟫ ∥ P
+    ))
 
-  RU-Close : (F₁ F₂ : Frame* n) →
-    ν ( ⟪ (F₁ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ‼) · ((K `unit ⊗ (` 0F)) ⊗ K `unit) ]* ⟫
-      ∥ ⟪ (F₂ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ⁇) · ((K `unit ⊗ (` 1F)) ⊗ K `unit) ]* ⟫ )
+  RU-Close : ∀ (F₁ F₂ : Frame* n) {e₁ e₁′ e₂ e₂′} →
+    ν ( ⟪ (F₁ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ‼) · 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
+      ∥ ⟪ (F₂ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ⁇) · 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫ )
       ─→ₚ
-    ⟪ F₁ [ K `unit ]* ⟫ ∥ ⟪ F₂ [ K `unit ]* ⟫
+    ⟪ F₁ [ * ]* ⟫ ∥ ⟪ F₂ [ * ]* ⟫
 
-  RU-Com : (F₁ F₂ : Frame* (2 + n)) (V : Value e) →
-    ν ( ⟪ F₁ [ K `send · (e ⊗ ((K `unit ⊗ (` 0F)) ⊗ e₁)) ]* ⟫
-      ∥ ( ⟪ F₂ [ K `recv · ((K `unit ⊗ (` 1F)) ⊗ e₂) ]* ⟫ ∥ P ) )
+  RU-Com : ∀ (F₁ F₂ : Frame* (2 + n)) (V : Value e) {e₁ e₁′ e₂ e₂′} →
+    ν (⟪ F₁ [ K `send · (e ⊗ 𝓒[ e₁ × 0F × e₁′ ]) ]* ⟫
+      ∥ ( ⟪ F₂ [ K `recv · 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫ ∥ P ) )
       ─→ₚ
-    ν ( ⟪ F₁ [ K `unit ]* ⟫ ∥ ( ⟪ F₂ [ e ]* ⟫ ∥ P ) )
+    ν ( ⟪ F₁ [ * ]* ⟫ ∥ ( ⟪ F₂ [ e ]* ⟫ ∥ P ) )
 
-  RU-Choice : ∀ (F₁ F₂ : Frame* (2 + n)) k →
-    ν ( ⟪ F₁ [ K (`select k) · ((K `unit ⊗ (` 0F)) ⊗ e₁) ]* ⟫
-      ∥ ( ⟪ F₂ [ K `branch · ((K `unit ⊗ (` 1F)) ⊗ e₂) ]* ⟫ ∥ P ) )
+  RU-Choice : ∀ (F₁ F₂ : Frame* (2 + n)) k {e₁ e₁′ e₂ e₂′} →
+    ν ( ⟪ F₁ [ K (`select k) · 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
+      ∥ ( ⟪ F₂ [ K `branch · 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫
+      ∥ P
+    ))
       ─→ₚ
-    ν ( ⟪ F₁ [ (K `unit ⊗ (` 0F)) ⊗ e₁ ]* ⟫ ∥ ( ⟪ F₂ [ `inj k ((K `unit ⊗ (` 1F)) ⊗ e₂) ]* ⟫ ∥ P ) )
+    ν ( ⟪ F₁ [ 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
+      ∥ ( ⟪ F₂ [ `inj k 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫
+      ∥ P
+    ))
+
+  RU-Cleanup :
+    φ done P ─→ₚ P ⋯ₚ ⦅ * ⦆ₛ
 
   RU-Par :
     P ─→ₚ P′ →
@@ -80,9 +96,9 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
     P ─→ₚ Q →
     ν P ─→ₚ ν Q
 
-  RU-Sync :
+  RU-Sync : ∀ {x} →
     P ─→ₚ Q →
-    φ P ─→ₚ φ Q
+    φ x P ─→ₚ φ x Q
 
   RU-Struct :
     P ≋ P′ →

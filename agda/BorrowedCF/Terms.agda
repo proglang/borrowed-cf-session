@@ -46,6 +46,8 @@ data Tm (n : ℕ) : Set where
   `inj : (i : Side) (e : Tm n) → Tm n
   `case_`of⟨_;_⟩ : (e : Tm n) (e₁ e₂ : Tm (1 + n)) → Tm n
 
+pattern * = K `unit
+
 private variable
   e e₁ e₂ : Tm n
 

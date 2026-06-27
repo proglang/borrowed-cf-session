@@ -137,6 +137,9 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
       ─→ₚ
     ⟪ E₁ [ K `unit ]* ⟫ ∥ ⟪ E₂ [ K `unit ]* ⟫
 
+  R-Discard :
+    ν (suc b ∷ B₁) B₂ (P ⋯ₚ weakenᵣ) ─→ₚ ν (b ∷ B₁) B₂ P
+
   R-Par :
     P ─→ₚ P′ →
     P ∥ Q ─→ₚ P′ ∥ Q
