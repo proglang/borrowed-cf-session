@@ -38,6 +38,20 @@ open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
 open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯; frame-plug₁; ++ₛ-VSub; weaken-VSub)
 open import BorrowedCF.Simulation2.TranslationProperties using (VChan; Value-subst; chanTriple-V)
+open T using (inv-∥; inv-ν; inv-⟪⟫; BindCtx; BindCtx′; last; cons-ret/acq; cons-acq; nil; cons)
+open import BorrowedCF.Simulation2.InvFrame using (inv-app; arg-type; strengthen-frame)
+open import BorrowedCF.Simulation2.Theorems.B1VacProbe
+  using ( NoRet; new⇒noRet; noRet-≃; ¬noRet-ret; noRet-front-last
+        ; RetTip; retTip-Sc-skips; noRet-front-cons; retTip-≃; noRet-;-fst )
+open import BorrowedCF.Simulation2.Theorems.B1VacProbe as VP using ()
+open import BorrowedCF.Types.Equivalence using (_≃𝕊_; ≃𝕊-;₁; ≃𝕊-;₂; ≃𝕊-skipˡ; ≃𝕊-skipʳ; ≃𝕊-μ; ≃𝕊-assoc; ≃𝕊-distr; ≃-skips)
+open import BorrowedCF.Context.Base using (_⸴*_; _⸴_)
+import BorrowedCF.Types.Substitution as 𝕊S
+open import Relation.Binary.Construct.Closure.Symmetric using (SymClosure)
+import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star
+import Relation.Binary.Construct.Closure.Equivalence as EqC
+open Bin using (_Respects_)
+open import BorrowedCF.Types using (Skips)
 import Data.Sum as Sum
 
 ------------------------------------------------------------------------
@@ -571,6 +585,48 @@ frame-plug*ᵣ (E ∷ E*) ρ =
 
 open T using (_;_⊢ₚ_)
 
+------------------------------------------------------------------------
+-- Vacuity infrastructure for the B₁=[] and b₁≥1 R-Drop branches.
+-- The dropped handle 0F is forced  Γ 0F ≃ ⟨ ret ⟩  by the drop constant
+-- (⊢ `drop ∶ ⟨ ret ⟩ →1M ⊤), via inversion of the redex thread typing.
+------------------------------------------------------------------------
+
+fn-drop-dom : ∀ {N} {Γ : Ctx N} {β : Struct N} {Tᵈ Uu a ϵ}
+  → Γ ; β ⊢ K `drop ∶ Tᵈ ⟨ a ⟩→ Uu ∣ ϵ
+  → ⟨ ret ⟩ ≃ Tᵈ
+fn-drop-dom (T-Const `drop)        = ≃-refl
+fn-drop-dom (T-Conv (dom≃ `→ _) _ d) = ≃-trans (fn-drop-dom d) dom≃
+fn-drop-dom (T-Weaken _ d)         = fn-drop-dom d
+
+drop-handle-≃ret : ∀ {N} {Δ : Ctx N}{β}{x : 𝔽 N}{U ϵ}
+  → Δ ; β ⊢ K `drop · (` x) ∶ U ∣ ϵ
+  → Δ x ≃ ⟨ ret ⟩
+drop-handle-≃ret (T-AppUnr   _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-drop-dom ⊢fn))
+drop-handle-≃ret (T-AppLin   _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-drop-dom ⊢fn))
+drop-handle-≃ret (T-AppLeft  _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-drop-dom ⊢fn))
+drop-handle-≃ret (T-AppRight _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-drop-dom ⊢fn))
+drop-handle-≃ret (T-Conv _ _ d)            = drop-handle-≃ret d
+drop-handle-≃ret (T-Weaken _ d)            = drop-handle-≃ret d
+
+⟨⟩≃ : ∀ {s₁ s₂ : 𝕊 0} → ⟨ s₁ ⟩ ≃ ⟨ s₂ ⟩ → s₁ ≃ s₂
+⟨⟩≃ ⟨ eq ⟩ = eq
+
+-- index 0F of the body context (Γ₁ ⸴* Γ₂) ⸴* γ lands in Γ₁ when Γ₁ is nonempty.
+bodyΓ-0F : ∀ {k} (A : Ctx (suc k)) {B C : Σ ℕ Ctx} →
+           ∀ (Bᶜ : Ctx (proj₁ B)) (Cᶜ : Ctx (proj₁ C)) →
+           ((A ⸴* Bᶜ) ⸴* Cᶜ) 0F ≡ A 0F
+bodyΓ-0F A Bᶜ Cᶜ = refl
+
+-- head channel 0F of a `last`-block over a NoRet front session is NoRet.
+head-noRet-last : ∀ {sF b}{Γ : Ctx (sum (suc b ∷ []))} →
+  NoRet sF → BindCtx sF (suc b ∷ []) Γ →
+  ∃[ s'' ] (Γ 0F ≡ ⟨ s'' ⟩) × NoRet s''
+head-noRet-last ns (last (cons {s₁ = s1} ¬sk s≃ Γ≗ _)) =
+  s1 , sym (Γ≗ 0F) , VP.noRet-;-fst (noRet-≃ (EqC.symmetric _≃𝕊_ s≃) ns)
+
+noRet⇒≄ret : ∀ {s'' : 𝕊 0} → NoRet s'' → s'' ≃ ret → ⊥
+noRet⇒≄ret ns eq = ¬noRet-ret (noRet-≃ eq ns)
+
 U-drop : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
        → {g : Struct m} {b₁ : ℕ} {B₁ B₂ : BindGroup}
          {E : Frame* (sum (b₁ ∷ B₁) + sum B₂ + m)}
@@ -583,11 +639,32 @@ U-drop : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
          ⊎ (U[ T.ν (suc b₁ ∷ B₁) B₂
              (T.⟪ (E ⋯ᶠ* weakenᵣ) [ K `drop · (` 0F) ]* ⟫ T.∥ (P T.⋯ₚ weakenᵣ)) ] σ
             U.≋ U[ T.ν (b₁ ∷ B₁) B₂ (T.⟪ E [ K `unit ]* ⟫ T.∥ P) ] σ)
-U-drop σ Vσ Γ-S {b₁ = b₁} {B₁ = []} {B₂ = B₂} {E = E} {P = P} ⊢P = {!!}
+U-drop σ Vσ Γ-S {b₁ = b₁} {B₁ = []} {B₂ = B₂} {E = E} {P = P} ⊢P
+  with inv-ν ⊢P
+... | _ , _ , sN , N , _ , _ , C , _ , ⊢body
+  with inv-∥ ⊢body
+... | _ , _ , _ , ⊢dropT , _
+  with strengthen-frame (E ⋯ᶠ* weakenᵣ) (inv-⟪⟫ ⊢dropT)
+... | _ , (_ , _ , ⊢plug) , _ , _
+  with head-noRet-last (noRet-front-last N) C
+... | s , Γ0≡ , Ns
+  = ⊥-elim (noRet⇒≄ret Ns (⟨⟩≃ (≃-trans (≃-reflexive (sym Γ0≡)) (drop-handle-≃ret ⊢plug))))
 U-drop {m} {n} σ Vσ Γ-S {b₁ = suc b₁} {B₁ = C@(_ ∷ _)} {B₂ = B₂} {E = E} {P = P} ⊢P
-  with T.inv-ν ⊢P
-... | _ , _ , _ , _ , _ , _ , T.cons-ret/acq _ _ (T.cons _ _ _ (T.cons ¬Ss s≃ _ _)) _ , _ , _ =
-  ⊥-elim {!!}
+  with inv-ν ⊢P
+... | _ , _ , sN , N , _ , _
+    , cons-ret/acq {s₁ = sh} scra Γ≗ (cons {s₁ = s1ʰ} {s₂ = s2ʰ} ¬sk1 s≃1 Γ≗1 (cons ¬Ss s≃2 _ _)) _ , _ , ⊢body
+  with inv-∥ ⊢body
+... | _ , _ , _ , ⊢dropT , _
+  with strengthen-frame (E ⋯ᶠ* weakenᵣ) (inv-⟪⟫ ⊢dropT)
+... | _ , (_ , _ , ⊢plug) , _ , _
+  = ⊥-elim (¬Ss (retTip-Sc-skips rt-borrow head≃ret))
+  where
+    head≃ret : s1ʰ ≃ ret
+    head≃ret = ⟨⟩≃ (≃-trans (≃-reflexive (sym (sym (Γ≗1 0F) ■ Γ≗ 0F))) (drop-handle-≃ret ⊢plug))
+    noRet-sh : NoRet sh
+    noRet-sh = noRet-;-fst (noRet-≃ (EqC.symmetric _≃𝕊_ scra) (noRet-front-last N))
+    rt-borrow : RetTip (s1ʰ ; s2ʰ)
+    rt-borrow = retTip-≃ (EqC.symmetric _≃𝕊_ s≃1) (noRet-front-cons noRet-sh)
 U-drop {m} {n} σ Vσ Γ-S {b₁ = zero} {B₁ = C@(cHd ∷ cTl)} {B₂ = B₂} {E = E} {P = P} ⊢P =
   ≋-wrap-⊎ front fire back
   where

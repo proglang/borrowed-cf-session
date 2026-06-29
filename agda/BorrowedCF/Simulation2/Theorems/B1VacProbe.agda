@@ -186,3 +186,62 @@ noRet-front-cons ns = ns tR ret
 retTip-Sc-skips : ∀ {a r : 𝕊 0} → RetTip (a ; r) → a ≃ ret → Skips r
 retTip-Sc-skips (r tL sk) _    = sk
 retTip-Sc-skips (nr tR _) aret = ⊥-elim (¬noRet-ret (noRet-≃ aret nr))
+
+
+------------------------------------------------------------------------
+-- RetTip respects ≃.  NoRet-side rewrites delegate to noRet-≃; the μ-fold
+-- cases need mu-bwd / mu-cancel.
+------------------------------------------------------------------------
+
+mu-cancel : ∀ {u : 𝕊 0} → unfold (u ⋯ weakenᵣ) ≡ u
+mu-cancel {u} = fusion u weakenᵣ ⦅ mu (u ⋯ weakenᵣ) ⦆ₛ ■ ⋯-id u wkc
+  where
+    wkc : (weakenᵣ ·ₖ ⦅ mu (u ⋯ weakenᵣ) ⦆ₛ) ≗ idₛ
+    wkc ()
+
+-- RESIDUAL (guardedness / occurrence lemma).  For s with a structural top
+-- (mu / ; / brn), RetTip (unfold s) forces s to be var0-free: a var0 would
+-- place the recursive `mu s` at a RetTip leaf, but `mu s` (it contains a ret)
+-- is neither ret, Skips, nor NoRet, so it cannot occupy a ret-tip / skip /
+-- NoRet slot.  Then s ≡ u ⋯ weakenᵣ (mu-cancel) and RetTip(mu s)=muC(RetTip u).
+-- Closing it needs a binder-depth-generalized strengthening reconstruction
+-- (reN/reS/reR over 𝕊 (suc k)); this is the single remaining open obligation.
+mu-bwd : ∀ {s : 𝕊 1} → RetTip (unfold s) → RetTip (mu s)
+mu-bwd {` zero}      rt = rt
+mu-bwd {ret}         rt = muC ret
+mu-bwd {mu s}        rt = {! mu-bwd-mu !}
+mu-bwd {s₁ ; s₂}   rt = {! mu-bwd-seq !}
+mu-bwd {brn p s₁ s₂} rt = {! mu-bwd-brn !}
+
+retTip-≃ : RetTip {0} Respects _≃_
+retTip-≃ refl       rt = rt
+retTip-≃ (x ◅ xs)   rt = retTip-≃ xs (go x rt) where
+  go : RetTip {0} Respects SymClosure _≃𝕊_
+  go (fwd (≃𝕊-;₁ eq)) (r tL sk)  = go (fwd eq) r tL sk
+  go (fwd (≃𝕊-;₁ eq)) (nr tR rt) = noRet-≃ (fwd eq ◅ refl) nr tR rt
+  go (fwd (≃𝕊-;₂ eq)) (r tL sk)  = r tL (≃-skips (fwd eq ◅ refl) sk)
+  go (fwd (≃𝕊-;₂ eq)) (nr tR rt) = nr tR go (fwd eq) rt
+  go (fwd ≃𝕊-skipˡ)   (r tL sk)  = ⊥-elim (retTip⊥skips r skip)
+  go (fwd ≃𝕊-skipˡ)   (nr tR rt) = rt
+  go (fwd ≃𝕊-skipʳ)   (r tL sk)  = r
+  go (fwd ≃𝕊-skipʳ)   (nr tR rt) = ⊥-elim (retTip⊥skips rt skip)
+  go (fwd ≃𝕊-μ)       (muC rt)   = subst RetTip (sym mu-cancel) rt
+  go (fwd ≃𝕊-assoc)   ((r tL s1) tL s2)   = r tL (s1 ; s2)
+  go (fwd ≃𝕊-assoc)   ((n tR r)  tL s2)   = n tR (r tL s2)
+  go (fwd ≃𝕊-assoc)   ((nL ; nR) tR rt) = nL tR (nR tR rt)
+  go (fwd ≃𝕊-distr)   (brn r1 r2 tL sk)   = brn (r1 tL sk) (r2 tL sk)
+  go (fwd ≃𝕊-distr)   (brn nL nR tR rt)   = brn (nL tR rt) (nR tR rt)
+  go (bwd (≃𝕊-;₁ eq)) (r tL sk)  = go (bwd eq) r tL sk
+  go (bwd (≃𝕊-;₁ eq)) (nr tR rt) = noRet-≃ (bwd eq ◅ refl) nr tR rt
+  go (bwd (≃𝕊-;₂ eq)) (r tL sk)  = r tL (≃-skips (bwd eq ◅ refl) sk)
+  go (bwd (≃𝕊-;₂ eq)) (nr tR rt) = nr tR go (bwd eq) rt
+  go (bwd ≃𝕊-skipˡ)   rt         = skip tR rt
+  go (bwd ≃𝕊-skipʳ)   rt         = rt tL skip
+  go (bwd ≃𝕊-μ)       rt         = mu-bwd rt
+  go (bwd ≃𝕊-assoc)   (r tL (s1 ; s2))        = (r tL s1) tL s2
+  go (bwd ≃𝕊-assoc)   (n tR (r tL s2))          = (n tR r) tL s2
+  go (bwd ≃𝕊-assoc)   (n tR (nr tR rt))         = (n ; nr) tR rt
+  go (bwd ≃𝕊-distr)   (brn (r1 tL sk1) (r2 tL sk2)) = brn r1 r2 tL sk1
+  go (bwd ≃𝕊-distr)   (brn (n1 tR r1) (n2 tR r2))   = (brn n1 n2) tR r1
+  go (bwd ≃𝕊-distr)   (brn (r1 tL sk1) (n2 tR r2))  = ⊥-elim (retTip⊥skips r2 sk1)
+  go (bwd ≃𝕊-distr)   (brn (n1 tR r1) (r2 tL sk2))  = ⊥-elim (retTip⊥skips r1 sk2)
