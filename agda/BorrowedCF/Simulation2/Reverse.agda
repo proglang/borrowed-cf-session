@@ -24,7 +24,8 @@ open import BorrowedCF.Simulation2.TranslationProperties
 -- that powers RU-Exp) live in BorrowedCF.Simulation2.ReverseInv.
 open import BorrowedCF.Simulation2.ReverseInv
   using (⋯→-reflect; frameApp-reflect; headK; plugApp-not-value;
-         rnew-bridge; new-arg-notVar)
+         rnew-bridge; new-arg-notVar;
+         inv-U-ν-∥-shape; U-ν-singleton; νσ; ν-inj)
 open import BorrowedCF.Simulation2.InvFrame using (strengthen-frame; inv-app)
 open import BorrowedCF.Simulation2.Frames using (frame-plug*)
 import Data.Sum as Sum
@@ -316,12 +317,40 @@ sim←ᵍ σ Vσ Γ-S {P = P TP.∥ Q}     ⊢P () (UR.RU-Drop F)
 sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Drop F)
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Acquire F) =
   {! RU-Acquire → TR.R-Acq: φ acq→done. inv-U-ν + zero∷suc b₁ binder shape + done-flag handling (RU-Cleanup pairs with it). !}
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Close F₁ F₂) =
-  {! RU-Close → TR.R-Close: inv-U-ν + two-frame plug inversion + L.[1]L.[1] binder match. !}
+-- RU-Close.  PARTIAL — the structural inversion is PROVEN (ReverseInv:
+--   inv-U-ν reads P = ν B₁ B₂ P₀ off the ν head; the RU-Close LHS body is
+--   ∥-headed, so inv-U-ν-∥-shape forces syncs B₁ = syncs B₂ = 0, i.e. B₁ = b₁ ∷
+--   [], B₂ = b₂ ∷ [] singletons — each endpoint carries one handle, as a
+--   well-typed close demands; U-ν-singleton then collapses the empty φ-telescope
+--   so the ν body is literally U[ P₀ ] (νσ b₁ b₂ σ) — see the `with`-stack here,
+--   which type-checks).  RESIDUAL (the remaining hole): from the collapsed body
+--   recover P₀ = ⟪eL⟫ ∥ ⟪eR⟫ (U[_]-of-∥ is ∥, of-thread is thread), then
+--   frameApp-reflect (c = `end ‼ / `end ⁇) each substituted close redex back to a
+--   source frame + its channel-var argument (`0F)/(`1F), fire TR.R-Close, and
+--   reconcile the codomain with the forward `thr`/frame-plug* bridge (R-Close in
+--   Theorems.agda).  That per-thread typed reflection needs inv-ν → inv-∥ →
+--   inv-⟪⟫ to type eL/eR in the binder-extended ChanCx (bindCtx⇒chanCtx) plus the
+--   forward-mirror ≋ — the large remaining piece; B-shape + φ-collapse are DONE.
+sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
+  with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
+  with shape ← inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq =
+  {! RU-Close: B-shape+φ-collapse PROVEN (inv-U-ν-∥-shape ⊢ B₁=b₁∷[], B₂=b₂∷[], body ≡ U[P₀](νσ b₁ b₂ σ)). RESIDUAL: recover P₀=⟪eL⟫∥⟪eR⟫, frameApp-reflect each `end-redex (arg = chan var `0F/`1F), fire TR.R-Close, codomain via forward thr/frame-plug* bridge (needs inv-ν→inv-∥→inv-⟪⟫ typing of eL/eR + bindCtx⇒chanCtx). !}
+-- RU-Com.  Body ν(⟪..⟫ ∥ (⟪..⟫ ∥ P)) is ∥-headed, so the SAME structural
+--   inversion as RU-Close applies: inv-U-ν + inv-U-ν-∥-shape force B₁,B₂ to
+--   singletons (syncs 0), U-ν-singleton collapses the φ-telescope, giving body ≡
+--   U[ P₀ ] (νσ b₁ b₂ σ) with P₀ = ⟪eS⟫ ∥ (⟪eR⟫ ∥ P).  RESIDUAL: frameApp-reflect
+--   the send redex K `send · (e ⊗ 𝓒[…]) (head⊗ on the argument, not a bare chan
+--   var) and the recv redex K `recv · 𝓒[…]; the recv channel INDEX (wkʳ/wkˡ
+--   geometry) is fixed only by the BindCtx chain — the same typing-driven index
+--   pin the forward U-com (Theorems/Com.agda, 962 ln) needs, mirrored.  Large but
+--   UNgated; structural shape/collapse PROVEN above (reuse for Close/Com/Choice).
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Com F₁ F₂ V) =
-  {! RU-Com → TR.R-Com: send/recv rendezvous. inv-U-ν + BindCtx typing + frame-plug*; HARDEST — mirror forward Com.agda (962 ln) in reverse. !}
+  {! RU-Com → TR.R-Com: send/recv rendezvous. STRUCTURE (B-singletons + φ-collapse) reusable via inv-U-ν-∥-shape/U-ν-singleton; RESIDUAL = frameApp-reflect send/recv redexes + BindCtx-pinned recv index + codomain bridge, mirroring forward Com.agda. !}
+-- RU-Choice.  Identical shape to RU-Com (ν, ∥-headed body): same inv-U-ν-∥-shape
+--   + U-ν-singleton collapse; RESIDUAL = frameApp-reflect the select/branch
+--   redexes + `inj wrapping on the codomain, mirroring forward U-choice.
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Choice F₁ F₂ k) =
-  {! RU-Choice → TR.R-Choice: select/branch. inv-U-ν + BindCtx typing + frame-plug*, like RU-Com. !}
+  {! RU-Choice → TR.R-Choice: select/branch. Same structure as RU-Com (inv-U-ν-∥-shape + collapse PROVEN); RESIDUAL = frameApp-reflect select/branch redexes + `inj codomain, mirroring forward Choice.agda. !}
 -- RU-Cleanup : R = φ done P.  U[_] never heads with φ (clauses are ⟪⟫/∥/ν), so
 -- eq : φ done P ≡ U[ Pₛ ] σ is absurd by case on Pₛ.  VACUOUS at top level
 -- (only reachable under an inner RU-Res recursion, where the φ is real).

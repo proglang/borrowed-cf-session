@@ -723,3 +723,68 @@ rnew-bridge {m} {n} E σ Vσ =
              ≡ ((E ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 1F) ⊗ (` 0F) ]*) ⋯ σ′
     bodyEq = sym (frame-plug* (E ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) σ′ Vσ′
                  ■ cong₂ _[_]* (frameEqA E) leafTermEq)
+
+------------------------------------------------------------------------
+-- φ-free body inversion for the ν-headed reverse channel cases.
+--
+--   When U[ ν B₁ B₂ P₀ ] σ ≡ ν Body and Body's head is NOT a φ (i.e. the
+--   redex sits in a thread/parallel body, as in RU-Close/Com/Choice), the
+--   φ-telescope must have depth 0: syncs B₁ = syncs B₂ = 0, which forces
+--   each Bᵢ to be [] or a singleton.  In that case UB[_] collapses
+--   definitionally and Body ≡ U[ P₀ ] bigσ with a CONCRETE substitution.
+--
+--   `notφ` is the head-non-φ witness, supplied by the caller as the body
+--   shape demanded by the firing untyped rule (e.g. A ∥ B for RU-Close).
+------------------------------------------------------------------------
+
+-- A bind group with syncs B = 0 is [] or a singleton.
+syncs0-shape : (B : TP.BindGroup) → syncs B ≡ 0
+             → (B ≡ []) Sum.⊎ (Σ[ b ∈ ℕ ] (B ≡ b ∷ []))
+syncs0-shape []            _  = Sum.inj₁ refl
+syncs0-shape (b ∷ [])      _  = Sum.inj₂ (b , refl)
+syncs0-shape (b ∷ _ ∷ _)   ()
+
+-- The concrete leaf substitution U[ ν [b₁] [b₂] P₀ ] σ uses on its body.
+-- For singleton B₁=[b₁], B₂=[b₂] the φ-telescope is empty and the body is
+-- exactly U[ P₀ ] (νσ b₁ b₂ σ).
+νσ : ∀ {m n} → (b₁ b₂ : ℕ) → (m →ₛ n) → (sum (b₁ ∷ []) + sum (b₂ ∷ []) + m →ₛ 2 + n)
+νσ b₁ b₂ σ =
+  ((λ i → (λ (_ : 𝔽 (sum (b₁ ∷ []))) → chanTriple (* , 0F , *)) i ⋯ weaken* ⦃ Kᵣ ⦄ 0) ++ₛ
+    (λ (_ : 𝔽 (sum (b₂ ∷ []))) → chanTriple (* , weaken* ⦃ Kᵣ ⦄ 0 1F , *)))
+  ++ₛ (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 0 ⋯ weaken* ⦃ Kᵣ ⦄ 0)
+
+-- U[ ν [b₁] [b₂] P₀ ] σ collapses (no φ binders) to ν (U[ P₀ ] (νσ …)).
+U-ν-singleton : ∀ {m n} (b₁ b₂ : ℕ)
+                (P₀ : TP.Proc (sum (b₁ ∷ []) + sum (b₂ ∷ []) + m)) (σ : m →ₛ n)
+              → U[ TP.ν (b₁ ∷ []) (b₂ ∷ []) P₀ ] σ ≡ UP.ν (U[ P₀ ] (νσ b₁ b₂ σ))
+U-ν-singleton b₁ b₂ P₀ σ = refl
+
+-- For the ν-headed reverse channel cases the firing untyped rule demands a body
+-- whose head is NOT a φ — for RU-Close/Com/Choice the body is a ∥.  Since
+-- UB[ b ∷ c ∷ B ] heads with φ, a ∥-headed ν body forces BOTH bind groups to be
+-- [] or a singleton (syncs Bᵢ = 0).  This lemma reads that B-shape off the body
+-- head and returns the (non-φ) collapsed leaf — i.e. the body is literally the
+-- U[_]-image of the source P₀ under the telescope substitution that U[_] uses.
+-- We package the four (≤singleton) shape combinations as a Sum the caller
+-- dispatches; the singleton/singleton component is the one a well-typed close
+-- (each endpoint has ≥1 handle) lands in, and is `refl`.
+-- ν-injectivity on the untyped Proc.
+ν-inj : ∀ {n} {X Y : UP.Proc (2 + n)} → UP.ν X ≡ UP.ν Y → X ≡ Y
+ν-inj refl = refl
+
+inv-U-ν-∥-shape : ∀ {m n} (B₁ B₂ : TP.BindGroup)
+              (P₀ : TP.Proc (sum B₁ + sum B₂ + m)) (σ : m →ₛ n) {A B : UP.Proc (2 + n)}
+          → UP.ν (A UP.∥ B) ≡ U[ TP.ν B₁ B₂ P₀ ] σ
+          → (Σ[ b₁ ∈ ℕ ] Σ[ b₂ ∈ ℕ ] (B₁ ≡ b₁ ∷ []) × (B₂ ≡ b₂ ∷ []))
+            Sum.⊎ ((syncs B₁ ≡ 0) × (syncs B₂ ≡ 0))
+inv-U-ν-∥-shape (b ∷ _ ∷ _) B₂ P₀ σ eq with ν-inj eq
+... | ()
+inv-U-ν-∥-shape (b₁ ∷ []) (b₂ ∷ _ ∷ _) P₀ σ eq with ν-inj eq
+... | ()
+inv-U-ν-∥-shape (b₁ ∷ []) (b₂ ∷ []) P₀ σ eq =
+  Sum.inj₁ (b₁ , b₂ , refl , refl)
+inv-U-ν-∥-shape [] (b₂ ∷ _ ∷ _) P₀ σ eq with ν-inj eq
+... | ()
+inv-U-ν-∥-shape [] (b₂ ∷ []) P₀ σ eq = Sum.inj₂ (refl , refl)
+inv-U-ν-∥-shape [] []        P₀ σ eq = Sum.inj₂ (refl , refl)
+inv-U-ν-∥-shape (b₁ ∷ []) [] P₀ σ eq = Sum.inj₂ (refl , refl)
