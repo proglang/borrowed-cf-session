@@ -28,6 +28,66 @@ open import BorrowedCF.Context using (Ctx; Struct)
 open TP using (_;_⊢ₚ_; inv-⟪⟫; inv-∥; inv-ν; ⊢-≋; bindCtx⇒chanCtx)
 
 ------------------------------------------------------------------------
+-- Expression-reduction REFLECTION through a value substitution.
+--
+--   The reverse of Frames.⋯→-⋯ₛ: substituting VALUES into a term cannot
+--   create new head redexes (a value never reduces, and a variable maps to a
+--   value), so every step of  e₀ ⋯ σ  is the image of a step of e₀.
+------------------------------------------------------------------------
+
+-- A value has no head reduction.
+value-no-head : {t : Tm n} → Value t → {e₂ : Tm n} → ¬ (t ─→ e₂)
+value-no-head V-`         ()
+value-no-head V-K         ()
+value-no-head V-λ         ()
+value-no-head (V-⊗ V₁ V₂) ()
+value-no-head (V-⊕ V)     ()
+
+-- A term that is a value never reduces.
+value-↛ : {t : Tm n} → Value t → {e₂ : Tm n} → ¬ (t ⋯→ e₂)
+value-↛ V (E-□ hred)             = value-no-head V hred
+value-↛ V (E-Ctx (□· _)  red)    with V
+... | ()
+value-↛ V (E-Ctx (_ ·□)  red)    with V
+... | ()
+value-↛ V (E-Ctx (□⊗ _)  red)    with V
+... | V-⊗ V₁ V₂ = value-↛ V₁ red
+value-↛ V (E-Ctx (_ ⊗□)  red)    with V
+... | V-⊗ V₁ V₂ = value-↛ V₂ red
+value-↛ V (E-Ctx (□; _)  red)    with V
+... | ()
+value-↛ V (E-Ctx (`let-`in _)  red) with V
+... | ()
+value-↛ V (E-Ctx (`let⊗-`in _) red) with V
+... | ()
+value-↛ V (E-Ctx (`inj□ i) red)  with V
+... | V-⊕ V′ = value-↛ V′ red
+value-↛ V (E-Ctx `case□`of⟨ _ ; _ ⟩ red) with V
+... | ()
+
+-- Value reflection: under a VSub, a substituted term is a value iff the
+-- source term is.  (Needed to recover the source-side Value side conditions of
+-- the head reductions.)
+value-⋯⁻¹ : (σ : m →ₛ n) → VSub σ → (e₀ : Tm m) → Value (e₀ ⋯ σ) → Value e₀
+value-⋯⁻¹ σ Vσ (` x)               V = V-`
+value-⋯⁻¹ σ Vσ (K c)               V = V-K
+value-⋯⁻¹ σ Vσ (ƛ e)               V = V-λ
+value-⋯⁻¹ σ Vσ (e₁ ⊗ e₂) (V-⊗ V₁ V₂) =
+  V-⊗ (value-⋯⁻¹ σ Vσ e₁ V₁) (value-⋯⁻¹ σ Vσ e₂ V₂)
+value-⋯⁻¹ σ Vσ (`inj i e)  (V-⊕ V)    = V-⊕ (value-⋯⁻¹ σ Vσ e V)
+
+-- NOTE (reflection of expression reduction): a TYPING-FREE reflection
+--   ⋯→-reflect : VSub σ → (e₀ ⋯ σ) ⋯→ e₂ → Σ e₀′. e₀ ⋯→ e₀′ × e₂ ≡ e₀′ ⋯ σ
+--   is mathematically FALSE for an arbitrary value substitution: a variable
+--   may map to a λ (or ⊗ / inj) value, so σ can CREATE a head redex that the
+--   source e₀ does not have (e.g. e₀ = (` x) · v with σ x = ƛ body).  Ruling
+--   this out needs the source typing: a channel-typed variable can never head
+--   an application / let⊗ / case.  The helpers below (value-↛, value-no-head,
+--   value-⋯⁻¹) are the SOUND, typing-free fragments and are reused elsewhere;
+--   the full reflection is carried as the RU-Exp hole (see sim←ᵍ).
+
+
+------------------------------------------------------------------------
 -- Translation-inversion lemmas.
 --
 -- U[_] has exactly three structural clauses (Bisim.agda:50-56):
@@ -66,14 +126,25 @@ inv-U-∥ (TP.ν B₁ B₂ P) σ ()
 -- DELIBERATELY OMITTED from this kickoff statement; the channel-op cases that
 -- need it (RU-Res and all ν-headed redexes) carry the body-recovery debt in
 -- their own holes (see assessment).
+--
+-- BODY (priority #1).  We additionally return the body equation
+--   UP.ν X ≡ U[ TP.ν B₁ B₂ P₀ ] σ
+-- which — combined with P ≡ TP.ν B₁ B₂ P₀ — pins X to the exact φ-telescope
+-- that U[_] builds for ν B₁ B₂ P₀ at σ:  X is definitionally
+--   UB[ B₁ ] (*,0F,*) (λ σ₁ → UB[ B₂ ] (*, weaken* (syncs B₁) 1F ,*)
+--     (λ σ₂ → U[ P₀ ] bigσ))     (Bisim.agda U[ ν … ]).
+-- So the φ-nest depth (syncs B₁ + syncs B₂) and the chanTriple/UB data are all
+-- recovered; this is what the ν-headed redex inversions consume.  (We cannot
+-- recover B₁,B₂ as LISTS from the depth alone — only syncs Bᵢ + sum Bᵢ — but
+-- that is fine for ≋, since the body equation already names a concrete B₁,B₂.)
 inv-U-ν : (P : TP.Proc m) (σ : m →ₛ n) {X : UP.Proc (2 + n)}
         → U[ P ] σ ≡ UP.ν X
         → Σ[ B₁ ∈ TP.BindGroup ] Σ[ B₂ ∈ TP.BindGroup ]
             Σ[ P₀ ∈ TP.Proc (sum B₁ + sum B₂ + m) ]
-            (P ≡ TP.ν B₁ B₂ P₀)
+            (P ≡ TP.ν B₁ B₂ P₀ × UP.ν X ≡ U[ TP.ν B₁ B₂ P₀ ] σ)
 inv-U-ν (TP.⟪ e₀ ⟫)    σ ()
 inv-U-ν (P TP.∥ Q)     σ ()
-inv-U-ν (TP.ν B₁ B₂ P) σ refl = B₁ , B₂ , P , refl
+inv-U-ν (TP.ν B₁ B₂ P) σ refl = B₁ , B₂ , P , refl , refl
 
 ------------------------------------------------------------------------
 -- The reverse-simulation statement.
@@ -101,9 +172,17 @@ sim← σ Vσ Γ-S ⊢P red = sim←ᵍ σ Vσ Γ-S ⊢P refl red
 --   eq : ⟪ e₁ ⟫ ≡ U[ P ] σ  ⇒ via inv-U-⟪⟫, P = ⟪ e₀ ⟫ with e₁ ≡ e₀ ⋯ σ.
 --   We then need to REFLECT the substituted step e₀ ⋯ σ ⋯→ e₂ back to a source
 --   step e₀ ⋯→ e₀′ with e₂ ≡ e₀′ ⋯ σ, and conclude TR.R-Exp.
---   HOLE: needs an expression-reduction reflection lemma
---     ⋯→-reflect : VSub σ → e₀ ⋯ σ ⋯→ e₂ → Σ e₀′. e₀ ⋯→ e₀′ × e₂ ≡ e₀′ ⋯ σ
---   (the reverse of Frames.⋯→-⋯ₛ; NOT yet in the codebase).
+--   HOLE — and the reason it is hard is now PINNED DOWN: a TYPING-FREE
+--   reflection lemma  ⋯→-reflect : VSub σ → e₀ ⋯ σ ⋯→ e₂ → Σ e₀′. …  is
+--   mathematically FALSE.  A value substitution may map a variable to a λ / ⊗ /
+--   inj value and thereby CREATE a head redex absent from e₀ (e.g. e₀ = (` x)·v
+--   with σ x = ƛ b, or `let⊗ (` x) `in e with σ x a pair — exactly the channel
+--   triple shape U[_] uses!).  The source step only exists because ⊢P + ChanCx Γ
+--   force every free variable of e₀ to be CHANNEL-typed, hence never in function
+--   / pair-elim / case head position.  So a SOUND reflection must thread the
+--   thread's typing (inv-⟪⟫ ⊢P).  The sound, typing-free fragments are proven
+--   above as value-↛ / value-no-head / value-⋯⁻¹ (these ARE the pieces a typed
+--   reflection reuses); the typed reflection itself is the remaining work.
 ------------------------------------------------------------------------
 sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Exp {e₁ = e₁} {e₂ = e₂} step) =
   {! RU-Exp: invert eq via inv-U-⟪⟫ (P=⟪e₀⟫, e₁≡e₀⋯σ); reflect e₀⋯σ ⋯→ e₂ to e₀ ⋯→ e₀′ with e₂≡e₀′⋯σ (reverse of Frames.⋯→-⋯ₛ — NOT in codebase); conclude TR.R-Exp. !}
