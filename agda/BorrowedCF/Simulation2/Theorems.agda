@@ -17,12 +17,18 @@ open import BorrowedCF.Simulation2.Base
 open import BorrowedCF.Simulation2.Frames using (⋯→-⋯ₛ; frame-plug*; frame*-⋯; ++ₛ-VSub; weaken-VSub)
 open import BorrowedCF.Simulation2.Congruence using (U-≋)
 open import BorrowedCF.Simulation2.TranslationProperties using (≡→≋; UB-cong-─→; UB-cong; ≋-subst; ─→-subst; Value-subst; chanTriple-V; VChan; U-⋯ₚ; U-cong)
+open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
 import Data.Sum as Sum
 import BorrowedCF.Processes.Typed             as TP
 import BorrowedCF.Processes.Untyped           as UP
 import BorrowedCF.Reduction.Processes.Typed   as TR
 import BorrowedCF.Reduction.Processes.Untyped as UR
 open import BorrowedCF.Context using (Ctx; Struct)
+
+infix 4 _UR─→ₚ*_
+_UR─→ₚ*_ : {n : ℕ} → UP.Proc n → UP.Proc n → Set
+_UR─→ₚ*_ = Star UR._─→ₚ_
+
 open TP using (_;_⊢ₚ_; inv-⟪⟫; inv-∥; inv-ν; ⊢-≋; bindCtx⇒chanCtx)
 
 
@@ -198,12 +204,12 @@ disc-multi b' x xs B₂ P σ =
 -- through the telescope as a single uniform tag.
 UB-cong-⊎ : (B : TP.BindGroup) (cc : UChan n) → VChan cc →
             {f g : (sum B →ₛ syncs B + n) → UP.Proc (syncs B + n)} →
-            (∀ σ → VSub σ → (f σ UR.─→ₚ g σ) ⊎ (f σ UP.≋ g σ)) →
-            (UB[ B ] cc f UR.─→ₚ UB[ B ] cc g) ⊎ (UB[ B ] cc f UP.≋ UB[ B ] cc g)
+            (∀ σ → VSub σ → (f σ UR─→ₚ* g σ) ⊎ (f σ UP.≋ g σ)) →
+            (UB[ B ] cc f UR─→ₚ* UB[ B ] cc g) ⊎ (UB[ B ] cc f UP.≋ UB[ B ] cc g)
 UB-cong-⊎ []        cc Vcc h = h _ (λ ())
 UB-cong-⊎ (b ∷ [])  cc Vcc h = h _ (λ _ → chanTriple-V cc Vcc)
 UB-cong-⊎ {n} (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) (Ve₁ , Ve₂) h =
-  [ (λ s → inj₁ (UR.RU-Sync s)) , (λ e → inj₂ (UP.φ-cong e)) ]′
+  [ (λ s → inj₁ (⋆-gmap (UP.φ ϕ[ b ]) UR.RU-Sync s)) , (λ e → inj₂ (UP.φ-cong e)) ]′
     (UB-cong-⊎ B (` 0F , suc x , e₂ ⋯ weakenᵣ) (V-` , Ve₂ ⋯ᵛ weakenᵣ)
       (λ σ Vσ → Sum.map (─→-subst (sym (+-suc (syncs B) _)))
                         (≋-subst (sym (+-suc (syncs B) _)))
@@ -220,22 +226,22 @@ UB-cong-⊎ {n} (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) (Ve₁ , Ve₂) h =
 sim→ : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
      → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
      → {P′ : TP.Proc m} → P TR.─→ₚ P′
-     → (U[ P ] σ UR.─→ₚ U[ P′ ] σ) ⊎ (U[ P ] σ UP.≋ U[ P′ ] σ)
+     → (U[ P ] σ UR─→ₚ* U[ P′ ] σ) ⊎ (U[ P ] σ UP.≋ U[ P′ ] σ)
 
 -- R-Exp: expression head reduction respects value substitution → RU-Exp.
-sim→ σ Vσ Γ-S ⊢P (TR.R-Exp x) = inj₁ (UR.RU-Exp (⋯→-⋯ₛ σ Vσ x))
+sim→ σ Vσ Γ-S ⊢P (TR.R-Exp x) = inj₁ (UR.RU-Exp (⋯→-⋯ₛ σ Vσ x) ◅ ε)
 
 -- R-Par: invert the typing of P ∥ Q, recurse on the left, congruence RU-Par.
 sim→ σ Vσ Γ-S ⊢P (TR.R-Par red)
   with _ , _ , _ , p , _ ← inv-∥ ⊢P =
-  [ (λ s → inj₁ (UR.RU-Par s)) , (λ e → inj₂ (UP.∥-cong e ε)) ]′ (sim→ σ Vσ Γ-S p red)
+  [ (λ s → inj₁ (⋆-gmap (UP._∥ _) UR.RU-Par s)) , (λ e → inj₂ (UP.∥-cong e ε)) ]′ (sim→ σ Vσ Γ-S p red)
 
 -- R-Fork: F [ K `fork . e ] → thread split.  Needs frame-plug* (DONE in Frames)
 --   to push U[ ] through the frame, then RU-Fork (with a Value for e).
 sim→ σ Vσ Γ-S ⊢P (TR.R-Fork E V) =
   inj₁ (subst₂ UR._─→ₚ_ (sym (cong UP.⟪_⟫ (frame-plug* E σ Vσ)))
                   (cong₂ UP._∥_ (sym (cong UP.⟪_⟫ (frame-plug* E σ Vσ))) refl)
-                  (UR.RU-Fork (frame*-⋯ E σ Vσ) (value-⋯ V σ Vσ)))
+                  (UR.RU-Fork (frame*-⋯ E σ Vσ) (value-⋯ V σ Vσ)) ◅ ε)
 
 -- R-New: BLOCKED (definition mismatch, needs an edit to a file owned elsewhere).
 --   The LHS bridge (frame-plug*) and `RU-New (frame*-⋯ E σ Vσ)` fire fine; the ONLY
@@ -253,7 +259,7 @@ sim→ σ Vσ Γ-S ⊢P (TR.R-New E) =
   inj₁ (UR.RU-Struct
     (≡→≋ (cong UP.⟪_⟫ (frame-plug* E σ Vσ)))
     (UR.RU-New (frame*-⋯ E σ Vσ))
-    (rnew-bridge E σ Vσ))
+    (rnew-bridge E σ Vσ) ◅ ε)
 
 -- R-Com: send/recv rendezvous across the binder.  Needs WELL-TYPEDNESS (inv-ν +
 --   the BindCtx chain to fix the recv channel index), frame-plug*, and the U[ν…]
@@ -291,7 +297,7 @@ sim→ {m = m} {n = n} σ Vσ Γ-S ⊢P (TR.R-Close {E₁ = E₁} {E₂ = E₂})
   inj₁ (UR.RU-Struct
     (≡→≋ (cong UP.ν (cong₂ UP._∥_ (thr ‼ E₁ 0F t₁ (⋯-id t₁ {ϕ = weaken* ⦃ Kᵣ ⦄ 0} (λ _ → refl))) (thr ⁇ E₂ 1F t₂ refl))))
     (UR.RU-Close (frame*-⋯ E₁ σ Vσ) (frame*-⋯ E₂ σ Vσ))
-    (≡→≋ (sym (cong₂ UP._∥_ (cong UP.⟪_⟫ (frame-plug* E₁ σ Vσ)) (cong UP.⟪_⟫ (frame-plug* E₂ σ Vσ))))))
+    (≡→≋ (sym (cong₂ UP._∥_ (cong UP.⟪_⟫ (frame-plug* E₁ σ Vσ)) (cong UP.⟪_⟫ (frame-plug* E₂ σ Vσ))))) ◅ ε)
   where
     t₁ : Tm (2 + n)
     t₁ = (K `unit ⊗ (` 0F)) ⊗ K `unit
