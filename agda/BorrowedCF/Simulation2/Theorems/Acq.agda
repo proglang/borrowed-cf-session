@@ -26,7 +26,7 @@ import Relation.Binary.Construct.Closure.Equivalence as Eq*
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_; _◅◅_)
 open import BorrowedCF.Context using (Ctx; Struct)
 open import BorrowedCF.Simulation2.TranslationProperties
-  using (UB-nat; mapᶜ; varΘ; U-cong; U-⋯ₚ; ++ₛ-⋯; liftCast; subst₂→; chanTriple-mapᶜ)
+  using (UB-nat; mapᶜ; varΘ; U-cong; U-⋯ₚ; U-σ⋯; ++ₛ-⋯; liftCast; subst₂→; chanTriple-mapᶜ)
   renaming ( subst-⋯ₚ-dom to TP-subst-⋯ₚ-dom
            ; subst₂-cancel to subst₂-cancel-local
            ; subst-⋯-cod to subst-⋯-cod-local
@@ -34,8 +34,11 @@ open import BorrowedCF.Simulation2.TranslationProperties
            ; subst-⋯ to subst-⋯-dom-local )
 open import BorrowedCF.Simulation2.BlockPerm
   using ( assocSwap-01; R-base-b0; assocSwap-0a; toℕ-R3; toℕ-R3₂; toℕ-R4
-        ; toℕ-weaken*ᵣ; toℕ-swapᵣ-mid; toℕ-reduce≥
-        ; toℕ-↑*-ge; commuteS; wkSwap-cancel; assocSwap-invol )
+        ; toℕ-weaken*ᵣ; toℕ-swapᵣ-mid; toℕ-reduce≥; toℕ-assoc-mid; toℕ-assoc-ge; toℕ-↑
+        ; toℕ-↑*-ge; toℕ-↑*-lt; commuteS; wkSwap-cancel; assocSwap-invol )
+open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯; frame-plug₁; ++ₛ-VSub)
+open import BorrowedCF.Simulation2.TranslationProperties using (VChan; chanTriple-V; Value-subst)
+open import BorrowedCF.Simulation2.SplitConfine using (acq-confine)
 open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
 
@@ -482,6 +485,128 @@ Bφ-fire (b ∷ [])      r = r
 Bφ-fire {n} (b ∷ B@(_ ∷ _)) r =
   φ-fire* ϕ[ b ] (Bφ-fire B (subst-fire* (sym (+-suc (syncs B) n)) r))
 
+VSub-canonₛ : ∀ (B : BindGroup) {N} (cc : UChan N) → VChan cc → VSub (canonₛ B cc)
+VSub-canonₛ []            cc            Vcc = λ ()
+VSub-canonₛ (b ∷ [])      (e1 , x , e2) (Ve1 , Ve2) =
+  λ _ → chanTriple-V (e1 , x , e2) (Ve1 , Ve2)
+VSub-canonₛ (b ∷ B@(_ ∷ _)) {N} (e1 , x , e2) (Ve1 , Ve2) i =
+  Value-subst (+-suc (syncs B) N)
+    (++ₛ-VSub {a = b}
+       (λ _ → value-⋯ (chanTriple-V (wk e1 , suc x , ` 0F) (Ve1 ⋯ᵛ weakenᵣ , V-`)) (weaken* ⦃ Kᵣ ⦄ (syncs B)) (λ _ → V-`))
+       (VSub-canonₛ B (` 0F , suc x , wk e2) (V-` , Ve2 ⋯ᵛ weakenᵣ)) i)
+
+-- canonₛ (suc b ∷ B) cc at index 0F is a chanTriple whose junction var sits at
+-- flat position syncs (suc b ∷ B) + toℕ x.
+canonₛ-head-triple : ∀ {N} (b : ℕ) (B : BindGroup) (e1 e2 : Tm N) (x : 𝔽 N) →
+  Σ[ a ∈ Tm (syncs (suc b ∷ B) + N) ] Σ[ c ∈ Tm (syncs (suc b ∷ B) + N) ]
+  Σ[ j ∈ 𝔽 (syncs (suc b ∷ B) + N) ]
+    (canonₛ (suc b ∷ B) (e1 , x , e2) 0F ≡ (a ⊗ (` j)) ⊗ c)
+    × (Fin.toℕ j ≡ syncs (suc b ∷ B) + Fin.toℕ x)
+canonₛ-head-triple b []        e1 e2 x =
+  e1 , e2 , x , refl , refl
+canonₛ-head-triple {N} b (c′ ∷ B) e1 e2 x =
+  ( subst Tm (+-suc sB N) (wk e1 ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+  , subst Tm (+-suc sB N) ((` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+  , subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))
+  , tripeq
+  , junceq )
+  where
+    sB = syncs (c′ ∷ B)
+    tripeq : canonₛ (suc b ∷ c′ ∷ B) (e1 , x , e2) 0F
+             ≡ (subst Tm (+-suc sB N) (wk e1 ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+                 ⊗ (` subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))))
+                 ⊗ subst Tm (+-suc sB N) ((` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+    tripeq = substTrip (+-suc sB N) (wk e1 ⋯ weaken* ⦃ Kᵣ ⦄ sB) (weaken* ⦃ Kᵣ ⦄ sB (suc x)) ((` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+      where
+        substTrip : ∀ {p q} (eq : p ≡ q) (A : Tm p) (jj : 𝔽 p) (C : Tm p) →
+                    subst Tm eq ((A ⊗ (` jj)) ⊗ C)
+                    ≡ (subst Tm eq A ⊗ (` subst 𝔽 eq jj)) ⊗ subst Tm eq C
+        substTrip refl A jj C = refl
+    junceq : Fin.toℕ (subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x)))
+             ≡ suc sB + Fin.toℕ x
+    junceq = toℕ-subst𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))
+           ■ toℕ-weaken*ᵣ sB (suc x)
+           ■ +-suc sB (Fin.toℕ x)
+      where
+        toℕ-subst𝔽 : ∀ {p q} (e : p ≡ q) (y : 𝔽 p) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
+        toℕ-subst𝔽 refl y = refl
+
+-- The push composite (assocSwapᵣ sA 2 ↑* sB) then (assocSwapᵣ sB 2) sends the
+-- data-pair junction var (flat position sB+sA+d, d∈{0,1}) to position d.
+assocPush-junc : ∀ (sA sB d : ℕ) {nn} (j : 𝔽 (sB + (sA + (2 + nn)))) →
+                 Fin.toℕ j ≡ sB + (sA + d) → d Nat.< 2 →
+                 Fin.toℕ ((assocSwapᵣ sB 2 {sA + nn}) ((assocSwapᵣ sA 2 {nn} ↑* sB) j)) ≡ d
+assocPush-junc sA sB d {nn} j jeq d<2 =
+    toℕ-assoc-mid sB 2 {sA + nn} ((assocSwapᵣ sA 2 {nn} ↑* sB) j) geB ltB
+  ■ aritheq
+  where
+    q1 : sB Nat.≤ Fin.toℕ j
+    q1 = subst (sB Nat.≤_) (sym jeq) (Nat.m≤m+n sB (sA + d))
+    redeq : Fin.toℕ (Fin.reduce≥ j q1) ≡ sA + d
+    redeq = toℕ-reduce≥ j q1 ■ cong (Nat._∸ sB) jeq ■ Nat.m+n∸m≡n sB (sA + d)
+    geA : sA Nat.≤ Fin.toℕ (Fin.reduce≥ j q1)
+    geA = subst (sA Nat.≤_) (sym redeq) (Nat.m≤m+n sA d)
+    ltA : Fin.toℕ (Fin.reduce≥ j q1) Nat.< sA + 2
+    ltA = subst (Nat._< sA + 2) (sym redeq) (Nat.+-monoʳ-< sA d<2)
+    midA : Fin.toℕ (assocSwapᵣ sA 2 {nn} (Fin.reduce≥ j q1)) ≡ d
+    midA = toℕ-assoc-mid sA 2 {nn} (Fin.reduce≥ j q1) geA ltA
+         ■ cong (Nat._∸ sA) redeq ■ Nat.m+n∸m≡n sA d
+    step1 : Fin.toℕ ((assocSwapᵣ sA 2 {nn} ↑* sB) j) ≡ sB + d
+    step1 = toℕ-↑*-ge (assocSwapᵣ sA 2 {nn}) sB j q1 ■ cong (sB +_) midA
+    geB : sB Nat.≤ Fin.toℕ ((assocSwapᵣ sA 2 {nn} ↑* sB) j)
+    geB = subst (sB Nat.≤_) (sym step1) (Nat.m≤m+n sB d)
+    ltB : Fin.toℕ ((assocSwapᵣ sA 2 {nn} ↑* sB) j) Nat.< sB + 2
+    ltB = subst (Nat._< sB + 2) (sym step1) (Nat.+-monoʳ-< sB d<2)
+    aritheq : Fin.toℕ ((assocSwapᵣ sA 2 {nn} ↑* sB) j) Nat.∸ sB ≡ d
+    aritheq = cong (Nat._∸ sB) step1 ■ Nat.m+n∸m≡n sB d
+
+-- frame-plug for a plain renaming (generic over the renaming Kit).
+frame-plug*ᵣ : (E : Frame* m) {t : Tm m} (ρ : m →ᵣ n) →
+               (E [ t ]*) ⋯ ρ ≡ (E ⋯ᶠ* ρ) [ t ⋯ ρ ]*
+frame-plug*ᵣ []       ρ = refl
+frame-plug*ᵣ (E ∷ E*) ρ =
+  frame-plug₁ E ρ (λ x → V-`) ■ cong (frame-⋯ E ρ (λ x → V-`) [_]) (frame-plug*ᵣ E* ρ)
+
+toℕ-subst𝔽 : ∀ {a c} (e : a ≡ c) (y : 𝔽 a) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
+toℕ-subst𝔽 refl y = refl
+
+-- The acq head-triple: canonₛ (suc b ∷ B) (` 0F , 1F , e2) 0F is a triple of two
+-- variables (endpoint, junction) over a third term.  Endpoint var sits at flat
+-- position syncs(suc b∷B)+0, junction at syncs(suc b∷B)+1.
+canonₛ-acq-head : ∀ {N} (b : ℕ) (B : BindGroup) (e2 : Tm (2 + N)) →
+  Σ[ ja ∈ 𝔽 (syncs (suc b ∷ B) + (2 + N)) ] Σ[ jj ∈ 𝔽 (syncs (suc b ∷ B) + (2 + N)) ]
+  Σ[ tc ∈ Tm (syncs (suc b ∷ B) + (2 + N)) ]
+    (canonₛ (suc b ∷ B) (` 0F , 1F , e2) 0F ≡ ((` ja) ⊗ (` jj)) ⊗ tc)
+    × (Fin.toℕ ja ≡ syncs (suc b ∷ B) + 0)
+    × (Fin.toℕ jj ≡ syncs (suc b ∷ B) + 1)
+canonₛ-acq-head b []        e2 = 0F , 1F , e2 , refl , refl , refl
+canonₛ-acq-head {N} b (c′ ∷ B) e2 =
+  ( subst 𝔽 (+-suc sB (2 + N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 0F))
+  , subst 𝔽 (+-suc sB (2 + N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 1F))
+  , subst Tm (+-suc sB (2 + N)) ((` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+  , tripeq
+  , jaeq
+  , jjeq )
+  where
+    sB = syncs (c′ ∷ B)
+    tripeq : canonₛ (suc b ∷ c′ ∷ B) (` 0F , 1F , e2) 0F
+             ≡ ((` subst 𝔽 (+-suc sB (2 + N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 0F)))
+                 ⊗ (` subst 𝔽 (+-suc sB (2 + N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 1F))))
+                 ⊗ subst Tm (+-suc sB (2 + N)) ((` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+    tripeq = substTrip (+-suc sB (2 + N))
+               (weaken* ⦃ Kᵣ ⦄ sB (suc 0F)) (weaken* ⦃ Kᵣ ⦄ sB (suc 1F)) ((` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+      where
+        substTrip : ∀ {p q} (eq : p ≡ q) (ja jj : 𝔽 p) (C : Tm p) →
+                    subst Tm eq (((` ja) ⊗ (` jj)) ⊗ C)
+                    ≡ ((` subst 𝔽 eq ja) ⊗ (` subst 𝔽 eq jj)) ⊗ subst Tm eq C
+        substTrip refl ja jj C = refl
+    jaeq : Fin.toℕ (subst 𝔽 (+-suc sB (2 + N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 0F))) ≡ suc sB + 0
+    jaeq = toℕ-subst𝔽 (+-suc sB (2 + N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 0F))
+         ■ toℕ-weaken*ᵣ sB (suc 0F) ■ +-suc sB 0
+    jjeq : Fin.toℕ (subst 𝔽 (+-suc sB (2 + N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 1F))) ≡ suc sB + 1
+    jjeq = toℕ-subst𝔽 (+-suc sB (2 + N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 1F))
+         ■ toℕ-weaken*ᵣ sB (suc 1F) ■ +-suc sB 1
+
 open T using (_;_⊢ₚ_)
 
 U-acq : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
@@ -517,8 +642,220 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
             U.⋯ₚ (assocSwapᵣ (syncs B₂) 2 ↑)
     mid : U.Proc n
     mid = Bφ C (Bφ B₂ (U.ν (U.φ U.acq LL₃)))
+    sC = syncs C
+    sB₂ = syncs B₂
+    τ : sum (zero ∷ C) + sum B₂ + m →ₛ syncs B₂ + (syncs (zero ∷ C) + (2 + n))
+    τ = leafσ σ (zero ∷ C) B₂
+    Vτ : VSub τ
+    Vτ = ++ₛ-VSub
+           (++ₛ-VSub
+             (λ i → value-⋯ (VSub-canonₛ (zero ∷ C) (K `unit , 0F , K `unit) (V-K , V-K) i)
+                       (weaken* ⦃ Kᵣ ⦄ sB₂) (λ _ → V-`))
+             (VSub-canonₛ B₂ (K `unit , weaken* ⦃ Kᵣ ⦄ (suc sC) 1F , K `unit) (V-K , V-K)))
+           (λ i → value-⋯ (value-⋯ (value-⋯ (Vσ i)
+                     (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`))
+                     (weaken* ⦃ Kᵣ ⦄ (suc sC)) (λ _ → V-`))
+                     (weaken* ⦃ Kᵣ ⦄ sB₂) (λ _ → V-`))
+    -- the four post-subst renamings of LL₃, as a single term/frame/proc push.
+    ρa = assocSwapᵣ sC 1 {2 + n} ↑* sB₂
+    ρb = assocSwapᵣ sB₂ 1 {sC + (2 + n)}
+    ρc = (assocSwapᵣ sC 2 {n} ↑* sB₂) ↑
+    ρd = (assocSwapᵣ sB₂ 2 {sC + n}) ↑
+    rnT : Tm (sB₂ + (suc sC + (2 + n))) → Tm (3 + (sB₂ + (sC + n)))
+    rnT t = (((subst Tm eqC t ⋯ ρa) ⋯ ρb) ⋯ ρc) ⋯ ρd
+    rnP : U.Proc (sB₂ + (suc sC + (2 + n))) → U.Proc (3 + (sB₂ + (sC + n)))
+    rnP P = (((subst U.Proc eqC P U.⋯ₚ ρa) U.⋯ₚ ρb) U.⋯ₚ ρc) U.⋯ₚ ρd
+    subst-⟪⟫ : ∀ {a b} (eq : a ≡ b) (e : Tm a) →
+               subst U.Proc eq (U.⟪ e ⟫) ≡ U.⟪ subst Tm eq e ⟫
+    subst-⟪⟫ refl e = refl
+    subst-∥ : ∀ {a b} (eq : a ≡ b) (A B : U.Proc a) →
+              subst U.Proc eq (A U.∥ B) ≡ subst U.Proc eq A U.∥ subst U.Proc eq B
+    subst-∥ refl A B = refl
+    rnP-⟪⟫ : (e : Tm (sB₂ + (suc sC + (2 + n)))) → rnP (U.⟪ e ⟫) ≡ U.⟪ rnT e ⟫
+    rnP-⟪⟫ e = cong (λ z → (((z U.⋯ₚ ρa) U.⋯ₚ ρb) U.⋯ₚ ρc) U.⋯ₚ ρd) (subst-⟪⟫ eqC e)
+    rnP-∥ : (A B : U.Proc (sB₂ + (suc sC + (2 + n)))) → rnP (A U.∥ B) ≡ rnP A U.∥ rnP B
+    rnP-∥ A B = cong (λ z → (((z U.⋯ₚ ρa) U.⋯ₚ ρb) U.⋯ₚ ρc) U.⋯ₚ ρd) (subst-∥ eqC A B)
+    subst-frame-plug : ∀ {a b} (eq : a ≡ b) (F : Frame* a) (t : Tm a) →
+                       subst Tm eq (F [ t ]*) ≡ (subst (λ z → Frame* z) eq F) [ subst Tm eq t ]*
+    subst-frame-plug refl F t = refl
+    F₁ : Frame* (sB₂ + (suc sC + (2 + n)))
+    F₁ = frame*-⋯ E τ Vτ
+    rnF : Frame* (sB₂ + (suc sC + (2 + n))) → Frame* (3 + (sB₂ + (sC + n)))
+    rnF F = ((((subst (λ z → Frame* z) eqC F ⋯ᶠ* ρa) ⋯ᶠ* ρb) ⋯ᶠ* ρc) ⋯ᶠ* ρd)
+    Fout : Frame* (3 + (sB₂ + (sC + n)))
+    Fout = rnF F₁
+    -- rnT distributes over a frame-plug.
+    rnT-plug : (F : Frame* (sB₂ + (suc sC + (2 + n)))) (t : Tm (sB₂ + (suc sC + (2 + n)))) →
+               rnT (F [ t ]*) ≡ (rnF F) [ rnT t ]*
+    rnT-plug F t =
+        cong (λ z → (((z ⋯ ρa) ⋯ ρb) ⋯ ρc) ⋯ ρd) (subst-frame-plug eqC F t)
+      ■ cong (λ z → ((z ⋯ ρb) ⋯ ρc) ⋯ ρd) (frame-plug*ᵣ (subst (λ z → Frame* z) eqC F) ρa)
+      ■ cong (λ z → (z ⋯ ρc) ⋯ ρd) (frame-plug*ᵣ (subst (λ z → Frame* z) eqC F ⋯ᶠ* ρa) ρb)
+      ■ cong (_⋯ ρd) (frame-plug*ᵣ ((subst (λ z → Frame* z) eqC F ⋯ᶠ* ρa) ⋯ᶠ* ρb) ρc)
+      ■ frame-plug*ᵣ (((subst (λ z → Frame* z) eqC F ⋯ᶠ* ρa) ⋯ᶠ* ρb) ⋯ᶠ* ρc) ρd
+    -- the consumed acq channel triple after the push: first var → 0F, junction → 1F.
+    τ0F : Tm (sB₂ + (suc sC + (2 + n)))
+    τ0F = τ 0F
+    e₀ : sC + suc (2 + n) ≡ suc (sC + (2 + n))
+    e₀ = +-suc sC (2 + n)
+    -- the whole post-triple chain applied to a single subterm.
+    chain : Tm (sC + suc (2 + n)) → Tm (3 + (sB₂ + (sC + n)))
+    chain t = rnT (subst Tm e₀ t ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+    pushVar : 𝔽 (sC + suc (2 + n)) → 𝔽 (3 + (sB₂ + (sC + n)))
+    pushVar v = ρd (ρc (ρb (ρa (subst 𝔽 eqC (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 e₀ v))))))
+    subst-var : ∀ {a b} (eq : a ≡ b) (v : 𝔽 a) → subst Tm eq (` v) ≡ ` subst 𝔽 eq v
+    subst-var refl v = refl
+    chain-var : (v : 𝔽 (sC + suc (2 + n))) → chain (` v) ≡ ` pushVar v
+    chain-var v =
+        cong (λ z → subst Tm eqC (z ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd) (subst-var e₀ v)
+      ■ cong (λ z → z ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd)
+          (subst-var eqC (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 e₀ v)))
+    subst-⊗ : ∀ {a b} (eq : a ≡ b) (A B C : Tm a) →
+              subst Tm eq ((A ⊗ B) ⊗ C) ≡ (subst Tm eq A ⊗ subst Tm eq B) ⊗ subst Tm eq C
+    subst-⊗ refl A B C = refl
+    chain-⊗ : (A B C : Tm (sC + suc (2 + n))) →
+              chain ((A ⊗ B) ⊗ C) ≡ (chain A ⊗ chain B) ⊗ chain C
+    chain-⊗ A B C =
+        cong (λ z → subst Tm eqC (z ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd)
+          (subst-⊗ e₀ A B C)
+      ■ cong (λ z → z ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd)
+          (subst-⊗ eqC (subst Tm e₀ A ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+                       (subst Tm e₀ B ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+                       (subst Tm e₀ C ⋯ weaken* ⦃ Kᵣ ⦄ sB₂))
+    trC = canonₛ-acq-head {suc n} b₁ B₁ (K `unit)
+    va = proj₁ trC
+    vj = proj₁ (proj₂ trC)
+    tcc = proj₁ (proj₂ (proj₂ trC))
+    canC≡ : canonₛ C (` 0F , 1F , K `unit) 0F ≡ ((` va) ⊗ (` vj)) ⊗ tcc
+    canC≡ = proj₁ (proj₂ (proj₂ (proj₂ trC)))
+    τ0F≡ : τ0F ≡ subst Tm e₀ (((` va) ⊗ (` vj)) ⊗ tcc) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+    τ0F≡ = cong (λ z → subst Tm e₀ z ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) canC≡
+    rnTriple : rnT τ0F ≡ ((` pushVar va) ⊗ (` pushVar vj)) ⊗ chain tcc
+    rnTriple = cong rnT τ0F≡ ■ chain-⊗ (` va) (` vj) tcc
+             ■ cong₂ (λ p q → (p ⊗ q) ⊗ chain tcc) (chain-var va) (chain-var vj)
+    junc-tr : Σ[ c ∈ Tm (3 + (sB₂ + (sC + n))) ]
+              (rnT τ0F ≡ ((` 0F) ⊗ (` 1F)) ⊗ c)
+    junc-tr = chain tcc ,
+              (rnTriple ■ cong (λ p → (((` p)) ⊗ (` pushVar vj)) ⊗ chain tcc) pushVar-va
+                       ■ cong (λ q → (((` 0F)) ⊗ (` q)) ⊗ chain tcc) pushVar-vj)
+      where
+        toℕva : Fin.toℕ va ≡ sC
+        toℕva = proj₁ (proj₂ (proj₂ (proj₂ (proj₂ trC)))) ■ +-identityʳ sC
+        toℕvj : Fin.toℕ vj ≡ sC + 1
+        toℕvj = proj₂ (proj₂ (proj₂ (proj₂ (proj₂ trC))))
+        -- shared prefix: subst e₀ ; weaken* sB₂ ; subst eqC ; raise toℕ to sB₂ + toℕ v.
+        pre : (v : 𝔽 (sC + suc (2 + n))) →
+              Fin.toℕ (subst 𝔽 eqC (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 e₀ v))) ≡ sB₂ + Fin.toℕ v
+        pre v = toℕ-subst𝔽 eqC (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 e₀ v))
+              ■ toℕ-weaken*ᵣ sB₂ (subst 𝔽 e₀ v)
+              ■ cong (sB₂ +_) (toℕ-subst𝔽 e₀ v)
+        w2a = subst 𝔽 eqC (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 e₀ va))
+        toℕw2a : Fin.toℕ w2a ≡ sB₂ + sC
+        toℕw2a = pre va ■ cong (sB₂ +_) toℕva
+        -- ρa lands va's endpoint at sB₂.
+        qa : sB₂ Nat.≤ Fin.toℕ w2a
+        qa = subst (sB₂ Nat.≤_) (sym toℕw2a) (Nat.m≤m+n sB₂ sC)
+        ρaw2a : Fin.toℕ (ρa w2a) ≡ sB₂
+        ρaw2a = toℕ-↑*-ge (assocSwapᵣ sC 1) sB₂ w2a qa
+              ■ cong (sB₂ +_)
+                  ( toℕ-assoc-mid sC 1 (Fin.reduce≥ w2a qa)
+                      (Nat.≤-reflexive (sym redc))
+                      (subst (Nat._< sC + 1) (sym redc) (subst (sC Nat.<_) (Nat.+-comm 1 sC) (Nat.n<1+n sC)))
+                  ■ cong (Nat._∸ sC) redc ■ Nat.n∸n≡0 sC )
+              ■ Nat.+-identityʳ sB₂
+          where redc : Fin.toℕ (Fin.reduce≥ w2a qa) ≡ sC
+                redc = toℕ-reduce≥ w2a qa ■ cong (Nat._∸ sB₂) toℕw2a ■ Nat.m+n∸m≡n sB₂ sC
+        wb-va : ρb (ρa w2a) ≡ 0F
+        wb-va = Fin.toℕ-injective
+          ( toℕ-assoc-mid sB₂ 1 (ρa w2a)
+              (Nat.≤-reflexive (sym ρaw2a))
+              (subst (Nat._< sB₂ + 1) (sym ρaw2a) (subst (sB₂ Nat.<_) (Nat.+-comm 1 sB₂) (Nat.n<1+n sB₂)))
+          ■ cong (Nat._∸ sB₂) ρaw2a ■ Nat.n∸n≡0 sB₂ )
+        pushVar-va : pushVar va ≡ 0F
+        pushVar-va = cong (λ z → ρd (ρc z)) wb-va
+        w2v = subst 𝔽 eqC (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 e₀ vj))
+        toℕw2v : Fin.toℕ w2v ≡ sB₂ + (sC + 1)
+        toℕw2v = pre vj ■ cong (sB₂ +_) toℕvj
+        qav : sB₂ Nat.≤ Fin.toℕ w2v
+        qav = subst (sB₂ Nat.≤_) (sym toℕw2v) (Nat.m≤m+n sB₂ (sC + 1))
+        redcv : Fin.toℕ (Fin.reduce≥ w2v qav) ≡ sC + 1
+        redcv = toℕ-reduce≥ w2v qav ■ cong (Nat._∸ sB₂) toℕw2v ■ Nat.m+n∸m≡n sB₂ (sC + 1)
+        ρavj : Fin.toℕ (ρa w2v) ≡ sB₂ + (sC + 1)
+        ρavj = toℕ-↑*-ge (assocSwapᵣ sC 1) sB₂ w2v qav
+             ■ cong (sB₂ +_)
+                 ( toℕ-assoc-ge sC 1 (Fin.reduce≥ w2v qav)
+                     (subst (sC + 1 Nat.≤_) (sym redcv) Nat.≤-refl)
+                 ■ redcv )
+        ρbvj : Fin.toℕ (ρb (ρa w2v)) ≡ sB₂ + (sC + 1)
+        ρbvj = toℕ-assoc-ge sB₂ 1 (ρa w2v)
+                 (subst (sB₂ + 1 Nat.≤_) (sym ρavj)
+                   (Nat.+-monoʳ-≤ sB₂ (subst (1 Nat.≤_) (Nat.+-comm 1 sC) (Nat.s≤s Nat.z≤n))))
+             ■ ρavj
+        qcv : 1 Nat.≤ Fin.toℕ (ρb (ρa w2v))
+        qcv = subst (1 Nat.≤_) (sym ρbvj)
+                (subst (1 Nat.≤_) (Nat.+-assoc sB₂ sC 1) (Nat.m≤n+m 1 (sB₂ + sC)))
+        ρcvj : Fin.toℕ (ρc (ρb (ρa w2v))) ≡ 1 + sB₂
+        ρcvj = toℕ-↑*-ge (assocSwapᵣ sC 2 ↑* sB₂) 1 (ρb (ρa w2v)) qcv
+             ■ cong (1 +_) inner
+          where
+            redc1 : Fin.toℕ (Fin.reduce≥ (ρb (ρa w2v)) qcv) ≡ sB₂ + sC
+            redc1 = toℕ-reduce≥ (ρb (ρa w2v)) qcv ■ cong (Nat._∸ 1) ρbvj ■ eqarith
+              where eqarith : (sB₂ + (sC + 1)) Nat.∸ 1 ≡ sB₂ + sC
+                    eqarith = cong (Nat._∸ 1) (sym (Nat.+-assoc sB₂ sC 1))
+                            ■ Nat.m+n∸n≡m (sB₂ + sC) 1
+            qin : sB₂ Nat.≤ Fin.toℕ (Fin.reduce≥ (ρb (ρa w2v)) qcv)
+            qin = subst (sB₂ Nat.≤_) (sym redc1) (Nat.m≤m+n sB₂ sC)
+            redin : Fin.toℕ (Fin.reduce≥ (Fin.reduce≥ (ρb (ρa w2v)) qcv) qin) ≡ sC
+            redin = toℕ-reduce≥ (Fin.reduce≥ (ρb (ρa w2v)) qcv) qin
+                  ■ cong (Nat._∸ sB₂) redc1 ■ Nat.m+n∸m≡n sB₂ sC
+            inner : Fin.toℕ ((assocSwapᵣ sC 2 ↑* sB₂) (Fin.reduce≥ (ρb (ρa w2v)) qcv)) ≡ sB₂
+            inner = toℕ-↑*-ge (assocSwapᵣ sC 2) sB₂ (Fin.reduce≥ (ρb (ρa w2v)) qcv) qin
+                  ■ cong (sB₂ +_)
+                      ( toℕ-assoc-mid sC 2 (Fin.reduce≥ (Fin.reduce≥ (ρb (ρa w2v)) qcv) qin)
+                          (Nat.≤-reflexive (sym redin))
+                          (subst (Nat._< sC + 2) (sym redin) (Nat.m<m+n sC (Nat.s≤s Nat.z≤n)))
+                      ■ cong (Nat._∸ sC) redin ■ Nat.n∸n≡0 sC )
+                  ■ Nat.+-identityʳ sB₂
+        pushVar-vj : pushVar vj ≡ 1F
+        pushVar-vj = Fin.toℕ-injective
+          ( toℕ-↑*-ge (assocSwapᵣ sB₂ 2) 1 (ρc (ρb (ρa w2v))) qdv
+          ■ cong (1 +_) innerd )
+          where
+            qdv : 1 Nat.≤ Fin.toℕ (ρc (ρb (ρa w2v)))
+            qdv = subst (1 Nat.≤_) (sym ρcvj) (Nat.s≤s Nat.z≤n)
+            redd : Fin.toℕ (Fin.reduce≥ (ρc (ρb (ρa w2v))) qdv) ≡ sB₂
+            redd = toℕ-reduce≥ (ρc (ρb (ρa w2v))) qdv ■ cong (Nat._∸ 1) ρcvj ■ Nat.m+n∸m≡n 1 sB₂
+            innerd : Fin.toℕ (assocSwapᵣ sB₂ 2 (Fin.reduce≥ (ρc (ρb (ρa w2v))) qdv)) ≡ 0
+            innerd = toℕ-assoc-mid sB₂ 2 (Fin.reduce≥ (ρc (ρb (ρa w2v))) qdv)
+                       (Nat.≤-reflexive (sym redd))
+                       (subst (Nat._< sB₂ + 2) (sym redd) (Nat.m<m+n sB₂ (Nat.s≤s Nat.z≤n)))
+                   ■ cong (Nat._∸ sB₂) redd ■ Nat.n∸n≡0 sB₂
+    eout : Tm (3 + (sB₂ + (sC + n)))
+    eout = proj₁ junc-tr
+    Qout : U.Proc (3 + (sB₂ + (sC + n)))
+    Qout = rnP (U[ P ] τ)
+    threadEq : LL ≡ U.⟪ F₁ [ K `acq · τ0F ]* ⟫ U.∥ U[ P ] τ
+    threadEq = cong (U._∥ U[ P ] τ) (cong U.⟪_⟫ (frame-plug* E τ Vτ))
+    subst-app : ∀ {a b} (eq : a ≡ b) (f t : Tm a) →
+                subst Tm eq (f · t) ≡ subst Tm eq f · subst Tm eq t
+    subst-app refl f t = refl
+    subst-K : ∀ {a b} (eq : a ≡ b) (c : _) → subst Tm eq (K c) ≡ K c
+    subst-K refl c = refl
+    rnT-Kacq· : (t : Tm (sB₂ + (suc sC + (2 + n)))) → rnT (K `acq · t) ≡ K `acq · rnT t
+    rnT-Kacq· t =
+        cong (λ z → (((z ⋯ ρa) ⋯ ρb) ⋯ ρc) ⋯ ρd) (subst-app eqC (K `acq) t)
+      ■ cong (λ z → (((z · subst Tm eqC t ⋯ ρa) ⋯ ρb) ⋯ ρc) ⋯ ρd) (subst-K eqC `acq)
+    rnT-acq : rnT (K `acq · τ0F) ≡ K `acq · (((` 0F) ⊗ (` 1F)) ⊗ eout)
+    rnT-acq = rnT-Kacq· τ0F ■ cong (K `acq ·_) (proj₂ junc-tr)
+    redexL : LL₃ ≡ U.⟪ Fout [ K `acq · (((` 0F) ⊗ (` 1F)) ⊗ eout) ]* ⟫ U.∥ Qout
+    redexL =
+        cong rnP threadEq
+      ■ rnP-∥ (U.⟪ F₁ [ K `acq · τ0F ]* ⟫) (U[ P ] τ)
+      ■ cong (U._∥ Qout)
+          ( rnP-⟪⟫ (F₁ [ K `acq · τ0F ]*)
+          ■ cong U.⟪_⟫ (rnT-plug F₁ (K `acq · τ0F) ■ cong (Fout [_]*) rnT-acq) )
     fired : U.Proc n
-    fired = {! fired !}
+    fired = Bφ C (Bφ B₂ (U.ν ((U.⟪ Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]* ⟫ U.∥ Qout) U.⋯ₚ ⦅ * ⦆ₛ)))
     front : U[ T.ν (zero ∷ C) B₂ QL ] σ U.≋ mid
     front = ≡→≋ flatL
       ◅◅ U.ν-cong (φ-past-Bφ C U.acq (subst U.Proc (sym (+-suc (syncs C) (suc (suc n)))) (Bφ B₂ LL)))
@@ -537,6 +874,213 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
            (U.φ U.acq (subst U.Proc eqC LL U.⋯ₚ (assocSwapᵣ (syncs C) 1 ↑* syncs B₂) U.⋯ₚ assocSwapᵣ (syncs B₂) 1)
               U.⋯ₚ (assocSwapᵣ (syncs C) 2 ↑* syncs B₂)))
     fire : mid UR─→ₚ* fired
-    fire = {! fireterm !}
+    fire = Bφ-fire C (Bφ-fire B₂
+             (subst (λ z → U.ν (U.φ U.acq z) UR─→ₚ*
+                       U.ν ((U.⟪ Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]* ⟫ U.∥ Qout) U.⋯ₚ ⦅ * ⦆ₛ))
+                    (sym redexL)
+                    (leaf-fire Fout {e = eout} Qout)))
+    leaf′ : U.Proc (2 + (sB₂ + (sC + n)))
+    leaf′ = (U.⟪ Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]* ⟫ U.∥ Qout) U.⋯ₚ ⦅ * ⦆ₛ
+    -- acq-confine factors E and P so they avoid the consumed handle 0F.
+    confine = acq-confine Γ-S ⊢P
+    kk : ℕ
+    kk = proj₁ confine
+    ρ⁻ : kk →ᵣ (sum (zero ∷ C) + sum B₂ + m)
+    ρ⁻ = proj₁ (proj₂ confine)
+    ρ⁻≢0 : ∀ y → ρ⁻ y ≢ 0F
+    ρ⁻≢0 = proj₁ (proj₂ (proj₂ confine))
+    E₀ : Frame* kk
+    E₀ = proj₁ (proj₂ (proj₂ (proj₂ confine)))
+    E≡ : E ≡ E₀ ⋯ᶠ* ρ⁻
+    E≡ = proj₁ (proj₂ (proj₂ (proj₂ (proj₂ confine))))
+    P₀ : T.Proc kk
+    P₀ = proj₁ (proj₂ (proj₂ (proj₂ (proj₂ (proj₂ confine)))))
+    P≡ : P ≡ P₀ T.⋯ₚ ρ⁻
+    P≡ = proj₂ (proj₂ (proj₂ (proj₂ (proj₂ (proj₂ confine)))))
+
+    -- canonₛ with a zero head: splitAt 0 is always inj₂, so canonₛ (zero ∷ C)
+    -- reduces to a subst of canonₛ C with bumped middle.
+    canonₛ-zero-head : ∀ {N} (e1 e2 : Tm N) (x : 𝔽 N) (y : 𝔽 (sum C)) →
+      canonₛ (zero ∷ C) (e1 , x , e2) y
+      ≡ subst Tm (+-suc (syncs C) N) (canonₛ C (` 0F , suc x , e2 ⋯ weakenᵣ) y)
+    canonₛ-zero-head e1 e2 x y = refl
+
+    threadEqR :
+      ((((U.⟪ Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]* ⟫) U.⋯ₚ ⦅ * ⦆ₛ)
+            U.⋯ₚ assocSwapᵣ 2 sB₂) U.⋯ₚ (assocSwapᵣ 2 sC ↑* sB₂))
+      ≡ U.⟪ (E [ ` 0F ]*) ⋯ leafσ σ C B₂ ⟫
+    threadEqR = {!  !}
+    -- subst on U.Proc codomain pushes into the translation's substitution.
+    subst-U-cod : ∀ {a c} (eq : a ≡ c) (s : (sum (zero ∷ C) + sum B₂ + m) →ₛ a) →
+                  subst U.Proc eq (U[ P ] s)
+                  ≡ U[ P ] (subst (λ z → (sum (zero ∷ C) + sum B₂ + m) →ₛ z) eq s)
+    subst-U-cod refl s = refl
+    subst-cod-ptR : ∀ {a c} (eq : a ≡ c) (s : (sum (zero ∷ C) + sum B₂ + m) →ₛ a) (i : _) →
+                    subst (λ z → (sum (zero ∷ C) + sum B₂ + m) →ₛ z) eq s i ≡ subst Tm eq (s i)
+    subst-cod-ptR refl s i = refl
+
+    -- Qout collapses every renaming into the codomain substitution of U[ P ].
+    sPre : (sum (zero ∷ C) + sum B₂ + m) →ₛ 3 + (sB₂ + (sC + n))
+    sPre = ((((subst (λ z → (sum (zero ∷ C) + sum B₂ + m) →ₛ z) eqC τ) ·ₖ ρa) ·ₖ ρb) ·ₖ ρc) ·ₖ ρd
+    Qout≡ : Qout ≡ U[ P ] sPre
+    Qout≡ =
+        cong (λ z → (((z U.⋯ₚ ρa) U.⋯ₚ ρb) U.⋯ₚ ρc) U.⋯ₚ ρd) (subst-U-cod eqC τ)
+      ■ cong (λ z → ((z U.⋯ₚ ρb) U.⋯ₚ ρc) U.⋯ₚ ρd)
+          (U-σ⋯ P {σ = subst (λ z → (sum (zero ∷ C) + sum B₂ + m) →ₛ z) eqC τ} {ρ = ρa})
+      ■ cong (λ z → (z U.⋯ₚ ρc) U.⋯ₚ ρd)
+          (U-σ⋯ P {σ = subst (λ z → (sum (zero ∷ C) + sum B₂ + m) →ₛ z) eqC τ ·ₖ ρa} {ρ = ρb})
+      ■ cong (λ z → z U.⋯ₚ ρd)
+          (U-σ⋯ P {σ = (subst (λ z → (sum (zero ∷ C) + sum B₂ + m) →ₛ z) eqC τ ·ₖ ρa) ·ₖ ρb} {ρ = ρc})
+      ■ U-σ⋯ P {σ = ((subst (λ z → (sum (zero ∷ C) + sum B₂ + m) →ₛ z) eqC τ ·ₖ ρa) ·ₖ ρb) ·ₖ ρc} {ρ = ρd}
+
+    A₂ : (2 + (sB₂ + (sC + n))) →ᵣ (sB₂ + (2 + (sC + n)))
+    A₂ = assocSwapᵣ 2 sB₂
+    B₂ᵣ : (sB₂ + (2 + (sC + n))) →ᵣ (sB₂ + (sC + (2 + n)))
+    B₂ᵣ = assocSwapᵣ 2 sC ↑* sB₂
+    sPre⁻ : kk →ₛ 3 + (sB₂ + (sC + n))
+    sPre⁻ = ρ⁻ ·ₖ sPre
+    QoutP₀ : Qout ≡ U[ P₀ ] sPre⁻
+    QoutP₀ = Qout≡ ■ cong (λ z → U[ z ] sPre) P≡ ■ U-⋯ₚ P₀ {ρ = ρ⁻} {σ = sPre}
+    -- s₀ : sPre⁻ with the cleanup substitution applied to its image (the lowering).
+    s₀ : kk →ₛ 2 + (sB₂ + (sC + n))
+    s₀ y = sPre⁻ y ⋯ ⦅ * ⦆ₛ
+    -- MASTER: for an index w avoiding the consumed handle 0F, sPre w is the
+    -- weakening of a term t whose A₂;B₂ᵣ-image is leafσ σ C B₂ w.
+    -- sPre w spelled out (collapse the ·ₖ composite pointwise).
+    sPre-pt : (w : 𝔽 (sum C + sum B₂ + m)) →
+              sPre w ≡ subst Tm eqC (τ w) ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd
+    sPre-pt w = cong (λ z → z ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd)
+                  (subst-cod-ptR eqC τ w)
+    TowerGoal : (w : 𝔽 (sum C + sum B₂ + m)) → Set
+    TowerGoal w = Σ[ t ∈ Tm (2 + (sB₂ + (sC + n))) ]
+                    (sPre w ≡ t ⋯ weakenᵣ) × (t ⋯ A₂ ⋯ B₂ᵣ ≡ leafσ σ C B₂ w)
+    towerNF : (w : 𝔽 (sum C + sum B₂ + m)) → w ≢ 0F → TowerGoal w
+    towerNF w w≢0 with Fin.splitAt (sum C + sum B₂) w in eqw
+    ... | inj₂ i = tailNF , tailWk , tailLeaf
+      where
+        tailNF : Tm (2 + (sB₂ + (sC + n)))
+        tailNF = σ i ⋯ weaken* ⦃ Kᵣ ⦄ sC ⋯ weaken* ⦃ Kᵣ ⦄ sB₂ ⋯ weaken* ⦃ Kᵣ ⦄ 2
+        -- τ w in the tail region.
+        τtail : τ w ≡ σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ (suc sC) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+        τtail = leafσ-tail σ (zero ∷ C) B₂ w i eqw
+        ρa⁻ = subst (λ z → z →ᵣ _) (sym eqC) ρa
+        -- push the subst eqC into ρa.
+        substPush : subst Tm eqC (τ w) ⋯ ρa ≡ τ w ⋯ ρa⁻
+        substPush = subst-⋯-dom-local eqC (τ w) ρa
+        tailWk : sPre w ≡ tailNF ⋯ weakenᵣ
+        tailWk =
+            sPre-pt w
+          ■ cong (λ z → z ⋯ ρb ⋯ ρc ⋯ ρd) substPush
+          ■ cong (λ z → z ⋯ ρa⁻ ⋯ ρb ⋯ ρc ⋯ ρd) τtail
+          ■ {! tailWk-fuse !}
+        -- tail value passes through every map as a left-weakening; compare toℕ.
+        -- LHS weakenings (grouping sC ; sB₂ ; 2)
+        lC : n →ᵣ (sC + n)
+        lC = weaken* ⦃ Kᵣ ⦄ sC
+        lB : (sC + n) →ᵣ (sB₂ + (sC + n))
+        lB = weaken* ⦃ Kᵣ ⦄ sB₂
+        l2 : (sB₂ + (sC + n)) →ᵣ (2 + (sB₂ + (sC + n)))
+        l2 = weaken* ⦃ Kᵣ ⦄ 2
+        -- RHS weakenings (grouping 2 ; sC ; sB₂)
+        r2 : n →ᵣ (2 + n)
+        r2 = weaken* ⦃ Kᵣ ⦄ 2
+        rC : (2 + n) →ᵣ (sC + (2 + n))
+        rC = weaken* ⦃ Kᵣ ⦄ sC
+        rB : (sC + (2 + n)) →ᵣ (sB₂ + (sC + (2 + n)))
+        rB = weaken* ⦃ Kᵣ ⦄ sB₂
+        tailRen : ((((lC ·ₖ lB) ·ₖ l2) ·ₖ A₂) ·ₖ B₂ᵣ) ≗ ((r2 ·ₖ rC) ·ₖ rB)
+        tailRen v = Fin.toℕ-injective (lhs ■ sym rhs)
+          where
+            pv = Fin.toℕ v
+            -- toℕ of the weakened value before the assocSwaps
+            wA = l2 (lB (lC v))
+            wAℕ : Fin.toℕ wA ≡ 2 + (sB₂ + (sC + pv))
+            wAℕ = toℕ-weaken*ᵣ 2 (lB (lC v))
+                ■ cong (2 +_) (toℕ-weaken*ᵣ sB₂ (lC v)
+                              ■ cong (sB₂ +_) (toℕ-weaken*ᵣ sC v))
+            -- A₂ preserves toℕ (input ≥ 2 + sB₂).
+            geA : 2 + sB₂ Nat.≤ Fin.toℕ wA
+            geA = subst (2 + sB₂ Nat.≤_) (sym wAℕ) (Nat.+-monoʳ-≤ 2 (Nat.m≤m+n sB₂ (sC + pv)))
+            A₂ℕ : Fin.toℕ (A₂ wA) ≡ 2 + (sB₂ + (sC + pv))
+            A₂ℕ = toℕ-assoc-ge 2 sB₂ wA geA ■ wAℕ
+            -- B₂ᵣ at A₂ wA.
+            geB : sB₂ Nat.≤ Fin.toℕ (A₂ wA)
+            geB = subst (sB₂ Nat.≤_) (sym A₂ℕ) (Nat.≤-trans (Nat.m≤m+n sB₂ (sC + pv))
+                    (Nat.m≤n+m (sB₂ + (sC + pv)) 2))
+            redB : Fin.toℕ (Fin.reduce≥ (A₂ wA) geB) ≡ 2 + (sC + pv)
+            redB = toℕ-reduce≥ (A₂ wA) geB ■ cong (Nat._∸ sB₂) A₂ℕ
+                 ■ cong (Nat._∸ sB₂)
+                     (sym (Nat.+-assoc 2 sB₂ (sC + pv))
+                      ■ cong (Nat._+ (sC + pv)) (Nat.+-comm 2 sB₂)
+                      ■ Nat.+-assoc sB₂ 2 (sC + pv))
+                 ■ Nat.m+n∸m≡n sB₂ (2 + (sC + pv))
+            geAi : 2 + sC Nat.≤ Fin.toℕ (Fin.reduce≥ (A₂ wA) geB)
+            geAi = subst (2 + sC Nat.≤_) (sym redB) (Nat.+-monoʳ-≤ 2 (Nat.m≤m+n sC pv))
+            lhs : Fin.toℕ (B₂ᵣ (A₂ wA)) ≡ sB₂ + (sC + (2 + pv))
+            lhs = toℕ-↑*-ge (assocSwapᵣ 2 sC) sB₂ (A₂ wA) geB
+                ■ cong (sB₂ +_) (toℕ-assoc-ge 2 sC (Fin.reduce≥ (A₂ wA) geB) geAi ■ redB
+                                ■ (sym (Nat.+-assoc 2 sC pv) ■ cong (Nat._+ pv) (Nat.+-comm 2 sC) ■ Nat.+-assoc sC 2 pv))
+            rhs : Fin.toℕ (rB (rC (r2 v))) ≡ sB₂ + (sC + (2 + pv))
+            rhs = toℕ-weaken*ᵣ sB₂ (rC (r2 v))
+                ■ cong (sB₂ +_) (toℕ-weaken*ᵣ sC (r2 v)
+                                ■ cong (sC +_) (toℕ-weaken*ᵣ 2 v))
+        fuseL : tailNF ⋯ A₂ ⋯ B₂ᵣ
+                ≡ σ i ⋯ ((((lC ·ₖ lB) ·ₖ l2) ·ₖ A₂) ·ₖ B₂ᵣ)
+        fuseL =
+            cong (λ z → z ⋯ A₂ ⋯ B₂ᵣ)
+              ( cong (_⋯ l2) (fusion (σ i) lC lB)
+              ■ fusion (σ i) (lC ·ₖ lB) l2 )
+          ■ cong (_⋯ B₂ᵣ) (fusion (σ i) ((lC ·ₖ lB) ·ₖ l2) A₂)
+          ■ fusion (σ i) (((lC ·ₖ lB) ·ₖ l2) ·ₖ A₂) B₂ᵣ
+        fuseR : σ i ⋯ r2 ⋯ rC ⋯ rB
+                ≡ σ i ⋯ ((r2 ·ₖ rC) ·ₖ rB)
+        fuseR =
+            cong (_⋯ rB) (fusion (σ i) r2 rC)
+          ■ fusion (σ i) (r2 ·ₖ rC) rB
+        tailLeaf : tailNF ⋯ A₂ ⋯ B₂ᵣ
+                   ≡ σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sC ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+        tailLeaf = fuseL ■ ⋯-cong (σ i) tailRen ■ sym fuseR
+    ... | inj₁ z with Fin.splitAt (sum C) z in eqz
+    ...   | inj₁ j = {! A1 !}
+    ...   | inj₂ k = {! B2 !}
+    -- pointwise: sPre⁻ y avoids 0F, so re-weakening after lowering is identity.
+    sPre⁻-wk : sPre⁻ ≗ (λ y → s₀ y ⋯ weakenᵣ)
+    sPre⁻-wk y = proj₁ (proj₂ (towerNF (ρ⁻ y) (ρ⁻≢0 y)))
+               ■ cong (_⋯ weakenᵣ) (sym (wk-cancels-⦅⦆-⋯ (proj₁ (towerNF (ρ⁻ y) (ρ⁻≢0 y))) *)
+                                  ■ cong (_⋯ ⦅ * ⦆ₛ) (sym (proj₁ (proj₂ (towerNF (ρ⁻ y) (ρ⁻≢0 y))))))
+    -- after lowering+renaming, s₀ ·ₖ A₂ ·ₖ B₂ᵣ matches ρ⁻ ·ₖ leafσ σ C B₂.
+    s₀-leaf : (λ y → s₀ y ⋯ A₂ ⋯ B₂ᵣ) ≗ (λ y → leafσ σ C B₂ (ρ⁻ y))
+    s₀-leaf y =
+        cong (λ z → z ⋯ A₂ ⋯ B₂ᵣ)
+          (cong (_⋯ ⦅ * ⦆ₛ) (proj₁ (proj₂ (towerNF (ρ⁻ y) (ρ⁻≢0 y))))
+           ■ wk-cancels-⦅⦆-⋯ (proj₁ (towerNF (ρ⁻ y) (ρ⁻≢0 y))) *)
+      ■ proj₂ (proj₂ (towerNF (ρ⁻ y) (ρ⁻≢0 y)))
+    residEqR :
+      (((Qout U.⋯ₚ ⦅ * ⦆ₛ) U.⋯ₚ assocSwapᵣ 2 sB₂) U.⋯ₚ (assocSwapᵣ 2 sC ↑* sB₂))
+      ≡ U[ P ] (leafσ σ C B₂)
+    residEqR =
+        cong (λ z → ((z U.⋯ₚ ⦅ * ⦆ₛ) U.⋯ₚ A₂) U.⋯ₚ B₂ᵣ) QoutP₀
+      ■ cong (λ z → ((z U.⋯ₚ ⦅ * ⦆ₛ) U.⋯ₚ A₂) U.⋯ₚ B₂ᵣ)
+          (U-cong P₀ sPre⁻-wk)
+      ■ cong (λ z → ((z U.⋯ₚ ⦅ * ⦆ₛ) U.⋯ₚ A₂) U.⋯ₚ B₂ᵣ)
+          (sym (U-σ⋯ P₀ {σ = s₀} {ρ = weakenᵣ}))
+      ■ cong (λ z → (z U.⋯ₚ A₂) U.⋯ₚ B₂ᵣ)
+          ( U.fusionₚ (U[ P₀ ] s₀) weakenᵣ ⦅ * ⦆ₛ
+          ■ U.⋯ₚ-cong (U[ P₀ ] s₀) (wk-cancels-⦅⦆ *)
+          ■ local-⋯ₚ-id (U[ P₀ ] s₀) (λ _ → refl) )
+      ■ U-σ⋯ P₀ {σ = s₀} {ρ = A₂}
+      ■ cong (λ z → z U.⋯ₚ B₂ᵣ) refl
+      ■ U-σ⋯ P₀ {σ = s₀ ·ₖ A₂} {ρ = B₂ᵣ}
+      ■ U-cong P₀ s₀-leaf
+      ■ sym (U-⋯ₚ P₀ {ρ = ρ⁻} {σ = leafσ σ C B₂})
+      ■ cong (λ z → U[ z ] (leafσ σ C B₂)) (sym P≡)
+    leafReconcile : (leaf′ U.⋯ₚ assocSwapᵣ 2 sB₂) U.⋯ₚ (assocSwapᵣ 2 sC ↑* sB₂)
+                    ≡ U[ QR ] (leafσ σ C B₂)
+    leafReconcile = cong₂ U._∥_ threadEqR residEqR
     back : fired U.≋ U[ T.ν C B₂ QR ] σ
-    back = {! back !}
+    back =
+         Bφ-cong C (Bφ-past-ν B₂ leaf′)
+      ◅◅ Bφ-past-ν C (Bφ B₂ (leaf′ U.⋯ₚ assocSwapᵣ 2 sB₂))
+      ◅◅ U.ν-cong (Bφ-cong C (≡→≋ (Bφ-⋯ B₂ (leaf′ U.⋯ₚ assocSwapᵣ 2 sB₂) (assocSwapᵣ 2 sC))))
+      ◅◅ U.ν-cong (Bφ-cong C (Bφ-cong B₂ (≡→≋ leafReconcile)))
+      ◅◅ ≡→≋ (sym (Uν-flat σ C B₂ QR))
