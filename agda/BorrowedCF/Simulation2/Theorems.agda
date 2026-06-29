@@ -29,6 +29,26 @@ infix 4 _UR─→ₚ*_
 _UR─→ₚ*_ : {n : ℕ} → UP.Proc n → UP.Proc n → Set
 _UR─→ₚ*_ = Star UR._─→ₚ_
 
+─→ₚ*-subst : {a b : ℕ} (eq : a ≡ b) {x y : UP.Proc a} →
+             x UR─→ₚ* y → subst UP.Proc eq x UR─→ₚ* subst UP.Proc eq y
+─→ₚ*-subst refl s = s
+
+-- Wrap a NON-EMPTY reduction star  (s₀ ◅ rest)  with structural congruences at
+-- both ends.  front is folded into the first step; back is folded into the last
+-- step (which may be the same first step when rest = ε).
+wrapNE : {w x y′ z : UP.Proc n} → w UP.≋ x →
+         {s₀tgt : UP.Proc n} → x UR.─→ₚ s₀tgt → s₀tgt UR─→ₚ* y′ → y′ UP.≋ z →
+         w UR─→ₚ* z
+wrapNE front s₀ ε        back = UR.RU-Struct front s₀ back ◅ ε
+wrapNE front s₀ (t ◅ ts) back = UR.RU-Struct front s₀ ε ◅ wrapNE ε t ts back
+
+-- Wrap a (possibly empty) star with congruences at both ends, dispatching back
+-- into ⊎ : an empty star collapses to a pure ≋ (inj₂).
+≋-wrap-⊎ : {w x y z : UP.Proc n} → w UP.≋ x → x UR─→ₚ* y → y UP.≋ z →
+           (w UR─→ₚ* z) ⊎ (w UP.≋ z)
+≋-wrap-⊎ front ε        back = inj₂ (front ◅◅ back)
+≋-wrap-⊎ front (s ◅ ss) back = inj₁ (wrapNE front s ss back)
+
 open TP using (_;_⊢ₚ_; inv-⟪⟫; inv-∥; inv-ν; ⊢-≋; bindCtx⇒chanCtx)
 
 
@@ -211,7 +231,7 @@ UB-cong-⊎ (b ∷ [])  cc Vcc h = h _ (λ _ → chanTriple-V cc Vcc)
 UB-cong-⊎ {n} (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) (Ve₁ , Ve₂) h =
   [ (λ s → inj₁ (⋆-gmap (UP.φ ϕ[ b ]) UR.RU-Sync s)) , (λ e → inj₂ (UP.φ-cong e)) ]′
     (UB-cong-⊎ B (` 0F , suc x , e₂ ⋯ weakenᵣ) (V-` , Ve₂ ⋯ᵛ weakenᵣ)
-      (λ σ Vσ → Sum.map (─→-subst (sym (+-suc (syncs B) _)))
+      (λ σ Vσ → Sum.map (─→ₚ*-subst (sym (+-suc (syncs B) _)))
                         (≋-subst (sym (+-suc (syncs B) _)))
         (h _ (λ y → Value-subst (+-suc (syncs B) _) (argV σ Vσ (splitAt b y))))))
   where
@@ -282,15 +302,39 @@ sim→ σ Vσ Γ-S ⊢P TR.R-LSplit =
 sim→ σ Vσ Γ-S ⊢P TR.R-RSplit =
   inj₁ {! R-RSplit → RU-RSplit: binder-order transpose + frame-plug*; cf. Simulation/Theorems/RSplit.agda !}
 
--- R-Drop: φ drop (… K `drop …) → φ acq (… *).  Needs typing (E,P must avoid the
---   consumed inj) — the lwk-identity blocker → RU-Drop.  cf. memory simlsplit-lwk-id-false.
+-- R-Drop.  Goal (?5):
+--   U[ ν (suc b₁ ∷ B₁) B₂ (⟪ E⋯ᶠ*weakenᵣ [ drop·(`0F) ] ⟫ ∥ (P⋯ₚweakenᵣ)) ] σ
+--     ─→ₚ*  U[ ν (b₁ ∷ B₁) B₂ (⟪ E[*] ⟫ ∥ P) ] σ.
+-- The translation places  φ ϕ[ suc b₁ ] = φ drop  at the TOP of UB[ suc b₁ ∷ B₁ ]
+-- (good — RU-Drop wants φ drop), but the dropped handle `0F` only becomes the
+-- chanTriple  𝓒[ e × suc x × `0F ]  (junction flag suc x ≥ 1 = drop) AFTER the
+-- φ-nest substitution, and ONLY the BindCtx typing chain forces that middle
+-- index to be a successor; under VSub alone it is FALSE (machine-checked
+-- counterexample, memory simlsplit-lwk-id-false / DropAcqCounter).  Moreover for
+-- |B₁| ≥ 2 or |B₂| ≥ 1 the φ drop does NOT directly wrap ⟪…⟫ ∥ P — further φ/ν
+-- binders sit between, so RU-Drop must be commuted to the leaf via a
+-- binder-order transpose (RU-Sync/RU-Res congruence + the canonₛ-handle
+-- positional lemma).  Both ingredients live in the old BorrowedCF.Simulation
+-- confine/transpose subsystem (Confine/HandleCount/StructDom/AcqHandle …), which
+-- does NOT typecheck against the reworked Processes.Typed (StructDom: NotInScope
+-- S.weaken*~wkr, ModuleDoesntExport structBinderWk/structBinder+2) and therefore
+-- cannot be imported.  BLOCKED: needs that subsystem PORTED to the new defs
+-- (out of this module's edit scope) — the typing-confinement (acq-confine /
+-- HandleCount) plus the leaf transpose.
 sim→ σ Vσ Γ-S ⊢P TR.R-Drop =
-  inj₁ {! R-Drop → RU-Drop: needs typing/linearity (lwk-identity) !}
+  inj₁ {! R-Drop → RU-Drop: needs ported acq-confine/HandleCount (chanTriple junction-flag = drop) + binder-order transpose to the leaf; old Simulation confine subsystem does not typecheck against reworked Processes.Typed !}
 
--- R-Acq: φ acq (… K `acq) → φ done (…).  Needs typing → RU-Acquire.
---   cf. old Simulation/Theorems/Acq.agda.
+-- R-Acq.  Goal (?6):
+--   U[ ν (zero ∷ suc b₁ ∷ B₁) B₂ (⟪ E[ acq·(`0F) ] ⟫ ∥ P) ] σ
+--     ─→ₚ*  U[ ν (suc b₁ ∷ B₁) B₂ (⟪ E[`0F] ⟫ ∥ P) ] σ.
+-- Two untyped steps: RU-Acquire (φ acq → φ done, consuming a set/`1F` junction)
+-- then RU-Cleanup (φ done P → P ⋯ₚ ⦅*⦆ₛ).  Same blocker as R-Drop: the acquired
+-- handle `0F` only becomes 𝓒[ `0F × 1F × e ] (junction flag exactly 1F = set)
+-- under the typing chain, FALSE under VSub alone, and the φ acq must be commuted
+-- past the rest of the φ-nest to the leaf.  Needs the SAME ported acq-confine /
+-- transpose machinery (memory: "needs acq-confine").  BLOCKED.
 sim→ σ Vσ Γ-S ⊢P TR.R-Acq =
-  inj₁ {! R-Acq → RU-Acquire: needs typing; cf. Simulation/Theorems/Acq.agda !}
+  inj₁ {! R-Acq → RU-Acquire ; RU-Cleanup: needs ported acq-confine (chanTriple junction-flag = set 1F) + binder-order transpose; same un-portable Simulation confine subsystem as R-Drop !}
 
 -- R-Close: end!! / end?? rendezvous → two units.  Needs frame-plug* + U[ν…] unfold → RU-Close.
 sim→ {m = m} {n = n} σ Vσ Γ-S ⊢P (TR.R-Close {E₁ = E₁} {E₂ = E₂}) =
@@ -356,7 +400,7 @@ sim→ σ Vσ Γ-S ⊢P (TR.R-Discard {b = zero}  {B₁ = _ ∷ _}) =
 --   "UB-cong / recurse-under-telescope" lemma.
 sim→ σ Vσ Γ-S ⊢P (TR.R-Bind {B₁} {B₂} red)
   with _ , _ , _ , _ , _ , _ , C , C′ , ⊢Q ← inv-ν ⊢P =
-  [ (λ s → inj₁ (UR.RU-Res s)) , (λ e → inj₂ (UP.ν-cong e)) ]′
+  [ (λ s → inj₁ (⋆-gmap UP.ν UR.RU-Res s)) , (λ e → inj₂ (UP.ν-cong e)) ]′
     (UB-cong-⊎ B₁ (* , 0F , *) (V-K , V-K)
       (λ σ₁ Vσ₁ → UB-cong-⊎ B₂ (* , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , *) (V-K , V-K)
         (λ σ₂ Vσ₂ → sim→ _
@@ -368,7 +412,6 @@ sim→ σ Vσ Γ-S ⊢P (TR.R-Bind {B₁} {B₂} red)
 -- R-Struct: P ≋ P′ → P′ ─→ₚ Q′ → Q′ ≋ Q.  Needs: translation respects structural
 --   congruence (U-≋ : P ≋ Q → U[P]σ ≋ U[Q]σ) + ChanCx-preservation of typing under ≋
 --   (TP.⊢-≋) → RU-Struct.  cf. old Simulation/TranslationProperties (U-≋) — REBUILD.
-sim→ σ Vσ Γ-S ⊢P (TR.R-Struct e r e′) =
-  [ (λ s → inj₁ (UR.RU-Struct (U-≋ σ e) s (U-≋ σ e′)))
-  , (λ eq → inj₂ (U-≋ σ e ◅◅ eq ◅◅ U-≋ σ e′)) ]′
-    (sim→ σ Vσ Γ-S (⊢-≋ Γ-S e ⊢P) r)
+sim→ σ Vσ Γ-S ⊢P (TR.R-Struct e r e′) with sim→ σ Vσ Γ-S (⊢-≋ Γ-S e ⊢P) r
+... | inj₂ eq = inj₂ (U-≋ σ e ◅◅ eq ◅◅ U-≋ σ e′)
+... | inj₁ s  = ≋-wrap-⊎ (U-≋ σ e) s (U-≋ σ e′)
