@@ -22,7 +22,9 @@ open import BorrowedCF.Simulation2.TranslationProperties
 -- Reusable reverse-direction inversion helpers (channel-var contradictions,
 -- value reflection, and the typed expression-reduction reflection ⋯→-reflect
 -- that powers RU-Exp) live in BorrowedCF.Simulation2.ReverseInv.
-open import BorrowedCF.Simulation2.ReverseInv using (⋯→-reflect)
+open import BorrowedCF.Simulation2.ReverseInv
+  using (⋯→-reflect; frameApp-reflect; headK; plugApp-not-value)
+open import BorrowedCF.Simulation2.Frames using (frame-plug*)
 import Data.Sum as Sum
 import BorrowedCF.Processes.Typed             as TP
 import BorrowedCF.Processes.Untyped           as UP
@@ -222,10 +224,17 @@ sim←ᵍ σ Vσ Γ-S {P = P₁ TP.∥ P₂}   ⊢P refl (UR.RU-Par sub)
 --     (φ-nest) ─→ₚ X′  ⇒  (inner step on U[P₀]bigσ reflectable) ⊎ (admin φ move),
 --   i.e. the same φ-nest engine the forward channel-op cases use, run in reverse.
 --   When syncs B₁ = syncs B₂ = 0 (no φ binders) the nest IS U[ P₀ ] bigσ and the
---   IH applies directly; the general case is the open work.
+--   IH applies directly (split B₁,B₂ into []/singleton, ν-inj the body eq, recurse
+--   sim←ᵍ at bigσ via inv-ν's P₀ typing + bindCtx⇒chanCtx + a bigσ VSub built from
+--   ++ₛ-VSub/weaken-VSub, re-wrap TR.R-Bind + ν-cong); this φ-free sub-case is the
+--   clean part.  The φ-bearing case (syncs ≥ 1) is blocked: branch (b)'s admin φ
+--   move (RU-Drop/RU-Acquire/RU-Cleanup flipping a sync cell) carries U[P]σ to a
+--   process OUTSIDE the U[_] image, so it has no typed counterpart at the binder
+--   and needs the SAME codomain-≋ strengthening as RU-Struct (reduction-up-to-≋
+--   on both sides) — a sim← statement change owned upstream.
 ------------------------------------------------------------------------
 sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Res {Q = X′} sub) =
-  {! RU-Res: φ-nest peeling — IH at U[P₀]bigσ then TR.R-Bind, vs administrative φ moves with no typed image. Needs the reverse φ-nest decomposition (UB σ-algebra). !}
+  {! RU-Res: φ-nest peeling.  φ-free sub-case (syncs B₁=syncs B₂=0): ν-inj body eq, IH at U[P₀]bigσ (inv-ν typing + bindCtx⇒chanCtx + bigσ VSub), re-wrap TR.R-Bind+ν-cong.  φ-bearing case: admin φ moves leave the U[_] image -> same codomain-≋ blocker as RU-Struct (statement change upstream). !}
 
 ------------------------------------------------------------------------
 -- RU-Sync : R = φ x P′.  But U[_] never heads with φ (clauses are ⟪⟫/∥/ν), so
@@ -242,18 +251,38 @@ sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Sync sub)
 -- source redex is the hard work.  Left as noted holes.
 ------------------------------------------------------------------------
 -- RU-Fork / RU-New : thread redexes.  inv-U-⟪⟫ gives P = ⟪ e₀ ⟫ with
---   e₀ ⋯ σ ≡ F [ K fork · e ]* (resp. F [ K (new s) · * ]*).  RESIDUAL = a
---   frame-plug reflection through σ: recover a source frame F₀ and source redex
---   with e₀ ≡ F₀ [ K fork · e′ ]*, F ≡ frame*-⋯ F₀ σ, e ≡ e′ ⋯ σ.  This is the
---   Frame* analogue of ReverseInv.⋯→-reflect (induct on e₀, peel each frame via
---   the head-shape inversions, refute a var head via var-app-absurd); fork/new
---   are structural constants so never appear in σ's channel image.  Then
---   TR.R-Fork / TR.R-New, with U-cong wrapping the result (New also needs the
---   reverse of the forward rnew-bridge ν(φacq(φacq …)) ≋ U[ν(0∷1)(0∷1)…]).
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Fork F V) =
-  {! RU-Fork → TR.R-Fork: frame*-plug reflection through σ (Frame* analogue of ⋯→-reflect). !}
+--   e₀ ⋯ σ ≡ F [ K fork · e ]* (resp. F [ K (new s) · * ]*).  The frame-plug
+--   reflection through σ is now DONE: ReverseInv.frameApp-reflect (the Frame*
+--   analogue of ⋯→-reflect — inducts on e₀, peels each frame via the head-shape
+--   reflectors headApp/head⊗′/headSeq/headInj′/headLet/headLetpair/headCase,
+--   refutes a var head via plugApp-not-value since F [ a · b ]* is never a value
+--   and a VSub maps a var to a value) recovers F₀, arg₀ with e₀ ≡ F₀ [ K c · arg₀
+--   ]*, F ≡ frame*-⋯ F₀ σ Vσ, arg ≡ arg₀ ⋯ σ.  RU-Fork is CLOSED below.  RU-New
+--   uses the same frameApp-reflect (c = `new s) but is BLOCKED on the ⊗-swap (see
+--   its note).  frameApp-reflect ALSO supplies the redex-inversion half of every
+--   ν-headed channel-op redex (LSplit/RSplit/Close/Com/Choice).
+sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Fork F V)
+  with e₀ , refl , feq ← inv-U-⟪⟫ _ σ (sym eq)
+  with F₀ , arg₀ , refl , Feq , argeq
+       ← frameApp-reflect Γ-S e₀ (inv-⟪⟫ ⊢P) σ Vσ `fork F (sym feq) =
+  TP.⟪ F₀ [ K `unit ]* ⟫ TP.∥ TP.⟪ arg₀ · K `unit ⟫ ,
+  TR.R-Fork F₀ (value-⋯⁻¹ σ Vσ arg₀ (subst Value argeq V)) ,
+  ≡→≋ (cong₂ UP._∥_
+        (cong UP.⟪_⟫ (cong (_[ K `unit ]*) Feq ■ sym (frame-plug* F₀ σ Vσ)))
+        (cong (λ z → UP.⟪ z · K `unit ⟫) argeq))
+-- RU-New : the LHS redex K (`new s) · * is an applied constant, so the source
+--   frame F₀ + source redex are recovered by frameApp-reflect (c = `new s, arg₀
+--   forced to K `unit since a unit-typed source var is ruled out by ChanCx, like
+--   fork).  The TYPED step is TR.R-New F₀.  BLOCKED on the SAME design mismatch
+--   as the forward R-New (Theorems.agda R-New note): the RU-New output pairs the
+--   two channel triples as  C[`0F×3F×*] ⊗ C[`1F×2F×*]  whereas U[ R-New's typed
+--   rhs ] σ pairs them SWAPPED (`1F⊗`0F leaf order); the differing a⊗b vs b⊗a is
+--   an expression-internal ⊗ inside << >> that NO untyped ≋ rule (all renaming-
+--   based ∥/ν/φ moves) can reorder.  Reverse inherits this verbatim (≋ is
+--   symmetric).  Fix is the same swap in Reduction/Processes/Untyped.agda RU-New
+--   OR the typed R-New body OR Bisim.agda U[_] — all outside this module's scope.
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-New F) =
-  {! RU-New → TR.R-New: frame*-plug reflection through σ + reverse rnew-bridge. !}
+  {! RU-New → TR.R-New: frameApp-reflect closes the redex inversion; BLOCKED on the same expression-internal ⊗-swap as forward R-New (output a⊗b vs U[rhs] b⊗a, unreachable by any ≋); needs the swap fix in a file owned elsewhere. !}
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-LSplit F) =
   {! RU-LSplit → TR.R-LSplit: inv-U-ν + recognise the U[_]-image of the lsplit redex inside the φ-nest. Design point: B-shape / SplitRenamings.inj alignment (cf. forward LSplit.agda). !}
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-RSplit F) =

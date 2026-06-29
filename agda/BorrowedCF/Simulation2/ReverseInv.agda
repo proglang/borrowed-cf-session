@@ -20,6 +20,7 @@ open import BorrowedCF.Context using (Ctx; Struct)
 
 open import BorrowedCF.Types using (_≃_; ⟨_⟩; ≃-sym)
 import BorrowedCF.Simulation2.InvFrame as IF
+open import BorrowedCF.Simulation2.Frames using (frame*-⋯; frame-plug*)
 import Data.Sum as Sum
 
 open Variables
@@ -311,6 +312,58 @@ head-inj σ (` x)       eq = inj₁ (x , refl)
 head-inj σ (`inj j v)  eq = inj₂ (j , v , refl)
 
 
+-- Head-shape reflections that ALSO carry the operand equalities (needed by the
+-- Frame* reflection below to peel a frame and recurse into the right subterm).
+-- A value substitution gives a c-headed result only when the source is a
+-- variable (σ x may be that value) or literally that head.
+headK : (σ : m →ₛ n) → (e : Tm m) {c : Const} → (e ⋯ σ) ≡ K c
+  → (Σ[ x ∈ 𝔽 m ] e ≡ ` x) ⊎ (e ≡ K c)
+headK σ (` x)    eq = inj₁ (x , refl)
+headK σ (K c)  refl = inj₂ refl
+
+headApp : (σ : m →ₛ n) → (e : Tm m) {a b : Tm n} → (e ⋯ σ) ≡ a · b
+  → (Σ[ x ∈ 𝔽 m ] e ≡ ` x)
+  ⊎ (Σ[ a₀ ∈ Tm m ] Σ[ b₀ ∈ Tm m ] (e ≡ a₀ · b₀) × (a ≡ a₀ ⋯ σ) × (b ≡ b₀ ⋯ σ))
+headApp σ (` x)       eq = inj₁ (x , refl)
+headApp σ (a₀ · b₀) refl = inj₂ (a₀ , b₀ , refl , refl , refl)
+
+head⊗′ : (σ : m →ₛ n) → (e : Tm m) {a b : Tm n} → (e ⋯ σ) ≡ a ⊗ b
+  → (Σ[ x ∈ 𝔽 m ] e ≡ ` x)
+  ⊎ (Σ[ a₀ ∈ Tm m ] Σ[ b₀ ∈ Tm m ] (e ≡ a₀ ⊗ b₀) × (a ≡ a₀ ⋯ σ) × (b ≡ b₀ ⋯ σ))
+head⊗′ σ (` x)       eq = inj₁ (x , refl)
+head⊗′ σ (a₀ ⊗ b₀) refl = inj₂ (a₀ , b₀ , refl , refl , refl)
+
+headSeq : (σ : m →ₛ n) → (e : Tm m) {a b : Tm n} → (e ⋯ σ) ≡ a ; b
+  → (Σ[ x ∈ 𝔽 m ] e ≡ ` x)
+  ⊎ (Σ[ a₀ ∈ Tm m ] Σ[ b₀ ∈ Tm m ] (e ≡ a₀ ; b₀) × (a ≡ a₀ ⋯ σ) × (b ≡ b₀ ⋯ σ))
+headSeq σ (` x)       eq = inj₁ (x , refl)
+headSeq σ (a₀ ; b₀) refl = inj₂ (a₀ , b₀ , refl , refl , refl)
+
+headInj′ : (σ : m →ₛ n) → (e : Tm m) {i : Side} {v : Tm n} → (e ⋯ σ) ≡ `inj i v
+  → (Σ[ x ∈ 𝔽 m ] e ≡ ` x)
+  ⊎ (Σ[ v₀ ∈ Tm m ] (e ≡ `inj i v₀) × (v ≡ v₀ ⋯ σ))
+headInj′ σ (` x)        eq = inj₁ (x , refl)
+headInj′ σ (`inj i v₀) refl = inj₂ (v₀ , refl , refl)
+
+headLet : (σ : m →ₛ n) → (e : Tm m) {a : Tm n} {b : Tm (suc n)} → (e ⋯ σ) ≡ `let a `in b
+  → (Σ[ x ∈ 𝔽 m ] e ≡ ` x)
+  ⊎ (Σ[ a₀ ∈ Tm m ] Σ[ b₀ ∈ Tm (suc m) ] (e ≡ `let a₀ `in b₀) × (a ≡ a₀ ⋯ σ) × (b ≡ b₀ ⋯ σ ↑))
+headLet σ (` x)              eq = inj₁ (x , refl)
+headLet σ (`let a₀ `in b₀) refl = inj₂ (a₀ , b₀ , refl , refl , refl)
+
+headLetpair : (σ : m →ₛ n) → (e : Tm m) {a : Tm n} {b : Tm (suc (suc n))} → (e ⋯ σ) ≡ `let⊗ a `in b
+  → (Σ[ x ∈ 𝔽 m ] e ≡ ` x)
+  ⊎ (Σ[ a₀ ∈ Tm m ] Σ[ b₀ ∈ Tm (suc (suc m)) ] (e ≡ `let⊗ a₀ `in b₀) × (a ≡ a₀ ⋯ σ) × (b ≡ b₀ ⋯ σ ↑ ↑))
+headLetpair σ (` x)               eq = inj₁ (x , refl)
+headLetpair σ (`let⊗ a₀ `in b₀) refl = inj₂ (a₀ , b₀ , refl , refl , refl)
+
+headCase : (σ : m →ₛ n) → (e : Tm m) {s : Tm n} {b₁ b₂ : Tm (suc n)} → (e ⋯ σ) ≡ `case s `of⟨ b₁ ; b₂ ⟩
+  → (Σ[ x ∈ 𝔽 m ] e ≡ ` x)
+  ⊎ (Σ[ s₀ ∈ Tm m ] Σ[ c₁ ∈ Tm (suc m) ] Σ[ c₂ ∈ Tm (suc m) ]
+       (e ≡ `case s₀ `of⟨ c₁ ; c₂ ⟩) × (s ≡ s₀ ⋯ σ) × (b₁ ≡ c₁ ⋯ σ ↑) × (b₂ ≡ c₂ ⋯ σ ↑))
+headCase σ (` x)                     eq = inj₁ (x , refl)
+headCase σ (`case s₀ `of⟨ c₁ ; c₂ ⟩) refl = inj₂ (s₀ , c₁ , c₂ , refl , refl , refl , refl)
+
 -- Injectivity of term constructors (for matching head equalities).
 ƛ-inj : {b₁ b₂ : Tm (suc n)} → (ƛ b₁) ≡ (ƛ b₂) → b₁ ≡ b₂
 ƛ-inj refl = refl
@@ -423,3 +476,115 @@ case-eq false e₁ e₂ v σ = sym (dist-↑-⦅⦆-⋯ e₂ v σ)
   with γ₁ , γ₂ , p/s , (_ , _ , ⊢escr) , _ , _ , _ ← IF.inv-case ⊢e
   with e0′ , s0 , refl ← ⋯→-reflect Γ-S e ⊢escr σ Vσ inner
   = `case e0′ `of⟨ e₁ ; e₂ ⟩ , E-Ctx `case□`of⟨ e₁ ; e₂ ⟩ s0 , refl
+
+-- A frame-stack with an application redex at the bottom is never a value: the
+-- innermost a · b is not a value, and the value-producing frames (⊗ / inj) only
+-- yield a value when their plug is a value, recursing down to a · b.
+plugApp-not-value : ∀ {n} (F : Frame* n) {a b : Tm n} → ¬ Value (F [ a · b ]*)
+plugApp-not-value [] ()
+plugApp-not-value (□· e₃ ∷ F*) ()
+plugApp-not-value (_·□ V₁ ∷ F*) ()
+plugApp-not-value (□⊗ e₃ ∷ F*) (V-⊗ V₁ _) = plugApp-not-value F* V₁
+plugApp-not-value (_⊗□ V₁ ∷ F*) (V-⊗ _ V₂) = plugApp-not-value F* V₂
+plugApp-not-value (□; e₃ ∷ F*) ()
+plugApp-not-value (`let-`in e₃ ∷ F*) ()
+plugApp-not-value (`let⊗-`in e₃ ∷ F*) ()
+plugApp-not-value (`inj□ i ∷ F*) (V-⊕ V) = plugApp-not-value F* V
+plugApp-not-value (`case□`of⟨ e₁ ; e₂ ⟩ ∷ F*) ()
+
+------------------------------------------------------------------------
+-- Frame* reflection through a value substitution (the Frame* analogue of
+-- ⋯→-reflect).  Inverts  e₀ ⋯ σ ≡ F [ K c · arg ]*  to a SOURCE frame stack F₀
+-- and source argument arg₀ with e₀ ≡ F₀ [ K c · arg₀ ]*, F ≡ frame*-⋯ F₀ σ Vσ,
+-- arg ≡ arg₀ ⋯ σ.  A variable head is refuted by the source typing
+-- (var-app-absurd); the constant K c is never in σ's (value) image at a redex
+-- head because the only var alternative is the refuted one.  Powers RU-Fork.
+------------------------------------------------------------------------
+
+frameApp-reflect : ∀ {m n} {Γ : Ctx m} {γ : Struct m} {T ϵ}
+  → ChanCx Γ → (e₀ : Tm m) → Γ ; γ ⊢ e₀ ∶ T ∣ ϵ
+  → (σ : m →ₛ n) (Vσ : VSub σ) → (c : Const) (F : Frame* n) {arg : Tm n}
+  → e₀ ⋯ σ ≡ F [ K c · arg ]*
+  → Σ[ F₀ ∈ Frame* m ] Σ[ arg₀ ∈ Tm m ]
+      (e₀ ≡ F₀ [ K c · arg₀ ]*) × (F ≡ frame*-⋯ F₀ σ Vσ) × (arg ≡ arg₀ ⋯ σ)
+frameApp-reflect Γ-S e₀ ⊢e σ Vσ c [] eq
+  with headApp σ e₀ eq
+... | inj₁ (x , refl) = ⊥-elim (plugApp-not-value [] (subst Value eq (Vσ x)))
+... | inj₂ (a₀ , b₀ , refl , aeq , beq)
+      with headK σ a₀ (sym aeq)
+...   | inj₁ (x , refl) = ⊥-elim (var-app-absurd Γ-S ⊢e)
+...   | inj₂ refl = [] , b₀ , refl , refl , beq
+frameApp-reflect Γ-S e₀ ⊢e σ Vσ c (□· e₃ ∷ F*) eq
+  with headApp σ e₀ eq
+... | inj₁ (x , refl) = ⊥-elim (plugApp-not-value (□· e₃ ∷ F*) (subst Value eq (Vσ x)))
+... | inj₂ (a₀ , b₀ , refl , aeq , beq)
+      with _ , _ , (_ , _ , ⊢a₀) , _ , _ ← IF.inv-app ⊢e
+      with F₀ , arg₀ , refl , Feq , argeq ← frameApp-reflect Γ-S a₀ ⊢a₀ σ Vσ c F* (sym aeq)
+      = (□· b₀) ∷ F₀ , arg₀ , refl ,
+        cong₂ L._∷_ (cong □·_ beq) Feq , argeq
+frameApp-reflect Γ-S e₀ ⊢e σ Vσ c (_·□ {e₁ = v} V₁ ∷ F*) eq
+  with headApp σ e₀ eq
+... | inj₁ (x , refl) = ⊥-elim (plugApp-not-value (_·□ {e₁ = v} V₁ ∷ F*) (subst Value eq (Vσ x)))
+... | inj₂ (a₀ , b₀ , refl , aeq , beq)
+      with _ , _ , (_ , _ , ⊢a₀) , (_ , _ , ⊢b₀) , _ ← IF.inv-app ⊢e
+      with F₀ , arg₀ , refl , Feq , argeq ← frameApp-reflect Γ-S b₀ ⊢b₀ σ Vσ c F* (sym beq)
+      = (value-⋯⁻¹ σ Vσ a₀ (subst Value aeq V₁) ·□) ∷ F₀ , arg₀ , refl ,
+        cong₂ L._∷_ (IF.·□-cong aeq V₁ (value-⋯ (value-⋯⁻¹ σ Vσ a₀ (subst Value aeq V₁)) σ Vσ)) Feq ,
+        argeq
+frameApp-reflect Γ-S e₀ ⊢e σ Vσ c (□⊗ e₃ ∷ F*) eq
+  with head⊗′ σ e₀ eq
+... | inj₁ (x , refl) = ⊥-elim (plugApp-not-value (□⊗ e₃ ∷ F*) (subst Value eq (Vσ x)))
+... | inj₂ (a₀ , b₀ , refl , aeq , beq)
+      with _ , _ , (_ , _ , ⊢a₀) , _ , _ ← IF.inv-pair ⊢e
+      with F₀ , arg₀ , refl , Feq , argeq ← frameApp-reflect Γ-S a₀ ⊢a₀ σ Vσ c F* (sym aeq)
+      = (□⊗ b₀) ∷ F₀ , arg₀ , refl ,
+        cong₂ L._∷_ (cong □⊗_ beq) Feq , argeq
+frameApp-reflect Γ-S e₀ ⊢e σ Vσ c (_⊗□ {e₁ = v} V₁ ∷ F*) eq
+  with head⊗′ σ e₀ eq
+... | inj₁ (x , refl) = ⊥-elim (plugApp-not-value (_⊗□ {e₁ = v} V₁ ∷ F*) (subst Value eq (Vσ x)))
+... | inj₂ (a₀ , b₀ , refl , aeq , beq)
+      with _ , _ , (_ , _ , ⊢a₀) , (_ , _ , ⊢b₀) , _ ← IF.inv-pair ⊢e
+      with F₀ , arg₀ , refl , Feq , argeq ← frameApp-reflect Γ-S b₀ ⊢b₀ σ Vσ c F* (sym beq)
+      = (value-⋯⁻¹ σ Vσ a₀ (subst Value aeq V₁) ⊗□) ∷ F₀ , arg₀ , refl ,
+        cong₂ L._∷_ (IF.⊗□-cong aeq V₁ (value-⋯ (value-⋯⁻¹ σ Vσ a₀ (subst Value aeq V₁)) σ Vσ)) Feq ,
+        argeq
+frameApp-reflect Γ-S e₀ ⊢e σ Vσ c (□; e₃ ∷ F*) eq
+  with headSeq σ e₀ eq
+... | inj₁ (x , refl) = ⊥-elim (plugApp-not-value (□; e₃ ∷ F*) (subst Value eq (Vσ x)))
+... | inj₂ (a₀ , b₀ , refl , aeq , beq)
+      with _ , _ , (_ , _ , ⊢a₀) , _ , _ ← IF.inv-seq ⊢e
+      with F₀ , arg₀ , refl , Feq , argeq ← frameApp-reflect Γ-S a₀ ⊢a₀ σ Vσ c F* (sym aeq)
+      = (□; b₀) ∷ F₀ , arg₀ , refl ,
+        cong₂ L._∷_ (cong □;_ beq) Feq , argeq
+frameApp-reflect Γ-S e₀ ⊢e σ Vσ c (`let-`in e₃ ∷ F*) eq
+  with headLet σ e₀ eq
+... | inj₁ (x , refl) = ⊥-elim (plugApp-not-value (`let-`in e₃ ∷ F*) (subst Value eq (Vσ x)))
+... | inj₂ (a₀ , b₀ , refl , aeq , beq)
+      with γ₁ , γ₂ , p/s , (_ , _ , ⊢a₀) , _ , _ ← IF.inv-let ⊢e
+      with F₀ , arg₀ , refl , Feq , argeq ← frameApp-reflect Γ-S a₀ ⊢a₀ σ Vσ c F* (sym aeq)
+      = (`let-`in b₀) ∷ F₀ , arg₀ , refl ,
+        cong₂ L._∷_ (cong `let-`in_ beq) Feq , argeq
+frameApp-reflect Γ-S e₀ ⊢e σ Vσ c (`let⊗-`in e₃ ∷ F*) eq
+  with headLetpair σ e₀ eq
+... | inj₁ (x , refl) = ⊥-elim (plugApp-not-value (`let⊗-`in e₃ ∷ F*) (subst Value eq (Vσ x)))
+... | inj₂ (a₀ , b₀ , refl , aeq , beq)
+      with γ₁ , γ₂ , p/s , d , (_ , _ , ⊢a₀) , _ , _ ← IF.inv-letpair ⊢e
+      with F₀ , arg₀ , refl , Feq , argeq ← frameApp-reflect Γ-S a₀ ⊢a₀ σ Vσ c F* (sym aeq)
+      = (`let⊗-`in b₀) ∷ F₀ , arg₀ , refl ,
+        cong₂ L._∷_ (cong `let⊗-`in_ beq) Feq , argeq
+frameApp-reflect Γ-S e₀ ⊢e σ Vσ c (`inj□ i ∷ F*) eq
+  with headInj′ σ e₀ eq
+... | inj₁ (x , refl) = ⊥-elim (plugApp-not-value (`inj□ i ∷ F*) (subst Value eq (Vσ x)))
+... | inj₂ (v₀ , refl , veq)
+      with _ , _ , ⊢v₀ ← IF.inv-inj ⊢e
+      with F₀ , arg₀ , refl , Feq , argeq ← frameApp-reflect Γ-S v₀ ⊢v₀ σ Vσ c F* (sym veq)
+      = (`inj□ i) ∷ F₀ , arg₀ , refl ,
+        cong₂ L._∷_ refl Feq , argeq
+frameApp-reflect Γ-S e₀ ⊢e σ Vσ c (`case□`of⟨ e₁ ; e₂ ⟩ ∷ F*) eq
+  with headCase σ e₀ eq
+... | inj₁ (x , refl) = ⊥-elim (plugApp-not-value (`case□`of⟨ e₁ ; e₂ ⟩ ∷ F*) (subst Value eq (Vσ x)))
+... | inj₂ (s₀ , c₁ , c₂ , refl , seq , beq1 , beq2)
+      with γ₁ , γ₂ , p/s , (_ , _ , ⊢s₀) , _ , _ , _ ← IF.inv-case ⊢e
+      with F₀ , arg₀ , refl , Feq , argeq ← frameApp-reflect Γ-S s₀ ⊢s₀ σ Vσ c F* (sym seq)
+      = (`case□`of⟨ c₁ ; c₂ ⟩) ∷ F₀ , arg₀ , refl ,
+        cong₂ L._∷_ (cong₂ (λ u v → `case□`of⟨ u ; v ⟩) beq1 beq2) Feq , argeq
