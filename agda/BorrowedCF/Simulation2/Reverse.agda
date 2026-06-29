@@ -25,9 +25,10 @@ open import BorrowedCF.Simulation2.TranslationProperties
 open import BorrowedCF.Simulation2.ReverseInv
   using (⋯→-reflect; frameApp-reflect; headK; plugApp-not-value;
          rnew-bridge; new-arg-notVar;
-         inv-U-ν-∥-shape; U-ν-singleton; νσ; ν-inj)
+         inv-U-ν-∥-shape; U-ν-singleton; νσ; ν-inj;
+         νσ-VSub; inv-ν-chanCx; close-bridge)
 open import BorrowedCF.Simulation2.InvFrame using (strengthen-frame; inv-app)
-open import BorrowedCF.Simulation2.Frames using (frame-plug*)
+open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯)
 import Data.Sum as Sum
 import BorrowedCF.Processes.Typed             as TP
 import BorrowedCF.Processes.Untyped           as UP
@@ -333,8 +334,25 @@ sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Acquire F) =
 --   forward-mirror ≋ — the large remaining piece; B-shape + φ-collapse are DONE.
 sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
   with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
-  with shape ← inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq =
-  {! RU-Close: B-shape+φ-collapse PROVEN (inv-U-ν-∥-shape ⊢ B₁=b₁∷[], B₂=b₂∷[], body ≡ U[P₀](νσ b₁ b₂ σ)). RESIDUAL: recover P₀=⟪eL⟫∥⟪eR⟫, frameApp-reflect each `end-redex (arg = chan var `0F/`1F), fire TR.R-Close, codomain via forward thr/frame-plug* bridge (needs inv-ν→inv-∥→inv-⟪⟫ typing of eL/eR + bindCtx⇒chanCtx). !}
+  with inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq
+... | Sum.inj₂ _ =
+  {! RU-Close inj₂ (one Bᵢ = []): a close endpoint with NO handle.  IMPOSSIBLE for a well-typed close — the reflected redex arg maps under νσ to a chanTriple whose flag is 0F/1F, but an empty block-1 (resp. block-2) forces it into the other block / σ-tail with the wrong flag.  Ruling this out needs the BindCtx HandleCount confinement (un-ported confine subsystem). !}
+... | Sum.inj₁ (b₁ , b₂ , refl , refl)
+  with _ , _ , Γ′-S , ⊢body ← inv-ν-chanCx Γ-S ⊢P
+  with bodyeq′ ← ν-inj (bodyeq ■ U-ν-singleton b₁ b₂ P₀ σ)
+  -- bodyeq′ : (F₁⋯ᶠ*wk2)[end‼·𝓒[e₁×0F×e₁′]]* ∥ (F₂⋯ᶠ*wk2)[end⁇·𝓒[e₂×1F×e₂′]]*
+  --           ≡ U[ P₀ ] (νσ b₁ b₂ σ)
+  with PL , PR , refl , Leq , Req ← inv-U-∥ P₀ (νσ b₁ b₂ σ) (sym bodyeq′)
+  with eL , refl , Leq′ ← inv-U-⟪⟫ PL (νσ b₁ b₂ σ) (sym Leq)
+  with eR , refl , Req′ ← inv-U-⟪⟫ PR (νσ b₁ b₂ σ) (sym Req)
+  with _ , _ , _ , ⊢PL , ⊢PR ← inv-∥ ⊢body
+  with F₀ᴸ , argᴸ , refl , FeqL , argeqL
+       ← frameApp-reflect Γ′-S eL (inv-⟪⟫ ⊢PL) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) (`end ‼)
+           (F₁ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) (sym Leq′)
+  with F₀ᴿ , argᴿ , refl , FeqR , argeqR
+       ← frameApp-reflect Γ′-S eR (inv-⟪⟫ ⊢PR) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) (`end ⁇)
+           (F₂ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) (sym Req′) =
+  {! RU-Close inj₁ singleton: threads RECOVERED (P₀ = ⟪F₀ᴸ[end‼·argᴸ]⟫ ∥ ⟪F₀ᴿ[end⁇·argᴿ]⟫) with typing ⊢PL/⊢PR in binder-extended ChanCx Γ′-S; redexes reflected (FeqL : F₁⋯ᶠ*wk2 ≡ frame*-⋯ F₀ᴸ νσ Vνσ ; argeqL : 𝓒[e₁×0F×e₁′] ≡ argᴸ ⋯ νσ).  RESIDUAL: the HandleCount confinement (b₁=b₂=1, argᴸ=`0F, argᴿ=`1F, F₀ᴸ=E₁⋯ᶠ*wk2) needed to fire TR.R-Close, then close-bridge for codomain.  Same un-ported confine subsystem as forward R-Close/R-Acq. !}
 -- RU-Com.  Body ν(⟪..⟫ ∥ (⟪..⟫ ∥ P)) is ∥-headed, so the SAME structural
 --   inversion as RU-Close applies: inv-U-ν + inv-U-ν-∥-shape force B₁,B₂ to
 --   singletons (syncs 0), U-ν-singleton collapses the φ-telescope, giving body ≡
@@ -345,12 +363,24 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
 --   pin the forward U-com (Theorems/Com.agda, 962 ln) needs, mirrored.  Large but
 --   UNgated; structural shape/collapse PROVEN above (reuse for Close/Com/Choice).
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Com F₁ F₂ V) =
-  {! RU-Com → TR.R-Com: send/recv rendezvous. STRUCTURE (B-singletons + φ-collapse) reusable via inv-U-ν-∥-shape/U-ν-singleton; RESIDUAL = frameApp-reflect send/recv redexes + BindCtx-pinned recv index + codomain bridge, mirroring forward Com.agda. !}
+  {! RU-Com → TR.R-Com: send/recv rendezvous.  The RU-Close inj₁ infra now REUSES
+     here verbatim down to redex reflection: inv-U-ν → inv-U-ν-∥-shape (body A ∥ (B ∥ P)
+     ⊢ B₁=b₁∷[],B₂=b₂∷[]) → U-ν-singleton collapse → inv-ν-chanCx (binder-extended
+     ChanCx Γ′-S + body typing via chanCx-⸴*) → inv-U-∥/inv-U-⟪⟫ recover ⟪eS⟫,⟪eR⟫,
+     Prest → frameApp-reflect (νσ-VSub) the K`send / K`recv redexes (args e⊗𝓒[..],
+     𝓒[..]).  RESIDUAL: (a) the HandleCount confinement b₁=suc·/b₂=suc· + the recv
+     channel INDEX (wkʳ/wkˡ geometry) — the typing-driven pin the forward U-com
+     (Theorems/Com.agda, 962 ln) needs, reversed; (b) close-bridge-style codomain.
+     Same un-ported confine subsystem as RU-Close inj₁; large (mirror forward Com). !}
 -- RU-Choice.  Identical shape to RU-Com (ν, ∥-headed body): same inv-U-ν-∥-shape
 --   + U-ν-singleton collapse; RESIDUAL = frameApp-reflect the select/branch
 --   redexes + `inj wrapping on the codomain, mirroring forward U-choice.
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Choice F₁ F₂ k) =
-  {! RU-Choice → TR.R-Choice: select/branch. Same structure as RU-Com (inv-U-ν-∥-shape + collapse PROVEN); RESIDUAL = frameApp-reflect select/branch redexes + `inj codomain, mirroring forward Choice.agda. !}
+  {! RU-Choice → TR.R-Choice: select/branch.  Identical structural skeleton to RU-Com
+     (reuses inv-U-ν-∥-shape / U-ν-singleton / inv-ν-chanCx / inv-U-∥ / inv-U-⟪⟫ /
+     frameApp-reflect with νσ-VSub on the K(`select k) / K`branch redexes).  RESIDUAL =
+     the `inj k wrapping on the codomain + the same HandleCount/index confinement,
+     mirroring forward U-choice (Theorems/Choice.agda).  Large; un-ported confine. !}
 -- RU-Cleanup : R = φ done P.  U[_] never heads with φ (clauses are ⟪⟫/∥/ν), so
 -- eq : φ done P ≡ U[ Pₛ ] σ is absurd by case on Pₛ.  VACUOUS at top level
 -- (only reachable under an inner RU-Res recursion, where the φ is real).

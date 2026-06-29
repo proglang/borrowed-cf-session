@@ -23,8 +23,10 @@ import BorrowedCF.Simulation2.InvFrame as IF
 open import BorrowedCF.Simulation2.Frames using (frame*-⋯; frame-plug*; ++ₛ-VSub; weaken-VSub)
 open import BorrowedCF.Simulation2.TranslationProperties using (≡→≋)
 import BorrowedCF.Processes.Typed   as TP
+open TP using (_;_⊢ₚ_; inv-ν; bindCtx⇒chanCtx)
 import BorrowedCF.Processes.Untyped as UP
 import Data.Sum as Sum
+open import BorrowedCF.Reduction.Base using (ChanCx; chanCx-⸴*)
 
 open Variables
 open Fin.Patterns
@@ -753,6 +755,19 @@ syncs0-shape (b ∷ _ ∷ _)   ()
     (λ (_ : 𝔽 (sum (b₂ ∷ []))) → chanTriple (* , weaken* ⦃ Kᵣ ⦄ 0 1F , *)))
   ++ₛ (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 0 ⋯ weaken* ⦃ Kᵣ ⦄ 0)
 
+-- νσ is a value substitution: every component is a chanTriple of values, or
+-- a renaming-image of a value (Vσ).
+νσ-VSub : ∀ {m n} (b₁ b₂ : ℕ) (σ : m →ₛ n) → VSub σ → VSub (νσ b₁ b₂ σ)
+νσ-VSub b₁ b₂ σ Vσ =
+  ++ₛ-VSub
+    {σ₁ = (λ i → (λ (_ : 𝔽 (sum (b₁ ∷ []))) → chanTriple (* , 0F , *)) i ⋯ weaken* ⦃ Kᵣ ⦄ 0) ++ₛ
+          (λ (_ : 𝔽 (sum (b₂ ∷ []))) → chanTriple (* , weaken* ⦃ Kᵣ ⦄ 0 1F , *))}
+    (++ₛ-VSub
+       {σ₁ = (λ i → (λ (_ : 𝔽 (sum (b₁ ∷ []))) → chanTriple (* , 0F , *)) i ⋯ weaken* ⦃ Kᵣ ⦄ 0)}
+       (λ _ → value-⋯ (V-⊗ (V-⊗ V-K V-`) V-K) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`))
+       (λ _ → V-⊗ (V-⊗ V-K V-`) V-K))
+    (λ i → value-⋯ (value-⋯ (value-⋯ (Vσ i) (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`))
+
 -- U[ ν [b₁] [b₂] P₀ ] σ collapses (no φ binders) to ν (U[ P₀ ] (νσ …)).
 U-ν-singleton : ∀ {m n} (b₁ b₂ : ℕ)
                 (P₀ : TP.Proc (sum (b₁ ∷ []) + sum (b₂ ∷ []) + m)) (σ : m →ₛ n)
@@ -788,3 +803,33 @@ inv-U-ν-∥-shape [] (b₂ ∷ _ ∷ _) P₀ σ eq with ν-inj eq
 inv-U-ν-∥-shape [] (b₂ ∷ []) P₀ σ eq = Sum.inj₂ (refl , refl)
 inv-U-ν-∥-shape [] []        P₀ σ eq = Sum.inj₂ (refl , refl)
 inv-U-ν-∥-shape (b₁ ∷ []) [] P₀ σ eq = Sum.inj₂ (refl , refl)
+
+------------------------------------------------------------------------
+-- inv-ν-chanCx : the BINDER-EXTENDED ChanCx + body typing.
+--
+--   From a ChanCx Γ and a typing of ν B₁ B₂ P₀, recover the body context
+--   (Γ₁ ⸴* Γ₂) ⸴* Γ together with a ChanCx witness for it (built from the
+--   two BindCtx-derived ChanCxs via chanCx-⸴*) and the typing of P₀ at that
+--   context.  This is the SHARED bridge that lets the ν-headed reverse cases
+--   (RU-Close / RU-Com / RU-Choice) reflect each thread redex through the
+--   leaf substitution νσ: frameApp-reflect needs both the source typing AND a
+--   ChanCx in the binder-extended scope.
+------------------------------------------------------------------------
+inv-ν-chanCx : ∀ {m} {Γ : Ctx m} {γ : Struct m} {B₁ B₂ P₀}
+  → ChanCx Γ → Γ ; γ ⊢ₚ TP.ν B₁ B₂ P₀
+  → Σ[ Γ′ ∈ Ctx (sum B₁ + sum B₂ + m) ] Σ[ γ′ ∈ Struct (sum B₁ + sum B₂ + m) ]
+      ChanCx Γ′ × (Γ′ ; γ′ ⊢ₚ P₀)
+inv-ν-chanCx Γ-S ⊢νP
+  with _ , _ , _ , _ , _ , _ , C , C′ , p ← inv-ν ⊢νP =
+  _ , _ , chanCx-⸴* (chanCx-⸴* (bindCtx⇒chanCtx C) (bindCtx⇒chanCtx C′)) Γ-S , p
+
+-- close-bridge : the codomain reconciliation for the reverse R-Close.  Both
+-- threads close to a unit; pushing U[_] through the (now source) frames is the
+-- forward frame-plug* run on `* (a constant, fixed by σ).
+close-bridge : ∀ {m n} (E₁ E₂ : Frame* m) (σ : m →ₛ n) (Vσ : VSub σ) →
+  UP.⟪ frame*-⋯ E₁ σ Vσ [ K `unit ]* ⟫ UP.∥ UP.⟪ frame*-⋯ E₂ σ Vσ [ K `unit ]* ⟫
+    UP.≋ U[ TP.⟪ E₁ [ K `unit ]* ⟫ TP.∥ TP.⟪ E₂ [ K `unit ]* ⟫ ] σ
+close-bridge E₁ E₂ σ Vσ =
+  ≡→≋ (cong₂ UP._∥_
+        (cong UP.⟪_⟫ (sym (frame-plug* E₁ σ Vσ)))
+        (cong UP.⟪_⟫ (sym (frame-plug* E₂ σ Vσ))))
