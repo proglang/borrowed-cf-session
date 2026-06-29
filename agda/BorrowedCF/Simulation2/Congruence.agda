@@ -1022,7 +1022,8 @@ module _ (sA1 sA2 sB1 sB2 : ℕ) {n : ℕ} where
          → Fin.toℕ (Φᵗ x) ≡ Fin.toℕ x Nat.∸ (sA2 + (sA1 + 2))
   Φᵗ-B x ge lt = bridge ■ Φ-B-body
     where
-      ρaccᵗ = assocSwapᵣ 2 sB2 ·ₖ ((assocSwapᵣ 2 sB1 ·ₖ (assocSwapᵣ 2 2 {n} ↑* sB1)) ↑* sB2)
+      ra-inner = assocSwapᵣ 2 sB1 ·ₖ (assocSwapᵣ 2 2 {n} ↑* sB1)
+      ρaccᵗ = assocSwapᵣ 2 sB2 ·ₖ (ra-inner ↑* sB2)
       Ωᵗ = ((assocSwapᵣ sA1 sB1 ↑* sA2) ·ₖ (assocSwapᵣ sA2 sB1 ·ₖ (((assocSwapᵣ sA1 2 ↑* sA2) ·ₖ assocSwapᵣ sA2 2) ↑* sB1))) ↑* sB2
       x1 = ((ρaccᵗ ↑* sA1) ↑* sA2) x
       x2 = (assocSwapᵣ sA1 sB2 ↑* sA2) x1
@@ -1035,6 +1036,19 @@ module _ (sA1 sA2 sB1 sB2 : ℕ) {n : ℕ} where
       -- toℕ x = sA2 + (sA1 + (2 + f))
       xeq : Fin.toℕ x ≡ sA2 + (sA1 + (2 + f))
       xeq = sym (Nat.m+[n∸m]≡n ge) ■ Nat.+-assoc sA2 (sA1 + 2) f ■ cong (sA2 +_) (Nat.+-assoc sA1 2 f)
+      fltBpre : f Nat.< sB2 + (sB1 + 2)
+      fltBpre = Nat.+-cancelˡ-< sA2 f (sB2 + (sB1 + 2))
+                  (Nat.+-cancelˡ-< sA1 (sA2 + f) _
+                    (Nat.+-cancelˡ-< 2 (sA1 + (sA2 + f)) _ goal2))
+        where -- 2 + (sA1 + (sA2 + f)) < 2 + (sA1 + (sA2 + (sB2+sB1+2)))  (= toℕx-region reassociated)
+              goal2 : 2 + (sA1 + (sA2 + f)) Nat.< 2 + (sA1 + (sA2 + (sB2 + (sB1 + 2))))
+              goal2 = subst₂ Nat._<_ lhseq rhseq (subst (Nat._< sA2 + (sA1 + (2 + (sB2 + (sB1 + 2))))) xeq lt)
+                where lhseq : sA2 + (sA1 + (2 + f)) ≡ 2 + (sA1 + (sA2 + f))
+                      lhseq = solve 3 (λ a2 a1 t → a2 :+ (a1 :+ (con 2 :+ t)) := con 2 :+ (a1 :+ (a2 :+ t))) refl sA2 sA1 f
+                        where open +-*-Solver
+                      rhseq : sA2 + (sA1 + (2 + (sB2 + (sB1 + 2)))) ≡ 2 + (sA1 + (sA2 + (sB2 + (sB1 + 2))))
+                      rhseq = solve 4 (λ a2 a1 b2 b1 → a2 :+ (a1 :+ (con 2 :+ (b2 :+ (b1 :+ con 2)))) := con 2 :+ (a1 :+ (a2 :+ (b2 :+ (b1 :+ con 2))))) refl sA2 sA1 sB2 sB1
+                        where open +-*-Solver
       -- common reduction of F1 down to the "2"-block: xr = reduce x past sA2 then sA1
       xrA = Fin.reduce≥ x a2le
       xrAN : Fin.toℕ xrA ≡ sA1 + (2 + f)
@@ -1078,9 +1092,189 @@ module _ (sA1 sA2 sB1 sB2 : ℕ) {n : ℕ} where
                   (subst (Nat._< sA2 + sB2) (sym x2N) (Nat.+-monoʳ-< sA2 flt2))
               ■ cong (Nat._∸ sA2) x2N ■ Nat.m+n∸m≡n sA2 f
       B2 : sB2 Nat.≤ f → f Nat.< sB2 + sB1 → Fin.toℕ (Ωᵗ x3) ≡ f
-      B2 ge2 flt21 = {! B2 !}
+      B2 ge2 flt21 = toℕ-↑*-ge _ sB2 x3 x3q ■ cong (sB2 +_) omN ■ Nat.m+[n∸m]≡n ge2
+        where
+          f1 = f Nat.∸ sB2
+          f1eq : sB2 + f1 ≡ f
+          f1eq = Nat.m+[n∸m]≡n ge2
+          f1ltB1 : f1 Nat.< sB1
+          f1ltB1 = Nat.+-cancelˡ-< sB2 f1 sB1 (subst (Nat._< sB2 + sB1) (sym f1eq) flt21)
+          -- ρaccᵗ on xrB (=2+f) ; sB2≤f<sB2+sB1 -> f
+          asN : Fin.toℕ (assocSwapᵣ 2 sB2 xrB) ≡ 2 + f
+          asN = toℕ-assoc-ge 2 sB2 xrB (subst (2 + sB2 Nat.≤_) (sym xrBN) (Nat.+-monoʳ-≤ 2 ge2)) ■ xrBN
+          asge : sB2 Nat.≤ Fin.toℕ (assocSwapᵣ 2 sB2 xrB)
+          asge = subst (sB2 Nat.≤_) (sym asN) (Nat.≤-trans (Nat.m≤n+m sB2 2) (Nat.+-monoʳ-≤ 2 ge2))
+          asr = Fin.reduce≥ (assocSwapᵣ 2 sB2 xrB) asge
+          asrN : Fin.toℕ asr ≡ 2 + f1
+          asrN = toℕ-reduce≥ (assocSwapᵣ 2 sB2 xrB) asge ■ cong (Nat._∸ sB2) asN ■ reassoc
+            where reassoc : (2 + f) Nat.∸ sB2 ≡ 2 + f1
+                  reassoc = cong (Nat._∸ sB2) (cong (2 +_) (sym f1eq) ■ sym (Nat.+-assoc 2 sB2 f1) ■ cong (Nat._+ f1) (Nat.+-comm 2 sB2) ■ Nat.+-assoc sB2 2 f1) ■ Nat.m+n∸m≡n sB2 (2 + f1)
+          -- ra_inner on (2+f1) = aS(2,sB1)·ₖ(aS(2,2)↑*sB1) ; aS(2,sB1) mid -> f1 ; lift lt -> f1
+          rai-asN : Fin.toℕ (assocSwapᵣ 2 sB1 asr) ≡ f1
+          rai-asN = toℕ-assoc-mid 2 sB1 asr (subst (2 Nat.≤_) (sym asrN) (Nat.m≤m+n 2 f1))
+                      (subst (Nat._< 2 + sB1) (sym asrN) (Nat.+-monoʳ-< 2 f1ltB1))
+                  ■ cong (Nat._∸ 2) asrN ■ Nat.m+n∸m≡n 2 f1
+          raiN : Fin.toℕ (ra-inner asr) ≡ f1
+          raiN = toℕ-↑*-lt (assocSwapᵣ 2 2 {n}) sB1 (assocSwapᵣ 2 sB1 asr) (subst (Nat._< sB1) (sym rai-asN) f1ltB1) ■ rai-asN
+          ρe : Fin.toℕ (ρaccᵗ xrB) ≡ f
+          ρe = toℕ-↑*-ge ra-inner sB2 (assocSwapᵣ 2 sB2 xrB) asge ■ cong (sB2 +_) raiN ■ f1eq
+          x1N : Fin.toℕ x1 ≡ sA2 + (sA1 + f)
+          x1N = toℕ-↑*-ge (ρaccᵗ ↑* sA1) sA2 x a2le
+              ■ cong (sA2 +_) (toℕ-↑*-ge ρaccᵗ sA1 xrA xrAge ■ cong (sA1 +_) ρe)
+          -- F2 aS(sA1,sB2) on (sA1+f) ge (f≥sB2) -> unchanged ; x2 = sA2+(sA1+f)
+          a2lex1 : sA2 Nat.≤ Fin.toℕ x1
+          a2lex1 = subst (sA2 Nat.≤_) (sym x1N) (Nat.m≤m+n sA2 (sA1 + f))
+          redf : Fin.toℕ (Fin.reduce≥ x1 a2lex1) ≡ sA1 + f
+          redf = toℕ-reduce≥ x1 a2lex1 ■ cong (Nat._∸ sA2) x1N ■ Nat.m+n∸m≡n sA2 (sA1 + f)
+          x2N : Fin.toℕ x2 ≡ sA2 + (sA1 + f)
+          x2N = toℕ-↑*-ge (assocSwapᵣ sA1 sB2) sA2 x1 a2lex1
+              ■ cong (sA2 +_) (toℕ-assoc-ge sA1 sB2 (Fin.reduce≥ x1 a2lex1)
+                  (subst (sA1 + sB2 Nat.≤_) (sym redf) (Nat.+-monoʳ-≤ sA1 ge2)) ■ redf)
+          x3N : Fin.toℕ x3 ≡ sA2 + (sA1 + f)
+          x3N = toℕ-assoc-ge sA2 sB2 x2 (subst (sA2 + sB2 Nat.≤_) (sym x2N)
+                  (Nat.+-monoʳ-≤ sA2 (Nat.≤-trans (Nat.m≤n+m sB2 sA1) (Nat.+-monoʳ-≤ sA1 ge2)))) ■ x2N
+          x3q : sB2 Nat.≤ Fin.toℕ x3
+          x3q = subst (sB2 Nat.≤_) (sym x3N) (Nat.≤-trans (Nat.m≤n+m sB2 (sA2 + sA1)) (Nat.≤-trans (Nat.+-monoʳ-≤ (sA2 + sA1) ge2) (Nat.≤-reflexive (Nat.+-assoc sA2 sA1 f))))
+          x3r = Fin.reduce≥ x3 x3q
+          x3rN : Fin.toℕ x3r ≡ sA2 + (sA1 + f1)
+          x3rN = toℕ-reduce≥ x3 x3q ■ cong (Nat._∸ sB2) x3N ■ reassoc
+            where open +-*-Solver
+                  reassoc : (sA2 + (sA1 + f)) Nat.∸ sB2 ≡ sA2 + (sA1 + f1)
+                  reassoc = cong (Nat._∸ sB2) (cong (λ z → sA2 + (sA1 + z)) (sym f1eq) ■ solve 4 (λ a2 a1 b2 t → a2 :+ (a1 :+ (b2 :+ t)) := b2 :+ (a2 :+ (a1 :+ t))) refl sA2 sA1 sB2 f1) ■ Nat.m+n∸m≡n sB2 (sA2 + (sA1 + f1))
+          -- Omega_inner x3r : g1 aS(sA1,sB1) mid -> f1 ; g2 aS(sA2,sB1) mid -> f1 ; g3 lift lt
+          omN : Fin.toℕ (((assocSwapᵣ sA1 sB1 ↑* sA2)
+                          ·ₖ (assocSwapᵣ sA2 sB1 ·ₖ
+                              (((assocSwapᵣ sA1 2 ↑* sA2) ·ₖ assocSwapᵣ sA2 2) ↑* sB1))) x3r)
+                 ≡ f1
+          omN = z3 ■ z2
+            where
+              z1f = (assocSwapᵣ sA1 sB1 ↑* sA2) x3r
+              z1 : Fin.toℕ z1f ≡ sA2 + f1
+              z1 = toℕ-↑*-ge (assocSwapᵣ sA1 sB1) sA2 x3r x3rge
+                 ■ cong (sA2 +_) (toℕ-assoc-mid sA1 sB1 (Fin.reduce≥ x3r x3rge) midlo midhi ■ cong (Nat._∸ sA1) redx3 ■ Nat.m+n∸m≡n sA1 f1)
+                where x3rge : sA2 Nat.≤ Fin.toℕ x3r
+                      x3rge = subst (sA2 Nat.≤_) (sym x3rN) (Nat.m≤m+n sA2 (sA1 + f1))
+                      redx3 : Fin.toℕ (Fin.reduce≥ x3r x3rge) ≡ sA1 + f1
+                      redx3 = toℕ-reduce≥ x3r x3rge ■ cong (Nat._∸ sA2) x3rN ■ Nat.m+n∸m≡n sA2 (sA1 + f1)
+                      midlo : sA1 Nat.≤ Fin.toℕ (Fin.reduce≥ x3r x3rge)
+                      midlo = subst (sA1 Nat.≤_) (sym redx3) (Nat.m≤m+n sA1 f1)
+                      midhi : Fin.toℕ (Fin.reduce≥ x3r x3rge) Nat.< sA1 + sB1
+                      midhi = subst (Nat._< sA1 + sB1) (sym redx3) (Nat.+-monoʳ-< sA1 f1ltB1)
+              z2f = assocSwapᵣ sA2 sB1 z1f
+              z2 : Fin.toℕ z2f ≡ f1
+              z2 = toℕ-assoc-mid sA2 sB1 z1f (subst (sA2 Nat.≤_) (sym z1) (Nat.m≤m+n sA2 f1))
+                     (subst (Nat._< sA2 + sB1) (sym z1) (Nat.+-monoʳ-< sA2 f1ltB1))
+                 ■ cong (Nat._∸ sA2) z1 ■ Nat.m+n∸m≡n sA2 f1
+              z3 : Fin.toℕ ((((assocSwapᵣ sA1 2 ↑* sA2) ·ₖ assocSwapᵣ sA2 2) ↑* sB1) z2f) ≡ Fin.toℕ z2f
+              z3 = toℕ-↑*-lt ((assocSwapᵣ sA1 2 ↑* sA2) ·ₖ assocSwapᵣ sA2 2) sB1 z2f (subst (Nat._< sB1) (sym z2) f1ltB1)
       B3 : sB2 + sB1 Nat.≤ f → Fin.toℕ (Ωᵗ x3) ≡ f
-      B3 ge21 = {! B3 !}
+      B3 ge21 = toℕ-↑*-ge _ sB2 x3 x3q ■ cong (sB2 +_) omN ■ f2eq
+        where
+          f2 = f Nat.∸ (sB2 + sB1)
+          f2eqB : (sB2 + sB1) + f2 ≡ f
+          f2eqB = Nat.m+[n∸m]≡n ge21
+          f2lt2 : f2 Nat.< 2
+          f2lt2 = Nat.+-cancelˡ-< (sB2 + sB1) f2 2 (subst (Nat._< (sB2 + sB1) + 2) (sym f2eqB)
+                    (subst (f Nat.<_) (sym (Nat.+-assoc sB2 sB1 2)) fltBpre))
+          ge2 : sB2 Nat.≤ f
+          ge2 = Nat.≤-trans (Nat.m≤m+n sB2 sB1) ge21
+          f2eq : sB2 + (sB1 + f2) ≡ f
+          f2eq = sym (Nat.+-assoc sB2 sB1 f2) ■ f2eqB
+          -- ρaccᵗ on xrB (=2+f) ; f≥sB2+sB1 -> f
+          asN : Fin.toℕ (assocSwapᵣ 2 sB2 xrB) ≡ 2 + f
+          asN = toℕ-assoc-ge 2 sB2 xrB (subst (2 + sB2 Nat.≤_) (sym xrBN) (Nat.+-monoʳ-≤ 2 ge2)) ■ xrBN
+          asge : sB2 Nat.≤ Fin.toℕ (assocSwapᵣ 2 sB2 xrB)
+          asge = subst (sB2 Nat.≤_) (sym asN) (Nat.≤-trans (Nat.m≤n+m sB2 2) (Nat.+-monoʳ-≤ 2 ge2))
+          asr = Fin.reduce≥ (assocSwapᵣ 2 sB2 xrB) asge
+          asrN : Fin.toℕ asr ≡ 2 + (sB1 + f2)
+          asrN = toℕ-reduce≥ (assocSwapᵣ 2 sB2 xrB) asge ■ cong (Nat._∸ sB2) asN ■ reassoc
+            where open +-*-Solver
+                  reassoc : (2 + f) Nat.∸ sB2 ≡ 2 + (sB1 + f2)
+                  reassoc = cong (Nat._∸ sB2) (cong (2 +_) (sym f2eq) ■ solve 3 (λ b2 b1 t → con 2 :+ (b2 :+ (b1 :+ t)) := b2 :+ (con 2 :+ (b1 :+ t))) refl sB2 sB1 f2) ■ Nat.m+n∸m≡n sB2 (2 + (sB1 + f2))
+          -- ra_inner on (2+(sB1+f2)) : aS(2,sB1) ge ; (aS(2,2)↑sB1) ge reduce ; aS(2,2) mid -> sB1+f2
+          rai-asN : Fin.toℕ (assocSwapᵣ 2 sB1 asr) ≡ 2 + (sB1 + f2)
+          rai-asN = toℕ-assoc-ge 2 sB1 asr (subst (2 + sB1 Nat.≤_) (sym asrN) (Nat.+-monoʳ-≤ 2 (Nat.m≤m+n sB1 f2))) ■ asrN
+          raisge : sB1 Nat.≤ Fin.toℕ (assocSwapᵣ 2 sB1 asr)
+          raisge = subst (sB1 Nat.≤_) (sym rai-asN) (Nat.≤-trans (Nat.m≤n+m sB1 2) (Nat.+-monoʳ-≤ 2 (Nat.m≤m+n sB1 f2)))
+          raisr = Fin.reduce≥ (assocSwapᵣ 2 sB1 asr) raisge
+          raisrN : Fin.toℕ raisr ≡ 2 + f2
+          raisrN = toℕ-reduce≥ (assocSwapᵣ 2 sB1 asr) raisge ■ cong (Nat._∸ sB1) rai-asN ■ reassoc
+            where open +-*-Solver
+                  reassoc : (2 + (sB1 + f2)) Nat.∸ sB1 ≡ 2 + f2
+                  reassoc = cong (Nat._∸ sB1) (solve 2 (λ b1 t → con 2 :+ (b1 :+ t) := b1 :+ (con 2 :+ t)) refl sB1 f2) ■ Nat.m+n∸m≡n sB1 (2 + f2)
+          raiN : Fin.toℕ (ra-inner asr) ≡ sB1 + f2
+          raiN = toℕ-↑*-ge (assocSwapᵣ 2 2 {n}) sB1 (assocSwapᵣ 2 sB1 asr) raisge
+               ■ cong (sB1 +_) (toℕ-assoc-mid 2 2 raisr (subst (2 Nat.≤_) (sym raisrN) (Nat.m≤m+n 2 f2)) (subst (Nat._< 2 + 2) (sym raisrN) (Nat.+-monoʳ-< 2 f2lt2)) ■ cong (Nat._∸ 2) raisrN ■ Nat.m+n∸m≡n 2 f2)
+          ρe : Fin.toℕ (ρaccᵗ xrB) ≡ f
+          ρe = toℕ-↑*-ge ra-inner sB2 (assocSwapᵣ 2 sB2 xrB) asge ■ cong (sB2 +_) raiN ■ f2eq
+          x1N : Fin.toℕ x1 ≡ sA2 + (sA1 + f)
+          x1N = toℕ-↑*-ge (ρaccᵗ ↑* sA1) sA2 x a2le
+              ■ cong (sA2 +_) (toℕ-↑*-ge ρaccᵗ sA1 xrA xrAge ■ cong (sA1 +_) ρe)
+          a2lex1 : sA2 Nat.≤ Fin.toℕ x1
+          a2lex1 = subst (sA2 Nat.≤_) (sym x1N) (Nat.m≤m+n sA2 (sA1 + f))
+          redf : Fin.toℕ (Fin.reduce≥ x1 a2lex1) ≡ sA1 + f
+          redf = toℕ-reduce≥ x1 a2lex1 ■ cong (Nat._∸ sA2) x1N ■ Nat.m+n∸m≡n sA2 (sA1 + f)
+          x2N : Fin.toℕ x2 ≡ sA2 + (sA1 + f)
+          x2N = toℕ-↑*-ge (assocSwapᵣ sA1 sB2) sA2 x1 a2lex1
+              ■ cong (sA2 +_) (toℕ-assoc-ge sA1 sB2 (Fin.reduce≥ x1 a2lex1)
+                  (subst (sA1 + sB2 Nat.≤_) (sym redf) (Nat.+-monoʳ-≤ sA1 ge2)) ■ redf)
+          x3N : Fin.toℕ x3 ≡ sA2 + (sA1 + f)
+          x3N = toℕ-assoc-ge sA2 sB2 x2 (subst (sA2 + sB2 Nat.≤_) (sym x2N)
+                  (Nat.+-monoʳ-≤ sA2 (Nat.≤-trans (Nat.m≤n+m sB2 sA1) (Nat.+-monoʳ-≤ sA1 ge2)))) ■ x2N
+          x3q : sB2 Nat.≤ Fin.toℕ x3
+          x3q = subst (sB2 Nat.≤_) (sym x3N) (Nat.≤-trans (Nat.m≤n+m sB2 (sA2 + sA1)) (Nat.≤-trans (Nat.+-monoʳ-≤ (sA2 + sA1) ge2) (Nat.≤-reflexive (Nat.+-assoc sA2 sA1 f))))
+          x3r = Fin.reduce≥ x3 x3q
+          x3rN : Fin.toℕ x3r ≡ sA2 + (sA1 + (sB1 + f2))
+          x3rN = toℕ-reduce≥ x3 x3q ■ cong (Nat._∸ sB2) x3N ■ reassoc
+            where open +-*-Solver
+                  reassoc : (sA2 + (sA1 + f)) Nat.∸ sB2 ≡ sA2 + (sA1 + (sB1 + f2))
+                  reassoc = cong (Nat._∸ sB2) (cong (λ z → sA2 + (sA1 + z)) (sym f2eq) ■ solve 4 (λ a2 a1 b2 t → a2 :+ (a1 :+ (b2 :+ t)) := b2 :+ (a2 :+ (a1 :+ t))) refl sA2 sA1 sB2 (sB1 + f2)) ■ Nat.m+n∸m≡n sB2 (sA2 + (sA1 + (sB1 + f2)))
+          omN : Fin.toℕ (((assocSwapᵣ sA1 sB1 ↑* sA2)
+                          ·ₖ (assocSwapᵣ sA2 sB1 ·ₖ
+                              (((assocSwapᵣ sA1 2 ↑* sA2) ·ₖ assocSwapᵣ sA2 2) ↑* sB1))) x3r)
+                 ≡ sB1 + f2
+          omN = z3 ■ cong (sB1 +_) l2
+            where
+              x3rge : sA2 Nat.≤ Fin.toℕ x3r
+              x3rge = subst (sA2 Nat.≤_) (sym x3rN) (Nat.m≤m+n sA2 (sA1 + (sB1 + f2)))
+              z1f = (assocSwapᵣ sA1 sB1 ↑* sA2) x3r
+              z1 : Fin.toℕ z1f ≡ sA2 + (sA1 + (sB1 + f2))
+              z1 = toℕ-↑*-ge (assocSwapᵣ sA1 sB1) sA2 x3r x3rge
+                 ■ cong (sA2 +_) (toℕ-assoc-ge sA1 sB1 (Fin.reduce≥ x3r x3rge)
+                     (subst (sA1 + sB1 Nat.≤_) (sym redx3) (Nat.+-monoʳ-≤ sA1 (Nat.m≤m+n sB1 f2))) ■ redx3)
+                where redx3 : Fin.toℕ (Fin.reduce≥ x3r x3rge) ≡ sA1 + (sB1 + f2)
+                      redx3 = toℕ-reduce≥ x3r x3rge ■ cong (Nat._∸ sA2) x3rN ■ Nat.m+n∸m≡n sA2 (sA1 + (sB1 + f2))
+              z2f = assocSwapᵣ sA2 sB1 z1f
+              z2 : Fin.toℕ z2f ≡ sA2 + (sA1 + (sB1 + f2))
+              z2 = toℕ-assoc-ge sA2 sB1 z1f (subst (sA2 + sB1 Nat.≤_) (sym z1)
+                     (Nat.+-monoʳ-≤ sA2 (Nat.≤-trans (Nat.m≤n+m sB1 sA1) (Nat.+-monoʳ-≤ sA1 (Nat.m≤m+n sB1 f2))))) ■ z1
+              z2q : sB1 Nat.≤ Fin.toℕ z2f
+              z2q = subst (sB1 Nat.≤_) (sym z2) (Nat.≤-trans (Nat.m≤n+m sB1 (sA2 + sA1)) (Nat.≤-trans (Nat.+-monoʳ-≤ (sA2 + sA1) (Nat.m≤m+n sB1 f2)) (Nat.≤-reflexive (Nat.+-assoc sA2 sA1 (sB1 + f2)))))
+              z2r = Fin.reduce≥ z2f z2q
+              z2rN : Fin.toℕ z2r ≡ sA2 + (sA1 + f2)
+              z2rN = toℕ-reduce≥ z2f z2q ■ cong (Nat._∸ sB1) z2 ■ reassoc
+                where open +-*-Solver
+                      reassoc : (sA2 + (sA1 + (sB1 + f2))) Nat.∸ sB1 ≡ sA2 + (sA1 + f2)
+                      reassoc = cong (Nat._∸ sB1) (solve 4 (λ a2 a1 b1 t → a2 :+ (a1 :+ (b1 :+ t)) := b1 :+ (a2 :+ (a1 :+ t))) refl sA2 sA1 sB1 f2) ■ Nat.m+n∸m≡n sB1 (sA2 + (sA1 + f2))
+              -- L3 on z2r (= sA2+(sA1+f2)) : aS(sA1,2) mid -> f2 ; aS(sA2,2) mid -> f2
+              z2rge : sA2 Nat.≤ Fin.toℕ z2r
+              z2rge = subst (sA2 Nat.≤_) (sym z2rN) (Nat.m≤m+n sA2 (sA1 + f2))
+              l1f = (assocSwapᵣ sA1 2 ↑* sA2) z2r
+              l1 : Fin.toℕ l1f ≡ sA2 + f2
+              l1 = toℕ-↑*-ge (assocSwapᵣ sA1 2) sA2 z2r z2rge
+                 ■ cong (sA2 +_) (toℕ-assoc-mid sA1 2 (Fin.reduce≥ z2r z2rge) midlo midhi ■ cong (Nat._∸ sA1) redz ■ Nat.m+n∸m≡n sA1 f2)
+                where redz : Fin.toℕ (Fin.reduce≥ z2r z2rge) ≡ sA1 + f2
+                      redz = toℕ-reduce≥ z2r z2rge ■ cong (Nat._∸ sA2) z2rN ■ Nat.m+n∸m≡n sA2 (sA1 + f2)
+                      midlo : sA1 Nat.≤ Fin.toℕ (Fin.reduce≥ z2r z2rge)
+                      midlo = subst (sA1 Nat.≤_) (sym redz) (Nat.m≤m+n sA1 f2)
+                      midhi : Fin.toℕ (Fin.reduce≥ z2r z2rge) Nat.< sA1 + 2
+                      midhi = subst (Nat._< sA1 + 2) (sym redz) (Nat.+-monoʳ-< sA1 f2lt2)
+              l2 : Fin.toℕ (assocSwapᵣ sA2 2 l1f) ≡ f2
+              l2 = toℕ-assoc-mid sA2 2 l1f (subst (sA2 Nat.≤_) (sym l1) (Nat.m≤m+n sA2 f2))
+                     (subst (Nat._< sA2 + 2) (sym l1) (Nat.+-monoʳ-< sA2 f2lt2))
+                 ■ cong (Nat._∸ sA2) l1 ■ Nat.m+n∸m≡n sA2 f2
+              z3 : Fin.toℕ ((((assocSwapᵣ sA1 2 ↑* sA2) ·ₖ assocSwapᵣ sA2 2) ↑* sB1) z2f) ≡ sB1 + Fin.toℕ (assocSwapᵣ sA2 2 l1f)
+              z3 = toℕ-↑*-ge ((assocSwapᵣ sA1 2 ↑* sA2) ·ₖ assocSwapᵣ sA2 2) sB1 z2f z2q
       Φ-B-body : Fin.toℕ (Ωᵗ x3) ≡ f
       Φ-B-body with Nat.<-cmp f sB2 | Nat.<-cmp f (sB2 + sB1)
       ... | tri< flt2 _ _ | _ = B1 flt2
