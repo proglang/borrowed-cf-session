@@ -19,6 +19,10 @@ module BorrowedCF.Simulation2.Reverse where
 open import BorrowedCF.Simulation2.Base
 open import BorrowedCF.Simulation2.TranslationProperties
   using (≡→≋; U-cong)
+-- Reusable reverse-direction inversion helpers (channel-var contradictions,
+-- value reflection) live in BorrowedCF.Simulation2.ReverseInv; the typed
+-- expression-reduction reflection they feed (⋯→-reflect) is blocked on
+-- frame-plug non-invertibility, so RU-Exp below carries that single residual.
 import Data.Sum as Sum
 import BorrowedCF.Processes.Typed             as TP
 import BorrowedCF.Processes.Untyped           as UP
@@ -184,8 +188,15 @@ sim← σ Vσ Γ-S ⊢P red = sim←ᵍ σ Vσ Γ-S ⊢P refl red
 --   above as value-↛ / value-no-head / value-⋯⁻¹ (these ARE the pieces a typed
 --   reflection reuses); the typed reflection itself is the remaining work.
 ------------------------------------------------------------------------
-sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Exp {e₁ = e₁} {e₂ = e₂} step) =
-  {! RU-Exp: invert eq via inv-U-⟪⟫ (P=⟪e₀⟫, e₁≡e₀⋯σ); reflect e₀⋯σ ⋯→ e₂ to e₀ ⋯→ e₀′ with e₂≡e₀′⋯σ (reverse of Frames.⋯→-⋯ₛ — NOT in codebase); conclude TR.R-Exp. !}
+sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Exp {e₁ = e₁} {e₂ = e₂} step)
+  with e₀ , refl , refl ← inv-U-⟪⟫ P σ (sym eq) =
+  -- inversion done: P = ⟪ e₀ ⟫, e₁ ≡ e₀ ⋯ σ, ⊢e₀ = inv-⟪⟫ ⊢P, step : e₀ ⋯ σ ⋯→ e₂.
+  -- RESIDUAL = the typed reflection  ⋯→-reflect e₀ (inv-⟪⟫ ⊢P) Γ-S σ Vσ step :
+  --   Σ e₀′. (e₀ ⋯→ e₀′) × (e₂ ≡ e₀′ ⋯ σ), then  ⟪ e₀′ ⟫ , TR.R-Exp _ , ≡→≋ (cong ⟪_⟫ _).
+  -- ReverseInv has every SOUND ingredient (value-step, value-⋯⁻¹, var-app-absurd,
+  -- chanvar-not*) hole-free; only the frame-plug inversion (E-Ctx split is
+  -- UnificationStuck — _[_] is not constructor-headed) blocks the final assembly.
+  {! RU-Exp residual: ⋯→-reflect (frame-plug inversion via unique-frame) !}
 
 ------------------------------------------------------------------------
 -- RU-Par : R = A ∥ B and A steps.  eq + inv-U-∥ gives P = P₁ ∥ P₂ with
@@ -231,8 +242,11 @@ sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-LSplit F) =
   {! RU-LSplit → TR.R-LSplit: inv-U-ν + recognise the U[_]-image of the lsplit redex inside the φ-nest. Design point: B-shape / SplitRenamings.inj alignment (cf. forward LSplit.agda). !}
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-RSplit F) =
   {! RU-RSplit → TR.R-RSplit: inv-U-ν + φ-drop allocation match (RSplit allocates a fresh unset φ). Design point: 1∷suc b₁ binder insertion. !}
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Drop F) =
-  {! RU-Drop → TR.R-Drop: φ drop→acq flag flip. inv-U-ν + b₁=0 alignment / RU-Cleanup interplay (see forward R-Drop blocker). Genuinely delicate. !}
+-- RU-Drop : R = φ drop (…).  φ-headed, so vacuous at top level (U[_] heads with
+-- ⟪⟫/∥/ν only); only reachable under an inner RU-Sync/RU-Res recursion.
+sim←ᵍ σ Vσ Γ-S {P = TP.⟪ e ⟫}     ⊢P () (UR.RU-Drop F)
+sim←ᵍ σ Vσ Γ-S {P = P TP.∥ Q}     ⊢P () (UR.RU-Drop F)
+sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Drop F)
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Acquire F) =
   {! RU-Acquire → TR.R-Acq: φ acq→done. inv-U-ν + zero∷suc b₁ binder shape + done-flag handling (RU-Cleanup pairs with it). !}
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Close F₁ F₂) =
@@ -241,8 +255,12 @@ sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Com F₁ F₂ V) =
   {! RU-Com → TR.R-Com: send/recv rendezvous. inv-U-ν + BindCtx typing + frame-plug*; HARDEST — mirror forward Com.agda (962 ln) in reverse. !}
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Choice F₁ F₂ k) =
   {! RU-Choice → TR.R-Choice: select/branch. inv-U-ν + BindCtx typing + frame-plug*, like RU-Com. !}
-sim←ᵍ σ Vσ Γ-S ⊢P eq UR.RU-Cleanup =
-  {! RU-Cleanup: φ done P → P⋯⦅*⦆ₛ. Image-side bookkeeping of TR.R-Discard / a no-op typed step. Needs the done-flag lifecycle design point. !}
+-- RU-Cleanup : R = φ done P.  U[_] never heads with φ (clauses are ⟪⟫/∥/ν), so
+-- eq : φ done P ≡ U[ Pₛ ] σ is absurd by case on Pₛ.  VACUOUS at top level
+-- (only reachable under an inner RU-Res recursion, where the φ is real).
+sim←ᵍ σ Vσ Γ-S {P = TP.⟪ e ⟫}     ⊢P () UR.RU-Cleanup
+sim←ᵍ σ Vσ Γ-S {P = P TP.∥ Q}     ⊢P () UR.RU-Cleanup
+sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () UR.RU-Cleanup
 
 ------------------------------------------------------------------------
 -- RU-Struct : R ≋ R′ ─→ₚ Q′ ≋ Q.  To reflect this we need the REVERSE of U-≋
