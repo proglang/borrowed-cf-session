@@ -660,7 +660,7 @@ U-drop {m} {n} σ Vσ Γ-S {b₁ = suc b₁} {B₁ = C@(_ ∷ _)} {B₂ = B₂} 
   = ⊥-elim (¬Ss (retTip-Sc-skips rt-borrow head≃ret))
   where
     head≃ret : s1ʰ ≃ ret
-    head≃ret = ⟨⟩≃ (≃-trans (≃-reflexive (sym (sym (Γ≗1 0F) ■ Γ≗ 0F))) (drop-handle-≃ret ⊢plug))
+    head≃ret = ⟨⟩≃ (≃-trans (≃-reflexive (sym (sym (Γ≗ 0F) ■ sym (Γ≗1 0F)))) (drop-handle-≃ret ⊢plug))
     noRet-sh : NoRet sh
     noRet-sh = noRet-;-fst (noRet-≃ (EqC.symmetric _≃𝕊_ scra) (noRet-front-last N))
     rt-borrow : RetTip (s1ʰ ; s2ʰ)
