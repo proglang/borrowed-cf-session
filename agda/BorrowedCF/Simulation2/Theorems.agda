@@ -17,6 +17,8 @@ open import BorrowedCF.Simulation2.Base
 open import BorrowedCF.Simulation2.Frames using (⋯→-⋯ₛ; frame-plug*; frame*-⋯; ++ₛ-VSub; weaken-VSub)
 open import BorrowedCF.Simulation2.Congruence using (U-≋)
 open import BorrowedCF.Simulation2.Theorems.Choice using (U-choice)
+open import BorrowedCF.Simulation2.Theorems.Drop using (U-drop)
+open import BorrowedCF.Simulation2.Theorems.Com using (U-com)
 open import BorrowedCF.Simulation2.TranslationProperties using (≡→≋; UB-cong-─→; UB-cong; ≋-subst; ─→-subst; Value-subst; chanTriple-V; VChan; U-⋯ₚ; U-cong)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
 import Data.Sum as Sum
@@ -285,8 +287,8 @@ sim→ σ Vσ Γ-S ⊢P (TR.R-New E) =
 -- R-Com: send/recv rendezvous across the binder.  Needs WELL-TYPEDNESS (inv-ν +
 --   the BindCtx chain to fix the recv channel index), frame-plug*, and the U[ν…]
 --   telescope unfold → RU-Com.  cf. old Simulation/Theorems/Com.agda.
-sim→ σ Vσ Γ-S ⊢P (TR.R-Com V) =
-  inj₁ {! R-Com → RU-Com: needs typing (inv-ν/BindCtx) + frame-plug*; cf. Simulation/Theorems/Com.agda !}
+sim→ σ Vσ Γ-S ⊢P (TR.R-Com {b₁} {b₂} {B₁} {B₂} {P} {e} {E₁} {E₂} V) =
+  U-com σ Vσ Γ-S {E₁ = E₁} {E₂ = E₂} V ⊢P
 
 -- R-Choice: select/branch rendezvous → RU-Choice.  Wired to Theorems.Choice.U-choice.
 --   U[_] is non-injective, so bind E₁/E₂/i (and b₁/b₂/B₁/B₂/P) explicitly and feed
@@ -324,8 +326,8 @@ sim→ σ Vσ Γ-S ⊢P TR.R-RSplit =
 -- cannot be imported.  BLOCKED: needs that subsystem PORTED to the new defs
 -- (out of this module's edit scope) — the typing-confinement (acq-confine /
 -- HandleCount) plus the leaf transpose.
-sim→ σ Vσ Γ-S ⊢P TR.R-Drop =
-  inj₁ {! R-Drop → RU-Drop: needs ported acq-confine/HandleCount (chanTriple junction-flag = drop) + binder-order transpose to the leaf; old Simulation confine subsystem does not typecheck against reworked Processes.Typed !}
+sim→ σ Vσ Γ-S ⊢P (TR.R-Drop {b₁} {B₁} {B₂} {P} {E}) =
+  U-drop σ Vσ Γ-S {E = E} ⊢P
 
 -- R-Acq.  Goal (?6):
 --   U[ ν (zero ∷ suc b₁ ∷ B₁) B₂ (⟪ E[ acq·(`0F) ] ⟫ ∥ P) ] σ
