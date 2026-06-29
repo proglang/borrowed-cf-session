@@ -20,9 +20,9 @@ open import BorrowedCF.Simulation2.Base
 open import BorrowedCF.Simulation2.TranslationProperties
   using (≡→≋; U-cong)
 -- Reusable reverse-direction inversion helpers (channel-var contradictions,
--- value reflection) live in BorrowedCF.Simulation2.ReverseInv; the typed
--- expression-reduction reflection they feed (⋯→-reflect) is blocked on
--- frame-plug non-invertibility, so RU-Exp below carries that single residual.
+-- value reflection, and the typed expression-reduction reflection ⋯→-reflect
+-- that powers RU-Exp) live in BorrowedCF.Simulation2.ReverseInv.
+open import BorrowedCF.Simulation2.ReverseInv using (⋯→-reflect)
 import Data.Sum as Sum
 import BorrowedCF.Processes.Typed             as TP
 import BorrowedCF.Processes.Untyped           as UP
@@ -189,14 +189,13 @@ sim← σ Vσ Γ-S ⊢P red = sim←ᵍ σ Vσ Γ-S ⊢P refl red
 --   reflection reuses); the typed reflection itself is the remaining work.
 ------------------------------------------------------------------------
 sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Exp {e₁ = e₁} {e₂ = e₂} step)
-  with e₀ , refl , refl ← inv-U-⟪⟫ P σ (sym eq) =
-  -- inversion done: P = ⟪ e₀ ⟫, e₁ ≡ e₀ ⋯ σ, ⊢e₀ = inv-⟪⟫ ⊢P, step : e₀ ⋯ σ ⋯→ e₂.
-  -- RESIDUAL = the typed reflection  ⋯→-reflect e₀ (inv-⟪⟫ ⊢P) Γ-S σ Vσ step :
-  --   Σ e₀′. (e₀ ⋯→ e₀′) × (e₂ ≡ e₀′ ⋯ σ), then  ⟪ e₀′ ⟫ , TR.R-Exp _ , ≡→≋ (cong ⟪_⟫ _).
-  -- ReverseInv has every SOUND ingredient (value-step, value-⋯⁻¹, var-app-absurd,
-  -- chanvar-not*) hole-free; only the frame-plug inversion (E-Ctx split is
-  -- UnificationStuck — _[_] is not constructor-headed) blocks the final assembly.
-  {! RU-Exp residual: ⋯→-reflect (frame-plug inversion via unique-frame) !}
+  with e₀ , refl , refl ← inv-U-⟪⟫ P σ (sym eq)
+  -- P = ⟪ e₀ ⟫, e₁ ≡ e₀ ⋯ σ, step : e₀ ⋯ σ ⋯→ e₂.  Reflect the substituted step
+  -- back to a source step via the typed reflection (ReverseInv.⋯→-reflect): the
+  -- source typing inv-⟪⟫ ⊢P + ChanCx Γ-S rule out a VSub manufacturing a head
+  -- redex at a channel-typed variable.
+  with e₀′ , s , refl ← ⋯→-reflect Γ-S e₀ (inv-⟪⟫ ⊢P) σ Vσ step =
+  TP.⟪ e₀′ ⟫ , TR.R-Exp s , ε
 
 ------------------------------------------------------------------------
 -- RU-Par : R = A ∥ B and A steps.  eq + inv-U-∥ gives P = P₁ ∥ P₂ with
@@ -212,13 +211,21 @@ sim←ᵍ σ Vσ Γ-S {P = P₁ TP.∥ P₂}   ⊢P refl (UR.RU-Par sub)
   P₁′ TP.∥ P₂ , TR.R-Par step₁ , UP.∥-cong c₁ ε
 
 ------------------------------------------------------------------------
--- RU-Res : R = ν X and X steps.  eq + inv-U-ν gives P = ν B₁ B₂ P₀.  The inner
---   step happens under the φ-telescope at the big UB-composite substitution;
---   the IH must be applied at THAT σ, and the result re-wrapped to TR.R-Bind.
---   PARTIAL: needs inv-U-ν exposing the body precisely + UB substitution algebra.
+-- RU-Res : R = ν X and X steps (sub : X ─→ₚ X′).  inv-U-ν (now PROVEN with its
+--   body) gives P = ν B₁ B₂ P₀ and ν X ≡ U[ ν B₁ B₂ P₀ ] σ, pinning X to the
+--   φ-telescope  UB[B₁] (*,0,*) (UB[B₂] (…) (U[ P₀ ] bigσ))  of depth
+--   syncs B₁ + syncs B₂.  RESIDUAL = φ-nest peeling: the inner step `sub` may
+--   fire (a) inside U[ P₀ ] bigσ — reflect via the IH at bigσ and re-wrap to
+--   TR.R-Bind — OR (b) on one of the administrative φ sync cells (RU-Sync /
+--   RU-Drop / RU-Acquire / RU-Cleanup), which has NO typed counterpart at the
+--   ν B₁ B₂ binder.  So a faithful reflection needs a decomposition lemma
+--     (φ-nest) ─→ₚ X′  ⇒  (inner step on U[P₀]bigσ reflectable) ⊎ (admin φ move),
+--   i.e. the same φ-nest engine the forward channel-op cases use, run in reverse.
+--   When syncs B₁ = syncs B₂ = 0 (no φ binders) the nest IS U[ P₀ ] bigσ and the
+--   IH applies directly; the general case is the open work.
 ------------------------------------------------------------------------
 sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Res {Q = X′} sub) =
-  {! RU-Res: inv-U-ν P σ eq → P=ν B₁ B₂ P₀; recurse under the φ-telescope at the UB-composite σ; rewrap TR.R-Bind. Needs inv-U-ν body + UB σ-algebra. !}
+  {! RU-Res: φ-nest peeling — IH at U[P₀]bigσ then TR.R-Bind, vs administrative φ moves with no typed image. Needs the reverse φ-nest decomposition (UB σ-algebra). !}
 
 ------------------------------------------------------------------------
 -- RU-Sync : R = φ x P′.  But U[_] never heads with φ (clauses are ⟪⟫/∥/ν), so
@@ -234,10 +241,19 @@ sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Sync sub)
 -- σ via eq) to a specific ν/φ + frame shape; inverting through U[_] to the
 -- source redex is the hard work.  Left as noted holes.
 ------------------------------------------------------------------------
+-- RU-Fork / RU-New : thread redexes.  inv-U-⟪⟫ gives P = ⟪ e₀ ⟫ with
+--   e₀ ⋯ σ ≡ F [ K fork · e ]* (resp. F [ K (new s) · * ]*).  RESIDUAL = a
+--   frame-plug reflection through σ: recover a source frame F₀ and source redex
+--   with e₀ ≡ F₀ [ K fork · e′ ]*, F ≡ frame*-⋯ F₀ σ, e ≡ e′ ⋯ σ.  This is the
+--   Frame* analogue of ReverseInv.⋯→-reflect (induct on e₀, peel each frame via
+--   the head-shape inversions, refute a var head via var-app-absurd); fork/new
+--   are structural constants so never appear in σ's channel image.  Then
+--   TR.R-Fork / TR.R-New, with U-cong wrapping the result (New also needs the
+--   reverse of the forward rnew-bridge ν(φacq(φacq …)) ≋ U[ν(0∷1)(0∷1)…]).
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Fork F V) =
-  {! RU-Fork → TR.R-Fork: inv-U-⟪⟫ + frame*-plug inversion (recognise U[⟪F[fork·e]⟫]); same frame-plug bridge as forward R-Fork. !}
+  {! RU-Fork → TR.R-Fork: frame*-plug reflection through σ (Frame* analogue of ⋯→-reflect). !}
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-New F) =
-  {! RU-New → TR.R-New: inv-U-⟪⟫ + frame*-plug inversion + reverse of forward rnew-bridge (ν(φacq(φacq …)) ≋ U[ν(0∷1∷[])(0∷1∷[])…]). !}
+  {! RU-New → TR.R-New: frame*-plug reflection through σ + reverse rnew-bridge. !}
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-LSplit F) =
   {! RU-LSplit → TR.R-LSplit: inv-U-ν + recognise the U[_]-image of the lsplit redex inside the φ-nest. Design point: B-shape / SplitRenamings.inj alignment (cf. forward LSplit.agda). !}
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-RSplit F) =
@@ -263,11 +279,24 @@ sim←ᵍ σ Vσ Γ-S {P = P TP.∥ Q}     ⊢P () UR.RU-Cleanup
 sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () UR.RU-Cleanup
 
 ------------------------------------------------------------------------
--- RU-Struct : R ≋ R′ ─→ₚ Q′ ≋ Q.  To reflect this we need the REVERSE of U-≋
---   (a source ≋ whose image is the given untyped ≋), then ⊢-≋ to retype and
---   recurse.  U-≋ lives in Simulation2.Congruence which we MAY NOT import here.
---   HOLE: needs reverse-U-≋ : R ≋ U[ P ] σ → Σ P₀. R ≡ U[ P₀ ] σ × P ≋ P₀ (or a
---   ≋-variant), then ⊢-≋ + recurse + stitch c₂.
+-- RU-Struct : R ≋ R′, inner : R′ ─→ₚ Q′, c₂ : Q′ ≋ Q  ⊢  R ─→ₚ Q.
+--
+--   VERDICT (investigated): NOT provable at the current sim← granularity, and
+--   the obstruction is on the INPUT ≋ (c₁), not the output.  The output slack is
+--   fine — given a source step P ─→ₚ P′ with Q′ ≋ U[ P′ ] σ, transitivity
+--   Q ≋ Q′ ≋ U[ P′ ] σ (gmap/◅◅) absorbs c₂.  But to run the IH on `inner` we
+--   need R′ to be the translation image U[ P₀ ] σ of SOME source P₀ with P
+--   suitably related to P₀ — i.e. a REVERSE-U-≋ lemma
+--       R ≋ S → Σ P₀. (S ≡ U[ P₀ ] σ) × (P ≋ P₀ source-side)
+--   and this is FALSE in general: untyped ≋ contains φ-nest administrative moves
+--   (ν-swap / ν-comm transposing φ-binders, φ-cong) that carry U[ P ] σ to
+--   processes NOT literally in the U[_] image, so S need not factor as U[ P₀ ] σ.
+--   The honest fixes (do NOT apply here — they change the sim← statement, which
+--   is owned upstream): (a) strengthen the codomain to reduction-up-to-≋ on BOTH
+--   sides (replace Q ≋ U[P′]σ by ∃ S. P ─→ₚ P′ × U[P′]σ ≋ S ≋ Q and let the
+--   relation be ≋-closed on the left), or (b) prove a confluence/normalisation
+--   lemma that every R ≋ U[P]σ reduces iff its U[_]-normal form does.  Either is
+--   a design change beyond Reverse.agda; flagged for the statement owner.
 ------------------------------------------------------------------------
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Struct c₁ inner c₂) =
-  {! RU-Struct: needs reverse of U-≋ (Simulation2.Congruence, currently unimportable) + ⊢-≋ retype + recurse + stitch c₂. !}
+  {! RU-Struct: blocked on reverse-U-≋ (FALSE in general — φ-nest admin ≋ leaves the U[_] image). Needs a sim← codomain strengthening (reduction-up-to-≋ on both sides); see note above. !}

@@ -19,6 +19,8 @@ open import BorrowedCF.Simulation2.Base
 open import BorrowedCF.Context using (Ctx; Struct)
 
 open import BorrowedCF.Types using (_≃_; ⟨_⟩; ≃-sym)
+import BorrowedCF.Simulation2.InvFrame as IF
+import Data.Sum as Sum
 
 open Variables
 open Fin.Patterns
@@ -63,6 +65,21 @@ var-app-absurd Γ-S (T-AppRight _ _ ⊢f _) = chanvar-notArr Γ-S ⊢f
 var-app-absurd Γ-S (T-Conv _ _ d) = var-app-absurd Γ-S d
 var-app-absurd Γ-S (T-Weaken _ d) = var-app-absurd Γ-S d
 
+
+-- A channel-typed variable can never be the scrutinee of a well-typed let⊗ or
+-- case: those rules type the scrutinee at a pair / sum, contradicting ChanCx.
+var-letpair-absurd : ∀ {m} {Γ : Ctx m} {γ} {x : 𝔽 m} {e : Tm (2 + m)} {T ϵ}
+  → ChanCx Γ → Γ ; γ ⊢ `let⊗ (` x) `in e ∶ T ∣ ϵ → ⊥
+var-letpair-absurd Γ-S (T-LetPair _ ⊢x _) = chanvar-notPair Γ-S ⊢x
+var-letpair-absurd Γ-S (T-Conv _ _ d) = var-letpair-absurd Γ-S d
+var-letpair-absurd Γ-S (T-Weaken _ d) = var-letpair-absurd Γ-S d
+
+var-case-absurd : ∀ {m} {Γ : Ctx m} {γ} {x : 𝔽 m} {e₁ e₂ : Tm (suc m)} {T ϵ}
+  → ChanCx Γ → Γ ; γ ⊢ `case (` x) `of⟨ e₁ ; e₂ ⟩ ∶ T ∣ ϵ → ⊥
+var-case-absurd Γ-S (T-Case _ ⊢x _ _) = chanvar-notSum Γ-S ⊢x
+var-case-absurd Γ-S (T-Conv _ _ d) = var-case-absurd Γ-S d
+var-case-absurd Γ-S (T-Weaken _ d) = var-case-absurd Γ-S d
+
 ------------------------------------------------------------------------
 -- Value reflection helpers (foundational; also re-used by Reverse).
 ------------------------------------------------------------------------
@@ -106,3 +123,303 @@ value-step V (E-Ctx (`inj□  i) red)  with V
 ... | V-⊕ V' = value-step V' red
 value-step V (E-Ctx `case□`of⟨ _ ; _ ⟩ red) with V
 ... | ()
+
+------------------------------------------------------------------------
+-- Head-shape inversions of expression reduction _⋯→_.
+--
+--   _⋯→_ has two constructors (E-□ head, E-Ctx frame), neither indexed by the
+--   term's top constructor, so a direct `with` split on  (c …) ⋯→ e′  is
+--   UnificationStuck (the plug E [ e ] is not constructor-headed).  We
+--   generalise the LHS to a variable t with t ≡ c … , split, and discharge the
+--   wrong frames by the (now constructor-headed) equation.  These are the SOUND
+--   reverse of E-Ctx: a step at a head shape is either the head redex or a
+--   congruence into one operand.
+------------------------------------------------------------------------
+
+⋯→-app : {e₁ e₂ e′ : Tm n} → (e₁ · e₂) ⋯→ e′ →
+     (Σ[ b ∈ Tm (suc n) ] (e₁ ≡ ƛ b) × Value e₂ × (e′ ≡ b ⋯ ⦅ e₂ ⦆))
+   ⊎ (Σ[ e₁′ ∈ Tm n ] (e₁ ⋯→ e₁′) × (e′ ≡ e₁′ · e₂))
+   ⊎ (Value e₁ × Σ[ e₂′ ∈ Tm n ] (e₂ ⋯→ e₂′) × (e′ ≡ e₁ · e₂′))
+⋯→-app {e₁ = e₁} {e₂ = e₂} {e′ = e′} step = go _ step refl
+  where
+    go : (t : Tm _) → t ⋯→ e′ → t ≡ e₁ · e₂ →
+         (Σ[ b ∈ Tm (suc _) ] (e₁ ≡ ƛ b) × Value e₂ × (e′ ≡ b ⋯ ⦅ e₂ ⦆))
+       ⊎ (Σ[ e₁′ ∈ Tm _ ] (e₁ ⋯→ e₁′) × (e′ ≡ e₁′ · e₂))
+       ⊎ (Value e₁ × Σ[ e₂′ ∈ Tm _ ] (e₂ ⋯→ e₂′) × (e′ ≡ e₁ · e₂′))
+    go _ (E-□ (E-App V)) refl = inj₁ (_ , refl , V , refl)
+    go _ (E-Ctx (□· e₃) inner) refl = inj₂ (inj₁ (_ , inner , refl))
+    go _ (E-Ctx (V₁ ·□) inner) refl = inj₂ (inj₂ (V₁ , _ , inner , refl))
+
+⋯→-pair : {e₁ e₂ e′ : Tm n} → (e₁ ⊗ e₂) ⋯→ e′ →
+     (Σ[ e₁′ ∈ Tm n ] (e₁ ⋯→ e₁′) × (e′ ≡ e₁′ ⊗ e₂))
+   ⊎ (Value e₁ × Σ[ e₂′ ∈ Tm n ] (e₂ ⋯→ e₂′) × (e′ ≡ e₁ ⊗ e₂′))
+⋯→-pair {e₁ = e₁} {e₂ = e₂} {e′ = e′} step = go _ step refl
+  where
+    go : (t : Tm _) → t ⋯→ e′ → t ≡ e₁ ⊗ e₂ →
+         (Σ[ e₁′ ∈ Tm _ ] (e₁ ⋯→ e₁′) × (e′ ≡ e₁′ ⊗ e₂))
+       ⊎ (Value e₁ × Σ[ e₂′ ∈ Tm _ ] (e₂ ⋯→ e₂′) × (e′ ≡ e₁ ⊗ e₂′))
+    go _ (E-□ ()) refl
+    go _ (E-Ctx (□· e₃) inner) ()
+    go _ (E-Ctx (V₁ ·□) inner) ()
+    go _ (E-Ctx (□⊗ e₃) inner) refl = inj₁ (_ , inner , refl)
+    go _ (E-Ctx (V₁ ⊗□) inner) refl = inj₂ (V₁ , _ , inner , refl)
+    go _ (E-Ctx (□; e₃) inner) ()
+    go _ (E-Ctx (`let-`in e₃) inner) ()
+    go _ (E-Ctx (`let⊗-`in e₃) inner) ()
+    go _ (E-Ctx (`inj□ i) inner) ()
+    go _ (E-Ctx `case□`of⟨ f₁ ; f₂ ⟩ inner) ()
+
+⋯→-inj : {i : Side} {e e′ : Tm n} → (`inj i e) ⋯→ e′ →
+   Σ[ e₂ ∈ Tm n ] (e ⋯→ e₂) × (e′ ≡ `inj i e₂)
+⋯→-inj {i = i} {e = e} {e′ = e′} step = go _ step refl
+  where
+    go : (t : Tm _) → t ⋯→ e′ → t ≡ `inj i e →
+       Σ[ e₂ ∈ Tm _ ] (e ⋯→ e₂) × (e′ ≡ `inj i e₂)
+    go _ (E-□ ()) refl
+    go _ (E-Ctx (□· e₃) inner) ()
+    go _ (E-Ctx (V₁ ·□) inner) ()
+    go _ (E-Ctx (□⊗ e₃) inner) ()
+    go _ (E-Ctx (V₁ ⊗□) inner) ()
+    go _ (E-Ctx (□; e₃) inner) ()
+    go _ (E-Ctx (`let-`in e₃) inner) ()
+    go _ (E-Ctx (`let⊗-`in e₃) inner) ()
+    go _ (E-Ctx (`inj□ j) inner) refl = _ , inner , refl
+    go _ (E-Ctx `case□`of⟨ f₁ ; f₂ ⟩ inner) ()
+
+⋯→-seq : {e₁ e₂ e′ : Tm n} → (e₁ ; e₂) ⋯→ e′ →
+     (Value e₁ × (e′ ≡ e₂))
+   ⊎ (Σ[ e₁′ ∈ Tm n ] (e₁ ⋯→ e₁′) × (e′ ≡ e₁′ ; e₂))
+⋯→-seq {e₁ = e₁} {e₂ = e₂} {e′ = e′} step = go _ step refl
+  where
+    go : (t : Tm _) → t ⋯→ e′ → t ≡ e₁ ; e₂ →
+         (Value e₁ × (e′ ≡ e₂))
+       ⊎ (Σ[ e₁′ ∈ Tm _ ] (e₁ ⋯→ e₁′) × (e′ ≡ e₁′ ; e₂))
+    go _ (E-□ (E-Seq V)) refl = inj₁ (V , refl)
+    go _ (E-Ctx (□· e₃) inner) ()
+    go _ (E-Ctx (V₁ ·□) inner) ()
+    go _ (E-Ctx (□⊗ e₃) inner) ()
+    go _ (E-Ctx (V₁ ⊗□) inner) ()
+    go _ (E-Ctx (□; e₃) inner) refl = inj₂ (_ , inner , refl)
+    go _ (E-Ctx (`let-`in e₃) inner) ()
+    go _ (E-Ctx (`let⊗-`in e₃) inner) ()
+    go _ (E-Ctx (`inj□ i) inner) ()
+    go _ (E-Ctx `case□`of⟨ f₁ ; f₂ ⟩ inner) ()
+
+⋯→-let : {e₁ : Tm n} {e₂ : Tm (suc n)} {e′ : Tm n} → (`let e₁ `in e₂) ⋯→ e′ →
+     (Value e₁ × (e′ ≡ e₂ ⋯ ⦅ e₁ ⦆))
+   ⊎ (Σ[ e₁′ ∈ Tm n ] (e₁ ⋯→ e₁′) × (e′ ≡ `let e₁′ `in e₂))
+⋯→-let {e₁ = e₁} {e₂ = e₂} {e′ = e′} step = go _ step refl
+  where
+    go : (t : Tm _) → t ⋯→ e′ → t ≡ `let e₁ `in e₂ →
+         (Value e₁ × (e′ ≡ e₂ ⋯ ⦅ e₁ ⦆))
+       ⊎ (Σ[ e₁′ ∈ Tm _ ] (e₁ ⋯→ e₁′) × (e′ ≡ `let e₁′ `in e₂))
+    go _ (E-□ (E-Let V)) refl = inj₁ (V , refl)
+    go _ (E-Ctx (□· e₃) inner) ()
+    go _ (E-Ctx (V₁ ·□) inner) ()
+    go _ (E-Ctx (□⊗ e₃) inner) ()
+    go _ (E-Ctx (V₁ ⊗□) inner) ()
+    go _ (E-Ctx (□; e₃) inner) ()
+    go _ (E-Ctx (`let-`in e₃) inner) refl = inj₂ (_ , inner , refl)
+    go _ (E-Ctx (`let⊗-`in e₃) inner) ()
+    go _ (E-Ctx (`inj□ i) inner) ()
+    go _ (E-Ctx `case□`of⟨ f₁ ; f₂ ⟩ inner) ()
+
+⋯→-letpair : {e₁ : Tm n} {e₂ : Tm (suc (suc n))} {e′ : Tm n} → (`let⊗ e₁ `in e₂) ⋯→ e′ →
+     (Σ[ a ∈ Tm n ] Σ[ b ∈ Tm n ] (e₁ ≡ a ⊗ b) × Value a × Value b × (e′ ≡ e₂ ⋯ ⦅ wk a ⦆ ⋯ ⦅ b ⦆))
+   ⊎ (Σ[ e₁′ ∈ Tm n ] (e₁ ⋯→ e₁′) × (e′ ≡ `let⊗ e₁′ `in e₂))
+⋯→-letpair {e₁ = e₁} {e₂ = e₂} {e′ = e′} step = go _ step refl
+  where
+    go : (t : Tm _) → t ⋯→ e′ → t ≡ `let⊗ e₁ `in e₂ →
+         (Σ[ a ∈ Tm _ ] Σ[ b ∈ Tm _ ] (e₁ ≡ a ⊗ b) × Value a × Value b × (e′ ≡ e₂ ⋯ ⦅ wk a ⦆ ⋯ ⦅ b ⦆))
+       ⊎ (Σ[ e₁′ ∈ Tm _ ] (e₁ ⋯→ e₁′) × (e′ ≡ `let⊗ e₁′ `in e₂))
+    go _ (E-□ (E-PairElim V₁ V₂)) refl = inj₁ (_ , _ , refl , V₁ , V₂ , refl)
+    go _ (E-Ctx (□· e₃) inner) ()
+    go _ (E-Ctx (V₁ ·□) inner) ()
+    go _ (E-Ctx (□⊗ e₃) inner) ()
+    go _ (E-Ctx (V₁ ⊗□) inner) ()
+    go _ (E-Ctx (□; e₃) inner) ()
+    go _ (E-Ctx (`let-`in e₃) inner) ()
+    go _ (E-Ctx (`let⊗-`in e₃) inner) refl = inj₂ (_ , inner , refl)
+    go _ (E-Ctx (`inj□ i) inner) ()
+    go _ (E-Ctx `case□`of⟨ f₁ ; f₂ ⟩ inner) ()
+
+⋯→-case : {e : Tm n} {e₁ e₂ : Tm (suc n)} {e′ : Tm n} → (`case e `of⟨ e₁ ; e₂ ⟩) ⋯→ e′ →
+     (Σ[ i ∈ Side ] Σ[ v ∈ Tm n ] (e ≡ `inj i v) × Value v × (e′ ≡ (if i then e₁ else e₂) ⋯ ⦅ v ⦆))
+   ⊎ (Σ[ e0 ∈ Tm n ] (e ⋯→ e0) × (e′ ≡ `case e0 `of⟨ e₁ ; e₂ ⟩))
+⋯→-case {e = e} {e₁ = e₁} {e₂ = e₂} {e′ = e′} step = go _ step refl
+  where
+    go : (t : Tm _) → t ⋯→ e′ → t ≡ `case e `of⟨ e₁ ; e₂ ⟩ →
+         (Σ[ i ∈ Side ] Σ[ v ∈ Tm _ ] (e ≡ `inj i v) × Value v × (e′ ≡ (if i then e₁ else e₂) ⋯ ⦅ v ⦆))
+       ⊎ (Σ[ e0 ∈ Tm _ ] (e ⋯→ e0) × (e′ ≡ `case e0 `of⟨ e₁ ; e₂ ⟩))
+    go _ (E-□ (E-SumElim V)) refl = inj₁ (_ , _ , refl , V , refl)
+    go _ (E-Ctx (□· e₃) inner) ()
+    go _ (E-Ctx (V₁ ·□) inner) ()
+    go _ (E-Ctx (□⊗ e₃) inner) ()
+    go _ (E-Ctx (V₁ ⊗□) inner) ()
+    go _ (E-Ctx (□; e₃) inner) ()
+    go _ (E-Ctx (`let-`in e₃) inner) ()
+    go _ (E-Ctx (`let⊗-`in e₃) inner) ()
+    go _ (E-Ctx (`inj□ i) inner) ()
+    go _ (E-Ctx `case□`of⟨ f₁ ; f₂ ⟩ inner) refl = inj₂ (_ , inner , refl)
+
+⋯→-mu : {e : Tm (suc n)} {e′ : Tm n} → (μ e) ⋯→ e′ → e′ ≡ e ⋯ ⦅ μ e ⦆
+⋯→-mu {e = e} {e′ = e′} step = go _ step refl
+  where
+    go : (t : Tm _) → t ⋯→ e′ → t ≡ μ e → e′ ≡ e ⋯ ⦅ μ e ⦆
+    go _ (E-□ E-Unfold) refl = refl
+    go _ (E-Ctx (□· e₃) inner) ()
+    go _ (E-Ctx (V₁ ·□) inner) ()
+    go _ (E-Ctx (□⊗ e₃) inner) ()
+    go _ (E-Ctx (V₁ ⊗□) inner) ()
+    go _ (E-Ctx (□; e₃) inner) ()
+    go _ (E-Ctx (`let-`in e₃) inner) ()
+    go _ (E-Ctx (`let⊗-`in e₃) inner) ()
+    go _ (E-Ctx (`inj□ i) inner) ()
+    go _ (E-Ctx `case□`of⟨ f₁ ; f₂ ⟩ inner) ()
+
+------------------------------------------------------------------------
+-- Typed reflection of expression reduction through a value substitution.
+--
+--   The reverse of Frames.⋯→-⋯ₛ.  Substituting VALUES into e₀ cannot create a
+--   NEW head redex EXCEPT at a variable in head position (σ x may be a λ / pair
+--   / inj value), and the source typing (ChanCx Γ forces every free var to a
+--   channel type ⟨ s ⟩) rules that out via chanvar-not* / var-app-absurd.  So
+--   every step of e₀ ⋯ σ is the image of a step of e₀.  Proven by induction on
+--   e₀, using the head-shape inversions above and the operand-typing inversions
+--   of InvFrame; the substitution-commutation glue is the same dist-↑-⦅⦆-⋯ the
+--   forward direction uses.
+------------------------------------------------------------------------
+
+
+-- A value substitution gives a λ-headed result only when the source is a
+-- variable (σ may map it to a λ) or literally a λ.  (Likewise ⊗ / inj.)  Used
+-- to dispatch the head-redex branch of ⋯→-reflect: the variable alternative is
+-- refuted by the source typing (chanvar-not* / var-app-absurd).
+headλ : (σ : m →ₛ n) → (e₁ : Tm m) {b : Tm (suc n)} → (e₁ ⋯ σ) ≡ ƛ b
+  → (Σ[ x ∈ 𝔽 m ] e₁ ≡ ` x) ⊎ (Σ[ b₀ ∈ Tm (suc m) ] e₁ ≡ ƛ b₀)
+headλ σ (` x)       eq = inj₁ (x , refl)
+headλ σ (ƛ e)       eq = inj₂ (e , refl)
+
+head⊗ : (σ : m →ₛ n) → (e₁ : Tm m) {a b : Tm n} → (e₁ ⋯ σ) ≡ a ⊗ b
+  → (Σ[ x ∈ 𝔽 m ] e₁ ≡ ` x) ⊎ (Σ[ a₀ ∈ Tm m ] Σ[ b₀ ∈ Tm m ] e₁ ≡ a₀ ⊗ b₀)
+head⊗ σ (` x)       eq = inj₁ (x , refl)
+head⊗ σ (e₁ ⊗ e₂)   eq = inj₂ (e₁ , e₂ , refl)
+
+head-inj : (σ : m →ₛ n) → (e : Tm m) {i : Side} {v : Tm n} → (e ⋯ σ) ≡ `inj i v
+  → (Σ[ x ∈ 𝔽 m ] e ≡ ` x) ⊎ (Σ[ j ∈ Side ] Σ[ v₀ ∈ Tm m ] e ≡ `inj j v₀)
+head-inj σ (` x)       eq = inj₁ (x , refl)
+head-inj σ (`inj j v)  eq = inj₂ (j , v , refl)
+
+
+-- Injectivity of term constructors (for matching head equalities).
+ƛ-inj : {b₁ b₂ : Tm (suc n)} → (ƛ b₁) ≡ (ƛ b₂) → b₁ ≡ b₂
+ƛ-inj refl = refl
+
+⊗-inj : {a₁ a₂ b₁ b₂ : Tm n} → (a₁ ⊗ b₁) ≡ (a₂ ⊗ b₂) → (a₁ ≡ a₂) × (b₁ ≡ b₂)
+⊗-inj refl = refl , refl
+
+inj-inj : {i j : Side} {u v : Tm n} → (`inj i u) ≡ (`inj j v) → (i ≡ j) × (u ≡ v)
+inj-inj refl = refl , refl
+
+-- Substitution-commutation for the let⊗ / case heads (the same equalities the
+-- forward ─→-⋯ₛ uses, run in reverse).
+letpair-eq : ∀ {m n} (e₂ : Tm (2 + m)) (a b : Tm m) (σ : m →ₛ n)
+  → (e₂ ⋯ σ ↑ ↑) ⋯ ⦅ wk (a ⋯ σ) ⦆ ⋯ ⦅ b ⋯ σ ⦆ ≡ (e₂ ⋯ ⦅ wk a ⦆ ⋯ ⦅ b ⦆) ⋯ σ
+letpair-eq e₂ a b σ =
+  let inner : e₂ ⋯ ⦅ wk a ⦆ ⋯ σ ↑ ≡ e₂ ⋯ σ ↑ ↑ ⋯ ⦅ wk (a ⋯ σ) ⦆
+      inner = dist-↑-⦅⦆-⋯ e₂ (wk a) (σ ↑) ■ cong (λ z → e₂ ⋯ σ ↑ ↑ ⋯ ⦅ z ⦆) (sym (⋯-↑-wk a σ))
+  in cong (_⋯ ⦅ b ⋯ σ ⦆) (sym inner) ■ sym (dist-↑-⦅⦆-⋯ (e₂ ⋯ ⦅ wk a ⦆) b σ)
+
+case-eq : ∀ {m n} (j : Side) (e₁ e₂ : Tm (suc m)) (v : Tm m) (σ : m →ₛ n)
+  → (if j then (e₁ ⋯ σ ↑) else (e₂ ⋯ σ ↑)) ⋯ ⦅ v ⋯ σ ⦆ ≡ ((if j then e₁ else e₂) ⋯ ⦅ v ⦆) ⋯ σ
+case-eq true  e₁ e₂ v σ = sym (dist-↑-⦅⦆-⋯ e₁ v σ)
+case-eq false e₁ e₂ v σ = sym (dist-↑-⦅⦆-⋯ e₂ v σ)
+
+⋯→-reflect : ∀ {m n} {Γ : Ctx m} {γ : Struct m} {T ϵ}
+  → ChanCx Γ → (e₀ : Tm m) → Γ ; γ ⊢ e₀ ∶ T ∣ ϵ
+  → (σ : m →ₛ n) → VSub σ → {e₂ : Tm n} → (e₀ ⋯ σ) ⋯→ e₂
+  → Σ[ e₀′ ∈ Tm m ] (e₀ ⋯→ e₀′) × (e₂ ≡ e₀′ ⋯ σ)
+⋯→-reflect Γ-S (` x)   ⊢e σ Vσ step = ⊥-elim (value-step (Vσ x) step)
+⋯→-reflect Γ-S (K c)   ⊢e σ Vσ step = ⊥-elim (value-step V-K step)
+⋯→-reflect Γ-S (ƛ e)   ⊢e σ Vσ step = ⊥-elim (value-step V-λ step)
+⋯→-reflect Γ-S (μ e)   ⊢e σ Vσ step =
+  e ⋯ ⦅ μ e ⦆ , E-□ E-Unfold , (⋯→-mu step ■ sym (dist-↑-⦅⦆-⋯ e (μ e) σ))
+⋯→-reflect Γ-S (e₁ ⊗ e₂) ⊢e σ Vσ step
+  with α₁ , α₂ , (_ , _ , ⊢e₁) , (_ , _ , ⊢e₂) , _ ← IF.inv-pair ⊢e
+  with ⋯→-pair step
+... | inj₁ (e₁″ , inner , refl)
+      with e₁′ , s₁ , refl ← ⋯→-reflect Γ-S e₁ ⊢e₁ σ Vσ inner
+      = e₁′ ⊗ e₂ , E-Ctx (□⊗ e₂) s₁ , refl
+... | Sum.inj₂ (Ve₁σ , e₂″ , inner , refl)
+      with e₂′ , s₂ , refl ← ⋯→-reflect Γ-S e₂ ⊢e₂ σ Vσ inner
+      = e₁ ⊗ e₂′ , E-Ctx (value-⋯⁻¹ σ Vσ e₁ Ve₁σ ⊗□) s₂ , refl
+⋯→-reflect Γ-S (`inj i e) ⊢e σ Vσ step
+  with _ , _ , ⊢e′ ← IF.inv-inj ⊢e
+  with e0 , inner , refl ← ⋯→-inj step
+  with e0′ , s0 , refl ← ⋯→-reflect Γ-S e ⊢e′ σ Vσ inner
+  = `inj i e0′ , E-Ctx (`inj□ i) s0 , refl
+⋯→-reflect Γ-S (e₁ · e₂) ⊢e σ Vσ step
+  with ⋯→-app step
+... | inj₁ (b , e₁σ≡ƛ , Ve₂σ , refl)
+      with headλ σ e₁ e₁σ≡ƛ
+...   | inj₁ (x , refl) = ⊥-elim (var-app-absurd Γ-S ⊢e)
+...   | inj₂ (b₀ , refl) =
+        b₀ ⋯ ⦅ e₂ ⦆ , E-□ (E-App (value-⋯⁻¹ σ Vσ e₂ Ve₂σ)) ,
+          (cong (_⋯ ⦅ e₂ ⋯ σ ⦆) (sym (ƛ-inj e₁σ≡ƛ)) ■ sym (dist-↑-⦅⦆-⋯ b₀ e₂ σ))
+⋯→-reflect Γ-S (e₁ · e₂) ⊢e σ Vσ step | inj₂ (inj₁ (e₁″ , inner , refl))
+  with α₁ , α₂ , (_ , _ , ⊢e₁) , (_ , _ , ⊢e₂) , _ ← IF.inv-app ⊢e
+  with e₁′ , s₁ , refl ← ⋯→-reflect Γ-S e₁ ⊢e₁ σ Vσ inner
+  = e₁′ · e₂ , E-Ctx (□· e₂) s₁ , refl
+⋯→-reflect Γ-S (e₁ · e₂) ⊢e σ Vσ step | inj₂ (inj₂ (Ve₁σ , e₂″ , inner , refl))
+  with α₁ , α₂ , (_ , _ , ⊢e₁) , (_ , _ , ⊢e₂) , _ ← IF.inv-app ⊢e
+  with e₂′ , s₂ , refl ← ⋯→-reflect Γ-S e₂ ⊢e₂ σ Vσ inner
+  = e₁ · e₂′ , E-Ctx (value-⋯⁻¹ σ Vσ e₁ Ve₁σ ·□) s₂ , refl
+
+⋯→-reflect Γ-S (e₁ ; e₂) ⊢e σ Vσ step
+  with α₁ , α₂ , (_ , _ , ⊢e₁) , (_ , _ , ⊢e₂) , _ ← IF.inv-seq ⊢e
+  with ⋯→-seq step
+... | inj₁ (Ve₁σ , refl) = e₂ , E-□ (E-Seq (value-⋯⁻¹ σ Vσ e₁ Ve₁σ)) , refl
+... | inj₂ (e₁″ , inner , refl)
+      with e₁′ , s₁ , refl ← ⋯→-reflect Γ-S e₁ ⊢e₁ σ Vσ inner
+      = e₁′ ; e₂ , E-Ctx (□; e₂) s₁ , refl
+
+⋯→-reflect Γ-S (`let e₁ `in e₂) ⊢e σ Vσ step
+  with γ₁ , γ₂ , p/s , (_ , _ , ⊢e₁) , _ , _ ← IF.inv-let ⊢e
+  with ⋯→-let step
+... | inj₁ (Ve₁σ , refl) =
+      e₂ ⋯ ⦅ e₁ ⦆ , E-□ (E-Let (value-⋯⁻¹ σ Vσ e₁ Ve₁σ)) , sym (dist-↑-⦅⦆-⋯ e₂ e₁ σ)
+... | inj₂ (e₁″ , inner , refl)
+      with e₁′ , s₁ , refl ← ⋯→-reflect Γ-S e₁ ⊢e₁ σ Vσ inner
+      = `let e₁′ `in e₂ , E-Ctx (`let-`in e₂) s₁ , refl
+
+⋯→-reflect Γ-S (`let⊗ e₁ `in e₂) ⊢e σ Vσ step
+  with γ₁ , γ₂ , p/s , d , (_ , _ , ⊢e₁) , _ , _ ← IF.inv-letpair ⊢e
+  with ⋯→-letpair step
+... | inj₁ (a , b , e₁σ≡⊗ , Va , Vb , refl)
+      with head⊗ σ e₁ e₁σ≡⊗
+...   | inj₁ (x , refl) = ⊥-elim (var-letpair-absurd Γ-S ⊢e)
+...   | inj₂ (a₀ , b₀ , refl)
+        with refl , refl ← ⊗-inj e₁σ≡⊗ =
+        e₂ ⋯ ⦅ wk a₀ ⦆ ⋯ ⦅ b₀ ⦆ ,
+          E-□ (E-PairElim (value-⋯⁻¹ σ Vσ a₀ Va) (value-⋯⁻¹ σ Vσ b₀ Vb)) ,
+          letpair-eq e₂ a₀ b₀ σ
+⋯→-reflect Γ-S (`let⊗ e₁ `in e₂) ⊢e σ Vσ step | inj₂ (e₁″ , inner , refl)
+  with γ₁ , γ₂ , p/s , d , (_ , _ , ⊢e₁) , _ , _ ← IF.inv-letpair ⊢e
+  with e₁′ , s₁ , refl ← ⋯→-reflect Γ-S e₁ ⊢e₁ σ Vσ inner
+  = `let⊗ e₁′ `in e₂ , E-Ctx (`let⊗-`in e₂) s₁ , refl
+
+⋯→-reflect Γ-S (`case e `of⟨ e₁ ; e₂ ⟩) ⊢e σ Vσ step
+  with γ₁ , γ₂ , p/s , (_ , _ , ⊢escr) , _ , _ , _ ← IF.inv-case ⊢e
+  with ⋯→-case step
+... | inj₁ (i , v , eσ≡inj , Vv , refl)
+      with head-inj σ e eσ≡inj
+...   | inj₁ (x , refl) = ⊥-elim (var-case-absurd Γ-S ⊢e)
+...   | inj₂ (j , v₀ , refl)
+        with refl , refl ← inj-inj eσ≡inj =
+        (if j then e₁ else e₂) ⋯ ⦅ v₀ ⦆ ,
+          E-□ (E-SumElim (value-⋯⁻¹ σ Vσ v₀ Vv)) ,
+          case-eq j e₁ e₂ v₀ σ
+⋯→-reflect Γ-S (`case e `of⟨ e₁ ; e₂ ⟩) ⊢e σ Vσ step | inj₂ (e0 , inner , refl)
+  with γ₁ , γ₂ , p/s , (_ , _ , ⊢escr) , _ , _ , _ ← IF.inv-case ⊢e
+  with e0′ , s0 , refl ← ⋯→-reflect Γ-S e ⊢escr σ Vσ inner
+  = `case e0′ `of⟨ e₁ ; e₂ ⟩ , E-Ctx `case□`of⟨ e₁ ; e₂ ⟩ s0 , refl
