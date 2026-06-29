@@ -85,7 +85,7 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
   R-Com : ∀ {E₁ E₂} → Value e →
     let wkρ = wkₚ (b₁ + sum B₁) (b₂ + sum B₂) in
     ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
-      ((⟪ E₁ ⋯ᶠ* wkρ [ K `send · ((` 0F) ⊗ (e ⋯ wkρ)) ]* ⟫
+      ((⟪ E₁ ⋯ᶠ* wkρ [ K `send · ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
         ∥ ⟪ E₂ ⋯ᶠ* wkρ [ K `recv · (` wkʳ n (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
         ∥ (P ⋯ₚ wkρ))
       ─→ₚ

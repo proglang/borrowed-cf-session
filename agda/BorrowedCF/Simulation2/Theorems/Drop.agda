@@ -33,11 +33,12 @@ open import BorrowedCF.Simulation2.TranslationProperties
 open import BorrowedCF.Simulation2.BlockPerm
   using ( assocSwap-01; R-base-b0; assocSwap-0a; toℕ-R3; toℕ-R3₂; toℕ-R4
         ; toℕ-weaken*ᵣ; toℕ-swapᵣ-mid; toℕ-reduce≥
-        ; toℕ-↑*-ge; commuteS; wkSwap-cancel; assocSwap-invol )
+        ; toℕ-↑*-ge; commuteS; wkSwap-cancel; assocSwap-invol; toℕ-assoc-mid; toℕ-assoc-ge )
 open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
 open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯; frame-plug₁; ++ₛ-VSub; weaken-VSub)
 open import BorrowedCF.Simulation2.TranslationProperties using (VChan; Value-subst; chanTriple-V)
+import Data.Sum as Sum
 
 ------------------------------------------------------------------------
 -- COPIED transpose engine from Simulation2.Theorems.Splits (hole-free prefix).
@@ -389,6 +390,39 @@ leafσ-tail : ∀ {m n} (σ : m →ₛ n) (B₁ B₂ : BindGroup) (y : 𝔽 (sum
              leafσ σ B₁ B₂ y ≡ σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₁) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₂)
 leafσ-tail σ B₁ B₂ y i e1 = cong [ _ , _ ]′ e1
 
+-- dropping the head bind count (suc zero → zero) on a nonempty chain shifts the
+-- channel substitution by one binder: canonₛ ignores the head count's actual
+-- value (only its splitAt-width), so the slot at index 0 is unused.
+canonₛ-shift : ∀ {N} (c′ : ℕ) (C : BindGroup) (cc : UChan N) (y : 𝔽 (sum (c′ ∷ C))) →
+               canonₛ (zero ∷ c′ ∷ C) cc y ≡ canonₛ (suc zero ∷ c′ ∷ C) cc (Fin.suc y)
+canonₛ-shift c′ C cc y = refl
+
+-- a front block shrinking by one slot (bL on suc i = bR on i) does not change
+-- the ((bL ++ₛ ts) ++ₛ rs) value (ported from Simulation2.Theorems.block-shift).
+block-shift : ∀ p {A B N} (bL : suc p →ₛ N) (bR : p →ₛ N)
+              (eq : ∀ k → bL (Fin.suc k) ≡ bR k)
+              (ts : A →ₛ N) (rs : B →ₛ N) (i : 𝔽 (p + A + B)) →
+              ((bL ++ₛ ts) ++ₛ rs) (Fin.suc i) ≡ ((bR ++ₛ ts) ++ₛ rs) i
+block-shift p {A} {B} bL bR eq ts rs i with Fin.splitAt (p + A) i
+... | inj₂ k = refl
+... | inj₁ j with Fin.splitAt p j
+...   | inj₁ k = eq k
+...   | inj₂ k = refl
+
+-- the outer/inner ++ₛ blocks of leafσ for (zero ∷ c′ ∷ C) and (suc zero ∷ c′ ∷ C)
+-- coincide except for the canonₛ-A₁ block, where canonₛ-shift bridges them.
+leafσ-shift : ∀ {m n} (σ : m →ₛ n) (c′ : ℕ) (C B₂ : BindGroup)
+              (y : 𝔽 (sum (zero ∷ c′ ∷ C) + sum B₂ + m)) →
+              leafσ σ (zero ∷ c′ ∷ C) B₂ y ≡ leafσ σ (suc zero ∷ c′ ∷ C) B₂ (Fin.suc y)
+leafσ-shift {m} σ c′ C B₂ y =
+  sym (block-shift (sum (c′ ∷ C))
+         (λ i → canonₛ (suc zero ∷ c′ ∷ C) (K `unit , 0F , K `unit) i ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₂))
+         (λ i → canonₛ (zero ∷ c′ ∷ C) (K `unit , 0F , K `unit) i ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₂))
+         (λ k → cong (_⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₂)) (sym (canonₛ-shift c′ C (K `unit , 0F , K `unit) k)))
+         (canonₛ B₂ (K `unit , weaken* ⦃ Kᵣ ⦄ (syncs (suc zero ∷ c′ ∷ C)) 1F , K `unit))
+         (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (suc zero ∷ c′ ∷ C)) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₂))
+         y)
+
 -- the swapᵣ 1 1 lifted past j inert binders lowers (weaken* j 1F) to (weaken* j 0F).
 swap-lower : ∀ j {p} → (swapᵣ 1 1 {p} ↑* j) (weaken* ⦃ Kᵣ ⦄ j (Fin.suc (Fin.zero {n = p})))
                        ≡ weaken* ⦃ Kᵣ ⦄ j (Fin.zero {n = suc p})
@@ -500,6 +534,41 @@ VSub-leafσ σ Vσ B₁ B₂ = ++ₛ-VSub
             (VSub-canonₛ B₂ (K `unit , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , K `unit) (V-K , V-K)))
   (weaken-VSub (syncs B₂) (weaken-VSub (syncs B₁) (weaken-VSub 2 Vσ)))
 
+-- The push composite (assocSwapᵣ sA w ↑* sB) then (assocSwapᵣ sB w) sends the
+-- junction var (flat position sB+(sA+d), d<w) to position d.
+assocPush-junc : ∀ (sA sB w d : ℕ) {nn} (j : 𝔽 (sB + (sA + (w + nn)))) →
+                 Fin.toℕ j ≡ sB + (sA + d) → d Nat.< w →
+                 Fin.toℕ ((assocSwapᵣ sB w {sA + nn}) ((assocSwapᵣ sA w {nn} ↑* sB) j)) ≡ d
+assocPush-junc sA sB w d {nn} j jeq d<w =
+    toℕ-assoc-mid sB w {sA + nn} ((assocSwapᵣ sA w {nn} ↑* sB) j) geB ltB
+  ■ aritheq
+  where
+    q1 : sB Nat.≤ Fin.toℕ j
+    q1 = subst (sB Nat.≤_) (sym jeq) (Nat.m≤m+n sB (sA + d))
+    redeq : Fin.toℕ (Fin.reduce≥ j q1) ≡ sA + d
+    redeq = toℕ-reduce≥ j q1 ■ cong (Nat._∸ sB) jeq ■ Nat.m+n∸m≡n sB (sA + d)
+    geA : sA Nat.≤ Fin.toℕ (Fin.reduce≥ j q1)
+    geA = subst (sA Nat.≤_) (sym redeq) (Nat.m≤m+n sA d)
+    ltA : Fin.toℕ (Fin.reduce≥ j q1) Nat.< sA + w
+    ltA = subst (Nat._< sA + w) (sym redeq) (Nat.+-monoʳ-< sA d<w)
+    midA : Fin.toℕ (assocSwapᵣ sA w {nn} (Fin.reduce≥ j q1)) ≡ d
+    midA = toℕ-assoc-mid sA w {nn} (Fin.reduce≥ j q1) geA ltA
+         ■ cong (Nat._∸ sA) redeq ■ Nat.m+n∸m≡n sA d
+    step1 : Fin.toℕ ((assocSwapᵣ sA w {nn} ↑* sB) j) ≡ sB + d
+    step1 = toℕ-↑*-ge (assocSwapᵣ sA w {nn}) sB j q1 ■ cong (sB +_) midA
+    geB : sB Nat.≤ Fin.toℕ ((assocSwapᵣ sA w {nn} ↑* sB) j)
+    geB = subst (sB Nat.≤_) (sym step1) (Nat.m≤m+n sB d)
+    ltB : Fin.toℕ ((assocSwapᵣ sA w {nn} ↑* sB) j) Nat.< sB + w
+    ltB = subst (Nat._< sB + w) (sym step1) (Nat.+-monoʳ-< sB d<w)
+    aritheq : Fin.toℕ ((assocSwapᵣ sA w {nn} ↑* sB) j) Nat.∸ sB ≡ d
+    aritheq = cong (Nat._∸ sB) step1 ■ Nat.m+n∸m≡n sB d
+
+frame-plug*ᵣ : ∀ {m p} (E : Frame* m) {t : Tm m} (ρ : m →ᵣ p) →
+               (E [ t ]*) ⋯ ρ ≡ (E ⋯ᶠ* ρ) [ t ⋯ ρ ]*
+frame-plug*ᵣ []       ρ = refl
+frame-plug*ᵣ (E ∷ E*) ρ =
+  frame-plug₁ E ρ (λ x → V-`) ■ cong (frame-⋯ E ρ (λ x → V-`) [_]) (frame-plug*ᵣ E* ρ)
+
 open T using (_;_⊢ₚ_)
 
 U-drop : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
@@ -515,9 +584,11 @@ U-drop : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
              (T.⟪ (E ⋯ᶠ* weakenᵣ) [ K `drop · (` 0F) ]* ⟫ T.∥ (P T.⋯ₚ weakenᵣ)) ] σ
             U.≋ U[ T.ν (b₁ ∷ B₁) B₂ (T.⟪ E [ K `unit ]* ⟫ T.∥ P) ] σ)
 U-drop σ Vσ Γ-S {b₁ = b₁} {B₁ = []} {B₂ = B₂} {E = E} {P = P} ⊢P = {!!}
-U-drop {m} {n} σ Vσ Γ-S {b₁ = suc b₁} {B₁ = C@(_ ∷ _)} {B₂ = B₂} {E = E} {P = P} ⊢P =
-  {!!}  -- b₁≥1 vacuous: ϕ[suc b₁]=drop on RHS, RU-Drop would have to produce φ drop
-U-drop {m} {n} σ Vσ Γ-S {b₁ = zero} {B₁ = C@(_ ∷ _)} {B₂ = B₂} {E = E} {P = P} ⊢P =
+U-drop {m} {n} σ Vσ Γ-S {b₁ = suc b₁} {B₁ = C@(_ ∷ _)} {B₂ = B₂} {E = E} {P = P} ⊢P
+  with T.inv-ν ⊢P
+... | _ , _ , _ , _ , _ , _ , T.cons-ret/acq _ _ (T.cons _ _ _ (T.cons ¬Ss s≃ _ _)) _ , _ , _ =
+  ⊥-elim {!!}
+U-drop {m} {n} σ Vσ Γ-S {b₁ = zero} {B₁ = C@(cHd ∷ cTl)} {B₂ = B₂} {E = E} {P = P} ⊢P =
   ≋-wrap-⊎ front fire back
   where
     Eᵂ : Frame* (sum (suc zero ∷ C) + sum B₂ + m)
@@ -547,16 +618,23 @@ U-drop {m} {n} σ Vσ Γ-S {b₁ = zero} {B₁ = C@(_ ∷ _)} {B₂ = B₂} {E =
             U.⋯ₚ assocSwapᵣ sB₂ 1
     mid : U.Proc n
     mid = U.ν (Bφ C (Bφ B₂ (U.φ U.drop LL₂)))
-    front : U[ T.ν (suc zero ∷ C) B₂ QL ] σ U.≋ mid
-    front = ≡→≋ flatL
-      ◅◅ U.ν-cong (φ-past-Bφ C U.drop
-           (subst U.Proc (sym (+-suc sC (suc (suc n)))) (Bφ B₂ LL)))
-      ◅◅ U.ν-cong (Bφ-cong C (U.φ-cong (≡→≋
+    -- generic: push a head φ z past Bφ C then Bφ B₂ down to the leaf, keeping ν.
+    pushφ-down : (z : U.Flag) (X : U.Proc (sB₂ + (suc sC + (2 + n)))) →
+      U.φ z (Bφ C (subst U.Proc (sym (+-suc sC (suc (suc n)))) (Bφ B₂ X)))
+        U.≋
+      Bφ C (Bφ B₂ (U.φ z (subst U.Proc eqC X
+                            U.⋯ₚ (assocSwapᵣ sC 1 ↑* sB₂)
+                            U.⋯ₚ assocSwapᵣ sB₂ 1)))
+    pushφ-down z X =
+         φ-past-Bφ C z (subst U.Proc (sym (+-suc sC (suc (suc n)))) (Bφ B₂ X))
+      ◅◅ Bφ-cong C (U.φ-cong (≡→≋
            ( cong (U._⋯ₚ assocSwapᵣ sC 1)
-               (subst-Bφ (sym (+-suc sC (suc (suc n)))) B₂ LL)
-           ■ Bφ-⋯ B₂ (subst U.Proc eqC LL) (assocSwapᵣ sC 1) ))))
-      ◅◅ U.ν-cong (Bφ-cong C (φ-past-Bφ B₂ U.drop
-           (subst U.Proc eqC LL U.⋯ₚ (assocSwapᵣ sC 1 ↑* sB₂))))
+               (subst-Bφ (sym (+-suc sC (suc (suc n)))) B₂ X)
+           ■ Bφ-⋯ B₂ (subst U.Proc eqC X) (assocSwapᵣ sC 1) )))
+      ◅◅ Bφ-cong C (φ-past-Bφ B₂ z
+           (subst U.Proc eqC X U.⋯ₚ (assocSwapᵣ sC 1 ↑* sB₂)))
+    front : U[ T.ν (suc zero ∷ C) B₂ QL ] σ U.≋ mid
+    front = ≡→≋ flatL ◅◅ U.ν-cong (pushφ-down U.drop LL)
     -- decompose LL₂ into ⟪ redex-thread ⟫ ∥ residual
     subst-∥ : ∀ {a b} (eq : a ≡ b) (X Y : U.Proc a) →
               subst U.Proc eq (X U.∥ Y) ≡ subst U.Proc eq X U.∥ subst U.Proc eq Y
@@ -579,14 +657,165 @@ U-drop {m} {n} σ Vσ Γ-S {b₁ = zero} {B₁ = C@(_ ∷ _)} {B₂ = B₂} {E =
           (cong (U._⋯ₚ (assocSwapᵣ sC 1 ↑* sB₂))
             (subst-∥ eqC U.⟪ aTm ⟫ bPr
              ■ cong (U._∥ subst U.Proc eqC bPr) (subst-⟪⟫ eqC aTm)))
+    -- the combined value-substitution applied to the redex thread
+    Vleafσ : VSub (leafσ σ (suc zero ∷ C) B₂)
+    Vleafσ = VSub-leafσ σ Vσ (suc zero ∷ C) B₂
+    θ : (sum (suc zero ∷ C) + sum B₂ + m) →ₛ suc (sB₂ + (sC + (2 + n)))
+    θ = ((subst (λ z → (sum (suc zero ∷ C) + sum B₂ + m) →ₛ z) eqC (leafσ σ (suc zero ∷ C) B₂))
+          ·ₖ (assocSwapᵣ sC 1 ↑* sB₂)) ·ₖ assocSwapᵣ sB₂ 1
+    Vθ-cod : ∀ {a c} {t : Tm a} (eq : a ≡ c) → Value t → Value (subst Tm eq t)
+    Vθ-cod refl V = V
+    subst-cod-pt : ∀ {a c} (eq : a ≡ c) (s : (sum (suc zero ∷ C) + sum B₂ + m) →ₛ a) (i : _) →
+                   subst (λ z → (sum (suc zero ∷ C) + sum B₂ + m) →ₛ z) eq s i ≡ subst Tm eq (s i)
+    subst-cod-pt refl s i = refl
+    Vθ : VSub θ
+    Vθ i = value-⋯ (value-⋯
+             (subst Value (sym (subst-cod-pt eqC (leafσ σ (suc zero ∷ C) B₂) i))
+               (Vθ-cod eqC (Vleafσ i)))
+             (assocSwapᵣ sC 1 ↑* sB₂) (λ _ → V-`))
+             (assocSwapᵣ sB₂ 1) (λ _ → V-`)
+    subst-⊗ : ∀ {a b} (eq : a ≡ b) (p r : Tm a) →
+              subst Tm eq (p ⊗ r) ≡ subst Tm eq p ⊗ subst Tm eq r
+    subst-⊗ refl p r = refl
+    subst-`F : ∀ {a b} (eq : a ≡ b) (q : 𝔽 a) → subst Tm eq (` q) ≡ ` subst 𝔽 eq q
+    subst-`F refl q = refl
+    -- the dropped handle term under θ is a chanTriple with `suc x` middle, `0F last
+    handle : Σ[ e ∈ Tm (suc (sB₂ + (sC + (2 + n)))) ]
+             Σ[ x ∈ 𝔽 (sB₂ + (sC + (2 + n))) ]
+               θ 0F ≡ ((e ⊗ (` (Fin.suc x))) ⊗ (` (Fin.zero {n = sB₂ + (sC + (2 + n))})))
+    handle = handleE , handleX , handleEq
+      where
+        ρ1 = assocSwapᵣ sC 1 ↑* sB₂
+        ρ2 = assocSwapᵣ sB₂ 1
+        handleE : Tm (suc (sB₂ + (sC + (2 + n))))
+        handleE = K `unit
+        handleX : 𝔽 (sB₂ + (sC + (2 + n)))
+        handleX = weaken* ⦃ Kᵣ ⦄ sB₂ (weaken* ⦃ Kᵣ ⦄ sC (Fin.zero {n = suc n}))
+        midV0 : 𝔽 (sC + suc (suc (suc n)))
+        midV0 = weaken* ⦃ Kᵣ ⦄ sC (Fin.suc (Fin.zero {n = suc n}))
+        lastV0 : 𝔽 (sC + suc (suc (suc n)))
+        lastV0 = weaken* ⦃ Kᵣ ⦄ sC (Fin.zero {n = suc (suc n)})
+        l0≡ : leafσ σ (suc zero ∷ C) B₂ 0F
+              ≡ subst Tm (+-suc sC (suc (suc n)))
+                    (((K `unit) ⊗ (` midV0)) ⊗ (` lastV0))
+                  ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+        l0≡ = refl
+        rnV : 𝔽 (sC + suc (suc (suc n))) → 𝔽 (suc (sB₂ + (sC + (2 + n))))
+        rnV v = ρ2 (ρ1 (subst 𝔽 eqC
+                  (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc sC (suc (suc n))) v))))
+        toℕ-subst𝔽 : ∀ {a b} (eq : a ≡ b) (q : 𝔽 a) → Fin.toℕ (subst 𝔽 eq q) ≡ Fin.toℕ q
+        toℕ-subst𝔽 refl q = refl
+        -- inner var of rnV before the ρ1/ρ2 push, with toℕ characterisation.
+        innerV : 𝔽 (sC + suc (suc (suc n))) → 𝔽 (sB₂ + (sC + (1 + (2 + n))))
+        innerV v = subst 𝔽 eqC (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc sC (suc (suc n))) v))
+        innerV-toℕ : (v : 𝔽 (sC + suc (suc (suc n)))) (d : ℕ) →
+                     Fin.toℕ v ≡ sC + d → Fin.toℕ (innerV v) ≡ sB₂ + (sC + d)
+        innerV-toℕ v d veq =
+            toℕ-subst𝔽 eqC (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc sC (suc (suc n))) v))
+          ■ toℕ-weaken*ᵣ sB₂ (subst 𝔽 (+-suc sC (suc (suc n))) v)
+          ■ cong (sB₂ +_) (toℕ-subst𝔽 (+-suc sC (suc (suc n))) v ■ veq)
+        midV0-toℕ : Fin.toℕ midV0 ≡ sC + 1
+        midV0-toℕ = toℕ-weaken*ᵣ sC (Fin.suc (Fin.zero {n = suc n}))
+        lastV0-toℕ : Fin.toℕ lastV0 ≡ sC + 0
+        lastV0-toℕ = toℕ-weaken*ᵣ sC (Fin.zero {n = suc (suc n)})
+        mid≡ : rnV midV0 ≡ Fin.suc handleX
+        mid≡ = Fin.toℕ-injective
+          ( toℕ-assoc-ge sB₂ 1 ((assocSwapᵣ sC 1 ↑* sB₂) (innerV midV0)) geρ2
+          ■ toℕ-↑*-ge (assocSwapᵣ sC 1) sB₂ (innerV midV0) geB
+          ■ cong (sB₂ +_) (toℕ-assoc-ge sC 1 (Fin.reduce≥ (innerV midV0) geB) geρ1)
+          ■ cong (sB₂ +_) redmid
+          ■ sym ( cong suc (toℕ-weaken*ᵣ sB₂ (weaken* ⦃ Kᵣ ⦄ sC (Fin.zero {n = suc n}))
+                          ■ cong (sB₂ +_) (toℕ-weaken*ᵣ sC (Fin.zero {n = suc n})
+                                          ■ Nat.+-identityʳ sC))
+                ■ sym (Nat.+-suc sB₂ sC)
+                ■ cong (sB₂ +_) (sym (Nat.+-comm sC 1)) ) )
+          where
+            imeq : Fin.toℕ (innerV midV0) ≡ sB₂ + (sC + 1)
+            imeq = innerV-toℕ midV0 1 midV0-toℕ
+            geB : sB₂ Nat.≤ Fin.toℕ (innerV midV0)
+            geB = subst (sB₂ Nat.≤_) (sym imeq) (Nat.m≤m+n sB₂ (sC + 1))
+            redmid : Fin.toℕ (Fin.reduce≥ (innerV midV0) geB) ≡ sC + 1
+            redmid = toℕ-reduce≥ (innerV midV0) geB ■ cong (Nat._∸ sB₂) imeq ■ Nat.m+n∸m≡n sB₂ (sC + 1)
+            geρ1 : sC + 1 Nat.≤ Fin.toℕ (Fin.reduce≥ (innerV midV0) geB)
+            geρ1 = subst (sC + 1 Nat.≤_) (sym redmid) Nat.≤-refl
+            geρ2 : sB₂ + 1 Nat.≤ Fin.toℕ ((assocSwapᵣ sC 1 ↑* sB₂) (innerV midV0))
+            geρ2 = subst (sB₂ + 1 Nat.≤_)
+                     (sym ( toℕ-↑*-ge (assocSwapᵣ sC 1) sB₂ (innerV midV0) geB
+                          ■ cong (sB₂ +_) (toℕ-assoc-ge sC 1 (Fin.reduce≥ (innerV midV0) geB) geρ1 ■ redmid) ))
+                     (Nat.+-monoʳ-≤ sB₂ (subst (1 Nat.≤_) (Nat.+-comm 1 sC) (Nat.s≤s (Nat.z≤n {sC}))))
+        last≡ : rnV lastV0 ≡ Fin.zero {n = sB₂ + (sC + (2 + n))}
+        last≡ = Fin.toℕ-injective
+          (assocPush-junc sC sB₂ 1 0 (innerV lastV0) (innerV-toℕ lastV0 0 lastV0-toℕ) (Nat.s≤s Nat.z≤n))
+        θ0≡ : θ 0F ≡ subst Tm eqC (leafσ σ (suc zero ∷ C) B₂ 0F) ⋯ ρ1 ⋯ ρ2
+        θ0≡ = cong (λ z → z ⋯ ρ1 ⋯ ρ2) (subst-cod-pt eqC (leafσ σ (suc zero ∷ C) B₂) 0F)
+        subst-K : ∀ {a b} (eq : a ≡ b) (c : _) → subst Tm eq (K c) ≡ K c
+        subst-K refl c = refl
+        -- push subst (+-suc) through the chanTriple ⊗-structure
+        push1 : subst Tm (+-suc sC (suc (suc n))) (((K `unit) ⊗ (` midV0)) ⊗ (` lastV0))
+                ≡ ((K `unit ⊗ (` subst 𝔽 (+-suc sC (suc (suc n))) midV0))
+                    ⊗ (` subst 𝔽 (+-suc sC (suc (suc n))) lastV0))
+        push1 = subst-⊗ (+-suc sC (suc (suc n))) ((K `unit) ⊗ (` midV0)) (` lastV0)
+              ■ cong₂ _⊗_
+                  (subst-⊗ (+-suc sC (suc (suc n))) (K `unit) (` midV0)
+                   ■ cong₂ _⊗_ (subst-K (+-suc sC (suc (suc n))) `unit)
+                               (subst-`F (+-suc sC (suc (suc n))) midV0))
+                  (subst-`F (+-suc sC (suc (suc n))) lastV0)
+        -- push subst eqC through (after ⋯ weaken*sB₂, which is definitional over ⊗)
+        push2 : subst Tm eqC
+                  ((K `unit ⊗ (` weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc sC (suc (suc n))) midV0)))
+                    ⊗ (` weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc sC (suc (suc n))) lastV0)))
+                ≡ ((K `unit ⊗ (` subst 𝔽 eqC (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc sC (suc (suc n))) midV0))))
+                    ⊗ (` subst 𝔽 eqC (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc sC (suc (suc n))) lastV0))))
+        push2 = subst-⊗ eqC _ _
+              ■ cong₂ _⊗_
+                  (subst-⊗ eqC (K `unit) _
+                   ■ cong₂ _⊗_ (subst-K eqC `unit)
+                               (subst-`F eqC (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc sC (suc (suc n))) midV0))))
+                  (subst-`F eqC (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc sC (suc (suc n))) lastV0)))
+        decomp : subst Tm eqC (leafσ σ (suc zero ∷ C) B₂ 0F) ⋯ ρ1 ⋯ ρ2
+                 ≡ ((K `unit ⊗ (` rnV midV0)) ⊗ (` rnV lastV0))
+        decomp =
+            cong (λ z → subst Tm eqC (z ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ⋯ ρ1 ⋯ ρ2) push1
+          ■ cong (λ z → subst Tm eqC z ⋯ ρ1 ⋯ ρ2) refl
+          ■ cong (λ z → z ⋯ ρ1 ⋯ ρ2) push2
+        handleEq : θ 0F ≡ ((handleE ⊗ (` (Fin.suc handleX))) ⊗ (` (Fin.zero {n = sB₂ + (sC + (2 + n))})))
+        handleEq = θ0≡ ■ decomp
+                 ■ cong (λ z → (K `unit ⊗ (` z)) ⊗ (` rnV lastV0)) mid≡
+                 ■ cong (λ z → (K `unit ⊗ (` Fin.suc handleX)) ⊗ (` z)) last≡
+    subst-⋯ₛ-cod : ∀ {a c d} (q : c ≡ d) (t : Tm a) (s : a →ₛ c) →
+                   t ⋯ subst (λ z → a →ₛ z) q s ≡ subst Tm q (t ⋯ s)
+    subst-⋯ₛ-cod refl t s = refl
+    redTm≡θ : redTm ≡ (Eᵂ [ K `drop · (` 0F) ]*) ⋯ θ
+    redTm≡θ =
+        cong (λ z → z ⋯ (assocSwapᵣ sC 1 ↑* sB₂) ⋯ assocSwapᵣ sB₂ 1)
+          (sym (subst-⋯ₛ-cod eqC (Eᵂ [ K `drop · (` 0F) ]*) (leafσ σ (suc zero ∷ C) B₂)))
+      ■ cong (_⋯ assocSwapᵣ sB₂ 1)
+          (fusion (Eᵂ [ K `drop · (` 0F) ]*)
+            (subst (λ z → (sum (suc zero ∷ C) + sum B₂ + m) →ₛ z) eqC (leafσ σ (suc zero ∷ C) B₂))
+            (assocSwapᵣ sC 1 ↑* sB₂))
+      ■ fusion (Eᵂ [ K `drop · (` 0F) ]*)
+          ((subst (λ z → (sum (suc zero ∷ C) + sum B₂ + m) →ₛ z) eqC (leafσ σ (suc zero ∷ C) B₂))
+            ·ₖ (assocSwapᵣ sC 1 ↑* sB₂))
+          (assocSwapᵣ sB₂ 1)
     -- the redex thread is a drop-redex applied to a chanTriple ending in `0F
+    redShapeF : Frame* (suc (sB₂ + (sC + (2 + n))))
+    redShapeF = frame*-⋯ Eᵂ θ Vθ
+    redShapeE : Tm (suc (sB₂ + (sC + (2 + n))))
+    redShapeE = proj₁ handle
+    redShapeX : 𝔽 (sB₂ + (sC + (2 + n)))
+    redShapeX = proj₁ (proj₂ handle)
+    redShapeEq : redTm ≡ redShapeF [ K `drop · (((redShapeE ⊗ (` (Fin.suc redShapeX))) ⊗ (` (Fin.zero {n = sB₂ + (sC + (2 + n))})))) ]*
+    redShapeEq =
+        redTm≡θ
+      ■ frame-plug* Eᵂ θ Vθ
+      ■ cong (redShapeF [_]*) (cong (K `drop ·_) (proj₂ (proj₂ handle)))
     redShape : Σ[ F ∈ Frame* (suc (sB₂ + (sC + (2 + n)))) ]
                Σ[ e ∈ Tm (suc (sB₂ + (sC + (2 + n)))) ]
                Σ[ x ∈ 𝔽 (sB₂ + (sC + (2 + n))) ]
                  redTm ≡ F [ K `drop · (((e ⊗ (` (Fin.suc x))) ⊗ (` (Fin.zero {n = sB₂ + (sC + (2 + n))})))) ]*
-    redShape = {! redShape !}
+    redShape = redShapeF , redShapeE , redShapeX , redShapeEq
     Eᶠ : Frame* (suc (sB₂ + (sC + (2 + n))))
-    Eᶠ = proj₁ redShape
+    Eᶠ = redShapeF
     fired : U.Proc n
     fired = U.ν (Bφ C (Bφ B₂ (U.φ U.acq (U.⟪ Eᶠ [ K `unit ]* ⟫ U.∥ Qᶠ))))
     fire : mid UR─→ₚ* fired
@@ -595,5 +824,88 @@ U-drop {m} {n} σ Vσ Γ-S {b₁ = zero} {B₁ = C@(_ ∷ _)} {B₂ = B₂} {E =
         (subst (λ z → U.φ U.drop z UR─→ₚ* U.φ U.acq (U.⟪ Eᶠ [ K `unit ]* ⟫ U.∥ Qᶠ))
           (sym (LL₂-split ■ cong (U._∥ Qᶠ) (cong U.⟪_⟫ (proj₂ (proj₂ (proj₂ redShape))))))
           (leaf-fire-drop Eᶠ {proj₁ (proj₂ redShape)} {proj₁ (proj₂ (proj₂ redShape))} Qᶠ))))
+    Yleaf : U.Proc (sB₂ + (suc sC + (2 + n)))
+    Yleaf = U[ QR ] (leafσ σ (zero ∷ C) B₂)
+    aR : Tm (sB₂ + (suc sC + (2 + n)))
+    aR = (E [ K `unit ]*) ⋯ leafσ σ (zero ∷ C) B₂
+    bR : U.Proc (sB₂ + (suc sC + (2 + n)))
+    bR = U[ P ] (leafσ σ (zero ∷ C) B₂)
+    Yleaf≡ : Yleaf ≡ U.⟪ aR ⟫ U.∥ bR
+    Yleaf≡ = refl
+    RHS-split : subst U.Proc eqC Yleaf U.⋯ₚ (assocSwapᵣ sC 1 ↑* sB₂) U.⋯ₚ assocSwapᵣ sB₂ 1
+                ≡ U.⟪ subst Tm eqC aR ⋯ (assocSwapᵣ sC 1 ↑* sB₂) ⋯ assocSwapᵣ sB₂ 1 ⟫
+                  U.∥ (subst U.Proc eqC bR U.⋯ₚ (assocSwapᵣ sC 1 ↑* sB₂) U.⋯ₚ assocSwapᵣ sB₂ 1)
+    RHS-split =
+        cong (λ z → z U.⋯ₚ (assocSwapᵣ sC 1 ↑* sB₂) U.⋯ₚ assocSwapᵣ sB₂ 1)
+          (subst-∥ eqC U.⟪ aR ⟫ bR ■ cong (U._∥ subst U.Proc eqC bR) (subst-⟪⟫ eqC aR))
+    reconcile : (U.⟪ Eᶠ [ K `unit ]* ⟫ U.∥ Qᶠ)
+                ≡ subst U.Proc eqC Yleaf U.⋯ₚ (assocSwapᵣ sC 1 ↑* sB₂) U.⋯ₚ assocSwapᵣ sB₂ 1
+    reconcile = cong₂ U._∥_ thread resid ■ sym RHS-split
+      where
+        subst-cod-ptR : ∀ {a c} (eq : a ≡ c) (s : (sum (zero ∷ C) + sum B₂ + m) →ₛ a) (i : _) →
+                        subst (λ z → (sum (zero ∷ C) + sum B₂ + m) →ₛ z) eq s i ≡ subst Tm eq (s i)
+        subst-cod-ptR refl s i = refl
+        subst-cod-pt1 : ∀ {a c} (eq : a ≡ c) (s : (sum (suc zero ∷ C) + sum B₂ + m) →ₛ a) (i : _) →
+                        subst (λ z → (sum (suc zero ∷ C) + sum B₂ + m) →ₛ z) eq s i ≡ subst Tm eq (s i)
+        subst-cod-pt1 refl s i = refl
+        -- dropping the head handle of leafσ (suc zero ∷ C) recovers leafσ (zero ∷ C).
+        leaf-drop-head : (i : 𝔽 (sum (zero ∷ C) + sum B₂ + m)) →
+                         leafσ σ (suc zero ∷ C) B₂ (weakenᵣ i) ≡ leafσ σ (zero ∷ C) B₂ i
+        leaf-drop-head i = sym (leafσ-shift σ cHd cTl B₂ i)
+        -- *⋯θ = * (K `unit is closed).
+        unit-θ : (K `unit) ⋯ θ ≡ K `unit
+        unit-θ = refl
+        -- Eᶠ[*]* = (Eᵂ[*]*) ⋯ θ
+        Eᶠ-plug : Eᶠ [ K `unit ]* ≡ (Eᵂ [ K `unit ]*) ⋯ θ
+        Eᶠ-plug = sym (frame-plug* Eᵂ θ Vθ ■ cong (frame*-⋯ Eᵂ θ Vθ [_]*) unit-θ)
+        -- Eᵂ[*]* = (E[*]*) ⋯ weakenᵣ
+        Eᵂ-plug : Eᵂ [ K `unit ]* ≡ (E [ K `unit ]*) ⋯ weakenᵣ
+        Eᵂ-plug = sym (frame-plug*ᵣ E weakenᵣ)
+        -- the leaf-substitution agreement, pointwise, lifted through subst eqC and ρ1,ρ2
+        θ-agree : (x : 𝔽 (sum (zero ∷ C) + sum B₂ + m)) →
+                  θ (weakenᵣ x)
+                  ≡ subst Tm eqC (leafσ σ (zero ∷ C) B₂ x)
+                      ⋯ (assocSwapᵣ sC 1 ↑* sB₂) ⋯ assocSwapᵣ sB₂ 1
+        θ-agree x =
+            cong (λ t → t ⋯ (assocSwapᵣ sC 1 ↑* sB₂) ⋯ assocSwapᵣ sB₂ 1)
+              (subst-cod-pt1 eqC (leafσ σ (suc zero ∷ C) B₂) (weakenᵣ x))
+          ■ cong (λ t → subst Tm eqC t ⋯ (assocSwapᵣ sC 1 ↑* sB₂) ⋯ assocSwapᵣ sB₂ 1)
+              (leaf-drop-head x)
+        -- the codomain leaf substitution for the RHS (leafσ of zero ∷ C).
+        θR : (sum (zero ∷ C) + sum B₂ + m) →ₛ suc (sB₂ + (sC + (2 + n)))
+        θR = ((subst (λ z → (sum (zero ∷ C) + sum B₂ + m) →ₛ z) eqC (leafσ σ (zero ∷ C) B₂))
+               ·ₖ (assocSwapᵣ sC 1 ↑* sB₂)) ·ₖ assocSwapᵣ sB₂ 1
+        aR≡θR : subst Tm eqC aR ⋯ (assocSwapᵣ sC 1 ↑* sB₂) ⋯ assocSwapᵣ sB₂ 1
+                ≡ (E [ K `unit ]*) ⋯ θR
+        aR≡θR =
+            cong (λ z → z ⋯ (assocSwapᵣ sC 1 ↑* sB₂) ⋯ assocSwapᵣ sB₂ 1)
+              (sym (subst-⋯ₛ-cod eqC (E [ K `unit ]*) (leafσ σ (zero ∷ C) B₂)))
+          ■ cong (_⋯ assocSwapᵣ sB₂ 1)
+              (fusion (E [ K `unit ]*)
+                (subst (λ z → (sum (zero ∷ C) + sum B₂ + m) →ₛ z) eqC (leafσ σ (zero ∷ C) B₂))
+                (assocSwapᵣ sC 1 ↑* sB₂))
+          ■ fusion (E [ K `unit ]*)
+              ((subst (λ z → (sum (zero ∷ C) + sum B₂ + m) →ₛ z) eqC (leafσ σ (zero ∷ C) B₂))
+                ·ₖ (assocSwapᵣ sC 1 ↑* sB₂))
+              (assocSwapᵣ sB₂ 1)
+        -- (weakenᵣ ·ₖ θ) agrees pointwise with θR (the head-handle drop).
+        θ-agreeR : (weakenᵣ ·ₖ θ) ≗ θR
+        θ-agreeR x = θ-agree x
+                   ■ cong (λ t → t ⋯ (assocSwapᵣ sC 1 ↑* sB₂) ⋯ assocSwapᵣ sB₂ 1)
+                       (sym (subst-cod-ptR eqC (leafσ σ (zero ∷ C) B₂) x))
+        thread =
+          cong U.⟪_⟫
+            ( Eᶠ-plug
+            ■ cong (_⋯ θ) Eᵂ-plug
+            ■ fusion (E [ K `unit ]*) weakenᵣ θ
+            ■ ⋯-cong (E [ K `unit ]*) θ-agreeR
+            ■ sym aR≡θR )
+        resid : Qᶠ ≡ subst U.Proc eqC bR U.⋯ₚ (assocSwapᵣ sC 1 ↑* sB₂) U.⋯ₚ assocSwapᵣ sB₂ 1
+        resid = cong (λ z → subst U.Proc eqC z U.⋯ₚ (assocSwapᵣ sC 1 ↑* sB₂) U.⋯ₚ assocSwapᵣ sB₂ 1)
+                  (U-⋯ₚ P {ρ = weakenᵣ} {σ = leafσ σ (suc zero ∷ C) B₂}
+                   ■ U-cong P leaf-drop-head)
     back : fired U.≋ U[ T.ν (zero ∷ C) B₂ QR ] σ
-    back = {! back !}
+    back =
+         U.ν-cong (Bφ-cong C (Bφ-cong B₂ (U.φ-cong (≡→≋ reconcile))))
+      ◅◅ Eq*.symmetric _ (U.ν-cong (pushφ-down U.acq Yleaf))
+      ◅◅ ≡→≋ (sym (Uν-flat σ (zero ∷ C) B₂ QR))
