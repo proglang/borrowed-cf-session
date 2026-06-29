@@ -18,6 +18,8 @@ open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosur
 open Un hiding (U)
 open Bin using (_Respects_)
 open Nat.Variables
+open Nat using (_≤_; ℕ; z≤n; s≤s; ≤-refl; ≤-trans; ≤-pred; m≤m+n; m≤n+m)
+open Fin.Patterns
 
 ------------------------------------------------------------------------
 -- NoRet : a session that contains no `ret` leaf (allows end / acq /
@@ -199,19 +201,322 @@ mu-cancel {u} = fusion u weakenᵣ ⦅ mu (u ⋯ weakenᵣ) ⦆ₛ ■ ⋯-id u 
     wkc : (weakenᵣ ·ₖ ⦅ mu (u ⋯ weakenᵣ) ⦆ₛ) ≗ idₛ
     wkc ()
 
+------------------------------------------------------------------------
+-- Strengthening reconstruction.  `Bad t` holds for the recursive body
+-- `mu s` substituted at var 0 by `unfold`: it is neither NoRet, Skips,
+-- nor ret.  RetTip / NoRet / Skips of `s ⋯ (pσ i t)` then force `s` to
+-- avoid variable `i`, so `s = s₀ ⋯ pin i` for some strengthened `s₀`.
+------------------------------------------------------------------------
+
+Bad : ∀ {n} → 𝕊 n → Set
+Bad t = (¬ NoRet t) × (¬ Skips t) × (t ≢ ret)
+
+wk-ret⁻¹ : ∀ {t : 𝕊 n} → t ⋯ weakenᵣ ≡ ret → t ≡ ret
+wk-ret⁻¹ {t = ret} _ = refl
+
+bad-wk : {t : 𝕊 n} → Bad t → Bad (t ⋯ weakenᵣ)
+bad-wk (¬nr , ¬sk , ¬rt) =
+  (λ nr → ¬nr (noRet-⋯⁻¹ nr)) , (λ sk → ¬sk (skips-⋯ᵣ⁻¹ sk)) , (λ eq → ¬rt (wk-ret⁻¹ eq))
+
+-- point substitution: var i ↦ t, everything else renamed down by punchOut.
+pσ : ∀ {j} → 𝔽 (suc j) → 𝕊 j → suc j →ₛ j
+pσ i t x with i Fin.≟ x
+... | yes _  = t
+... | no  ¬p = ` Fin.punchOut ¬p
+
+-- the strengthening renaming: var x ↦ punchIn i x (skips slot i).
+pin : ∀ {j} → 𝔽 (suc j) → 𝕊 j → 𝕊 (suc j)
+pin i s = s ⋯ (λ x → Fin.punchIn i x)
+
+Str : ∀ {j} → 𝔽 (suc j) → 𝕊 (suc j) → Set
+Str i s = ∃[ s₀ ] s ≡ pin i s₀
+
+-- pσ commutes with ↑, raising the bad variable.
+pσ-↑ : ∀ {j} (i : 𝔽 (suc j)) (t : 𝕊 j) → (pσ i t ↑) ≗ pσ (Fin.suc i) (t ⋯ weakenᵣ)
+pσ-↑ i t zero = refl
+pσ-↑ i t (suc x) with i Fin.≟ x
+... | yes refl = refl
+... | no ¬p with Fin.suc i Fin.≟ Fin.suc x
+...   | yes eq = ⊥-elim (¬p (Fin.suc-injective eq))
+...   | no ¬q  = cong `_ (cong suc (Fin.punchOut-cong i refl))
+
+-- pin commutes with mu, lowering the avoided slot under the binder.
+pin-↑ : ∀ {j} (i : 𝔽 (suc j)) (a₀ : 𝕊 (suc j)) →
+        pin i (mu a₀) ≡ mu (pin (Fin.suc i) a₀)
+pin-↑ i a₀ = cong mu (⋯-cong a₀ λ where
+  zero    → refl
+  (suc x) → refl)
+
+pin0 : ∀ {n} {s : 𝕊 n} → pin 0F s ≡ s ⋯ weakenᵣ
+pin0 {s = s} = ⋯-cong s (λ _ → refl)
+
+------------------------------------------------------------------------
 -- RESIDUAL (guardedness / occurrence lemma).  For s with a structural top
 -- (mu / ; / brn), RetTip (unfold s) forces s to be var0-free: a var0 would
 -- place the recursive `mu s` at a RetTip leaf, but `mu s` (it contains a ret)
 -- is neither ret, Skips, nor NoRet, so it cannot occupy a ret-tip / skip /
 -- NoRet slot.  Then s ≡ u ⋯ weakenᵣ (mu-cancel) and RetTip(mu s)=muC(RetTip u).
--- Closing it needs a binder-depth-generalized strengthening reconstruction
--- (reN/reS/reR over 𝕊 (suc k)); this is the single remaining open obligation.
+-- reN/reS/reR reconstruct the strengthening witness Str i s.
+
+-- RetTip preservation by renaming (forward, easy direction).
+rettip-⋯ᵣ : ∀ {ρ : m →ᵣ n} → RetTip s → RetTip (s ⋯ ρ)
+rettip-⋯ᵣ ret        = ret
+rettip-⋯ᵣ (r tL sk)  = rettip-⋯ᵣ r tL skips-⋯ sk
+rettip-⋯ᵣ (nr tR r)  = noRet-⋯ᵣ nr tR rettip-⋯ᵣ r
+rettip-⋯ᵣ (brn r₁ r₂) = brn (rettip-⋯ᵣ r₁) (rettip-⋯ᵣ r₂)
+rettip-⋯ᵣ {ρ = ρ} (muC {s = c} r) =
+  subst RetTip (cong mu (sym (fusion c weakenᵣ (ρ ↑) ■ ⋯-cong c (λ _ → refl) ■ sym (fusion c ρ weakenᵣ))))
+    (muC (rettip-⋯ᵣ r))
+
+rettip-mu-inv : ∀ {n} {X : 𝕊 (suc n)} → RetTip (mu X) →
+                ∃[ c ] (X ≡ c ⋯ weakenᵣ) × RetTip c
+rettip-mu-inv (muC {s = c} r) = c , refl , r
+
+¬rettip-var : ∀ {n} {x : 𝔽 n} → ¬ RetTip (` x)
+¬rettip-var ()
+
+rettip⇒¬noRet : RetTip s → ¬ NoRet s
+rettip⇒¬noRet ret        ()
+rettip⇒¬noRet (r tL _)   (nr ; _)  = rettip⇒¬noRet r nr
+rettip⇒¬noRet (_ tR r)   (_ ; nr)  = rettip⇒¬noRet r nr
+rettip⇒¬noRet (brn r₁ _) (brn nr₁ _) = rettip⇒¬noRet r₁ nr₁
+rettip⇒¬noRet (muC r)    (mu nr)   = rettip⇒¬noRet r (noRet-⋯⁻¹ nr)
+
+-- constructor count (a strictly decreasing measure for fuelled recursion).
+size : 𝕊 n → ℕ
+size (` x)        = 1
+size (end p)      = 1
+size (msg p T)    = 1
+size (brn p s₁ s₂) = suc (size s₁ + size s₂)
+size (mu s)       = suc (size s)
+size (s₁ ; s₂)    = suc (size s₁ + size s₂)
+size skip         = 1
+size ret          = 1
+size acq          = 1
+size (`` α)       = 1
+
+size-⋯ᵣ : (s : 𝕊 m) (ρ : m →ᵣ n) → size (s ⋯ ρ) ≡ size s
+size-⋯ᵣ (` x) ρ = refl
+size-⋯ᵣ (end p) ρ = refl
+size-⋯ᵣ (msg p T) ρ = refl
+size-⋯ᵣ (brn p s₁ s₂) ρ = cong suc (cong₂ _+_ (size-⋯ᵣ s₁ ρ) (size-⋯ᵣ s₂ ρ))
+size-⋯ᵣ (mu s) ρ = cong suc (size-⋯ᵣ s (ρ ↑))
+size-⋯ᵣ (s₁ ; s₂) ρ = cong suc (cong₂ _+_ (size-⋯ᵣ s₁ ρ) (size-⋯ᵣ s₂ ρ))
+size-⋯ᵣ skip ρ = refl
+size-⋯ᵣ ret ρ = refl
+size-⋯ᵣ acq ρ = refl
+size-⋯ᵣ (`` α) ρ = refl
+
+-- pure occurrence + strengthening across a punchIn-renaming.
+Mentions : ∀ {n} → 𝔽 n → 𝕊 n → Set
+Mentions i (` x)        = i ≡ x
+Mentions i (end p)      = ⊥
+Mentions i (msg p T)    = ⊥
+Mentions i (brn p s₁ s₂) = Mentions i s₁ ⊎ Mentions i s₂
+Mentions i (mu s)       = Mentions (suc i) s
+Mentions i (s₁ ; s₂)    = Mentions i s₁ ⊎ Mentions i s₂
+Mentions i skip         = ⊥
+Mentions i ret          = ⊥
+Mentions i acq          = ⊥
+Mentions i (`` α)       = ⊥
+
+mentions? : ∀ {n} (i : 𝔽 n) (s : 𝕊 n) → Dec (Mentions i s)
+mentions? i (` x)        = i Fin.≟ x
+mentions? i (end p)      = no λ()
+mentions? i (msg p T)    = no λ()
+mentions? i (brn p s₁ s₂) = mentions? i s₁ ⊎-dec mentions? i s₂
+mentions? i (mu s)       = mentions? (suc i) s
+mentions? i (s₁ ; s₂)    = mentions? i s₁ ⊎-dec mentions? i s₂
+mentions? i skip         = no λ()
+mentions? i ret          = no λ()
+mentions? i acq          = no λ()
+mentions? i (`` α)       = no λ()
+
+-- s avoiding slot i strengthens: s = s₀ ⋯ punchIn i.
+str-ren : ∀ {j} (s : 𝕊 (suc j)) (i : 𝔽 (suc j)) → ¬ Mentions i s → Str i s
+str-ren (` x) i ¬m with i Fin.≟ x
+... | yes eq = ⊥-elim (¬m eq)
+... | no ¬p  = ` Fin.punchOut ¬p , cong `_ (sym (Fin.punchIn-punchOut ¬p))
+str-ren (end p) i ¬m = end p , refl
+str-ren (msg p T) i ¬m = msg p T , refl
+str-ren (brn p s₁ s₂) i ¬m =
+  let a₀ , ea = str-ren s₁ i (¬m ∘ inj₁)
+      b₀ , eb = str-ren s₂ i (¬m ∘ inj₂)
+  in brn p a₀ b₀ , cong₂ (brn p) ea eb
+str-ren (mu s) i ¬m =
+  let s₀ , es = str-ren s (suc i) ¬m
+  in mu s₀ , (cong mu es ■ sym (pin-↑ i s₀))
+str-ren (s₁ ; s₂) i ¬m =
+  let a₀ , ea = str-ren s₁ i (¬m ∘ inj₁)
+      b₀ , eb = str-ren s₂ i (¬m ∘ inj₂)
+  in (a₀ ; b₀) , cong₂ _;_ ea eb
+str-ren skip i ¬m = skip , refl
+str-ren ret i ¬m = ret , refl
+str-ren acq i ¬m = acq , refl
+str-ren (`` α) i ¬m = `` α , refl
+
+-- weakenᵣ ↑ , post-composed onto the image of weakenᵣ, agrees with weakenᵣ.
+wk-wk↑ : (c₀ : 𝕊 m) → (c₀ ⋯ weakenᵣ) ⋯ (weakenᵣ ↑) ≡ (c₀ ⋯ weakenᵣ) ⋯ weakenᵣ
+wk-wk↑ c₀ = fusion c₀ weakenᵣ (weakenᵣ ↑) ■ ⋯-cong c₀ (λ _ → refl) ■ sym (fusion c₀ weakenᵣ weakenᵣ)
+
+-- occurrence transports forward along a renaming.
+mention-⋯ᵣ : ∀ {i} (s : 𝕊 m) (ρ : m →ᵣ n) → Mentions i s → Mentions (ρ i) (s ⋯ ρ)
+mention-⋯ᵣ (` x) ρ refl = refl
+mention-⋯ᵣ (brn p s₁ s₂) ρ (inj₁ x) = inj₁ (mention-⋯ᵣ s₁ ρ x)
+mention-⋯ᵣ (brn p s₁ s₂) ρ (inj₂ y) = inj₂ (mention-⋯ᵣ s₂ ρ y)
+mention-⋯ᵣ {i = i} (mu s) ρ m = mention-⋯ᵣ s (ρ ↑) m
+mention-⋯ᵣ (s₁ ; s₂) ρ (inj₁ x) = inj₁ (mention-⋯ᵣ s₁ ρ x)
+mention-⋯ᵣ (s₁ ; s₂) ρ (inj₂ y) = inj₂ (mention-⋯ᵣ s₂ ρ y)
+
+-- occurrence reflects backward: a mention of s⋯ρ comes from a mention of s.
+mention-⋯ᵣ⁻¹ : ∀ {i} (s : 𝕊 m) (ρ : m →ᵣ n) → Mentions i (s ⋯ ρ) → ∃[ i′ ] (Mentions i′ s × ρ i′ ≡ i)
+mention-⋯ᵣ⁻¹ (` x) ρ refl = x , refl , refl
+mention-⋯ᵣ⁻¹ (brn p s₁ s₂) ρ (inj₁ x) = let i′ , m , e = mention-⋯ᵣ⁻¹ s₁ ρ x in i′ , inj₁ m , e
+mention-⋯ᵣ⁻¹ (brn p s₁ s₂) ρ (inj₂ y) = let i′ , m , e = mention-⋯ᵣ⁻¹ s₂ ρ y in i′ , inj₂ m , e
+mention-⋯ᵣ⁻¹ (mu s) ρ m with mention-⋯ᵣ⁻¹ s (ρ ↑) m
+... | zero    , mm , ()
+... | suc i″ , mm , e = i″ , mm , Fin.suc-injective e
+mention-⋯ᵣ⁻¹ (s₁ ; s₂) ρ (inj₁ x) = let i′ , m , e = mention-⋯ᵣ⁻¹ s₁ ρ x in i′ , inj₁ m , e
+mention-⋯ᵣ⁻¹ (s₁ ; s₂) ρ (inj₂ y) = let i′ , m , e = mention-⋯ᵣ⁻¹ s₂ ρ y in i′ , inj₂ m , e
+
+-- weakenᵣ never produces an occurrence of slot 0.
+mention-after-wk : (X : 𝕊 m) → ¬ Mentions 0F (X ⋯ weakenᵣ)
+mention-after-wk X m with mention-⋯ᵣ⁻¹ X weakenᵣ m
+... | i′ , _ , ()
+
+rettip-wkN : (k : ℕ) {t : 𝕊 n} → size t ≤ k → RetTip (t ⋯ weakenᵣ) → RetTip t
+rettip-wkN k {ret}        sz ret        = ret
+rettip-wkN (suc k) {_ ; _}     sz (r tL sk)  =
+  rettip-wkN k (≤-trans (m≤m+n _ _) (≤-pred sz)) r tL skips-⋯ᵣ⁻¹ sk
+rettip-wkN (suc k) {_ ; _}     sz (nr tR r)  =
+  noRet-⋯⁻¹ nr tR rettip-wkN k (≤-trans (m≤n+m _ _) (≤-pred sz)) r
+rettip-wkN (suc k) {brn _ _ _} sz (brn r₁ r₂) =
+  brn (rettip-wkN k (≤-trans (m≤m+n _ _) (≤-pred sz)) r₁)
+      (rettip-wkN k (≤-trans (m≤n+m _ _) (≤-pred sz)) r₂)
+rettip-wkN (suc k) {mu c} sz rt
+  with rettip-mu-inv rt
+... | d , eq , rd =
+  let ¬m0c : ¬ Mentions 0F c
+      ¬m0c mc = mention-after-wk d (subst (Mentions 0F) eq (mention-⋯ᵣ c (weakenᵣ ↑) mc))
+      c₀ , ec₀ = str-ren c 0F ¬m0c
+      ec : c ≡ c₀ ⋯ weakenᵣ
+      ec = ec₀ ■ pin0 {s = c₀}
+      rc⋯ : RetTip (c ⋯ weakenᵣ ↑)
+      rc⋯ = subst RetTip (sym eq) (rettip-⋯ᵣ rd)
+      rc₀ww : RetTip ((c₀ ⋯ weakenᵣ) ⋯ weakenᵣ)
+      rc₀ww = subst RetTip (wk-wk↑ c₀) (subst (λ ■ → RetTip (■ ⋯ weakenᵣ ↑)) ec rc⋯)
+      szk : size c ≤ k
+      szk = ≤-pred sz
+      sz₀ : size c₀ ≤ k
+      sz₀ = subst (_≤ k) (cong size ec ■ size-⋯ᵣ c₀ weakenᵣ) szk
+      rc₀ : RetTip c₀
+      rc₀ = rettip-wkN k sz₀ (rettip-wkN k (subst (_≤ k) (sym (size-⋯ᵣ c₀ weakenᵣ)) sz₀) rc₀ww)
+  in subst (λ ■ → RetTip (mu ■)) (sym ec) (muC rc₀)
+
+rettip-wk⁻¹ : {t : 𝕊 n} → RetTip (t ⋯ weakenᵣ) → RetTip t
+rettip-wk⁻¹ {t = t} = rettip-wkN (size t) ≤-refl
+
+reN : ∀ {j} (s : 𝕊 (suc j)) (i : 𝔽 (suc j)) {t : 𝕊 j} →
+      ¬ NoRet t → NoRet (s ⋯ pσ i t) → Str i s
+reS : ∀ {j} (s : 𝕊 (suc j)) (i : 𝔽 (suc j)) {t : 𝕊 j} →
+      ¬ Skips t → Skips (s ⋯ pσ i t) → Str i s
+reR : ∀ {j} (s : 𝕊 (suc j)) (i : 𝔽 (suc j)) {t : 𝕊 j} →
+      ¬ NoRet t → ¬ Skips t → ¬ RetTip t → RetTip (s ⋯ pσ i t) → Str i s
+
+reN (` x) i {t} ¬nr nr with i Fin.≟ x
+... | yes _ = ⊥-elim (¬nr nr)
+... | no ¬p = ` Fin.punchOut ¬p , cong `_ (sym (Fin.punchIn-punchOut ¬p))
+reN (mu a) i {t} ¬nr (mu nr) =
+  let a₀ , ea = reN a (suc i) {t ⋯ weakenᵣ}
+                    (λ nr′ → ¬nr (noRet-⋯⁻¹ nr′))
+                    (subst NoRet (⋯-cong a (pσ-↑ i t)) nr)
+  in mu a₀ , (cong mu ea ■ sym (pin-↑ i a₀))
+reN (s₁ ; s₂) i ¬nr (nr₁ ; nr₂) =
+  let a₀ , ea = reN s₁ i ¬nr nr₁
+      b₀ , eb = reN s₂ i ¬nr nr₂
+  in (a₀ ; b₀) , cong₂ _;_ ea eb
+reN (brn p s₁ s₂) i ¬nr (brn nr₁ nr₂) =
+  let a₀ , ea = reN s₁ i ¬nr nr₁
+      b₀ , eb = reN s₂ i ¬nr nr₂
+  in brn p a₀ b₀ , cong₂ (brn p) ea eb
+reN (end p) i ¬nr nr = end p , refl
+reN acq i ¬nr nr = acq , refl
+reN skip i ¬nr nr = skip , refl
+reN (msg p T) i ¬nr nr = msg p T , refl
+
+reS (` x) i {t} ¬sk sk with i Fin.≟ x
+... | yes _ = ⊥-elim (¬sk sk)
+... | no ¬p = ⊥-elim (¬skips-` sk)
+reS (mu a) i {t} ¬sk (mu sk) =
+  let a₀ , ea = reS a (suc i) {t ⋯ weakenᵣ}
+                    (λ sk′ → ¬sk (skips-⋯ᵣ⁻¹ sk′))
+                    (subst Skips (⋯-cong a (pσ-↑ i t)) sk)
+  in mu a₀ , (cong mu ea ■ sym (pin-↑ i a₀))
+reS (s₁ ; s₂) i ¬sk (sk₁ ; sk₂) =
+  let a₀ , ea = reS s₁ i ¬sk sk₁
+      b₀ , eb = reS s₂ i ¬sk sk₂
+  in (a₀ ; b₀) , cong₂ _;_ ea eb
+reS skip i ¬sk sk = skip , refl
+
+reR (` x) i {t} ¬nr ¬sk ¬rt rt with i Fin.≟ x
+... | yes _ = ⊥-elim (¬rt rt)
+... | no ¬p = ⊥-elim (¬rettip-var rt)
+reR ret i ¬nr ¬sk ¬rt rt = ret , refl
+reR (mu a) i {t} ¬nr ¬sk ¬rt rt
+  with rettip-mu-inv (subst RetTip (cong mu (⋯-cong a (pσ-↑ i t))) rt)
+... | d , eq , rd =
+  let rt-a : RetTip (a ⋯ pσ (suc i) (t ⋯ weakenᵣ))
+      rt-a = subst RetTip (sym eq) (rettip-⋯ᵣ rd)
+      a₀ , ea = reR a (suc i) {t ⋯ weakenᵣ}
+                    (λ nr′ → ¬nr (noRet-⋯⁻¹ nr′))
+                    (λ sk′ → ¬sk (skips-⋯ᵣ⁻¹ sk′))
+                    (λ rt′ → ¬rt (rettip-wk⁻¹ rt′))
+                    rt-a
+  in mu a₀ , (cong mu ea ■ sym (pin-↑ i a₀))
+reR (s₁ ; s₂) i ¬nr ¬sk ¬rt (r tL sk) =
+  let a₀ , ea = reR s₁ i ¬nr ¬sk ¬rt r
+      b₀ , eb = reS s₂ i ¬sk sk
+  in (a₀ ; b₀) , cong₂ _;_ ea eb
+reR (s₁ ; s₂) i ¬nr ¬sk ¬rt (nr tR r) =
+  let a₀ , ea = reN s₁ i ¬nr nr
+      b₀ , eb = reR s₂ i ¬nr ¬sk ¬rt r
+  in (a₀ ; b₀) , cong₂ _;_ ea eb
+reR (brn p s₁ s₂) i ¬nr ¬sk ¬rt (brn r₁ r₂) =
+  let a₀ , ea = reR s₁ i ¬nr ¬sk ¬rt r₁
+      b₀ , eb = reR s₂ i ¬nr ¬sk ¬rt r₂
+  in brn p a₀ b₀ , cong₂ (brn p) ea eb
+
+-- unfold is the point-substitution of `mu s` at slot 0.
+unfold≡pσ : (s : 𝕊 (suc n)) → unfold s ≡ s ⋯ pσ 0F (mu s)
+unfold≡pσ s = ⋯-cong s (λ where zero → refl ; (suc x) → refl)
+
+-- if s mentions slot 0, `mu s` cannot be a RetTip.
+mentions-mu-¬rettip : {s : 𝕊 (suc n)} → Mentions 0F s → ¬ RetTip (mu s)
+mentions-mu-¬rettip m rtm =
+  let s′ , e , _ = rettip-mu-inv rtm
+  in mention-after-wk s′ (subst (Mentions 0F) e m)
+
 mu-bwd : ∀ {s : 𝕊 1} → RetTip (unfold s) → RetTip (mu s)
-mu-bwd {` zero}      rt = rt
-mu-bwd {ret}         rt = muC ret
-mu-bwd {mu s}        rt = {! mu-bwd-mu !}
-mu-bwd {s₁ ; s₂}   rt = {! mu-bwd-seq !}
-mu-bwd {brn p s₁ s₂} rt = {! mu-bwd-brn !}
+mu-bwd {` zero} rt = rt
+mu-bwd {ret}    rt = muC ret
+mu-bwd {s} rt with mentions? 0F s
+... | no ¬m =
+  let s₀ , es = str-ren s 0F ¬m
+      es′ : s ≡ s₀ ⋯ weakenᵣ
+      es′ = es ■ pin0 {s = s₀}
+      rs₀ : RetTip s₀
+      rs₀ = subst RetTip (cong unfold es′ ■ mu-cancel) rt
+  in subst (λ ■ → RetTip (mu ■)) (sym es′) (muC rs₀)
+... | yes m =
+  let ¬nrmus : ¬ NoRet (mu s)
+      ¬nrmus = λ where
+        (mu nrs) → rettip⇒¬noRet rt
+          (noRet-⋯ nrs (λ where zero → mu nrs ; (suc x) → `-))
+      ¬skmus : ¬ Skips (mu s)
+      ¬skmus = λ where (mu sks) → retTip⊥skips rt (skips-⋯ sks)
+      s₀ , es = reR s 0F {mu s} ¬nrmus ¬skmus (mentions-mu-¬rettip m)
+                    (subst RetTip (unfold≡pσ s) rt)
+  in ⊥-elim (mention-after-wk s₀ (subst (Mentions 0F) (es ■ pin0 {s = s₀}) m))
 
 retTip-≃ : RetTip {0} Respects _≃_
 retTip-≃ refl       rt = rt
