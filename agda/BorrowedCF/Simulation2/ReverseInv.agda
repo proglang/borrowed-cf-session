@@ -18,9 +18,12 @@ module BorrowedCF.Simulation2.ReverseInv where
 open import BorrowedCF.Simulation2.Base
 open import BorrowedCF.Context using (Ctx; Struct)
 
-open import BorrowedCF.Types using (_≃_; ⟨_⟩; ≃-sym)
+open import BorrowedCF.Types using (_≃_; ⟨_⟩; ≃-sym; ≃-trans)
 import BorrowedCF.Simulation2.InvFrame as IF
-open import BorrowedCF.Simulation2.Frames using (frame*-⋯; frame-plug*)
+open import BorrowedCF.Simulation2.Frames using (frame*-⋯; frame-plug*; ++ₛ-VSub; weaken-VSub)
+open import BorrowedCF.Simulation2.TranslationProperties using (≡→≋)
+import BorrowedCF.Processes.Typed   as TP
+import BorrowedCF.Processes.Untyped as UP
 import Data.Sum as Sum
 
 open Variables
@@ -36,6 +39,9 @@ open Fin.Patterns
 
 ⟨⟩≄⊕ : ∀ {s T U} → ¬ (⟨ s ⟩ ≃ (T ⊕ U))
 ⟨⟩≄⊕ ()
+
+⟨⟩≄⊤ : ∀ {s} → ¬ (⟨ s ⟩ ≃ `⊤)
+⟨⟩≄⊤ ()
 
 -- A channel-typed variable cannot be typed at an arrow / pair / sum, so it can
 -- never occupy the (function / scrutinee) head position of an application,
@@ -54,6 +60,35 @@ chanvar-notSum : ∀ {m} {Γ : Ctx m} {γ} {x : 𝔽 m} {T U ϵ}
   → ChanCx Γ → Γ ; γ ⊢ ` x ∶ (T ⊕ U) ∣ ϵ → ⊥
 chanvar-notSum {x = x} Γ-S ⊢x with inv-` ⊢x | Γ-S x
 ... | T≃ , _ | s , eq = ⟨⟩≄⊕ (≃-sym (subst (_ ≃_) eq T≃))
+
+chanvar-not⊤ : ∀ {m} {Γ : Ctx m} {γ} {x : 𝔽 m} {ϵ}
+  → ChanCx Γ → Γ ; γ ⊢ ` x ∶ `⊤ ∣ ϵ → ⊥
+chanvar-not⊤ {x = x} Γ-S ⊢x with inv-` ⊢x | Γ-S x
+... | T≃ , _ | s , eq = ⟨⟩≄⊤ (≃-sym (subst (_ ≃_) eq T≃))
+
+-- new's declared domain is `⊤; reading it off the arrow ≃ forces the argument
+-- type to `⊤.
+⊤-dom : ∀ {m} {T U R R′ : Ty 𝕥 m} {a a′} → (T ⟨ a ⟩→ R) ≃ (U ⟨ a′ ⟩→ R′) → T ≃ U
+⊤-dom (eq `→ _) = eq
+
+-- The argument of `new s` is typed at `⊤, so a channel variable can never be
+-- it: a (matched) App constructor types the function at (`⊤ ⟨a⟩→ R) and the
+-- argument at `⊤, contradicting ChanCx.
+clash-new : ∀ {m} {Γ : Ctx m} {γ₁ γ₂} {x : 𝔽 m} {s : 𝕊 0} {U a R ϵ₁ ϵ₂}
+      → ChanCx Γ → Γ ; γ₁ ⊢ K (`new s) ∶ (U ⟨ a ⟩→ R) ∣ ϵ₁
+      → Γ ; γ₂ ⊢ ` x ∶ U ∣ ϵ₂ → ⊥
+clash-new Γ-S ⊢f ⊢a with inv-K ⊢f
+... | _ , U≃ , _ , `new _ =
+      chanvar-not⊤ Γ-S (T-Conv (≃-sym (⊤-dom U≃)) ≤ϵ-refl ⊢a)
+
+new-arg-notVar : ∀ {m} {Γ : Ctx m} {γ} {x : 𝔽 m} {s : 𝕊 0} {T ϵ}
+  → ChanCx Γ → Γ ; γ ⊢ K (`new s) · (` x) ∶ T ∣ ϵ → ⊥
+new-arg-notVar Γ-S (T-AppUnr _ _ ⊢f ⊢a)  = clash-new Γ-S ⊢f ⊢a
+new-arg-notVar Γ-S (T-AppLin _ _ ⊢f ⊢a)  = clash-new Γ-S ⊢f ⊢a
+new-arg-notVar Γ-S (T-AppLeft _ _ ⊢f ⊢a) = clash-new Γ-S ⊢f ⊢a
+new-arg-notVar Γ-S (T-AppRight _ _ ⊢f ⊢a) = clash-new Γ-S ⊢f ⊢a
+new-arg-notVar Γ-S (T-Conv _ _ d) = new-arg-notVar Γ-S d
+new-arg-notVar Γ-S (T-Weaken _ d) = new-arg-notVar Γ-S d
 
 -- A channel-typed variable can never head a well-typed application: the
 -- application rules type the function at an arrow, contradicting ChanCx.
@@ -588,3 +623,103 @@ frameApp-reflect Γ-S e₀ ⊢e σ Vσ c (`case□`of⟨ e₁ ; e₂ ⟩ ∷ F*
       with F₀ , arg₀ , refl , Feq , argeq ← frameApp-reflect Γ-S s₀ ⊢s₀ σ Vσ c F* (sym seq)
       = (`case□`of⟨ c₁ ; c₂ ⟩) ∷ F₀ , arg₀ , refl ,
         cong₂ L._∷_ (cong₂ (λ u v → `case□`of⟨ u ; v ⟩) beq1 beq2) Feq , argeq
+
+
+------------------------------------------------------------------------
+-- R-New codomain bridge (copied from Theorems.agda; reused for sim<- RU-New).
+------------------------------------------------------------------------
+
+□·-cong : {e₁ e₂ : Tm n} → e₁ ≡ e₂ → (□· e₁) ≡ (□· e₂)
+□·-cong refl = refl
+
+·□-cong : {e₁ e₂ : Tm n} {V₁ : Value e₁} {V₂ : Value e₂} → e₁ ≡ e₂ → (V₁ ·□) ≡ (V₂ ·□)
+·□-cong refl = cong _·□ Value-irr
+
+⊗□-cong : {e₁ e₂ : Tm n} {V₁ : Value e₁} {V₂ : Value e₂} → e₁ ≡ e₂ → (V₁ ⊗□) ≡ (V₂ ⊗□)
+⊗□-cong refl = cong _⊗□ Value-irr
+
+frame-cong : (E : Frame m) {ϕ ψ : m →ₛ n} (Vϕ : VSub ϕ) (Vψ : VSub ψ) → ϕ ≗ ψ →
+             frame-⋯ E ϕ Vϕ ≡ frame-⋯ E ψ Vψ
+frame-cong (□· e₂)        Vϕ Vψ eq = cong □·_ (⋯-cong e₂ eq)
+frame-cong (V₁ ·□)        Vϕ Vψ eq = ·□-cong (⋯-cong (vTm V₁) eq)
+frame-cong (□⊗ e₂)        Vϕ Vψ eq = cong □⊗_ (⋯-cong e₂ eq)
+frame-cong (V₁ ⊗□)        Vϕ Vψ eq = ⊗□-cong (⋯-cong (vTm V₁) eq)
+frame-cong (□; e₂)        Vϕ Vψ eq = cong □;_ (⋯-cong e₂ eq)
+frame-cong (`let-`in e′)  Vϕ Vψ eq = cong `let-`in_ (⋯-cong e′ (eq ~↑))
+frame-cong (`let⊗-`in e′) Vϕ Vψ eq = cong `let⊗-`in_ (⋯-cong e′ (eq ~↑* 2))
+frame-cong (`inj□ i)      Vϕ Vψ eq = refl
+frame-cong (`case□`of⟨ e₁ ; e₂ ⟩) Vϕ Vψ eq =
+  cong₂ `case□`of⟨_;_⟩ (⋯-cong e₁ (eq ~↑)) (⋯-cong e₂ (eq ~↑))
+
+frame-fusion-gen : ∀ {𝓕₁ 𝓕₂ 𝓕} ⦃ K₁ : Kit 𝓕₁ ⦄ ⦃ K₂ : Kit 𝓕₂ ⦄ ⦃ K : Kit 𝓕 ⦄ ⦃ W₁ : WkKit K₁ ⦄ ⦃ C : CKit K₁ K₂ K ⦄ {m₁ p}
+                   (E : Frame m) {ϕ : m –[ K₁ ]→ m₁} (Vϕ : VSub ϕ) {ξ : m₁ –[ K₂ ]→ p} (Vξ : VSub ξ)
+                   (Vϕξ : VSub (ϕ ·ₖ ξ)) →
+                   frame-⋯ (frame-⋯ E ϕ Vϕ) ξ Vξ ≡ frame-⋯ E (ϕ ·ₖ ξ) Vϕξ
+frame-fusion-gen (□· e₂)        {ϕ} Vϕ {ξ} Vξ Vϕξ = cong □·_ (fusion e₂ ϕ ξ)
+frame-fusion-gen (V₁ ·□)        {ϕ} Vϕ {ξ} Vξ Vϕξ = ·□-cong (fusion (vTm V₁) ϕ ξ)
+frame-fusion-gen (□⊗ e₂)        {ϕ} Vϕ {ξ} Vξ Vϕξ = cong □⊗_ (fusion e₂ ϕ ξ)
+frame-fusion-gen (V₁ ⊗□)        {ϕ} Vϕ {ξ} Vξ Vϕξ = ⊗□-cong (fusion (vTm V₁) ϕ ξ)
+frame-fusion-gen (□; e₂)        {ϕ} Vϕ {ξ} Vξ Vϕξ = cong □;_ (fusion e₂ ϕ ξ)
+frame-fusion-gen (`let-`in e′)  {ϕ} Vϕ {ξ} Vξ Vϕξ = cong `let-`in_ (fusion e′ (ϕ ↑) (ξ ↑) ■ ⋯-cong e′ (λ x → sym (dist-↑-· ϕ ξ x)))
+frame-fusion-gen (`let⊗-`in e′) {ϕ} Vϕ {ξ} Vξ Vϕξ = cong `let⊗-`in_ (fusion e′ (ϕ ↑* 2) (ξ ↑* 2) ■ ⋯-cong e′ (λ x → sym (dist-↑*-· 2 ϕ ξ x)))
+frame-fusion-gen (`inj□ i)      {ϕ} Vϕ {ξ} Vξ Vϕξ = refl
+frame-fusion-gen (`case□`of⟨ e₁ ; e₂ ⟩) {ϕ} Vϕ {ξ} Vξ Vϕξ =
+  cong₂ `case□`of⟨_;_⟩ (fusion e₁ (ϕ ↑) (ξ ↑) ■ ⋯-cong e₁ (λ x → sym (dist-↑-· ϕ ξ x)))
+                        (fusion e₂ (ϕ ↑) (ξ ↑) ■ ⋯-cong e₂ (λ x → sym (dist-↑-· ϕ ξ x)))
+
+
+
+tL : Tm (4 + n)
+tL = (((` 0F) ⊗ (` 3F)) ⊗ *) ⊗ (((` 1F) ⊗ (` 2F)) ⊗ *)
+
+rnew-bridge : (E : Frame* m) (σ : m →ₛ n) (Vσ : VSub σ) →
+  UP.ν (UP.φ UP.acq (UP.φ UP.acq UP.⟪
+        (frame*-⋯ E σ Vσ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [ tL ]* ⟫))
+    UP.≋
+  U[ TP.ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
+        TP.⟪ (E ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 1F) ⊗ (` 0F) ]* ⟫ ] σ
+rnew-bridge {m} {n} E σ Vσ =
+  ≡→≋ (cong UP.ν (cong (UP.φ UP.acq) (cong (UP.φ UP.acq) (cong UP.⟪_⟫ bodyEq))))
+  where
+    cA : Tm (1 + (1 + (2 + n)))
+    cA = chanTriple ((` 0F) , 1F , wk *) ⋯ weaken* ⦃ Kᵣ ⦄ 1
+    cB : Tm (1 + (1 + (2 + n)))
+    cB = chanTriple ((` 0F) , suc (weaken* ⦃ Kᵣ ⦄ 1 1F) , wk *)
+    A : 1 →ₛ (1 + (1 + (2 + n)))
+    A = λ _ → cA
+    B : 1 →ₛ (1 + (1 + (2 + n)))
+    B = λ _ → cB
+    Bσ : m →ₛ (1 + (1 + (2 + n)))
+    Bσ = λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 1 ⋯ weaken* ⦃ Kᵣ ⦄ 1
+    σ′ : (1 + 1 + m) →ₛ (1 + (1 + (2 + n)))
+    σ′ = (A ++ₛ B) ++ₛ Bσ
+    VcAch : Value (chanTriple ((` 0F) , 1F , wk *))
+    VcAch = V-⊗ (V-⊗ V-` V-`) (value-⋯ V-K (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`))
+    VcBch : Value (chanTriple ((` 0F) , suc (weaken* ⦃ Kᵣ ⦄ 1 1F) , wk *))
+    VcBch = V-⊗ (V-⊗ V-` V-`) (value-⋯ V-K (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`))
+    VcA : Value cA
+    VcA = value-⋯ VcAch (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`)
+    VA : VSub A
+    VA = λ _ → VcA
+    VB : VSub B
+    VB = λ _ → VcBch
+    Vσ′ : VSub σ′
+    Vσ′ = ++ₛ-VSub {σ₁ = A ++ₛ B}
+            (++ₛ-VSub {σ₁ = A} VA VB)
+            (weaken-VSub 1 (weaken-VSub 1 (weaken-VSub 2 Vσ)))
+    weakenEq : Bσ ≗ (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 4)
+    weakenEq i = fusion (σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2) (weaken* ⦃ Kᵣ ⦄ 1) (weaken* ⦃ Kᵣ ⦄ 1)
+               ■ fusion (σ i) (weaken* ⦃ Kᵣ ⦄ 2) (weaken* ⦃ Kᵣ ⦄ 1 ·ₖ weaken* ⦃ Kᵣ ⦄ 1)
+    perF : (F : Frame m) → frame-⋯ (F ⋯ᶠ weaken* ⦃ Kᵣ ⦄ 2) σ′ Vσ′ ≡ frame-⋯ F σ Vσ ⋯ᶠ weaken* ⦃ Kᵣ ⦄ 4
+    perF F = frame-fusion-gen F (λ _ → V-`) Vσ′ (λ x → Vσ′ (weaken* ⦃ Kᵣ ⦄ 2 x))
+           ■ frame-cong F (λ x → Vσ′ (weaken* ⦃ Kᵣ ⦄ 2 x)) (λ x → value-⋯ (Vσ x) (weaken* ⦃ Kᵣ ⦄ 4) (λ _ → V-`)) weakenEq
+           ■ sym (frame-fusion-gen F Vσ (λ _ → V-`) (λ x → value-⋯ (Vσ x) (weaken* ⦃ Kᵣ ⦄ 4) (λ _ → V-`)))
+    frameEqA : (E* : Frame* m) → frame*-⋯ (E* ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) σ′ Vσ′ ≡ frame*-⋯ E* σ Vσ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4
+    frameEqA []        = refl
+    frameEqA (F ∷ E*) = cong₂ _∷_ (perF F) (frameEqA E*)
+    leafTermEq : ((` 1F) ⊗ (` 0F)) ⋯ σ′ ≡ tL
+    leafTermEq = refl
+    bodyEq : (frame*-⋯ E σ Vσ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [ tL ]*
+             ≡ ((E ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 1F) ⊗ (` 0F) ]*) ⋯ σ′
+    bodyEq = sym (frame-plug* (E ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) σ′ Vσ′
+                 ■ cong₂ _[_]* (frameEqA E) leafTermEq)

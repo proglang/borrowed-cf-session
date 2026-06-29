@@ -23,7 +23,9 @@ open import BorrowedCF.Simulation2.TranslationProperties
 -- value reflection, and the typed expression-reduction reflection ⋯→-reflect
 -- that powers RU-Exp) live in BorrowedCF.Simulation2.ReverseInv.
 open import BorrowedCF.Simulation2.ReverseInv
-  using (⋯→-reflect; frameApp-reflect; headK; plugApp-not-value)
+  using (⋯→-reflect; frameApp-reflect; headK; plugApp-not-value;
+         rnew-bridge; new-arg-notVar)
+open import BorrowedCF.Simulation2.InvFrame using (strengthen-frame; inv-app)
 open import BorrowedCF.Simulation2.Frames using (frame-plug*)
 import Data.Sum as Sum
 import BorrowedCF.Processes.Typed             as TP
@@ -281,8 +283,28 @@ sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Fork F V)
 --   based ∥/ν/φ moves) can reorder.  Reverse inherits this verbatim (≋ is
 --   symmetric).  Fix is the same swap in Reduction/Processes/Untyped.agda RU-New
 --   OR the typed R-New body OR Bisim.agda U[_] — all outside this module's scope.
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-New F) =
-  {! RU-New → TR.R-New: frameApp-reflect closes the redex inversion; BLOCKED on the same expression-internal ⊗-swap as forward R-New (output a⊗b vs U[rhs] b⊗a, unreachable by any ≋); needs the swap fix in a file owned elsewhere. !}
+-- RU-New : redex K (`new s) · *.  frameApp-reflect recovers F₀ and arg₀;
+--   strengthen-frame + new-arg-notVar rules out a variable argument (new's
+--   domain is `⊤, never a channel), forcing arg₀ ≡ K `unit, i.e. an R-New
+--   redex.  The codomain ≋ is the (now reusable) rnew-bridge — the SAME bridge
+--   the forward R-New uses; the ⊗-swap is reconciled there (the U[ν…] leaf order
+--   `1F⊗`0F substitutes the two channel triples into the unswapped pair tL).
+sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-New {s = s} F)
+  with e₀ , refl , feq ← inv-U-⟪⟫ P σ (sym eq)
+  with F₀ , arg₀ , refl , Feq , argeq
+       ← frameApp-reflect Γ-S e₀ (inv-⟪⟫ ⊢P) σ Vσ (`new s) F (sym feq)
+  with headK σ arg₀ (sym argeq)
+... | Sum.inj₁ (x , refl)
+      with _ , (_ , _ , ⊢redex) , _ , _ ← strengthen-frame F₀ (inv-⟪⟫ ⊢P)
+      = ⊥-elim (new-arg-notVar Γ-S ⊢redex)
+... | Sum.inj₂ refl =
+  TP.ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
+    TP.⟪ (F₀ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 1F) ⊗ (` 0F) ]* ⟫ ,
+  TR.R-New F₀ ,
+  subst (λ z → UP.ν (UP.φ UP.acq (UP.φ UP.acq UP.⟪
+                  (z ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [ _ ]* ⟫))
+                UP.≋ _)
+        (sym Feq) (rnew-bridge F₀ σ Vσ)
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-LSplit F) =
   {! RU-LSplit → TR.R-LSplit: inv-U-ν + recognise the U[_]-image of the lsplit redex inside the φ-nest. Design point: B-shape / SplitRenamings.inj alignment (cf. forward LSplit.agda). !}
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-RSplit F) =
