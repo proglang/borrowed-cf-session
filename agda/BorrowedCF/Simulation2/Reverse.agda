@@ -335,8 +335,10 @@ sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Acquire F) =
 sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
   with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
   with inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq
-... | Sum.inj₂ _ =
-  {! RU-Close inj₂ (one Bᵢ = []): a close endpoint with NO handle.  IMPOSSIBLE for a well-typed close — the reflected redex arg maps under νσ to a chanTriple whose flag is 0F/1F, but an empty block-1 (resp. block-2) forces it into the other block / σ-tail with the wrong flag.  Ruling this out needs the BindCtx HandleCount confinement (un-ported confine subsystem). !}
+... | Sum.inj₂ (Sum.inj₁ refl)
+  with _ , _ , _ , _ , _ , _ , () , _ ← inv-ν ⊢P
+... | Sum.inj₂ (Sum.inj₂ refl)
+  with _ , _ , _ , _ , _ , _ , _ , () , _ ← inv-ν ⊢P
 ... | Sum.inj₁ (b₁ , b₂ , refl , refl)
   with _ , _ , Γ′-S , ⊢body ← inv-ν-chanCx Γ-S ⊢P
   with bodyeq′ ← ν-inj (bodyeq ■ U-ν-singleton b₁ b₂ P₀ σ)
@@ -352,7 +354,7 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
   with F₀ᴿ , argᴿ , refl , FeqR , argeqR
        ← frameApp-reflect Γ′-S eR (inv-⟪⟫ ⊢PR) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) (`end ⁇)
            (F₂ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) (sym Req′) =
-  {! RU-Close inj₁ singleton: threads RECOVERED (P₀ = ⟪F₀ᴸ[end‼·argᴸ]⟫ ∥ ⟪F₀ᴿ[end⁇·argᴿ]⟫) with typing ⊢PL/⊢PR in binder-extended ChanCx Γ′-S; redexes reflected (FeqL : F₁⋯ᶠ*wk2 ≡ frame*-⋯ F₀ᴸ νσ Vνσ ; argeqL : 𝓒[e₁×0F×e₁′] ≡ argᴸ ⋯ νσ).  RESIDUAL: the HandleCount confinement (b₁=b₂=1, argᴸ=`0F, argᴿ=`1F, F₀ᴸ=E₁⋯ᶠ*wk2) needed to fire TR.R-Close, then close-bridge for codomain.  Same un-ported confine subsystem as forward R-Close/R-Acq. !}
+  {! RU-Close inj₁: threads RECOVERED (P₀ = ⟪F₀ᴸ[end‼·argᴸ]⟫ ∥ ⟪F₀ᴿ[end⁇·argᴿ]⟫) with typing ⊢PL/⊢PR in binder-extended ChanCx Γ′-S; redexes reflected (FeqL : F₁⋯ᶠ*wk2 ≡ frame*-⋯ F₀ᴸ νσ Vνσ ; argeqL : 𝓒[e₁×0F×e₁′] ≡ argᴸ ⋯ νσ).  To fire TR.R-Close we would need b₁=b₂=1, argᴸ=`0F, argᴿ=`1F.  GENUINE ROADBLOCK (machine-checked): b₁=1 is NOT forced.  BindCtx′ (s;end⁇) 2 is INHABITED by skip-padding — `cons` splits end⁇ ≃ skip;end⁇ (borrow ⟨skip⟩, Unr) then end⁇ ≃ end⁇;skip (borrow ⟨end⁇⟩) then nil skip (verified inhabitant `build2`).  Such a b₁=2 close is well-typed (the ⟨skip⟩ padding channel is Unr/weakenable, the real ⟨end⟩ handle sits at index 1F not 0F, so argᴸ≠0F) and `inv-U-ν-∥-shape` routes it here, yet R-Close fires only at B₁=B₂=[1].  sim←'s codomain is a SINGLE step (─→ₚ), so the typed side cannot first R-Discard the padding and then R-Close.  Closing this requires a typing/calculus-design change: either generalise sim← to ─→ₚ* (R-Discard*-then-R-Close), forbid skip-padded bind groups, or add a ≋-normalisation stripping ⟨skip⟩ borrows.  See final report. !}
 -- RU-Com.  Body ν(⟪..⟫ ∥ (⟪..⟫ ∥ P)) is ∥-headed, so the SAME structural
 --   inversion as RU-Close applies: inv-U-ν + inv-U-ν-∥-shape force B₁,B₂ to
 --   singletons (syncs 0), U-ν-singleton collapses the φ-telescope, giving body ≡

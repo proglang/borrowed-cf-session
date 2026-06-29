@@ -791,7 +791,7 @@ inv-U-ν-∥-shape : ∀ {m n} (B₁ B₂ : TP.BindGroup)
               (P₀ : TP.Proc (sum B₁ + sum B₂ + m)) (σ : m →ₛ n) {A B : UP.Proc (2 + n)}
           → UP.ν (A UP.∥ B) ≡ U[ TP.ν B₁ B₂ P₀ ] σ
           → (Σ[ b₁ ∈ ℕ ] Σ[ b₂ ∈ ℕ ] (B₁ ≡ b₁ ∷ []) × (B₂ ≡ b₂ ∷ []))
-            Sum.⊎ ((syncs B₁ ≡ 0) × (syncs B₂ ≡ 0))
+            Sum.⊎ ((B₁ ≡ []) Sum.⊎ (B₂ ≡ []))
 inv-U-ν-∥-shape (b ∷ _ ∷ _) B₂ P₀ σ eq with ν-inj eq
 ... | ()
 inv-U-ν-∥-shape (b₁ ∷ []) (b₂ ∷ _ ∷ _) P₀ σ eq with ν-inj eq
@@ -800,9 +800,9 @@ inv-U-ν-∥-shape (b₁ ∷ []) (b₂ ∷ []) P₀ σ eq =
   Sum.inj₁ (b₁ , b₂ , refl , refl)
 inv-U-ν-∥-shape [] (b₂ ∷ _ ∷ _) P₀ σ eq with ν-inj eq
 ... | ()
-inv-U-ν-∥-shape [] (b₂ ∷ []) P₀ σ eq = Sum.inj₂ (refl , refl)
-inv-U-ν-∥-shape [] []        P₀ σ eq = Sum.inj₂ (refl , refl)
-inv-U-ν-∥-shape (b₁ ∷ []) [] P₀ σ eq = Sum.inj₂ (refl , refl)
+inv-U-ν-∥-shape [] (b₂ ∷ []) P₀ σ eq = Sum.inj₂ (Sum.inj₁ refl)
+inv-U-ν-∥-shape [] []        P₀ σ eq = Sum.inj₂ (Sum.inj₁ refl)
+inv-U-ν-∥-shape (b₁ ∷ []) [] P₀ σ eq = Sum.inj₂ (Sum.inj₂ refl)
 
 ------------------------------------------------------------------------
 -- inv-ν-chanCx : the BINDER-EXTENDED ChanCx + body typing.
