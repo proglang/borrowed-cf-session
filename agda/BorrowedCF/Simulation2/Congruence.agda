@@ -28,6 +28,7 @@ open import BorrowedCF.Simulation2.BlockPerm
 open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat.Solver using (module +-*-Solver)
+open import Relation.Binary.Definitions using (tri<; tri≈; tri>)
 
 -- moving a (p+q+2)-block past an (r+s+2)-block (pure ℕ arithmetic).
 blockComm : ∀ p q r s Y →
@@ -842,6 +843,32 @@ lift-fix-ge ρ k T h z ge =
                 reassoc = solve 3 (λ u v w → u :+ (v :+ (w :+ con 2)) := w :+ (u :+ (v :+ con 2)))
                             refl sA2 sA1 sB1
                   where open +-*-Solver
+
+-- top-level rebuild of the composite body permutation Φ of subEqComm-gen,
+-- parameterised purely by the four syncs counts.  (Definitionally equal to the
+-- in-where Φ once the counts are instantiated.)
+module _ (sA1 sA2 sB1 sB2 : ℕ) {n : ℕ} where
+  Φᵗ : (sA2 + (sA1 + (2 + (sB2 + (sB1 + (2 + n))))))
+       →ᵣ (sB2 + (sB1 + (2 + (sA2 + (sA1 + (2 + n))))))
+  Φᵗ = (((((ρaccᵗ ↑* sA1) ↑* sA2) ·ₖ (assocSwapᵣ sA1 sB2 ↑* sA2)) ·ₖ assocSwapᵣ sA2 sB2) ·ₖ Ωᵗ)
+    where
+      ρaccᵗ = assocSwapᵣ 2 sB2 ·ₖ ((assocSwapᵣ 2 sB1 ·ₖ (assocSwapᵣ 2 2 {n} ↑* sB1)) ↑* sB2)
+      Ωᵗ = ((assocSwapᵣ sA1 sB1 ↑* sA2) ·ₖ (assocSwapᵣ sA2 sB1 ·ₖ (((assocSwapᵣ sA1 2 ↑* sA2) ·ₖ assocSwapᵣ sA2 2) ↑* sB1))) ↑* sB2
+
+  -- A-region: an index strictly below the whole A-prefix (sA2+sA1+2) is shifted
+  -- right by the whole B-prefix (sB2+sB1+2).
+  Φᵗ-A : ∀ (x : 𝔽 (sA2 + (sA1 + (2 + (sB2 + (sB1 + (2 + n)))))))
+         → Fin.toℕ x Nat.< sA2 + (sA1 + 2)
+         → Fin.toℕ (Φᵗ x) ≡ (sB2 + (sB1 + 2)) + Fin.toℕ x
+  Φᵗ-A x lt = {! Φ-A !}
+
+  -- B-region: an index in [sA2+sA1+2, sA2+sA1+2 + (sB2+sB1+2)) is shifted left
+  -- by the whole A-prefix.
+  Φᵗ-B : ∀ (x : 𝔽 (sA2 + (sA1 + (2 + (sB2 + (sB1 + (2 + n)))))))
+         → sA2 + (sA1 + 2) Nat.≤ Fin.toℕ x
+         → Fin.toℕ x Nat.< sA2 + (sA1 + (2 + (sB2 + (sB1 + 2))))
+         → Fin.toℕ (Φᵗ x) ≡ Fin.toℕ x Nat.∸ (sA2 + (sA1 + 2))
+  Φᵗ-B x ge lt = {! Φ-B !}
 
 -- leaf reconcile for the ν-comm case (the nested analogue of subEq-gen).
 subEqComm-gen : ∀ {m n} (σ : m →ₛ n) (A₁ A₂ B₁ B₂ : BindGroup) →
