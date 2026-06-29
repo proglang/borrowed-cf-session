@@ -934,6 +934,17 @@ subst-frame-plug : (h : ℕ → ℕ) {x y : ℕ} (eq : x ≡ y) (F : Frame* (h x
                    ≡ subst (λ z → Frame* (h z)) eq F [ subst (λ z → Tm (h z)) eq t ]*
 subst-frame-plug h refl F t = refl
 
+subst-⊗f : (h : ℕ → ℕ) {x y : ℕ} (eq : x ≡ y) (a b : Tm (h x)) →
+           subst (λ z → Tm (h z)) eq (a ⊗ b)
+           ≡ subst (λ z → Tm (h z)) eq a ⊗ subst (λ z → Tm (h z)) eq b
+subst-⊗f h refl a b = refl
+
+transport-⋯t : {kk kk′ : ℕ} (fg gg : ℕ → ℕ) (ρ : ∀ j → fg j →ᵣ gg j) (eq : kk ≡ kk′)
+               (t : Tm (fg kk)) →
+               subst (λ j → Tm (gg j)) eq (t ⋯ ρ kk)
+               ≡ (subst (λ j → Tm (fg j)) eq t) ⋯ ρ kk′
+transport-⋯t fg gg ρ refl t = refl
+
 ss-U : ∀ {x y z : ℕ} (p : x ≡ y) (q : y ≡ z) {t : U.Proc x} →
        subst U.Proc q (subst U.Proc p t) ≡ subst U.Proc (p ■ q) t
 ss-U refl refl = refl
@@ -1119,8 +1130,138 @@ canonₛ-handle-lwk (a ∷ d ∷ B₁″) {N} (e₁ , x , e₂) b₁ B₂
              ≡ subst Tm (+-suc s′ N) Y
     chainH refl X .X refl = refl
 
+
+-- canonₛ on the grown group is the same at slot 0F and slot 1F of the head
+-- data-block: both land on the same const triple (induction on B₁).
+canonₛ-slot01 : ∀ (B₁ : BindGroup) {N} (cc : UChan N) (b₁ : ℕ) (B₂ : BindGroup) →
+  canonₛ (B₁ ++ suc (suc b₁) ∷ B₂) cc (Fin.cast (sym (sum-++ B₁ (suc (suc b₁) ∷ B₂))) (sum B₁ ↑ʳ 0F))
+  ≡ canonₛ (B₁ ++ suc (suc b₁) ∷ B₂) cc (Fin.cast (sym (sum-++ B₁ (suc (suc b₁) ∷ B₂))) (sum B₁ ↑ʳ 1F))
+canonₛ-slot01 []            {N} cc b₁ []        =
+  cong (canonₛ (suc (suc b₁) ∷ []) cc) (castPos 0F)
+  ■ sym (cong (canonₛ (suc (suc b₁) ∷ []) cc) (castPos 1F))
+  where
+    castPos : (z : 𝔽 (sum (suc (suc b₁) ∷ []))) →
+              Fin.cast (sym (sum-++ [] (suc (suc b₁) ∷ []))) (sum [] ↑ʳ z) ≡ z
+    castPos z = Fin.toℕ-injective
+      ( Fin.toℕ-cast (sym (sum-++ [] (suc (suc b₁) ∷ []))) (sum [] ↑ʳ z)
+      ■ Fin.toℕ-↑ʳ (sum []) z )
+canonₛ-slot01 []            {N} cc b₁ (b ∷ B) =
+  cong (canonₛ (suc (suc b₁) ∷ (b ∷ B)) cc) (castPos 0F)
+  ■ headConst
+  ■ sym (cong (canonₛ (suc (suc b₁) ∷ (b ∷ B)) cc) (castPos 1F))
+  where
+    castPos : (z : 𝔽 (sum (suc (suc b₁) ∷ (b ∷ B)))) →
+              Fin.cast (sym (sum-++ [] (suc (suc b₁) ∷ (b ∷ B)))) (sum [] ↑ʳ z) ≡ z
+    castPos z = Fin.toℕ-injective
+      ( Fin.toℕ-cast (sym (sum-++ [] (suc (suc b₁) ∷ (b ∷ B)))) (sum [] ↑ʳ z)
+      ■ Fin.toℕ-↑ʳ (sum []) z )
+    headConst : canonₛ (suc (suc b₁) ∷ (b ∷ B)) cc 0F ≡ canonₛ (suc (suc b₁) ∷ (b ∷ B)) cc 1F
+    headConst = refl
+canonₛ-slot01 (a ∷ [])      {N} (e₁ , x , e₂) b₁ B₂
+  with canonₛ-slot01 [] (` 0F , suc x , wk e₂) b₁ B₂
+... | rec =
+      cong (subst Tm (+-suc (syncs ([] ++ suc (suc b₁) ∷ B₂)) N))
+        ( cong [ _ , _ ]′ (cong (Fin.splitAt a) (pos-split-gen a [] (suc (suc b₁)) B₂ 0F) ■ Fin.splitAt-↑ʳ a (sum ([] ++ suc (suc b₁) ∷ B₂)) cpL)
+        ■ rec
+        ■ sym (cong [ _ , _ ]′ (cong (Fin.splitAt a) (pos-split-gen a [] (suc (suc b₁)) B₂ 1F) ■ Fin.splitAt-↑ʳ a (sum ([] ++ suc (suc b₁) ∷ B₂)) cpR)) )
+  where
+    cpL = Fin.cast (sym (sum-++ [] (suc (suc b₁) ∷ B₂))) (sum [] ↑ʳ 0F)
+    cpR = Fin.cast (sym (sum-++ [] (suc (suc b₁) ∷ B₂))) (sum [] ↑ʳ 1F)
+canonₛ-slot01 (a ∷ d ∷ B₁′) {N} (e₁ , x , e₂) b₁ B₂
+  with canonₛ-slot01 (d ∷ B₁′) (` 0F , suc x , wk e₂) b₁ B₂
+... | rec =
+      cong (subst Tm (+-suc (syncs ((d ∷ B₁′) ++ suc (suc b₁) ∷ B₂)) N))
+        ( cong [ _ , _ ]′ (cong (Fin.splitAt a) (pos-split-gen a (d ∷ B₁′) (suc (suc b₁)) B₂ 0F) ■ Fin.splitAt-↑ʳ a (sum ((d ∷ B₁′) ++ suc (suc b₁) ∷ B₂)) cpL)
+        ■ rec
+        ■ sym (cong [ _ , _ ]′ (cong (Fin.splitAt a) (pos-split-gen a (d ∷ B₁′) (suc (suc b₁)) B₂ 1F) ■ Fin.splitAt-↑ʳ a (sum ((d ∷ B₁′) ++ suc (suc b₁) ∷ B₂)) cpR)) )
+  where
+    cpL = Fin.cast (sym (sum-++ (d ∷ B₁′) (suc (suc b₁) ∷ B₂))) (sum (d ∷ B₁′) ↑ʳ 0F)
+    cpR = Fin.cast (sym (sum-++ (d ∷ B₁′) (suc (suc b₁) ∷ B₂))) (sum (d ∷ B₁′) ↑ʳ 1F)
+
+
 open T using (_;_⊢ₚ_)
+
+-- Ported frame-cong / frame-fusion-gen (verbatim from Simulation2.Theorems).
+□·-cong : {e₁ e₂ : Tm n} → e₁ ≡ e₂ → (□· e₁) ≡ (□· e₂)
+□·-cong refl = refl
+
+·□-cong : {e₁ e₂ : Tm n} {V₁ : Value e₁} {V₂ : Value e₂} → e₁ ≡ e₂ → (V₁ ·□) ≡ (V₂ ·□)
+·□-cong refl = cong _·□ Value-irr
+
+⊗□-cong : {e₁ e₂ : Tm n} {V₁ : Value e₁} {V₂ : Value e₂} → e₁ ≡ e₂ → (V₁ ⊗□) ≡ (V₂ ⊗□)
+⊗□-cong refl = cong _⊗□ Value-irr
+
+frame-cong : (E : Frame m) {ϕ ψ : m →ₛ n} (Vϕ : VSub ϕ) (Vψ : VSub ψ) → ϕ ≗ ψ →
+             frame-⋯ E ϕ Vϕ ≡ frame-⋯ E ψ Vψ
+frame-cong (□· e₂)        Vϕ Vψ eq = cong □·_ (⋯-cong e₂ eq)
+frame-cong (V₁ ·□)        Vϕ Vψ eq = ·□-cong (⋯-cong (vTm V₁) eq)
+frame-cong (□⊗ e₂)        Vϕ Vψ eq = cong □⊗_ (⋯-cong e₂ eq)
+frame-cong (V₁ ⊗□)        Vϕ Vψ eq = ⊗□-cong (⋯-cong (vTm V₁) eq)
+frame-cong (□; e₂)        Vϕ Vψ eq = cong □;_ (⋯-cong e₂ eq)
+frame-cong (`let-`in e′)  Vϕ Vψ eq = cong `let-`in_ (⋯-cong e′ (eq ~↑))
+frame-cong (`let⊗-`in e′) Vϕ Vψ eq = cong `let⊗-`in_ (⋯-cong e′ (eq ~↑* 2))
+frame-cong (`inj□ i)      Vϕ Vψ eq = refl
+frame-cong (`case□`of⟨ e₁ ; e₂ ⟩) Vϕ Vψ eq =
+  cong₂ `case□`of⟨_;_⟩ (⋯-cong e₁ (eq ~↑)) (⋯-cong e₂ (eq ~↑))
+
+frame-fusion-gen : ∀ {𝓕₁ 𝓕₂ 𝓕} ⦃ K₁ : Kit 𝓕₁ ⦄ ⦃ K₂ : Kit 𝓕₂ ⦄ ⦃ K : Kit 𝓕 ⦄ ⦃ W₁ : WkKit K₁ ⦄ ⦃ C : CKit K₁ K₂ K ⦄ {m₁ p}
+                   (E : Frame m) {ϕ : m –[ K₁ ]→ m₁} (Vϕ : VSub ϕ) {ξ : m₁ –[ K₂ ]→ p} (Vξ : VSub ξ)
+                   (Vϕξ : VSub (ϕ ·ₖ ξ)) →
+                   frame-⋯ (frame-⋯ E ϕ Vϕ) ξ Vξ ≡ frame-⋯ E (ϕ ·ₖ ξ) Vϕξ
+frame-fusion-gen (□· e₂)        {ϕ} Vϕ {ξ} Vξ Vϕξ = cong □·_ (fusion e₂ ϕ ξ)
+frame-fusion-gen (V₁ ·□)        {ϕ} Vϕ {ξ} Vξ Vϕξ = ·□-cong (fusion (vTm V₁) ϕ ξ)
+frame-fusion-gen (□⊗ e₂)        {ϕ} Vϕ {ξ} Vξ Vϕξ = cong □⊗_ (fusion e₂ ϕ ξ)
+frame-fusion-gen (V₁ ⊗□)        {ϕ} Vϕ {ξ} Vξ Vϕξ = ⊗□-cong (fusion (vTm V₁) ϕ ξ)
+frame-fusion-gen (□; e₂)        {ϕ} Vϕ {ξ} Vξ Vϕξ = cong □;_ (fusion e₂ ϕ ξ)
+frame-fusion-gen (`let-`in e′)  {ϕ} Vϕ {ξ} Vξ Vϕξ = cong `let-`in_ (fusion e′ (ϕ ↑) (ξ ↑) ■ ⋯-cong e′ (λ x → sym (dist-↑-· ϕ ξ x)))
+frame-fusion-gen (`let⊗-`in e′) {ϕ} Vϕ {ξ} Vξ Vϕξ = cong `let⊗-`in_ (fusion e′ (ϕ ↑* 2) (ξ ↑* 2) ■ ⋯-cong e′ (λ x → sym (dist-↑*-· 2 ϕ ξ x)))
+frame-fusion-gen (`inj□ i)      {ϕ} Vϕ {ξ} Vξ Vϕξ = refl
+frame-fusion-gen (`case□`of⟨ e₁ ; e₂ ⟩) {ϕ} Vϕ {ξ} Vξ Vϕξ =
+  cong₂ `case□`of⟨_;_⟩ (fusion e₁ (ϕ ↑) (ξ ↑) ■ ⋯-cong e₁ (λ x → sym (dist-↑-· ϕ ξ x)))
+                        (fusion e₂ (ϕ ↑) (ξ ↑) ■ ⋯-cong e₂ (λ x → sym (dist-↑-· ϕ ξ x)))
+
 -- The two exported simulation cases.
+
+-- | Frame-level analogues of the U-cong / U-⋯p / transport helpers used in
+--   PrestRec, for the FRAME side of redexRec (ccEqR).
+
+frame*-cong : (E : Frame* m) {σ τ : m →ₛ n} (Vσ : VSub σ) (Vτ : VSub τ) → σ ≗ τ →
+              frame*-⋯ E σ Vσ ≡ frame*-⋯ E τ Vτ
+frame*-cong []       Vσ Vτ eq = refl
+frame*-cong (F ∷ E*) Vσ Vτ eq = cong₂ _∷_ (frame-cong F Vσ Vτ eq) (frame*-cong E* Vσ Vτ eq)
+
+-- frame*-⋯ of a frame renaming fuses into the substitution (frame analogue of U-⋯p).
+F-⋯f*-fuse : (E : Frame* m) {p : ℕ} {ρ : m →ᵣ p} {τ : p →ₛ n} (Vτ : VSub τ) (Vρτ : VSub (ρ ·ₖ τ)) →
+             frame*-⋯ (E ⋯ᶠ* ρ) τ Vτ ≡ frame*-⋯ E (ρ ·ₖ τ) Vρτ
+F-⋯f*-fuse []       Vτ Vρτ = refl
+F-⋯f*-fuse (F ∷ E*) {ρ} {τ} Vτ Vρτ =
+  cong₂ _∷_ (frame-fusion-gen F (λ _ → V-`) Vτ Vρτ) (F-⋯f*-fuse E* Vτ Vρτ)
+
+subst-VSub : {a : ℕ} (h : ℕ → ℕ) {x y : ℕ} (eq : x ≡ y) {σ : a →ₛ h x} → VSub σ →
+             VSub (subst (λ z → a →ₛ h z) eq σ)
+subst-VSub h refl V = V
+
+·ₖ-VSubᵣ : {m p n : ℕ} (ρ : m →ᵣ p) {τ : p →ₛ n} → VSub τ → VSub (ρ ·ₖ τ)
+·ₖ-VSubᵣ ρ {τ} Vτ i = Vτ (ρ i)
+
+-- transport of frame*-⋯ along a codomain scope equality (frame analogue of U-cod-transport).
+F-cod-transport : {a : ℕ} (E : Frame* a) (h : ℕ → ℕ) {x y : ℕ} (eq : x ≡ y)
+                  {σ : a →ₛ h x} (Vσ : VSub σ) →
+                  subst (λ z → Frame* (h z)) eq (frame*-⋯ E σ Vσ)
+                  ≡ frame*-⋯ E (subst (λ z → a →ₛ h z) eq σ) (subst-VSub h eq Vσ)
+F-cod-transport E h refl Vσ = refl
+
+substF-⋯ : {kk kk′ : ℕ} (fg : ℕ → ℕ) (e : kk ≡ kk′) (E : Frame* (fg kk)) →
+           subst Frame* (cong fg e) E ≡ subst (λ j → Frame* (fg j)) e E
+substF-⋯ fg refl E = refl
+
+transport-⋯f* : {kk kk′ : ℕ} (fg gg : ℕ → ℕ) (ρ : ∀ j → fg j →ᵣ gg j) (eq : kk ≡ kk′)
+                (E : Frame* (fg kk)) →
+                subst (λ j → Frame* (gg j)) eq (E ⋯ᶠ* ρ kk)
+                ≡ (subst (λ j → Frame* (fg j)) eq E) ⋯ᶠ* ρ kk′
+transport-⋯f* fg gg ρ refl E = refl
+
+
 U-lsplit : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
   → {γ : Struct m} {B₁ B₂ B : BindGroup} {b₁ : ℕ} {s : 𝕊 0}
   → {E : Frame* (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)}
@@ -1293,7 +1434,73 @@ U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
         cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′ + sum B) (castpos′ ↑ˡ sum B) m)
       ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′) castpos′ (sum B))
     ccEqR : subst U.Proc eqP (U.⟪ Fr [ cc ⊗ cc ]* ⟫) ≡ pushR-thread
-    ccEqR = {!!}
+    ccEqR =
+        cong (λ pf → subst U.Proc pf (U.⟪ Fr [ cc ⊗ cc ]* ⟫)) (uipℕ eqP eqPh)
+      ■ substP-∘ hF e1 (U.⟪ Fr [ cc ⊗ cc ]* ⟫)
+      ■ subst-⟪⟫f hF e1 (Fr [ cc ⊗ cc ]*)
+      ■ cong U.⟪_⟫ (subst-frame-plug hF e1 Fr (cc ⊗ cc))
+      ■ cong U.⟪_⟫ (cong₂ _[_]* frameTransport bodyTransport)
+      ■ sym pushR-threadEq
+      where
+        hF : ℕ → ℕ
+        hF j = 2 + (sB + (j + n))
+        eqPh : (2 + (sB + (sA + n))) ≡ (2 + (sB + (sA′ + n)))
+        eqPh = cong hF e1
+        frameLeafeq : subst (λ j → Frame* (sB + (j + (2 + n)))) e1 (frame*-⋯ E τ Vτ)
+                      ≡ frame*-⋯ (E ⋯ᶠ* 𝐒.lwk) τ′ Vτ′
+        frameLeafeq =
+            F-cod-transport E (λ j → sB + (j + (2 + n))) e1 Vτ
+          ■ cong (λ EE → frame*-⋯ EE (subst (λ j → (sum C₁ + sum B + m) →ₛ (sB + (j + (2 + n)))) e1 τ)
+                            (subst-VSub (λ j → sB + (j + (2 + n))) e1 Vτ)) Eeq
+          ■ F-⋯f*-fuse E₀ (subst-VSub (λ j → sB + (j + (2 + n))) e1 Vτ)
+                       (·ₖ-VSubᵣ ρ⁻ (subst-VSub (λ j → sB + (j + (2 + n))) e1 Vτ))
+          ■ frame*-cong E₀ (·ₖ-VSubᵣ ρ⁻ (subst-VSub (λ j → sB + (j + (2 + n))) e1 Vτ))
+                           (·ₖ-VSubᵣ ρ⁻ (·ₖ-VSubᵣ 𝐒.lwk Vτ′))
+              (λ y → substσ-app (λ j → sB + (j + (2 + n))) e1 τ (ρ⁻ y)
+                   ■ leafσ-lwk-id σ B₁ B₂ B b₁ (ρ⁻ y) (ρ⁻-skip y))
+          ■ sym (F-⋯f*-fuse E₀ (·ₖ-VSubᵣ 𝐒.lwk Vτ′) (·ₖ-VSubᵣ ρ⁻ (·ₖ-VSubᵣ 𝐒.lwk Vτ′)))
+          ■ cong (λ EE → frame*-⋯ EE (𝐒.lwk ·ₖ τ′) (·ₖ-VSubᵣ 𝐒.lwk Vτ′)) (sym Eeq)
+          ■ sym (F-⋯f*-fuse E Vτ′ (·ₖ-VSubᵣ 𝐒.lwk Vτ′))
+          where
+            substσ-app : (h : ℕ → ℕ) {x yy : ℕ} (eq : x ≡ yy) {aa : ℕ} (ϱ : aa →ₛ h x) (i : 𝔽 aa) →
+                         subst (λ j → aa →ₛ h j) eq ϱ i ≡ subst (λ j → Tm (h j)) eq (ϱ i)
+            substσ-app h refl ϱ i = refl
+        frameTransport : subst (λ j → Frame* (hF j)) e1 Fr ≡ Fr′
+        frameTransport =
+            transport-⋯f* (λ j → sB + (2 + (j + n))) hF (λ j → assocSwapᵣ sB 2 {j + n}) e1 (frame*-⋯ E τ Vτ ⋯ᶠ* ρ₁)
+          ■ cong (λ z → z ⋯ᶠ* assocSwapᵣ sB 2 {sA′ + n})
+              ( transport-⋯f* (λ j → sB + (j + (2 + n))) (λ j → sB + (2 + (j + n))) (λ j → assocSwapᵣ j 2 {n} ↑* sB) e1 (frame*-⋯ E τ Vτ)
+              ■ cong (λ z → z ⋯ᶠ* (assocSwapᵣ sA′ 2 {n} ↑* sB)) frameLeafeq )
+        bodyTransport : subst (λ j → Tm (hF j)) e1 (cc ⊗ cc)
+                        ≡ rn′ (τ′ (𝐒.inj 0F)) ⊗ rn′ (τ′ (𝐒.inj 1F))
+        bodyTransport =
+            subst-⊗f hF e1 cc cc
+          ■ cong₂ _⊗_ ccLeft ccRight
+          where
+            leafEq0 : subst (λ j → Tm (sB + (j + (2 + n)))) e1 (τ (𝐒.inj 0F)) ≡ τ′ (𝐒.inj 0F)
+            leafEq0 =
+                cong (subst (λ j → Tm (sB + (j + (2 + n)))) e1) τinj0
+              ■ subst-wkB sB e1 (canonₛ C₁ (K `unit , 0F , K `unit) castpos)
+              ■ cong (_⋯ weaken* {{ Kᵣ }} sB) (canonₛ-handle-lwk B₁ (K `unit , 0F , K `unit) b₁ B₂)
+              ■ sym τ′inj0
+            ccLeft : subst (λ j → Tm (hF j)) e1 cc ≡ rn′ (τ′ (𝐒.inj 0F))
+            ccLeft =
+                transport-⋯t (λ j → sB + (2 + (j + n))) hF (λ j → assocSwapᵣ sB 2 {j + n}) e1 (τ (𝐒.inj 0F) ⋯ ρ₁)
+              ■ cong (_⋯ assocSwapᵣ sB 2 {sA′ + n})
+                  ( transport-⋯t (λ j → sB + (j + (2 + n))) (λ j → sB + (2 + (j + n))) (λ j → assocSwapᵣ j 2 {n} ↑* sB) e1 (τ (𝐒.inj 0F)) )
+              ■ cong (λ z → (z ⋯ (assocSwapᵣ sA′ 2 {n} ↑* sB)) ⋯ assocSwapᵣ sB 2 {sA′ + n}) leafEq0
+            castpos1′ : 𝔽 (sum C₁′)
+            castpos1′ = Fin.cast (sym (sum-++ B₁ (suc (suc b₁) ∷ B₂))) (sum B₁ ↑ʳ 1F)
+            τ′inj1 : τ′ (𝐒.inj 1F) ≡ canonₛ C₁′ (K `unit , 0F , K `unit) castpos1′ ⋯ weaken* {{ Kᵣ }} sB
+            τ′inj1 =
+                cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′ + sum B) (castpos1′ ↑ˡ sum B) m)
+              ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′) castpos1′ (sum B))
+            slotEq : canonₛ C₁′ (K `unit , 0F , K `unit) castpos′ ≡ canonₛ C₁′ (K `unit , 0F , K `unit) castpos1′
+            slotEq = canonₛ-slot01 B₁ (K `unit , 0F , K `unit) b₁ B₂
+            ccRight : subst (λ j → Tm (hF j)) e1 cc ≡ rn′ (τ′ (𝐒.inj 1F))
+            ccRight =
+                ccLeft
+              ■ cong rn′ (τ′inj0 ■ cong (_⋯ weaken* {{ Kᵣ }} sB) slotEq ■ sym τ′inj1)
     redexRec : subst U.Proc eqP (U.⟪ Fr [ cc ⊗ cc ]* ⟫) ≡ pushR-thread
     redexRec = ccEqR
     ρ₂F : (j : ℕ) → (sB + (2 + (j + n))) →ᵣ (2 + (sB + (j + n)))
