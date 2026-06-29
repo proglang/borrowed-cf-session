@@ -1014,6 +1014,176 @@ module _ (sA1 sA2 sB1 sB2 : ℕ) {n : ℕ} where
       ... | tri≈ _ xeqA2 _ = A23 (Nat.≤-reflexive (sym xeqA2))
       ... | tri> _ _ xgtA2 = A23 (Nat.<⇒≤ xgtA2)
 
+  -- A-data region: the two A data channels at [sA2+sA1, sA2+sA1+2) follow the
+  -- SAME flat shift as the A sync prefix (right by sB2+sB1+2).
+  Φᵗ-Adata : ∀ (x : 𝔽 (sA2 + (sA1 + (2 + (sB2 + (sB1 + (2 + n)))))))
+             → sA2 + sA1 Nat.≤ Fin.toℕ x
+             → Fin.toℕ x Nat.< sA2 + sA1 + 2
+             → Fin.toℕ (Φᵗ x) ≡ (sB2 + (sB1 + 2)) + Fin.toℕ x
+  Φᵗ-Adata x age alt = bridge ■ body
+    where
+      ρaccᵗ = assocSwapᵣ 2 sB2 ·ₖ ((assocSwapᵣ 2 sB1 ·ₖ (assocSwapᵣ 2 2 {n} ↑* sB1)) ↑* sB2)
+      Ωᵗ = ((assocSwapᵣ sA1 sB1 ↑* sA2) ·ₖ (assocSwapᵣ sA2 sB1 ·ₖ (((assocSwapᵣ sA1 2 ↑* sA2) ·ₖ assocSwapᵣ sA2 2) ↑* sB1))) ↑* sB2
+      x1 = ((ρaccᵗ ↑* sA1) ↑* sA2) x
+      x2 = (assocSwapᵣ sA1 sB2 ↑* sA2) x1
+      x3 = assocSwapᵣ sA2 sB2 x2
+      bridge : Fin.toℕ (Φᵗ x) ≡ Fin.toℕ (Ωᵗ x3)
+      bridge = refl
+      de = Fin.toℕ x Nat.∸ (sA2 + sA1)
+      a2le : sA2 Nat.≤ Fin.toℕ x
+      a2le = Nat.≤-trans (Nat.m≤m+n sA2 sA1) age
+      dx = sA1 + de
+      xd : Fin.toℕ x ≡ sA2 + dx
+      xd = sym (Nat.m+[n∸m]≡n a2le) ■ cong (sA2 +_) red-dx
+        where red-dx : Fin.toℕ x Nat.∸ sA2 ≡ sA1 + de
+              red-dx = cong (Nat._∸ sA2) (sym (Nat.m+[n∸m]≡n age))
+                     ■ cong (Nat._∸ sA2) (Nat.+-assoc sA2 sA1 de) ■ Nat.m+n∸m≡n sA2 (sA1 + de)
+      elt2 : de Nat.< 2
+      elt2 = Nat.+-cancelˡ-< (sA2 + sA1) de 2
+               (subst (Nat._< sA2 + sA1 + 2) (sym (Nat.m+[n∸m]≡n age)) alt)
+      dxge : sA1 Nat.≤ dx
+      dxge = Nat.m≤m+n sA1 de
+      dxlt2 : dx Nat.< sA1 + 2
+      dxlt2 = Nat.+-monoʳ-< sA1 elt2
+      -- F1: ρaccᵗ fires on the data channel index w (toℕ w < 2).
+      ρae : ∀ (w : 𝔽 (2 + (sB2 + (sB1 + (2 + n))))) → Fin.toℕ w Nat.< 2
+            → Fin.toℕ (ρaccᵗ w) ≡ sB2 + (sB1 + (2 + Fin.toℕ w))
+      ρae w wlt =
+          toℕ-↑*-ge (assocSwapᵣ 2 sB1 ·ₖ (assocSwapᵣ 2 2 {n} ↑* sB1)) sB2 (assocSwapᵣ 2 sB2 w) sb2le
+        ■ cong (sB2 +_) inner
+        where
+          asN : Fin.toℕ (assocSwapᵣ 2 sB2 w) ≡ sB2 + Fin.toℕ w
+          asN = toℕ-assoc-lt 2 sB2 w wlt
+          sb2le : sB2 Nat.≤ Fin.toℕ (assocSwapᵣ 2 sB2 w)
+          sb2le = subst (sB2 Nat.≤_) (sym asN) (Nat.m≤m+n sB2 (Fin.toℕ w))
+          r0 = Fin.reduce≥ (assocSwapᵣ 2 sB2 w) sb2le
+          r0N : Fin.toℕ r0 ≡ Fin.toℕ w
+          r0N = toℕ-reduce≥ (assocSwapᵣ 2 sB2 w) sb2le ■ cong (Nat._∸ sB2) asN ■ Nat.m+n∸m≡n sB2 (Fin.toℕ w)
+          r0lt : Fin.toℕ r0 Nat.< 2
+          r0lt = subst (Nat._< 2) (sym r0N) wlt
+          inner : Fin.toℕ ((assocSwapᵣ 2 sB1 ·ₖ (assocSwapᵣ 2 2 {n} ↑* sB1)) r0) ≡ sB1 + (2 + Fin.toℕ w)
+          inner = toℕ-↑*-ge (assocSwapᵣ 2 2 {n}) sB1 (assocSwapᵣ 2 sB1 r0) sb1le
+                ■ cong (sB1 +_) inner2
+            where
+              as2N : Fin.toℕ (assocSwapᵣ 2 sB1 r0) ≡ sB1 + Fin.toℕ r0
+              as2N = toℕ-assoc-lt 2 sB1 r0 r0lt
+              sb1le : sB1 Nat.≤ Fin.toℕ (assocSwapᵣ 2 sB1 r0)
+              sb1le = subst (sB1 Nat.≤_) (sym as2N) (Nat.m≤m+n sB1 (Fin.toℕ r0))
+              r1 = Fin.reduce≥ (assocSwapᵣ 2 sB1 r0) sb1le
+              r1N : Fin.toℕ r1 ≡ Fin.toℕ w
+              r1N = toℕ-reduce≥ (assocSwapᵣ 2 sB1 r0) sb1le ■ cong (Nat._∸ sB1) as2N ■ Nat.m+n∸m≡n sB1 (Fin.toℕ r0) ■ r0N
+              r1lt : Fin.toℕ r1 Nat.< 2
+              r1lt = subst (Nat._< 2) (sym r1N) wlt
+              inner2 : Fin.toℕ (assocSwapᵣ 2 2 {n} r1) ≡ 2 + Fin.toℕ w
+              inner2 = toℕ-assoc-lt 2 2 r1 r1lt ■ cong (2 +_) r1N
+      -- F1: x1
+      x1N : Fin.toℕ x1 ≡ sA2 + (sA1 + (sB2 + (sB1 + (2 + de))))
+      x1N = toℕ-↑*-ge (ρaccᵗ ↑* sA1) sA2 x a2le
+          ■ cong (sA2 +_) inner1
+        where
+          xr = Fin.reduce≥ x a2le
+          xrN : Fin.toℕ xr ≡ dx
+          xrN = toℕ-reduce≥ x a2le ■ cong (Nat._∸ sA2) xd ■ Nat.m+n∸m≡n sA2 dx
+          xrge : sA1 Nat.≤ Fin.toℕ xr
+          xrge = subst (sA1 Nat.≤_) (sym xrN) dxge
+          inner1 : Fin.toℕ ((ρaccᵗ ↑* sA1) xr) ≡ sA1 + (sB2 + (sB1 + (2 + de)))
+          inner1 = toℕ-↑*-ge ρaccᵗ sA1 xr xrge ■ cong (sA1 +_) (ρae r2 r2lt ■ cong (λ z → sB2 + (sB1 + (2 + z))) r2N)
+            where
+              r2 = Fin.reduce≥ xr xrge
+              r2N : Fin.toℕ r2 ≡ de
+              r2N = toℕ-reduce≥ xr xrge ■ cong (Nat._∸ sA1) xrN ■ Nat.m+n∸m≡n sA1 de
+              r2lt : Fin.toℕ r2 Nat.< 2
+              r2lt = subst (Nat._< 2) (sym r2N) elt2
+      x2N : Fin.toℕ x2 ≡ sA2 + (sA1 + (sB2 + (sB1 + (2 + de))))
+      x2N = toℕ-↑*-ge (assocSwapᵣ sA1 sB2) sA2 x1 a2lex1 ■ cong (sA2 +_) inner2
+        where
+          a2lex1 : sA2 Nat.≤ Fin.toℕ x1
+          a2lex1 = subst (sA2 Nat.≤_) (sym x1N) (Nat.m≤m+n sA2 _)
+          r1 = Fin.reduce≥ x1 a2lex1
+          r1N : Fin.toℕ r1 ≡ sA1 + (sB2 + (sB1 + (2 + de)))
+          r1N = toℕ-reduce≥ x1 a2lex1 ■ cong (Nat._∸ sA2) x1N ■ Nat.m+n∸m≡n sA2 (sA1 + (sB2 + (sB1 + (2 + de))))
+          r1ge : sA1 + sB2 Nat.≤ Fin.toℕ r1
+          r1ge = subst (sA1 + sB2 Nat.≤_) (sym r1N) (Nat.+-monoʳ-≤ sA1 (Nat.m≤m+n sB2 (sB1 + (2 + de))))
+          inner2 : Fin.toℕ (assocSwapᵣ sA1 sB2 r1) ≡ sA1 + (sB2 + (sB1 + (2 + de)))
+          inner2 = toℕ-assoc-ge sA1 sB2 r1 r1ge ■ r1N
+      x3N : Fin.toℕ x3 ≡ sA2 + (sA1 + (sB2 + (sB1 + (2 + de))))
+      x3N = toℕ-assoc-ge sA2 sB2 x2 (subst (sA2 + sB2 Nat.≤_) (sym x2N)
+              (Nat.+-monoʳ-≤ sA2 (Nat.≤-trans (Nat.m≤m+n sB2 (sB1 + (2 + de))) (Nat.m≤n+m _ sA1)))) ■ x2N
+      body : Fin.toℕ (Ωᵗ x3) ≡ (sB2 + (sB1 + 2)) + Fin.toℕ x
+      body = toℕ-↑*-ge _ sB2 x3 q ■ cong (sB2 +_) omN ■ final
+        where
+          q : sB2 Nat.≤ Fin.toℕ x3
+          q = subst (sB2 Nat.≤_) (sym x3N)
+                (Nat.≤-trans (Nat.m≤m+n sB2 (sB1 + (2 + de)))
+                  (Nat.≤-trans (Nat.m≤n+m _ sA1) (Nat.m≤n+m _ sA2)))
+          r = Fin.reduce≥ x3 q
+          rN : Fin.toℕ r ≡ sA2 + (sA1 + (sB1 + (2 + de)))
+          rN = toℕ-reduce≥ x3 q ■ cong (Nat._∸ sB2) x3N ■ reassoc
+            where open +-*-Solver
+                  reassoc : (sA2 + (sA1 + (sB2 + (sB1 + (2 + de))))) Nat.∸ sB2 ≡ sA2 + (sA1 + (sB1 + (2 + de)))
+                  reassoc = cong (Nat._∸ sB2) (solve 5 (λ a2 a1 b2 b1 t →
+                                a2 :+ (a1 :+ (b2 :+ (b1 :+ (con 2 :+ t))))
+                                := b2 :+ (a2 :+ (a1 :+ (b1 :+ (con 2 :+ t))))) refl sA2 sA1 sB2 sB1 de)
+                          ■ Nat.m+n∸m≡n sB2 (sA2 + (sA1 + (sB1 + (2 + de))))
+          rge : sA2 Nat.≤ Fin.toℕ r
+          rge = subst (sA2 Nat.≤_) (sym rN) (Nat.m≤m+n sA2 _)
+          g1 = (assocSwapᵣ sA1 sB1 ↑* sA2) r
+          g1N : Fin.toℕ g1 ≡ sA2 + (sA1 + (sB1 + (2 + de)))
+          g1N = toℕ-↑*-ge (assocSwapᵣ sA1 sB1) sA2 r rge ■ cong (sA2 +_) inner-g1
+            where
+              rr = Fin.reduce≥ r rge
+              rrN : Fin.toℕ rr ≡ sA1 + (sB1 + (2 + de))
+              rrN = toℕ-reduce≥ r rge ■ cong (Nat._∸ sA2) rN ■ Nat.m+n∸m≡n sA2 (sA1 + (sB1 + (2 + de)))
+              rrge : sA1 + sB1 Nat.≤ Fin.toℕ rr
+              rrge = subst (sA1 + sB1 Nat.≤_) (sym rrN) (Nat.+-monoʳ-≤ sA1 (Nat.m≤m+n sB1 (2 + de)))
+              inner-g1 : Fin.toℕ (assocSwapᵣ sA1 sB1 rr) ≡ sA1 + (sB1 + (2 + de))
+              inner-g1 = toℕ-assoc-ge sA1 sB1 rr rrge ■ rrN
+          g2 = assocSwapᵣ sA2 sB1 g1
+          g2N : Fin.toℕ g2 ≡ sA2 + (sA1 + (sB1 + (2 + de)))
+          g2N = toℕ-assoc-ge sA2 sB1 g1 (subst (sA2 + sB1 Nat.≤_) (sym g1N)
+                  (Nat.+-monoʳ-≤ sA2 (Nat.≤-trans (Nat.m≤m+n sB1 (2 + de)) (Nat.m≤n+m _ sA1)))) ■ g1N
+          g3q : sB1 Nat.≤ Fin.toℕ g2
+          g3q = subst (sB1 Nat.≤_) (sym g2N)
+                  (Nat.≤-trans (Nat.m≤m+n sB1 (2 + de))
+                    (Nat.≤-trans (Nat.m≤n+m _ sA1) (Nat.m≤n+m _ sA2)))
+          g3r = Fin.reduce≥ g2 g3q
+          g3rN : Fin.toℕ g3r ≡ sA2 + (sA1 + (2 + de))
+          g3rN = toℕ-reduce≥ g2 g3q ■ cong (Nat._∸ sB1) g2N ■ reassoc
+            where open +-*-Solver
+                  reassoc : (sA2 + (sA1 + (sB1 + (2 + de)))) Nat.∸ sB1 ≡ sA2 + (sA1 + (2 + de))
+                  reassoc = cong (Nat._∸ sB1) (solve 4 (λ a2 a1 b1 t →
+                                a2 :+ (a1 :+ (b1 :+ (con 2 :+ t)))
+                                := b1 :+ (a2 :+ (a1 :+ (con 2 :+ t)))) refl sA2 sA1 sB1 de)
+                          ■ Nat.m+n∸m≡n sB1 (sA2 + (sA1 + (2 + de)))
+          g3rge : sA2 Nat.≤ Fin.toℕ g3r
+          g3rge = subst (sA2 Nat.≤_) (sym g3rN) (Nat.m≤m+n sA2 _)
+          l1 = (assocSwapᵣ sA1 2 ↑* sA2) g3r
+          l1N : Fin.toℕ l1 ≡ sA2 + (sA1 + (2 + de))
+          l1N = toℕ-↑*-ge (assocSwapᵣ sA1 2) sA2 g3r g3rge ■ cong (sA2 +_) inner-l1
+            where
+              gg = Fin.reduce≥ g3r g3rge
+              ggN : Fin.toℕ gg ≡ sA1 + (2 + de)
+              ggN = toℕ-reduce≥ g3r g3rge ■ cong (Nat._∸ sA2) g3rN ■ Nat.m+n∸m≡n sA2 (sA1 + (2 + de))
+              ggge : sA1 + 2 Nat.≤ Fin.toℕ gg
+              ggge = subst (sA1 + 2 Nat.≤_) (sym ggN) (Nat.+-monoʳ-≤ sA1 (Nat.m≤m+n 2 de))
+              inner-l1 : Fin.toℕ (assocSwapᵣ sA1 2 gg) ≡ sA1 + (2 + de)
+              inner-l1 = toℕ-assoc-ge sA1 2 gg ggge ■ ggN
+          l2N : Fin.toℕ (assocSwapᵣ sA2 2 l1) ≡ sA2 + (sA1 + (2 + de))
+          l2N = toℕ-assoc-ge sA2 2 l1 (subst (sA2 + 2 Nat.≤_) (sym l1N)
+                  (Nat.+-monoʳ-≤ sA2 (Nat.≤-trans (Nat.m≤m+n 2 de) (Nat.m≤n+m _ sA1)))) ■ l1N
+          omN : Fin.toℕ (((assocSwapᵣ sA1 sB1 ↑* sA2)
+                          ·ₖ (assocSwapᵣ sA2 sB1 ·ₖ
+                              (((assocSwapᵣ sA1 2 ↑* sA2) ·ₖ assocSwapᵣ sA2 2) ↑* sB1))) r)
+                 ≡ sB1 + (sA2 + (sA1 + (2 + de)))
+          omN = toℕ-↑*-ge _ sB1 g2 g3q ■ cong (sB1 +_) l2N
+          final : sB2 + (sB1 + (sA2 + (sA1 + (2 + de)))) ≡ (sB2 + (sB1 + 2)) + Fin.toℕ x
+          final = solveF ■ cong ((sB2 + (sB1 + 2)) +_) (sym xd)
+            where open +-*-Solver
+                  solveF : sB2 + (sB1 + (sA2 + (sA1 + (2 + de)))) ≡ (sB2 + (sB1 + 2)) + (sA2 + (sA1 + de))
+                  solveF = solve 5 (λ b2 b1 a2 a1 t →
+                      b2 :+ (b1 :+ (a2 :+ (a1 :+ (con 2 :+ t))))
+                      := (b2 :+ (b1 :+ con 2)) :+ (a2 :+ (a1 :+ t))) refl sB2 sB1 sA2 sA1 de
+
   -- B-region: an index in [sA2+sA1+2, sA2+sA1+2 + (sB2+sB1+2)) is shifted left
   -- by the whole A-prefix.
   Φᵗ-B : ∀ (x : 𝔽 (sA2 + (sA1 + (2 + (sB2 + (sB1 + (2 + n)))))))
@@ -1347,6 +1517,21 @@ subEqComm-gen {m} {n} σ A₁ A₂ B₁ B₂ i = body
         l2 = x2N
         l3 : Fin.toℕ x3 ≡ Fin.toℕ x2
         l3 = x3N
+    -- Φ reuses the module-level positional lemmas Φᵗ-A / Φᵗ-B.
+    Φ-toℕ-A : ∀ (x : 𝔽 (sA2 + (sA1 + (2 + (sB2 + (sB1 + (2 + n)))))))
+              → Fin.toℕ x Nat.< sA2 + sA1
+              → Fin.toℕ (Φ x) ≡ (sB2 + (sB1 + 2)) + Fin.toℕ x
+    Φ-toℕ-A x lt = Φᵗ-A sA1 sA2 sB1 sB2 x lt
+    Φ-toℕ-B : ∀ (x : 𝔽 (sA2 + (sA1 + (2 + (sB2 + (sB1 + (2 + n)))))))
+              → sA2 + (sA1 + 2) Nat.≤ Fin.toℕ x
+              → Fin.toℕ x Nat.< sA2 + (sA1 + (2 + (sB2 + (sB1 + 2))))
+              → Fin.toℕ (Φ x) ≡ Fin.toℕ x Nat.∸ (sA2 + (sA1 + 2))
+    Φ-toℕ-B x ge lt = Φᵗ-B sA1 sA2 sB1 sB2 x ge lt
+    Φ-toℕ-Adata : ∀ (x : 𝔽 (sA2 + (sA1 + (2 + (sB2 + (sB1 + (2 + n)))))))
+                  → sA2 + sA1 Nat.≤ Fin.toℕ x
+                  → Fin.toℕ x Nat.< sA2 + sA1 + 2
+                  → Fin.toℕ (Φ x) ≡ (sB2 + (sB1 + 2)) + Fin.toℕ x
+    Φ-toℕ-Adata x ge lt = Φᵗ-Adata sA1 sA2 sB1 sB2 x ge lt
     -- fuse the four body-renaming factors applied to a term into a single Φ.
     fuseΦ : (t : Tm (sA2 + (sA1 + (2 + (sB2 + (sB1 + (2 + n)))))))
             → t ⋯ ((ρacc ↑* sA1) ↑* sA2) ⋯ (assocSwapᵣ sA1 sB2 ↑* sA2) ⋯ assocSwapᵣ sA2 sB2 ⋯ Ω
@@ -1365,7 +1550,7 @@ subEqComm-gen {m} {n} σ A₁ A₂ B₁ B₂ i = body
     ...   | inj₁ w with Fin.splitAt b1 w in eqw
     ...     | inj₁ jb =
                 fuseΦ cB1t
-              ■ {! RTB1-mid !}
+              ■ midB1
               ■ sym rhsB1
               where
                 cc₀ : UChan (2 + n)
@@ -1377,7 +1562,264 @@ subEqComm-gen {m} {n} σ A₁ A₂ B₁ B₂ i = body
                 rhsB1 =
                   leafσ-A₁ (leafσ σ A₁ A₂) B₁ B₂ (w ↑ˡ (a1 + a2 + m)) w jb
                     (Fin.splitAt-↑ˡ (b1 + b2) w (a1 + a2 + m)) eqw
-    ...     | inj₂ kb = {! RTB2 !}
+                c₁ = canonₛ B₁ cc₀ jb
+                assoc3 : (sA2 + (sA1 + 2)) + n ≡ sA2 + (sA1 + (2 + n))
+                assoc3 = Nat.+-assoc sA2 (sA1 + 2) n ■ cong (sA2 +_) (Nat.+-assoc sA1 2 n)
+                ρ₁ : (2 + n) →ᵣ (2 + (sA2 + (sA1 + (2 + n))))
+                ρ₁ = λ y → Fin.cast (cong (2 +_) assoc3) ((weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2)) ↑* 2) y)
+                ρ₁0F : ρ₁ 0F ≡ 0F
+                ρ₁0F = Fin.toℕ-injective (Fin.toℕ-cast (cong (2 +_) assoc3) ((weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2)) ↑* 2) 0F))
+                ρ₁tailN : ∀ (k : 𝔽 n) → Fin.toℕ (ρ₁ (2 ↑ʳ k)) ≡ 2 + ((sA2 + (sA1 + 2)) + Fin.toℕ k)
+                ρ₁tailN k = Fin.toℕ-cast (cong (2 +_) assoc3) ((weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2)) ↑* 2) (2 ↑ʳ k))
+                          ■ toℕ-↑*-ge (weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2))) 2 (2 ↑ʳ k) q2
+                          ■ cong (2 +_) (toℕ-weaken*ᵣ (sA2 + (sA1 + 2)) (Fin.reduce≥ (2 ↑ʳ k) q2) ■ cong ((sA2 + (sA1 + 2)) +_) redk)
+                  where q2 : 2 Nat.≤ Fin.toℕ (2 ↑ʳ k)
+                        q2 = subst (2 Nat.≤_) (sym (Fin.toℕ-↑ʳ 2 k)) (Nat.m≤m+n 2 (Fin.toℕ k))
+                        redk : Fin.toℕ (Fin.reduce≥ (2 ↑ʳ k) q2) ≡ Fin.toℕ k
+                        redk = toℕ-reduce≥ (2 ↑ʳ k) q2 ■ cong (Nat._∸ 2) (Fin.toℕ-↑ʳ 2 k) ■ Nat.m+n∸m≡n 2 (Fin.toℕ k)
+                wk4c : (sB1 + (2 + n)) →ᵣ (sA2 + (sA1 + (2 + (sB2 + (sB1 + (2 + n))))))
+                wk4c = (((weaken* ⦃ Kᵣ ⦄ sB2 ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ weaken* ⦃ Kᵣ ⦄ sA1) ·ₖ weaken* ⦃ Kᵣ ⦄ sA2)
+                Λ : (sB1 + (2 + n)) →ᵣ (sB2 + (sB1 + (2 + (sA2 + (sA1 + (2 + n))))))
+                Λ = wk4c ·ₖ Φ
+                wkc4eq : cB1t ≡ c₁ ⋯ wk4c
+                wkc4eq =
+                    cong (λ t → t ⋯ weaken* ⦃ Kᵣ ⦄ sA1 ⋯ weaken* ⦃ Kᵣ ⦄ sA2)
+                      (fusion c₁ (weaken* ⦃ Kᵣ ⦄ sB2) (weaken* ⦃ Kᵣ ⦄ 2))
+                  ■ cong (λ t → t ⋯ weaken* ⦃ Kᵣ ⦄ sA2)
+                      (fusion c₁ (weaken* ⦃ Kᵣ ⦄ sB2 ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (weaken* ⦃ Kᵣ ⦄ sA1))
+                  ■ fusion c₁ ((weaken* ⦃ Kᵣ ⦄ sB2 ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ weaken* ⦃ Kᵣ ⦄ sA1) (weaken* ⦃ Kᵣ ⦄ sA2)
+                fuseΛ : cB1t ⋯ Φ ≡ c₁ ⋯ Λ
+                fuseΛ = cong (_⋯ Φ) wkc4eq ■ fusion c₁ wk4c Φ
+                ΛEq : Λ ≗ (ρ₁ ↑* sB1) ·ₖ weaken* ⦃ Kᵣ ⦄ sB2
+                ΛEq y = Fin.toℕ-injective (lhsN ■ sym rhsN)
+                  where
+                    wk4cN : Fin.toℕ (wk4c y) ≡ sA2 + (sA1 + (2 + (sB2 + Fin.toℕ y)))
+                    wk4cN = toℕ-weaken*ᵣ sA2 _
+                          ■ cong (sA2 +_) (toℕ-weaken*ᵣ sA1 _
+                          ■ cong (sA1 +_) (cong (2 +_) (toℕ-weaken*ᵣ sB2 y)))
+                    rhsN : Fin.toℕ (((ρ₁ ↑* sB1) ·ₖ weaken* ⦃ Kᵣ ⦄ sB2) y)
+                           ≡ sB2 + Fin.toℕ ((ρ₁ ↑* sB1) y)
+                    rhsN = toℕ-weaken*ᵣ sB2 ((ρ₁ ↑* sB1) y)
+                    assocB : ∀ X → sA2 + (sA1 + (2 + X)) ≡ (sA2 + (sA1 + 2)) + X
+                    assocB X = cong (sA2 +_) (sym (Nat.+-assoc sA1 2 X)) ■ sym (Nat.+-assoc sA2 (sA1 + 2) X)
+                    ρ₁liftData : Fin.toℕ y Nat.< sB1 + 2 → sB1 Nat.≤ Fin.toℕ y → Fin.toℕ ((ρ₁ ↑* sB1) y) ≡ Fin.toℕ y
+                    ρ₁liftData ylt ge1 = toℕ-↑*-ge ρ₁ sB1 y ge1 ■ cong (sB1 +_) ρ₁red ■ Nat.m+[n∸m]≡n ge1
+                      where
+                        dd = Fin.toℕ y Nat.∸ sB1
+                        dlt2 : dd Nat.< 2
+                        dlt2 = Nat.+-cancelˡ-< sB1 dd 2 (subst (Nat._< sB1 + 2) (sym (Nat.m+[n∸m]≡n ge1)) ylt)
+                        ρ₁red : Fin.toℕ (ρ₁ (Fin.reduce≥ y ge1)) ≡ dd
+                        ρ₁red = Fin.toℕ-cast (cong (2 +_) assoc3) ((weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2)) ↑* 2) (Fin.reduce≥ y ge1))
+                              ■ toℕ-↑*-lt (weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2))) 2 (Fin.reduce≥ y ge1)
+                                  (subst (Nat._< 2) (sym redy) dlt2)
+                              ■ redy
+                          where redy : Fin.toℕ (Fin.reduce≥ y ge1) ≡ dd
+                                redy = toℕ-reduce≥ y ge1
+                    ρ₁liftLow : Fin.toℕ y Nat.< sB1 + 2 → Fin.toℕ ((ρ₁ ↑* sB1) y) ≡ Fin.toℕ y
+                    ρ₁liftLow ylt with Nat.<-cmp (Fin.toℕ y) sB1
+                    ... | tri< ylt1 _ _ = toℕ-↑*-lt ρ₁ sB1 y ylt1
+                    ... | tri≈ _ yeq1 _ = ρ₁liftData ylt (Nat.≤-reflexive (sym yeq1))
+                    ... | tri> _ _ ygt1 = ρ₁liftData ylt (Nat.<⇒≤ ygt1)
+                    tailEq : sB1 + 2 Nat.≤ Fin.toℕ y → Fin.toℕ (Λ y) ≡ sB2 + Fin.toℕ ((ρ₁ ↑* sB1) y)
+                    tailEq ge2 = Φ-fix-ge (wk4c y) geΦ ■ wk4cN ■ assocFinal ■ sym (cong (sB2 +_) ρ₁high)
+                      where
+                        d2 = Fin.toℕ y Nat.∸ (sB1 + 2)
+                        yd : (sB1 + 2) + d2 ≡ Fin.toℕ y
+                        yd = Nat.m+[n∸m]≡n ge2
+                        ge1 : sB1 Nat.≤ Fin.toℕ y
+                        ge1 = Nat.≤-trans (Nat.m≤m+n sB1 2) ge2
+                        geΦ : sA2 + (sA1 + (2 + (sB2 + (sB1 + 2)))) Nat.≤ Fin.toℕ (wk4c y)
+                        geΦ = subst (sA2 + (sA1 + (2 + (sB2 + (sB1 + 2)))) Nat.≤_) (sym wk4cN)
+                                (Nat.+-monoʳ-≤ sA2 (Nat.+-monoʳ-≤ sA1 (Nat.+-monoʳ-≤ 2
+                                  (Nat.+-monoʳ-≤ sB2 ge2))))
+                        z = Fin.reduce≥ y ge1
+                        zN : Fin.toℕ z ≡ 2 + d2
+                        zN = toℕ-reduce≥ y ge1 ■ red2
+                          where red2 : Fin.toℕ y Nat.∸ sB1 ≡ 2 + d2
+                                red2 = cong (Nat._∸ sB1) (sym yd) ■ cong (Nat._∸ sB1) (Nat.+-assoc sB1 2 d2) ■ Nat.m+n∸m≡n sB1 (2 + d2)
+                        z2 : 2 Nat.≤ Fin.toℕ z
+                        z2 = subst (2 Nat.≤_) (sym zN) (Nat.m≤m+n 2 d2)
+                        ρ₁zN : Fin.toℕ (ρ₁ z) ≡ 2 + ((sA2 + (sA1 + 2)) + d2)
+                        ρ₁zN = Fin.toℕ-cast (cong (2 +_) assoc3) ((weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2)) ↑* 2) z)
+                             ■ toℕ-↑*-ge (weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2))) 2 z z2
+                             ■ cong (2 +_) (toℕ-weaken*ᵣ (sA2 + (sA1 + 2)) (Fin.reduce≥ z z2)
+                                 ■ cong ((sA2 + (sA1 + 2)) +_) (toℕ-reduce≥ z z2 ■ cong (Nat._∸ 2) zN ■ Nat.m+n∸m≡n 2 d2))
+                        ρ₁high : Fin.toℕ ((ρ₁ ↑* sB1) y) ≡ sB1 + (2 + ((sA2 + (sA1 + 2)) + d2))
+                        ρ₁high = toℕ-↑*-ge ρ₁ sB1 y ge1 ■ cong (sB1 +_) ρ₁zN
+                        assocFinal : sA2 + (sA1 + (2 + (sB2 + Fin.toℕ y))) ≡ sB2 + (sB1 + (2 + ((sA2 + (sA1 + 2)) + d2)))
+                        assocFinal = cong (λ w → sA2 + (sA1 + (2 + (sB2 + w)))) (sym yd) ■ solveFinal
+                          where open +-*-Solver
+                                solveFinal : sA2 + (sA1 + (2 + (sB2 + ((sB1 + 2) + d2))))
+                                             ≡ sB2 + (sB1 + (2 + ((sA2 + (sA1 + 2)) + d2)))
+                                solveFinal = solve 5 (λ a2 a1 b2 b1 t →
+                                                a2 :+ (a1 :+ (con 2 :+ (b2 :+ ((b1 :+ con 2) :+ t))))
+                                                := b2 :+ (b1 :+ (con 2 :+ ((a2 :+ (a1 :+ con 2)) :+ t))))
+                                              refl sA2 sA1 sB2 sB1 d2
+                    lhsN : Fin.toℕ (Λ y) ≡ sB2 + Fin.toℕ ((ρ₁ ↑* sB1) y)
+                    lhsN with Nat.<-cmp (Fin.toℕ y) (sB1 + 2)
+                    ... | tri< ylt _ _ =
+                            Φ-toℕ-B (wk4c y) geB ltB
+                          ■ cong (Nat._∸ (sA2 + (sA1 + 2))) (wk4cN ■ assocB (sB2 + Fin.toℕ y))
+                          ■ Nat.m+n∸m≡n (sA2 + (sA1 + 2)) (sB2 + Fin.toℕ y)
+                          ■ sym (cong (sB2 +_) (ρ₁liftLow ylt))
+                      where
+                        geB : sA2 + (sA1 + 2) Nat.≤ Fin.toℕ (wk4c y)
+                        geB = subst (sA2 + (sA1 + 2) Nat.≤_) (sym wk4cN)
+                                (subst (sA2 + (sA1 + 2) Nat.≤_) (sym (assocB (sB2 + Fin.toℕ y)))
+                                  (Nat.m≤m+n (sA2 + (sA1 + 2)) (sB2 + Fin.toℕ y)))
+                        ltB : Fin.toℕ (wk4c y) Nat.< sA2 + (sA1 + (2 + (sB2 + (sB1 + 2))))
+                        ltB = subst (Nat._< sA2 + (sA1 + (2 + (sB2 + (sB1 + 2))))) (sym wk4cN)
+                                (Nat.+-monoʳ-< sA2 (Nat.+-monoʳ-< sA1 (Nat.+-monoʳ-< 2
+                                  (Nat.+-monoʳ-< sB2 ylt))))
+                    ... | tri≈ _ yeq _ = tailEq (Nat.≤-reflexive (sym yeq))
+                    ... | tri> _ _ ygt = tailEq (Nat.<⇒≤ ygt)
+                mapcc : mapᶜ ρ₁ cc₀ ≡ (K `unit , 0F , K `unit)
+                mapcc = cong₂ _,_ refl (cong₂ _,_ ρ₁0F refl)
+                midB1 : cB1t ⋯ Φ ≡ canonₛ B₁ (K `unit , 0F , K `unit) jb ⋯ weaken* ⦃ Kᵣ ⦄ sB2
+                midB1 =
+                    fuseΛ
+                  ■ ⋯-cong (canonₛ B₁ cc₀ jb) ΛEq
+                  ■ sym (fusion (canonₛ B₁ cc₀ jb) (ρ₁ ↑* sB1) (weaken* ⦃ Kᵣ ⦄ sB2))
+                  ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB2) (canonₛ-nat B₁ cc₀ ρ₁ jb)
+                  ■ cong (λ c → canonₛ B₁ c jb ⋯ weaken* ⦃ Kᵣ ⦄ sB2) mapcc
+    ...     | inj₂ kb =
+                fuseΦ cB2t
+              ■ midB2
+              ■ sym rhsB2
+              where
+                flagIdx : 𝔽 (sB1 + (2 + n))
+                flagIdx = weaken* ⦃ Kᵣ ⦄ sB1 1F
+                cc₂ : UChan (sB1 + (2 + n))
+                cc₂ = (K `unit , flagIdx , K `unit)
+                c₂ = canonₛ B₂ cc₂ kb
+                cB2t = c₂ ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sA1 ⋯ weaken* ⦃ Kᵣ ⦄ sA2
+                rhsB2 : leafσ (leafσ σ A₁ A₂) B₁ B₂ (w ↑ˡ (a1 + a2 + m))
+                        ≡ canonₛ B₂ (K `unit , weaken* ⦃ Kᵣ ⦄ sB1 1F , K `unit) kb
+                rhsB2 =
+                  leafσ-B₁ (leafσ σ A₁ A₂) B₁ B₂ (w ↑ˡ (a1 + a2 + m)) w kb
+                    (Fin.splitAt-↑ˡ (b1 + b2) w (a1 + a2 + m)) eqw
+                assoc3 : (sA2 + (sA1 + 2)) + n ≡ sA2 + (sA1 + (2 + n))
+                assoc3 = Nat.+-assoc sA2 (sA1 + 2) n ■ cong (sA2 +_) (Nat.+-assoc sA1 2 n)
+                assocIn : (sB1 + 2) + n ≡ sB1 + (2 + n)
+                assocIn = Nat.+-assoc sB1 2 n
+                assocOut : (sB1 + 2) + ((sA2 + (sA1 + 2)) + n) ≡ sB1 + (2 + (sA2 + (sA1 + (2 + n))))
+                assocOut = Nat.+-assoc sB1 2 ((sA2 + (sA1 + 2)) + n) ■ cong (sB1 +_) (cong (2 +_) assoc3)
+                ρ₂ : (sB1 + (2 + n)) →ᵣ (sB1 + (2 + (sA2 + (sA1 + (2 + n)))))
+                ρ₂ = λ y → Fin.cast assocOut ((weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2)) ↑* (sB1 + 2)) (Fin.cast (sym assocIn) y))
+                flagN : Fin.toℕ flagIdx ≡ sB1 + 1
+                flagN = toℕ-weaken*ᵣ sB1 1F
+                ρ₂flag : ρ₂ flagIdx ≡ weaken* ⦃ Kᵣ ⦄ sB1 1F
+                ρ₂flag = Fin.toℕ-injective
+                  ( Fin.toℕ-cast assocOut ((weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2)) ↑* (sB1 + 2)) (Fin.cast (sym assocIn) flagIdx))
+                  ■ toℕ-↑*-lt (weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2))) (sB1 + 2) (Fin.cast (sym assocIn) flagIdx) flagLt
+                  ■ castN
+                  ■ sym (toℕ-weaken*ᵣ sB1 1F) )
+                  where castN : Fin.toℕ (Fin.cast (sym assocIn) flagIdx) ≡ sB1 + 1
+                        castN = Fin.toℕ-cast (sym assocIn) flagIdx ■ flagN
+                        flagLt : Fin.toℕ (Fin.cast (sym assocIn) flagIdx) Nat.< sB1 + 2
+                        flagLt = subst (Nat._< sB1 + 2) (sym castN) (Nat.+-monoʳ-< sB1 (Nat.s≤s (Nat.s≤s Nat.z≤n)))
+                wk3c : (sB2 + (sB1 + (2 + n))) →ᵣ (sA2 + (sA1 + (2 + (sB2 + (sB1 + (2 + n))))))
+                wk3c = ((weaken* ⦃ Kᵣ ⦄ 2 ·ₖ weaken* ⦃ Kᵣ ⦄ sA1) ·ₖ weaken* ⦃ Kᵣ ⦄ sA2)
+                Λ₂ : (sB2 + (sB1 + (2 + n))) →ᵣ (sB2 + (sB1 + (2 + (sA2 + (sA1 + (2 + n))))))
+                Λ₂ = wk3c ·ₖ Φ
+                wkc3eq : cB2t ≡ c₂ ⋯ wk3c
+                wkc3eq =
+                    cong (λ t → t ⋯ weaken* ⦃ Kᵣ ⦄ sA2)
+                      (fusion c₂ (weaken* ⦃ Kᵣ ⦄ 2) (weaken* ⦃ Kᵣ ⦄ sA1))
+                  ■ fusion c₂ (weaken* ⦃ Kᵣ ⦄ 2 ·ₖ weaken* ⦃ Kᵣ ⦄ sA1) (weaken* ⦃ Kᵣ ⦄ sA2)
+                fuseΛ₂ : cB2t ⋯ Φ ≡ c₂ ⋯ Λ₂
+                fuseΛ₂ = cong (_⋯ Φ) wkc3eq ■ fusion c₂ wk3c Φ
+                ρ₂N-low : ∀ (z : 𝔽 (sB1 + (2 + n))) → Fin.toℕ z Nat.< sB1 + 2 → Fin.toℕ (ρ₂ z) ≡ Fin.toℕ z
+                ρ₂N-low z zlt =
+                    Fin.toℕ-cast assocOut ((weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2)) ↑* (sB1 + 2)) (Fin.cast (sym assocIn) z))
+                  ■ toℕ-↑*-lt (weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2))) (sB1 + 2) (Fin.cast (sym assocIn) z)
+                      (subst (Nat._< sB1 + 2) (sym (Fin.toℕ-cast (sym assocIn) z)) zlt)
+                  ■ Fin.toℕ-cast (sym assocIn) z
+                ρ₂N-high : ∀ (z : 𝔽 (sB1 + (2 + n))) → sB1 + 2 Nat.≤ Fin.toℕ z →
+                           Fin.toℕ (ρ₂ z) ≡ sB1 + (2 + ((sA2 + (sA1 + 2)) + (Fin.toℕ z Nat.∸ (sB1 + 2))))
+                ρ₂N-high z zge =
+                    Fin.toℕ-cast assocOut ((weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2)) ↑* (sB1 + 2)) (Fin.cast (sym assocIn) z))
+                  ■ toℕ-↑*-ge (weaken* ⦃ Kᵣ ⦄ (sA2 + (sA1 + 2))) (sB1 + 2) (Fin.cast (sym assocIn) z) zge'
+                  ■ cong ((sB1 + 2) +_) (toℕ-weaken*ᵣ (sA2 + (sA1 + 2)) (Fin.reduce≥ (Fin.cast (sym assocIn) z) zge')
+                      ■ cong ((sA2 + (sA1 + 2)) +_) (toℕ-reduce≥ (Fin.cast (sym assocIn) z) zge' ■ cong (Nat._∸ (sB1 + 2)) (Fin.toℕ-cast (sym assocIn) z)))
+                  ■ Nat.+-assoc sB1 2 ((sA2 + (sA1 + 2)) + (Fin.toℕ z Nat.∸ (sB1 + 2)))
+                  where zge' : sB1 + 2 Nat.≤ Fin.toℕ (Fin.cast (sym assocIn) z)
+                        zge' = subst (sB1 + 2 Nat.≤_) (sym (Fin.toℕ-cast (sym assocIn) z)) zge
+                Λ₂Eq : Λ₂ ≗ ρ₂ ↑* sB2
+                Λ₂Eq y = Fin.toℕ-injective lhsN
+                  where
+                    wk3cN : Fin.toℕ (wk3c y) ≡ sA2 + (sA1 + (2 + Fin.toℕ y))
+                    wk3cN = toℕ-weaken*ᵣ sA2 _
+                          ■ cong (sA2 +_) (toℕ-weaken*ᵣ sA1 _ ■ cong (sA1 +_) (toℕ-weaken*ᵣ 2 y))
+                    assocB : ∀ X → sA2 + (sA1 + (2 + X)) ≡ (sA2 + (sA1 + 2)) + X
+                    assocB X = cong (sA2 +_) (sym (Nat.+-assoc sA1 2 X)) ■ sym (Nat.+-assoc sA2 (sA1 + 2) X)
+                    ρ₂liftData : Fin.toℕ y Nat.< sB2 + (sB1 + 2) → sB2 Nat.≤ Fin.toℕ y → Fin.toℕ ((ρ₂ ↑* sB2) y) ≡ Fin.toℕ y
+                    ρ₂liftData ylt ge1 = toℕ-↑*-ge ρ₂ sB2 y ge1 ■ cong (sB2 +_) (ρ₂N-low (Fin.reduce≥ y ge1) redlt ■ toℕ-reduce≥ y ge1) ■ Nat.m+[n∸m]≡n ge1
+                      where redlt : Fin.toℕ (Fin.reduce≥ y ge1) Nat.< sB1 + 2
+                            redlt = subst (Nat._< sB1 + 2) (sym (toℕ-reduce≥ y ge1))
+                                      (Nat.+-cancelˡ-< sB2 _ (sB1 + 2)
+                                        (subst (Nat._< sB2 + (sB1 + 2)) (sym (Nat.m+[n∸m]≡n ge1)) ylt))
+                    ρ₂liftLow : Fin.toℕ y Nat.< sB2 + (sB1 + 2) → Fin.toℕ ((ρ₂ ↑* sB2) y) ≡ Fin.toℕ y
+                    ρ₂liftLow ylt with Nat.<-cmp (Fin.toℕ y) sB2
+                    ... | tri< ylt1 _ _ = toℕ-↑*-lt ρ₂ sB2 y ylt1
+                    ... | tri≈ _ yeq1 _ = ρ₂liftData ylt (Nat.≤-reflexive (sym yeq1))
+                    ... | tri> _ _ ygt1 = ρ₂liftData ylt (Nat.<⇒≤ ygt1)
+                    tailEq : sB2 + (sB1 + 2) Nat.≤ Fin.toℕ y → Fin.toℕ (Λ₂ y) ≡ Fin.toℕ ((ρ₂ ↑* sB2) y)
+                    tailEq ge3 = Φ-fix-ge (wk3c y) geΦ ■ wk3cN ■ tailEq2
+                      where
+                        d3 = Fin.toℕ y Nat.∸ (sB2 + (sB1 + 2))
+                        yd : (sB2 + (sB1 + 2)) + d3 ≡ Fin.toℕ y
+                        yd = Nat.m+[n∸m]≡n ge3
+                        ge2 : sB2 Nat.≤ Fin.toℕ y
+                        ge2 = Nat.≤-trans (Nat.m≤m+n sB2 (sB1 + 2)) ge3
+                        geΦ : sA2 + (sA1 + (2 + (sB2 + (sB1 + 2)))) Nat.≤ Fin.toℕ (wk3c y)
+                        geΦ = subst (sA2 + (sA1 + (2 + (sB2 + (sB1 + 2)))) Nat.≤_) (sym wk3cN)
+                                (Nat.+-monoʳ-≤ sA2 (Nat.+-monoʳ-≤ sA1 (Nat.+-monoʳ-≤ 2 ge3)))
+                        z = Fin.reduce≥ y ge2
+                        zN : Fin.toℕ z ≡ (sB1 + 2) + d3
+                        zN = toℕ-reduce≥ y ge2 ■ red2
+                          where red2 : Fin.toℕ y Nat.∸ sB2 ≡ (sB1 + 2) + d3
+                                red2 = cong (Nat._∸ sB2) (sym yd) ■ cong (Nat._∸ sB2) (Nat.+-assoc sB2 (sB1 + 2) d3) ■ Nat.m+n∸m≡n sB2 ((sB1 + 2) + d3)
+                        zge : sB1 + 2 Nat.≤ Fin.toℕ z
+                        zge = subst (sB1 + 2 Nat.≤_) (sym zN) (Nat.m≤m+n (sB1 + 2) d3)
+                        ρ₂high : Fin.toℕ ((ρ₂ ↑* sB2) y) ≡ sB2 + (sB1 + (2 + ((sA2 + (sA1 + 2)) + d3)))
+                        ρ₂high = toℕ-↑*-ge ρ₂ sB2 y ge2 ■ cong (sB2 +_) (ρ₂N-high z zge ■ cong (λ w → sB1 + (2 + ((sA2 + (sA1 + 2)) + w))) zd3)
+                          where zd3 : Fin.toℕ z Nat.∸ (sB1 + 2) ≡ d3
+                                zd3 = cong (Nat._∸ (sB1 + 2)) zN ■ Nat.m+n∸m≡n (sB1 + 2) d3
+                        tailEq2 : sA2 + (sA1 + (2 + Fin.toℕ y)) ≡ Fin.toℕ ((ρ₂ ↑* sB2) y)
+                        tailEq2 = cong (λ w → sA2 + (sA1 + (2 + w))) (sym yd) ■ solveT ■ sym ρ₂high
+                          where open +-*-Solver
+                                solveT : sA2 + (sA1 + (2 + ((sB2 + (sB1 + 2)) + d3)))
+                                         ≡ sB2 + (sB1 + (2 + ((sA2 + (sA1 + 2)) + d3)))
+                                solveT = solve 5 (λ a2 a1 b2 b1 t →
+                                            a2 :+ (a1 :+ (con 2 :+ ((b2 :+ (b1 :+ con 2)) :+ t)))
+                                            := b2 :+ (b1 :+ (con 2 :+ ((a2 :+ (a1 :+ con 2)) :+ t))))
+                                          refl sA2 sA1 sB2 sB1 d3
+                    lhsN : Fin.toℕ (Λ₂ y) ≡ Fin.toℕ ((ρ₂ ↑* sB2) y)
+                    lhsN with Nat.<-cmp (Fin.toℕ y) (sB2 + (sB1 + 2))
+                    ... | tri< ylt _ _ =
+                            Φ-toℕ-B (wk3c y) geB ltB
+                          ■ cong (Nat._∸ (sA2 + (sA1 + 2))) (wk3cN ■ assocB (Fin.toℕ y))
+                          ■ Nat.m+n∸m≡n (sA2 + (sA1 + 2)) (Fin.toℕ y)
+                          ■ sym (ρ₂liftLow ylt)
+                      where
+                        geB : sA2 + (sA1 + 2) Nat.≤ Fin.toℕ (wk3c y)
+                        geB = subst (sA2 + (sA1 + 2) Nat.≤_) (sym wk3cN)
+                                (subst (sA2 + (sA1 + 2) Nat.≤_) (sym (assocB (Fin.toℕ y)))
+                                  (Nat.m≤m+n (sA2 + (sA1 + 2)) (Fin.toℕ y)))
+                        ltB : Fin.toℕ (wk3c y) Nat.< sA2 + (sA1 + (2 + (sB2 + (sB1 + 2))))
+                        ltB = subst (Nat._< sA2 + (sA1 + (2 + (sB2 + (sB1 + 2))))) (sym wk3cN)
+                                (Nat.+-monoʳ-< sA2 (Nat.+-monoʳ-< sA1 (Nat.+-monoʳ-< 2 ylt)))
+                    ... | tri≈ _ yeq _ = tailEq (Nat.≤-reflexive (sym yeq))
+                    ... | tri> _ _ ygt = tailEq (Nat.<⇒≤ ygt)
+                mapcc2 : mapᶜ ρ₂ cc₂ ≡ (K `unit , weaken* ⦃ Kᵣ ⦄ sB1 1F , K `unit)
+                mapcc2 = cong₂ _,_ refl (cong₂ _,_ ρ₂flag refl)
+                midB2 : cB2t ⋯ Φ ≡ canonₛ B₂ (K `unit , weaken* ⦃ Kᵣ ⦄ sB1 1F , K `unit) kb
+                midB2 =
+                    fuseΛ₂
+                  ■ ⋯-cong c₂ Λ₂Eq
+                  ■ canonₛ-nat B₂ cc₂ ρ₂ kb
+                  ■ cong (λ c → canonₛ B₂ c kb) mapcc2
     body | inj₂ ii | inj₂ jj =
         fuseΦ wk6t
       ■ fuseWk
@@ -1455,8 +1897,317 @@ subEqComm-gen {m} {n} σ A₁ A₂ B₁ B₂ i = body
           ■ cong (λ z → z ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sB1 ⋯ weaken* ⦃ Kᵣ ⦄ sB2)
               (leafσ-tail σ A₁ A₂ ((a1 + a2) ↑ʳ jj) jj (Fin.splitAt-↑ʳ (a1 + a2) m jj))
     body | inj₁ z with Fin.splitAt a1 z in eqi
-    ...   | inj₁ j = {! RA1 !}
-    ...   | inj₂ k = {! RA2 !}
+    ...   | inj₁ j =
+                fuseΦ cA1t
+              ■ midA1
+              ■ sym rhsA1
+              where
+                cc₀ : UChan (2 + n)
+                cc₀ = (K `unit , 0F , K `unit)
+                cc₀big : UChan (2 + (sB2 + (sB1 + (2 + n))))
+                cc₀big = (K `unit , 0F , K `unit)
+                cA1t = canonₛ A₁ cc₀big j ⋯ weaken* ⦃ Kᵣ ⦄ sA2
+                rhsA1 : leafσ (leafσ σ A₁ A₂) B₁ B₂ ((b1 + b2) ↑ʳ (z ↑ˡ m))
+                        ≡ canonₛ A₁ (K `unit , 0F , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sA2
+                          ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sB1 ⋯ weaken* ⦃ Kᵣ ⦄ sB2
+                rhsA1 =
+                    leafσ-tail (leafσ σ A₁ A₂) B₁ B₂ ((b1 + b2) ↑ʳ (z ↑ˡ m)) (z ↑ˡ m)
+                      (Fin.splitAt-↑ʳ (b1 + b2) (a1 + a2 + m) (z ↑ˡ m))
+                  ■ cong (λ t → t ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sB1 ⋯ weaken* ⦃ Kᵣ ⦄ sB2)
+                      (leafσ-A₁ σ A₁ A₂ (z ↑ˡ m) z j (Fin.splitAt-↑ˡ (a1 + a2) z m) eqi)
+                c₁ = canonₛ A₁ cc₀ j
+                assoc-A : (sB2 + (sB1 + 2)) + n ≡ sB2 + (sB1 + (2 + n))
+                assoc-A = Nat.+-assoc sB2 (sB1 + 2) n ■ cong (sB2 +_) (Nat.+-assoc sB1 2 n)
+                ρA : (2 + n) →ᵣ (2 + (sB2 + (sB1 + (2 + n))))
+                ρA = λ y → Fin.cast (cong (2 +_) assoc-A) ((weaken* ⦃ Kᵣ ⦄ (sB2 + (sB1 + 2)) ↑* 2) y)
+                ρA0F : ρA 0F ≡ 0F
+                ρA0F = Fin.toℕ-injective (Fin.toℕ-cast (cong (2 +_) assoc-A) ((weaken* ⦃ Kᵣ ⦄ (sB2 + (sB1 + 2)) ↑* 2) 0F))
+                mapcc : mapᶜ ρA cc₀ ≡ (K `unit , 0F , K `unit)
+                mapcc = cong₂ _,_ refl (cong₂ _,_ ρA0F refl)
+                ΨLHS : (sA1 + (2 + n)) →ᵣ (sB2 + (sB1 + (2 + (sA2 + (sA1 + (2 + n))))))
+                ΨLHS = ((ρA ↑* sA1) ·ₖ weaken* ⦃ Kᵣ ⦄ sA2) ·ₖ Φ
+                ΨRHS : (sA1 + (2 + n)) →ᵣ (sB2 + (sB1 + (2 + (sA2 + (sA1 + (2 + n))))))
+                ΨRHS = ((weaken* ⦃ Kᵣ ⦄ sA2 ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ weaken* ⦃ Kᵣ ⦄ sB1) ·ₖ weaken* ⦃ Kᵣ ⦄ sB2
+                fuseL : cA1t ⋯ Φ ≡ c₁ ⋯ ΨLHS
+                fuseL =
+                    cong (λ t → t ⋯ weaken* ⦃ Kᵣ ⦄ sA2 ⋯ Φ)
+                      (sym (canonₛ-nat A₁ cc₀ ρA j ■ cong (λ c → canonₛ A₁ c j) mapcc))
+                  ■ cong (_⋯ Φ) (fusion c₁ (ρA ↑* sA1) (weaken* ⦃ Kᵣ ⦄ sA2))
+                  ■ fusion c₁ ((ρA ↑* sA1) ·ₖ weaken* ⦃ Kᵣ ⦄ sA2) Φ
+                fuseR : c₁ ⋯ ΨRHS
+                        ≡ canonₛ A₁ (K `unit , 0F , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sA2
+                          ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sB1 ⋯ weaken* ⦃ Kᵣ ⦄ sB2
+                fuseR =
+                    sym ( cong (λ t → t ⋯ weaken* ⦃ Kᵣ ⦄ sB1 ⋯ weaken* ⦃ Kᵣ ⦄ sB2)
+                            (fusion c₁ (weaken* ⦃ Kᵣ ⦄ sA2) (weaken* ⦃ Kᵣ ⦄ 2))
+                        ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB2)
+                            (fusion c₁ (weaken* ⦃ Kᵣ ⦄ sA2 ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (weaken* ⦃ Kᵣ ⦄ sB1))
+                        ■ fusion c₁ ((weaken* ⦃ Kᵣ ⦄ sA2 ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ weaken* ⦃ Kᵣ ⦄ sB1) (weaken* ⦃ Kᵣ ⦄ sB2) )
+                ΨEq : ΨLHS ≗ ΨRHS
+                ΨEq y = Fin.toℕ-injective (lhsN ■ sym rhsN)
+                  where
+                    t = Fin.toℕ y
+                    rhsN : Fin.toℕ (ΨRHS y) ≡ sB2 + (sB1 + (2 + (sA2 + t)))
+                    rhsN = toℕ-weaken*ᵣ sB2 _
+                         ■ cong (sB2 +_) (toℕ-weaken*ᵣ sB1 _
+                         ■ cong (sB1 +_) (toℕ-weaken*ᵣ 2 _
+                         ■ cong (2 +_) (toℕ-weaken*ᵣ sA2 y)))
+                    dataEq : sA1 Nat.≤ t → t Nat.< sA1 + 2 → Fin.toℕ (ΨLHS y) ≡ sB2 + (sB1 + (2 + (sA2 + t)))
+                    dataEq ge2 lt2 = Φ-toℕ-Adata (weaken* ⦃ Kᵣ ⦄ sA2 ((ρA ↑* sA1) y)) wge wlt
+                                   ■ cong ((sB2 + (sB1 + 2)) +_) wN
+                                   ■ solveD
+                      where
+                        dd = t Nat.∸ sA1
+                        td : sA1 + dd ≡ t
+                        td = Nat.m+[n∸m]≡n ge2
+                        ddlt2 : dd Nat.< 2
+                        ddlt2 = Nat.+-cancelˡ-< sA1 dd 2 (subst (Nat._< sA1 + 2) (sym td) lt2)
+                        ρAred : Fin.toℕ (ρA (Fin.reduce≥ y ge2)) ≡ dd
+                        ρAred = Fin.toℕ-cast (cong (2 +_) assoc-A) ((weaken* ⦃ Kᵣ ⦄ (sB2 + (sB1 + 2)) ↑* 2) (Fin.reduce≥ y ge2))
+                              ■ toℕ-↑*-lt (weaken* ⦃ Kᵣ ⦄ (sB2 + (sB1 + 2))) 2 (Fin.reduce≥ y ge2)
+                                  (subst (Nat._< 2) (sym redy) ddlt2)
+                              ■ redy
+                          where redy : Fin.toℕ (Fin.reduce≥ y ge2) ≡ dd
+                                redy = toℕ-reduce≥ y ge2
+                        ρAhigh : Fin.toℕ ((ρA ↑* sA1) y) ≡ t
+                        ρAhigh = toℕ-↑*-ge ρA sA1 y ge2 ■ cong (sA1 +_) ρAred ■ td
+                        wN : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sA2 ((ρA ↑* sA1) y)) ≡ sA2 + t
+                        wN = toℕ-weaken*ᵣ sA2 _ ■ cong (sA2 +_) ρAhigh
+                        wge : sA2 + sA1 Nat.≤ Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sA2 ((ρA ↑* sA1) y))
+                        wge = subst (sA2 + sA1 Nat.≤_) (sym wN) (Nat.+-monoʳ-≤ sA2 ge2)
+                        wlt : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sA2 ((ρA ↑* sA1) y)) Nat.< sA2 + sA1 + 2
+                        wlt = subst (Nat._< sA2 + sA1 + 2) (sym wN)
+                                (subst (Nat._< sA2 + sA1 + 2) (Nat.+-assoc sA2 sA1 dd ■ cong (sA2 +_) td)
+                                  (Nat.+-monoʳ-< (sA2 + sA1) ddlt2))
+                        open +-*-Solver
+                        solveD : (sB2 + (sB1 + 2)) + (sA2 + t) ≡ sB2 + (sB1 + (2 + (sA2 + t)))
+                        solveD = solve 4 (λ b2 b1 a2 s →
+                                    (b2 :+ (b1 :+ con 2)) :+ (a2 :+ s)
+                                    := b2 :+ (b1 :+ (con 2 :+ (a2 :+ s)))) refl sB2 sB1 sA2 t
+                    tailEq : sA1 + 2 Nat.≤ t → Fin.toℕ (ΨLHS y) ≡ sB2 + (sB1 + (2 + (sA2 + t)))
+                    tailEq ge2 = Φ-fix-ge (weaken* ⦃ Kᵣ ⦄ sA2 ((ρA ↑* sA1) y)) geΦ ■ wN ■ solveT
+                      where
+                        dd = t Nat.∸ (sA1 + 2)
+                        td : (sA1 + 2) + dd ≡ t
+                        td = Nat.m+[n∸m]≡n ge2
+                        ge1 : sA1 Nat.≤ t
+                        ge1 = Nat.≤-trans (Nat.m≤m+n sA1 2) ge2
+                        red0 = Fin.reduce≥ y ge1
+                        red0N : Fin.toℕ red0 ≡ 2 + dd
+                        red0N = toℕ-reduce≥ y ge1 ■ red2
+                          where red2 : t Nat.∸ sA1 ≡ 2 + dd
+                                red2 = cong (Nat._∸ sA1) (sym td) ■ cong (Nat._∸ sA1) (Nat.+-assoc sA1 2 dd) ■ Nat.m+n∸m≡n sA1 (2 + dd)
+                        red0ge2 : 2 Nat.≤ Fin.toℕ red0
+                        red0ge2 = subst (2 Nat.≤_) (sym red0N) (Nat.m≤m+n 2 dd)
+                        ρAred : Fin.toℕ (ρA red0) ≡ 2 + ((sB2 + (sB1 + 2)) + dd)
+                        ρAred = Fin.toℕ-cast (cong (2 +_) assoc-A) ((weaken* ⦃ Kᵣ ⦄ (sB2 + (sB1 + 2)) ↑* 2) red0)
+                              ■ toℕ-↑*-ge (weaken* ⦃ Kᵣ ⦄ (sB2 + (sB1 + 2))) 2 red0 red0ge2
+                              ■ cong (2 +_) (toℕ-weaken*ᵣ (sB2 + (sB1 + 2)) (Fin.reduce≥ red0 red0ge2)
+                                  ■ cong ((sB2 + (sB1 + 2)) +_) (toℕ-reduce≥ red0 red0ge2 ■ cong (Nat._∸ 2) red0N ■ Nat.m+n∸m≡n 2 dd))
+                        ρAhigh : Fin.toℕ ((ρA ↑* sA1) y) ≡ sA1 + (2 + ((sB2 + (sB1 + 2)) + dd))
+                        ρAhigh = toℕ-↑*-ge ρA sA1 y ge1 ■ cong (sA1 +_) ρAred
+                        wN : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sA2 ((ρA ↑* sA1) y)) ≡ sA2 + (sA1 + (2 + ((sB2 + (sB1 + 2)) + dd)))
+                        wN = toℕ-weaken*ᵣ sA2 _ ■ cong (sA2 +_) ρAhigh
+                        geΦ : sA2 + (sA1 + (2 + (sB2 + (sB1 + 2)))) Nat.≤ Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sA2 ((ρA ↑* sA1) y))
+                        geΦ = subst (sA2 + (sA1 + (2 + (sB2 + (sB1 + 2)))) Nat.≤_) (sym wN)
+                                (Nat.+-monoʳ-≤ sA2 (Nat.+-monoʳ-≤ sA1 (Nat.+-monoʳ-≤ 2 (Nat.m≤m+n (sB2 + (sB1 + 2)) dd))))
+                        open +-*-Solver
+                        solveT : sA2 + (sA1 + (2 + ((sB2 + (sB1 + 2)) + dd))) ≡ sB2 + (sB1 + (2 + (sA2 + t)))
+                        solveT = solve 5 (λ a2 a1 b2 b1 w →
+                                    a2 :+ (a1 :+ (con 2 :+ ((b2 :+ (b1 :+ con 2)) :+ w)))
+                                    := b2 :+ (b1 :+ (con 2 :+ (a2 :+ ((a1 :+ con 2) :+ w))))) refl sA2 sA1 sB2 sB1 dd
+                               ■ cong (λ w → sB2 + (sB1 + (2 + (sA2 + w)))) td
+                    lhsN : Fin.toℕ (ΨLHS y) ≡ sB2 + (sB1 + (2 + (sA2 + t)))
+                    lhsN with Nat.<-cmp t sA1
+                    ... | tri< tlt _ _ = lowEq
+                      where
+                        lA : Fin.toℕ ((ρA ↑* sA1) y) ≡ t
+                        lA = toℕ-↑*-lt ρA sA1 y tlt
+                        wA : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sA2 ((ρA ↑* sA1) y)) ≡ sA2 + t
+                        wA = toℕ-weaken*ᵣ sA2 _ ■ cong (sA2 +_) lA
+                        wlt : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sA2 ((ρA ↑* sA1) y)) Nat.< sA2 + sA1
+                        wlt = subst (Nat._< sA2 + sA1) (sym wA) (Nat.+-monoʳ-< sA2 tlt)
+                        lowEq : Fin.toℕ (ΨLHS y) ≡ sB2 + (sB1 + (2 + (sA2 + t)))
+                        lowEq = Φ-toℕ-A (weaken* ⦃ Kᵣ ⦄ sA2 ((ρA ↑* sA1) y)) wlt
+                              ■ cong ((sB2 + (sB1 + 2)) +_) wA
+                              ■ solveLow
+                          where open +-*-Solver
+                                solveLow : (sB2 + (sB1 + 2)) + (sA2 + t) ≡ sB2 + (sB1 + (2 + (sA2 + t)))
+                                solveLow = solve 4 (λ b2 b1 a2 s →
+                                              (b2 :+ (b1 :+ con 2)) :+ (a2 :+ s)
+                                              := b2 :+ (b1 :+ (con 2 :+ (a2 :+ s)))) refl sB2 sB1 sA2 t
+                    ... | tri≈ _ teq _ = dataEq (Nat.≤-reflexive (sym teq))
+                                          (subst (Nat._< sA1 + 2) (sym teq) sA1<sA1+2)
+                      where sA1<sA1+2 : sA1 Nat.< sA1 + 2
+                            sA1<sA1+2 = Nat.≤-<-trans (Nat.≤-reflexive (sym (Nat.+-identityʳ sA1))) (Nat.+-monoʳ-< sA1 (Nat.s≤s Nat.z≤n))
+                    ... | tri> _ _ tgt = highEq tgt
+                      where
+                        highEq : sA1 Nat.< t → Fin.toℕ (ΨLHS y) ≡ sB2 + (sB1 + (2 + (sA2 + t)))
+                        highEq tg with Nat.<-cmp t (sA1 + 2)
+                        ... | tri< tlt2 _ _ = dataEq (Nat.<⇒≤ tg) tlt2
+                        ... | tri≈ _ teq2 _ = tailEq (Nat.≤-reflexive (sym teq2))
+                        ... | tri> _ _ tgt2 = tailEq (Nat.<⇒≤ tgt2)
+                midA1 : cA1t ⋯ Φ ≡ canonₛ A₁ (K `unit , 0F , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sA2
+                          ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sB1 ⋯ weaken* ⦃ Kᵣ ⦄ sB2
+                midA1 = fuseL ■ ⋯-cong c₁ ΨEq ■ fuseR
+    ...   | inj₂ k =
+                fuseΦ cA2t
+              ■ midA2
+              ■ sym rhsA2
+              where
+                flagIdx : 𝔽 (sA1 + (2 + n))
+                flagIdx = weaken* ⦃ Kᵣ ⦄ sA1 1F
+                cc₂big : UChan (sA1 + (2 + (sB2 + (sB1 + (2 + n)))))
+                cc₂big = (K `unit , weaken* ⦃ Kᵣ ⦄ sA1 1F , K `unit)
+                cc₂ : UChan (sA1 + (2 + n))
+                cc₂ = (K `unit , flagIdx , K `unit)
+                c₂ = canonₛ A₂ cc₂ k
+                cA2t = canonₛ A₂ cc₂big k
+                rhsA2 : leafσ (leafσ σ A₁ A₂) B₁ B₂ ((b1 + b2) ↑ʳ (z ↑ˡ m))
+                        ≡ canonₛ A₂ (K `unit , weaken* ⦃ Kᵣ ⦄ sA1 1F , K `unit) k
+                          ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sB1 ⋯ weaken* ⦃ Kᵣ ⦄ sB2
+                rhsA2 =
+                    leafσ-tail (leafσ σ A₁ A₂) B₁ B₂ ((b1 + b2) ↑ʳ (z ↑ˡ m)) (z ↑ˡ m)
+                      (Fin.splitAt-↑ʳ (b1 + b2) (a1 + a2 + m) (z ↑ˡ m))
+                  ■ cong (λ t → t ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sB1 ⋯ weaken* ⦃ Kᵣ ⦄ sB2)
+                      (leafσ-B₁ σ A₁ A₂ (z ↑ˡ m) z k (Fin.splitAt-↑ˡ (a1 + a2) z m) eqi)
+                assocIn : (sA1 + 2) + n ≡ sA1 + (2 + n)
+                assocIn = Nat.+-assoc sA1 2 n
+                assocOut : (sA1 + 2) + ((sB2 + (sB1 + 2)) + n) ≡ sA1 + (2 + (sB2 + (sB1 + (2 + n))))
+                assocOut = Nat.+-assoc sA1 2 ((sB2 + (sB1 + 2)) + n)
+                         ■ cong (sA1 +_) (cong (2 +_) (Nat.+-assoc sB2 (sB1 + 2) n ■ cong (sB2 +_) (Nat.+-assoc sB1 2 n)))
+                ρ₂ : (sA1 + (2 + n)) →ᵣ (sA1 + (2 + (sB2 + (sB1 + (2 + n)))))
+                ρ₂ = λ y → Fin.cast assocOut ((weaken* ⦃ Kᵣ ⦄ (sB2 + (sB1 + 2)) ↑* (sA1 + 2)) (Fin.cast (sym assocIn) y))
+                flagN : Fin.toℕ flagIdx ≡ sA1 + 1
+                flagN = toℕ-weaken*ᵣ sA1 1F
+                ρ₂flag : ρ₂ flagIdx ≡ weaken* ⦃ Kᵣ ⦄ sA1 1F
+                ρ₂flag = Fin.toℕ-injective
+                  ( Fin.toℕ-cast assocOut ((weaken* ⦃ Kᵣ ⦄ (sB2 + (sB1 + 2)) ↑* (sA1 + 2)) (Fin.cast (sym assocIn) flagIdx))
+                  ■ toℕ-↑*-lt (weaken* ⦃ Kᵣ ⦄ (sB2 + (sB1 + 2))) (sA1 + 2) (Fin.cast (sym assocIn) flagIdx) flagLt
+                  ■ castN
+                  ■ sym (toℕ-weaken*ᵣ sA1 1F) )
+                  where castN : Fin.toℕ (Fin.cast (sym assocIn) flagIdx) ≡ sA1 + 1
+                        castN = Fin.toℕ-cast (sym assocIn) flagIdx ■ flagN
+                        flagLt : Fin.toℕ (Fin.cast (sym assocIn) flagIdx) Nat.< sA1 + 2
+                        flagLt = subst (Nat._< sA1 + 2) (sym castN) (Nat.+-monoʳ-< sA1 (Nat.s≤s (Nat.s≤s Nat.z≤n)))
+                mapcc2 : mapᶜ ρ₂ cc₂ ≡ (K `unit , weaken* ⦃ Kᵣ ⦄ sA1 1F , K `unit)
+                mapcc2 = cong₂ _,_ refl (cong₂ _,_ ρ₂flag refl)
+                Λ₂ : (sA2 + (sA1 + (2 + n))) →ᵣ (sB2 + (sB1 + (2 + (sA2 + (sA1 + (2 + n))))))
+                Λ₂ = (ρ₂ ↑* sA2) ·ₖ Φ
+                fuseL : cA2t ⋯ Φ ≡ c₂ ⋯ Λ₂
+                fuseL =
+                    cong (_⋯ Φ)
+                      (sym (canonₛ-nat A₂ cc₂ ρ₂ k ■ cong (λ c → canonₛ A₂ c k) mapcc2))
+                  ■ fusion c₂ (ρ₂ ↑* sA2) Φ
+                ρ₂N-low : ∀ (z′ : 𝔽 (sA1 + (2 + n))) → Fin.toℕ z′ Nat.< sA1 + 2 → Fin.toℕ (ρ₂ z′) ≡ Fin.toℕ z′
+                ρ₂N-low z′ zlt =
+                    Fin.toℕ-cast assocOut ((weaken* ⦃ Kᵣ ⦄ (sB2 + (sB1 + 2)) ↑* (sA1 + 2)) (Fin.cast (sym assocIn) z′))
+                  ■ toℕ-↑*-lt (weaken* ⦃ Kᵣ ⦄ (sB2 + (sB1 + 2))) (sA1 + 2) (Fin.cast (sym assocIn) z′)
+                      (subst (Nat._< sA1 + 2) (sym (Fin.toℕ-cast (sym assocIn) z′)) zlt)
+                  ■ Fin.toℕ-cast (sym assocIn) z′
+                ρ₂N-high : ∀ (z′ : 𝔽 (sA1 + (2 + n))) → sA1 + 2 Nat.≤ Fin.toℕ z′ →
+                           Fin.toℕ (ρ₂ z′) ≡ sA1 + (2 + ((sB2 + (sB1 + 2)) + (Fin.toℕ z′ Nat.∸ (sA1 + 2))))
+                ρ₂N-high z′ zge =
+                    Fin.toℕ-cast assocOut ((weaken* ⦃ Kᵣ ⦄ (sB2 + (sB1 + 2)) ↑* (sA1 + 2)) (Fin.cast (sym assocIn) z′))
+                  ■ toℕ-↑*-ge (weaken* ⦃ Kᵣ ⦄ (sB2 + (sB1 + 2))) (sA1 + 2) (Fin.cast (sym assocIn) z′) zge'
+                  ■ cong ((sA1 + 2) +_) (toℕ-weaken*ᵣ (sB2 + (sB1 + 2)) (Fin.reduce≥ (Fin.cast (sym assocIn) z′) zge')
+                      ■ cong ((sB2 + (sB1 + 2)) +_) (toℕ-reduce≥ (Fin.cast (sym assocIn) z′) zge' ■ cong (Nat._∸ (sA1 + 2)) (Fin.toℕ-cast (sym assocIn) z′)))
+                  ■ Nat.+-assoc sA1 2 ((sB2 + (sB1 + 2)) + (Fin.toℕ z′ Nat.∸ (sA1 + 2)))
+                  where zge' : sA1 + 2 Nat.≤ Fin.toℕ (Fin.cast (sym assocIn) z′)
+                        zge' = subst (sA1 + 2 Nat.≤_) (sym (Fin.toℕ-cast (sym assocIn) z′)) zge
+                Λ₂Eq : Λ₂ ≗ ((weaken* ⦃ Kᵣ ⦄ 2 ·ₖ weaken* ⦃ Kᵣ ⦄ sB1) ·ₖ weaken* ⦃ Kᵣ ⦄ sB2)
+                Λ₂Eq y = Fin.toℕ-injective (lhsN ■ sym rhsN)
+                  where
+                    t = Fin.toℕ y
+                    v = (ρ₂ ↑* sA2) y
+                    rhsN : Fin.toℕ (((weaken* ⦃ Kᵣ ⦄ 2 ·ₖ weaken* ⦃ Kᵣ ⦄ sB1) ·ₖ weaken* ⦃ Kᵣ ⦄ sB2) y)
+                           ≡ sB2 + (sB1 + (2 + t))
+                    rhsN = toℕ-weaken*ᵣ sB2 _ ■ cong (sB2 +_) (toℕ-weaken*ᵣ sB1 _ ■ cong (sB1 +_) (toℕ-weaken*ᵣ 2 y))
+                    -- v fixes toℕ for the low region (t < sA2+(sA1+2)).
+                    vlowGe : t Nat.< sA2 + (sA1 + 2) → sA2 Nat.≤ t → Fin.toℕ v ≡ t
+                    vlowGe tlt tge = toℕ-↑*-ge ρ₂ sA2 y tge ■ cong (sA2 +_) (ρ₂N-low (Fin.reduce≥ y tge) redlt ■ redN) ■ Nat.m+[n∸m]≡n tge
+                      where redN : Fin.toℕ (Fin.reduce≥ y tge) ≡ t Nat.∸ sA2
+                            redN = toℕ-reduce≥ y tge
+                            redlt : Fin.toℕ (Fin.reduce≥ y tge) Nat.< sA1 + 2
+                            redlt = subst (Nat._< sA1 + 2) (sym redN)
+                                      (Nat.+-cancelˡ-< sA2 (t Nat.∸ sA2) (sA1 + 2)
+                                        (subst (Nat._< sA2 + (sA1 + 2)) (sym (Nat.m+[n∸m]≡n tge)) tlt))
+                    vlow : t Nat.< sA2 + (sA1 + 2) → Fin.toℕ v ≡ t
+                    vlow tlt with Nat.<-cmp t sA2
+                    ... | tri< tlt1 _ _ = toℕ-↑*-lt ρ₂ sA2 y tlt1
+                    ... | tri≈ _ teq1 _ = vlowGe tlt (Nat.≤-reflexive (sym teq1))
+                    ... | tri> _ _ tgt1 = vlowGe tlt (Nat.<⇒≤ tgt1)
+                    dataEq : sA2 + sA1 Nat.≤ t → t Nat.< sA2 + sA1 + 2 → Fin.toℕ (Λ₂ y) ≡ sB2 + (sB1 + (2 + t))
+                    dataEq ge2 lt2 = Φ-toℕ-Adata v (subst (sA2 + sA1 Nat.≤_) (sym vN) ge2) (subst (Nat._< sA2 + sA1 + 2) (sym vN) lt2)
+                                   ■ cong ((sB2 + (sB1 + 2)) +_) vN ■ solveD
+                      where vN : Fin.toℕ v ≡ t
+                            vN = vlow (Nat.<-≤-trans lt2 (Nat.≤-reflexive (Nat.+-assoc sA2 sA1 2)))
+                            open +-*-Solver
+                            solveD : (sB2 + (sB1 + 2)) + t ≡ sB2 + (sB1 + (2 + t))
+                            solveD = solve 3 (λ b2 b1 s →
+                                        (b2 :+ (b1 :+ con 2)) :+ s := b2 :+ (b1 :+ (con 2 :+ s))) refl sB2 sB1 t
+                    tailEq : sA2 + sA1 + 2 Nat.≤ t → Fin.toℕ (Λ₂ y) ≡ sB2 + (sB1 + (2 + t))
+                    tailEq ge2 = Φ-fix-ge v geΦ ■ vN ■ solveT
+                      where
+                        ge1 : sA2 + (sA1 + 2) Nat.≤ t
+                        ge1 = subst (Nat._≤ t) (Nat.+-assoc sA2 sA1 2) ge2
+                        dd = t Nat.∸ (sA2 + (sA1 + 2))
+                        td : (sA2 + (sA1 + 2)) + dd ≡ t
+                        td = Nat.m+[n∸m]≡n ge1
+                        tge2 : sA2 Nat.≤ t
+                        tge2 = Nat.≤-trans (Nat.m≤m+n sA2 (sA1 + 2)) ge1
+                        red = Fin.reduce≥ y tge2
+                        redN : Fin.toℕ red ≡ sA1 + 2 + dd
+                        redN = toℕ-reduce≥ y tge2 ■ red2
+                          where red2 : t Nat.∸ sA2 ≡ sA1 + 2 + dd
+                                red2 = cong (Nat._∸ sA2) (sym td)
+                                     ■ cong (Nat._∸ sA2) (Nat.+-assoc sA2 (sA1 + 2) dd)
+                                     ■ Nat.m+n∸m≡n sA2 (sA1 + 2 + dd)
+                        redge : sA1 + 2 Nat.≤ Fin.toℕ red
+                        redge = subst (sA1 + 2 Nat.≤_) (sym redN) (Nat.m≤m+n (sA1 + 2) dd)
+                        ρ₂redN : Fin.toℕ (ρ₂ red) ≡ sA1 + (2 + ((sB2 + (sB1 + 2)) + dd))
+                        ρ₂redN = ρ₂N-high red redge ■ cong (λ w → sA1 + (2 + ((sB2 + (sB1 + 2)) + w))) redd
+                          where redd : Fin.toℕ red Nat.∸ (sA1 + 2) ≡ dd
+                                redd = cong (Nat._∸ (sA1 + 2)) redN ■ Nat.m+n∸m≡n (sA1 + 2) dd
+                        vN : Fin.toℕ v ≡ sA2 + (sA1 + (2 + ((sB2 + (sB1 + 2)) + dd)))
+                        vN = toℕ-↑*-ge ρ₂ sA2 y tge2 ■ cong (sA2 +_) ρ₂redN
+                        geΦ : sA2 + (sA1 + (2 + (sB2 + (sB1 + 2)))) Nat.≤ Fin.toℕ v
+                        geΦ = subst (sA2 + (sA1 + (2 + (sB2 + (sB1 + 2)))) Nat.≤_) (sym vN)
+                                (Nat.+-monoʳ-≤ sA2 (Nat.+-monoʳ-≤ sA1 (Nat.+-monoʳ-≤ 2 (Nat.m≤m+n (sB2 + (sB1 + 2)) dd))))
+                        open +-*-Solver
+                        solveT : sA2 + (sA1 + (2 + ((sB2 + (sB1 + 2)) + dd))) ≡ sB2 + (sB1 + (2 + t))
+                        solveT = solve 5 (λ a2 a1 b2 b1 w →
+                                    a2 :+ (a1 :+ (con 2 :+ ((b2 :+ (b1 :+ con 2)) :+ w)))
+                                    := b2 :+ (b1 :+ (con 2 :+ ((a2 :+ (a1 :+ con 2)) :+ w)))) refl sA2 sA1 sB2 sB1 dd
+                               ■ cong (λ w → sB2 + (sB1 + (2 + w))) td
+                    lhsN : Fin.toℕ (Λ₂ y) ≡ sB2 + (sB1 + (2 + t))
+                    lhsN with Nat.<-cmp t (sA2 + sA1)
+                    ... | tri< tlt _ _ =
+                            Φ-toℕ-A v (subst (Nat._< sA2 + sA1) (sym vN) tlt)
+                          ■ cong ((sB2 + (sB1 + 2)) +_) vN
+                          ■ solveLow
+                      where vlt : t Nat.< sA2 + (sA1 + 2)
+                            vlt = Nat.<-≤-trans tlt (Nat.+-monoʳ-≤ sA2 (Nat.m≤m+n sA1 2))
+                            vN : Fin.toℕ v ≡ t
+                            vN = vlow vlt
+                            open +-*-Solver
+                            solveLow : (sB2 + (sB1 + 2)) + t ≡ sB2 + (sB1 + (2 + t))
+                            solveLow = solve 3 (λ b2 b1 s →
+                                          (b2 :+ (b1 :+ con 2)) :+ s := b2 :+ (b1 :+ (con 2 :+ s))) refl sB2 sB1 t
+                    ... | tri≈ _ teq _ = dataEq (Nat.≤-reflexive (sym teq)) (subst (Nat._< sA2 + sA1 + 2) (sym teq) data<)
+                      where data< : sA2 + sA1 Nat.< sA2 + sA1 + 2
+                            data< = Nat.≤-<-trans (Nat.≤-reflexive (sym (Nat.+-identityʳ (sA2 + sA1)))) (Nat.+-monoʳ-< (sA2 + sA1) (Nat.s≤s Nat.z≤n))
+                    ... | tri> _ _ tgt with Nat.<-cmp t (sA2 + sA1 + 2)
+                    ...   | tri< tlt2 _ _ = dataEq (Nat.<⇒≤ tgt) tlt2
+                    ...   | tri≈ _ teq2 _ = tailEq (Nat.≤-reflexive (sym teq2))
+                    ...   | tri> _ _ tgt2 = tailEq (Nat.<⇒≤ tgt2)
+                midA2 : cA2t ⋯ Φ ≡ canonₛ A₂ (K `unit , weaken* ⦃ Kᵣ ⦄ sA1 1F , K `unit) k
+                          ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sB1 ⋯ weaken* ⦃ Kᵣ ⦄ sB2
+                midA2 =
+                    fuseL
+                  ■ ⋯-cong c₂ Λ₂Eq
+                  ■ sym (fusion c₂ (weaken* ⦃ Kᵣ ⦄ 2 ·ₖ weaken* ⦃ Kᵣ ⦄ sB1) (weaken* ⦃ Kᵣ ⦄ sB2))
+                  ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB2) (sym (fusion c₂ (weaken* ⦃ Kᵣ ⦄ 2) (weaken* ⦃ Kᵣ ⦄ sB1)))
 
 U-ν-comm : (σ : m →ₛ n) {B₁ B₂ A₁ A₂ : BindGroup} {P : T.Proc (sum A₁ + sum A₂ + (sum B₁ + sum B₂ + m))} →
            U[ T.ν B₁ B₂ (T.ν A₁ A₂ P) ] σ U.≋

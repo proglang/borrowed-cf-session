@@ -16,6 +16,7 @@ module BorrowedCF.Simulation2.Theorems where
 open import BorrowedCF.Simulation2.Base
 open import BorrowedCF.Simulation2.Frames using (⋯→-⋯ₛ; frame-plug*; frame*-⋯; ++ₛ-VSub; weaken-VSub)
 open import BorrowedCF.Simulation2.Congruence using (U-≋)
+open import BorrowedCF.Simulation2.Theorems.Choice using (U-choice)
 open import BorrowedCF.Simulation2.TranslationProperties using (≡→≋; UB-cong-─→; UB-cong; ≋-subst; ─→-subst; Value-subst; chanTriple-V; VChan; U-⋯ₚ; U-cong)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
 import Data.Sum as Sum
@@ -287,9 +288,11 @@ sim→ σ Vσ Γ-S ⊢P (TR.R-New E) =
 sim→ σ Vσ Γ-S ⊢P (TR.R-Com V) =
   inj₁ {! R-Com → RU-Com: needs typing (inv-ν/BindCtx) + frame-plug*; cf. Simulation/Theorems/Com.agda !}
 
--- R-Choice: select/branch rendezvous.  Like R-Com but → RU-Choice; needs typing + frames.
-sim→ σ Vσ Γ-S ⊢P TR.R-Choice =
-  inj₁ {! R-Choice → RU-Choice: needs typing (inv-ν/BindCtx) + frame-plug* !}
+-- R-Choice: select/branch rendezvous → RU-Choice.  Wired to Theorems.Choice.U-choice.
+--   U[_] is non-injective, so bind E₁/E₂/i (and b₁/b₂/B₁/B₂/P) explicitly and feed
+--   them to U-choice so its result type is rigid.
+sim→ σ Vσ Γ-S ⊢P (TR.R-Choice {b1} {B1} {b2} {B2} {P} {E₁} {E₂} {i}) =
+  U-choice σ Vσ Γ-S {i = i} {E₁ = E₁} {E₂ = E₂} ⊢P
 
 -- R-LSplit: local split duplicates the triple.  Needs a typing-driven binder-order
 --   transpose (canonₛ-handle positional lemma) + frame-plug* → RU-LSplit.
