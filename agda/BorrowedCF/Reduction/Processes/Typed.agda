@@ -75,7 +75,7 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
     ⟪ E [ K (`new s) · K `unit ]* ⟫
       ─→ₚ
     ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
-      ⟪ E ⋯ᶠ* weaken* _ [ (` 0F) ⊗ (` 1F) ]* ⟫
+      ⟪ E ⋯ᶠ* weaken* _ [ (` 1F) ⊗ (` 0F) ]* ⟫
 
   R-Fork : (E : Frame* n) (V : Value e) →
     ⟪ E [ K `fork · e ]* ⟫
