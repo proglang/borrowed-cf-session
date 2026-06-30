@@ -58,6 +58,12 @@ subst-flip : {A : Set} {F : A → Set} {x y : A} (q : x ≡ y) {a : F x} {b : F 
              subst F q a ≡ b → a ≡ subst F (sym q) b
 subst-flip refl eq = eq
 
+-- ⋯ₚ with a subst₂-coerced renaming: re-coerce X's domain and the codomain.
+cast-⋯2 : ∀ {A A′ B B′} (pA : A′ ≡ A) (pB : B ≡ B′) (Y : U.Proc A′) (ρ : A →ᵣ B) →
+          Y U.⋯ₚ subst₂ _→ᵣ_ (sym pA) pB ρ
+          ≡ subst U.Proc pB (subst U.Proc pA Y U.⋯ₚ ρ)
+cast-⋯2 refl refl Y ρ = refl
+
 Bφ : ∀ {n} (B : BindGroup) → U.Proc (syncs B + n) → U.Proc n
 Bφ []            P = P
 Bφ (b ∷ [])      P = P
@@ -1697,71 +1703,190 @@ ss-Uf : ∀ {h : ℕ → ℕ} {x y z : ℕ} (p : x ≡ y) (q : y ≡ z) {t : U.P
         ≡ subst (λ j → U.Proc (h j)) (p ■ q) t
 ss-Uf refl refl = refl
 
--- The inserted φ-drop binder descends to the leaf.  The leaf-relative target swap
--- is assocSwapᵣ (syncs C₁) 1; the per-level reconciliation (slideBody) composes
--- the IH swap with the φ-a' commute via R2 (BlockPerm: assocSwapᵣ b 1 ↑ ·ₖ
--- assocSwapᵣ 1 1 ≡ assocSwapᵣ (suc b) 1).
+-- syncs of an append with a nonempty tail splits additively (one junction per
+-- B₁-block).  Fact (A) for the sw-cast index reshaping.
+syncs-split : ∀ (B₁ : BindGroup) {b₁ : ℕ} {B₂ : BindGroup} →
+              syncs (B₁ ++ suc b₁ ∷ B₂) ≡ L.length B₁ + syncs (suc b₁ ∷ B₂)
+syncs-split []            {b₁} {B₂} = refl
+syncs-split (a ∷ [])      {b₁} {B₂} = cong suc (syncs-split [] {b₁} {B₂})
+syncs-split (a ∷ d ∷ B₁″) {b₁} {B₂} = cong suc (syncs-split (d ∷ B₁″) {b₁} {B₂})
+
+comm3 : ∀ x y z → x + (y + z) ≡ y + (x + z)
+comm3 x y z = sym (+-assoc x y z) ■ cong (_+ z) (Nat.+-comm x y) ■ +-assoc y x z
+
+-- the leaf swap assocSwapᵣ sD 1 at leaf scope (L.length B₁ + a) — the φ-drop
+-- binder, which sits ABOVE the B₁-prefix binders (de Bruijn-checked), slides past
+-- the sD suffix-binders to the leaf.  Retyped to the (syncs C₁)-relative scope.
+sw-dom : ∀ (B₁ : BindGroup) {b₁ : ℕ} {B₂ : BindGroup} {a : ℕ} →
+         syncs (B₁ ++ suc b₁ ∷ B₂) + suc a ≡ syncs (suc b₁ ∷ B₂) + (1 + (L.length B₁ + a))
+sw-dom B₁ {b₁} {B₂} {a} =
+    cong (_+ suc a) (syncs-split B₁)
+  ■ +-suc (L.length B₁ + syncs (suc b₁ ∷ B₂)) a
+  ■ cong suc (+-assoc (L.length B₁) (syncs (suc b₁ ∷ B₂)) a ■ comm3 (L.length B₁) (syncs (suc b₁ ∷ B₂)) a)
+  ■ sym (+-suc (syncs (suc b₁ ∷ B₂)) (L.length B₁ + a))
+
+sw-cod : ∀ (B₁ : BindGroup) {b₁ : ℕ} {B₂ : BindGroup} {a : ℕ} →
+         1 + (syncs (suc b₁ ∷ B₂) + (L.length B₁ + a)) ≡ suc (syncs (B₁ ++ suc b₁ ∷ B₂) + a)
+sw-cod B₁ {b₁} {B₂} {a} =
+  cong suc (comm3 (syncs (suc b₁ ∷ B₂)) (L.length B₁) a
+           ■ sym (+-assoc (L.length B₁) (syncs (suc b₁ ∷ B₂)) a)
+           ■ cong (_+ a) (sym (syncs-split B₁)))
+
+sw-cast : ∀ (B₁ : BindGroup) {b₁ : ℕ} {B₂ : BindGroup} {a : ℕ} →
+          (syncs (B₁ ++ suc b₁ ∷ B₂) + suc a) →ᵣ suc (syncs (B₁ ++ suc b₁ ∷ B₂) + a)
+sw-cast B₁ {b₁} {B₂} {a} =
+  subst₂ _→ᵣ_ (sym (sw-dom B₁ {b₁} {B₂} {a})) (sw-cod B₁ {b₁} {B₂} {a})
+    (assocSwapᵣ (syncs (suc b₁ ∷ B₂)) 1 {L.length B₁ + a})
+
+-- Prefix fold: applies one φ-binder per B₁-block, with the leaf at the bottom.
+-- (Distinct from Bφ, which drops the last block; here EVERY block is a binder.)
+Pfx : ∀ {n} (B₁ : BindGroup) → U.Proc (L.length B₁ + n) → U.Proc n
+Pfx []        X = X
+Pfx {n} (b ∷ B₁') X =
+  U.φ ϕ[ b ] (Pfx B₁' (subst U.Proc (sym (+-suc (L.length B₁') n)) X))
+
+Pfx-cong : ∀ {n} (B₁ : BindGroup) {X Y : U.Proc (L.length B₁ + n)} →
+           X U.≋ Y → Pfx {n} B₁ X U.≋ Pfx B₁ Y
+Pfx-cong []        xy = xy
+Pfx-cong {n} (b ∷ B₁') xy =
+  U.φ-cong (Pfx-cong B₁' (subst-≋ (sym (+-suc (L.length B₁') n)) xy))
+
+subst-Pfx : ∀ {n n′} (e : n ≡ n′) (B₁ : BindGroup) (X : U.Proc (L.length B₁ + n)) →
+            subst U.Proc e (Pfx {n} B₁ X)
+            ≡ Pfx {n′} B₁ (subst U.Proc (cong (L.length B₁ +_) e) X)
+subst-Pfx refl B₁ X = refl
+
+-- ⋯ₚ lifts through Pfx by ↑* (L.length B₁) over the prefix binders.
+Pfx-⋯ : ∀ {n n′} (B₁ : BindGroup) (X : U.Proc (L.length B₁ + n)) (ρ : n →ᵣ n′) →
+        Pfx {n} B₁ X U.⋯ₚ ρ ≡ Pfx {n′} B₁ (X U.⋯ₚ (ρ ↑* L.length B₁))
+Pfx-⋯ []        X ρ = refl
+Pfx-⋯ {n} {n′} (b ∷ B₁') X ρ =
+  cong (U.φ ϕ[ b ])
+    ( Pfx-⋯ B₁' (subst U.Proc (sym (+-suc (L.length B₁') n)) X) (ρ ↑)
+    ■ cong (Pfx B₁') bodyeq )
+  where
+    sB = L.length B₁'
+    Θ : (sB + suc n) →ᵣ (sB + suc n′)
+    Θ = (ρ ↑) ↑* sB
+    Θ⁺eq : subst (λ z → z →ᵣ (sB + suc n′)) (+-suc sB n) Θ
+           ≡ subst (λ z → suc (sB + n) →ᵣ z) (sym (+-suc sB n′)) (ρ ↑* suc sB)
+    Θ⁺eq = subst-flip (+-suc sB n′) (sym (subst₂→ (+-suc sB n) (+-suc sB n′) Θ) ■ liftCast sB ρ)
+    bodyeq : (subst U.Proc (sym (+-suc sB n)) X) U.⋯ₚ ((ρ ↑) ↑* sB)
+             ≡ subst U.Proc (sym (+-suc sB n′)) (X U.⋯ₚ (ρ ↑* suc sB))
+    bodyeq =
+        TP-subst-⋯ₚ-dom (+-suc sB n) X Θ
+      ■ cong (X U.⋯ₚ_) Θ⁺eq
+      ■ subst-⋯ₚ-cod (sym (+-suc sB n′)) X (ρ ↑* suc sB)
+
+-- Peel: Bφ over an append (with nonempty tail c∷D′) = Pfx of B₁ over Bφ of the tail.
+syncs-split-gen : ∀ (Bp : BindGroup) (cc : ℕ) (Dp : BindGroup) →
+                  syncs (Bp ++ cc ∷ Dp) ≡ L.length Bp + syncs (cc ∷ Dp)
+syncs-split-gen []            cc Dp = refl
+syncs-split-gen (x ∷ [])      cc Dp = cong suc (syncs-split-gen [] cc Dp)
+syncs-split-gen (x ∷ y ∷ Bp″) cc Dp = cong suc (syncs-split-gen (y ∷ Bp″) cc Dp)
+
+peel-eq : ∀ (B₁ : BindGroup) (c : ℕ) (D′ : BindGroup) {a : ℕ} →
+          syncs (B₁ ++ c ∷ D′) + a ≡ syncs (c ∷ D′) + (L.length B₁ + a)
+peel-eq B₁ c D′ {a} =
+    cong (_+ a) (syncs-split-gen B₁ c D′)
+  ■ +-assoc (L.length B₁) (syncs (c ∷ D′)) a
+  ■ comm3 (L.length B₁) (syncs (c ∷ D′)) a
+
+Bφ-peel : ∀ (B₁ : BindGroup) (c : ℕ) (D′ : BindGroup) {a : ℕ}
+          (Z : U.Proc (syncs (B₁ ++ c ∷ D′) + a)) →
+          Bφ (B₁ ++ c ∷ D′) Z
+          ≡ Pfx B₁ (Bφ (c ∷ D′) (subst U.Proc (peel-eq B₁ c D′ {a}) Z))
+Bφ-peel []        c D′ {a} Z =
+  cong (Bφ (c ∷ D′)) (sym (cong (λ e → subst U.Proc e Z) (uipℕ (peel-eq [] c D′ {a}) refl)))
+Bφ-peel (b ∷ [])       c D′ {a} Z =
+  cong (U.φ ϕ[ b ])
+    ( Bφ-peel [] c D′ {suc a} (subst U.Proc (sym (+-suc sT a)) Z)
+    ■ cong (Pfx [])
+        ( cong (Bφ (c ∷ D′)) bodyeq
+        ■ sym (subst-Bφ (sym (+-suc (L.length ([] {A = ℕ})) a)) (c ∷ D′)
+                 (subst U.Proc (peel-eq (b ∷ []) c D′ {a}) Z)) ) )
+  where
+    sT = syncs ([] ++ c ∷ D′)
+    bodyeq : subst U.Proc (peel-eq [] c D′ {suc a})
+               (subst U.Proc (sym (+-suc sT a)) Z)
+             ≡ subst U.Proc (cong (syncs (c ∷ D′) +_) (sym (+-suc (L.length ([] {A = ℕ})) a)))
+                 (subst U.Proc (peel-eq (b ∷ []) c D′ {a}) Z)
+    bodyeq = ss-U (sym (+-suc sT a)) (peel-eq [] c D′ {suc a}) {t = Z}
+           ■ cong (λ e → subst U.Proc e Z) (uipℕ _ _)
+           ■ sym (ss-U (peel-eq (b ∷ []) c D′ {a})
+                       (cong (syncs (c ∷ D′) +_) (sym (+-suc (L.length ([] {A = ℕ})) a))) {t = Z})
+Bφ-peel (b ∷ x ∷ B₁'') c D′ {a} Z =
+  cong (U.φ ϕ[ b ])
+    ( Bφ-peel (x ∷ B₁'') c D′ {suc a} (subst U.Proc (sym (+-suc sT a)) Z)
+    ■ cong (Pfx (x ∷ B₁''))
+        ( cong (Bφ (c ∷ D′)) bodyeq
+        ■ sym (subst-Bφ (sym (+-suc (L.length (x ∷ B₁'')) a)) (c ∷ D′)
+                 (subst U.Proc (peel-eq (b ∷ x ∷ B₁'') c D′ {a}) Z)) ) )
+  where
+    sT = syncs ((x ∷ B₁'') ++ c ∷ D′)
+    bodyeq : subst U.Proc (peel-eq (x ∷ B₁'') c D′ {suc a})
+               (subst U.Proc (sym (+-suc sT a)) Z)
+             ≡ subst U.Proc (cong (syncs (c ∷ D′) +_) (sym (+-suc (L.length (x ∷ B₁'')) a)))
+                 (subst U.Proc (peel-eq (b ∷ x ∷ B₁'') c D′ {a}) Z)
+    bodyeq = ss-U (sym (+-suc sT a)) (peel-eq (x ∷ B₁'') c D′ {suc a}) {t = Z}
+           ■ cong (λ e → subst U.Proc e Z) (uipℕ _ _)
+           ■ sym (ss-U (peel-eq (b ∷ x ∷ B₁'') c D′ {a})
+                       (cong (syncs (c ∷ D′) +_) (sym (+-suc (L.length (x ∷ B₁'')) a))) {t = Z})
+
+-- The inserted φ-drop binder descends to the leaf.  Non-recursive: peel B₁ as a
+-- Pfx prefix, push the (1-block) φ-drop down past Bφ (suc b₁ ∷ B₂) to the leaf
+-- via φ-past-Bφ, then re-peel.  The ↑* L.length B₁ on the swap comes from Pfx-⋯.
 Brwk-slide : ∀ (B₁ : BindGroup) {b₁ : ℕ} {B₂ : BindGroup} {a : ℕ}
              (Z : U.Proc (syncs (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + a)) →
              Bφ (B₁ ++ 1 ∷ suc b₁ ∷ B₂) Z
              U.≋ Bφ (B₁ ++ suc b₁ ∷ B₂)
                    (U.φ U.drop (subst U.Proc (cong (_+ a) (syncs-rwk B₁) ■ sym (+-suc (syncs (B₁ ++ suc b₁ ∷ B₂)) a)) Z
-                                 U.⋯ₚ assocSwapᵣ (syncs (B₁ ++ suc b₁ ∷ B₂)) 1 {a}))
-
--- the per-level recombination, generalised over the stuck syncs terms.  With
--- qq := suc pp it is exactly the R2 composition of the inner swap (assocSwapᵣ pp 1
--- at scope suc a, i.e. one extra binder) with the φ-a' commute.
-slideBodyGen : ∀ (p : ℕ) {a : ℕ} (Z : U.Proc (suc (suc p + a))) →
-            U.φ U.drop (subst U.Proc (sym (+-suc p (suc a)))
-                          (subst U.Proc (sym (+-suc (suc p) a)) Z)
-                          U.⋯ₚ assocSwapᵣ p 1 {suc a})
-            ≡ subst U.Proc (sym (+-suc p a))
-                (U.φ U.drop (subst U.Proc (sym (cong suc (+-suc p a))) Z
-                              U.⋯ₚ assocSwapᵣ (suc p) 1 {a}))
-slideBodyGen p {a} Z =
-    cong (U.φ U.drop) lhsEq
-  ■ sym (subst-φ (sym (+-suc p a)) (Z' U.⋯ₚ assocSwapᵣ (suc p) 1 {a}))
+                                 U.⋯ₚ sw-cast B₁ {b₁} {B₂} {a}))
+Brwk-slide B₁ {b₁} {B₂} {a} Z =
+     ≡→≋ (Bφ-peel B₁ 1 (suc b₁ ∷ B₂) {a} Z)
+  ◅◅ Pfx-cong B₁ (φ-past-Bφ (suc b₁ ∷ B₂) U.drop {L.length B₁ + a} bodyW)
+  ◅◅ ≡→≋
+       ( cong (Pfx B₁) (cong (Bφ (suc b₁ ∷ B₂)) reconcile)
+       ■ sym (Bφ-peel B₁ (suc b₁) B₂ {a}
+                (U.φ U.drop (subst U.Proc (cong (_+ a) (syncs-rwk B₁) ■ sym (+-suc (syncs (B₁ ++ suc b₁ ∷ B₂)) a)) Z
+                              U.⋯ₚ sw-cast B₁ {b₁} {B₂} {a}))) )
   where
-    Z' : U.Proc (suc (p + suc a))
-    Z' = subst U.Proc (sym (cong suc (+-suc p a))) Z
-    -- the inner ⋯-equality.  RESIDUAL: R2 recombination of assocSwapᵣ p 1 {suc a}
-    -- (one extra binder) with the φ-a' commute into assocSwapᵣ (suc p) 1 {a}.
-    lhsEq : subst U.Proc (sym (+-suc p (suc a))) (subst U.Proc (sym (+-suc (suc p) a)) Z)
-              U.⋯ₚ assocSwapᵣ p 1 {suc a}
-            ≡ subst U.Proc (cong suc (sym (+-suc p a))) (Z' U.⋯ₚ assocSwapᵣ (suc p) 1 {a})
-    lhsEq = {!!}
-
-slideBody : ∀ (B₁'' : BindGroup) {b₁ : ℕ} {B₂ : BindGroup} {a : ℕ} (a' : ℕ)
-            (Z : U.Proc (suc (syncs (B₁'' ++ 1 ∷ suc b₁ ∷ B₂)) + a)) →
-            U.φ U.drop (subst U.Proc (cong (_+ suc a) (syncs-rwk B₁'') ■ sym (+-suc (syncs (B₁'' ++ suc b₁ ∷ B₂)) (suc a)))
-                          (subst U.Proc (sym (+-suc (syncs (B₁'' ++ 1 ∷ suc b₁ ∷ B₂)) a)) Z)
-                          U.⋯ₚ assocSwapᵣ (syncs (B₁'' ++ suc b₁ ∷ B₂)) 1 {suc a})
-            ≡ subst U.Proc (sym (+-suc (syncs (B₁'' ++ suc b₁ ∷ B₂)) a))
-                (U.φ U.drop (subst U.Proc (cong (_+ a) (cong suc (syncs-rwk B₁'')) ■ sym (+-suc (suc (syncs (B₁'' ++ suc b₁ ∷ B₂))) a)) Z
-                              U.⋯ₚ assocSwapᵣ (suc (syncs (B₁'' ++ suc b₁ ∷ B₂))) 1 {a}))
-slideBody B₁'' {b₁} {B₂} {a} a' Z =
-  bridge (syncs (B₁'' ++ 1 ∷ suc b₁ ∷ B₂)) (syncs-rwk B₁'') Z
-  where
-    pp = syncs (B₁'' ++ suc b₁ ∷ B₂)
-    bridge : (qq : ℕ) (r : qq ≡ suc pp) (Z : U.Proc (suc (qq + a))) →
-             U.φ U.drop (subst U.Proc (cong (_+ suc a) r ■ sym (+-suc pp (suc a)))
-                           (subst U.Proc (sym (+-suc qq a)) Z)
-                           U.⋯ₚ assocSwapᵣ pp 1 {suc a})
-             ≡ subst U.Proc (sym (+-suc pp a))
-                 (U.φ U.drop (subst U.Proc (cong (_+ a) (cong suc r) ■ sym (cong suc (+-suc pp a))) Z
-                               U.⋯ₚ assocSwapᵣ (suc pp) 1 {a}))
-    bridge .(suc pp) refl Z = slideBodyGen pp {a} Z
-
-Brwk-slide []            {b₁} {B₂} {a} Z =
-  φ-past-Bφ (suc b₁ ∷ B₂) U.drop (subst U.Proc (sym (+-suc (syncs (suc b₁ ∷ B₂)) a)) Z)
-Brwk-slide (a' ∷ [])      {b₁} {B₂} {a} Z =
-  U.φ-cong (Brwk-slide [] {b₁} {B₂} {suc a}
-             (subst U.Proc (sym (+-suc (syncs ([] ++ 1 ∷ suc b₁ ∷ B₂)) a)) Z))
-  ◅◅ ≡→≋ (cong (U.φ ϕ[ a' ]) (cong (Bφ ([] ++ suc b₁ ∷ B₂)) (slideBody [] a' Z)))
-Brwk-slide (a' ∷ d ∷ B₁″) {b₁} {B₂} {a} Z =
-  U.φ-cong (Brwk-slide (d ∷ B₁″) {b₁} {B₂} {suc a}
-             (subst U.Proc (sym (+-suc (syncs ((d ∷ B₁″) ++ 1 ∷ suc b₁ ∷ B₂)) a)) Z))
-  ◅◅ ≡→≋ (cong (U.φ ϕ[ a' ]) (cong (Bφ ((d ∷ B₁″) ++ suc b₁ ∷ B₂)) (slideBody (d ∷ B₁″) a' Z)))
+    sD = syncs (suc b₁ ∷ B₂)
+    W0 : U.Proc (syncs (1 ∷ suc b₁ ∷ B₂) + (L.length B₁ + a))
+    W0 = subst U.Proc (peel-eq B₁ 1 (suc b₁ ∷ B₂) {a}) Z
+    bodyW : U.Proc (sD + suc (L.length B₁ + a))
+    bodyW = subst U.Proc (sym (+-suc sD (L.length B₁ + a))) W0
+    reconcile : U.φ U.drop (bodyW U.⋯ₚ assocSwapᵣ sD 1 {L.length B₁ + a})
+                ≡ subst U.Proc (peel-eq B₁ (suc b₁) B₂ {a})
+                    (U.φ U.drop (subst U.Proc (cong (_+ a) (syncs-rwk B₁) ■ sym (+-suc (syncs (B₁ ++ suc b₁ ∷ B₂)) a)) Z
+                                  U.⋯ₚ sw-cast B₁ {b₁} {B₂} {a}))
+    reconcile =
+        cong (U.φ U.drop) reconcileBody
+      ■ sym (subst-φ (peel-eq B₁ (suc b₁) B₂ {a})
+               (subst U.Proc (cong (_+ a) (syncs-rwk B₁) ■ sym (+-suc (syncs (B₁ ++ suc b₁ ∷ B₂)) a)) Z
+                 U.⋯ₚ sw-cast B₁ {b₁} {B₂} {a}))
+      where
+        raw : (sD + (1 + (L.length B₁ + a))) →ᵣ (1 + (sD + (L.length B₁ + a)))
+        raw = assocSwapᵣ sD 1 {L.length B₁ + a}
+        EQ : syncs (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + a ≡ syncs (B₁ ++ suc b₁ ∷ B₂) + suc a
+        EQ = cong (_+ a) (syncs-rwk B₁) ■ sym (+-suc (syncs (B₁ ++ suc b₁ ∷ B₂)) a)
+        -- RHS body: subst EQ Z ⋯ sw-cast = subst (sw-cod) ((subst (EQ ■ sw-dom) Z) ⋯ raw).
+        rhs≡ : subst U.Proc EQ Z U.⋯ₚ sw-cast B₁ {b₁} {B₂} {a}
+               ≡ subst U.Proc (sw-cod B₁ {b₁} {B₂} {a})
+                   (subst U.Proc (EQ ■ sw-dom B₁ {b₁} {B₂} {a}) Z U.⋯ₚ raw)
+        rhs≡ = cast-⋯2 (sw-dom B₁ {b₁} {B₂} {a}) (sw-cod B₁ {b₁} {B₂} {a}) (subst U.Proc EQ Z) raw
+             ■ cong (λ w → subst U.Proc (sw-cod B₁ {b₁} {B₂} {a}) (w U.⋯ₚ raw))
+                 (ss-U EQ (sw-dom B₁ {b₁} {B₂} {a}) {t = Z})
+        -- LHS body: bodyW = subst (EQ ■ sw-dom) Z (same coercion, by UIP).
+        bodyW≡ : bodyW ≡ subst U.Proc (EQ ■ sw-dom B₁ {b₁} {B₂} {a}) Z
+        bodyW≡ = ss-U (peel-eq B₁ 1 (suc b₁ ∷ B₂) {a}) (sym (+-suc sD (L.length B₁ + a))) {t = Z}
+               ■ cong (λ e → subst U.Proc e Z) (uipℕ _ (EQ ■ sw-dom B₁ {b₁} {B₂} {a}))
+        reconcileBody =
+            cong (U._⋯ₚ raw) bodyW≡
+          ■ sym ( cong (subst U.Proc (cong suc (peel-eq B₁ (suc b₁) B₂ {a}))) rhs≡
+                ■ ss-U (sw-cod B₁ {b₁} {B₂} {a}) (cong suc (peel-eq B₁ (suc b₁) B₂ {a}))
+                       {t = subst U.Proc (EQ ■ sw-dom B₁ {b₁} {B₂} {a}) Z U.⋯ₚ raw}
+                ■ cong (λ e → subst U.Proc e (subst U.Proc (EQ ■ sw-dom B₁ {b₁} {B₂} {a}) Z U.⋯ₚ raw)) (uipℕ _ refl) )
 
 U-rsplit : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
   → {γ : Struct m} {B₁ B₂ B : BindGroup} {b₁ : ℕ} {s : 𝕊 0}
@@ -1914,11 +2039,11 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
     -- reconcile to commuting that φ-drop past (Bφ B ; ν) and matching the leaf.
     slid : Bφ C₁ᴿ (Bφ B (U.ν (pushR XRᴿ)))
            U.≋ Bφ C₁ (U.φ U.drop (subst U.Proc (cong (_+ n) (syncs-rwk B₁) ■ sym (+-suc (syncs C₁) n)) (Bφ B (U.ν (pushR XRᴿ)))
-                                    U.⋯ₚ assocSwapᵣ (syncs C₁) 1 {n}))
+                                    U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n}))
     slid = Brwk-slide B₁ {b₁} {B₂} {n} (Bφ B (U.ν (pushR XRᴿ)))
     innerReconcile : Bφ B (U.ν (U.φ U.drop contractumR))
                      U.≋ U.φ U.drop (subst U.Proc (cong (_+ n) (syncs-rwk B₁) ■ sym (+-suc (syncs C₁) n)) (Bφ B (U.ν (pushR XRᴿ)))
-                                      U.⋯ₚ assocSwapᵣ (syncs C₁) 1 {n})
+                                      U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n})
     innerReconcile = {!!}
     middleReconcile : Bφ C₁ (Bφ B (U.ν (U.φ U.drop contractumR)))
                       U.≋ Bφ C₁ᴿ (Bφ B (U.ν (pushR XRᴿ)))
