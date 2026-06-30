@@ -123,6 +123,15 @@ chanTriple-mapᶜ : (θ : n →ᵣ n′) (cc : UChan n) → chanTriple cc ⋯ θ
 chanTriple-mapᶜ θ (e₁ , x , e₂) = refl
 
 ------------------------------------------------------------------------
+-- Ub[_] : pointwise naturality of the distributing data-block leaf.
+------------------------------------------------------------------------
+
+Ub-nat : (b : ℕ) (cc : UChan n) (θ : n →ᵣ n′) (j : 𝔽 b) →
+         Ub[ b ] cc j ⋯ θ ≡ Ub[ b ] (mapᶜ θ cc) j
+Ub-nat (suc b) (e₁ , c , e₂) θ zero    = refl
+Ub-nat (suc b) (e₁ , c , e₂) θ (suc j) = Ub-nat b (* , c , e₂) θ j
+
+------------------------------------------------------------------------
 -- UB-cong : the φ-nest respects pointwise-equal continuations (≋-variant).
 ------------------------------------------------------------------------
 
@@ -220,16 +229,18 @@ UB-nat {n} {n′} (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) θ {f} {f′} h =
      ■ cong (λ cc → UB[ B ] cc gR) ccEq)
   where
     sB = syncs B
+    UbL : b →ₛ (sB + suc n)
+    UbL = Ub[ b ] (e₁ ⋯ weakenᵣ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB
+    UbR : b →ₛ (sB + suc n′)
+    UbR = Ub[ b ] (e₁ ⋯ θ ⋯ weakenᵣ , suc (θ x) , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB
     gL : (sum B →ₛ sB + suc n) → UP.Proc (sB + suc n)
     gL σ = subst UP.Proc (sym (+-suc sB n))
              (f (λ y → subst Tm (+-suc sB n)
-                  ([ const (chanTriple (e₁ ⋯ weakenᵣ , suc x , ` 0F) ⋯ᵣ weaken* ⦃ Kᵣ ⦄ sB)
-                   , σ ]′ (splitAt b y))))
+                  ([ UbL , σ ]′ (splitAt b y))))
     gR : (sum B →ₛ sB + suc n′) → UP.Proc (sB + suc n′)
     gR σ = subst UP.Proc (sym (+-suc sB n′))
              (f′ (λ y → subst Tm (+-suc sB n′)
-                  ([ const (chanTriple (e₁ ⋯ θ ⋯ weakenᵣ , suc (θ x) , ` 0F) ⋯ᵣ weaken* ⦃ Kᵣ ⦄ sB)
-                   , σ ]′ (splitAt b y))))
+                  ([ UbR , σ ]′ (splitAt b y))))
     ccEq : mapᶜ (θ ↑) (` 0F , suc x , e₂ ⋯ weakenᵣ)
            ≡ (` 0F , suc (θ x) , (e₂ ⋯ θ) ⋯ weakenᵣ)
     ccEq = cong₂ _,_ refl (cong₂ _,_ refl (sym (⋯-↑-wk e₂ θ)))
@@ -238,14 +249,10 @@ UB-nat {n} {n′} (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) θ {f} {f′} h =
     Θ⁺eq : subst (λ z → z →ᵣ (sB + suc n′)) (+-suc sB n) Θ
            ≡ subst (λ z → suc (sB + n) →ᵣ z) (sym (+-suc sB n′)) (θ ↑* suc sB)
     Θ⁺eq = subst-flip (+-suc sB n′) (sym (subst₂→ (+-suc sB n) (+-suc sB n′) Θ) ■ liftCast sB θ)
-    chL : Tm (sB + suc n)
-    chL = chanTriple (e₁ ⋯ weakenᵣ , suc x , ` 0F) ⋯ᵣ weaken* ⦃ Kᵣ ⦄ sB
-    chR : Tm (sB + suc n′)
-    chR = chanTriple (e₁ ⋯ θ ⋯ weakenᵣ , suc (θ x) , ` 0F) ⋯ᵣ weaken* ⦃ Kᵣ ⦄ sB
     Y : (sum B →ₛ sB + suc n) → (sum (b ∷ B) →ₛ suc (sB + n))
-    Y τ y = subst Tm (+-suc sB n) ([ const chL , τ ]′ (splitAt b y))
+    Y τ y = subst Tm (+-suc sB n) ([ UbL , τ ]′ (splitAt b y))
     Y′ : (sum B →ₛ sB + suc n′) → (sum (b ∷ B) →ₛ suc (sB + n′))
-    Y′ τ y = subst Tm (+-suc sB n′) ([ const chR , τ ]′ (splitAt b y))
+    Y′ τ y = subst Tm (+-suc sB n′) ([ UbR , τ ]′ (splitAt b y))
     θ⁻ : (sB + suc n) →ᵣ suc (sB + n′)
     θ⁻ = subst (λ z → z →ᵣ suc (sB + n′)) (sym (+-suc sB n)) (θ ↑* suc sB)
     ΘθEq : Θ ≡ subst (λ z → (sB + suc n) →ᵣ z) (sym (+-suc sB n′)) θ⁻
@@ -256,23 +263,23 @@ UB-nat {n} {n′} (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) θ {f} {f′} h =
     ΘrelEq t = sym ( cong (λ r → subst Tm (+-suc sB n′) (t ⋯ r)) ΘθEq
                    ■ cong (subst Tm (+-suc sB n′)) (subst-⋯-cod (sym (+-suc sB n′)) t θ⁻)
                    ■ subst-subst-sym′ (+-suc sB n′) )
-    chReq : chL ⋯ Θ ≡ chR
-    chReq =
-      cong₂ _⊗_
-        (cong₂ _⊗_
-          (sym (⋯-↑*-wk (e₁ ⋯ weakenᵣ) (θ ↑) sB) ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) (sym (⋯-↑-wk e₁ θ)))
-          (cong `_ (varΘ sB (θ ↑) (suc x))))
-        (cong `_ (varΘ sB (θ ↑) 0F))
+    ccUbEq : mapᶜ (θ ↑) (e₁ ⋯ weakenᵣ , suc x , ` 0F) ≡ (e₁ ⋯ θ ⋯ weakenᵣ , suc (θ x) , ` 0F)
+    ccUbEq = cong₂ _,_ (sym (⋯-↑-wk e₁ θ)) refl
+    UbReq : (j : 𝔽 b) → UbL j ⋯ Θ ≡ UbR j
+    UbReq j =
+        sym (⋯-↑*-wk (Ub[ b ] (e₁ ⋯ weakenᵣ , suc x , ` 0F) j) (θ ↑) sB)
+      ■ cong (_⋯ᵣ weaken* ⦃ Kᵣ ⦄ sB) (Ub-nat b (e₁ ⋯ weakenᵣ , suc x , ` 0F) (θ ↑) j)
+      ■ cong (λ cc → Ub[ b ] cc j ⋯ᵣ weaken* ⦃ Kᵣ ⦄ sB) ccUbEq
     Yeq : (τ : sum B →ₛ sB + suc n) →
           (λ i → Y τ i ⋯ (θ ↑* suc sB)) ≡ Y′ (λ i → τ i ⋯ Θ)
     Yeq τ = funext (λ i →
-        subst-⋯ (+-suc sB n) ([ const chL , τ ]′ (splitAt b i)) (θ ↑* suc sB)
-      ■ ΘrelEq ([ const chL , τ ]′ (splitAt b i))
+        subst-⋯ (+-suc sB n) ([ UbL , τ ]′ (splitAt b i)) (θ ↑* suc sB)
+      ■ ΘrelEq ([ UbL , τ ]′ (splitAt b i))
       ■ cong (subst Tm (+-suc sB n′)) (body (splitAt b i)))
       where
         body : (s : 𝔽 b ⊎ 𝔽 (sum B)) →
-               [ const chL , τ ]′ s ⋯ Θ ≡ [ const chR , (λ i → τ i ⋯ Θ) ]′ s
-        body (inj₁ j) = chReq
+               [ UbL , τ ]′ s ⋯ Θ ≡ [ UbR , (λ i → τ i ⋯ Θ) ]′ s
+        body (inj₁ j) = UbReq j
         body (inj₂ k) = refl
     contH : (τ : sum B →ₛ sB + suc n) →
             gL τ UP.⋯ₚ ((θ ↑) ↑* sB) ≡ gR (λ i → τ i ⋯ ((θ ↑) ↑* sB))
@@ -347,6 +354,10 @@ VSub-subst refl Vσ = Vσ
 chanTriple-V : (cc : UChan n) → VChan cc → Value (chanTriple cc)
 chanTriple-V (e₁ , c , e₂) (Ve₁ , Ve₂) = V-⊗ (V-⊗ Ve₁ V-`) Ve₂
 
+Ub-V : (b : ℕ) (e₁ : Tm n) (c : 𝔽 n) (e₂ : Tm n) → Value e₁ → (j : 𝔽 b) → Value (Ub[ b ] (e₁ , c , e₂) j)
+Ub-V (suc b) e₁ c e₂ Ve₁ zero    = V-⊗ (V-⊗ Ve₁ V-`) V-K
+Ub-V (suc b) e₁ c e₂ Ve₁ (suc j) = Ub-V b (K `unit) c e₂ V-K j
+
 Value-subst : ∀ {a b} (eq : a ≡ b) {t : Tm a} → Value t → Value (subst Tm eq t)
 Value-subst refl Vt = Vt
 
@@ -361,10 +372,10 @@ UB-cong-─→ {n} (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) (Ve₁ , Ve₂) h =
       (λ σ Vσ → ─→-subst (sym (+-suc (syncs B) _))
         (h _ (λ y → Value-subst (+-suc (syncs B) _) (argV σ Vσ (splitAt b y))))))
   where
-    chV : Value (chanTriple (e₁ ⋯ weakenᵣ , suc x , ` 0F) ⋯ᵣ weaken* ⦃ Kᵣ ⦄ (syncs B))
-    chV = value-⋯ (chanTriple-V _ (Ve₁ ⋯ᵛ weakenᵣ , V-`)) (weaken* ⦃ Kᵣ ⦄ (syncs B)) (λ z → V-`)
+    UbV : (j : 𝔽 b) → Value ((Ub[ b ] (e₁ ⋯ weakenᵣ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ (syncs B)) j)
+    UbV j = value-⋯ (Ub-V b (e₁ ⋯ weakenᵣ) (suc x) (` 0F) (Ve₁ ⋯ᵛ weakenᵣ) j) (weaken* ⦃ Kᵣ ⦄ (syncs B)) (λ z → V-`)
     argV : (σ : sum B →ₛ syncs B + suc n) (Vσ : VSub σ)
            (s : 𝔽 b ⊎ 𝔽 (sum B)) →
-           Value ([ const (chanTriple (e₁ ⋯ weakenᵣ , suc x , ` 0F) ⋯ᵣ weaken* ⦃ Kᵣ ⦄ (syncs B)) , σ ]′ s)
-    argV σ Vσ (inj₁ j) = chV
+           Value ([ Ub[ b ] (e₁ ⋯ weakenᵣ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ (syncs B) , σ ]′ s)
+    argV σ Vσ (inj₁ j) = UbV j
     argV σ Vσ (inj₂ k) = Vσ k
