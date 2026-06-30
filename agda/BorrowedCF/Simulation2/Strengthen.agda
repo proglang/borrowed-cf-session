@@ -249,3 +249,132 @@ strengthen-Proc : {Γ : Ctx (suc n)} {γ : Struct (suc n)} {P : Proc (suc n)}
 strengthen-Proc d x x∉ =
   strengthen-Proc-gen d (punchIn x) x
     (λ y y≢x → let x≢y = λ x≡y → y≢x (sym x≡y) in punchOut x≢y , punchIn-punchOut x≢y) x∉
+
+
+-- ============================================================================
+--   MULTI-HANDLE (handle-SET) strengthening.  Generalises the single-handle
+--   `Inverter ρ h` to `Inverter* ρ H`, where `H : 𝔽 N → Set` carves out an
+--   arbitrary SET of missing handles: every var NOT in H has a preimage.  This
+--   is the additive primitive that lets a typed term / process / frame factor
+--   through a renaming missing a whole BLOCK of consumed channels at once
+--   (RU-RSplit consumes the entire `suc b₁`-wide data block, not one handle).
+--
+--   The single-handle lemmas above are untouched (they drive the closed
+--   U-com / U-choice / U-drop cases); everything here is strictly new names.
+-- ============================================================================
+
+Inverter* : ∀ {k N} → (k →ᵣ N) → (𝔽 N → Set) → Set
+Inverter* {k} {N} ρ H = (y : 𝔽 N) → ¬ H y → Σ[ y₀ ∈ 𝔽 k ] ρ y₀ ≡ y
+
+-- Shift a handle-set under one binder: 0F is fresh, suc z is a handle iff z was.
+H↑ : ∀ {N} → (𝔽 N → Set) → (𝔽 (suc N) → Set)
+H↑ H 0F      = ⊥
+H↑ H (suc z) = H z
+
+invH↑ : ∀ {k N} {ρ : k →ᵣ N} {H : 𝔽 N → Set}
+      → Inverter* ρ H → Inverter* (ρ ↑) (H↑ H)
+invH↑ inv 0F       _  = 0F , refl
+invH↑ inv (suc y') ne = let y₀' , eq = inv y' ne in suc y₀' , cong suc eq
+
+-- Shift a handle-set up by j positions (Σ-form: y is in the shifted set iff
+-- it lies in the upper region and the un-shifted index was a handle).
+H↑ʳ* : ∀ {N} (j : ℕ) → (𝔽 N → Set) → (𝔽 (j + N) → Set)
+H↑ʳ* {N} j H y = Σ[ y₀ ∈ 𝔽 N ] (y ≡ j ↑ʳ y₀) × H y₀
+
+invH↑ʳ* : ∀ {k N} {ρ : k →ᵣ N} {H : 𝔽 N → Set} (j : ℕ)
+        → Inverter* ρ H → Inverter* (ρ ↑* j) (H↑ʳ* j H)
+invH↑ʳ* {k} {N} {ρ} {H} j inv y ¬Hy with Fin.splitAt j y in seqo
+... | inj₁ w = (w ↑ˡ k) ,
+      (↑*-↑ˡ ρ j w ■ sym yeq)
+  where yeq : y ≡ w ↑ˡ N
+        yeq = sym (Fin.join-splitAt j N y) ■ cong (Fin.join j N) seqo
+... | inj₂ w =
+      let yeq : y ≡ j ↑ʳ w
+          yeq = sym (Fin.join-splitAt j N y) ■ cong (Fin.join j N) seqo
+          ¬Hw : ¬ H w
+          ¬Hw hw = ¬Hy (w , yeq , hw)
+          w₀ , req = inv w ¬Hw
+      in (j ↑ʳ w₀) , (↑*-↑ʳ ρ j w₀ ■ cong (j ↑ʳ_) req ■ sym yeq)
+
+-- Generalised strengthening (term level) through a renaming missing a SET H.
+strengthen-Tm-gen* : {N : ℕ} {Γ : Ctx N} {γ : Struct N} {e : Tm N} {T : 𝕋} {ϵ : Eff}
+  → Γ ; γ ⊢ e ∶ T ∣ ϵ → {k : ℕ} (ρ : k →ᵣ N) (H : 𝔽 N → Set)
+  → Inverter* ρ H → ((z : 𝔽 N) → H z → z ∉ dom γ) → Σ[ e₀ ∈ Tm k ] e ≡ e₀ ⋯ ρ
+strengthen-Tm-gen* (T-Const {c = c} _) ρ H inv H∉ = K c , refl
+strengthen-Tm-gen* (T-Var x′ _) ρ H inv H∉ =
+  let y₀ , yeq = inv x′ (λ hx → H∉ x′ hx (x∈⁅x⁆ x′))
+  in ` y₀ , cong `_ (sym yeq)
+strengthen-Tm-gen* {γ = γ} (T-Abs {a = a} _ _ ⊢e) ρ H inv H∉ =
+  let e₀ , eq = strengthen-Tm-gen* ⊢e (ρ ↑) (H↑ H) (invH↑ inv)
+                  (λ { (suc z) hz → ∉-abs-ctx-Dir (Arr.dir a) γ (H∉ z hz) })
+  in ƛ e₀ , cong ƛ eq
+strengthen-Tm-gen* {γ = γ} (T-AbsRec _ _ ⊢e) ρ H inv H∉ =
+  let e₀ , eq = strengthen-Tm-gen* ⊢e (ρ ↑ ↑) (H↑ (H↑ H)) (invH↑ (invH↑ inv))
+                  (λ { (suc (suc z)) hz → ∉-absrec-ctx γ (H∉ z hz) })
+  in μ (ƛ e₀) , cong μ (cong ƛ eq)
+strengthen-Tm-gen* (T-AppUnr _ _ ⊢e₁ ⊢e₂) ρ H inv H∉ =
+  let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₁ x∈)))
+      e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₂ x∈)))
+  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+strengthen-Tm-gen* (T-AppLin _ _ ⊢e₁ ⊢e₂) ρ H inv H∉ =
+  let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₁ x∈)))
+      e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₂ x∈)))
+  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+strengthen-Tm-gen* (T-AppLeft _ _ ⊢e₁ ⊢e₂) ρ H inv H∉ =
+  let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₂ x∈)))
+      e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₁ x∈)))
+  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+strengthen-Tm-gen* (T-AppRight _ _ ⊢e₁ ⊢e₂) ρ H inv H∉ =
+  let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₁ x∈)))
+      e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₂ x∈)))
+  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+strengthen-Tm-gen* (T-Pair p/s {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂) ρ H inv H∉ =
+  let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz → let a , _ = ∉-join-biased⁻ p/s γ₁ γ₂ (H∉ z hz) in a)
+      e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz → let _ , b = ∉-join-biased⁻ p/s γ₁ γ₂ (H∉ z hz) in b)
+  in e₁₀ ⊗ e₂₀ , cong₂ _⊗_ eq₁ eq₂
+strengthen-Tm-gen* (T-Let p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e₁ ⊢e₂) ρ H inv H∉ =
+  let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz → let a , _ = ∉-join-PS⁻ p/s γ₁ γ₂ (H∉ z hz) in a)
+      e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ (ρ ↑) (H↑ H) (invH↑ inv)
+                    (λ { (suc z) hz → ∉-abs-ctx-PS p/s γ₂ (let _ , b = ∉-join-PS⁻ p/s γ₁ γ₂ (H∉ z hz) in b) })
+  in `let e₁₀ `in e₂₀ , cong₂ `let_`in_ eq₁ eq₂
+strengthen-Tm-gen* (T-Seq {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂) ρ H inv H∉ =
+  let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz → let a , _ = ∉∪⁻ (H∉ z hz) in a)
+      e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz → let _ , b = ∉∪⁻ (H∉ z hz) in b)
+  in e₁₀ ; e₂₀ , cong₂ _;_ eq₁ eq₂
+strengthen-Tm-gen* (T-LetPair {d = d} p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e₁ ⊢e₂) ρ H inv H∉ =
+  let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz → let a , _ = ∉-join-PS⁻ p/s γ₁ γ₂ (H∉ z hz) in a)
+      e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ (ρ ↑ ↑) (H↑ (H↑ H)) (invH↑ (invH↑ inv))
+                    (λ { (suc (suc z)) hz → ∉-letpair-ctx p/s d γ₂ (let _ , b = ∉-join-PS⁻ p/s γ₁ γ₂ (H∉ z hz) in b) })
+  in `let⊗ e₁₀ `in e₂₀ , cong₂ `let⊗_`in_ eq₁ eq₂
+strengthen-Tm-gen* (T-Inj {i = i} ⊢e) ρ H inv H∉ =
+  let e₀ , eq = strengthen-Tm-gen* ⊢e ρ H inv H∉
+  in `inj i e₀ , cong (`inj i) eq
+strengthen-Tm-gen* (T-Case p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e ⊢e₁ ⊢e₂) ρ H inv H∉ =
+  let e₀  , eq  = strengthen-Tm-gen* ⊢e  ρ H inv (λ z hz → let a , _ = ∉-join-PS⁻ p/s γ₁ γ₂ (H∉ z hz) in a)
+      e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ (ρ ↑) (H↑ H) (invH↑ inv)
+                    (λ { (suc z) hz → ∉-abs-ctx-PS p/s γ₂ (let _ , b = ∉-join-PS⁻ p/s γ₁ γ₂ (H∉ z hz) in b) })
+      e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ (ρ ↑) (H↑ H) (invH↑ inv)
+                    (λ { (suc z) hz → ∉-abs-ctx-PS p/s γ₂ (let _ , b = ∉-join-PS⁻ p/s γ₁ γ₂ (H∉ z hz) in b) })
+  in `case e₀ `of⟨ e₁₀ ; e₂₀ ⟩ , cong₃ (λ a b c → `case a `of⟨ b ; c ⟩) eq eq₁ eq₂
+strengthen-Tm-gen* (T-Conv _ _ ⊢e) ρ H inv H∉ = strengthen-Tm-gen* ⊢e ρ H inv H∉
+strengthen-Tm-gen* (T-Weaken γ≤ ⊢e) ρ H inv H∉ =
+  strengthen-Tm-gen* ⊢e ρ H inv (λ z hz x∈ → H∉ z hz (≼⇒dom⊆ γ≤ x∈))
+
+-- Generalised strengthening (process level) through a renaming missing a SET H.
+strengthen-Proc-gen* : {N : ℕ} {Γ : Ctx N} {γ : Struct N} {P : Proc N}
+  → Γ ; γ ⊢ₚ P → {k : ℕ} (ρ : k →ᵣ N) (H : 𝔽 N → Set)
+  → Inverter* ρ H → ((z : 𝔽 N) → H z → z ∉ dom γ) → Σ[ P₀ ∈ Proc k ] P ≡ P₀ ⋯ₚ ρ
+strengthen-Proc-gen* (TP-Expr ⊢e) ρ H inv H∉ =
+  let e₀ , eq = strengthen-Tm-gen* ⊢e ρ H inv H∉ in ⟪ e₀ ⟫ , cong ⟪_⟫ eq
+strengthen-Proc-gen* (TP-Par ⊢P ⊢Q) ρ H inv H∉ =
+  let P₀ , eqP = strengthen-Proc-gen* ⊢P ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₁ x∈)))
+      Q₀ , eqQ = strengthen-Proc-gen* ⊢Q ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₂ x∈)))
+  in P₀ ∥ Q₀ , cong₂ _∥_ eqP eqQ
+strengthen-Proc-gen* {γ = γ} (TP-Res {B₁ = A₁} {B₂ = A₂} N ⊢B₁ ⊢B₂ C C′ ⊢P) ρ H inv H∉ =
+  let P₀ , eq = strengthen-Proc-gen* ⊢P (ρ ↑* (sum A₁ + sum A₂)) (H↑ʳ* (sum A₁ + sum A₂) H)
+                  (invH↑ʳ* (sum A₁ + sum A₂) inv)
+                  (λ z → λ { (z₀ , zeq , Hz₀) →
+                     subst (_∉ _) (sym zeq) (binder-precond A₁ A₂ γ z₀ (H∉ z₀ Hz₀)) })
+  in ν A₁ A₂ P₀ , cong (ν A₁ A₂) eq
+strengthen-Proc-gen* (TP-Weaken γ≤ ⊢P) ρ H inv H∉ =
+  strengthen-Proc-gen* ⊢P ρ H inv (λ z hz x∈ → H∉ z hz (≼⇒dom⊆ γ≤ x∈))
