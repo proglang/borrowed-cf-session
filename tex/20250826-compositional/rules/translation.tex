@@ -23,8 +23,8 @@
 
 % Tr-Bind
 \DefRule {Bind} {
-  \BindGroup[1] \TransBind[\TEChan \TEVar] {\TCC[1]} {\Sub[1]} \\
-  \BindGroup[2] \TransBind[\TEChan \TEVary] {\TCC[2]} {\Sub[2]} \\
+  \BindGroup[1] \TransBind[\TEChan \TEVar] {\TCC[1]}  [\Sub[1]] \\
+  \BindGroup[2] \TransBind[\TEChan \TEVary] {\TCC[2]} [\Sub[2]] \\
   \Proc \TransProc[{\Sub \cup \Sub[1] \cup \Sub[2]}] \TProc* \\
 } {
   \PNew {\BindGroup[1]}{\BindGroup[2]} \Proc
@@ -40,15 +40,37 @@
 
 % Tr-BindPar
 \DefRule {Par} {
-  \BindGroup[1] \TransBind[{\TEChan[\E[1]] \TEVar [\TEVarz]}] {\TCC[1]} {\Sub[1]} \\
-  \BindGroup[2] \TransBind[{\TEChan[\TEVarz] \TEVar [\E[1]]}] {\TCC[2]} {\Sub[2]} \\
+  \BindGroup[1] \TransBind[{\TEChan[\E[1]] \TEVar [\TEVarz]}] {\TCC[1]} [\Sub[1]] \\
+  \BindGroup[2] \TransBind[{\TEChan[\TEVarz] \TEVar [\E[1]]}] {\TCC[2]} [\Sub[2]] \\
   \BindFlag{\BindGroup[1]} = \Flag
 }{
   \BPar {\BindGroup[1]} {\BindGroup[2]} \TransBind[{\TEChan[\E[1]] \TEVar [\E[2]]}]
-    {\TPSync {z} \Flag \targetproccolor{(\TCC[1][\TCC[2]])}}
-    {\Sub[1] \cup \Sub[2]}
+    {\TPSync \Flag \targetproccolor{(\TCC[1][\TCC[2]])}}
+    [\Sub[1] \cup \Sub[2]]
 }
 
-\DefRule {Channels} {}{
-  \Bind \TransBind \TCCEmpty \{ \EVar\mapsto\E \mathrel{|} \EVar \in \Fv(\Bind) \}
+% Tr-BindSeq
+\DefRule {Channels} {
+  \Bind \Downarrow \Bind* \\
+  \Bind* \TransBind \Sub
+}{
+  \Bind \TransBind \TCCEmpty [\Sub]
+}
+
+% Tr-BindSeq
+\DefRule {Seq} {
+  \Bind[1] \TransBind {\Sub[1]} \\
+  \Bind[2] \TransBind {\Sub[2]} \\
+}{
+  \BSeq{\Bind[1]}{\Bind[2]} \TransBind {\Sub[1] \cup \Sub[2]}
+}
+
+% Tr-BindVar
+\DefRule {Var} {} {
+  \EVar \TransBind \{ \EVar\mapsto\E \}
+}
+
+% Tr-BindNil
+\DefRule {Nil} {} {
+  \BEmp \TransBind \emptyset
 }
