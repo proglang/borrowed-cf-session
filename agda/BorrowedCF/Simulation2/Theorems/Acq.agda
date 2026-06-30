@@ -1080,6 +1080,146 @@ canonₛ-acq-head {N} b (c′ ∷ B) e2 =
     jjeq = toℕ-subst𝔽 (+-suc sB (2 + N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 1F))
          ■ toℕ-weaken*ᵣ sB (suc 1F) ■ +-suc sB 1
 
+-- Variable-base sibling of canonₛ-↑transpose.  The C-region leaf canonₛ C
+-- (` 0F , 1F , K `unit) j sits behind a foreign front block sB₂ (weaken* sB₂),
+-- and the acq cleanup ⦅ K `unit ⦆ₛ collapses the head-channel variable ` 0F to *.
+varC-transpose : ∀ {n} (C : BindGroup) (sB₂ : ℕ) (j : 𝔽 (sum C)) →
+  subst Tm (cong (sB₂ +_) (sym (+-suc (syncs C) (suc (suc n)))))
+    (subst Tm (+-suc (syncs C) (suc (suc n)))
+       (canonₛ C (` 0F , 1F , K `unit) j) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+    ⋯ (assocSwapᵣ (syncs C) 1 {2 + n} ↑* sB₂)
+    ⋯ assocSwapᵣ sB₂ 1 {syncs C + (2 + n)}
+    ⋯ ((assocSwapᵣ (syncs C) 2 {n} ↑* sB₂) ↑)
+    ⋯ ((assocSwapᵣ sB₂ 2 {syncs C + n}) ↑)
+    ⋯ ⦅ K `unit ⦆ₛ
+  ≡ (canonₛ C (K `unit , 0F , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+    ⋯ (assocSwapᵣ (syncs C) 2 {n} ↑* sB₂) ⋯ assocSwapᵣ sB₂ 2 {syncs C + n}
+varC-transpose []            sB₂ ()
+varC-transpose {n} (b ∷ [])      sB₂ j =
+    cong (λ z → z ⋯ (assocSwapᵣ 0 1 {2 + n} ↑* sB₂) ⋯ assocSwapᵣ sB₂ 1 ⋯ ((assocSwapᵣ 0 2 {n} ↑* sB₂) ↑) ⋯ ((assocSwapᵣ sB₂ 2 {n}) ↑) ⋯ ⦅ K `unit ⦆ₛ) lhsTriple
+  ■ cong₂ _⊗_ (cong₂ _⊗_ unitL flagL) unitR
+  where
+    -- the three triple components (e1 var, flag, e2 unit)
+    i0 : 𝔽 (3 + n)
+    i0 = Fin.zero
+    i1 : 𝔽 (3 + n)
+    i1 = Fin.suc Fin.zero
+    e0 : sB₂ + suc (suc (suc n)) ≡ sB₂ + suc (suc (suc n))
+    e0 = cong (sB₂ +_) (sym (+-suc 0 (suc (suc n))))
+    Q0 : 𝔽 (sB₂ + suc (suc (suc n)))
+    Q0 = subst 𝔽 e0 (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc 0 (suc (suc n))) i0))
+    Q1 : 𝔽 (sB₂ + suc (suc (suc n)))
+    Q1 = subst 𝔽 e0 (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc 0 (suc (suc n))) i1))
+    subst-O : ∀ {a c} (eq : a ≡ c) (p r : Tm a) →
+              subst Tm eq (p ⊗ r) ≡ subst Tm eq p ⊗ subst Tm eq r
+    subst-O refl p r = refl
+    subst-`F : ∀ {a c} (eq : a ≡ c) (q : 𝔽 a) → subst Tm eq (` q) ≡ ` subst 𝔽 eq q
+    subst-`F refl q = refl
+    subst-Ku : ∀ {a c} (eq : a ≡ c) (cc : _) → subst Tm eq (K cc) ≡ K cc
+    subst-Ku refl cc = refl
+    substTripV : ∀ {a c} (eq : a ≡ c) (q0 q1 : 𝔽 a) →
+      subst Tm eq (((` q0) ⊗ (` q1)) ⊗ K `unit)
+      ≡ (((` subst 𝔽 eq q0) ⊗ (` subst 𝔽 eq q1)) ⊗ K `unit)
+    substTripV eq q0 q1 =
+        subst-O eq ((` q0) ⊗ (` q1)) (K `unit)
+      ■ cong₂ _⊗_ (subst-O eq (` q0) (` q1)
+                  ■ cong₂ _⊗_ (subst-`F eq q0) (subst-`F eq q1))
+                  (subst-Ku eq `unit)
+    lhsTriple :
+      subst Tm e0 (subst Tm (+-suc 0 (suc (suc n))) (chanTriple (` i0 , i1 , K `unit)) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+      ≡ (((` Q0) ⊗ (` Q1)) ⊗ K `unit)
+    lhsTriple =
+        cong (subst Tm e0)
+          ( cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB₂) (substTripV (+-suc 0 (suc (suc n))) i0 i1)
+          ■ refl )
+      ■ substTripV e0 (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc 0 (suc (suc n))) i0))
+                      (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc 0 (suc (suc n))) i1))
+    unitL : (` Q0) ⋯ (assocSwapᵣ 0 1 {2 + n} ↑* sB₂) ⋯ assocSwapᵣ sB₂ 1 ⋯ ((assocSwapᵣ 0 2 {n} ↑* sB₂) ↑) ⋯ ((assocSwapᵣ sB₂ 2 {n}) ↑) ⋯ ⦅ K `unit ⦆ₛ
+            ≡ (K `unit ⋯ weaken* ⦃ Kᵣ ⦄ sB₂ ⋯ (assocSwapᵣ 0 2 {n} ↑* sB₂) ⋯ assocSwapᵣ sB₂ 2 {n})
+    unitL = cong (⦅ K `unit ⦆ₛ) imgEq
+      where
+        Q0ℕ : Fin.toℕ Q0 ≡ sB₂
+        Q0ℕ = toℕ-substF-acq e0 (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc 0 (suc (suc n))) i0))
+            ■ toℕ-weaken*ᵣ sB₂ (subst 𝔽 (+-suc 0 (suc (suc n))) i0)
+            ■ cong (sB₂ +_) (toℕ-substF-acq (+-suc 0 (suc (suc n))) i0)
+            ■ Nat.+-identityʳ sB₂
+        -- ρa = id, ρc = id (assocSwapᵣ 0 _ = id, lifted)
+        dropA : (assocSwapᵣ 0 1 {2 + n} ↑* sB₂) Q0 ≡ Q0
+        dropA = id↑* sB₂ (assocSwap-0a 1) Q0
+        -- assocSwapᵣ sB₂ 1 sends the mid index sB₂ to 0F
+        v1 : 𝔽 (1 + (sB₂ + suc (suc n)))
+        v1 = assocSwapᵣ sB₂ 1 Q0
+        v1ℕ : Fin.toℕ v1 ≡ 0
+        v1ℕ = toℕ-assoc-mid sB₂ 1 Q0
+                (subst (sB₂ Nat.≤_) (sym Q0ℕ) Nat.≤-refl)
+                (subst (Nat._< sB₂ + 1) (sym Q0ℕ) (subst (sB₂ Nat.<_) (Nat.+-comm 1 sB₂) (Nat.n<1+n sB₂)))
+            ■ cong (Nat._∸ sB₂) Q0ℕ ■ Nat.n∸n≡0 sB₂
+        dropC : (assocSwapᵣ 0 2 {n} ↑* sB₂ ↑) v1 ≡ v1
+        dropC = id↑ (id↑* sB₂ (assocSwap-0a 2)) v1
+        imgEq : (assocSwapᵣ sB₂ 2 {n} ↑)
+                  ((assocSwapᵣ 0 2 {n} ↑* sB₂ ↑)
+                   (assocSwapᵣ sB₂ 1 ((assocSwapᵣ 0 1 {2 + n} ↑* sB₂) Q0))) ≡ 0F
+        imgEq =
+            cong (λ z → (assocSwapᵣ sB₂ 2 {n} ↑) ((assocSwapᵣ 0 2 {n} ↑* sB₂ ↑) (assocSwapᵣ sB₂ 1 z))) dropA
+          ■ cong (assocSwapᵣ sB₂ 2 {n} ↑) dropC
+          ■ cong (assocSwapᵣ sB₂ 2 {n} ↑) (Fin.toℕ-injective {j = 0F} v1ℕ)
+    flagL : (` Q1) ⋯ (assocSwapᵣ 0 1 {2 + n} ↑* sB₂) ⋯ assocSwapᵣ sB₂ 1 ⋯ ((assocSwapᵣ 0 2 {n} ↑* sB₂) ↑) ⋯ ((assocSwapᵣ sB₂ 2 {n}) ↑) ⋯ ⦅ K `unit ⦆ₛ
+            ≡ ((` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂ ⋯ (assocSwapᵣ 0 2 {n} ↑* sB₂) ⋯ assocSwapᵣ sB₂ 2 {n})
+    flagL =
+        cong (⦅ K `unit ⦆ₛ) imgEq
+      ■ cong `_ (Fin.toℕ-injective (sym rhsℕ))
+      where
+        Q1ℕ : Fin.toℕ Q1 ≡ suc sB₂
+        Q1ℕ = toℕ-substF-acq e0 (weaken* ⦃ Kᵣ ⦄ sB₂ (subst 𝔽 (+-suc 0 (suc (suc n))) i1))
+            ■ toℕ-weaken*ᵣ sB₂ (subst 𝔽 (+-suc 0 (suc (suc n))) i1)
+            ■ cong (sB₂ +_) (toℕ-substF-acq (+-suc 0 (suc (suc n))) i1)
+            ■ Nat.+-comm sB₂ 1
+        dropA : (assocSwapᵣ 0 1 {2 + n} ↑* sB₂) Q1 ≡ Q1
+        dropA = id↑* sB₂ (assocSwap-0a 1) Q1
+        v1 : 𝔽 (1 + (sB₂ + suc (suc n)))
+        v1 = assocSwapᵣ sB₂ 1 Q1
+        v1ℕ : Fin.toℕ v1 ≡ suc sB₂
+        v1ℕ = toℕ-assoc-ge sB₂ 1 Q1 (subst (sB₂ + 1 Nat.≤_) (sym Q1ℕ) (Nat.≤-reflexive (Nat.+-comm sB₂ 1)))
+            ■ Q1ℕ
+        dropC : (assocSwapᵣ 0 2 {n} ↑* sB₂ ↑) v1 ≡ v1
+        dropC = id↑ (id↑* sB₂ (assocSwap-0a 2)) v1
+        v1ge : 1 Nat.≤ Fin.toℕ v1
+        v1ge = subst (1 Nat.≤_) (sym v1ℕ) (Nat.s≤s Nat.z≤n)
+        redv1 : Fin.toℕ (Fin.reduce≥ v1 v1ge) ≡ sB₂
+        redv1 = toℕ-reduce≥ v1 v1ge ■ cong (Nat._∸ 1) v1ℕ
+        finalℕ : Fin.toℕ ((assocSwapᵣ sB₂ 2 {n} ↑) v1) ≡ 1
+        finalℕ = ↑-posℕ (assocSwapᵣ sB₂ 2 {n}) v1 v1ge
+               ■ cong suc ( toℕ-assoc-mid sB₂ 2 (Fin.reduce≥ v1 v1ge)
+                              (subst (sB₂ Nat.≤_) (sym redv1) Nat.≤-refl)
+                              (subst (Nat._< sB₂ + 2) (sym redv1) (Nat.m<m+n sB₂ (Nat.s≤s Nat.z≤n)))
+                          ■ cong (Nat._∸ sB₂) redv1 ■ Nat.n∸n≡0 sB₂ )
+        imgEq : (assocSwapᵣ sB₂ 2 {n} ↑)
+                  ((assocSwapᵣ 0 2 {n} ↑* sB₂ ↑)
+                   (assocSwapᵣ sB₂ 1 ((assocSwapᵣ 0 1 {2 + n} ↑* sB₂) Q1))) ≡ 1F
+        imgEq =
+            cong (λ z → (assocSwapᵣ sB₂ 2 {n} ↑) ((assocSwapᵣ 0 2 {n} ↑* sB₂ ↑) (assocSwapᵣ sB₂ 1 z))) dropA
+          ■ cong (assocSwapᵣ sB₂ 2 {n} ↑) dropC
+          ■ Fin.toℕ-injective {j = 1F} finalℕ
+        rhsℕ : Fin.toℕ (assocSwapᵣ sB₂ 2 ((assocSwapᵣ 0 2 {n} ↑* sB₂) (weaken* ⦃ Kᵣ ⦄ sB₂ 0F))) ≡ 0
+        rhsℕ =
+          let w0 = (assocSwapᵣ 0 2 {n} ↑* sB₂) (weaken* ⦃ Kᵣ ⦄ sB₂ 0F)
+              w0ℕ : Fin.toℕ w0 ≡ sB₂
+              w0ℕ = cong Fin.toℕ (id↑* sB₂ (assocSwap-0a 2) (weaken* ⦃ Kᵣ ⦄ sB₂ 0F))
+                  ■ toℕ-weaken*ᵣ sB₂ 0F ■ Nat.+-identityʳ sB₂
+          in toℕ-assoc-mid sB₂ 2 w0
+               (subst (sB₂ Nat.≤_) (sym w0ℕ) Nat.≤-refl)
+               (subst (Nat._< sB₂ + 2) (sym w0ℕ) (Nat.m<m+n sB₂ (Nat.s≤s Nat.z≤n)))
+           ■ cong (Nat._∸ sB₂) w0ℕ ■ Nat.n∸n≡0 sB₂
+    unitR : (K `unit) ⋯ (assocSwapᵣ 0 1 {2 + n} ↑* sB₂) ⋯ assocSwapᵣ sB₂ 1 ⋯ ((assocSwapᵣ 0 2 {n} ↑* sB₂) ↑) ⋯ ((assocSwapᵣ sB₂ 2 {n}) ↑) ⋯ ⦅ K `unit ⦆ₛ
+            ≡ (K `unit ⋯ weaken* ⦃ Kᵣ ⦄ sB₂ ⋯ (assocSwapᵣ 0 2 {n} ↑* sB₂) ⋯ assocSwapᵣ sB₂ 2 {n})
+    unitR = refl
+-- cons case: split on (Fin.splitAt b j).  inj₁ jh is a finite head-triple leaf
+-- computation (generalise the (b ∷ []) unitL/flagL toℕ chases above).  inj₂ k
+-- recurses on C with the channel-triple flag shifted (1F→2F): needs a flag-general
+-- sibling of this lemma, threading the +-suc codomain reassociation via
+-- canonₛ-substcod / canonₛ-nat-↑ / ΘrelEqᵍ exactly as canonₛ-↑transpose's cons does.
+varC-transpose {n} (b ∷ C@(_ ∷ _)) sB₂ j = {!vct-cons!}
+
 open T using (_;_⊢ₚ_)
 
 -- Output-substitution push for the singleton acq-cleanup substitution.
@@ -1661,7 +1801,7 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
         coreCmain =
           cong (λ z → subst Tm eqC (z ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd ⋯ ⦅ * ⦆ₛ)
             (canonₛ-zero-head (K `unit) (K `unit) 0F j)
-          ■ {!step!}
+          ■ varC-transpose C sB₂ j
         coreC : sPre w ⋯ ⦅ * ⦆ₛ ≡ tC
         coreC =
             cong (_⋯ ⦅ * ⦆ₛ)
@@ -1833,7 +1973,49 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
       ■ sym (frame-plug* E (leafσ σ C B₂) Vτ-C)
       where
         plugReconcile : (` 0F) ⋯ cs ≡ (` 0F) ⋯ leafσ σ C B₂
-        plugReconcile = {!  !}
+        plugReconcile =
+            cong (λ z → z ⋯ A₂ ⋯ B₂ᵣ) coreC0 ■ leafC0
+          where
+            j0 : 𝔽 (sum C)
+            j0 = 0F
+            eqw0 : Fin.splitAt (sum C + sum B₂) {m} 0F ≡ inj₁ 0F
+            eqw0 = refl
+            eqz0 : Fin.splitAt (sum C) {sum B₂} 0F ≡ inj₁ 0F
+            eqz0 = refl
+            Lc0 : Tm (sB₂ + (sC + (2 + n)))
+            Lc0 = canonₛ C (K `unit , 0F , K `unit) j0 ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+            tC0 : Tm (2 + (sB₂ + (sC + n)))
+            tC0 = Lc0 ⋯ (assocSwapᵣ sC 2 ↑* sB₂) ⋯ assocSwapᵣ sB₂ 2
+            τC0 : sPre 0F ≡ subst Tm eqC
+                    (canonₛ (zero ∷ C) (K `unit , 0F , K `unit) j0 ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+                    ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd
+            τC0 = sPre-pt 0F
+                ■ cong (λ z → subst Tm eqC z ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd)
+                    (leafσ-A₁ σ (zero ∷ C) B₂ 0F 0F j0 eqw0 eqz0)
+            coreCmain0 :
+              subst Tm eqC (canonₛ (zero ∷ C) (K `unit , 0F , K `unit) j0 ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+                ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd ⋯ ⦅ * ⦆ₛ
+              ≡ tC0
+            coreCmain0 =
+              cong (λ z → subst Tm eqC (z ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd ⋯ ⦅ * ⦆ₛ)
+                (canonₛ-zero-head (K `unit) (K `unit) 0F j0)
+              ■ varC-transpose C sB₂ j0
+            coreC0 : sPre 0F ⋯ ⦅ * ⦆ₛ ≡ tC0
+            coreC0 = cong (_⋯ ⦅ * ⦆ₛ) τC0 ■ coreCmain0
+            tCA0 : tC0 ⋯ A₂ ≡ Lc0 ⋯ (assocSwapᵣ sC 2 ↑* sB₂)
+            tCA0 =
+                fusion (Lc0 ⋯ (assocSwapᵣ sC 2 ↑* sB₂)) (assocSwapᵣ sB₂ 2) A₂
+              ■ ⋯-cong (Lc0 ⋯ (assocSwapᵣ sC 2 ↑* sB₂)) (assocSwap-invol sB₂ 2)
+              ■ ⋯-id (Lc0 ⋯ (assocSwapᵣ sC 2 ↑* sB₂)) (λ _ → refl)
+            cancelC0 : ((assocSwapᵣ sC 2 ↑* sB₂) ·ₖ (assocSwapᵣ 2 sC ↑* sB₂)) ≗ idₖ
+            cancelC0 x = sym (dist-↑*-· sB₂ (assocSwapᵣ sC 2) (assocSwapᵣ 2 sC) x)
+                       ■ id↑* sB₂ (assocSwap-invol sC 2) x
+            leafC0 : tC0 ⋯ A₂ ⋯ B₂ᵣ ≡ leafσ σ C B₂ 0F
+            leafC0 =
+                cong (λ z → z ⋯ B₂ᵣ) tCA0
+              ■ fusion Lc0 (assocSwapᵣ sC 2 ↑* sB₂) B₂ᵣ
+              ■ ⋯-id Lc0 cancelC0
+              ■ sym (leafσ-A₁ σ C B₂ 0F 0F j0 eqw0 eqz0)
     threadEqR :
       ((((U.⟪ Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]* ⟫) U.⋯ₚ ⦅ * ⦆ₛ)
             U.⋯ₚ assocSwapᵣ 2 sB₂) U.⋯ₚ (assocSwapᵣ 2 sC ↑* sB₂))
