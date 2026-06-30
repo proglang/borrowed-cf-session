@@ -2088,7 +2088,79 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
     leafRec : Bφ B ((U.ν (contractumR U.⋯ₚ assocSwapᵣ 1 2)) U.⋯ₚ assocSwapᵣ 1 (syncs B))
               U.≋ subst U.Proc (cong (_+ n) (syncs-rwk B₁) ■ sym (+-suc (syncs C₁) n)) (Bφ B (U.ν (pushR XRᴿ)))
                     U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n}
-    leafRec = {!!}
+    leafRec = ≡→≋ leafRec≡
+      where
+        EQ′ : syncs C₁ᴿ + n ≡ syncs C₁ + suc n
+        EQ′ = cong (_+ n) (syncs-rwk B₁) ■ sym (+-suc (syncs C₁) n)
+        sD′ : ℕ
+        sD′ = syncs (suc b₁ ∷ B₂)
+        rawR : (sD′ + (1 + (L.length B₁ + n))) →ᵣ (1 + (sD′ + (L.length B₁ + n)))
+        rawR = assocSwapᵣ sD′ 1 {L.length B₁ + n}
+        rhsR≡ : subst U.Proc EQ′ (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n}
+                ≡ subst U.Proc (sw-cod B₁ {b₁} {B₂} {n})
+                    (subst U.Proc (EQ′ ■ sw-dom B₁ {b₁} {B₂} {n}) (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ rawR)
+        rhsR≡ = cast-⋯2 (sw-dom B₁ {b₁} {B₂} {n}) (sw-cod B₁ {b₁} {B₂} {n}) (subst U.Proc EQ′ (Bφ B (U.ν (pushR XRᴿ)))) rawR
+             ■ cong (λ w → subst U.Proc (sw-cod B₁ {b₁} {B₂} {n}) (w U.⋯ₚ rawR))
+                 (ss-U EQ′ (sw-dom B₁ {b₁} {B₂} {n}) {t = Bφ B (U.ν (pushR XRᴿ))})
+        e2 : syncs C₁ᴿ + n ≡ sD′ + (1 + (L.length B₁ + n))
+        e2 = EQ′ ■ sw-dom B₁ {b₁} {B₂} {n}
+        rhsPush : subst U.Proc EQ′ (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n}
+                  ≡ Bφ B (subst U.Proc (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n}))
+                            (subst U.Proc (cong (syncs B +_) e2) (U.ν (pushR XRᴿ)) U.⋯ₚ (rawR ↑* syncs B)))
+        rhsInner : subst U.Proc e2 (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ rawR
+                   ≡ Bφ B (subst U.Proc (cong (syncs B +_) e2) (U.ν (pushR XRᴿ)) U.⋯ₚ (rawR ↑* syncs B))
+        rhsInner =
+            cong (U._⋯ₚ rawR) (subst-Bφ e2 B (U.ν (pushR XRᴿ)))
+          ■ Bφ-⋯ B (subst U.Proc (cong (syncs B +_) e2) (U.ν (pushR XRᴿ))) rawR
+        rhsPush = rhsR≡
+                ■ cong (subst U.Proc (sw-cod B₁ {b₁} {B₂} {n})) rhsInner
+                ■ subst-Bφ (sw-cod B₁ {b₁} {B₂} {n}) B
+                    (subst U.Proc (cong (syncs B +_) e2) (U.ν (pushR XRᴿ)) U.⋯ₚ (rawR ↑* syncs B))
+        rhsνOut : subst U.Proc (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n}))
+                     (subst U.Proc (cong (syncs B +_) e2) (U.ν (pushR XRᴿ)) U.⋯ₚ (rawR ↑* syncs B))
+                  ≡ U.ν (subst U.Proc (cong (2 +_) (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
+                          (subst U.Proc (cong (2 +_) (cong (syncs B +_) e2)) (pushR XRᴿ)
+                             U.⋯ₚ ((rawR ↑* syncs B) ↑* 2)))
+        rhsνOut =
+            cong (subst U.Proc (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
+              (cong (U._⋯ₚ (rawR ↑* syncs B)) (subst-ν (cong (syncs B +_) e2) (pushR XRᴿ)))
+          ■ subst-ν (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n}))
+              (subst U.Proc (cong (2 +_) (cong (syncs B +_) e2)) (pushR XRᴿ) U.⋯ₚ ((rawR ↑* syncs B) ↑* 2))
+        νInner : (contractumR U.⋯ₚ assocSwapᵣ 1 2) U.⋯ₚ ((assocSwapᵣ 1 (syncs B)) ↑* 2)
+                 ≡ subst U.Proc (cong (2 +_) (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
+                     (subst U.Proc (cong (2 +_) (cong (syncs B +_) e2)) (pushR XRᴿ)
+                        U.⋯ₚ ((rawR ↑* syncs B) ↑* 2))
+        SQ : ℕ → ℕ
+        SQ section = suc (suc section)
+        ρρ : (syncs B + (sD′ + (1 + (L.length B₁ + n)))) →ᵣ (syncs B + (1 + (sD′ + (L.length B₁ + n))))
+        ρρ = (rawR ↑* syncs B)
+        -- distribute RHS subst/⋯ over the ∥ of pushR-bodyᴿ
+        rhsSplit : subst U.Proc (cong SQ (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
+                     (subst U.Proc (cong SQ (cong (syncs B +_) e2)) (pushR XRᴿ) U.⋯ₚ (ρρ ↑* 2))
+                   ≡ subst U.Proc (cong SQ (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
+                       ( (subst U.Proc (cong SQ (cong (syncs B +_) e2))
+                           (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫) U.⋯ₚ (ρρ ↑* 2))
+                       U.∥ (subst U.Proc (cong SQ (cong (syncs B +_) e2)) pushR-Pᴿ U.⋯ₚ (ρρ ↑* 2)) )
+        rhsSplit =
+            cong (subst U.Proc (cong SQ (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n}))))
+              ( cong (λ z → (subst U.Proc (cong SQ (cong (syncs B +_) e2)) z) U.⋯ₚ (ρρ ↑* 2)) pushR-bodyᴿ
+              ■ cong (U._⋯ₚ (ρρ ↑* 2))
+                  (subst-∥f (λ z → z) (cong SQ (cong (syncs B +_) e2))
+                     (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫) pushR-Pᴿ) )
+        νInner =
+            cong₂ U._∥_ {!!} {!!}
+          ■ sym ( rhsSplit
+                ■ subst-∥f (λ z → z) (cong SQ (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
+                    (subst U.Proc (cong SQ (cong (syncs B +_) e2))
+                       (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫) U.⋯ₚ (ρρ ↑* 2))
+                    (subst U.Proc (cong SQ (cong (syncs B +_) e2)) pushR-Pᴿ U.⋯ₚ (ρρ ↑* 2)) )
+        bodyEq : (U.ν (contractumR U.⋯ₚ assocSwapᵣ 1 2)) U.⋯ₚ assocSwapᵣ 1 (syncs B)
+                 ≡ subst U.Proc (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n}))
+                     (subst U.Proc (cong (syncs B +_) e2) (U.ν (pushR XRᴿ)) U.⋯ₚ (rawR ↑* syncs B))
+        bodyEq = cong U.ν νInner ■ sym rhsνOut
+        leafRec≡ : Bφ B ((U.ν (contractumR U.⋯ₚ assocSwapᵣ 1 2)) U.⋯ₚ assocSwapᵣ 1 (syncs B))
+                   ≡ subst U.Proc EQ′ (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n}
+        leafRec≡ = cong (Bφ B) bodyEq ■ sym rhsPush
     innerReconcile =
          Bφ-cong B (Eq*.return U.νφ-comm′)
       ◅◅ Bφ-φ-comm B U.drop (U.ν (contractumR U.⋯ₚ assocSwapᵣ 1 2))
