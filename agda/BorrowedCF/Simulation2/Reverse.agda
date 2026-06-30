@@ -26,7 +26,8 @@ open import BorrowedCF.Simulation2.ReverseInv
   using (⋯→-reflect; frameApp-reflect; headK; plugApp-not-value;
          rnew-bridge; new-arg-notVar;
          inv-U-ν-∥-shape; U-ν-singleton; νσ; ν-inj;
-         νσ-VSub; inv-ν-chanCx; close-bridge)
+         νσ-VSub; inv-ν-chanCx; close-bridge;
+         νσ-φfree; νσ-φfree-VSub; U-ν-φfree-eq)
 open import BorrowedCF.Simulation2.InvFrame using (strengthen-frame; inv-app)
 open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯)
 import Data.Sum as Sum
@@ -200,6 +201,24 @@ sim←ᵍ : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
       → {R Q : UP.Proc n} → R ≡ U[ P ] σ → R UR.─→ₚ Q
       → Σ[ P′ ∈ TP.Proc m ] (P TR─→ₚ* P′ × Q UP.≋ U[ P′ ] σ)
 
+-- syncs-of : the (<=singleton) phi-free shape of a bind group, or a >=2 witness.
+syncs-of : (B : TP.BindGroup)
+         → (syncs B ≡ 0) Sum.⊎ (Σ[ b ∈ ℕ ] Σ[ c ∈ ℕ ] Σ[ Bp ∈ TP.BindGroup ] (B ≡ b ∷ c ∷ Bp))
+syncs-of []           = Sum.inj₁ refl
+syncs-of (b ∷ [])     = Sum.inj₁ refl
+syncs-of (b ∷ c ∷ Bp) = Sum.inj₂ (b , c , Bp , refl)
+
+-- simRes : RU-Res reflection, factored out so it does NOT re-generalise the
+-- scope index (a where-local helper would break the sigma : m -> n alignment).
+simRes : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+       → {g : Struct m}
+       → (B₁ B₂ : TP.BindGroup) (P₀ : TP.Proc (sum B₁ + sum B₂ + m))
+       → Γ ; g ⊢ₚ TP.ν B₁ B₂ P₀
+       → (X X′ : UP.Proc (2 + n)) → X UR.─→ₚ X′
+       → UP.ν X ≡ U[ TP.ν B₁ B₂ P₀ ] σ
+       → (syncs B₁ ≡ 0) Sum.⊎ _ → (syncs B₂ ≡ 0) Sum.⊎ _
+       → Σ[ P′ ∈ TP.Proc m ] (TP.ν B₁ B₂ P₀ TR─→ₚ* P′ × UP.ν X′ UP.≋ U[ P′ ] σ)
+
 -- Public entry, ≋-closed on the input.  When R IS literally the image
 -- (the ε / reflexive prefix) it is the engine at refl; a genuine ≋ prefix
 -- needs the reverse-U-≋ factorisation (the same blocker carried by the
@@ -268,8 +287,12 @@ sim←ᵍ σ Vσ Γ-S {P = P₁ TP.∥ P₂}   ⊢P refl (UR.RU-Par sub)
 --   and needs the SAME codomain-≋ strengthening as RU-Struct (reduction-up-to-≋
 --   on both sides) — a sim← statement change owned upstream.
 ------------------------------------------------------------------------
-sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Res {Q = X′} sub) =
-  {! RU-Res: φ-nest peeling.  φ-free sub-case (syncs B₁=syncs B₂=0): ν-inj body eq, IH at U[P₀]bigσ (inv-ν typing + bindCtx⇒chanCtx + bigσ VSub), re-wrap TR.R-Bind+ν-cong.  φ-bearing case: admin φ moves leave the U[_] image -> same codomain-≋ blocker as RU-Struct (statement change upstream). !}
+sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Res {P = X} {Q = X′} sub)
+  with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
+  -- φ-free sub-case is dispatched (on the (<=singleton) shape of B₁,B₂) in
+  -- simRes.  The φ-bearing case (some Bᵢ >= 2 ==> syncs >= 1) is the documented
+  -- codomain-≋ blocker (admin φ moves leave the U[_] image), a noted hole in simRes.
+  = simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq (syncs-of B₁) (syncs-of B₂)
 
 ------------------------------------------------------------------------
 -- RU-Sync : R = φ x P′.  But U[_] never heads with φ (clauses are ⟪⟫/∥/ν), so
@@ -438,3 +461,18 @@ sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () UR.RU-Cleanup
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Struct c₁ inner c₂)
   with P′ , steps , Q′≋ ← sim← σ Vσ Γ-S ⊢P (Eq*.symmetric _ c₁ ◅◅ ≡→≋ eq) inner =
   P′ , steps , Eq*.symmetric _ c₂ ◅◅ Q′≋
+
+
+------------------------------------------------------------------------
+-- simRes clauses.  phi-free (both syncs 0): recurse the IH at the phi-free
+-- leaf U[ P₀ ] σ′, re-wrap R-Bind, reconcile codomain via U-ν-phifree.
+-- phi-bearing (some syncs >= 1): documented codomain-≋ blocker.
+simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₁ s₁) (Sum.inj₁ s₂)
+  with _ , _ , Γ′-S , ⊢body ← inv-ν-chanCx Γ-S ⊢ₚP
+  with P₀′ , steps , c ← sim←ᵍ (νσ-φfree B₁ B₂ σ s₁ s₂) (νσ-φfree-VSub B₁ B₂ σ Vσ s₁ s₂) Γ′-S ⊢body (ν-inj (bodyeq ■ U-ν-φfree-eq B₁ B₂ P₀ σ s₁ s₂)) sub =
+  TP.ν B₁ B₂ P₀′ , ⋆-gmap (TP.ν B₁ B₂) TR.R-Bind steps
+  , subst (UP.ν X′ UP.≋_) (sym (U-ν-φfree-eq B₁ B₂ P₀′ σ s₁ s₂)) (UP.ν-cong c)
+simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₂ _) _ =
+  {! RU-Res phi-bearing (syncs B₁ >= 1): an admin phi sync-cell move (RU-Drop/Acquire/Cleanup flips a flag) inside the phi-telescope carries U[P]σ OUTSIDE the U[_] image, so it has no R-Bind counterpart at the binder.  Needs the codomain-≋ strengthening (reduction-up-to-≋ on BOTH sides) -- same blocker as RU-Struct / sim← non-ε.  Statement change owned upstream. !}
+simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq _ (Sum.inj₂ _) =
+  {! RU-Res phi-bearing (syncs B₂ >= 1): see syncs B₁ >= 1 case -- same admin-phi codomain-≋ blocker. !}

@@ -833,3 +833,59 @@ close-bridge E₁ E₂ σ Vσ =
   ≡→≋ (cong₂ UP._∥_
         (cong UP.⟪_⟫ (sym (frame-plug* E₁ σ Vσ)))
         (cong UP.⟪_⟫ (sym (frame-plug* E₂ σ Vσ))))
+
+------------------------------------------------------------------------
+-- U-ν-φfree : the φ-FREE (syncs B₁ = syncs B₂ = 0) collapse of a ν body.
+--   When neither bind group contributes a φ binder, the φ-telescope built by
+--   U[_] is empty, so U[ ν B₁ B₂ P₀ ] σ ≡ ν (U[ P₀ ] σ′) for a concrete leaf
+--   substitution σ′ (depending on the ≤-singleton shape of B₁,B₂).  Each σ′ is
+--   a value substitution.  This is the engine of the φ-free RU-Res sub-case.
+------------------------------------------------------------------------
+-- The φ-free leaf substitution depends ONLY on the (≤singleton) shapes of
+-- B₁,B₂ and σ — NOT on the body P₀.  Splitting it out (vs returning it inside
+-- the Σ together with the body eq) keeps a SINGLE shared σ′ term for both the
+-- recursive call at P₀ and the codomain reconciliation at P₀′.
+νσ-φfree : ∀ {m n} (B₁ B₂ : TP.BindGroup) (σ : m →ₛ n)
+         → syncs B₁ ≡ 0 → syncs B₂ ≡ 0 → (sum B₁ + sum B₂ + m →ₛ 2 + n)
+νσ-φfree B₁ B₂ σ p₁ p₂ with syncs0-shape B₁ p₁ | syncs0-shape B₂ p₂
+... | Sum.inj₂ (b₁ , refl) | Sum.inj₂ (b₂ , refl) = νσ b₁ b₂ σ
+... | Sum.inj₂ (b₁ , refl) | Sum.inj₁ refl =
+  ((λ i → (λ (_ : 𝔽 (sum (b₁ ∷ []))) → chanTriple (* , 0F , *)) i ⋯ weaken* ⦃ Kᵣ ⦄ 0) ++ₛ
+      (λ ())) ++ₛ
+      (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 0 ⋯ weaken* ⦃ Kᵣ ⦄ 0)
+... | Sum.inj₁ refl | Sum.inj₂ (b₂ , refl) =
+  (λ (_ : 𝔽 (sum (b₂ ∷ []))) → chanTriple (* , weaken* ⦃ Kᵣ ⦄ 0 1F , *)) ++ₛ
+      (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 0 ⋯ weaken* ⦃ Kᵣ ⦄ 0)
+... | Sum.inj₁ refl | Sum.inj₁ refl =
+  (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 0 ⋯ weaken* ⦃ Kᵣ ⦄ 0)
+
+νσ-φfree-VSub : ∀ {m n} (B₁ B₂ : TP.BindGroup) (σ : m →ₛ n) (Vσ : VSub σ)
+              → (p₁ : syncs B₁ ≡ 0) (p₂ : syncs B₂ ≡ 0)
+              → VSub (νσ-φfree B₁ B₂ σ p₁ p₂)
+νσ-φfree-VSub B₁ B₂ σ Vσ p₁ p₂ with syncs0-shape B₁ p₁ | syncs0-shape B₂ p₂
+... | Sum.inj₂ (b₁ , refl) | Sum.inj₂ (b₂ , refl) = νσ-VSub b₁ b₂ σ Vσ
+... | Sum.inj₂ (b₁ , refl) | Sum.inj₁ refl =
+  ++ₛ-VSub
+      {σ₁ = (λ i → (λ (_ : 𝔽 (sum (b₁ ∷ []))) → chanTriple (* , 0F , *)) i ⋯ weaken* ⦃ Kᵣ ⦄ 0) ++ₛ (λ ())}
+      (++ₛ-VSub
+        {σ₁ = (λ i → (λ (_ : 𝔽 (sum (b₁ ∷ []))) → chanTriple (* , 0F , *)) i ⋯ weaken* ⦃ Kᵣ ⦄ 0)}
+        (λ _ → value-⋯ (V-⊗ (V-⊗ V-K V-`) V-K) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`))
+        (λ ()))
+      (λ i → value-⋯ (value-⋯ (value-⋯ (Vσ i) (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`))
+... | Sum.inj₁ refl | Sum.inj₂ (b₂ , refl) =
+  ++ₛ-VSub
+      {σ₁ = (λ (_ : 𝔽 (sum (b₂ ∷ []))) → chanTriple (* , weaken* ⦃ Kᵣ ⦄ 0 1F , *))}
+      (λ _ → V-⊗ (V-⊗ V-K V-`) V-K)
+      (λ i → value-⋯ (value-⋯ (value-⋯ (Vσ i) (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`))
+... | Sum.inj₁ refl | Sum.inj₁ refl =
+  λ i → value-⋯ (value-⋯ (value-⋯ (Vσ i) (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`)
+
+U-ν-φfree-eq : ∀ {m n} (B₁ B₂ : TP.BindGroup)
+            (P₀ : TP.Proc (sum B₁ + sum B₂ + m)) (σ : m →ₛ n)
+          → (p₁ : syncs B₁ ≡ 0) (p₂ : syncs B₂ ≡ 0)
+          → U[ TP.ν B₁ B₂ P₀ ] σ ≡ UP.ν (U[ P₀ ] (νσ-φfree B₁ B₂ σ p₁ p₂))
+U-ν-φfree-eq B₁ B₂ P₀ σ p₁ p₂ with syncs0-shape B₁ p₁ | syncs0-shape B₂ p₂
+... | Sum.inj₂ (b₁ , refl) | Sum.inj₂ (b₂ , refl) = refl
+... | Sum.inj₂ (b₁ , refl) | Sum.inj₁ refl = refl
+... | Sum.inj₁ refl | Sum.inj₂ (b₂ , refl) = refl
+... | Sum.inj₁ refl | Sum.inj₁ refl = refl
