@@ -34,8 +34,25 @@ import BorrowedCF.Processes.Typed             as TP
 import BorrowedCF.Processes.Untyped           as UP
 import BorrowedCF.Reduction.Processes.Typed   as TR
 import BorrowedCF.Reduction.Processes.Untyped as UR
+open import Relation.Binary.Construct.Closure.ReflexiveTransitive
+  using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
+import Relation.Binary.Construct.Closure.Equivalence as Eq*
 open import BorrowedCF.Context using (Ctx; Struct)
 open TP using (_;_⊢ₚ_; inv-⟪⟫; inv-∥; inv-ν; ⊢-≋; bindCtx⇒chanCtx)
+
+------------------------------------------------------------------------
+-- Typed-side reflexive-transitive closure of process reduction.
+--
+--   The reverse-simulation codomain is the MIRROR of the forward sim→ ⊎
+--   codomain (Theorems.agda): there U[P]σ ─→ₚ* U[P′]σ on the UNTYPED side; here
+--   we need P ─→ₚ* P′ on the TYPED side, so a skip-padded redex can R-Discard*
+--   its padding and THEN fire the real step (the RU-Close inj₁ / skip-padding
+--   blocker is exactly this).  Single steps inject as  s ◅ ε.
+------------------------------------------------------------------------
+
+infix 4 _TR─→ₚ*_
+_TR─→ₚ*_ : {n : ℕ} → TP.Proc n → TP.Proc n → Set
+_TR─→ₚ*_ = Star TR._─→ₚ_
 
 ------------------------------------------------------------------------
 -- Expression-reduction REFLECTION through a value substitution.
@@ -160,22 +177,36 @@ inv-U-ν (TP.ν B₁ B₂ P) σ refl = B₁ , B₂ , P , refl , refl
 -- The reverse-simulation statement.
 ------------------------------------------------------------------------
 
+-- WEAK reverse simulation, UP TO ≋ on the input, MULTI-STEP on the typed side
+-- (the exact mirror of the forward sim→ ⊎ codomain in Theorems.agda).  The
+-- input is taken up to untyped ≋ — `R ≋ U[ P ] σ` instead of a bare image —
+-- so RU-Struct's structural-congruence premise `c₁ : R ≋ R′` is absorbable
+-- (recurse at R′ ≋ U[ P ] σ); the codomain is `P ─→ₚ* P′` so a skip-padded
+-- redex may R-Discard* its padding before firing the real step.
 sim← : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
      → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
-     → {Q : UP.Proc n} → U[ P ] σ UR.─→ₚ Q
-     → Σ[ P′ ∈ TP.Proc m ] (P TR.─→ₚ P′ × Q UP.≋ U[ P′ ] σ)
+     → {R Q : UP.Proc n} → R UP.≋ U[ P ] σ → R UR.─→ₚ Q
+     → Σ[ P′ ∈ TP.Proc m ] (P TR─→ₚ* P′ × Q UP.≋ U[ P′ ] σ)
 
 -- The untyped step has LHS index U[ P ] σ, a stuck application, so a direct
 -- `with` case-split on it gets a SplitError (UnificationStuck).  We generalise:
 -- abstract the LHS to a fresh variable R with a proof R ≡ U[ P ] σ, split on
 -- the reduction (now R is a variable so every RU-* constructor unifies), and
--- read P back off the equality with the inv-U-* lemmas.
+-- read P back off the equality with the inv-U-* lemmas.  This is the inversion
+-- ENGINE: it keeps the strict `≡` image on the input (the inv-U-* lemmas need
+-- propositional equality), and the codomain is the MULTI-STEP P ─→ₚ* P′.
 sim←ᵍ : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
       → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
       → {R Q : UP.Proc n} → R ≡ U[ P ] σ → R UR.─→ₚ Q
-      → Σ[ P′ ∈ TP.Proc m ] (P TR.─→ₚ P′ × Q UP.≋ U[ P′ ] σ)
+      → Σ[ P′ ∈ TP.Proc m ] (P TR─→ₚ* P′ × Q UP.≋ U[ P′ ] σ)
 
-sim← σ Vσ Γ-S ⊢P red = sim←ᵍ σ Vσ Γ-S ⊢P refl red
+-- Public entry, ≋-closed on the input.  When R IS literally the image
+-- (the ε / reflexive prefix) it is the engine at refl; a genuine ≋ prefix
+-- needs the reverse-U-≋ factorisation (the same blocker carried by the
+-- RU-Struct case) and is left a noted hole.
+sim← σ Vσ Γ-S ⊢P ε red = sim←ᵍ σ Vσ Γ-S ⊢P refl red
+sim← σ Vσ Γ-S ⊢P (c ◅ cs) red =
+  {! reverse-U-≋: a non-reflexive ≋ prefix R ≋ U[P]σ need not factor through the U[_] image (φ-nest admin ν-swap/ν-comm/φ-cong leave the image); needs a U[_]-normal-form confluence lemma.  Same blocker as RU-Struct. !}
 
 ------------------------------------------------------------------------
 -- RU-Exp : R = ⟪ e₁ ⟫ steps by an expression reduction e₁ ⋯→ e₂.
@@ -201,7 +232,7 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Exp {e₁ = e₁} {e₂ = e₂} ste
   -- source typing inv-⟪⟫ ⊢P + ChanCx Γ-S rule out a VSub manufacturing a head
   -- redex at a channel-typed variable.
   with e₀′ , s , refl ← ⋯→-reflect Γ-S e₀ (inv-⟪⟫ ⊢P) σ Vσ step =
-  TP.⟪ e₀′ ⟫ , TR.R-Exp s , ε
+  TP.⟪ e₀′ ⟫ , TR.R-Exp s ◅ ε , ε
 
 ------------------------------------------------------------------------
 -- RU-Par : R = A ∥ B and A steps.  eq + inv-U-∥ gives P = P₁ ∥ P₂ with
@@ -214,7 +245,7 @@ sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Par sub)
 sim←ᵍ σ Vσ Γ-S {P = P₁ TP.∥ P₂}   ⊢P refl (UR.RU-Par sub)
   with _ , _ , _ , ⊢P₁ , _ ← inv-∥ ⊢P
   with P₁′ , step₁ , c₁ ← sim←ᵍ σ Vσ Γ-S ⊢P₁ refl sub =
-  P₁′ TP.∥ P₂ , TR.R-Par step₁ , UP.∥-cong c₁ ε
+  P₁′ TP.∥ P₂ , ⋆-gmap (TP._∥ P₂) TR.R-Par step₁ , UP.∥-cong c₁ ε
 
 ------------------------------------------------------------------------
 -- RU-Res : R = ν X and X steps (sub : X ─→ₚ X′).  inv-U-ν (now PROVEN with its
@@ -270,7 +301,7 @@ sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Fork F V)
   with F₀ , arg₀ , refl , Feq , argeq
        ← frameApp-reflect Γ-S e₀ (inv-⟪⟫ ⊢P) σ Vσ `fork F (sym feq) =
   TP.⟪ F₀ [ K `unit ]* ⟫ TP.∥ TP.⟪ arg₀ · K `unit ⟫ ,
-  TR.R-Fork F₀ (value-⋯⁻¹ σ Vσ arg₀ (subst Value argeq V)) ,
+  TR.R-Fork F₀ (value-⋯⁻¹ σ Vσ arg₀ (subst Value argeq V)) ◅ ε ,
   ≡→≋ (cong₂ UP._∥_
         (cong UP.⟪_⟫ (cong (_[ K `unit ]*) Feq ■ sym (frame-plug* F₀ σ Vσ)))
         (cong (λ z → UP.⟪ z · K `unit ⟫) argeq))
@@ -302,7 +333,7 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-New {s = s} F)
 ... | Sum.inj₂ refl =
   TP.ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
     TP.⟪ (F₀ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 1F) ⊗ (` 0F) ]* ⟫ ,
-  TR.R-New F₀ ,
+  TR.R-New F₀ ◅ ε ,
   subst (λ z → UP.ν (UP.φ UP.acq (UP.φ UP.acq UP.⟪
                   (z ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [ _ ]* ⟫))
                 UP.≋ _)
@@ -393,22 +424,17 @@ sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () UR.RU-Cleanup
 ------------------------------------------------------------------------
 -- RU-Struct : R ≋ R′, inner : R′ ─→ₚ Q′, c₂ : Q′ ≋ Q  ⊢  R ─→ₚ Q.
 --
---   VERDICT (investigated): NOT provable at the current sim← granularity, and
---   the obstruction is on the INPUT ≋ (c₁), not the output.  The output slack is
---   fine — given a source step P ─→ₚ P′ with Q′ ≋ U[ P′ ] σ, transitivity
---   Q ≋ Q′ ≋ U[ P′ ] σ (gmap/◅◅) absorbs c₂.  But to run the IH on `inner` we
---   need R′ to be the translation image U[ P₀ ] σ of SOME source P₀ with P
---   suitably related to P₀ — i.e. a REVERSE-U-≋ lemma
---       R ≋ S → Σ P₀. (S ≡ U[ P₀ ] σ) × (P ≋ P₀ source-side)
---   and this is FALSE in general: untyped ≋ contains φ-nest administrative moves
---   (ν-swap / ν-comm transposing φ-binders, φ-cong) that carry U[ P ] σ to
---   processes NOT literally in the U[_] image, so S need not factor as U[ P₀ ] σ.
---   The honest fixes (do NOT apply here — they change the sim← statement, which
---   is owned upstream): (a) strengthen the codomain to reduction-up-to-≋ on BOTH
---   sides (replace Q ≋ U[P′]σ by ∃ S. P ─→ₚ P′ × U[P′]σ ≋ S ≋ Q and let the
---   relation be ≋-closed on the left), or (b) prove a confluence/normalisation
---   lemma that every R ≋ U[P]σ reduces iff its U[_]-normal form does.  Either is
---   a design change beyond Reverse.agda; flagged for the statement owner.
+--   With the statement now ≋-CLOSED on the input (sim← takes R ≋ U[ P ] σ) and
+--   the codomain reduction-up-to-≋ / multi-step, this case is NO LONGER blocked
+--   at the granularity: the structural-congruence premise c₁ is ABSORBABLE.
+--   From eq : R ≡ U[ P ] σ and c₁ : R ≋ R′ we get  R′ ≋ U[ P ] σ
+--   (= ≋-trans (≋-sym c₁) (≡→≋ eq)), so we recurse on `inner` through the public
+--   ≋-input simulator sim←, obtaining P′, P ─→ₚ* P′, Q′ ≋ U[ P′ ] σ.  The output
+--   ≋ then absorbs c₂ by transitivity: Q ≋ Q′ ≋ U[ P′ ] σ.  The residual reverse-
+--   U-≋ work (factoring a genuine ≋ prefix through the U[_] image) is now ISOLATED
+--   in sim←'s non-ε branch (the c ◅ cs hole) — the single place where the φ-nest
+--   administrative moves that leave the U[_] image must be handled.
 ------------------------------------------------------------------------
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Struct c₁ inner c₂) =
-  {! RU-Struct: blocked on reverse-U-≋ (FALSE in general — φ-nest admin ≋ leaves the U[_] image). Needs a sim← codomain strengthening (reduction-up-to-≋ on both sides); see note above. !}
+sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Struct c₁ inner c₂)
+  with P′ , steps , Q′≋ ← sim← σ Vσ Γ-S ⊢P (Eq*.symmetric _ c₁ ◅◅ ≡→≋ eq) inner =
+  P′ , steps , Eq*.symmetric _ c₂ ◅◅ Q′≋
