@@ -26,7 +26,7 @@ import Relation.Binary.Construct.Closure.Equivalence as Eq*
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_; _◅◅_)
 open import BorrowedCF.Context using (Ctx; Struct)
 open import BorrowedCF.Simulation2.TranslationProperties
-  using (UB-nat; mapᶜ; varΘ; U-cong; U-⋯ₚ; U-σ⋯; ++ₛ-⋯; liftCast; subst₂→; chanTriple-mapᶜ)
+  using (UB-nat; mapᶜ; mapᶜ-fusion; varΘ; U-cong; U-⋯ₚ; U-σ⋯; ++ₛ-⋯; liftCast; subst₂→; chanTriple-mapᶜ)
   renaming ( subst-⋯ₚ-dom to TP-subst-⋯ₚ-dom
            ; subst₂-cancel to subst₂-cancel-local
            ; subst-⋯-cod to subst-⋯-cod-local
@@ -35,7 +35,7 @@ open import BorrowedCF.Simulation2.TranslationProperties
 open import BorrowedCF.Simulation2.BlockPerm
   using ( assocSwap-01; R-base-b0; assocSwap-0a; toℕ-R3; toℕ-R3₂; toℕ-R4
         ; toℕ-weaken*ᵣ; toℕ-swapᵣ-mid; toℕ-reduce≥; toℕ-assoc-mid; toℕ-assoc-ge; toℕ-assoc-lt; toℕ-↑
-        ; toℕ-↑*-ge; toℕ-↑*-lt; commuteS; wkSwap-cancel; assocSwap-invol )
+        ; toℕ-↑*-ge; toℕ-↑*-lt; commuteS; wkSwap-cancel; assocSwap-invol; R2' )
 open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯; frame-plug₁; ++ₛ-VSub)
 open import BorrowedCF.Simulation2.TranslationProperties using (VChan; chanTriple-V; Value-subst)
 open import BorrowedCF.Simulation2.SplitConfine using (acq-confine)
@@ -173,10 +173,155 @@ private
   -- Both sides are the block permutation [sB][1][sC][2][p], computing per region to:
   --   x<sB ↦ 1+x ;  x=sB ↦ 0 ;  C-block ↦ x+2 ;  2-block ↦ x∸sC ;  tail ↦ x.
   -- Proof = a 5-region toℕ case analysis (mirror commuteS in BlockPerm.agda).
+  -- assocSwapᵣ's toℕ output depends only on the toℕ of its input.
+  assoc-toℕ-cong : ∀ a b {m} (b≥1 : 1 Nat.≤ b) (i j : 𝔽 (a + (b + m))) → Fin.toℕ i ≡ Fin.toℕ j →
+                   Fin.toℕ (assocSwapᵣ a b i) ≡ Fin.toℕ (assocSwapᵣ a b j)
+  assoc-toℕ-cong a b b≥1 i j eq with Nat.<-cmp (Fin.toℕ i) a
+  ... | tri< lt _ _ = toℕ-assoc-lt a b i lt
+                    ■ cong (b +_) eq
+                    ■ sym (toℕ-assoc-lt a b j (subst (Nat._< a) eq lt))
+  ... | tri≈ _ e _ = toℕ-assoc-mid a b i (Nat.≤-reflexive (sym e)) a<a+b
+                   ■ cong (Nat._∸ a) eq
+                   ■ sym (toℕ-assoc-mid a b j (Nat.≤-reflexive (sym (sym eq ■ e)))
+                       (subst (Nat._< a + b) (sym (sym eq ■ e)) a<a+b-base))
+    where a<a+b-base : a Nat.< a + b
+          a<a+b-base = subst (Nat._≤ a + b) (Nat.+-comm a 1) (Nat.+-monoʳ-≤ a b≥1)
+          a<a+b : Fin.toℕ i Nat.< a + b
+          a<a+b = subst (Nat._< a + b) (sym e) a<a+b-base
+  ... | tri> _ _ gt with Nat.<-cmp (Fin.toℕ i) (a + b)
+  ...   | tri< lt2 _ _ = toℕ-assoc-mid a b i (Nat.<⇒≤ gt) lt2
+                       ■ cong (Nat._∸ a) eq
+                       ■ sym (toℕ-assoc-mid a b j (subst (a Nat.≤_) eq (Nat.<⇒≤ gt))
+                           (subst (Nat._< a + b) eq lt2))
+  ...   | tri≈ _ e2 _ = toℕ-assoc-ge a b i (Nat.≤-reflexive (sym e2))
+                      ■ eq
+                      ■ sym (toℕ-assoc-ge a b j (Nat.≤-reflexive (sym (sym eq ■ e2))))
+  ...   | tri> _ _ gt2 = toℕ-assoc-ge a b i (Nat.<⇒≤ gt2)
+                       ■ eq
+                       ■ sym (toℕ-assoc-ge a b j (subst (a + b Nat.≤_) eq (Nat.<⇒≤ gt2)))
+
+  ↑-zeroℕ : ∀ {n n′} (h : n →ᵣ n′) (w : 𝔽 (suc n)) → Fin.toℕ w ≡ 0 →
+            Fin.toℕ ((h ↑) w) ≡ 0
+  ↑-zeroℕ h w eq = toℕ-↑ h w
+    ■ cong [ (λ _ → 0) , (λ j → suc (Fin.toℕ (h j))) ]′
+        (Fin.splitAt-< 1 w (subst (Nat._< 1) (sym eq) (Nat.s≤s Nat.z≤n)))
+  ↑-posℕ : ∀ {n n′} (h : n →ᵣ n′) (w : 𝔽 (suc n)) (ge : 1 Nat.≤ Fin.toℕ w) →
+           Fin.toℕ ((h ↑) w) ≡ suc (Fin.toℕ (h (Fin.reduce≥ w ge)))
+  ↑-posℕ h w ge = toℕ-↑ h w
+    ■ cong [ (λ _ → 0) , (λ j → suc (Fin.toℕ (h j))) ]′ (Fin.splitAt-≥ 1 w ge)
+
   comm-bc : ∀ sB sC {p} →
             (assocSwapᵣ sB 1 {sC + (2 + p)} ·ₖ ((assocSwapᵣ sC 2 {p} ↑* sB) ↑))
             ≗ (((assocSwapᵣ sC 2 {p} ↑) ↑* sB) ·ₖ assocSwapᵣ sB 1 {2 + (sC + p)})
-  comm-bc sB sC {p} x = Fin.toℕ-injective {!cb!}
+  comm-bc sB sC {p} x = Fin.toℕ-injective (cb sB sC x)
+    where
+    -- toℕ of the LHS, x < sB :  1 + x
+    cb : ∀ sB sC (x : 𝔽 (sB + (1 + (sC + (2 + p))))) →
+         Fin.toℕ (((assocSwapᵣ sC 2 {p} ↑* sB) ↑) (assocSwapᵣ sB 1 x))
+         ≡ Fin.toℕ (assocSwapᵣ sB 1 (((assocSwapᵣ sC 2 {p} ↑) ↑* sB) x))
+    cb sB sC x with Nat.<-cmp (Fin.toℕ x) sB
+    ... | tri< lt _ _ =
+            -- y = assocSwapᵣ sB 1 x has toℕ (1+x); apply (g↑*sB)↑ : pred has toℕ x<sB ⇒ id ⇒ result 1+x.
+            ↑-posℕ gsB y yge ■ congSucL
+          ■ sym ( toℕ-assoc-lt sB 1 z zlt ■ cong (1 +_) zℕ )
+      where
+        g   = assocSwapᵣ sC 2 {p}
+        gsB = g ↑* sB
+        y   = assocSwapᵣ sB 1 {sC + (2 + p)} x
+        z   = ((g ↑) ↑* sB) x
+        yℕ : Fin.toℕ y ≡ 1 + Fin.toℕ x
+        yℕ = toℕ-assoc-lt sB 1 x lt
+        yge : 1 Nat.≤ Fin.toℕ y
+        yge = subst (1 Nat.≤_) (sym yℕ) (Nat.s≤s Nat.z≤n)
+        redℕ : Fin.toℕ (Fin.reduce≥ y yge) ≡ Fin.toℕ x
+        redℕ = toℕ-reduce≥ y yge ■ cong (Nat._∸ 1) yℕ
+        red<sB : Fin.toℕ (Fin.reduce≥ y yge) Nat.< sB
+        red<sB = subst (Nat._< sB) (sym redℕ) lt
+        congSucL : suc (Fin.toℕ (gsB (Fin.reduce≥ y yge))) ≡ 1 + Fin.toℕ x
+        congSucL = cong suc (toℕ-↑*-lt g sB (Fin.reduce≥ y yge) red<sB ■ redℕ)
+        zℕ : Fin.toℕ z ≡ Fin.toℕ x
+        zℕ = toℕ-↑*-lt (g ↑) sB x lt
+        zlt : Fin.toℕ z Nat.< sB
+        zlt = subst (Nat._< sB) (sym zℕ) lt
+    ... | tri≈ _ eq _ =
+            -- y has toℕ 0 ; LHS = 0.  z has toℕ sB (mid) ; RHS = z∸sB = 0.
+            ↑-zeroℕ gsB y yℕ
+          ■ sym ( toℕ-assoc-mid sB 1 z zge zlt ■ cong (Nat._∸ sB) zℕ ■ Nat.n∸n≡0 sB )
+      where
+        g   = assocSwapᵣ sC 2 {p}
+        gsB = g ↑* sB
+        y   = assocSwapᵣ sB 1 {sC + (2 + p)} x
+        z   = ((g ↑) ↑* sB) x
+        xge : sB Nat.≤ Fin.toℕ x
+        xge = Nat.≤-reflexive (sym eq)
+        yℕ : Fin.toℕ y ≡ 0
+        yℕ = toℕ-assoc-mid sB 1 x xge (subst (Nat._< sB + 1) (sym eq)
+               (subst (sB Nat.<_) (Nat.+-comm 1 sB) (Nat.n<1+n sB)))
+             ■ cong (Nat._∸ sB) eq ■ Nat.n∸n≡0 sB
+        zℕ : Fin.toℕ z ≡ sB
+        zℕ = toℕ-↑*-ge (g ↑) sB x xge
+           ■ cong (sB +_) (↑-zeroℕ g (Fin.reduce≥ x xge)
+               (toℕ-reduce≥ x xge ■ cong (Nat._∸ sB) eq ■ Nat.n∸n≡0 sB))
+           ■ Nat.+-identityʳ sB
+        zge : sB Nat.≤ Fin.toℕ z
+        zge = subst (sB Nat.≤_) (sym zℕ) Nat.≤-refl
+        zlt : Fin.toℕ z Nat.< sB + 1
+        zlt = subst (Nat._< sB + 1) (sym zℕ) (subst (sB Nat.<_) (Nat.+-comm 1 sB) (Nat.n<1+n sB))
+    ... | tri> _ _ gt = cbHi sB sC x gt
+      where
+        cbHi : ∀ sB sC (x : 𝔽 (sB + (1 + (sC + (2 + p))))) → suc sB Nat.≤ Fin.toℕ x →
+               Fin.toℕ (((assocSwapᵣ sC 2 {p} ↑* sB) ↑) (assocSwapᵣ sB 1 x))
+               ≡ Fin.toℕ (assocSwapᵣ sB 1 (((assocSwapᵣ sC 2 {p} ↑) ↑* sB) x))
+        cbHi sB sC x sb<x =
+              -- LHS : suc (sB + toℕ (g iL))
+              ↑-posℕ gsB y yge
+            ■ cong suc (toℕ-↑*-ge g sB (Fin.reduce≥ y yge) ry≥sB)
+            ■ sym (Nat.+-suc sB (Fin.toℕ (g iL)))
+              -- bridge g iL ≡ g iR (same toℕ input)
+            ■ cong (λ t → sB + suc t) (assoc-toℕ-cong sC 2 (Nat.s≤s Nat.z≤n) iL iR (iLℕ ■ sym iRℕ))
+              -- RHS : assocSwapᵣ sB 1 z, z ≥ sB+1 ⇒ ge ⇒ toℕ z
+            ■ sym ( toℕ-assoc-ge sB 1 z zge
+                  ■ toℕ-↑*-ge (g ↑) sB x sB≤x
+                  ■ cong (sB +_) (↑-posℕ g (Fin.reduce≥ x sB≤x) rx≥1) )
+          where
+            g    = assocSwapᵣ sC 2 {p}
+            gsB  = g ↑* sB
+            y    = assocSwapᵣ sB 1 {sC + (2 + p)} x
+            z    = ((g ↑) ↑* sB) x
+            sB≤x : sB Nat.≤ Fin.toℕ x
+            sB≤x = Nat.<⇒≤ sb<x
+            -- LHS bookkeeping
+            yℕ : Fin.toℕ y ≡ Fin.toℕ x
+            yℕ = toℕ-assoc-ge sB 1 x (subst (Nat._≤ Fin.toℕ x) (Nat.+-comm 1 sB) sb<x)
+            yge : 1 Nat.≤ Fin.toℕ y
+            yge = subst (1 Nat.≤_) (sym yℕ) (Nat.≤-trans (Nat.s≤s Nat.z≤n) sb<x)
+            redyℕ : Fin.toℕ (Fin.reduce≥ y yge) ≡ Fin.toℕ x Nat.∸ 1
+            redyℕ = toℕ-reduce≥ y yge ■ cong (Nat._∸ 1) yℕ
+            ry≥sB : sB Nat.≤ Fin.toℕ (Fin.reduce≥ y yge)
+            ry≥sB = subst (sB Nat.≤_) (sym redyℕ)
+                      (subst (Nat._≤ Fin.toℕ x Nat.∸ 1) (Nat.m+n∸n≡m sB 1)
+                        (Nat.∸-monoˡ-≤ 1 (subst (Nat._≤ Fin.toℕ x) (Nat.+-comm 1 sB) sb<x)))
+            iL = Fin.reduce≥ (Fin.reduce≥ y yge) ry≥sB
+            iLℕ : Fin.toℕ iL ≡ Fin.toℕ x Nat.∸ 1 Nat.∸ sB
+            iLℕ = toℕ-reduce≥ (Fin.reduce≥ y yge) ry≥sB ■ cong (Nat._∸ sB) redyℕ
+            -- RHS bookkeeping
+            rx≥1 : 1 Nat.≤ Fin.toℕ (Fin.reduce≥ x sB≤x)
+            rx≥1 = subst (1 Nat.≤_) (sym (toℕ-reduce≥ x sB≤x)) (Nat.m<n⇒0<n∸m sb<x)
+            iR = Fin.reduce≥ (Fin.reduce≥ x sB≤x) rx≥1
+            ∸swap : Fin.toℕ x Nat.∸ sB Nat.∸ 1 ≡ Fin.toℕ x Nat.∸ 1 Nat.∸ sB
+            ∸swap = Nat.∸-+-assoc (Fin.toℕ x) sB 1
+                  ■ cong (Fin.toℕ x Nat.∸_) (Nat.+-comm sB 1)
+                  ■ sym (Nat.∸-+-assoc (Fin.toℕ x) 1 sB)
+            iRℕ : Fin.toℕ iR ≡ Fin.toℕ x Nat.∸ 1 Nat.∸ sB
+            iRℕ = toℕ-reduce≥ (Fin.reduce≥ x sB≤x) rx≥1
+                ■ cong (Nat._∸ 1) (toℕ-reduce≥ x sB≤x)
+                ■ ∸swap
+            zℕ : Fin.toℕ z ≡ sB + suc (Fin.toℕ (g iR))
+            zℕ = toℕ-↑*-ge (g ↑) sB x sB≤x
+               ■ cong (sB +_) (↑-posℕ g (Fin.reduce≥ x sB≤x) rx≥1)
+            zge : sB + 1 Nat.≤ Fin.toℕ z
+            zge = subst (sB + 1 Nat.≤_) (sym zℕ)
+                    (Nat.+-monoʳ-≤ sB (Nat.s≤s Nat.z≤n))
   -- weakenᵣ on 𝔽 is suc.
   weakenᵣ≡suc : ∀ {m} (x : 𝔽 m) → Fin.toℕ (weakenᵣ x) ≡ suc (Fin.toℕ x)
   weakenᵣ≡suc x = toℕ-weaken*ᵣ 1 x
@@ -238,6 +383,19 @@ private
   ... | tri> _ _ gt = Fin.toℕ-injective (wk-swap3-hi sB x (Nat.<⇒≤ gt))
 
 -- The R-Acq leaf transpose: absorbs ρa·ρb·ρc·ρd into the channel triple.
+canonₛ-substcod : ∀ {a c} (q : a ≡ c) (B : BindGroup) (cc : UChan a) (k : 𝔽 (sum B)) →
+   subst Tm (cong (syncs B +_) q) (canonₛ B cc k) ≡ canonₛ B (subst UChan q cc) k
+canonₛ-substcod refl B cc k = refl
+
+-- K `unit is fixed by subst and by any renaming.
+substK-⋯ : ∀ {a c bb} (q : a ≡ c) (ρ : c →ᵣ bb) →
+           subst Tm q (K `unit) ⋯ ρ ≡ K `unit
+substK-⋯ refl ρ = refl
+
+subst-UChan : ∀ {a c} (q : a ≡ c) (e₁ : Tm a) (x : 𝔽 a) (e₂ : Tm a) →
+              subst UChan q (e₁ , x , e₂) ≡ (subst Tm q e₁ , subst 𝔽 q x , subst Tm q e₂)
+subst-UChan refl e₁ x e₂ = refl
+
 canonₛ-↑transpose : ∀ {sC n} (B : BindGroup) (k : 𝔽 (sum B)) →
   subst Tm (cong (syncs B +_) (sym (+-suc sC (suc (suc n)))))
     (canonₛ B (K `unit , weaken* ⦃ Kᵣ ⦄ (suc sC) 1F , K `unit) k)
@@ -311,7 +469,86 @@ canonₛ-↑transpose {sC} {n} (b ∷ [])      k =
 --   5. reverse-fold the resulting triple (unit,2F,unit)=mapᶜ weaken1 (unit,1F,unit)
 --      via canonₛ-nat, then wk-swap3 : (weaken1↑*sB)·assocSwapᵣ sB 3 ≗ assocSwapᵣ sB 2·weakenᵣ.
 --   The subst eqC at the front is threaded with subst-⋯-dom-local / ΘrelEqᵍ.
-canonₛ-↑transpose {sC} {n} (b ∷ B@(_ ∷ _)) k = {!cons!}
+canonₛ-↑transpose {sC} {n} (b ∷ B@(_ ∷ _)) k =
+    -- eliminate the front subst into the channel triple
+    cong (λ z → z ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd)
+      (canonₛ-substcod (sym (+-suc sC (2 + n))) Bg cc1 k)
+    -- step 1: fold ρa
+  ■ cong (λ z → z ⋯ ρb ⋯ ρc ⋯ ρd) (canonₛ-nat Bg cc1♭ (assocSwapᵣ sC 1 {2 + n}) k)
+    -- step 2: commute ρb past ρc, fuse/unfuse
+  ■ cong (λ z → z ⋯ ρd)
+      ( fusion (canonₛ Bg cc2 k) ρb ρc
+      ■ ⋯-cong (canonₛ Bg cc2 k) (comm-bc sB sC {n})
+      ■ sym (fusion (canonₛ Bg cc2 k) ρc' ρb') )
+    -- step 3: fold ρc'
+  ■ cong (λ z → z ⋯ ρb' ⋯ ρd) (canonₛ-nat Bg cc2 (assocSwapᵣ sC 2 {n} ↑) k)
+    -- step 4: merge ρb' · ρd via R2'
+  ■ ( fusion (canonₛ Bg cc3 k) ρb' ρd
+    ■ ⋯-cong (canonₛ Bg cc3 k) (R2' sB 2 {sC + n}) )
+    -- step 5: cc3 ≡ (unit,2F,unit) ; reverse-fold ; wk-swap3
+  ■ cong (λ cc → canonₛ Bg cc k ⋯ assocSwapᵣ sB 3 {sC + n}) cc3≡
+  ■ cong (λ z → z ⋯ assocSwapᵣ sB 3 {sC + n})
+      (sym (canonₛ-nat Bg (K `unit , 1F , K `unit) weakenᵣ k
+            ■ cong (λ cc → canonₛ Bg cc k) mapwk≡))
+  ■ fusion (canonₛ Bg (K `unit , 1F , K `unit) k) (weakenᵣ ↑* sB) (assocSwapᵣ sB 3 {sC + n})
+  ■ ⋯-cong (canonₛ Bg (K `unit , 1F , K `unit) k) (wk-swap3 sB {sC + n})
+  ■ sym (fusion (canonₛ Bg (K `unit , 1F , K `unit) k) (assocSwapᵣ sB 2 {sC + n}) weakenᵣ)
+  where
+    Bg  = b ∷ B
+    sB  = syncs Bg
+    cc1 : UChan (suc sC + (2 + n))
+    cc1 = (K `unit , weaken* ⦃ Kᵣ ⦄ (suc sC) 1F , K `unit)
+    ρa  = assocSwapᵣ sC 1 {2 + n} ↑* sB
+    ρb  = assocSwapᵣ sB 1 {sC + (2 + n)}
+    ρc  = (assocSwapᵣ sC 2 {n} ↑* sB) ↑
+    ρc' = ((assocSwapᵣ sC 2 {n} ↑) ↑* sB)
+    ρb' = assocSwapᵣ sB 1 {2 + (sC + n)}
+    ρd  = (assocSwapᵣ sB 2 {sC + n}) ↑
+    cc1♭ : UChan (sC + (1 + (2 + n)))
+    cc1♭ = subst UChan (sym (+-suc sC (2 + n))) cc1
+    cc2 : UChan (1 + (sC + (2 + n)))
+    cc2 = mapᶜ (assocSwapᵣ sC 1 {2 + n}) cc1♭
+    cc3 : UChan (suc (2 + (sC + n)))
+    cc3 = mapᶜ (assocSwapᵣ sC 2 {n} ↑) cc2
+    cc3≡ : cc3 ≡ (K `unit , 2F , K `unit)
+    cc3≡ =
+        mapᶜ-fusion (assocSwapᵣ sC 1 {2 + n}) (assocSwapᵣ sC 2 {n} ↑) cc1♭
+      ■ cong (mapᶜ ρcomp) (subst-UChan qC (K `unit) (weaken* ⦃ Kᵣ ⦄ (suc sC) 1F) (K `unit))
+      ■ cong₂ _,_ (substK-⋯ qC ρcomp)
+          (cong₂ _,_ flag2 (substK-⋯ qC ρcomp))
+      where
+        qC : suc sC + (2 + n) ≡ sC + (1 + (2 + n))
+        qC = sym (+-suc sC (2 + n))
+        ρcomp = (assocSwapᵣ sC 1 {2 + n}) ·ₖ (assocSwapᵣ sC 2 {n} ↑)
+        flag♭ : 𝔽 (sC + (1 + (2 + n)))
+        flag♭ = subst 𝔽 qC (weaken* ⦃ Kᵣ ⦄ (suc sC) 1F)
+        flag♭ℕ : Fin.toℕ flag♭ ≡ sC + 2
+        flag♭ℕ = toℕ-substF-acq qC (weaken* ⦃ Kᵣ ⦄ (suc sC) 1F)
+               ■ toℕ-weaken*ᵣ (suc sC) 1F ■ sym (+-suc sC 1)
+        f1 : 𝔽 (1 + (sC + (2 + n)))
+        f1 = assocSwapᵣ sC 1 {2 + n} flag♭
+        f1ℕ : Fin.toℕ f1 ≡ sC + 2
+        f1ℕ = toℕ-assoc-ge sC 1 flag♭
+                (subst (sC + 1 Nat.≤_) (sym flag♭ℕ)
+                  (subst (Nat._≤ sC + 2) refl (Nat.+-monoʳ-≤ sC (Nat.s≤s Nat.z≤n))))
+            ■ flag♭ℕ
+        f1ge1 : 1 Nat.≤ Fin.toℕ f1
+        f1ge1 = subst (1 Nat.≤_) (sym f1ℕ) (subst (1 Nat.≤_) (sym (+-suc sC 1)) (Nat.s≤s Nat.z≤n))
+        redf1 : Fin.toℕ (Fin.reduce≥ f1 f1ge1) ≡ sC + 1
+        redf1 = toℕ-reduce≥ f1 f1ge1 ■ cong (Nat._∸ 1) f1ℕ
+              ■ cong (Nat._∸ 1) (Nat.+-comm sC 2) ■ Nat.+-comm 1 sC
+        flag2 : ρcomp flag♭ ≡ 2F
+        flag2 = Fin.toℕ-injective
+          ( toℕ-↑ (assocSwapᵣ sC 2 {n}) f1
+          ■ cong [ (λ _ → 0) , (λ j → suc (Fin.toℕ (assocSwapᵣ sC 2 {n} j))) ]′
+              (Fin.splitAt-≥ 1 f1 f1ge1)
+          ■ cong suc
+              ( toℕ-assoc-mid sC 2 (Fin.reduce≥ f1 f1ge1)
+                  (subst (sC Nat.≤_) (sym redf1) (Nat.m≤m+n sC 1))
+                  (subst (Nat._< sC + 2) (sym redf1) (Nat.+-monoʳ-< sC (Nat.s≤s (Nat.s≤s Nat.z≤n))))
+              ■ cong (Nat._∸ sC) redf1 ■ Nat.m+n∸m≡n sC 1 ) )
+    mapwk≡ : mapᶜ weakenᵣ (K `unit , 1F , K `unit) ≡ (K `unit , 2F , K `unit)
+    mapwk≡ = cong₂ _,_ refl (cong₂ _,_ (Fin.toℕ-injective (toℕ-weaken*ᵣ 1 (Fin.suc (Fin.zero {suc (sC + n)})))) refl)
 
 
 -- UB[ B ] unfolds to its φ-prefix wrapped around the leaf at the canonical sub.
@@ -1387,7 +1624,41 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
                    ≡ σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sC ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
         tailLeaf = fuseL ■ ⋯-cong (σ i) tailRen ■ sym fuseR
     ... | inj₁ z with Fin.splitAt (sum C) z in eqz
-    ...   | inj₁ j = {! A1 !}
+    ...   | inj₁ j rewrite leafσ-A₁ σ C B₂ w z j eqw eqz = tC , wkC , leafC
+      where
+        Lc : Tm (sB₂ + (sC + (2 + n)))
+        Lc = canonₛ C (K `unit , 0F , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+        tC : Tm (2 + (sB₂ + (sC + n)))
+        tC = Lc ⋯ (assocSwapᵣ sC 2 ↑* sB₂) ⋯ assocSwapᵣ sB₂ 2
+        τC : τ w ≡ canonₛ (zero ∷ C) (K `unit , 0F , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+        τC = leafσ-A₁ σ (zero ∷ C) B₂ w z j eqw eqz
+        -- C-region transpose (analogue of canonₛ-↑transpose for the C bind group):
+        -- canonₛ (zero ∷ C) reduces (zero-head) to subst (+-suc sC) of canonₛ C with
+        -- triple (` 0F , 1F , *) and a trailing  ⋯ weaken* sB₂.  The fixed swap chain
+        -- ρa ⋯ ρb ⋯ ρc ⋯ ρd must lower (` 0F , 1F , *) ↦ (unit , 0F , unit) exactly as
+        -- canonₛ-↑transpose does for B₂, threading the extra weaken* sB₂ / +-suc / eqC.
+        coreC : subst Tm eqC (canonₛ (zero ∷ C) (K `unit , 0F , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+                  ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd
+                ≡ tC ⋯ weakenᵣ
+        coreC = {!coreC!}
+        wkC : sPre w ≡ tC ⋯ weakenᵣ
+        wkC =
+            sPre-pt w
+          ■ cong (λ z → z ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd) (cong (subst Tm eqC) τC)
+          ■ coreC
+        tCA : tC ⋯ A₂ ≡ Lc ⋯ (assocSwapᵣ sC 2 ↑* sB₂)
+        tCA =
+            fusion (Lc ⋯ (assocSwapᵣ sC 2 ↑* sB₂)) (assocSwapᵣ sB₂ 2) A₂
+          ■ ⋯-cong (Lc ⋯ (assocSwapᵣ sC 2 ↑* sB₂)) (assocSwap-invol sB₂ 2)
+          ■ ⋯-id (Lc ⋯ (assocSwapᵣ sC 2 ↑* sB₂)) (λ _ → refl)
+        cancelCₛ : ((assocSwapᵣ sC 2 ↑* sB₂) ·ₖ (assocSwapᵣ 2 sC ↑* sB₂)) ≗ idₖ
+        cancelCₛ x = sym (dist-↑*-· sB₂ (assocSwapᵣ sC 2) (assocSwapᵣ 2 sC) x)
+                   ■ id↑* sB₂ (assocSwap-invol sC 2) x
+        leafC : tC ⋯ A₂ ⋯ B₂ᵣ ≡ canonₛ C (K `unit , 0F , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+        leafC =
+            cong (λ z → z ⋯ B₂ᵣ) tCA
+          ■ fusion Lc (assocSwapᵣ sC 2 ↑* sB₂) B₂ᵣ
+          ■ ⋯-id Lc cancelCₛ
     ...   | inj₂ k rewrite leafσ-B₁ σ C B₂ w z k eqw eqz = tB2 , wkB2 , leafB2
       where
         cBk : Tm (sB₂ + (sC + (2 + n)))
