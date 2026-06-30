@@ -1180,12 +1180,46 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
                      ⋯ assocSwapᵣ sB₂ 2 ⋯ weakenᵣ
         rhsRed = cong (λ z → z ⋯ assocSwapᵣ sB₂ 2 ⋯ weakenᵣ)
                    (canonₛ-nat B₂ (K `unit , weaken* ⦃ Kᵣ ⦄ sC 1F , K `unit) (assocSwapᵣ sC 2) k)
+        cc0 : UChan (sC + (2 + n))
+        cc0 = (K `unit , weaken* ⦃ Kᵣ ⦄ sC 1F , K `unit)
+        cc1 : UChan (suc sC + (2 + n))
+        cc1 = (K `unit , weaken* ⦃ Kᵣ ⦄ (suc sC) 1F , K `unit)
+        c0 : Tm (sB₂ + (sC + (2 + n)))
+        c0 = canonₛ B₂ cc0 k
+        ρa♭ = subst (λ z → z →ᵣ (sB₂ + suc (sC + (2 + n)))) (sym eqC) ρa
+        flagEq : weakenᵣ (weaken* ⦃ Kᵣ ⦄ sC 1F) ≡ weaken* ⦃ Kᵣ ⦄ (suc sC) 1F
+        flagEq = Fin.toℕ-injective
+          ( toℕ-weaken*ᵣ 1 (weaken* ⦃ Kᵣ ⦄ sC 1F)
+          ■ cong (1 +_) (toℕ-weaken*ᵣ sC 1F)
+          ■ sym (toℕ-weaken*ᵣ (suc sC) 1F) )
+        headEq : c0 ⋯ (weakenᵣ ↑* sB₂) ≡ canonₛ B₂ cc1 k
+        headEq = canonₛ-nat B₂ cc0 weakenᵣ k
+               ■ cong (λ cc → canonₛ B₂ cc k) (cong₂ _,_ refl (cong₂ _,_ flagEq refl))
+        flagEq2 : assocSwapᵣ sC 2 (weaken* ⦃ Kᵣ ⦄ sC 1F) ≡ 1F
+        flagEq2 = Fin.toℕ-injective
+          ( toℕ-assoc-mid sC 2 (weaken* ⦃ Kᵣ ⦄ sC 1F)
+              (subst (sC Nat.≤_) (sym (toℕ-weaken*ᵣ sC 1F)) (Nat.m≤m+n sC 1))
+              (subst (Nat._< sC + 2) (sym (toℕ-weaken*ᵣ sC 1F)) (Nat.+-monoʳ-< sC (Nat.s≤s (Nat.s≤s Nat.z≤n))))
+          ■ cong (Nat._∸ sC) (toℕ-weaken*ᵣ sC 1F)
+          ■ Nat.m+n∸m≡n sC 1 )
+        mid1 : Tm (3 + (sB₂ + (sC + n)))
+        mid1 = canonₛ B₂ (K `unit , 1F , K `unit) k ⋯ assocSwapᵣ sB₂ 2 ⋯ weakenᵣ
+        midR : mid1 ≡ tB2 ⋯ weakenᵣ
+        midR = cong (λ z → z ⋯ assocSwapᵣ sB₂ 2 ⋯ weakenᵣ)
+                 ( cong (λ cc → canonₛ B₂ cc k) (cong₂ _,_ refl (cong₂ _,_ (sym flagEq2) refl))
+                 ■ sym (canonₛ-nat B₂ cc0 (assocSwapᵣ sC 2) k) )
+        core : subst Tm eqC (canonₛ B₂ cc1 k)
+                 ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd
+               ≡ tB2 ⋯ weakenᵣ
+        core = coreL ■ midR
+          where
+            coreL : subst Tm eqC (canonₛ B₂ cc1 k) ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd ≡ mid1
+            coreL = {!coreL!}
         wkB2 : sPre w ≡ tB2 ⋯ weakenᵣ
         wkB2 =
             sPre-pt w
           ■ cong (λ z → z ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd) (cong (subst Tm eqC) τB₂)
-          ■ {! reconcileB2 !}
-          ■ sym rhsRed
+          ■ core
         tB2A : tB2 ⋯ A₂ ≡ cBk ⋯ (assocSwapᵣ sC 2 ↑* sB₂)
         tB2A =
             fusion (cBk ⋯ (assocSwapᵣ sC 2 ↑* sB₂)) (assocSwapᵣ sB₂ 2) A₂
