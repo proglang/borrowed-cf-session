@@ -2047,6 +2047,29 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
     rhs : U[ T.ν C₁ᴿ B QR ] σ U.≋ Bφ C₁ᴿ (Bφ B (U.ν (pushR XRᴿ)))
     rhs = ≡→≋ (Uν-flat σ C₁ᴿ B QR) ◅◅ ν↓ᴿ XRᴿ
 
+    -- ----- grown-leaf (RHS) thread expansion (mirror of lsplit pushR-thread) -----
+    ρ₁ᴿ : (sB + (sAᴿ + (2 + n))) →ᵣ (sB + (2 + (sAᴿ + n)))
+    ρ₁ᴿ = assocSwapᵣ sAᴿ 2 ↑* sB
+    ρ₂ᴿ : (sB + (2 + (sAᴿ + n))) →ᵣ (2 + (sB + (sAᴿ + n)))
+    ρ₂ᴿ = assocSwapᵣ sB 2
+    rnᴿ : Tm (sB + (sAᴿ + (2 + n))) → Tm (2 + (sB + (sAᴿ + n)))
+    rnᴿ t = (t ⋯ ρ₁ᴿ) ⋯ ρ₂ᴿ
+    Frᴿ : Frame* (2 + (sB + (sAᴿ + n)))
+    Frᴿ = (frame*-⋯ (E ⋯ᶠ* 𝐒.rwk) τᴿ Vτᴿ ⋯ᶠ* ρ₁ᴿ) ⋯ᶠ* ρ₂ᴿ
+    threadEqᴿ : (Ef : Frame* (sum C₁ᴿ + sum B + m)) (p : Tm (sum C₁ᴿ + sum B + m)) →
+                (U[ T.⟪ Ef [ p ]* ⟫ ] τᴿ U.⋯ₚ ρ₁ᴿ) U.⋯ₚ ρ₂ᴿ
+                ≡ U.⟪ ((frame*-⋯ Ef τᴿ Vτᴿ ⋯ᶠ* ρ₁ᴿ) ⋯ᶠ* ρ₂ᴿ) [ rnᴿ (p ⋯ τᴿ) ]* ⟫
+    threadEqᴿ Ef p = cong U.⟪_⟫
+      ( cong (λ t → (t ⋯ ρ₁ᴿ) ⋯ ρ₂ᴿ) (frame-plug* Ef τᴿ Vτᴿ)
+      ■ cong (_⋯ ρ₂ᴿ) (frame-plug*ᵣ (frame*-⋯ Ef τᴿ Vτᴿ) ρ₁ᴿ)
+      ■ frame-plug*ᵣ (frame*-⋯ Ef τᴿ Vτᴿ ⋯ᶠ* ρ₁ᴿ) ρ₂ᴿ )
+    pushR-threadᴿ : U.Proc (2 + (sB + (sAᴿ + n)))
+    pushR-threadᴿ = (U[ T.⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F) ]* ⟫ ] τᴿ U.⋯ₚ ρ₁ᴿ) U.⋯ₚ ρ₂ᴿ
+    pushR-Pᴿ : U.Proc (2 + (sB + (sAᴿ + n)))
+    pushR-Pᴿ = (U[ P T.⋯ₚ 𝐒.rwk ] τᴿ U.⋯ₚ ρ₁ᴿ) U.⋯ₚ ρ₂ᴿ
+    pushR-threadEqᴿ : pushR-threadᴿ ≡ U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫
+    pushR-threadEqᴿ = threadEqᴿ (E ⋯ᶠ* 𝐒.rwk) ((` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F))
+
     -- ----- the residual bridge (back) -----
     -- Brwk-slide pulls C₁ᴿ's extra φ-drop binder down to the leaf, reducing the
     -- reconcile to commuting that φ-drop past (Bφ B ; ν) and matching the leaf.
@@ -2057,6 +2080,11 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
     innerReconcile : Bφ B (U.ν (U.φ U.drop contractumR))
                      U.≋ U.φ U.drop (subst U.Proc (cong (_+ n) (syncs-rwk B₁) ■ sym (+-suc (syncs C₁) n)) (Bφ B (U.ν (pushR XRᴿ)))
                                       U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n})
+    -- pushR XRᴿ splits into the grown thread + P, with the thread expanded via
+    -- the proven pushR-threadEqᴿ.  (Reusable building block for leafRec.)
+    pushR-bodyᴿ : pushR XRᴿ
+                  ≡ U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫ U.∥ pushR-Pᴿ
+    pushR-bodyᴿ = cong₂ U._∥_ pushR-threadEqᴿ refl
     leafRec : Bφ B ((U.ν (contractumR U.⋯ₚ assocSwapᵣ 1 2)) U.⋯ₚ assocSwapᵣ 1 (syncs B))
               U.≋ subst U.Proc (cong (_+ n) (syncs-rwk B₁) ■ sym (+-suc (syncs C₁) n)) (Bφ B (U.ν (pushR XRᴿ)))
                     U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n}
