@@ -48,6 +48,22 @@ open import BorrowedCF.Processes.Typed using (_;_⊢ₚ_; inv-∥; inv-ν; inv-
 open import BorrowedCF.Simulation2.Confine using (count-self; ≼⇒count≤)
 open Nat using (n≤0⇒n≡0; s≤s⁻¹; +-monoˡ-≤; +-monoʳ-≤; +-mono-≤)
 
+-- Vacuity (block size 1): a New-derived close block, with its consumed handle
+-- (index 0) typed at the `end` tip, can host no second borrow.  Ported from the
+-- machine-checked CloseVacuityProbe (EndTip / residual-Skips argument).
+open import BorrowedCF.Types using (𝕊; Skips; dual)
+import BorrowedCF.Types.Syntax as TS
+open import BorrowedCF.Types.Predicates using (New; new-dual)
+open import BorrowedCF.CloseVacuityProbe using (close-residual-skips)
+open import BorrowedCF.Processes.Typed
+  using (BindCtx; BindCtx′; inv-⟪⟫)
+open BorrowedCF.Processes.Typed.BindCtx
+open BorrowedCF.Processes.Typed.BindCtx′
+open import BorrowedCF.Reduction.Base using (ChanCx; chanCx-⸴*)
+open import BorrowedCF.Terms using (inv-`)
+open import BorrowedCF.Types using (≃-reflexive)
+open import BorrowedCF.Processes.Typed using (bindCtx⇒chanCtx)
+
 -- ───────────────────────────────────────────────────────────────────────────
 -- close-app-nonUnr : the consumed close handle has a non-Unr type.  end's domain
 -- is ⟨ end p ⟩ and Unr ⟨ end p ⟩ ≡ Skips (end p), which is uninhabited (Skips has
@@ -315,6 +331,23 @@ inv-wk2 (suc 0F)       ¬H = ⊥-elim (¬H (inj₂ refl))
 inv-wk2 (suc (suc y')) ¬H = y' , sym (wk2-image y')
 
 -- ───────────────────────────────────────────────────────────────────────────
+-- bc′-len1 : a New-derived close block whose first borrow (handle 0) is typed
+-- at the `end` tip can host no further borrow — the residual after the end-tip
+-- borrow is Skips (close-residual-skips), and a `cons` requires ¬ Skips, so the
+-- BindCtx′ tail must be `nil`.  Hence the block width is exactly suc 0.
+bc′-len1 : ∀ {p q} {s : 𝕊 0} {b} {Γ : Ctx (suc b)} {s₀} →
+  New s → BindCtx′ (TS._;_ s (end p)) (suc b) Γ → Γ 0F ≡ ⟨ s₀ ⟩ → s₀ ≃ end q → b ≡ 0
+bc′-len1 N (cons ¬sk s≃ Γ≗ (nil _)) Γ0 s₀≃ = refl
+bc′-len1 {s₀ = s₀} N (cons {s₁ = sa} {s₂ = sb} ¬sk s≃ Γ≗ (cons ¬sk2 s≃2 Γ≗2 tl)) Γ0 s₀≃ =
+  ⊥-elim (¬sk2 (close-residual-skips N s≃ (≃-trans sa≃s₀ s₀≃)))
+  where
+    ⟨⟩-inj : ⟨ sa ⟩ ≡ ⟨ s₀ ⟩ → sa ≡ s₀
+    ⟨⟩-inj refl = refl
+    sa≃s₀ : sa ≃ s₀
+    sa≃s₀ with ⟨⟩-inj (Γ≗ 0F ■ Γ0)
+    ... | refl = ≃-refl
+
+-- ───────────────────────────────────────────────────────────────────────────
 -- close-confine (base case b₁ = b₂ = 1).  From the well-typed close redex body
 -- ν [1] [1] (⟪ F₀ᴸ [ end‼ · `0F ] ⟫ ∥ ⟪ F₀ᴿ [ end⁇ · `1F ] ⟫) recover source
 -- frames E₁ E₂ : Frame* m with F₀ᴸ ≡ E₁ ⋯ᶠ* weaken* 2 , F₀ᴿ ≡ E₂ ⋯ᶠ* weaken* 2 —
@@ -381,3 +414,56 @@ close-confine {m = m} Γ-S {γ = γ} {F₀ᴸ = F₀ᴸ} {F₀ᴿ = F₀ᴿ} ⊢
     E₁ , Eeq₁ = factorL hypL (𝐂S.weaken* ⦃ 𝐂S.Kᵣ ⦄ 2) inv-wk2
     E₂ , Eeq₂ = factorR hypR (𝐂S.weaken* ⦃ 𝐂S.Kᵣ ⦄ 2) inv-wk2
   in E₁ , Eeq₁ , E₂ , Eeq₂
+
+-- ───────────────────────────────────────────────────────────────────────────
+-- close-b≡0 : a well-typed close redex forces BOTH borrow blocks to width 1.
+-- The consumed handle (0F for the L thread, 1F for the R thread) is typed at the
+-- `end` tip, hence — via bc′-len1 — is the unique borrow of its New-derived
+-- block.  The block-1 borrow (handle 0) is the L endpoint; the block-2 borrow
+-- (handle at sum (b₁ ∷ [])) is the R endpoint.  Returns b₁ ≡ 1 × b₂ ≡ 1 (the
+-- existential widths the reverse RU-Close clause must pin before close-confine).
+close-handle-end : ∀ {N} {Γ : Ctx N} {β : Struct N} {p} {x : 𝔽 N} {T ϵ} {s₀}
+  → Γ ; β ⊢ K (`end p) · (` x) ∶ T ∣ ϵ → Γ x ≡ ⟨ s₀ ⟩ → s₀ ≃ end p
+close-handle-end {x = x} {s₀ = s₀} d Γx = go d
+  where
+    ≃-tip : ∀ {β₁ β₂ p T U a ϵ₁ ϵ₂} → _ ; β₁ ⊢ K (`end p) ∶ T ⟨ a ⟩→ U ∣ ϵ₁
+          → _ ; β₂ ⊢ ` x ∶ T ∣ ϵ₂ → s₀ ≃ end p
+    ≃-tip ⊢fn ⊢arg =
+      let T≃Γx = arg-type ⊢arg
+          end≃T = fn-end-dom ⊢fn
+          ⟨s₀⟩≃end : ⟨ s₀ ⟩ ≃ ⟨ end _ ⟩
+          ⟨s₀⟩≃end = ≃-trans (≃-sym (≃-reflexive Γx)) (≃-trans T≃Γx (≃-sym end≃T))
+      in ⟨⟩≃-inv ⟨s₀⟩≃end
+      where ⟨⟩≃-inv : ∀ {a b} → ⟨ a ⟩ ≃ ⟨ b ⟩ → a ≃ b
+            ⟨⟩≃-inv ⟨ eqc ⟩ = eqc
+    go : ∀ {β T ϵ} → _ ; β ⊢ K (`end _) · (` x) ∶ T ∣ ϵ → s₀ ≃ end _
+    go (T-AppUnr _ _ ⊢fn ⊢arg) = ≃-tip ⊢fn ⊢arg
+    go (T-AppLin _ _ ⊢fn ⊢arg) = ≃-tip ⊢fn ⊢arg
+    go (T-AppLeft _ _ ⊢fn ⊢arg) = ≃-tip ⊢fn ⊢arg
+    go (T-AppRight _ _ ⊢fn ⊢arg) = ≃-tip ⊢fn ⊢arg
+    go (T-Conv _ _ d) = go d
+    go (T-Weaken _ d) = go d
+
+-- ───────────────────────────────────────────────────────────────────────────
+-- bc-len1 : the BindCtx-level vacuity wrapper.  A New-derived singleton block
+-- whose handle 0 is typed at the `end` tip has width exactly 1.
+bc-len1 : ∀ {p q} {s : 𝕊 0} {b′} {Γ : Ctx (suc b′ + 0)} {s₀}
+  → New s → BindCtx (TS._;_ s (end p)) (suc b′ ∷ []) Γ → Γ 0F ≡ ⟨ s₀ ⟩ → s₀ ≃ end q → b′ ≡ 0
+bc-len1 N (last bc) Γ0 s₀≃ = bc′-len1 N bc Γ0 s₀≃
+
+-- ───────────────────────────────────────────────────────────────────────────
+-- NOTE on the close-block-width vacuity.  bc-len1 (above) is the residual-Skips
+-- half: GIVEN handle 0 (the FIRST borrow) is typed at the `end` tip, the block
+-- has no further borrow — width 1.  It is NOT a full `close ⇒ width 1`, because
+-- it presupposes the consumed handle IS the first borrow.  In the reverse
+-- RU-Close clause the consumed handle sits at a GENERIC block-1 index x (νσ maps
+-- EVERY block-1 index to chanTriple(*,0F,*), so the redex image does not pin
+-- x = 0F); a well-typed close with b₁ ≥ 2 whose end-borrow is the LAST borrow
+-- (x = b₁−1, the earlier non-end borrows linearly held by F₀ᴸ) is not refuted
+-- by bc-len1 (nothing follows the end borrow) and cannot be R-Discarded (the
+-- earlier handles are USED, count 1).  Forcing x = 0F / b₁ = 1 needs a result
+-- absent from CloseVacuityProbe (no non-end borrow precedes the consumed one —
+-- a frame/linearity fact), or a typed rule closing an inner block handle: the
+-- same calculus-level gap as det-lemma-false / simlsplit-lwk-id-false.
+-- bc-len1 / bc′-len1 / close-handle-end are the reusable verified halves.
+

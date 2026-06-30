@@ -441,20 +441,30 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
            EVERY block-1 index to chanTriple(*,0F,*), so argᴸ ⋯ νσ ≡ 𝓒[e₁×0F×e₁′]
            only forces x ∈ block-1, not x = 0F; x = 0F follows once b₁ is discarded
            down to 1 (piece (b)).
-       (b) the b₁≥2 / b₂≥2 case is a GENUINE ROADBLOCK — the "discard the padding"
-           route is FALSE.  count-structNSeq-lt proves EVERY block-1 index (toℕ < b₁)
-           counts EXACTLY 1 in the structBinder γinner: the extra handles are LINEAR
-           (used), NOT Unr/unused.  R-Discard requires the discarded handle to be
-           UNUSED (count 0), so it does NOT apply to a well-typed close body with
-           b₁≥2 (the frame F₀ᴸ holds the other b₁−1 channel values as a linearity
-           LEAK — they are never closed).  Closing this needs a TYPING/CALCULUS-LEVEL
-           argument that the b₁≥2 / b₂≥2 close-redex is unreachable/vacuous in
-           well-typed whole programs (a close must consume its WHOLE block ⇒ b₁=b₂=1),
-           OR a different binder/reduction discipline.  This is the same FALSE-confine
-           family as R-LSplit lwk-id and BindCtx-degeneracy.  The b₁=b₂=1 path
+       (b) forcing b₁ = b₂ = 1 (⇒ x = 0F) is a GENUINE ROADBLOCK — the close
+           vacuity is INSUFFICIENT.  The ported vacuity (ReverseConfine.bc-len1 /
+           bc′-len1 / close-handle-end, from CloseVacuityProbe's residual-Skips
+           EndTip argument) proves ONLY: GIVEN the FIRST borrow (handle 0) is the
+           `end` tip, the block has no FURTHER borrow (residual is Skips ⇒ no second
+           cons).  It does NOT prove the consumed handle is the first borrow.
+           The reverse redex's consumed handle sits at a GENERIC block-1 index x:
+           νσ maps EVERY block-1 index to chanTriple(*,0F,*), so argᴸ ⋯ νσ ≡
+           𝓒[e₁×0F×e₁′] pins only x ∈ block-1, never x = 0F.  A well-typed close
+           with b₁ = 2 whose `end` borrow is the SECOND (x = 1F) and whose first
+           borrow is a non-`end` New piece (e.g. msg ‼ ⟨⊤⟩) held/used linearly by
+           the frame F₀ᴸ is REACHABLE — MACHINE-VERIFIED constructible:
+           `BindCtx′ (msg ‼ `⊤ ; end ⁇) 2 g2` typechecks (scratch BC2.agda, exit 0).
+           bc-len1 cannot refute it (nothing follows the `end` borrow), and
+           R-Discard cannot fire (the earlier handle is USED, count 1 — not Unr).
+           Such a redex has NO matching single TR.R-Close (R-Close closes a width-1
+           block at 0F, not an inner handle).  Closing inj₁ needs either a typed
+           rule that closes an inner block handle, or a frame/linearity proof that
+           no non-`end` borrow precedes the consumed one — a TYPING/CALCULUS-DESIGN
+           change absent from the codebase (same family as det-lemma-false /
+           simlsplit-lwk-id-false / BindCtx-degeneracy).  The b₁=b₂=1 path
            (close-arg-var ⇒ argL=`0F ⇒ close-confine ⇒ R-Close ⇒ close-bridge) IS
-           sound, but the existentially-introduced b₁,b₂ here cannot be case-split
-           to 1 without that vacuity result.
+           sound, but b₁,b₂ cannot be case-split to 1 — the missing half of the
+           vacuity (no borrow BEFORE the consumed `end`) does not hold in general.
        (c) the codomain ≋: mirror RU-Close inj₂'s close-bridge (ReverseInv) —
            both threads close to a unit, push U[_] through E₁/E₂ via frame-plug*.
      Codomain is multi-step (P TR─→ₚ* P′), so (R-Discard* ◅◅ R-Close ◅ ε) IS
