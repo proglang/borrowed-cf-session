@@ -82,49 +82,8 @@ canonₛ []            cc = λ ()
 canonₛ (b ∷ [])      cc = λ _ → chanTriple cc
 canonₛ {n} (b ∷ B@(_ ∷ _)) (e1 , x , e2) =
   λ y → subst Tm (+-suc (syncs B) n)
-          ([ const (chanTriple (wk e1 , suc x , ` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B))
+          ([ Ub[ b ] (wk e1 , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ (syncs B)
            , canonₛ B (` 0F , suc x , wk e2) ]′ (Fin.splitAt b y))
-
-private
-  ΘrelEqᵍ : ∀ {a bb} sB (ρ : a →ᵣ bb) (t : Tm (sB + suc a)) →
-            subst Tm (+-suc sB a) t ⋯ (ρ ↑* suc sB)
-            ≡ subst Tm (+-suc sB bb) (t ⋯ ((ρ ↑) ↑* sB))
-  ΘrelEqᵍ {a} {bb} sB ρ t =
-      subst-⋯-dom-local (+-suc sB a) t (ρ ↑* suc sB)
-    ■ sym ( cong (λ r → subst Tm (+-suc sB bb) (t ⋯ r)) ΘθEq
-          ■ cong (subst Tm (+-suc sB bb)) (subst-⋯-cod-local (sym (+-suc sB bb)) t θ⁻)
-          ■ subst-subst-sym-local (+-suc sB bb) )
-    where
-      θ⁻ : (sB + suc a) →ᵣ suc (sB + bb)
-      θ⁻ = subst (λ z → z →ᵣ suc (sB + bb)) (sym (+-suc sB a)) (ρ ↑* suc sB)
-      ΘθEq : (ρ ↑) ↑* sB ≡ subst (λ z → (sB + suc a) →ᵣ z) (sym (+-suc sB bb)) θ⁻
-      ΘθEq = sym ( sym (subst₂→ (sym (+-suc sB a)) (sym (+-suc sB bb)) (ρ ↑* suc sB))
-                 ■ cong (subst₂ _→ᵣ_ (sym (+-suc sB a)) (sym (+-suc sB bb))) (sym (liftCast sB ρ))
-                 ■ subst₂-cancel-local (+-suc sB a) (+-suc sB bb) ((ρ ↑) ↑* sB) )
-
-  chReqᵍ : ∀ {a bb} sB (e1 : Tm a) (x : 𝔽 a) (ρ : a →ᵣ bb) →
-           (chanTriple (wk e1 , suc x , ` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB) ⋯ ((ρ ↑) ↑* sB)
-           ≡ chanTriple (wk (e1 ⋯ ρ) , suc (ρ x) , ` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB
-  chReqᵍ sB e1 x ρ = cong₂ _⊗_
-      (cong₂ _⊗_
-        (sym (⋯-↑*-wk (wk e1) (ρ ↑) sB) ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) (sym (⋯-↑-wk e1 ρ)))
-        (cong `_ (varΘ sB (ρ ↑) (suc x))))
-      (cong `_ (varΘ sB (ρ ↑) 0F))
-
-canonₛ-nat : ∀ {a bb} (B : BindGroup) (cc : UChan a) (ρ : a →ᵣ bb) (i : 𝔽 (sum B)) →
-             canonₛ B cc i ⋯ (ρ ↑* syncs B) ≡ canonₛ B (mapᶜ ρ cc) i
-canonₛ-nat []            cc ρ ()
-canonₛ-nat (b ∷ [])      (e1 , x , e2) ρ i = refl
-canonₛ-nat {a} {bb} (b ∷ B@(_ ∷ _)) (e1 , x , e2) ρ i
-  with Fin.splitAt b i | canonₛ-nat B (` 0F , suc x , wk e2) (ρ ↑)
-... | inj₁ j | _  = ΘrelEqᵍ (syncs B) ρ (const chL j)
-                  ■ cong (subst Tm (+-suc (syncs B) bb)) (chReqᵍ (syncs B) e1 x ρ)
-  where chL = chanTriple (wk e1 , suc x , ` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)
-... | inj₂ k | ih = ΘrelEqᵍ (syncs B) ρ (canonₛ B (` 0F , suc x , wk e2) k)
-                  ■ cong (subst Tm (+-suc (syncs B) bb))
-                      ( ih k
-                      ■ cong (λ cc → canonₛ B cc k)
-                          (cong₂ _,_ refl (cong₂ _,_ refl (sym (⋯-↑-wk e2 ρ)))) )
 
 UB-flat : ∀ {n} (B : BindGroup) (cc : UChan n)
           (f : (sum B →ₛ syncs B + n) → U.Proc (syncs B + n)) →
@@ -138,7 +97,7 @@ UB-flat {n} (b ∷ B@(_ ∷ _)) (e1 , x , e2) f =
     leaffn : (sum B →ₛ sB + suc n) → U.Proc (sB + suc n)
     leaffn = λ τ → subst U.Proc (sym (+-suc sB n))
                (f (λ y → subst Tm (+-suc sB n)
-                     ([ const (chanTriple (wk e1 , suc x , ` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB) , τ ]′ (Fin.splitAt b y))))
+                     ([ Ub[ b ] (wk e1 , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB , τ ]′ (Fin.splitAt b y))))
 
 leafσ : ∀ {m n} (σ : m →ₛ n) (B₁ B₂ : BindGroup) →
         (sum B₁ + sum B₂ + m →ₛ syncs B₂ + (syncs B₁ + (2 + n)))
@@ -286,7 +245,7 @@ Bφ-lift-step (b ∷ B@(_ ∷ _)) {n} r =
                subst U.Proc eq P UR.─→ₚ subst U.Proc eq Q
     subst-→ₚ refl r = r
 
-open import BorrowedCF.Simulation2.TranslationProperties using (VChan; chanTriple-V; Value-subst)
+open import BorrowedCF.Simulation2.TranslationProperties using (VChan; chanTriple-V; Value-subst; Ub-V)
 
 VSub-canonₛ : ∀ (B : BindGroup) {N} (cc : UChan N) → VChan cc → VSub (canonₛ B cc)
 VSub-canonₛ []            cc            Vcc = λ ()
@@ -295,7 +254,7 @@ VSub-canonₛ (b ∷ [])      (e1 , x , e2) (Ve1 , Ve2) =
 VSub-canonₛ (b ∷ B@(_ ∷ _)) {N} (e1 , x , e2) (Ve1 , Ve2) i =
   Value-subst (+-suc (syncs B) N)
     (++ₛ-VSub {a = b}
-       (λ _ → value-⋯ (chanTriple-V (wk e1 , suc x , ` 0F) (Ve1 ⋯ᵛ weakenᵣ , V-`)) (weaken* ⦃ Kᵣ ⦄ (syncs B)) (λ _ → V-`))
+       (λ j → value-⋯ (Ub-V b (wk e1) (suc x) (` 0F) (Ve1 ⋯ᵛ weakenᵣ) j) (weaken* ⦃ Kᵣ ⦄ (syncs B)) (λ _ → V-`))
        (VSub-canonₛ B (` 0F , suc x , wk e2) (V-` , Ve2 ⋯ᵛ weakenᵣ)) i)
 
 -- canonₛ (suc b ∷ B) cc at index 0F is a chanTriple whose junction var sits at
@@ -309,7 +268,7 @@ canonₛ-head-triple b []        e1 e2 x =
   e1 , e2 , x , refl , refl
 canonₛ-head-triple {N} b (c′ ∷ B) e1 e2 x =
   ( subst Tm (+-suc sB N) (wk e1 ⋯ weaken* ⦃ Kᵣ ⦄ sB)
-  , subst Tm (+-suc sB N) ((` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+  , subst Tm (+-suc sB N) (* ⋯ weaken* ⦃ Kᵣ ⦄ sB)
   , subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))
   , tripeq
   , junceq )
@@ -318,8 +277,8 @@ canonₛ-head-triple {N} b (c′ ∷ B) e1 e2 x =
     tripeq : canonₛ (suc b ∷ c′ ∷ B) (e1 , x , e2) 0F
              ≡ (subst Tm (+-suc sB N) (wk e1 ⋯ weaken* ⦃ Kᵣ ⦄ sB)
                  ⊗ (` subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))))
-                 ⊗ subst Tm (+-suc sB N) ((` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB)
-    tripeq = substTrip (+-suc sB N) (wk e1 ⋯ weaken* ⦃ Kᵣ ⦄ sB) (weaken* ⦃ Kᵣ ⦄ sB (suc x)) ((` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+                 ⊗ subst Tm (+-suc sB N) (* ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+    tripeq = substTrip (+-suc sB N) (wk e1 ⋯ weaken* ⦃ Kᵣ ⦄ sB) (weaken* ⦃ Kᵣ ⦄ sB (suc x)) (* ⋯ weaken* ⦃ Kᵣ ⦄ sB)
       where
         substTrip : ∀ {p q} (eq : p ≡ q) (A : Tm p) (jj : 𝔽 p) (C : Tm p) →
                     subst Tm eq ((A ⊗ (` jj)) ⊗ C)
