@@ -408,7 +408,32 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
   with F₀ᴿ , argᴿ , refl , FeqR , argeqR
        ← frameApp-reflect Γ′-S eR (inv-⟪⟫ ⊢PR) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) (`end ⁇)
            (F₂ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) (sym Req′) =
-  {! RU-Close inj₁: threads RECOVERED (P₀ = ⟪F₀ᴸ[end‼·argᴸ]⟫ ∥ ⟪F₀ᴿ[end⁇·argᴿ]⟫) with typing ⊢PL/⊢PR in binder-extended ChanCx Γ′-S; redexes reflected (FeqL : F₁⋯ᶠ*wk2 ≡ frame*-⋯ F₀ᴸ νσ Vνσ ; argeqL : 𝓒[e₁×0F×e₁′] ≡ argᴸ ⋯ νσ).  To fire TR.R-Close we would need b₁=b₂=1, argᴸ=`0F, argᴿ=`1F.  GENUINE ROADBLOCK (machine-checked): b₁=1 is NOT forced.  BindCtx′ (s;end⁇) 2 is INHABITED by skip-padding — `cons` splits end⁇ ≃ skip;end⁇ (borrow ⟨skip⟩, Unr) then end⁇ ≃ end⁇;skip (borrow ⟨end⁇⟩) then nil skip (verified inhabitant `build2`).  Such a b₁=2 close is well-typed (the ⟨skip⟩ padding channel is Unr/weakenable, the real ⟨end⟩ handle sits at index 1F not 0F, so argᴸ≠0F) and `inv-U-ν-∥-shape` routes it here, yet R-Close fires only at B₁=B₂=[1].  sim←'s codomain is a SINGLE step (─→ₚ), so the typed side cannot first R-Discard the padding and then R-Close.  Closing this requires a typing/calculus-design change: either generalise sim← to ─→ₚ* (R-Discard*-then-R-Close), forbid skip-padded bind groups, or add a ≋-normalisation stripping ⟨skip⟩ borrows.  See final report. !}
+  {! RU-Close inj₁: structural inversion DONE (threads P₀ = ⟪F₀ᴸ[end‼·argᴸ]⟫ ∥
+     ⟪F₀ᴿ[end⁇·argᴿ]⟫ recovered, typed ⊢PL/⊢PR in binder-extended ChanCx Γ′-S;
+     FeqL : F₁⋯ᶠ*wk2 ≡ frame*-⋯ F₀ᴸ νσ Vνσ ; argeqL : 𝓒[e₁×0F×e₁′] ≡ argᴸ ⋯ νσ).
+     The codomain is now multi-step (P TR─→ₚ* P′), so the R-Discard*-then-R-Close
+     route IS expressible — the prior "single-step blocker" note is STALE.
+     RESIDUAL = the CLOSE CONFINEMENT subsystem, which is NOT built:
+       (1) the b₁=b₂=1 base case still needs the close frame to factor as
+           F₀ᴸ ≡ E₁ ⋯ᶠ* wk2 (E₁ at scope m) — i.e. F₀ᴸ avoids BOTH bound channel
+           handles except the consumed `0F.  This is `strengthen-frame` composed
+           over TWO handles via a 2-point `mk-thin` inverter, gated on a NEW
+           `count-handle-close` lemma (the close binder structBinder [1] geometry
+           — the existing HandleCount lemmas are SplitRenamings-specific and do
+           NOT apply).  Also needs argᴸ=`0F / argᴿ=`1F from the νσ-image-to-block
+           inversion (chanvar-not* gives argᴸ is a var; mapping its νσ-image to a
+           block-1 chanTriple forces the index, at b₁=1 the only block-1 var = 0F).
+       (2) b₁≥2 OR b₂≥2 additionally needs the discard-chain: a `close-confine`
+           proving the front skip-padding handle is Unr/unused (count=0 in the
+           close thread), so the body factors through weakenᵣ → R-Discard step,
+           induct down to b₁=1; the B₂ side needs ≋ ν-swap (swapᵣ transport) to
+           expose B₂ to R-Discard, then swap back.
+     ASSESSMENT: this is the same un-ported confine frontier that gates forward
+     R-Close (Theorems.agda:428 starts from the canonical TR.R-Close already in
+     wk2-form, so it NEVER inverts the factoring) and forward R-Acq (Acq.agda
+     itself carries open holes).  Building close-confine + count-handle-close is a
+     substantial new subsystem (cf. acq-confine ~130 ln + its HandleCount deps),
+     out of reach within the Reverse/ReverseInv edit scope this session. !}
 -- RU-Com.  Body ν(⟪..⟫ ∥ (⟪..⟫ ∥ P)) is ∥-headed, so the SAME structural
 --   inversion as RU-Close applies: inv-U-ν + inv-U-ν-∥-shape force B₁,B₂ to
 --   singletons (syncs 0), U-ν-singleton collapses the φ-telescope, giving body ≡
