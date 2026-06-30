@@ -34,7 +34,7 @@ open import BorrowedCF.Simulation2.TranslationProperties
            ; subst-⋯ to subst-⋯-dom-local )
 open import BorrowedCF.Simulation2.BlockPerm
   using ( assocSwap-01; R-base-b0; assocSwap-0a; toℕ-R3; toℕ-R3₂; toℕ-R4
-        ; toℕ-weaken*ᵣ; toℕ-swapᵣ-mid; toℕ-reduce≥; toℕ-assoc-mid; toℕ-assoc-ge; toℕ-↑
+        ; toℕ-weaken*ᵣ; toℕ-swapᵣ-mid; toℕ-reduce≥; toℕ-assoc-mid; toℕ-assoc-ge; toℕ-assoc-lt; toℕ-↑
         ; toℕ-↑*-ge; toℕ-↑*-lt; commuteS; wkSwap-cancel; assocSwap-invol )
 open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯; frame-plug₁; ++ₛ-VSub)
 open import BorrowedCF.Simulation2.TranslationProperties using (VChan; chanTriple-V; Value-subst)
@@ -580,6 +580,57 @@ frame-plug*ᵣ (E ∷ E*) ρ =
 toℕ-subst𝔽 : ∀ {a c} (e : a ≡ c) (y : 𝔽 a) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
 toℕ-subst𝔽 refl y = refl
 
+-- frame congruence / fusion helpers (copied from Theorems/Splits, which is
+-- unimportable because it carries downstream interaction metas).
+·□-cong : {e₁ e₂ : Tm n} {V₁ : Value e₁} {V₂ : Value e₂} → e₁ ≡ e₂ → (V₁ ·□) ≡ (V₂ ·□)
+·□-cong refl = cong _·□ Value-irr
+
+⊗□-cong : {e₁ e₂ : Tm n} {V₁ : Value e₁} {V₂ : Value e₂} → e₁ ≡ e₂ → (V₁ ⊗□) ≡ (V₂ ⊗□)
+⊗□-cong refl = cong _⊗□ Value-irr
+
+frame-cong : (E : Frame m) {ϕ ψ : m →ₛ n} (Vϕ : VSub ϕ) (Vψ : VSub ψ) → ϕ ≗ ψ →
+             frame-⋯ E ϕ Vϕ ≡ frame-⋯ E ψ Vψ
+frame-cong (□· e₂)        Vϕ Vψ eq = cong □·_ (⋯-cong e₂ eq)
+frame-cong (V₁ ·□)        Vϕ Vψ eq = ·□-cong (⋯-cong (vTm V₁) eq)
+frame-cong (□⊗ e₂)        Vϕ Vψ eq = cong □⊗_ (⋯-cong e₂ eq)
+frame-cong (V₁ ⊗□)        Vϕ Vψ eq = ⊗□-cong (⋯-cong (vTm V₁) eq)
+frame-cong (□; e₂)        Vϕ Vψ eq = cong □;_ (⋯-cong e₂ eq)
+frame-cong (`let-`in e′)  Vϕ Vψ eq = cong `let-`in_ (⋯-cong e′ (eq ~↑))
+frame-cong (`let⊗-`in e′) Vϕ Vψ eq = cong `let⊗-`in_ (⋯-cong e′ (eq ~↑* 2))
+frame-cong (`inj□ i)      Vϕ Vψ eq = refl
+frame-cong (`case□`of⟨ e₁ ; e₂ ⟩) Vϕ Vψ eq =
+  cong₂ `case□`of⟨_;_⟩ (⋯-cong e₁ (eq ~↑)) (⋯-cong e₂ (eq ~↑))
+
+frame-fusion-gen : ∀ {𝓕₁ 𝓕₂ 𝓕} ⦃ K₁ : Kit 𝓕₁ ⦄ ⦃ K₂ : Kit 𝓕₂ ⦄ ⦃ K : Kit 𝓕 ⦄ ⦃ W₁ : WkKit K₁ ⦄ ⦃ C : CKit K₁ K₂ K ⦄ {m₁ p}
+                   (E : Frame m) {ϕ : m –[ K₁ ]→ m₁} (Vϕ : VSub ϕ) {ξ : m₁ –[ K₂ ]→ p} (Vξ : VSub ξ)
+                   (Vϕξ : VSub (ϕ ·ₖ ξ)) →
+                   frame-⋯ (frame-⋯ E ϕ Vϕ) ξ Vξ ≡ frame-⋯ E (ϕ ·ₖ ξ) Vϕξ
+frame-fusion-gen (□· e₂)        {ϕ} Vϕ {ξ} Vξ Vϕξ = cong □·_ (fusion e₂ ϕ ξ)
+frame-fusion-gen (V₁ ·□)        {ϕ} Vϕ {ξ} Vξ Vϕξ = ·□-cong (fusion (vTm V₁) ϕ ξ)
+frame-fusion-gen (□⊗ e₂)        {ϕ} Vϕ {ξ} Vξ Vϕξ = cong □⊗_ (fusion e₂ ϕ ξ)
+frame-fusion-gen (V₁ ⊗□)        {ϕ} Vϕ {ξ} Vξ Vϕξ = ⊗□-cong (fusion (vTm V₁) ϕ ξ)
+frame-fusion-gen (□; e₂)        {ϕ} Vϕ {ξ} Vξ Vϕξ = cong □;_ (fusion e₂ ϕ ξ)
+frame-fusion-gen (`let-`in e′)  {ϕ} Vϕ {ξ} Vξ Vϕξ = cong `let-`in_ (fusion e′ (ϕ ↑) (ξ ↑) ■ ⋯-cong e′ (λ x → sym (dist-↑-· ϕ ξ x)))
+frame-fusion-gen (`let⊗-`in e′) {ϕ} Vϕ {ξ} Vξ Vϕξ = cong `let⊗-`in_ (fusion e′ (ϕ ↑* 2) (ξ ↑* 2) ■ ⋯-cong e′ (λ x → sym (dist-↑*-· 2 ϕ ξ x)))
+frame-fusion-gen (`inj□ i)      {ϕ} Vϕ {ξ} Vξ Vϕξ = refl
+frame-fusion-gen (`case□`of⟨ e₁ ; e₂ ⟩) {ϕ} Vϕ {ξ} Vξ Vϕξ =
+  cong₂ `case□`of⟨_;_⟩ (fusion e₁ (ϕ ↑) (ξ ↑) ■ ⋯-cong e₁ (λ x → sym (dist-↑-· ϕ ξ x)))
+                        (fusion e₂ (ϕ ↑) (ξ ↑) ■ ⋯-cong e₂ (λ x → sym (dist-↑-· ϕ ξ x)))
+
+frame*-cong : (E : Frame* m) {σ τ : m →ₛ n} (Vσ : VSub σ) (Vτ : VSub τ) → σ ≗ τ →
+              frame*-⋯ E σ Vσ ≡ frame*-⋯ E τ Vτ
+frame*-cong []       Vσ Vτ eq = refl
+frame*-cong (F ∷ E*) Vσ Vτ eq = cong₂ _∷_ (frame-cong F Vσ Vτ eq) (frame*-cong E* Vσ Vτ eq)
+
+F-⋯f*-fuse : (E : Frame* m) {p : ℕ} {ρ : m →ᵣ p} {τ : p →ₛ n} (Vτ : VSub τ) (Vρτ : VSub (ρ ·ₖ τ)) →
+             frame*-⋯ (E ⋯ᶠ* ρ) τ Vτ ≡ frame*-⋯ E (ρ ·ₖ τ) Vρτ
+F-⋯f*-fuse []       Vτ Vρτ = refl
+F-⋯f*-fuse (F ∷ E*) {ρ} {τ} Vτ Vρτ =
+  cong₂ _∷_ (frame-fusion-gen F (λ _ → V-`) Vτ Vρτ) (F-⋯f*-fuse E* Vτ Vρτ)
+
+·ₖ-VSubᵣ : {m p n : ℕ} (ρ : m →ᵣ p) {τ : p →ₛ n} → VSub τ → VSub (ρ ·ₖ τ)
+·ₖ-VSubᵣ ρ {τ} Vτ i = Vτ (ρ i)
+
 -- The acq head-triple: canonₛ (suc b ∷ B) (` 0F , 1F , e2) 0F is a triple of two
 -- variables (endpoint, junction) over a third term.  Endpoint var sits at flat
 -- position syncs(suc b∷B)+0, junction at syncs(suc b∷B)+1.
@@ -915,11 +966,6 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
       ≡ subst Tm (+-suc (syncs C) N) (canonₛ C (` 0F , suc x , e2 ⋯ weakenᵣ) y)
     canonₛ-zero-head e1 e2 x y = refl
 
-    threadEqR :
-      ((((U.⟪ Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]* ⟫) U.⋯ₚ ⦅ * ⦆ₛ)
-            U.⋯ₚ assocSwapᵣ 2 sB₂) U.⋯ₚ (assocSwapᵣ 2 sC ↑* sB₂))
-      ≡ U.⟪ (E [ ` 0F ]*) ⋯ leafσ σ C B₂ ⟫
-    threadEqR = {!  !}
     -- subst on U.Proc codomain pushes into the translation's substitution.
     subst-U-cod : ∀ {a c} (eq : a ≡ c) (s : (sum (zero ∷ C) + sum B₂ + m) →ₛ a) →
                   subst U.Proc eq (U[ P ] s)
@@ -1245,6 +1291,94 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
           (cong (_⋯ ⦅ * ⦆ₛ) (proj₁ (proj₂ (towerNF (ρ⁻ y) (ρ⁻≢0 y))))
            ■ wk-cancels-⦅⦆-⋯ (proj₁ (towerNF (ρ⁻ y) (ρ⁻≢0 y))) *)
       ■ proj₂ (proj₂ (towerNF (ρ⁻ y) (ρ⁻≢0 y)))
+    subst-Tm-cod : ∀ {a c} (eq : a ≡ c) {aa} (u : Tm aa) (s : aa →ₛ a) →
+                   subst Tm eq (u ⋯ s) ≡ u ⋯ subst (λ z → aa →ₛ z) eq s
+    subst-Tm-cod refl u s = refl
+    -- the combined leaf substitution that the whole post-redex renaming chain
+    -- collapses to:  sPre ; ⦅*⦆ₛ ; A₂ ; B₂ᵣ.
+    cs : (sum (zero ∷ C) + sum B₂ + m) →ₛ sB₂ + (sC + (2 + n))
+    cs = (((sPre ·ₖ ⦅ * ⦆ₛ) ·ₖ A₂) ·ₖ B₂ᵣ)
+    -- LHS thread collapses (rnT-plug ; frame-plug* ; junc-tr ; fusion) to (E[`0F]*) ⋯ cs.
+    threadReduce :
+      (((Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]*) ⋯ ⦅ * ⦆ₛ) ⋯ A₂) ⋯ B₂ᵣ
+      ≡ (E [ ` 0F ]*) ⋯ cs
+    threadReduce =
+        cong (λ z → (z ⋯ ⦅ * ⦆ₛ ⋯ A₂) ⋯ B₂ᵣ) stepA
+      ■ cong (λ z → (z ⋯ ⦅ * ⦆ₛ ⋯ A₂) ⋯ B₂ᵣ) stepB
+      ■ ⋯-fuse4
+      where
+        stepA : Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]* ≡ rnT ((E [ ` 0F ]*) ⋯ τ)
+        stepA =
+            cong (Fout [_]*) (sym (proj₂ junc-tr))
+          ■ sym (rnT-plug F₁ τ0F)
+          ■ cong rnT (sym (frame-plug* E τ Vτ))
+        τ̂ : (sum (zero ∷ C) + sum B₂ + m) →ₛ sB₂ + (sC + (3 + n))
+        τ̂ = subst (λ z → (sum (zero ∷ C) + sum B₂ + m) →ₛ z) eqC τ
+        s1 = τ̂ ·ₖ ρa
+        s2 = s1 ·ₖ ρb
+        s3 = s2 ·ₖ ρc
+        stepB : rnT ((E [ ` 0F ]*) ⋯ τ) ≡ (E [ ` 0F ]*) ⋯ sPre
+        stepB =
+            cong (λ z → z ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd)
+              (subst-Tm-cod eqC (E [ ` 0F ]*) τ)
+          ■ cong (λ z → z ⋯ ρb ⋯ ρc ⋯ ρd) (fusion (E [ ` 0F ]*) τ̂ ρa)
+          ■ cong (λ z → z ⋯ ρc ⋯ ρd) (fusion (E [ ` 0F ]*) s1 ρb)
+          ■ cong (_⋯ ρd) (fusion (E [ ` 0F ]*) s2 ρc)
+          ■ fusion (E [ ` 0F ]*) s3 ρd
+        c1 : (sum (zero ∷ C) + sum B₂ + m) →ₛ 2 + (sB₂ + (sC + n))
+        c1 = sPre ·ₖ ⦅ * ⦆ₛ
+        c2 : (sum (zero ∷ C) + sum B₂ + m) →ₛ sB₂ + (2 + (sC + n))
+        c2 = c1 ·ₖ A₂
+        ⋯-fuse4 : ((E [ ` 0F ]*) ⋯ sPre ⋯ ⦅ * ⦆ₛ ⋯ A₂) ⋯ B₂ᵣ ≡ (E [ ` 0F ]*) ⋯ cs
+        ⋯-fuse4 =
+            cong (λ z → z ⋯ A₂ ⋯ B₂ᵣ) (fusion (E [ ` 0F ]*) sPre ⦅ * ⦆ₛ)
+          ■ cong (_⋯ B₂ᵣ) (fusion (E [ ` 0F ]*) c1 A₂)
+          ■ fusion (E [ ` 0F ]*) c2 B₂ᵣ
+    -- VSub for the leaf substitution of the RHS (C-bind group).
+    Vτ-C : VSub (leafσ σ C B₂)
+    Vτ-C = ++ₛ-VSub
+             (++ₛ-VSub
+               (λ i → value-⋯ (VSub-canonₛ C (K `unit , 0F , K `unit) (V-K , V-K) i)
+                         (weaken* ⦃ Kᵣ ⦄ sB₂) (λ _ → V-`))
+               (VSub-canonₛ B₂ (K `unit , weaken* ⦃ Kᵣ ⦄ sC 1F , K `unit) (V-K , V-K)))
+             (λ i → value-⋯ (value-⋯ (value-⋯ (Vσ i)
+                       (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`))
+                       (weaken* ⦃ Kᵣ ⦄ sC) (λ _ → V-`))
+                       (weaken* ⦃ Kᵣ ⦄ sB₂) (λ _ → V-`))
+    -- cs is a value-substitution: each component is a value (chanTriple / σ image
+    -- pushed through value-preserving renamings).
+    Vcs : VSub cs
+    Vcs i = value-⋯ (value-⋯ (value-⋯ Vsprei ⦅ * ⦆ₛ ∈-cleanup) A₂ (λ _ → V-`)) B₂ᵣ (λ _ → V-`)
+      where
+        ∈-cleanup : VSub ⦅ * ⦆ₛ
+        ∈-cleanup zero    = V-K
+        ∈-cleanup (suc _) = V-`
+        Vsprei : Value (sPre i)
+        Vsprei = subst Value (sym (sPre-pt i))
+          (value-⋯ (value-⋯ (value-⋯ (value-⋯ (Value-subst eqC (Vτ i))
+            ρa (λ _ → V-`)) ρb (λ _ → V-`)) ρc (λ _ → V-`)) ρd (λ _ → V-`))
+    -- the frame uses only ρ⁻-image indices, so cs and leafσ σ C B₂ agree there.
+    csleaf : (ρ⁻ ·ₖ cs) ≗ (ρ⁻ ·ₖ leafσ σ C B₂)
+    csleaf y = s₀-leaf y
+    frameReconcile : (E [ ` 0F ]*) ⋯ cs ≡ (E [ ` 0F ]*) ⋯ leafσ σ C B₂
+    frameReconcile =
+        frame-plug* E cs Vcs
+      ■ cong₂ _[_]*
+          ( cong (λ EE → frame*-⋯ EE cs Vcs) E≡
+          ■ F-⋯f*-fuse E₀ Vcs (·ₖ-VSubᵣ ρ⁻ Vcs)
+          ■ frame*-cong E₀ (·ₖ-VSubᵣ ρ⁻ Vcs) (·ₖ-VSubᵣ ρ⁻ Vτ-C) csleaf
+          ■ sym (F-⋯f*-fuse E₀ Vτ-C (·ₖ-VSubᵣ ρ⁻ Vτ-C))
+          ■ cong (λ EE → frame*-⋯ EE (leafσ σ C B₂) Vτ-C) (sym E≡) )
+          plugReconcile
+      ■ sym (frame-plug* E (leafσ σ C B₂) Vτ-C)
+      where
+        plugReconcile : (` 0F) ⋯ cs ≡ (` 0F) ⋯ leafσ σ C B₂
+        plugReconcile = {!  !}
+    threadEqR :
+      ((((U.⟪ Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]* ⟫) U.⋯ₚ ⦅ * ⦆ₛ)
+            U.⋯ₚ assocSwapᵣ 2 sB₂) U.⋯ₚ (assocSwapᵣ 2 sC ↑* sB₂))
+      ≡ U.⟪ (E [ ` 0F ]*) ⋯ leafσ σ C B₂ ⟫
+    threadEqR = cong U.⟪_⟫ (threadReduce ■ frameReconcile)
     residEqR :
       (((Qout U.⋯ₚ ⦅ * ⦆ₛ) U.⋯ₚ assocSwapᵣ 2 sB₂) U.⋯ₚ (assocSwapᵣ 2 sC ↑* sB₂))
       ≡ U[ P ] (leafσ σ C B₂)
