@@ -1833,6 +1833,19 @@ Bφ-peel (b ∷ x ∷ B₁'') c D′ {a} Z =
            ■ sym (ss-U (peel-eq (b ∷ x ∷ B₁'') c D′ {a})
                        (cong (syncs (c ∷ D′) +_) (sym (+-suc (L.length (x ∷ B₁'')) a))) {t = Z})
 
+-- Pull a single φ binder OUT of a Bφ B block (reverse of φ-past-Bφ).
+Bφ-φ-comm : (B : BindGroup) (z : U.Flag) {n : ℕ} (Y : U.Proc (1 + (syncs B + n))) →
+            Bφ B (U.φ z Y) U.≋
+            U.φ z (Bφ B (Y U.⋯ₚ assocSwapᵣ 1 (syncs B)))
+Bφ-φ-comm B z {n} Y =
+     Eq*.symmetric _
+       ( φ-past-Bφ B z (Y U.⋯ₚ assocSwapᵣ 1 (syncs B))
+       ◅◅ Bφ-cong B (U.φ-cong (≡→≋ bodyid)) )
+  where
+    bodyid : (Y U.⋯ₚ assocSwapᵣ 1 (syncs B)) U.⋯ₚ assocSwapᵣ (syncs B) 1 ≡ Y
+    bodyid = U.fusionₚ Y (assocSwapᵣ 1 (syncs B)) (assocSwapᵣ (syncs B) 1)
+           ■ local-⋯ₚ-id Y (assocSwap-invol 1 (syncs B))
+
 -- The inserted φ-drop binder descends to the leaf.  Non-recursive: peel B₁ as a
 -- Pfx prefix, push the (1-block) φ-drop down past Bφ (suc b₁ ∷ B₂) to the leaf
 -- via φ-past-Bφ, then re-peel.  The ↑* L.length B₁ on the swap comes from Pfx-⋯.
@@ -2044,7 +2057,14 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
     innerReconcile : Bφ B (U.ν (U.φ U.drop contractumR))
                      U.≋ U.φ U.drop (subst U.Proc (cong (_+ n) (syncs-rwk B₁) ■ sym (+-suc (syncs C₁) n)) (Bφ B (U.ν (pushR XRᴿ)))
                                       U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n})
-    innerReconcile = {!!}
+    leafRec : Bφ B ((U.ν (contractumR U.⋯ₚ assocSwapᵣ 1 2)) U.⋯ₚ assocSwapᵣ 1 (syncs B))
+              U.≋ subst U.Proc (cong (_+ n) (syncs-rwk B₁) ■ sym (+-suc (syncs C₁) n)) (Bφ B (U.ν (pushR XRᴿ)))
+                    U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n}
+    leafRec = {!!}
+    innerReconcile =
+         Bφ-cong B (Eq*.return U.νφ-comm′)
+      ◅◅ Bφ-φ-comm B U.drop (U.ν (contractumR U.⋯ₚ assocSwapᵣ 1 2))
+      ◅◅ U.φ-cong leafRec
     middleReconcile : Bφ C₁ (Bφ B (U.ν (U.φ U.drop contractumR)))
                       U.≋ Bφ C₁ᴿ (Bφ B (U.ν (pushR XRᴿ)))
     middleReconcile = Bφ-cong C₁ innerReconcile ◅◅ Eq*.symmetric _ slid
