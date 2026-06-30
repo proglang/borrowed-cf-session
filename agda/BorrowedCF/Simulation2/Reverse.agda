@@ -411,29 +411,45 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
   {! RU-Close inj₁: structural inversion DONE (threads P₀ = ⟪F₀ᴸ[end‼·argᴸ]⟫ ∥
      ⟪F₀ᴿ[end⁇·argᴿ]⟫ recovered, typed ⊢PL/⊢PR in binder-extended ChanCx Γ′-S;
      FeqL : F₁⋯ᶠ*wk2 ≡ frame*-⋯ F₀ᴸ νσ Vνσ ; argeqL : 𝓒[e₁×0F×e₁′] ≡ argᴸ ⋯ νσ).
-     The codomain is now multi-step (P TR─→ₚ* P′), so the R-Discard*-then-R-Close
-     route IS expressible — the prior "single-step blocker" note is STALE.
-     RESIDUAL = the CLOSE CONFINEMENT subsystem, which is NOT built:
-       (1) the b₁=b₂=1 base case still needs the close frame to factor as
-           F₀ᴸ ≡ E₁ ⋯ᶠ* wk2 (E₁ at scope m) — i.e. F₀ᴸ avoids BOTH bound channel
-           handles except the consumed `0F.  This is `strengthen-frame` composed
-           over TWO handles via a 2-point `mk-thin` inverter, gated on a NEW
-           `count-handle-close` lemma (the close binder structBinder [1] geometry
-           — the existing HandleCount lemmas are SplitRenamings-specific and do
-           NOT apply).  Also needs argᴸ=`0F / argᴿ=`1F from the νσ-image-to-block
-           inversion (chanvar-not* gives argᴸ is a var; mapping its νσ-image to a
-           block-1 chanTriple forces the index, at b₁=1 the only block-1 var = 0F).
-       (2) b₁≥2 OR b₂≥2 additionally needs the discard-chain: a `close-confine`
-           proving the front skip-padding handle is Unr/unused (count=0 in the
-           close thread), so the body factors through weakenᵣ → R-Discard step,
-           induct down to b₁=1; the B₂ side needs ≋ ν-swap (swapᵣ transport) to
-           expose B₂ to R-Discard, then swap back.
-     ASSESSMENT: this is the same un-ported confine frontier that gates forward
-     R-Close (Theorems.agda:428 starts from the canonical TR.R-Close already in
-     wk2-form, so it NEVER inverts the factoring) and forward R-Acq (Acq.agda
-     itself carries open holes).  Building close-confine + count-handle-close is a
-     substantial new subsystem (cf. acq-confine ~130 ln + its HandleCount deps),
-     out of reach within the Reverse/ReverseInv edit scope this session. !}
+
+     The REVERSE-CONFINE subsystem is now BUILT and verified hole-free in
+     BorrowedCF.Simulation2.ReverseConfine (the mirror of the forward acq-confine
+     / HandleCount machinery):
+       • count-handle-closeᴸ / count-handle-closeᴿ — the HandleCount analogues for
+         the CLOSE binder ν (suc b₁ ∷ []) (suc b₂ ∷ []) (structBinder-singleton
+         geometry, NOT the SplitRenamings B₁++suc b₁∷B₂ shape): the L handle 0F
+         and the R handle at flat position sum (suc b₁ ∷ []) each count exactly 1.
+       • strengthen-frame* — MULTI-handle frame strengthening (the missing
+         primitive; factors a typed frame through a renaming missing a whole SET
+         H, via Inverter* / strengthen-Tm-gen*).
+       • close-app-nonUnr — the consumed close handle is non-Unr (end's domain
+         ⟨end p⟩, Unr⟨end p⟩ = Skips(end p) is uninhabited).
+       • H2 / inv-wk2 — the {0F,1F} handle-set and its weaken* 2 inverter.
+       • close-confine (b₁=b₂=1) — assembles the above: from the well-typed close
+         body ν [1] [1] (⟪F₀ᴸ[end‼·`0F]⟫ ∥ ⟪F₀ᴿ[end⁇·`1F]⟫) recovers E₁ E₂ : Frame* m
+         with F₀ᴸ ≡ E₁ ⋯ᶠ* weaken* 2 and F₀ᴿ ≡ E₂ ⋯ᶠ* weaken* 2.  The consumed
+         handle is confined by its own plug; the SIBLING's handle is linear in the
+         other thread (count 0 here) — the cross-thread linearity argument.
+
+     REMAINING to fire TR.R-Close and close this hole (the three pieces close-confine
+     PLUGS INTO, not yet built):
+       (a) argL≡0F / argR≡1F : the νσ-image→var inversion.  argᴸ is typed at the
+           session type ⟨end‼⟩, so chanvar-not* forces it to be a VARIABLE ` x;
+           then argᴸ ⋯ νσ ≡ 𝓒[e₁×0F×e₁′] = (e₁⊗`0F)⊗e₁′ forces x = 0F (only the
+           block-1 var maps under νσ to a chanTriple whose inner channel is `0F;
+           the σ-region and the 1F-block map to other inner indices), and e₁=e₁′=*.
+           This rewrites the body into close-confine's exact `0F/`1F form.
+       (b) the b₁≥2 / b₂≥2 DISCARD CHAIN: BindCtx′ admits skip-padding so b₁,b₂ are
+           NOT typing-forced to 1.  Use the typed R-Discard (ν (suc b∷B₁) B₂
+           (P⋯ₚweakenᵣ) ─→ₚ ν (b∷B₁) B₂ P) inducting the front block down to
+           width 1 — the padding handle is Unr/unused (countProc-avoid), so the
+           body factors through weakenᵣ; the B₂ side needs a ≋ ν-swap (swapᵣ) to
+           expose B₂, then swap back.  THEN close-confine at [1][1], THEN R-Close.
+       (c) the codomain ≋: mirror RU-Close inj₂'s close-bridge (ReverseInv) —
+           both threads close to a unit, push U[_] through E₁/E₂ via frame-plug*.
+     Codomain is multi-step (P TR─→ₚ* P′), so (R-Discard* ◅◅ R-Close ◅ ε) IS
+     expressible.  This SAME ReverseConfine pattern is the template for the other
+     reverse channel cases (Acq/Com/Choice/LSplit/RSplit). !}
 -- RU-Com.  Body ν(⟪..⟫ ∥ (⟪..⟫ ∥ P)) is ∥-headed, so the SAME structural
 --   inversion as RU-Close applies: inv-U-ν + inv-U-ν-∥-shape force B₁,B₂ to
 --   singletons (syncs 0), U-ν-singleton collapses the φ-telescope, giving body ≡
