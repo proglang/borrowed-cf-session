@@ -432,19 +432,29 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
          other thread (count 0 here) — the cross-thread linearity argument.
 
      REMAINING to fire TR.R-Close and close this hole (the three pieces close-confine
-     PLUGS INTO, not yet built):
-       (a) argL≡0F / argR≡1F : the νσ-image→var inversion.  argᴸ is typed at the
-           session type ⟨end‼⟩, so chanvar-not* forces it to be a VARIABLE ` x;
-           then argᴸ ⋯ νσ ≡ 𝓒[e₁×0F×e₁′] = (e₁⊗`0F)⊗e₁′ forces x = 0F (only the
-           block-1 var maps under νσ to a chanTriple whose inner channel is `0F;
-           the σ-region and the 1F-block map to other inner indices), and e₁=e₁′=*.
-           This rewrites the body into close-confine's exact `0F/`1F form.
-       (b) the b₁≥2 / b₂≥2 DISCARD CHAIN: BindCtx′ admits skip-padding so b₁,b₂ are
-           NOT typing-forced to 1.  Use the typed R-Discard (ν (suc b∷B₁) B₂
-           (P⋯ₚweakenᵣ) ─→ₚ ν (b∷B₁) B₂ P) inducting the front block down to
-           width 1 — the padding handle is Unr/unused (countProc-avoid), so the
-           body factors through weakenᵣ; the B₂ side needs a ≋ ν-swap (swapᵣ) to
-           expose B₂, then swap back.  THEN close-confine at [1][1], THEN R-Close.
+     PLUGS INTO):
+       (a) argL is a VARIABLE : DONE — `close-arg-var` (ReverseInv) proves that a
+           close argument typed at the session type ⟨ end p ⟩ whose νσ-image is a
+           pair must be a (channel) variable ` x (the pair alternative of head⊗ is
+           refuted by `pair-not-chan`, since a pair is typed at a ⊗-type and
+           ⟨ s ⟩ ≄ ⊗).  RESIDUAL of (a): identify x = 0F.  At GENERAL b₁ νσ maps
+           EVERY block-1 index to chanTriple(*,0F,*), so argᴸ ⋯ νσ ≡ 𝓒[e₁×0F×e₁′]
+           only forces x ∈ block-1, not x = 0F; x = 0F follows once b₁ is discarded
+           down to 1 (piece (b)).
+       (b) the b₁≥2 / b₂≥2 case is a GENUINE ROADBLOCK — the "discard the padding"
+           route is FALSE.  count-structNSeq-lt proves EVERY block-1 index (toℕ < b₁)
+           counts EXACTLY 1 in the structBinder γinner: the extra handles are LINEAR
+           (used), NOT Unr/unused.  R-Discard requires the discarded handle to be
+           UNUSED (count 0), so it does NOT apply to a well-typed close body with
+           b₁≥2 (the frame F₀ᴸ holds the other b₁−1 channel values as a linearity
+           LEAK — they are never closed).  Closing this needs a TYPING/CALCULUS-LEVEL
+           argument that the b₁≥2 / b₂≥2 close-redex is unreachable/vacuous in
+           well-typed whole programs (a close must consume its WHOLE block ⇒ b₁=b₂=1),
+           OR a different binder/reduction discipline.  This is the same FALSE-confine
+           family as R-LSplit lwk-id and BindCtx-degeneracy.  The b₁=b₂=1 path
+           (close-arg-var ⇒ argL=`0F ⇒ close-confine ⇒ R-Close ⇒ close-bridge) IS
+           sound, but the existentially-introduced b₁,b₂ here cannot be case-split
+           to 1 without that vacuity result.
        (c) the codomain ≋: mirror RU-Close inj₂'s close-bridge (ReverseInv) —
            both threads close to a unit, push U[_] through E₁/E₂ via frame-plug*.
      Codomain is multi-step (P TR─→ₚ* P′), so (R-Discard* ◅◅ R-Close ◅ ε) IS

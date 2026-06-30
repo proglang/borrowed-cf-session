@@ -118,6 +118,22 @@ var-case-absurd Γ-S (T-Case _ ⊢x _ _) = chanvar-notSum Γ-S ⊢x
 var-case-absurd Γ-S (T-Conv _ _ d) = var-case-absurd Γ-S d
 var-case-absurd Γ-S (T-Weaken _ d) = var-case-absurd Γ-S d
 
+-- A pair e₁ ⊗ e₂ is always typed at a ⊗-type (up to ≃), so it can never carry
+-- a channel session type ⟨ s ⟩.  Used to invert a close argument whose νσ-image
+-- is a pair back to a (channel) variable: the pair alternative is impossible.
+pair-ty : ∀ {m} {Γ : Ctx m} {γ} {e₁ e₂ : Tm m} {R ϵ}
+  → Γ ; γ ⊢ e₁ ⊗ e₂ ∶ R ∣ ϵ
+  → Σ[ T₁ ∈ 𝕋 ] Σ[ T₂ ∈ 𝕋 ] Σ[ d ∈ Dir ] ((T₁ ⊗⟨ d ⟩ T₂) ≃ R)
+pair-ty (T-Pair {T = T₁} {U = U₁} p/s _ _ _) = T₁ , U₁ , _ , ≃-refl
+pair-ty (T-Conv T≃ _ d) with pair-ty d
+... | T₁ , T₂ , d′ , eq = T₁ , T₂ , d′ , ≃-trans eq T≃
+pair-ty (T-Weaken _ d) = pair-ty d
+
+pair-not-chan : ∀ {m} {Γ : Ctx m} {γ} {e₁ e₂ : Tm m} {s : 𝕊 0} {R ϵ}
+  → Γ ; γ ⊢ e₁ ⊗ e₂ ∶ R ∣ ϵ → ⟨ s ⟩ ≃ R → ⊥
+pair-not-chan ⊢p ch with pair-ty ⊢p
+... | _ , _ , _ , eq = ⟨⟩≄⊗ (≃-trans ch (≃-sym eq))
+
 ------------------------------------------------------------------------
 -- Value reflection helpers (foundational; also re-used by Reverse).
 ------------------------------------------------------------------------
@@ -342,6 +358,16 @@ head⊗ : (σ : m →ₛ n) → (e₁ : Tm m) {a b : Tm n} → (e₁ ⋯ σ) ≡
   → (Σ[ x ∈ 𝔽 m ] e₁ ≡ ` x) ⊎ (Σ[ a₀ ∈ Tm m ] Σ[ b₀ ∈ Tm m ] e₁ ≡ a₀ ⊗ b₀)
 head⊗ σ (` x)       eq = inj₁ (x , refl)
 head⊗ σ (e₁ ⊗ e₂)   eq = inj₂ (e₁ , e₂ , refl)
+
+-- close-arg-var : a close argument typed at ⟨ s ⟩ (a session type) whose νσ-image
+-- is a pair must be a (channel) variable.  The pair alternative of head⊗ is
+-- refuted by pair-not-chan against the channel-type hypothesis.
+close-arg-var : ∀ {m n} {Γ : Ctx m} {γ} {s : 𝕊 0} {R ϵ}
+  → (arg : Tm m) → Γ ; γ ⊢ arg ∶ R ∣ ϵ → ⟨ s ⟩ ≃ R
+  → (σ : m →ₛ n) {a b : Tm n} → arg ⋯ σ ≡ a ⊗ b → Σ[ x ∈ 𝔽 m ] arg ≡ ` x
+close-arg-var arg ⊢arg ch σ eq with head⊗ σ arg eq
+... | inj₁ (x , p) = x , p
+... | inj₂ (a₀ , b₀ , refl) = ⊥-elim (pair-not-chan ⊢arg ch)
 
 head-inj : (σ : m →ₛ n) → (e : Tm m) {i : Side} {v : Tm n} → (e ⋯ σ) ≡ `inj i v
   → (Σ[ x ∈ 𝔽 m ] e ≡ ` x) ⊎ (Σ[ j ∈ Side ] Σ[ v₀ ∈ Tm m ] e ≡ `inj j v₀)
