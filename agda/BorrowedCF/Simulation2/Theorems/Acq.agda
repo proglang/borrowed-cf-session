@@ -41,6 +41,7 @@ open import BorrowedCF.Simulation2.TranslationProperties using (VChan; chanTripl
 open import BorrowedCF.Simulation2.SplitConfine using (acq-confine)
 open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
+open import Relation.Binary.Definitions using (tri<; tri≈; tri>)
 
 ------------------------------------------------------------------------
 -- COPIED transpose engine from Simulation2.Theorems.Splits (hole-free prefix).
@@ -138,6 +139,180 @@ canonₛ-nat {a} {bb} (b ∷ B@(_ ∷ _)) (e1 , x , e2) ρ i
                       ( ih k
                       ■ cong (λ cc → canonₛ B cc k)
                           (cong₂ _,_ refl (cong₂ _,_ refl (sym (⋯-↑-wk e2 ρ)))) )
+
+------------------------------------------------------------------------
+-- canonₛ-↑transpose : absorbs the front-binder ↑-lifted swap chain
+-- ρa·ρb·ρc·ρd (used by R-Acq's leaf reconcile) into the channel triple.
+--
+-- The four renamings, with sB = syncs B :
+--   ρa = assocSwapᵣ sC 1 ↑* sB        (foldable, ↑* sB)
+--   ρb = assocSwapᵣ sB 1              (cross-boundary)
+--   ρc = (assocSwapᵣ sC 2 ↑* sB) ↑    (front-binder ↑-lifted, ↑* sB)
+--   ρd = (assocSwapᵣ sB 2) ↑          (cross-boundary, ↑-lifted)
+-- Algebra used (all global ≗):
+--   ρb · ρc ≗ ρc · ρb                 (commute)
+--   ρb · ρd ≗ assocSwapᵣ sB 3         (R2')
+--   (weaken1 ↑* sB) · assocSwapᵣ sB 3 ≗ assocSwapᵣ sB 2 · weaken1
+------------------------------------------------------------------------
+
+-- canonₛ naturality for a front-binder ↑-lifted renaming (g ↑* sB) ↑.
+-- This is the bridge that lets the ↑-lifted swap ρc be folded into the
+-- channel triple, threading the +-suc codomain reassociation.
+canonₛ-nat-↑ : ∀ {a bb} (B : BindGroup) (cc : UChan (suc a)) (g : a →ᵣ bb) (k : 𝔽 (sum B)) →
+               subst Tm (+-suc (syncs B) a) (canonₛ B cc k) ⋯ ((g ↑* syncs B) ↑)
+               ≡ subst Tm (+-suc (syncs B) bb) (canonₛ B (mapᶜ (g ↑) cc) k)
+canonₛ-nat-↑ {a} {bb} B cc g k =
+    ΘrelEqᵍ (syncs B) g (canonₛ B cc k)
+  ■ cong (subst Tm (+-suc (syncs B) bb)) (canonₛ-nat B cc (g ↑) k)
+
+toℕ-substF-acq : ∀ {a c} (e : a ≡ c) (y : 𝔽 a) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
+toℕ-substF-acq refl y = refl
+
+private
+  -- generalised commuteS: assocSwapᵣ sB 1 past a front-binder ↑-lifted ↑* sB renaming.
+  -- Both sides are the block permutation [sB][1][sC][2][p], computing per region to:
+  --   x<sB ↦ 1+x ;  x=sB ↦ 0 ;  C-block ↦ x+2 ;  2-block ↦ x∸sC ;  tail ↦ x.
+  -- Proof = a 5-region toℕ case analysis (mirror commuteS in BlockPerm.agda).
+  comm-bc : ∀ sB sC {p} →
+            (assocSwapᵣ sB 1 {sC + (2 + p)} ·ₖ ((assocSwapᵣ sC 2 {p} ↑* sB) ↑))
+            ≗ (((assocSwapᵣ sC 2 {p} ↑) ↑* sB) ·ₖ assocSwapᵣ sB 1 {2 + (sC + p)})
+  comm-bc sB sC {p} x = Fin.toℕ-injective {!cb!}
+  -- weakenᵣ on 𝔽 is suc.
+  weakenᵣ≡suc : ∀ {m} (x : 𝔽 m) → Fin.toℕ (weakenᵣ x) ≡ suc (Fin.toℕ x)
+  weakenᵣ≡suc x = toℕ-weaken*ᵣ 1 x
+  -- toℕ of weakenᵣ ↑* sB on a high index.
+  wk↑*ℕ : ∀ sB {p} (x : 𝔽 (sB + (2 + p))) (ge : sB Nat.≤ Fin.toℕ x) →
+          Fin.toℕ ((weakenᵣ {n = 2 + p} ↑* sB) x) ≡ suc (Fin.toℕ x)
+  wk↑*ℕ sB x ge =
+      toℕ-↑*-ge weakenᵣ sB x ge
+    ■ cong (sB +_) (weakenᵣ≡suc (Fin.reduce≥ x ge))
+    ■ Nat.+-suc sB (Fin.toℕ (Fin.reduce≥ x ge))
+    ■ cong suc ( cong (sB +_) (toℕ-reduce≥ x ge) ■ Nat.m+[n∸m]≡n ge )
+  wk-swap3-hitop : ∀ sB {p} (x : 𝔽 (sB + (2 + p))) (ge : sB Nat.≤ Fin.toℕ x) →
+                   sB + 2 Nat.≤ Fin.toℕ x →
+                   Fin.toℕ (((weakenᵣ {n = 2 + p} ↑* sB) ·ₖ assocSwapᵣ sB 3 {p}) x)
+                   ≡ Fin.toℕ ((assocSwapᵣ sB 2 {p} ·ₖ weakenᵣ) x)
+  wk-swap3-hitop sB {p} x ge gesb2 =
+      toℕ-assoc-ge sB 3 ((weakenᵣ {n = 2 + p} ↑* sB) x) geW
+    ■ wk↑*ℕ sB x ge
+    ■ sym ( weakenᵣ≡suc (assocSwapᵣ sB 2 {p} x)
+          ■ cong suc (toℕ-assoc-ge sB 2 x gesb2) )
+    where
+      geW : sB + 3 Nat.≤ Fin.toℕ ((weakenᵣ {n = 2 + p} ↑* sB) x)
+      geW = subst (sB + 3 Nat.≤_) (sym (wk↑*ℕ sB x ge))
+              (subst (Nat._≤ suc (Fin.toℕ x)) (sym (Nat.+-suc sB 2)) (Nat.s≤s gesb2))
+  wk-swap3-hi : ∀ sB {p} (x : 𝔽 (sB + (2 + p))) → sB Nat.≤ Fin.toℕ x →
+                Fin.toℕ (((weakenᵣ {n = 2 + p} ↑* sB) ·ₖ assocSwapᵣ sB 3 {p}) x)
+                ≡ Fin.toℕ ((assocSwapᵣ sB 2 {p} ·ₖ weakenᵣ) x)
+  wk-swap3-hi sB {p} x ge with Nat.<-cmp (Fin.toℕ x) (sB + 2)
+  ... | tri< ltsb2 _ _ =
+          toℕ-assoc-mid sB 3 wval geW ltW
+        ■ cong (Nat._∸ sB) (wk↑*ℕ sB x ge) ■ Nat.+-∸-assoc 1 ge
+        ■ sym ( weakenᵣ≡suc (assocSwapᵣ sB 2 {p} x)
+              ■ cong suc (toℕ-assoc-mid sB 2 x ge ltsb2) )
+    where
+      wval = (weakenᵣ {n = 2 + p} ↑* sB) x
+      geW : sB Nat.≤ Fin.toℕ wval
+      geW = subst (sB Nat.≤_) (sym (wk↑*ℕ sB x ge)) (Nat.≤-trans ge (Nat.n≤1+n _))
+      ltW : Fin.toℕ wval Nat.< sB + 3
+      ltW = subst (Nat._< sB + 3) (sym (wk↑*ℕ sB x ge))
+              (subst (suc (Fin.toℕ x) Nat.<_) (sym (Nat.+-suc sB 2)) (Nat.s≤s ltsb2))
+  ... | tri≈ _ eqsb2 _ = wk-swap3-hitop sB x ge (Nat.≤-reflexive (sym eqsb2))
+  ... | tri> _ _ gtsb2 = wk-swap3-hitop sB x ge (Nat.<⇒≤ gtsb2)
+  -- (weaken1 ↑* sB) · assocSwapᵣ sB 3 ≗ assocSwapᵣ sB 2 · weaken1
+  wk-swap3 : ∀ sB {p} →
+             ((weakenᵣ {n = 2 + p} ↑* sB) ·ₖ assocSwapᵣ sB 3 {p})
+             ≗ (assocSwapᵣ sB 2 {p} ·ₖ weakenᵣ)
+  wk-swap3 sB {p} x with Nat.<-cmp (Fin.toℕ x) sB
+  ... | tri< lt _ _ = Fin.toℕ-injective
+        ( toℕ-assoc-lt sB 3 ((weakenᵣ {n = 2 + p} ↑* sB) x) wlt
+        ■ cong (3 +_) wltℕ
+        ■ sym ( weakenᵣ≡suc (assocSwapᵣ sB 2 {p} x)
+              ■ cong suc (toℕ-assoc-lt sB 2 x lt) ) )
+    where
+      wltℕ : Fin.toℕ ((weakenᵣ {n = 2 + p} ↑* sB) x) ≡ Fin.toℕ x
+      wltℕ = toℕ-↑*-lt (weakenᵣ {n = 2 + p}) sB x lt
+      wlt : Fin.toℕ ((weakenᵣ {n = 2 + p} ↑* sB) x) Nat.< sB
+      wlt = subst (Nat._< sB) (sym wltℕ) lt
+  ... | tri≈ _ eq _ = Fin.toℕ-injective (wk-swap3-hi sB x (Nat.≤-reflexive (sym eq)))
+  ... | tri> _ _ gt = Fin.toℕ-injective (wk-swap3-hi sB x (Nat.<⇒≤ gt))
+
+-- The R-Acq leaf transpose: absorbs ρa·ρb·ρc·ρd into the channel triple.
+canonₛ-↑transpose : ∀ {sC n} (B : BindGroup) (k : 𝔽 (sum B)) →
+  subst Tm (cong (syncs B +_) (sym (+-suc sC (suc (suc n)))))
+    (canonₛ B (K `unit , weaken* ⦃ Kᵣ ⦄ (suc sC) 1F , K `unit) k)
+    ⋯ (assocSwapᵣ sC 1 {2 + n} ↑* syncs B)
+    ⋯ assocSwapᵣ (syncs B) 1 {sC + (2 + n)}
+    ⋯ ((assocSwapᵣ sC 2 {n} ↑* syncs B) ↑)
+    ⋯ (assocSwapᵣ (syncs B) 2 {sC + n} ↑)
+  ≡ canonₛ B (K `unit , 1F , K `unit) k ⋯ assocSwapᵣ (syncs B) 2 {sC + n} ⋯ weakenᵣ
+canonₛ-↑transpose {sC} {n} (b ∷ [])      k =
+    cong (λ z → z ⋯ (assocSwapᵣ sC 1 {2 + n} ↑* 0) ⋯ assocSwapᵣ 0 1 {sC + (2 + n)} ⋯ ((assocSwapᵣ sC 2 {n} ↑* 0) ↑) ⋯ ((assocSwapᵣ 0 2 {sC + n}) ↑))
+      (subst-flagtriple e' (weaken* ⦃ Kᵣ ⦄ (suc sC) 1F))
+  ■ cong₂ _⊗_ (cong₂ _⊗_ refl (cong `_ flagEqLeaf)) refl
+  where
+    e' : 0 + suc (sC + suc (suc n)) ≡ 0 + (sC + suc (suc (suc n)))
+    e' = cong (0 +_) (sym (+-suc sC (suc (suc n))))
+    subst-flagtriple : ∀ {a c} (eq : a ≡ c) (x : 𝔽 a) →
+                       subst Tm eq (chanTriple (K `unit , x , K `unit))
+                       ≡ chanTriple (K `unit , subst 𝔽 eq x , K `unit)
+    subst-flagtriple refl x = refl
+    flagEqLeaf :
+      ((assocSwapᵣ 0 2 {sC + n} ↑)
+        ((assocSwapᵣ sC 2 {n} ↑* 0 ↑)
+          (assocSwapᵣ 0 1 {sC + (2 + n)}
+            ((assocSwapᵣ sC 1 {2 + n} ↑* 0) (subst 𝔽 e' (weaken* ⦃ Kᵣ ⦄ (suc sC) 1F))))))
+      ≡ weakenᵣ (assocSwapᵣ 0 2 {sC + n} 1F)
+    flagEqLeaf = Fin.toℕ-injective (goalL ■ sym goalR)
+      where
+        f0 : 𝔽 (sC + suc (suc (suc n)))
+        f0 = subst 𝔽 e' (weaken* ⦃ Kᵣ ⦄ (suc sC) 1F)
+        f0ℕ : Fin.toℕ f0 ≡ sC + 2
+        f0ℕ = toℕ-substF-acq e' (weaken* ⦃ Kᵣ ⦄ (suc sC) 1F)
+            ■ toℕ-weaken*ᵣ (suc sC) 1F
+            ■ sym (+-suc sC 1)
+        -- assocSwapᵣ sC 1 f0 : fixed (f0 ≥ sC+1).
+        f1ℕ : Fin.toℕ (assocSwapᵣ sC 1 {2 + n} f0) ≡ sC + 2
+        f1ℕ = toℕ-assoc-ge sC 1 f0 (subst (sC + 1 Nat.≤_) (sym f0ℕ)
+                (subst (Nat._≤ sC + 2) refl (Nat.+-monoʳ-≤ sC (Nat.s≤s Nat.z≤n))))
+            ■ f0ℕ
+        -- assocSwapᵣ 0 1 = id.
+        f2ℕ : Fin.toℕ (assocSwapᵣ 0 1 {sC + (2 + n)} (assocSwapᵣ sC 1 {2 + n} f0)) ≡ sC + 2
+        f2ℕ = cong Fin.toℕ (assocSwap-0a 1 (assocSwapᵣ sC 1 {2 + n} f0)) ■ f1ℕ
+        goalL : Fin.toℕ ((assocSwapᵣ 0 2 {sC + n} ↑)
+                  ((assocSwapᵣ sC 2 {n} ↑* 0 ↑)
+                    (assocSwapᵣ 0 1 {sC + (2 + n)}
+                      ((assocSwapᵣ sC 1 {2 + n} ↑* 0) f0)))) ≡ 2
+        goalL = cong Fin.toℕ (id↑ (assocSwap-0a 2) _)
+              ■ toℕ-↑ (assocSwapᵣ sC 2 {n}) (assocSwapᵣ 0 1 {sC + (2 + n)} (assocSwapᵣ sC 1 {2 + n} f0))
+              ■ cong [ (λ _ → 0) , (λ j → suc (Fin.toℕ (assocSwapᵣ sC 2 {n} j))) ]′
+                  (Fin.splitAt-≥ 1 (assocSwapᵣ 0 1 {sC + (2 + n)} (assocSwapᵣ sC 1 {2 + n} f0)) ge1)
+              ■ cong suc inner2
+          where
+            ge1 : 1 Nat.≤ Fin.toℕ (assocSwapᵣ 0 1 {sC + (2 + n)} (assocSwapᵣ sC 1 {2 + n} f0))
+            ge1 = subst (1 Nat.≤_) (sym f2ℕ) (subst (1 Nat.≤_) (sym (+-suc sC 1)) (Nat.s≤s Nat.z≤n))
+            redf2 : Fin.toℕ (Fin.reduce≥ (assocSwapᵣ 0 1 {sC + (2 + n)} (assocSwapᵣ sC 1 {2 + n} f0)) ge1) ≡ sC + 1
+            redf2 = toℕ-reduce≥ _ ge1 ■ cong (Nat._∸ 1) f2ℕ
+                  ■ cong (Nat._∸ 1) (Nat.+-comm sC 2) ■ Nat.+-comm 1 sC
+            inner2 : Fin.toℕ (assocSwapᵣ sC 2 {n} (Fin.reduce≥ (assocSwapᵣ 0 1 {sC + (2 + n)} (assocSwapᵣ sC 1 {2 + n} f0)) ge1)) ≡ 1
+            inner2 = toℕ-assoc-mid sC 2 _
+                       (subst (sC Nat.≤_) (sym redf2) (Nat.m≤m+n sC 1))
+                       (subst (Nat._< sC + 2) (sym redf2) (Nat.+-monoʳ-< sC (Nat.s≤s (Nat.s≤s Nat.z≤n))))
+                   ■ cong (Nat._∸ sC) redf2 ■ Nat.m+n∸m≡n sC 1
+        goalR : Fin.toℕ (weakenᵣ (assocSwapᵣ 0 2 {sC + n} 1F)) ≡ 2
+        goalR = toℕ-weaken*ᵣ 1 (assocSwapᵣ 0 2 {sC + n} 1F)
+              ■ cong (1 +_) (cong Fin.toℕ (assocSwap-0a 2 {sC + n} 1F))
+-- Non-inductive assembly (the (b ∷ []) leaf above is complete; this case
+-- closes the same way for any nonempty B using the proven helpers):
+--   1. fold ρa (= assocSwapᵣ sC 1 ↑* sB) into cc1 via canonₛ-nat.
+--   2. comm-bc : ρb · ρc ≗ ((assocSwapᵣ sC 2 ↑)↑* sB) · ρb'  (move ρb right).
+--   3. fold (assocSwapᵣ sC 2 ↑)↑* sB into cc via canonₛ-nat (g = assocSwapᵣ sC 2 ↑).
+--   4. R2' sB 2 : ρb' · ρd ≗ assocSwapᵣ sB 3   (merge the two cross-boundary swaps).
+--   5. reverse-fold the resulting triple (unit,2F,unit)=mapᶜ weaken1 (unit,1F,unit)
+--      via canonₛ-nat, then wk-swap3 : (weaken1↑*sB)·assocSwapᵣ sB 3 ≗ assocSwapᵣ sB 2·weakenᵣ.
+--   The subst eqC at the front is threaded with subst-⋯-dom-local / ΘrelEqᵍ.
+canonₛ-↑transpose {sC} {n} (b ∷ B@(_ ∷ _)) k = {!cons!}
+
 
 -- UB[ B ] unfolds to its φ-prefix wrapped around the leaf at the canonical sub.
 UB-flat : ∀ {n} (B : BindGroup) (cc : UChan n)
@@ -1019,7 +1194,7 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
         -- τ w in the tail region.
         τtail : τ w ≡ σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ (suc sC) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
         τtail = leafσ-tail σ (zero ∷ C) B₂ w i eqw
-        ρa⁻ = subst (λ z → z →ᵣ _) (sym eqC) ρa
+        ρa⁻ = subst (λ z → z →ᵣ (sB₂ + suc (sC + (2 + n)))) (sym eqC) ρa
         -- push the subst eqC into ρa.
         substPush : subst Tm eqC (τ w) ⋯ ρa ≡ τ w ⋯ ρa⁻
         substPush = subst-⋯-dom-local eqC (τ w) ρa
@@ -1260,7 +1435,7 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
         core = coreL ■ midR
           where
             coreL : subst Tm eqC (canonₛ B₂ cc1 k) ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd ≡ mid1
-            coreL = {!coreL!}
+            coreL = canonₛ-↑transpose {sC = sC} {n = n} B₂ k
         wkB2 : sPre w ≡ tB2 ⋯ weakenᵣ
         wkB2 =
             sPre-pt w
