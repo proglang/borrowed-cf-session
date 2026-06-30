@@ -1082,6 +1082,14 @@ canonₛ-acq-head {N} b (c′ ∷ B) e2 =
 
 open T using (_;_⊢ₚ_)
 
+-- Output-substitution push for the singleton acq-cleanup substitution.
+-- (General output substitutions are ill-typed against UChan's Fin flag; this
+--  push is valid because ⦅*⦆ₛ, once lifted past the φ-nest binders, fixes every
+--  flag index — the injected handle sits strictly above the nest.)
+U-σ⋯ₛ : ∀ {m n n′} (P : T.Proc m) {σ : m →ₛ n} {τ : n →ₛ n′} →
+        U[ P ] σ U.⋯ₚ τ ≡ U[ P ] (σ ·ₖ τ)
+U-σ⋯ₛ P = {!U-σ⋯ₛ!}
+
 U-acq : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
       → {g : Struct m} {b₁ : ℕ} {B₁ B₂ : BindGroup}
         {E : Frame* (sum (zero ∷ suc b₁ ∷ B₁) + sum B₂ + m)}
@@ -1420,11 +1428,20 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
     sPre-pt w = cong (λ z → z ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd)
                   (subst-cod-ptR eqC τ w)
     TowerGoal : (w : 𝔽 (sum C + sum B₂ + m)) → Set
-    TowerGoal w = Σ[ t ∈ Tm (2 + (sB₂ + (sC + n))) ]
-                    (sPre w ≡ t ⋯ weakenᵣ) × (t ⋯ A₂ ⋯ B₂ᵣ ≡ leafσ σ C B₂ w)
+    TowerGoal w = sPre w ⋯ ⦅ * ⦆ₛ ⋯ A₂ ⋯ B₂ᵣ ≡ leafσ σ C B₂ w
+    -- branches whose leaf does not mention the consumed handle 0F factor
+    -- sPre w = t ⋯ weakenᵣ (a pure weakening), so ⦅*⦆ₛ cancels the weakening.
+    fromWk : (w : 𝔽 (sum C + sum B₂ + m)) {L : Tm (sB₂ + (sC + (2 + n)))}
+             (t : Tm (2 + (sB₂ + (sC + n)))) →
+             sPre w ≡ t ⋯ weakenᵣ → t ⋯ A₂ ⋯ B₂ᵣ ≡ L →
+             sPre w ⋯ ⦅ * ⦆ₛ ⋯ A₂ ⋯ B₂ᵣ ≡ L
+    fromWk w t wkfact leaffact =
+        cong (λ z → z ⋯ ⦅ * ⦆ₛ ⋯ A₂ ⋯ B₂ᵣ) wkfact
+      ■ cong (λ z → z ⋯ A₂ ⋯ B₂ᵣ) (wk-cancels-⦅⦆-⋯ t *)
+      ■ leaffact
     towerNF : (w : 𝔽 (sum C + sum B₂ + m)) → w ≢ 0F → TowerGoal w
     towerNF w w≢0 with Fin.splitAt (sum C + sum B₂) w in eqw
-    ... | inj₂ i = tailNF , tailWk , tailLeaf
+    ... | inj₂ i = fromWk w tailNF tailWk tailLeaf
       where
         tailNF : Tm (2 + (sB₂ + (sC + n)))
         tailNF = σ i ⋯ weaken* ⦃ Kᵣ ⦄ sC ⋯ weaken* ⦃ Kᵣ ⦄ sB₂ ⋯ weaken* ⦃ Kᵣ ⦄ 2
@@ -1624,7 +1641,8 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
                    ≡ σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sC ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
         tailLeaf = fuseL ■ ⋯-cong (σ i) tailRen ■ sym fuseR
     ... | inj₁ z with Fin.splitAt (sum C) z in eqz
-    ...   | inj₁ j rewrite leafσ-A₁ σ C B₂ w z j eqw eqz = tC , wkC , leafC
+    ...   | inj₁ j rewrite leafσ-A₁ σ C B₂ w z j eqw eqz =
+            cong (λ z → z ⋯ A₂ ⋯ B₂ᵣ) coreC ■ leafC
       where
         Lc : Tm (sB₂ + (sC + (2 + n)))
         Lc = canonₛ C (K `unit , 0F , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
@@ -1632,20 +1650,24 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
         tC = Lc ⋯ (assocSwapᵣ sC 2 ↑* sB₂) ⋯ assocSwapᵣ sB₂ 2
         τC : τ w ≡ canonₛ (zero ∷ C) (K `unit , 0F , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
         τC = leafσ-A₁ σ (zero ∷ C) B₂ w z j eqw eqz
-        -- C-region transpose (analogue of canonₛ-↑transpose for the C bind group):
-        -- canonₛ (zero ∷ C) reduces (zero-head) to subst (+-suc sC) of canonₛ C with
-        -- triple (` 0F , 1F , *) and a trailing  ⋯ weaken* sB₂.  The fixed swap chain
-        -- ρa ⋯ ρb ⋯ ρc ⋯ ρd must lower (` 0F , 1F , *) ↦ (unit , 0F , unit) exactly as
-        -- canonₛ-↑transpose does for B₂, threading the extra weaken* sB₂ / +-suc / eqC.
-        coreC : subst Tm eqC (canonₛ (zero ∷ C) (K `unit , 0F , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
-                  ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd
-                ≡ tC ⋯ weakenᵣ
-        coreC = {!coreC!}
-        wkC : sPre w ≡ tC ⋯ weakenᵣ
-        wkC =
-            sPre-pt w
-          ■ cong (λ z → z ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd) (cong (subst Tm eqC) τC)
-          ■ coreC
+        -- C-region: the (zero ∷ C) head reduces to subst (+-suc sC) of canonₛ C with
+        -- channel triple (` 0F , 1F , *).  The e1 slot is the head sync VARIABLE ` 0F,
+        -- which the ACQ substitution ⦅ * ⦆ₛ collapses to *, matching tC's K `unit e1.
+        -- So coreC is NOT a renaming identity; the variable collapse happens here.
+        coreCmain :
+          subst Tm eqC (canonₛ (zero ∷ C) (K `unit , 0F , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+            ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd ⋯ ⦅ * ⦆ₛ
+          ≡ tC
+        coreCmain =
+          cong (λ z → subst Tm eqC (z ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd ⋯ ⦅ * ⦆ₛ)
+            (canonₛ-zero-head (K `unit) (K `unit) 0F j)
+          ■ {!step!}
+        coreC : sPre w ⋯ ⦅ * ⦆ₛ ≡ tC
+        coreC =
+            cong (_⋯ ⦅ * ⦆ₛ)
+              ( sPre-pt w
+              ■ cong (λ z → subst Tm eqC z ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd) τC )
+          ■ coreCmain
         tCA : tC ⋯ A₂ ≡ Lc ⋯ (assocSwapᵣ sC 2 ↑* sB₂)
         tCA =
             fusion (Lc ⋯ (assocSwapᵣ sC 2 ↑* sB₂)) (assocSwapᵣ sB₂ 2) A₂
@@ -1659,7 +1681,7 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
             cong (λ z → z ⋯ B₂ᵣ) tCA
           ■ fusion Lc (assocSwapᵣ sC 2 ↑* sB₂) B₂ᵣ
           ■ ⋯-id Lc cancelCₛ
-    ...   | inj₂ k rewrite leafσ-B₁ σ C B₂ w z k eqw eqz = tB2 , wkB2 , leafB2
+    ...   | inj₂ k rewrite leafσ-B₁ σ C B₂ w z k eqw eqz = fromWk w tB2 wkB2 leafB2
       where
         cBk : Tm (sB₂ + (sC + (2 + n)))
         cBk = canonₛ B₂ (K `unit , weaken* ⦃ Kᵣ ⦄ sC 1F , K `unit) k
@@ -1725,18 +1747,10 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
             cong (λ z → z ⋯ B₂ᵣ) tB2A
           ■ fusion cBk (assocSwapᵣ sC 2 ↑* sB₂) B₂ᵣ
           ■ ⋯-id cBk cancelBₛ
-    -- pointwise: sPre⁻ y avoids 0F, so re-weakening after lowering is identity.
-    sPre⁻-wk : sPre⁻ ≗ (λ y → s₀ y ⋯ weakenᵣ)
-    sPre⁻-wk y = proj₁ (proj₂ (towerNF (ρ⁻ y) (ρ⁻≢0 y)))
-               ■ cong (_⋯ weakenᵣ) (sym (wk-cancels-⦅⦆-⋯ (proj₁ (towerNF (ρ⁻ y) (ρ⁻≢0 y))) *)
-                                  ■ cong (_⋯ ⦅ * ⦆ₛ) (sym (proj₁ (proj₂ (towerNF (ρ⁻ y) (ρ⁻≢0 y))))))
-    -- after lowering+renaming, s₀ ·ₖ A₂ ·ₖ B₂ᵣ matches ρ⁻ ·ₖ leafσ σ C B₂.
+    -- after lowering (⦅*⦆ₛ collapses the consumed handle) + renaming, s₀ ·ₖ A₂ ·ₖ B₂ᵣ
+    -- matches ρ⁻ ·ₖ leafσ σ C B₂.  This is exactly TowerGoal at the frame index ρ⁻ y.
     s₀-leaf : (λ y → s₀ y ⋯ A₂ ⋯ B₂ᵣ) ≗ (λ y → leafσ σ C B₂ (ρ⁻ y))
-    s₀-leaf y =
-        cong (λ z → z ⋯ A₂ ⋯ B₂ᵣ)
-          (cong (_⋯ ⦅ * ⦆ₛ) (proj₁ (proj₂ (towerNF (ρ⁻ y) (ρ⁻≢0 y))))
-           ■ wk-cancels-⦅⦆-⋯ (proj₁ (towerNF (ρ⁻ y) (ρ⁻≢0 y))) *)
-      ■ proj₂ (proj₂ (towerNF (ρ⁻ y) (ρ⁻≢0 y)))
+    s₀-leaf y = towerNF (ρ⁻ y) (ρ⁻≢0 y)
     subst-Tm-cod : ∀ {a c} (eq : a ≡ c) {aa} (u : Tm aa) (s : aa →ₛ a) →
                    subst Tm eq (u ⋯ s) ≡ u ⋯ subst (λ z → aa →ₛ z) eq s
     subst-Tm-cod refl u s = refl
@@ -1830,14 +1844,7 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
       ≡ U[ P ] (leafσ σ C B₂)
     residEqR =
         cong (λ z → ((z U.⋯ₚ ⦅ * ⦆ₛ) U.⋯ₚ A₂) U.⋯ₚ B₂ᵣ) QoutP₀
-      ■ cong (λ z → ((z U.⋯ₚ ⦅ * ⦆ₛ) U.⋯ₚ A₂) U.⋯ₚ B₂ᵣ)
-          (U-cong P₀ sPre⁻-wk)
-      ■ cong (λ z → ((z U.⋯ₚ ⦅ * ⦆ₛ) U.⋯ₚ A₂) U.⋯ₚ B₂ᵣ)
-          (sym (U-σ⋯ P₀ {σ = s₀} {ρ = weakenᵣ}))
-      ■ cong (λ z → (z U.⋯ₚ A₂) U.⋯ₚ B₂ᵣ)
-          ( U.fusionₚ (U[ P₀ ] s₀) weakenᵣ ⦅ * ⦆ₛ
-          ■ U.⋯ₚ-cong (U[ P₀ ] s₀) (wk-cancels-⦅⦆ ⦃ Kₛ ⦄ *)
-          ■ local-⋯ₚ-idₖ (U[ P₀ ] s₀) (λ _ → refl) )
+      ■ cong (λ z → (z U.⋯ₚ A₂) U.⋯ₚ B₂ᵣ) (U-σ⋯ₛ P₀ {σ = sPre⁻} {τ = ⦅ * ⦆ₛ})
       ■ cong (λ z → z U.⋯ₚ B₂ᵣ) (U-σ⋯ P₀ {σ = s₀} {ρ = A₂})
       ■ U-σ⋯ P₀ {σ = s₀ ·ₖ A₂} {ρ = B₂ᵣ}
       ■ U-cong P₀ s₀-leaf
