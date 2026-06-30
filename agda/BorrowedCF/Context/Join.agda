@@ -130,6 +130,11 @@ instance
   join-p/s : Join ParSeq
   join-p/s = record { joinDir = biasedDir }
 
+join-flip : ∀ d → Γ ∶ join (flipDir d) β α ≈ join d α β
+join-flip L = refl
+join-flip R = refl
+join-flip 𝟙 = ∥-comm
+
 postulate parOrSeq? : Γ ∶ α ; β ≼ γ → Σ[ p/s ∈ ParSeq ] Γ ∶ join p/s α β ≼ γ
 
 ;-≼-join : (p/s : ParSeq) → Γ ∶ α ; β ≼ join p/s α β

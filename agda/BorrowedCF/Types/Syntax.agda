@@ -14,6 +14,11 @@ data Pol : Set where
 data Dir : Set where
   L R 𝟙 : Dir
 
+flipDir : Dir → Dir
+flipDir L = R
+flipDir R = L
+flipDir 𝟙 = 𝟙
+
 data Mob : Set where
   M S : Mob
 

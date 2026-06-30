@@ -4,6 +4,11 @@ open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Types
 open import BorrowedCF.Context
+open import BorrowedCF.Context.Pattern
+
+import BorrowedCF.Context.Substitution as 𝐂
+
+open Fin.Patterns
 
 module Variables where
   open Nat.Variables public
@@ -110,6 +115,90 @@ V ⋯ᵛ ϕ = value-⋯ V ϕ λ x → V-`
 _⋯ᶠ_ : Frame m → (ϕ : m →ᵣ n) → Frame n
 E ⋯ᶠ ϕ = frame-⋯ E ϕ λ x → V-`
 
+infix 4 _;_⊢_∶_⇒_∣_⇒_
+
+data _;_⊢_∶_⇒_∣_⇒_ (Γ : Ctx n) : CxPat n → Frame n → 𝕋 → 𝕋 → Eff → Eff → Set where
+  TF-□· :
+    (≤ₐ : Arr.eff a ≤ϵ ϵ) →
+    (appPar   : Arr.Par a → ϵ₁ ≡ ϵ × ϵ₂ ≡ ϵ) →
+    (appLeft  : Arr.IsL a → ϵ₁ ≡ ℙ × ϵ₂ ≡ ϵ) →
+    (appRight : Arr.IsR a → ϵ₁ ≡ ϵ × ϵ₂ ≡ ℙ) →
+    Γ ; γ ⊢ e₂ ∶ T ∣ ϵ₂ →
+    Γ ; 𝒫[ Arr.dir a , γ ] ⊢ □· e₂ ∶ T ⟨ a ⟩→ U ⇒ U ∣ ϵ₁ ⇒ ϵ
+
+  TF-·□ : {V₁ : Value e₁} →
+    (≤ₐ : Arr.eff a ≤ϵ ϵ) →
+    (appPar   : Arr.Par a → ϵ₁ ≡ ϵ × ϵ₂ ≡ ϵ) →
+    (appLeft  : Arr.IsL a → ϵ₁ ≡ ℙ × ϵ₂ ≡ ϵ) →
+    (appRight : Arr.IsR a → ϵ₁ ≡ ϵ × ϵ₂ ≡ ℙ) →
+    Γ ; γ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ₁ →
+    Γ ; 𝒫[ flipDir (Arr.dir a) , γ ] ⊢ V₁ ·□ ∶ T ⇒ U ∣ ϵ₂ ⇒ ϵ
+
+  TF-□⊗ : (p/s : ParSeq) →
+    let d = biasedDir p/s in
+    (seq⇒p : Seq⇒Pure p/s ϵ₁ ϵ₂) →
+    Γ ; γ ⊢ e₂ ∶ U ∣ ϵ₂ →
+    Γ ; 𝒫[ flipDir d , γ ] ⊢ □⊗ e₂ ∶ T ⇒ T ⊗⟨ d ⟩ U ∣ ϵ₁ ⇒ ϵ₁
+
+  TF-⊗□ : (p/s : ParSeq) {V : Value e₁} →
+    let d = biasedDir p/s in
+    (seq⇒p : Seq⇒Pure p/s ϵ₁ ϵ₂) →
+    Γ ; γ ⊢ e₁ ∶ T ∣ ϵ₁ →
+    Γ ; 𝒫[ d , γ ] ⊢ V ⊗□ ∶ U ⇒ T ⊗⟨ d ⟩ U ∣ ϵ₂ ⇒ ϵ₁
+
+  TF-; :
+    Unr T →
+    Γ ; γ ⊢ e₂ ∶ U ∣ ϵ →
+    Γ ; 𝒫[ R , γ ] ⊢ □; e₂ ∶ T ⇒ U ∣ ϵ ⇒ ϵ
+
+  TF-`let : (p/s : ParSeq) →
+    T ⸴ Γ ; join p/s (` 0F) (𝐂.wk γ) ⊢ e₂ ∶ U ∣ ϵ →
+    Γ ; 𝒫[ flipDir (biasedDir p/s) , γ ] ⊢ `let-`in e₂ ∶ T ⇒ U ∣ ϵ ⇒ ϵ
+
+  TF-`let⊗ : (p/s : ParSeq) →
+    T₁ ⸴ T₂ ⸴ Γ ; join p/s (join d (` 0F) (` 1F)) (𝐂.wk (𝐂.wk γ)) ⊢ e₂ ∶ U ∣ ϵ →
+    Γ ; 𝒫[ flipDir (biasedDir p/s) , γ ] ⊢ `let⊗-`in e₂ ∶ T₁ ⊗⟨ d ⟩ T₂ ⇒ U ∣ ϵ ⇒ ϵ
+
+  TF-`inj□ : ∀ i →
+    Γ ; [] ⊢ `inj□ i ∶ if i then T₁ else T₂ ⇒ T₁ ⊕ T₂ ∣ ϵ ⇒ ϵ
+
+  TF-`case□ : (p/s : ParSeq) →
+    let γ′ = join p/s (` 0F) (𝐂.wk γ) in
+    T₁ ⸴ Γ ; γ′ ⊢ e₁ ∶ U ∣ ϵ →
+    T₂ ⸴ Γ ; γ′ ⊢ e₂ ∶ U ∣ ϵ →
+    Γ ; 𝒫[ flipDir (biasedDir p/s) , γ ] ⊢ `case□`of⟨ e₁ ; e₂ ⟩ ∶ T₁ ⊕ T₂ ⇒ U ∣ ϵ ⇒ ϵ
+
+⊢⟨_[_]⟩ : {E : Frame n} → Γ ; P ⊢ E ∶ T ⇒ U ∣ ϵ₁ ⇒ ϵ₂ → Γ ; γ ⊢ e ∶ T ∣ ϵ₁ → Γ ; P [ γ ]𝓅 ⊢ E [ e ] ∶ U ∣ ϵ₂
+⊢⟨ TF-□· {a} ≤ₐ appPar appLeft appRight x [ e ]⟩
+  with Arr.lin a in lin-eq
+... | unr
+  rewrite Arr.ω⇒𝟙 a lin-eq
+  with refl , refl ← appPar refl
+  = T-Weaken (≼-refl ∥-comm) $ T-AppUnr lin-eq ≤ₐ e x
+... | 𝟙
+  with Arr.dir a in dir-eq
+... | L with refl , refl ← appLeft  refl = T-AppLeft dir-eq ≤ₐ e x
+... | R with refl , refl ← appRight refl = T-AppRight dir-eq ≤ₐ e x
+... | 𝟙 with refl , refl ← appPar   refl = T-Weaken (≼-refl ∥-comm) $ T-AppLin dir-eq ≤ₐ e x
+⊢⟨ TF-·□ {a = a} ≤ₐ appPar appLeft appRight x [ e ]⟩
+  with Arr.lin a in lin-eq
+... | unr
+  rewrite Arr.ω⇒𝟙 a lin-eq
+  with refl , refl ← appPar refl
+  = T-AppUnr lin-eq ≤ₐ x e
+... | 𝟙
+  with Arr.dir a in dir-eq
+... | L with refl , refl ← appLeft  refl = T-AppLeft dir-eq ≤ₐ x e
+... | R with refl , refl ← appRight refl = T-AppRight dir-eq ≤ₐ x e
+... | 𝟙 with refl , refl ← appPar   refl = T-AppLin dir-eq ≤ₐ x e
+⊢⟨ TF-□⊗ p/s seq⇒p x [ e ]⟩ = T-Weaken (≼-refl (≈-sym (join-flip (biasedDir p/s)))) $ T-Pair p/s seq⇒p e x
+⊢⟨ TF-⊗□ p/s seq⇒p x [ e ]⟩ = T-Pair p/s seq⇒p x e
+⊢⟨ TF-; uT x [ e ]⟩ = T-Seq uT e x
+⊢⟨ TF-`let p/s x [ e ]⟩ = T-Weaken (≼-refl (≈-sym (join-flip (biasedDir p/s)))) $ T-Let p/s e x
+⊢⟨ TF-`let⊗ p/s x [ e ]⟩ = T-Weaken (≼-refl (≈-sym (join-flip (biasedDir p/s)))) $ T-LetPair p/s e x
+⊢⟨ TF-`inj□ i [ e ]⟩ = T-Inj e
+⊢⟨ TF-`case□ p/s x₁ x₂ [ e ]⟩ = T-Weaken (≼-refl (≈-sym (join-flip (biasedDir p/s)))) $ T-Case p/s e x₁ x₂
+
 Frame* : ℕ → Set
 Frame* n = List (Frame n)
 
@@ -123,6 +212,21 @@ infixl 5 _⋯ᶠ*_
 
 _⋯ᶠ*_ : Frame* m → (ϕ : m →ᵣ n) → Frame* n
 E* ⋯ᶠ* ϕ = L.map (_⋯ᶠ ϕ) E*
+
+infix 4 _;_⊢*_∶_⇒_∣_⇒_
+
+data _;_⊢*_∶_⇒_∣_⇒_ (Γ : Ctx n) : CxPat n → Frame* n → 𝕋 → 𝕋 → Eff → Eff → Set where
+  [] :
+    Γ ; [] ⊢* [] ∶ T ⇒ T ∣ ϵ ⇒ ϵ
+
+  _∷_ : {E : Frame n} {E* : Frame* n} →
+    Γ ; P₁ ⊢  E  ∶ T₂ ⇒ T₃ ∣ ϵ₂ ⇒ ϵ₃ →
+    Γ ; P₂ ⊢* E* ∶ T₁ ⇒ T₂ ∣ ϵ₁ ⇒ ϵ₂ →
+    Γ ; P₁ ++ P₂ ⊢* E ∷ E* ∶ T₁ ⇒ T₃ ∣ ϵ₁ ⇒ ϵ₃
+
+⊢⟨_[_]*⟩ : {E* : Frame* n} → Γ ; P ⊢* E* ∶ T ⇒ U ∣ ϵ₁ ⇒ ϵ₂ → Γ ; γ ⊢ e ∶ T ∣ ϵ₁ → Γ ; P [ γ ]𝓅 ⊢ E* [ e ]* ∶ U ∣ ϵ₂
+⊢⟨ [] [ e ]*⟩ = e
+⊢⟨_[_]*⟩ {γ = γ} (_∷_ {P₁} {P₂ = P₂} E E*) e = subst-γ (sym ([-]𝓅-dist-++ P₁ P₂ γ)) ⊢⟨ E [ ⊢⟨ E* [ e ]*⟩ ]⟩
 
 FullBlocked : Tm n → Set
 FullBlocked {n} e = ∀ E (e′ : Tm n) → e ≡ E [ e′ ] → Blocked e′
