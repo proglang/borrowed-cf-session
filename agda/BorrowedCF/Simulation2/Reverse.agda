@@ -225,7 +225,7 @@ simRes : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
 -- RU-Struct case) and is left a noted hole.
 sim← σ Vσ Γ-S ⊢P ε red = sim←ᵍ σ Vσ Γ-S ⊢P refl red
 sim← σ Vσ Γ-S ⊢P (c ◅ cs) red =
-  {! reverse-U-≋: a non-reflexive ≋ prefix R ≋ U[P]σ need not factor through the U[_] image (φ-nest admin ν-swap/ν-comm/φ-cong leave the image); needs a U[_]-normal-form confluence lemma.  Same blocker as RU-Struct. !}
+  {! reverse-U-≋: a non-reflexive ≋ prefix R ≋ U[P]σ need not factor through the U[_] image (φ-nest admin ν-swap/ν-comm/φ-cong leave the image); needs a U[_]-normal-form confluence lemma.  Same blocker as RU-Struct.  NOTE: the route `sim← cs (RU-Struct (sym c) red ε)` typechecks but FAILS termination — sim←ᵍ's RU-Struct case calls sim← back with a freshly-grown ≋ chain, so the mutual sim←/sim←ᵍ recursion has no structural descent metric (the untyped derivation `red` is wrapped LARGER here while it only shrinks in RU-Struct's `inner`).  Closing this requires a well-founded measure (≋-chain length) or the confluence lemma, not a direct delegation. !}
 
 ------------------------------------------------------------------------
 -- RU-Exp : R = ⟪ e₁ ⟫ steps by an expression reduction e₁ ⋯→ e₂.
