@@ -1,4 +1,4 @@
-module BorrowedCF.RedexTypingProbe where
+module BorrowedCF.Simulation2.RedexTypingProbe where
 
 open import Data.Vec.Functional as F using ()
 
@@ -13,7 +13,7 @@ open import BorrowedCF.Processes.Typed
 open Fin.Patterns
 open Nat.Variables
 
-import BorrowedCF.RsplitOwnershipProbe as P
+import BorrowedCF.Simulation2.RsplitOwnershipProbe as P
 
 -- ============================================================================
 -- The handle slot 0F of the chain context g2 has type < msg ! T >.

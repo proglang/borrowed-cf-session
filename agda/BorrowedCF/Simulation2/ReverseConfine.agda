@@ -54,7 +54,7 @@ open Nat using (n≤0⇒n≡0; s≤s⁻¹; +-monoˡ-≤; +-monoʳ-≤; +-mono-�
 open import BorrowedCF.Types using (𝕊; Skips; dual)
 import BorrowedCF.Types.Syntax as TS
 open import BorrowedCF.Types.Predicates using (New; new-dual)
-open import BorrowedCF.CloseVacuityProbe using (close-residual-skips)
+open import BorrowedCF.Simulation2.CloseVacuityProbe using (close-residual-skips)
 open import BorrowedCF.Processes.Typed
   using (BindCtx; BindCtx′; inv-⟪⟫)
 open BorrowedCF.Processes.Typed.BindCtx

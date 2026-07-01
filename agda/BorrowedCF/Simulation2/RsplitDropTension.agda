@@ -1,4 +1,4 @@
-module BorrowedCF.RsplitDropTension where
+module BorrowedCF.Simulation2.RsplitDropTension where
 
 ------------------------------------------------------------------------
 -- RSPLIT vs DROP TENSION  —  a MACHINE-CHECKED slot characterization.

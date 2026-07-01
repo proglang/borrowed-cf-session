@@ -1,4 +1,4 @@
-module BorrowedCF.RsplitTypingRefute where
+module BorrowedCF.Simulation2.RsplitTypingRefute where
 
 open import Data.Nat using (zero; suc; _+_)
 open import Data.Product using (_×_; _,_) renaming (proj₁ to fst)
@@ -15,7 +15,7 @@ open import BorrowedCF.Processes.Typed using (Proc; _∥_; _;_⊢ₚ_; inv-∥)
 open Fin.Patterns
 open Nat.Variables
 
-import BorrowedCF.RsplitOwnershipProbe as P
+import BorrowedCF.Simulation2.RsplitOwnershipProbe as P
 open import BorrowedCF.Simulation2.Confine using (count; unrCx⇒count0; count-≈′; ≼⇒count≤)
 open import Data.Nat using (z≤n; _≤_)
 

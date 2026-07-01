@@ -6,7 +6,7 @@
 -- (! Skips s) to BindCtx' cons. The counterexample is now VACUOUS: skip-padding is
 -- impossible, so the b1>=1 R-Drop redex is untypeable and R-Drop closes at b1=0 via
 -- RU-Drop. The original counterexample is preserved in git history (commit 49f70ba).
-module BorrowedCF.DropAcqCounter where
+module BorrowedCF.Simulation2.DropAcqCounter where
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Types

@@ -27,7 +27,7 @@
 --  exactly where a binder-reordering ≋ move could in principle bridge.
 -- ============================================================================
 
-module BorrowedCF.RsplitBisimIssue where
+module BorrowedCF.Simulation2.RsplitBisimIssue where
 
 open import BorrowedCF.Simulation2.Base
 open import BorrowedCF.Simulation2.Congruence
@@ -36,7 +36,7 @@ open import BorrowedCF.Processes.Typed using (BindGroup)
 open import Data.List using (_∷_; [])
 open import Data.Fin using (zero; suc)
 
-import BorrowedCF.RsplitOwnershipProbe as Probe
+import BorrowedCF.Simulation2.RsplitOwnershipProbe as Probe
 import BorrowedCF.Processes.Typed as T
 import BorrowedCF.Reduction.Processes.Typed as TR
 import BorrowedCF.Processes.Untyped as U

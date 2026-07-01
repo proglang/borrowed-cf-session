@@ -22,7 +22,7 @@
 --  so the distributing leaf gives its handle a  *  right-sync.
 -- ============================================================================
 
-module BorrowedCF.FixBreaksDrop where
+module BorrowedCF.Simulation2.FixBreaksDrop where
 
 open import BorrowedCF.Simulation2.Base
 open import BorrowedCF.Simulation2.Congruence

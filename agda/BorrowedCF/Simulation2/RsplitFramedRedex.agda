@@ -1,4 +1,4 @@
-module BorrowedCF.RsplitFramedRedex where
+module BorrowedCF.Simulation2.RsplitFramedRedex where
 
 open import Data.Vec.Functional as F using ()
 
@@ -521,7 +521,7 @@ wall-general sp le = ¬Sep-target (Sep-≼ le sp)
 -- (1) ⊢rsplitBody : a NON-EMPTY evaluation frame E DOES exist that consumes the
 --     rsplit result pair  ⟨ msg‼⊤;ret ⟩ ⊗¹ ⟨ acq;skip ⟩  down to ⊤ ∣ 𝕀.  So an
 --     rsplit thread CAN be well-typed (unlike the empty-frame case refuted in
---     BorrowedCF.RedexTypingProbe).  The thread reads ONLY the handle slot 0F.
+--     BorrowedCF.Simulation2.RedexTypingProbe).  The thread reads ONLY the handle slot 0F.
 --
 -- (2) ⊢offThread, ⊢backThread : the off-handle borrow (front slot 1F) and the
 --     back-chain borrow are each independently consumable to ⊤ by sibling threads.

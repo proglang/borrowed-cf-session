@@ -1,7 +1,7 @@
 {-# OPTIONS --rewriting #-}
 -- Machine-checked: the merged translation fix (distributing Ub[_]) does NOT change
 -- the two canonS values the rsplit off-handle obligation compares.
-module BorrowedCF.RsplitFlipCheck where
+module BorrowedCF.Simulation2.RsplitFlipCheck where
 
 open import BorrowedCF.Simulation2.Base
 open import BorrowedCF.Simulation2.Congruence

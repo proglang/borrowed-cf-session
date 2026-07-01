@@ -1,4 +1,4 @@
-module BorrowedCF.RsplitOwnershipProbe where
+module BorrowedCF.Simulation2.RsplitOwnershipProbe where
 
 open import Data.Nat.ListAction using (sum)
 open import Data.Vec.Functional as F using ()

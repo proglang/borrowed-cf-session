@@ -5,7 +5,7 @@
 --   * b=0 with nonempty tail: the head junction flag flips phi drop -> phi acq;
 --     NOT silent, and no untyped step connects phi drop to phi acq (RU-Drop needs
 --     a drop redex). So a weak-sim-up-to-Discard alone does NOT cover this case.
-module BorrowedCF.DiscardCheck where
+module BorrowedCF.Simulation2.DiscardCheck where
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms

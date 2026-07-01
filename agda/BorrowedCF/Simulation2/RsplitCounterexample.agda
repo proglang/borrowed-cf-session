@@ -47,7 +47,7 @@
 --      so the untyped P-triple really is  weakened-ungrown.
 -- ============================================================================
 
-module BorrowedCF.RsplitCounterexample where
+module BorrowedCF.Simulation2.RsplitCounterexample where
 
 open import BorrowedCF.Simulation2.Base
 open import BorrowedCF.Simulation2.Congruence
@@ -57,7 +57,7 @@ open import Data.List using (_∷_; [])
 open import Data.Fin using (zero; suc)
 
 -- the well-typed redex (sibling owns the off-handle borrow) lives here:
-import BorrowedCF.RsplitOwnershipProbe as Probe
+import BorrowedCF.Simulation2.RsplitOwnershipProbe as Probe
 -- typed processes + typed reduction (the  R-RSplit  source step):
 import BorrowedCF.Processes.Typed as T
 import BorrowedCF.Reduction.Processes.Typed as TR

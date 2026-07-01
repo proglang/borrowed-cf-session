@@ -1,4 +1,4 @@
-module BorrowedCF.InnerHandleProbe where
+module BorrowedCF.Simulation2.InnerHandleProbe where
 
 open import Data.Nat.ListAction using (sum)
 open import Data.Vec.Functional as F using ()
@@ -16,7 +16,7 @@ open import BorrowedCF.Reduction.Expressions
 open import BorrowedCF.Processes.Typed
 import BorrowedCF.Reduction.Processes.Typed as RR
 open import BorrowedCF.Simulation2.Confine using (count)
-import BorrowedCF.RsplitTypingRefute as R
+import BorrowedCF.Simulation2.RsplitTypingRefute as R
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 
 open Fin.Patterns
@@ -241,7 +241,7 @@ handle-not-head ()
 -- same-block borrow (slot 0F, ⟨msg ‼ ⊤⟩) can NEVER be owned by a PARALLEL
 -- SIBLING of the close thread: that would ∥-separate 0F and 1F, but both sit
 -- under `;` in resBodyStruct (the structBinder geometry) -- reusing the proven
--- sep-monotonicity of BorrowedCF.RsplitTypingRefute (sep is UPWARD-monotone
+-- sep-monotonicity of BorrowedCF.Simulation2.RsplitTypingRefute (sep is UPWARD-monotone
 -- under ≼ for non-Unr slots; a pure ;-sequence has NO separation).
 --
 -- CONSEQUENCE for the reverse simulation:  when the close `end ⁇`·(inner) is
