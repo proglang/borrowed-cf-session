@@ -103,6 +103,12 @@ no-RU-Drop-match :
        dropTriple Usrc ≡ ((e ⊗ (` suc x)) ⊗ (` 0F)))
 no-RU-Drop-match (e , x , ())
 
+-- IMPORTANT: RU-Drop is the SOLE drop rule of the untyped reduction
+-- (Reduction/Processes/Untyped.agda has exactly ONE drop constructor; there is
+-- NO RU-DropLocal / no-sync drop).  So `no-RU-Drop-match` is not "one rule can't
+-- fire" but "NO drop step exists" — the R-Drop forward-simulation step is
+-- genuinely unconstructible under the fix, not merely routed through another rule.
+
 -- Contrast: the BROADCAST leaf puts the flag ` 0F in that slot, so RU-Drop DOES
 -- fire — this is exactly the regression the fix introduces.  (See also the live
 -- proof obstruction Theorems/Drop.agda:779  `* != ` 0F`, and the leaf-level
