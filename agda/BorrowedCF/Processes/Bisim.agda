@@ -10,6 +10,7 @@ open import BorrowedCF.Types
 
 import BorrowedCF.Processes.Typed as 𝐓
 import BorrowedCF.Processes.Untyped as 𝐔
+import BorrowedCF.Reduction.Processes.Untyped as 𝐔
 
 open Nat.Variables
 open Fin.Patterns
@@ -36,13 +37,17 @@ infixr 5 _++ₛ_
 _++ₛ_ : ∀ {a b N} → (a →ₛ N) → (b →ₛ N) → (a + b →ₛ N)
 _++ₛ_ {a} σ₁ σ₂ i = [ σ₁ , σ₂ ]′ (Fin.splitAt a i)
 
+Ub[_] : (b : ℕ) → UChan n → b →ₛ n
+Ub[ suc b ] (e₁ , c , e₂) zero = 𝐔.𝓒[ e₁ × c × * ]
+Ub[ suc b ] (e₁ , c , e₂) (suc x) = Ub[ b ] (* , c , e₂) x
+
 UB[_] : (B : 𝐓.BindGroup) → UChan n → ((sum B →ₛ syncs B + n) → 𝐔.Proc (syncs B + n)) → 𝐔.Proc n
 UB[ [] ] c f = f λ()
 UB[ b ∷ [] ] c f = f λ _ → chanTriple c
 UB[ b ∷ B@(_ ∷ _) ] (e₁ , x , e₂) f = φ ϕ[ b ] $ UB[ B ] (` 0F , suc x , wk e₂) λ σ →
   subst 𝐔.Proc (sym (+-suc (syncs B) _)) $ f λ y →
     subst Tm (+-suc (syncs B) _) $
-      [ const (chanTriple (wk e₁ , suc x , ` 0F) ⋯ᵣ weaken* (syncs B))
+      [ Ub[ b ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* (syncs B)
       , σ
       ]′ (splitAt b y)
 

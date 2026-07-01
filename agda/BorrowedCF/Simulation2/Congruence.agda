@@ -9,7 +9,7 @@ import BorrowedCF.Processes.Typed   as T
 import BorrowedCF.Processes.Untyped as U
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
 open import BorrowedCF.Simulation2.TranslationProperties
-  using (UB-nat; mapᶜ; varΘ; U-cong; U-⋯ₚ; ++ₛ-⋯; liftCast; subst₂→; chanTriple-mapᶜ)
+  using (UB-nat; Ub-nat; Ub-V; mapᶜ; varΘ; U-cong; U-⋯ₚ; ++ₛ-⋯; liftCast; subst₂→; chanTriple-mapᶜ)
   renaming ( subst-⋯ₚ-dom to TP-subst-⋯ₚ-dom
            ; subst₂-cancel to subst₂-cancel-local
            ; subst-⋯-cod to subst-⋯-cod-local
@@ -197,12 +197,12 @@ UB-ext (b ∷ B@(_ ∷ _)) (e1 , x , e2) Rp f =
     f' : (sum B →ₛ sB + suc _) → U.Proc (sB + suc _)
     f' τ = subst U.Proc (sym (+-suc sB _))
              (f (λ y → subst Tm (+-suc sB _)
-                   ([ const (chanTriple (wk e1 , suc x , ` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB) , τ ]′ (Fin.splitAt b y))))
+                   ([ Ub[ b ] (wk e1 , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB , τ ]′ (Fin.splitAt b y))))
     perτ : ∀ τ → ((Rp U.⋯ₚ weaken* ⦃ Kᵣ ⦄ 1) U.⋯ₚ weaken* ⦃ Kᵣ ⦄ sB) U.∥ f' τ
                  ≡ subst U.Proc (sym (+-suc sB _))
                      ((Rp U.⋯ₚ weaken* ⦃ Kᵣ ⦄ (suc sB)) U.∥
                       f (λ y → subst Tm (+-suc sB _)
-                            ([ const (chanTriple (wk e1 , suc x , ` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB) , τ ]′ (Fin.splitAt b y))))
+                            ([ Ub[ b ] (wk e1 , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB , τ ]′ (Fin.splitAt b y))))
     perτ τ =
         cong (U._∥ f' τ) (weakenComp sB Rp)
       ■ sym (subst-∥ (sym (+-suc sB _)) (Rp U.⋯ₚ weaken* ⦃ Kᵣ ⦄ (suc sB)) _)
@@ -230,7 +230,7 @@ canonₛ []            cc = λ ()
 canonₛ (b ∷ [])      cc = λ _ → chanTriple cc
 canonₛ {n} (b ∷ B@(_ ∷ _)) (e1 , x , e2) =
   λ y → subst Tm (+-suc (syncs B) n)
-          ([ const (chanTriple (wk e1 , suc x , ` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B))
+          ([ Ub[ b ] (wk e1 , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ (syncs B)
            , canonₛ B (` 0F , suc x , wk e2) ]′ (Fin.splitAt b y))
 
 -- naturality of the subst-bracketed Θ-shift used inside canonₛ.
@@ -260,6 +260,15 @@ private
         (cong `_ (varΘ sB (ρ ↑) (suc x))))
       (cong `_ (varΘ sB (ρ ↑) 0F))
 
+  UbReqᵍ : ∀ {a bb} b sB (e1 : Tm a) (x : 𝔽 a) (ρ : a →ᵣ bb) (j : 𝔽 b) →
+           (Ub[ b ] (wk e1 , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB) j ⋯ ((ρ ↑) ↑* sB)
+           ≡ (Ub[ b ] (wk (e1 ⋯ ρ) , suc (ρ x) , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB) j
+  UbReqᵍ b sB e1 x ρ j =
+      sym (⋯-↑*-wk (Ub[ b ] (wk e1 , suc x , ` 0F) j) (ρ ↑) sB)
+    ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) (Ub-nat b (wk e1 , suc x , ` 0F) (ρ ↑) j)
+    ■ cong (λ cc → Ub[ b ] cc j ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+        (cong₂ _,_ (sym (⋯-↑-wk e1 ρ)) refl)
+
 -- canonₛ is natural in its channel triple under target renamings.
 canonₛ-nat : ∀ {a bb} (B : BindGroup) (cc : UChan a) (ρ : a →ᵣ bb) (i : 𝔽 (sum B)) →
              canonₛ B cc i ⋯ (ρ ↑* syncs B) ≡ canonₛ B (mapᶜ ρ cc) i
@@ -267,9 +276,8 @@ canonₛ-nat []            cc ρ ()
 canonₛ-nat (b ∷ [])      (e1 , x , e2) ρ i = refl
 canonₛ-nat {a} {bb} (b ∷ B@(_ ∷ _)) (e1 , x , e2) ρ i
   with Fin.splitAt b i | canonₛ-nat B (` 0F , suc x , wk e2) (ρ ↑)
-... | inj₁ j | _  = ΘrelEqᵍ (syncs B) ρ (const chL j)
-                  ■ cong (subst Tm (+-suc (syncs B) bb)) (chReqᵍ (syncs B) e1 x ρ)
-  where chL = chanTriple (wk e1 , suc x , ` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)
+... | inj₁ j | _  = ΘrelEqᵍ (syncs B) ρ ((Ub[ b ] (wk e1 , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ (syncs B)) j)
+                  ■ cong (subst Tm (+-suc (syncs B) bb)) (UbReqᵍ b (syncs B) e1 x ρ j)
 ... | inj₂ k | ih = ΘrelEqᵍ (syncs B) ρ (canonₛ B (` 0F , suc x , wk e2) k)
                   ■ cong (subst Tm (+-suc (syncs B) bb))
                       ( ih k
@@ -289,7 +297,7 @@ UB-flat {n} (b ∷ B@(_ ∷ _)) (e1 , x , e2) f =
     leaffn : (sum B →ₛ sB + suc n) → U.Proc (sB + suc n)
     leaffn = λ τ → subst U.Proc (sym (+-suc sB n))
                (f (λ y → subst Tm (+-suc sB n)
-                     ([ const (chanTriple (wk e1 , suc x , ` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB) , τ ]′ (Fin.splitAt b y))))
+                     ([ Ub[ b ] (wk e1 , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB , τ ]′ (Fin.splitAt b y))))
 
 -- the leaf substitution of a flattened ν-block
 leafσ : ∀ {m n} (σ : m →ₛ n) (B₁ B₂ : BindGroup) →
