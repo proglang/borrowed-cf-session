@@ -210,3 +210,31 @@ before-structNSeq m z′ = inj₁ (0∈ , z∈)
     ceq = count-wk-suc (structNSeq m) z′ ■ count-structNSeq-lt m z′ (toℕ<n z′)
     z∈ : (Fin.suc z′) ∈ₘ 𝐂.wk (structNSeq m)
     z∈ eq = case (sym ceq ■ eq) of λ ()
+
+
+-- ── step 2(b): before/count transported forward along an injective renaming. ──
+count-⋯ᵣ-inj : ∀ {m k} (ϕ : m 𝐂.→ᵣ k) → 𝐂.Inj ϕ → (γ : Struct m) (w : 𝔽 m)
+             → count (ϕ w) (γ 𝐂.⋯ᵣ ϕ) ≡ count w γ
+count-⋯ᵣ-inj ϕ inj []      w = refl
+count-⋯ᵣ-inj ϕ inj (` v)   w with ϕ w Fin.≟ ϕ v | w Fin.≟ v
+... | yes _ | yes _ = refl
+... | no  _ | no  _ = refl
+... | yes p | no ¬q = ⊥-elim (¬q (inj p))
+... | no ¬p | yes q = ⊥-elim (¬p (cong ϕ q))
+count-⋯ᵣ-inj ϕ inj (α ∥ β) w = cong₂ _+_ (count-⋯ᵣ-inj ϕ inj α w) (count-⋯ᵣ-inj ϕ inj β w)
+count-⋯ᵣ-inj ϕ inj (α ; β) w = cong₂ _+_ (count-⋯ᵣ-inj ϕ inj α w) (count-⋯ᵣ-inj ϕ inj β w)
+
+mem-⋯ᵣ-inj : ∀ {m k} (ϕ : m 𝐂.→ᵣ k) → 𝐂.Inj ϕ → (γ : Struct m) {w : 𝔽 m}
+           → w ∈ₘ γ → (ϕ w) ∈ₘ (γ 𝐂.⋯ᵣ ϕ)
+mem-⋯ᵣ-inj ϕ inj γ {w} w∈ eq = w∈ (sym (count-⋯ᵣ-inj ϕ inj γ w) ■ eq)
+
+before-⋯ᵣ-inj : ∀ {m k} (ϕ : m 𝐂.→ᵣ k) → 𝐂.Inj ϕ → (γ : Struct m) {x y : 𝔽 m}
+              → before x y γ → before (ϕ x) (ϕ y) (γ 𝐂.⋯ᵣ ϕ)
+before-⋯ᵣ-inj ϕ inj (` z) ()
+before-⋯ᵣ-inj ϕ inj [] ()
+before-⋯ᵣ-inj ϕ inj (α ∥ β) (inj₁ bα) = inj₁ (before-⋯ᵣ-inj ϕ inj α bα)
+before-⋯ᵣ-inj ϕ inj (α ∥ β) (inj₂ bβ) = inj₂ (before-⋯ᵣ-inj ϕ inj β bβ)
+before-⋯ᵣ-inj ϕ inj (α ; β) (inj₁ (x∈α , y∈β)) =
+  inj₁ (mem-⋯ᵣ-inj ϕ inj α x∈α , mem-⋯ᵣ-inj ϕ inj β y∈β)
+before-⋯ᵣ-inj ϕ inj (α ; β) (inj₂ (inj₁ bα)) = inj₂ (inj₁ (before-⋯ᵣ-inj ϕ inj α bα))
+before-⋯ᵣ-inj ϕ inj (α ; β) (inj₂ (inj₂ bβ)) = inj₂ (inj₂ (before-⋯ᵣ-inj ϕ inj β bβ))
