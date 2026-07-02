@@ -26,9 +26,40 @@ open import BorrowedCF.Simulation2.BeforeOrder using (before; before⇒mem)
 open import BorrowedCF.Context.Join using (join)
 open import BorrowedCF.Context.Pattern using (foldPattern)
 open import Data.List using ([]; _∷_)
+open import BorrowedCF.Simulation2.BeforeOrder using (before-structNSeq; before-⋯ᵣ-inj)
+open import BorrowedCF.Processes.Typed using (structBinder; structNSeq; BindGroup)
+import BorrowedCF.Context.Substitution as 𝐂S
+open import Data.Nat.ListAction using (sum)
+open import Data.Fin.Base using (_↑ˡ_)
+open import Data.Fin.Properties using (↑ˡ-injective)
 
 open Nat.Variables
+open Fin.Patterns
 open Nat using (+-assoc)
+
+-- ── step 4(a): the send handle's binder-context has 0F ;-before it whenever the
+--    block-1 index z₀ is not the minimal 0F.  The inner binder of
+--    ν (b₁ ∷ []) (b₂ ∷ []) _ places 0F ;-before every LATER block-1 leaf
+--    (structNSeq is a ;-chain), lifted through the two right-weakenings.  This is
+--    the ONE `before` fact the LeftPat/¬before squeeze contradicts to force z₀ ≡ 0F. ──
+inj-wkʳ : ∀ {n} k → 𝐂S.Inj (𝐂S.wkʳ {n = n} k)
+inj-wkʳ k {x} {y} eq = ↑ˡ-injective k x y eq
+
+before-com-binderᴸ : ∀ (b₁ b₂ : ℕ) {m} (γ : Struct m) (z₀ : 𝔽 (suc b₁)) → Fin.toℕ z₀ ≢ 0 →
+  let C₁ = suc b₁ ∷ []
+      C₂ = b₂ ∷ [] in
+  before 0F (((z₀ ↑ˡ 0) ↑ˡ (b₂ + 0)) ↑ˡ m)
+    ( (structBinder C₁ 𝐂S.⋯ᵣ 𝐂S.wkʳ (sum C₂) 𝐂S.⋯ᵣ 𝐂S.wkʳ m)
+    ∥ (structBinder C₂ 𝐂S.⋯ᵣ 𝐂S.wkˡ (sum C₁) 𝐂S.⋯ᵣ 𝐂S.wkʳ m)
+    ∥ (γ 𝐂S.⋯ 𝐂S.weaken* ⦃ 𝐂S.Kᵣ ⦄ (sum C₁ + sum C₂)) )
+before-com-binderᴸ b₁ b₂ {m} γ 0F       z₀≢ = ⊥-elim (z₀≢ refl)
+before-com-binderᴸ b₁ b₂ {m} γ (suc z′) z₀≢ =
+  inj₁ (inj₁ (before-⋯ᵣ-inj (𝐂S.wkʳ m) (inj-wkʳ m)
+         (structBinder (suc b₁ ∷ []) 𝐂S.⋯ᵣ 𝐂S.wkʳ (b₂ + 0))
+         (before-⋯ᵣ-inj (𝐂S.wkʳ (b₂ + 0)) (inj-wkʳ (b₂ + 0))
+           (structBinder (suc b₁ ∷ []))
+           (inj₁ (before-⋯ᵣ-inj (𝐂S.wkʳ 0) (inj-wkʳ 0) (structNSeq (suc b₁))
+                   (before-structNSeq b₁ z′))))))
 
 -- ── step 3(b): count is ADDITIVE over pattern-plugging.  Plugging δ into the hole
 --    of a frame context 𝒫 adds count z δ on top of the frame-context count (the
