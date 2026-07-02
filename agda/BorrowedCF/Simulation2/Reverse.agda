@@ -32,7 +32,11 @@ open import BorrowedCF.Simulation2.ReverseInv
 open import BorrowedCF.Simulation2.InvFrame using (strengthen-frame; inv-app; inv-pair; arg-type)
 open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯)
 open import BorrowedCF.Simulation2.RevComConfine
-  using (frames-𝕀; leftPat-¬before; leftPat-pullOut-∥-≼)
+  using (frames-𝕀; leftPat-¬before; leftPat-pullOut-∥-≼; before-com-binderᴸ; com-xS-min)
+open import BorrowedCF.Simulation2.ReverseConfine using (count-handle-comᴸ)
+open import BorrowedCF.Simulation2.BeforeOrder using (before)
+import BorrowedCF.Context.Substitution as 𝐂S
+open import Data.Nat.ListAction using (sum)
 open import BorrowedCF.Simulation2.RevComImage using (com-image-block1; pos⇒suc)
 open import BorrowedCF.Context.Pattern using (LeftPat; CxPat; _[_]𝓅)
 open import BorrowedCF.Simulation2.Confine using (count; ≼⇒count≤; count-self; count-join-Dir; count-join-PS)
@@ -47,7 +51,7 @@ open import Relation.Binary.Construct.Closure.ReflexiveTransitive
   using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
 open import BorrowedCF.Context using (Ctx; Struct; biasedDir; _∶_≼_; join)
-open TP using (_;_⊢ₚ_; inv-⟪⟫; inv-∥; inv-ν; ⊢-≋; bindCtx⇒chanCtx)
+open TP using (_;_⊢ₚ_; inv-⟪⟫; inv-∥; inv-ν; ⊢-≋; bindCtx⇒chanCtx; structBinder)
 
 ------------------------------------------------------------------------
 -- Typed-side reflexive-transitive closure of process reduction.
@@ -618,7 +622,8 @@ sim←ᵍ {m = m} σ Vσ Γ-S {g = g} {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
 ... | Sum.inj₂ (Sum.inj₂ refl)
   with _ , _ , _ , _ , _ , _ , _ , _ , () , _ ← inv-ν ⊢P
 ... | Sum.inj₁ (b₁ , b₂ , refl , refl)
-  with _ , _ , Γ′-S , ⊢body ← inv-ν-chanCx Γ-S ⊢P
+  with _ , _ , _ , _ , _ , _ , _ , C , C′ , ⊢body ← inv-ν ⊢P
+  with Γ′-S ← chanCx-⸴* (chanCx-⸴* (bindCtx⇒chanCtx C) (bindCtx⇒chanCtx C′)) Γ-S
   with bodyeq′ ← ν-inj (bodyeq ■ U-ν-singleton b₁ b₂ P₀ σ)
   -- bodyeq′ : ⟪F₁[send·(e⊗𝓒[e₁×0F×e₁′])]⟫ ∥ (⟪F₂[recv·𝓒[e₂×1F×e₂′]]⟫ ∥ P₁)
   --           ≡ U[ P₀ ] (νσ b₁ b₂ σ)
@@ -650,20 +655,30 @@ sim←ᵍ {m = m} σ Vσ Γ-S {g = g} {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
 ... | refl , lpˢ
   with com-image-block1 b₁ b₂ σ Vσ xS cSeq
 ... | z , 1≤b₁ , refl
-  with b₁' , refl ← pos⇒suc 1≤b₁ = {! STEP 1+5 (RU-Com).  N2 (com-image-block1)
-     pinned the send channel to block-1: b₁ ≡ suc b₁', z : 𝔽 (suc b₁' + 0), and
-     xS ≡ (z ↑ˡ (b₂ + 0)) ↑ˡ m (exactly count-handle-comᴸ's handle).
-     N1 = send-chan-nonUnr ⊢cS msg≃Tx : ¬ Unr (Γ xS).
-     N3 = send-arg-count N1 ⊢redexˢ : 1 ≤ count xS γrˢ.
-     To pin xS ≡ 0F: feed com-xS-min with count-handle-comᴸ (suc b₁') b₂ g z and
-     before-com-binderᴸ b₁' b₂ g z₀ (z₀ = cast z, z₀ ↑ˡ 0 ≡ z) over the ν body
-     context γinner.  BLOCKER: γinner is bound here via `with … ← inv-ν-chanCx`, so
-     it prints as an opaque `fst` and count-handle-comᴸ's explicit structBinder-∥
-     cannot defeq-match it (close-confine avoids this by taking ⊢P as a parameter /
-     `let`-binding inv-ν, keeping the struct transparent).  So this needs a
-     concrete-struct `com-min` lemma (mirror ReverseConfine.close-confine), plus
-     ¬ Unr (Γ 0F) (block-1 New tip, mirror Theorems.agda:119's ¬u-head) and
-     ¬ before 0F xS γrˢ.  Then reconstruct R-Com and bridge to U[P′]σ (U-com). !}
+  with b₁' , refl ← pos⇒suc 1≤b₁ = {! STEP 5: xS≡0F pins the send handle (xS ≡ 0F
+       below); reconstruct the typed R-Com redex + U-com back-bridge, close ─→ᶜ?. !}
+  where
+    ¬uxS = send-chan-nonUnr ⊢cS msg≃Tx
+    1≤c  = send-arg-count ¬uxS ⊢redexˢ
+    cnt1 = count-handle-comᴸ (suc b₁') b₂ g z
+    z₀   = Fin.cast (+-identityʳ (suc b₁')) z
+    z₀↑0≡z : z₀ Fin.↑ˡ 0 ≡ z
+    z₀↑0≡z = Fin.toℕ-injective (Fin.toℕ-↑ˡ z₀ 0 ■ Fin.toℕ-cast (+-identityʳ (suc b₁')) z)
+    Sbind = (structBinder (suc b₁' ∷ []) 𝐂S.⋯ᵣ 𝐂S.wkʳ (sum (b₂ ∷ [])) 𝐂S.⋯ᵣ 𝐂S.wkʳ m)
+          Struct.∥ (structBinder (b₂ ∷ []) 𝐂S.⋯ᵣ 𝐂S.wkˡ (sum (suc b₁' ∷ [])) 𝐂S.⋯ᵣ 𝐂S.wkʳ m)
+          Struct.∥ (g 𝐂S.⋯ 𝐂S.weaken* ⦃ 𝐂S.Kᵣ ⦄ (sum (suc b₁' ∷ []) + sum (b₂ ∷ [])))
+    contra : Fin.toℕ z₀ ≢ 0 → ⊥
+    contra ne = com-xS-min ¬uxS {! ¬ Unr (Γ 0F) !} lpˢ ≼ˢ αβ≼ cnt1
+                  (subst (λ zz → before 0F ((zz Fin.↑ˡ (b₂ + 0)) Fin.↑ˡ m) Sbind) z₀↑0≡z
+                    (before-com-binderᴸ b₁' b₂ g z₀ ne))
+                  1≤c {! ¬ before 0F xS γrˢ !}
+    z₀≡0F : z₀ ≡ 0F
+    z₀≡0F with Fin.toℕ z₀ Nat.≟ 0
+    ... | yes e0 = Fin.toℕ-injective e0
+    ... | no  ne = ⊥-elim (contra ne)
+    xS≡0F : ((z Fin.↑ˡ (b₂ + 0)) Fin.↑ˡ m) ≡ 0F
+    xS≡0F = cong (λ zz → (zz Fin.↑ˡ (b₂ + 0)) Fin.↑ˡ m) (sym z₀↑0≡z)
+          ■ cong (λ zz → ((zz Fin.↑ˡ 0) Fin.↑ˡ (b₂ + 0)) Fin.↑ˡ m) z₀≡0F
 -- RU-Choice.  Identical shape to RU-Com (ν, ∥-headed body): same inv-U-ν-∥-shape
 --   + U-ν-singleton collapse; RESIDUAL = frameApp-reflect the select/branch
 --   redexes + `inj wrapping on the codomain, mirroring forward U-choice.
