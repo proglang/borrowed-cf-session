@@ -61,20 +61,17 @@ grown-b1' : canonₛ {n = 1} (3 ∷ 1 ∷ []) (K `unit , 0F , K `unit) 1F
             ≡ ((* ⊗ (` 1F)) ⊗ *)
 grown-b1' = refl
 
--- ── SINGLE-CHAIN-TAIL FINDING ────────────────────────────────────────────
--- When B₂ = [] the handle chain is the LAST chain, so canonₛ reaches it via the
--- single-chain leaf  canonₛ (h ∷ []) cc = λ _ → chanTriple cc  which BROADCASTS
--- the full triple to BOTH borrows.  Hence for B₂ = [] the grown borrow-1 is NOT
--- 𝓒[* × junc × R] but the whole 𝓒[e₁ × junc × R] (left slot = the threaded e₁,
--- here ` 0F), IDENTICAL to grown borrow-0.  Example (B₁ = 1∷[], handle width 2):
-grown-b1-B1ne : canonₛ {n = 1} (1 ∷ 2 ∷ []) (K `unit , 0F , K `unit)
-                  (Data.Fin.suc (Data.Fin.suc Data.Fin.zero))
-                ≡ (((` 0F) ⊗ (` 1F)) ⊗ *)
-grown-b1-B1ne = refl
--- borrow-0 of that same chain is IDENTICAL (broadcast), so the split (which would
--- send borrow-1 → 𝓒[* × junc × *]) does NOT match the translation for B₂ = [].
--- ⇒ the ≡-level split-halves alignment holds ONLY for B₂ ≠ [] (distributing Ub).
+-- ── LAST-CHAIN NOW DISTRIBUTES (obstruction RESOLVED) ────────────────────
+-- The singleton leaf now distributes: canonₛ (h ∷ []) cc = Ub[ h + 0 ] cc.
+-- So even when B₂ = [] (handle is the LAST chain, e.g. B₁ = 1∷[], handle width
+-- 2 grown), the two grown borrows are DIFFERENT — the two split halves:
 grown-b0-B1ne : canonₛ {n = 1} (1 ∷ 2 ∷ []) (K `unit , 0F , K `unit)
-                  (Data.Fin.suc Data.Fin.zero)
-                ≡ (((` 0F) ⊗ (` 1F)) ⊗ *)
+                  (Data.Fin.suc Data.Fin.zero)          -- borrow-0
+                ≡ (((` 0F) ⊗ (` 1F)) ⊗ *)               -- 𝓒[e₁ × j × *]  (L kept, R=*)
 grown-b0-B1ne = refl
+grown-b1-B1ne : canonₛ {n = 1} (1 ∷ 2 ∷ []) (K `unit , 0F , K `unit)
+                  (Data.Fin.suc (Data.Fin.suc Data.Fin.zero))  -- borrow-1
+                ≡ ((* ⊗ (` 1F)) ⊗ *)                    -- 𝓒[* × j × R]  (L=*, R kept)
+grown-b1-B1ne = refl
+-- ⇒ borrow-0 and borrow-1 now DIFFER for B₂ = [] too, matching RU-LSplit's split.
+--   The last-chain broadcast-vs-split obstruction is gone; U-lsplit closes for all B₂.
