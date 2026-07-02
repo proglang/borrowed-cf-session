@@ -20,6 +20,10 @@ open import BorrowedCF.Reduction.Base
 open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.List.Relation.Unary.All.Properties using (++⁺)
 open import Data.Sum using (inj₁; inj₂)
+open import Data.Product using (_,_; proj₁; proj₂)
+open import BorrowedCF.Simulation2.Confine using (count; +≡0)
+open import BorrowedCF.Simulation2.BeforeOrder using (before; before⇒mem)
+open import BorrowedCF.Context.Join using (join)
 
 open Nat.Variables
 
@@ -72,3 +76,22 @@ leftPat-pullOut-∥-≼ {𝒫 = (R , γ) ∷ 𝒫} {α} {β} (inj₂ refl ∷ lp
   ≼-trans (≼-cong-; (leftPat-pullOut-∥-≼ lp) (≼-refl ≈-refl))
           (≼-trans (≼-refl (;-cong ≈-refl (≈-sym ∥-unit₁)))
                    (≼-trans ≼-wk (≼-refl (∥-cong ;-unit₂ ≈-refl))))
+
+
+-- ── step 2(a): a LeftPat frame context has NOTHING ;-before the hole channel xS,
+--    provided xS is absent from the frame contexts (count 0 in 𝒫[[]]).  This is
+--    the ;-minimality of an impure head redex, pushed into `before`. ──
+leftPat-¬before : ∀ {n} {𝒫 : CxPat n} {δ : Struct n} {z xS : 𝔽 n}
+  → LeftPat 𝒫 → count xS (𝒫 [ [] ]𝓅) ≡ 0 → ¬ before z xS δ
+  → ¬ before z xS (𝒫 [ δ ]𝓅)
+leftPat-¬before {𝒫 = []} [] c0 ¬bδ b = ¬bδ b
+leftPat-¬before {𝒫 = (𝟙 , γ) ∷ 𝒫′} {δ} {z} {xS} (inj₁ refl ∷ lp) c0 ¬bδ (inj₁ bγ) =
+  proj₂ (before⇒mem γ bγ) (proj₁ (+≡0 {count xS γ} c0))
+leftPat-¬before {𝒫 = (𝟙 , γ) ∷ 𝒫′} {δ} {z} {xS} (inj₁ refl ∷ lp) c0 ¬bδ (inj₂ brest) =
+  leftPat-¬before lp (proj₂ (+≡0 {count xS γ} c0)) ¬bδ brest
+leftPat-¬before {𝒫 = (R , γ) ∷ 𝒫′} {δ} {z} {xS} (inj₂ refl ∷ lp) c0 ¬bδ (inj₁ (z∈ , xS∈)) =
+  xS∈ (proj₂ (+≡0 {count xS (𝒫′ [ [] ]𝓅)} c0))
+leftPat-¬before {𝒫 = (R , γ) ∷ 𝒫′} {δ} {z} {xS} (inj₂ refl ∷ lp) c0 ¬bδ (inj₂ (inj₁ brest)) =
+  leftPat-¬before lp (proj₁ (+≡0 {count xS (𝒫′ [ [] ]𝓅)} c0)) ¬bδ brest
+leftPat-¬before {𝒫 = (R , γ) ∷ 𝒫′} {δ} {z} {xS} (inj₂ refl ∷ lp) c0 ¬bδ (inj₂ (inj₂ bγ)) =
+  proj₂ (before⇒mem γ bγ) (proj₂ (+≡0 {count xS (𝒫′ [ [] ]𝓅)} c0))
