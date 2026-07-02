@@ -668,16 +668,17 @@ sim←ᵍ {m = m} σ Vσ Γ-S {g = g} {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
           Struct.∥ (structBinder (b₂ ∷ []) 𝐂S.⋯ᵣ 𝐂S.wkˡ (sum (suc b₁' ∷ [])) 𝐂S.⋯ᵣ 𝐂S.wkʳ m)
           Struct.∥ (g 𝐂S.⋯ 𝐂S.weaken* ⦃ 𝐂S.Kᵣ ⦄ (sum (suc b₁' ∷ []) + sum (b₂ ∷ [])))
     contra : Fin.toℕ z₀ ≢ 0 → ⊥
-    contra ne = com-xS-min ¬uxS {! ¬ Unr (Γ 0F).  ROADBLOCK (skip-padding, same
-                  family as the ?4 close roadblock): the block-1 head 0F need NOT
-                  be non-Unr.  A New session admits a Skip first piece — e.g.
-                  s = skip ; (msg ‼ ⊤ ; end) is New (New.skip / New.msg / New._;_),
-                  and BindCtx′ decomposes it with head ⟨skip⟩ (Skips skip ⇒ Unr).
-                  Then the send borrows a LATER (msg) piece, so xS ≠ 0F and
-                  ¬ Unr (Γ 0F) is FALSE.  com-xS-min (y = 0F) only closes the
-                  no-Skip-padding sub-case; the general reverse RU-Com must
-                  R-Discard* the Skip-padding borrows (codomain is multi-step) and
-                  then fire R-Com at the reduced block where the send handle is 0F. !}
+    contra ne = com-xS-min ¬uxS {! ¬ Unr (Γ 0F).  This com-xS-min path closes the
+                  NO-skip-padding sub-case (0F live ⇒ ¬Unr holds).  The block-1
+                  head 0F may instead be a Skip borrow (New admits a Skip first
+                  piece, e.g. skip ; (msg ‼ ⊤ ; end); BindCtx′ head ⟨skip⟩ ⇒ Unr);
+                  then the send borrows a later piece (xS ≠ 0F).  That case is NOT
+                  a roadblock: the reconstruction R-Discard*s the leading unused
+                  Skip borrows (codomain is multi-step) — see
+                  BorrowedCF.Simulation2.RevSkipNorm.normalize-block1 (the R-Discard
+                  chain + U[_]-invariance ≋, built on disc-single) fed the
+                  ⋯ₚ weakenᵣ form from Strengthen.strengthen-Proc-gen (0F ∉ dom γ) —
+                  bringing the send handle to 0F, then R-Com fires. !}
                   lpˢ ≼ˢ αβ≼ cnt1
                   (subst (λ zz → before 0F ((zz Fin.↑ˡ (b₂ + 0)) Fin.↑ˡ m) Sbind) z₀↑0≡z
                     (before-com-binderᴸ b₁' b₂ g z₀ ne))
