@@ -1910,6 +1910,38 @@ canonₛ-rwk0 {N} (e₁ , x , e₂) b₁ B₂ i i≢ =
     ■ sym (canonₛ-nat (suc b₁ ∷ B₂) (e₁ , x , e₂) weakenᵣ i) )
   where sD = syncs (suc b₁ ∷ B₂)
 
+-- transport equation for the general canonₛ-rwk: reshape the insertion codomain
+-- (syncs(B₁++suc b₁∷B₂) + suc N) to the grown scope (syncs(B₁++1∷suc b₁∷B₂) + N).
+rwk-eq : ∀ (B₁ : BindGroup) {b₁ B₂ N} →
+         syncs (B₁ ++ suc b₁ ∷ B₂) + suc N ≡ syncs (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + N
+rwk-eq B₁ {b₁} {B₂} {N} =
+    +-suc (syncs (B₁ ++ suc b₁ ∷ B₂)) N
+  ■ cong (_+ N) (sym (syncs-rwk B₁ {b₁} {B₂}))
+
+-- general canonₛ-rwk: off the consumed handle inj 0F, canonₛ on the rwk-grown
+-- bind group equals the transported ungrown canonₛ with the fresh `1`-block sync
+-- inserted (weakenᵣ ↑* syncs).  B₁=[] is canonₛ-rwk0; a∷B₁' peels the head block
+-- and recurses (chainRwk telescopes the +-suc scope-shuffle), mirroring canonₛ-lwk.
+canonₛ-rwk : ∀ (B₁ : BindGroup) {N} (cc : UChan N) (b₁ : ℕ) (B₂ : BindGroup)
+             (i : 𝔽 (sum (B₁ ++ suc b₁ ∷ B₂))) →
+             i ≢ Fin.cast (sym (sum-++ B₁ (suc b₁ ∷ B₂))) (sum B₁ ↑ʳ 0F) →
+             canonₛ (B₁ ++ 1 ∷ suc b₁ ∷ B₂) cc (drwk B₁ b₁ B₂ i)
+             ≡ subst Tm (rwk-eq B₁ {b₁} {B₂} {N})
+                 (canonₛ (B₁ ++ suc b₁ ∷ B₂) cc i ⋯ (weakenᵣ ↑* syncs (B₁ ++ suc b₁ ∷ B₂)))
+canonₛ-rwk [] {N} cc b₁ B₂ i i≢ =
+    canonₛ-rwk0 cc b₁ B₂ i (λ i≡ → i≢ (i≡ ■ sym cast≡))
+  ■ cong (λ e → subst Tm e (canonₛ (suc b₁ ∷ B₂) cc i ⋯ (weakenᵣ ↑* syncs (suc b₁ ∷ B₂))))
+      (uipℕ (+-suc (syncs (suc b₁ ∷ B₂)) N) (rwk-eq [] {b₁} {B₂} {N}))
+  where
+    cast≡ : Fin.cast (sym (sum-++ [] (suc b₁ ∷ B₂))) (sum [] ↑ʳ 0F) ≡ 0F
+    cast≡ = Fin.toℕ-injective (Fin.toℕ-cast (sym (sum-++ [] (suc b₁ ∷ B₂))) (sum [] ↑ʳ 0F)
+                              ■ Fin.toℕ-↑ʳ (sum []) 0F)
+canonₛ-rwk (a ∷ B₁') {N} (e₁ , x , e₂) b₁ B₂ i i≢
+  with canonₛ-rwk B₁' (` 0F , suc x , wk e₂) b₁ B₂
+... | rec with Fin.splitAt a i in seq
+... | inj₁ p = {!inj1!}
+... | inj₂ r = {!inj2!}
+
 
 -- The rsplit-grown bind group's Bφ-prefix carries one extra φ-drop binder (the
 -- inserted `1`-block).  That binder slides down past the remaining blocks to the

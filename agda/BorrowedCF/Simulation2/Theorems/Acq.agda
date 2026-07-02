@@ -1229,7 +1229,12 @@ U-σ⋯ₛ {n = n} {n′ = n′} (T.ν B₁ B₂ P) {σ} {τ} =
     ... | inj₁ z with Fin.splitAt (sum B₁) z
     ...   | inj₁ j = {!region1!}
     ...   | inj₂ k = {!region2!}
-    leaf-eq y | inj₂ i = {!region3!}
+    leaf-eq y | inj₂ i =
+        sym (⋯-↑*-wk (σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sB₁) ((τ ↑* 2) ↑* sB₁) sB₂)
+      ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+          (sym (⋯-↑*-wk (σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2) (τ ↑* 2) sB₁))
+      ■ cong (λ z → z ⋯ weaken* ⦃ Kᵣ ⦄ sB₁ ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+          (sym (⋯-↑*-wk (σ i) τ 2))
 
 U-acq : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
       → {g : Struct m} {b₁ : ℕ} {B₁ B₂ : BindGroup}
