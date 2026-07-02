@@ -1202,7 +1202,30 @@ varC-transpose []            sB₂ ()
 -- recurses on C with the channel-triple flag shifted (1F→2F), threading the +-suc
 -- codomain reassociation via canonₛ-substcod / canonₛ-nat-↑ / ΘrelEqᵍ exactly as
 -- canonₛ-↑transpose's cons does.
-varC-transpose {n} (b ∷ C)       sB₂ j = {!vct-cons!}
+varC-transpose {n} (b ∷ C)       sB₂ j =
+    push
+  ■ cong (λ z → z ⋯ ρc-base ⋯ ρd-base) core
+  where
+    Cg : BindGroup
+    Cg = b ∷ C
+    sC : ℕ
+    sC = syncs Cg
+    M0 : Tm (sB₂ + (sC + (3 + n)))
+    M0 = subst Tm (cong (sB₂ +_) (sym (+-suc sC (suc (suc n)))))
+           (subst Tm (+-suc sC (suc (suc n))) (canonₛ Cg (` 0F , 1F , K `unit) j) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+    ρa = assocSwapᵣ sC 1 {2 + n} ↑* sB₂
+    ρb = assocSwapᵣ sB₂ 1 {sC + (2 + n)}
+    ρc = (assocSwapᵣ sC 2 {n} ↑* sB₂) ↑
+    ρd = (assocSwapᵣ sB₂ 2 {sC + n}) ↑
+    ρc-base = assocSwapᵣ sC 2 {n} ↑* sB₂
+    ρd-base = assocSwapᵣ sB₂ 2 {sC + n}
+    W : Tm (suc (sB₂ + (sC + (2 + n))))
+    W = M0 ⋯ ρa ⋯ ρb
+    push : W ⋯ ρc ⋯ ρd ⋯ ⦅ K `unit ⦆ₛ ≡ W ⋯ ⦅ K `unit ⦆ₛ ⋯ ρc-base ⋯ ρd-base
+    push = sym (dist-↑-⦅⦆-⋯ (W ⋯ ρc) (K `unit) ρd-base)
+         ■ cong (_⋯ ρd-base) (sym (dist-↑-⦅⦆-⋯ W (K `unit) ρc-base))
+    core : W ⋯ ⦅ K `unit ⦆ₛ ≡ canonₛ Cg (K `unit , 0F , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+    core = {!core!}
 
 open T using (_;_⊢ₚ_)
 
