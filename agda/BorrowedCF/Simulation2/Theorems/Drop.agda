@@ -92,7 +92,7 @@ Bφ-cong {n} (b ∷ B@(_ ∷ _)) pq = U.φ-cong (Bφ-cong B (subst-≋ (sym (+-s
 
 canonₛ : ∀ {n} (B : BindGroup) → UChan n → (sum B →ₛ syncs B + n)
 canonₛ []            cc = λ ()
-canonₛ (b ∷ [])      cc = λ _ → chanTriple cc
+canonₛ (b ∷ [])      cc = Ub[ b + 0 ] cc
 canonₛ {n} (b ∷ B@(_ ∷ _)) (e1 , x , e2) =
   λ y → subst Tm (+-suc (syncs B) n)
           ([ Ub[ b ] (wk e1 , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ (syncs B)
@@ -129,7 +129,7 @@ private
 canonₛ-nat : ∀ {a bb} (B : BindGroup) (cc : UChan a) (ρ : a →ᵣ bb) (i : 𝔽 (sum B)) →
              canonₛ B cc i ⋯ (ρ ↑* syncs B) ≡ canonₛ B (mapᶜ ρ cc) i
 canonₛ-nat []            cc ρ ()
-canonₛ-nat (b ∷ [])      (e1 , x , e2) ρ i = refl
+canonₛ-nat (b ∷ [])      (e1 , x , e2) ρ i = Ub-nat (b + 0) (e1 , x , e2) ρ i
 canonₛ-nat {a} {bb} (b ∷ B@(_ ∷ _)) (e1 , x , e2) ρ i
   with Fin.splitAt b i | canonₛ-nat B (` 0F , suc x , wk e2) (ρ ↑)
 ... | inj₁ j | _  = ΘrelEqᵍ (syncs B) ρ chL
@@ -535,11 +535,11 @@ leaf-fire-drop F {e} {x} Q = UR.RU-Drop F ◅ ε
 VSub-canonₛ : ∀ (B : BindGroup) {N} (cc : UChan N) → VChan cc → VSub (canonₛ B cc)
 VSub-canonₛ []            cc            Vcc = λ ()
 VSub-canonₛ (b ∷ [])      (e1 , x , e2) (Ve1 , Ve2) =
-  λ _ → chanTriple-V (e1 , x , e2) (Ve1 , Ve2)
+  λ j → Ub-V (b + 0) e1 x e2 Ve1 Ve2 j
 VSub-canonₛ (b ∷ B@(_ ∷ _)) {N} (e1 , x , e2) (Ve1 , Ve2) i =
   Value-subst (+-suc (syncs B) N)
     (++ₛ-VSub {a = b}
-       (λ j → value-⋯ (Ub-V b (wk e1) (suc x) (` 0F) (Ve1 ⋯ᵛ weakenᵣ) j) (weaken* ⦃ Kᵣ ⦄ (syncs B)) (λ _ → V-`))
+       (λ j → value-⋯ (Ub-V b (wk e1) (suc x) (` 0F) (Ve1 ⋯ᵛ weakenᵣ) V-` j) (weaken* ⦃ Kᵣ ⦄ (syncs B)) (λ _ → V-`))
        (VSub-canonₛ B (` 0F , suc x , wk e2) (V-` , Ve2 ⋯ᵛ weakenᵣ)) i)
 
 VSub-leafσ : ∀ {m n} (σ : m →ₛ n) → VSub σ → (B₁ B₂ : BindGroup) → VSub (leafσ σ B₁ B₂)
