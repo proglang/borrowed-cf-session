@@ -501,25 +501,64 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
 --   geometry) is fixed only by the BindCtx chain — the same typing-driven index
 --   pin the forward U-com (Theorems/Com.agda, 962 ln) needs, mirrored.  Large but
 --   UNgated; structural shape/collapse PROVEN above (reuse for Close/Com/Choice).
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Com F₁ F₂ V) =
-  {! RU-Com → TR.R-Com: send/recv rendezvous.  The RU-Close inj₁ infra now REUSES
-     here verbatim down to redex reflection: inv-U-ν → inv-U-ν-∥-shape (body A ∥ (B ∥ P)
-     ⊢ B₁=b₁∷[],B₂=b₂∷[]) → U-ν-singleton collapse → inv-ν-chanCx (binder-extended
-     ChanCx Γ′-S + body typing via chanCx-⸴*) → inv-U-∥/inv-U-⟪⟫ recover ⟪eS⟫,⟪eR⟫,
-     Prest → frameApp-reflect (νσ-VSub) the K`send / K`recv redexes (args e⊗𝓒[..],
-     𝓒[..]).  RESIDUAL: (a) the HandleCount confinement b₁=suc·/b₂=suc· + the recv
-     channel INDEX (wkʳ/wkˡ geometry) — the typing-driven pin the forward U-com
-     (Theorems/Com.agda, 962 ln) needs, reversed; (b) close-bridge-style codomain.
-     Same un-ported confine subsystem as RU-Close inj₁; large (mirror forward Com). !}
+sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
+  with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
+  with inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq
+... | Sum.inj₂ (Sum.inj₁ refl)
+  with _ , _ , _ , _ , _ , _ , _ , () , _ ← inv-ν ⊢P
+... | Sum.inj₂ (Sum.inj₂ refl)
+  with _ , _ , _ , _ , _ , _ , _ , _ , () , _ ← inv-ν ⊢P
+... | Sum.inj₁ (b₁ , b₂ , refl , refl)
+  with _ , _ , Γ′-S , ⊢body ← inv-ν-chanCx Γ-S ⊢P
+  with bodyeq′ ← ν-inj (bodyeq ■ U-ν-singleton b₁ b₂ P₀ σ)
+  -- bodyeq′ : ⟪F₁[send·(e⊗𝓒[e₁×0F×e₁′])]⟫ ∥ (⟪F₂[recv·𝓒[e₂×1F×e₂′]]⟫ ∥ P₁)
+  --           ≡ U[ P₀ ] (νσ b₁ b₂ σ)
+  with PS , Prest , refl , Seq , Resteq ← inv-U-∥ P₀ (νσ b₁ b₂ σ) (sym bodyeq′)
+  with PR , Pr , refl , Req , Preq ← inv-U-∥ Prest (νσ b₁ b₂ σ) (sym Resteq)
+  with eS , refl , Seq′ ← inv-U-⟪⟫ PS (νσ b₁ b₂ σ) (sym Seq)
+  with eR , refl , Req′ ← inv-U-⟪⟫ PR (νσ b₁ b₂ σ) (sym Req)
+  with _ , _ , _ , ⊢PS , ⊢Prest ← inv-∥ ⊢body
+  with _ , _ , _ , ⊢PR , ⊢Pr ← inv-∥ ⊢Prest
+  with F₀ˢ , argˢ , refl , FeqS , argeqS
+       ← frameApp-reflect Γ′-S eS (inv-⟪⟫ ⊢PS) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) `send
+           F₁ (sym Seq′)
+  with F₀ᴿ , argᴿ , refl , FeqR , argeqR
+       ← frameApp-reflect Γ′-S eR (inv-⟪⟫ ⊢PR) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) `recv
+           F₂ (sym Req′) =
+  {! RU-Com inj₁: structural inversion DONE (P₀ = ⟪F₀ˢ[send·argˢ]⟫ ∥ (⟪F₀ᴿ[recv·argᴿ]⟫ ∥ Pr)
+     recovered, typed ⊢PS/⊢PR/⊢Pr in binder-extended ChanCx Γ′-S; FeqS/FeqR frame equations;
+     argeqS : e ⊗ 𝓒[e₁×0F×e₁′] ≡ argˢ ⋯ νσ ; argeqR : 𝓒[e₂×1F×e₂′] ≡ argᴿ ⋯ νσ).
+     REMAINING (RevComConfine): (a) argˢ ≡ payloadˢ ⊗ ` xS with xS forced to 0F (send session
+     type ⟨msg ‼ T⟩ + BindCtx chain), argᴿ ≡ ` xR with xR the recv index wkʳ(wkˡ(suc b₁)0F);
+     (b) fire TR.R-Com ; (c) codomain bridge RU-Com-RHS ≋ U[R-Com-RHS]σ. !}
 -- RU-Choice.  Identical shape to RU-Com (ν, ∥-headed body): same inv-U-ν-∥-shape
 --   + U-ν-singleton collapse; RESIDUAL = frameApp-reflect the select/branch
 --   redexes + `inj wrapping on the codomain, mirroring forward U-choice.
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Choice F₁ F₂ k) =
-  {! RU-Choice → TR.R-Choice: select/branch.  Identical structural skeleton to RU-Com
-     (reuses inv-U-ν-∥-shape / U-ν-singleton / inv-ν-chanCx / inv-U-∥ / inv-U-⟪⟫ /
-     frameApp-reflect with νσ-VSub on the K(`select k) / K`branch redexes).  RESIDUAL =
-     the `inj k wrapping on the codomain + the same HandleCount/index confinement,
-     mirroring forward U-choice (Theorems/Choice.agda).  Large; un-ported confine. !}
+sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Choice F₁ F₂ k)
+  with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
+  with inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq
+... | Sum.inj₂ (Sum.inj₁ refl)
+  with _ , _ , _ , _ , _ , _ , _ , () , _ ← inv-ν ⊢P
+... | Sum.inj₂ (Sum.inj₂ refl)
+  with _ , _ , _ , _ , _ , _ , _ , _ , () , _ ← inv-ν ⊢P
+... | Sum.inj₁ (b₁ , b₂ , refl , refl)
+  with _ , _ , Γ′-S , ⊢body ← inv-ν-chanCx Γ-S ⊢P
+  with bodyeq′ ← ν-inj (bodyeq ■ U-ν-singleton b₁ b₂ P₀ σ)
+  with PS , Prest , refl , Seq , Resteq ← inv-U-∥ P₀ (νσ b₁ b₂ σ) (sym bodyeq′)
+  with PR , Pr , refl , Req , Preq ← inv-U-∥ Prest (νσ b₁ b₂ σ) (sym Resteq)
+  with eS , refl , Seq′ ← inv-U-⟪⟫ PS (νσ b₁ b₂ σ) (sym Seq)
+  with eR , refl , Req′ ← inv-U-⟪⟫ PR (νσ b₁ b₂ σ) (sym Req)
+  with _ , _ , _ , ⊢PS , ⊢Prest ← inv-∥ ⊢body
+  with _ , _ , _ , ⊢PR , ⊢Pr ← inv-∥ ⊢Prest
+  with F₀ˢ , argˢ , refl , FeqS , argeqS
+       ← frameApp-reflect Γ′-S eS (inv-⟪⟫ ⊢PS) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) (`select k)
+           F₁ (sym Seq′)
+  with F₀ᴿ , argᴿ , refl , FeqR , argeqR
+       ← frameApp-reflect Γ′-S eR (inv-⟪⟫ ⊢PR) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) `branch
+           F₂ (sym Req′) =
+  {! RU-Choice inj₁: structural inversion DONE (P₀ = ⟪F₀ˢ[select k·argˢ]⟫ ∥ (⟪F₀ᴿ[branch·argᴿ]⟫ ∥ Pr)).
+     REMAINING (RevChoiceConfine, mirror RevComConfine): argˢ ≡ ` xS forced 0F, argᴿ ≡ ` xR the
+     branch index; fire TR.R-Choice; codomain bridge with `inj k wrapping. !}
 -- RU-Cleanup : R = φ done P.  U[_] never heads with φ (clauses are ⟪⟫/∥/ν), so
 -- eq : φ done P ≡ U[ Pₛ ] σ is absurd by case on Pₛ.  VACUOUS at top level
 -- (only reachable under an inner RU-Res recursion, where the φ is real).
