@@ -116,7 +116,10 @@ $\TEChan [\E[1]] \E [\E[2]]$.
     \RuleTransProcPar   \and
     \RuleTransProcBind  \\
     \RuleTransBindPar   \and
-    \RuleTransBindChannels
+    \RuleTransBindChannels \and
+    \RuleTransBindSeq   \and
+    \RuleTransBindVar   \and
+    \RuleTransBindNil
   \end{mathpar}
   \begin{align*}
     \BindFlag{\BPar{\BindGroup[1]}{\BindGroup[2]}} &= \BindFlag{\BindGroup[2]} &
@@ -125,9 +128,41 @@ $\TEChan [\E[1]] \E [\E[2]]$.
       \FlagInit & \text{otherwise}
     \end{cases}
   \end{align*}
+  % \begin{mathpar}
+  %   \inferrule{}{
+  %     \Bind \BCat \BEmp = \Bind
+  %   }
+
+  %   \inferrule{
+  %     \Bind[2] \ne \BEmp
+  %   }{
+  %     \Bind[1] \BCat \Bind[2] = \BSeq{\Bind[1]}{\Bind[2]}
+  %   }
+
+  %   \inferrule{}{
+  %     \BEmp \BNorm \BEmp
+  %   }
+
+  %   \inferrule{}{
+  %     \EVar \BNorm \EVar
+  %   }
+
+  %   \inferrule{
+  %     \Bind[1] \BNorm \Bind*[1] \\
+  %     \Bind[2] \BNorm \Bind*[2]
+  %   }{
+  %     \BSeq{\Bind[1]}{\Bind[2]} \BNorm \Bind*
+  %   }
+
+  %   \inferrule{
+  %     \Bind \BNorm \Bind*
+  %   }{
+  %     \BSeq\EVar\Bind \BNorm \EVar \BCat \Bind*
+  %   }
+  % \end{mathpar}
   \caption{Translation of
     processes ($\Proc \TransProc \TProc*$)
-    and bind groups ($\BindGroup \TransBind \TCC \Sub$) with $\BindFlag{}$
+    and bind groups ($\BindGroup \TransBind \TCC [\Sub]$) with $\BindFlag{}$
     mapping bind groups $\BindGroup$ to synchronization flags $\Flag$.}
   \label{fig:translation}
 \end{figure}

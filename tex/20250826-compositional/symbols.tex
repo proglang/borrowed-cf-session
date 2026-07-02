@@ -189,6 +189,8 @@
 \newcommand*\BPar[2]{\procbindcolor{#1\|#2}}
 \newcommand*\BEmp{\procbindcolor{\cdot}}
 \DeclareMathOperator\BindHead{head}
+\newcommand*\BNorm{\Downarrow}
+\newcommand*\BCat{\mathop{++}}
 
 % Expressions
 \NewMetaVar[\termcolor] \E     e
@@ -439,14 +441,7 @@
 \newcommand\TrBG{\TrCmd B}
 
 \newcommand*\TransProc[1][\Sub]{\stackrel{#1}{\TrRel{}}}
-\newcommand*\TransBind[3][\E]{\stackrel{\targettermcolor{#1}}{\TrRel{}} #2 \mid #3}
-
-\NewDocumentCommand\TyTransProc{O{\Ctx} m O{\Sub} m}{
-  #1 \vdash \proccolor{#2} \TransProc[#3] \targetproccolor{#4}
-}
-\NewDocumentCommand\TyTransBind{O{\Ctx} m m m m}{
-  #1 \vdash \proccolor{#2} \TransBind[#3]{#4}{#5}
-}
+\NewDocumentCommand\TransBind{O{\E} m o}{\stackrel{\targettermcolor{#1}}{\TrRel{}} #2 \IfValueT{#3}{\mid #3}}
 
 \newcommand*\TA[2]{\metacolor{\llbracket #1;#2 \rrbracket_{\Gamma}}}
 % \newcommand*\TA[2]{\metacolor{\llbracket #2 \rrbracket_{\Gamma} ({#1})}}

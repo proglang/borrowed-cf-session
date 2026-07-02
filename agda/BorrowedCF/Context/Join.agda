@@ -68,7 +68,7 @@ record Join (A : Set) : Set where
   ... | L = ;-unit₂
   ... | R = ;-unit₁
 
-  join-⋯ : ∀ ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} a (α β : Struct m) → join a α β ⋯ ϕ ≡ join a (α ⋯ ϕ) (β ⋯ ϕ)
+  join-⋯ : ∀ a ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} (α β : Struct m) → join a α β ⋯ ϕ ≡ join a (α ⋯ ϕ) (β ⋯ ϕ)
   join-⋯ a α β with joinDir a
   ... | L = refl
   ... | R = refl
@@ -129,6 +129,11 @@ instance
 
   join-p/s : Join ParSeq
   join-p/s = record { joinDir = biasedDir }
+
+join-flip : ∀ d → Γ ∶ join (flipDir d) β α ≈ join d α β
+join-flip L = refl
+join-flip R = refl
+join-flip 𝟙 = ∥-comm
 
 postulate parOrSeq? : Γ ∶ α ; β ≼ γ → Σ[ p/s ∈ ParSeq ] Γ ∶ join p/s α β ≼ γ
 

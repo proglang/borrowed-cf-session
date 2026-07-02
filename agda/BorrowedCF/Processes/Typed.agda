@@ -138,7 +138,7 @@ structBinder (b ∷ B) = (structNSeq b 𝐂.⋯ᵣ 𝐂.wkʳ (sum B)) ∥ (struc
 
 data BindCtx′ (s : 𝕊 0) : ∀ n → Ctx n → Set where
   nil : Skips s → BindCtx′ s 0 λ()
-  cons : ∀ {b} {Γ Γ′} (s≃ : s₁ ; s₂ ≃ s) (Γ≗ : ⟨ s₁ ⟩ ⸴ Γ′ ≗ Γ) →
+  cons : ∀ {b} {Γ Γ′} (¬skips : ¬ Skips s) (s≃ : s₁ ; s₂ ≃ s) (Γ≗ : ⟨ s₁ ⟩ ⸴ Γ′ ≗ Γ) →
     BindCtx′ s₂ b Γ′ → BindCtx′ s (suc b) Γ
 
 data BindCtx (s : 𝕊 0) : (B : BindGroup) (Γ : Ctx (sum B)) → Set where
@@ -150,8 +150,8 @@ data BindCtx (s : 𝕊 0) : (B : BindGroup) (Γ : Ctx (sum B)) → Set where
     BindCtx (acq ; s) B Γ → BindCtx s (0 ∷ B) Γ
 
 bindCtx′⇒chanCtx : BindCtx′ s n Γ → ChanCx Γ
-bindCtx′⇒chanCtx (cons s≃ Γ≗ b) zero = _ , sym (Γ≗ zero)
-bindCtx′⇒chanCtx (cons s≃ Γ≗ b) (suc x) = Π.map₂ (sym (Γ≗ (suc x)) ■_) (bindCtx′⇒chanCtx b x)
+bindCtx′⇒chanCtx (cons ¬skips s≃ Γ≗ b) zero = _ , sym (Γ≗ zero)
+bindCtx′⇒chanCtx (cons ¬skips s≃ Γ≗ b) (suc x) = Π.map₂ (sym (Γ≗ (suc x)) ■_) (bindCtx′⇒chanCtx b x)
 
 bindCtx⇒chanCtx : ∀ {B Γ} → BindCtx s B Γ → ChanCx Γ
 bindCtx⇒chanCtx {B = b ∷ _} {Γ} (last b′) x =
@@ -180,14 +180,13 @@ data _;_⊢ₚ_ (Γ : Ctx n) : Struct n → Proc n → Set where
     Γ ; γ₁ ∥ γ₂ ⊢ₚ P ∥ Q
 
   TP-Res :
-    (N : New s) →
-    (⊢B₁ : ⊢ᴮ B₁) (⊢B₂ : ⊢ᴮ B₂) →
-    (C  : BindCtx (s      ; end ⁇) B₁ Γ₁) →
-    (C′ : BindCtx (dual s ; end ‼) B₂ Γ₂) →
-    (Γ₁ ⸴* Γ₂) ⸴* Γ ; (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n)
-                    ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n)
-                    ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
-      ⊢ₚ P →
+    ∀ (N : New s) (⊢B₁ : ⊢ᴮ B₁) (⊢B₂ : ⊢ᴮ B₂) {Γ₁ Γ₂} →
+      (C  : BindCtx (s      ; end ⁇) B₁ Γ₁) →
+      (C′ : BindCtx (dual s ; end ‼) B₂ Γ₂) →
+      (Γ₁ ⸴* Γ₂) ⸴* Γ ; (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n) -- ` 0F
+                      ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n) -- ` 1F
+                      ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
+          ⊢ₚ P →
     Γ ; γ ⊢ₚ ν B₁ B₂ P
 
   TP-Weaken :
