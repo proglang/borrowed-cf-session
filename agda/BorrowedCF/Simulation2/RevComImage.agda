@@ -12,8 +12,8 @@ module BorrowedCF.Simulation2.RevComImage where
 open import BorrowedCF.Simulation2.Base
 open import BorrowedCF.Simulation2.ReverseInv using (νσ; ⊗-inj)
 
-open import Data.Fin.Base using (join)
-open import Data.Fin.Properties using (join-splitAt; toℕ-↑ˡ; toℕ-cast; toℕ-injective)
+open import Data.Fin.Base using (join; _↑ʳ_)
+open import Data.Fin.Properties using (join-splitAt; toℕ-↑ˡ; toℕ-cast; toℕ-injective; toℕ<n)
 open import Data.Nat.Properties using (+-identityʳ)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (Σ; _,_; _×_; Σ-syntax; proj₁; proj₂)
@@ -90,3 +90,59 @@ com-image-block1 zero b₂ σ Vσ xS ceq
   with Fin.splitAt (zero + 0 + (b₂ + 0)) xS in seq
 ... | inj₂ i = ⊥-elim (σreg-mid (Vσ i) (sym ceq))
 ... | inj₁ v = ⊥-elim (block2-refute b₂ v ceq)
+
+-- ── recv-side (block-2, middle 1F) mirror of the send-side above ──────────────
+
+-- 1F variants of the σ-region refuters (a shifted value's vars are all ≥ 2F).
+σreg-var1 : {t : Tm n} → Value t → shift2 t ≡ ` 1F → ⊥
+σreg-var1 V-` ()
+σreg-var1 V-K ()
+σreg-var1 V-λ ()
+σreg-var1 (V-⊗ _ _) ()
+σreg-var1 (V-⊕ _) ()
+
+σreg-pair1 : {t : Tm n} → Value t → ∀ {a : Tm (2 + n)} → shift2 t ≡ a ⊗ (` 1F) → ⊥
+σreg-pair1 V-` ()
+σreg-pair1 V-K ()
+σreg-pair1 V-λ ()
+σreg-pair1 (V-⊕ _) ()
+σreg-pair1 (V-⊗ V₁ V₂) eq = σreg-var1 V₂ (proj₂ (⊗-inj eq))
+
+σreg-mid1 : {t : Tm n} → Value t → ∀ {a b : Tm (2 + n)}
+          → shift2 t ≡ (a ⊗ (` 1F)) ⊗ b → ⊥
+σreg-mid1 V-` ()
+σreg-mid1 V-K ()
+σreg-mid1 V-λ ()
+σreg-mid1 (V-⊕ _) ()
+σreg-mid1 (V-⊗ V₁ V₂) eq = σreg-pair1 V₁ (proj₁ (⊗-inj eq))
+
+-- A block-1 entry has middle channel 0F, so it is not chanTriple(*,1F,*).
+block1-refute : ∀ b (u : 𝔽 (b + 0)) {a b′ : Tm (2 + n)}
+              → chanTriple (a , 1F , b′) ≡ Ub[ b + 0 ] (* , 0F , *) u ⋯ weaken* ⦃ Kᵣ ⦄ 0 → ⊥
+block1-refute b u ceq
+  with a₀ , d₀ , ueq ← Ub-chanTriple (b + 0) * 0F * u
+  with () ← proj₂ (⊗-inj (proj₁ (⊗-inj (ceq ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ 0) ueq))))
+
+-- recv-image-block2 : the block-2 mirror of com-image-block1 — pins the recv
+-- channel xR to block-2 position w : 𝔽 (b₂+0), exposing 1 ≤ b₂, with the flat
+-- index xR ≡ ((b₁+0) ↑ʳ w) ↑ˡ m (block-2 injection, R-Com's recv-handle shape).
+recv-image-block2 : ∀ {m n : ℕ} (b₁ b₂ : ℕ) (σ : m →ₛ n) (Vσ : VSub σ)
+  (xR : 𝔽 (b₁ + 0 + (b₂ + 0) + m)) {e₂ e₂′ : Tm (2 + n)}
+  → chanTriple (e₂ , 1F , e₂′) ≡ (` xR) ⋯ νσ b₁ b₂ σ
+  → Σ[ w ∈ 𝔽 (b₂ + 0) ] (1 Nat.≤ b₂) × (xR ≡ ((b₁ + 0) ↑ʳ w) ↑ˡ m)
+recv-image-block2 {m} b₁ b₂ σ Vσ xR {e₂} {e₂′} ceq
+  with Fin.splitAt (b₁ + 0 + (b₂ + 0)) xR in seq
+... | inj₂ i = ⊥-elim (σreg-mid1 (Vσ i) (sym ceq))
+... | inj₁ w′
+  with Fin.splitAt (b₁ + 0) w′ in weq
+...   | inj₁ u = ⊥-elim (block1-refute b₁ u ceq)
+...   | inj₂ v = v , 1≤b₂ , xReq
+  where
+    1≤b₂ : 1 Nat.≤ b₂
+    1≤b₂ = subst (1 Nat.≤_) (+-identityʳ b₂) (Nat.≤-trans (Nat.s≤s Nat.z≤n) (toℕ<n v))
+    xR≡w′↑ : xR ≡ w′ ↑ˡ m
+    xR≡w′↑ = sym (join-splitAt (b₁ + 0 + (b₂ + 0)) m xR) ■ cong (join _ m) seq
+    w′≡inj : w′ ≡ (b₁ + 0) ↑ʳ v
+    w′≡inj = sym (join-splitAt (b₁ + 0) (b₂ + 0) w′) ■ cong (join _ (b₂ + 0)) weq
+    xReq : xR ≡ ((b₁ + 0) ↑ʳ v) ↑ˡ m
+    xReq = xR≡w′↑ ■ cong (_↑ˡ m) w′≡inj
