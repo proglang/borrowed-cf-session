@@ -34,7 +34,7 @@ open import BorrowedCF.Simulation2.TranslationProperties
            ; subst-⋯ to subst-⋯-dom-local )
 open import BorrowedCF.Simulation2.BlockPerm
   using ( assocSwap-01; R-base-b0; assocSwap-0a; toℕ-R3; toℕ-R3₂; toℕ-R4
-        ; toℕ-weaken*ᵣ; toℕ-swapᵣ-mid; toℕ-reduce≥; toℕ-assoc-mid; toℕ-assoc-ge; toℕ-assoc-lt; toℕ-↑
+        ; toℕ-weaken*ᵣ; weaken*ᵣ~↑ʳ; toℕ-swapᵣ-mid; toℕ-reduce≥; toℕ-assoc-mid; toℕ-assoc-ge; toℕ-assoc-lt; toℕ-↑
         ; toℕ-↑*-ge; toℕ-↑*-lt; commuteS; wkSwap-cancel; assocSwap-invol; R2' )
 open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯; frame-plug₁; ++ₛ-VSub)
 open import BorrowedCF.Simulation2.TranslationProperties using (VChan; chanTriple-V; Value-subst)
@@ -1214,7 +1214,38 @@ core-gen {n} D sB₂ x j =
     varʳ : ∀ {mm pp} (ρ : mm →ᵣ pp) (x : 𝔽 mm) → (` x) ⋯ ρ ≡ ` (ρ x)
     varʳ ρ x = ⋯-var x ρ
     swap-collapse : (aS ·ₖ ⦅ K `unit ⦆ₛ) ≗ (⦅ K `unit ⦆ₛ ↑* sD)
-    swap-collapse i = {!swap-collapse!}
+    swap-collapse i = lhsS i ■ coreS i
+      where
+        wk-⋯-weaken : ∀ {aa} (t : Tm aa) (m : ℕ) →
+                      wk ⦃ Kₛ ⦄ (t ⋯ weaken* ⦃ Kᵣ ⦄ m) ≡ t ⋯ weaken* ⦃ Kᵣ ⦄ (suc m)
+        wk-⋯-weaken t m = fusion t (weaken* ⦃ Kᵣ ⦄ m) (weaken ⦃ Kᵣ ⦄) ■ ⋯-cong t (λ _ → refl)
+        ↑*ˡ : ∀ {mm pp} (ϕ : mm →ₛ pp) (m : ℕ) (x : 𝔽 m) → (ϕ ↑* m) (x ↑ˡ mm) ≡ ` (x ↑ˡ pp)
+        ↑*ˡ ϕ (suc m) zero    = refl
+        ↑*ˡ ϕ (suc m) (suc x) = cong (wk ⦃ Kₛ ⦄) (↑*ˡ ϕ m x) ■ ⋯-var (x ↑ˡ _) (weaken ⦃ Kᵣ ⦄)
+        ↑*ʳ : ∀ {mm pp} (ϕ : mm →ₛ pp) (m : ℕ) (y : 𝔽 mm) → (ϕ ↑* m) (m ↑ʳ y) ≡ (ϕ y) ⋯ weaken* ⦃ Kᵣ ⦄ m
+        ↑*ʳ ϕ zero    y = sym (⋯-id (ϕ y) (λ _ → refl))
+        ↑*ʳ ϕ (suc m) y = cong (wk ⦃ Kₛ ⦄) (↑*ʳ ϕ m y) ■ wk-⋯-weaken (ϕ y) m
+        lhsS : (j : 𝔽 (sD + (3 + n))) → (aS ·ₖ ⦅ K `unit ⦆ₛ) j ≡ ⦅ K `unit ⦆ₛ (aS j)
+        lhsS j =
+            varˢ (aS ·ₖ ⦅ K `unit ⦆ₛ) j
+          ■ sym (fusion (` j) aS ⦅ K `unit ⦆ₛ)
+          ■ cong (_⋯ ⦅ K `unit ⦆ₛ) (varʳ aS j)
+          ■ ⋯-var (aS j) ⦅ K `unit ⦆ₛ
+        coreS : (j : 𝔽 (sD + (3 + n))) → ⦅ K `unit ⦆ₛ (aS j) ≡ (⦅ K `unit ⦆ₛ ↑* sD) j
+        coreS j with Fin.splitAt sD j in eq
+        ... | inj₁ x = sym (cong (⦅ K `unit ⦆ₛ ↑* sD) iform ■ ↑*ˡ ⦅ K `unit ⦆ₛ sD x)
+          where iform : j ≡ x ↑ˡ (3 + n)
+                iform = sym (Fin.join-splitAt sD (3 + n) j) ■ cong (Fin.join sD (3 + n)) eq
+        ... | inj₂ zero = sym (cong (⦅ K `unit ⦆ₛ ↑* sD) iform ■ ↑*ʳ ⦅ K `unit ⦆ₛ sD (zero {2 + n}))
+          where iform : j ≡ sD ↑ʳ (zero {2 + n})
+                iform = sym (Fin.join-splitAt sD (3 + n) j) ■ cong (Fin.join sD (3 + n)) eq
+        ... | inj₂ (suc z) =
+            sym ( cong (⦅ K `unit ⦆ₛ ↑* sD) iform
+                ■ ↑*ʳ ⦅ K `unit ⦆ₛ sD (suc z)
+                ■ varʳ (weaken* ⦃ Kᵣ ⦄ sD) z
+                ■ cong `_ (weaken*ᵣ~↑ʳ sD z) )
+          where iform : j ≡ sD ↑ʳ (suc z)
+                iform = sym (Fin.join-splitAt sD (3 + n) j) ■ cong (Fin.join sD (3 + n)) eq
     wk-swap-collapse : ((weaken* ⦃ Kᵣ ⦄ sB₂ ·ₖ ρb) ·ₖ ⦅ K `unit ⦆ₛ)
                        ≗ (⦅ K `unit ⦆ₛ ·ₖ weaken* ⦃ Kᵣ ⦄ sB₂)
     wk-swap-collapse v = lhsW v ■ coreW v ■ sym (rhsW v)
