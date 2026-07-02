@@ -19,6 +19,7 @@ open import BorrowedCF.Simulation2.Congruence using (U-≋)
 open import BorrowedCF.Simulation2.Theorems.Choice using (U-choice)
 open import BorrowedCF.Simulation2.Theorems.Drop using (U-drop)
 open import BorrowedCF.Simulation2.Theorems.Com using (U-com)
+open import BorrowedCF.Simulation2.Theorems.Acq using (U-acq)
 open import BorrowedCF.Simulation2.TranslationProperties using (≡→≋; UB-cong-─→; UB-cong; ≋-subst; ─→-subst; Value-subst; chanTriple-V; VChan; U-⋯ₚ; U-cong; Ub-V)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
 import Data.Sum as Sum
@@ -442,8 +443,7 @@ sim→ σ Vσ Γ-S ⊢P (TR.R-Drop {b₁} {B₁} {B₂} {P} {E}) =
 -- under the typing chain, FALSE under VSub alone, and the φ acq must be commuted
 -- past the rest of the φ-nest to the leaf.  Needs the SAME ported acq-confine /
 -- transpose machinery (memory: "needs acq-confine").  BLOCKED.
-sim→ σ Vσ Γ-S ⊢P TR.R-Acq =
-  inj₁ {! R-Acq → RU-Acquire ; RU-Cleanup: needs ported acq-confine (chanTriple junction-flag = set 1F) + binder-order transpose; same un-portable Simulation confine subsystem as R-Drop !}
+sim→ σ Vσ Γ-S ⊢P (TR.R-Acq {b₁} {B₁} {B₂} {P} {E}) = U-acq σ Vσ Γ-S {E = E} ⊢P
 
 -- R-Close: end!! / end?? rendezvous → two units.  Needs frame-plug* + U[ν…] unfold → RU-Close.
 sim→ {m = m} {n = n} σ Vσ Γ-S ⊢P (TR.R-Close {E₁ = E₁} {E₂ = E₂}) =
