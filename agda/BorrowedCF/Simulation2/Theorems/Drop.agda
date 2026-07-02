@@ -41,7 +41,7 @@ open import BorrowedCF.Simulation2.TranslationProperties using (VChan; Value-sub
 open T using (inv-∥; inv-ν; inv-⟪⟫; BindCtx; BindCtx′; last; cons-ret/acq; cons-acq; nil; cons)
 open import BorrowedCF.Simulation2.InvFrame using (inv-app; arg-type; strengthen-frame)
 open import BorrowedCF.Simulation2.Theorems.B1VacProbe
-  using ( NoRet; new⇒noRet; noRet-≃; ¬noRet-ret; noRet-front-last
+  using ( NoRet; new⇒noRet; noRet-≃; ¬noRet-ret
         ; RetTip; retTip-Sc-skips; noRet-front-cons; retTip-≃; noRet-;-fst )
 open import BorrowedCF.Simulation2.Theorems.B1VacProbe as VP using ()
 open import BorrowedCF.Types.Equivalence using (_≃𝕊_; ≃𝕊-;₁; ≃𝕊-;₂; ≃𝕊-skipˡ; ≃𝕊-skipʳ; ≃𝕊-μ; ≃𝕊-assoc; ≃𝕊-distr; ≃-skips)
@@ -603,8 +603,6 @@ drop-handle-≃ret : ∀ {N} {Δ : Ctx N}{β}{x : 𝔽 N}{U ϵ}
   → Δ x ≃ ⟨ ret ⟩
 drop-handle-≃ret (T-AppUnr   _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-drop-dom ⊢fn))
 drop-handle-≃ret (T-AppLin   _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-drop-dom ⊢fn))
-drop-handle-≃ret (T-AppLeft  _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-drop-dom ⊢fn))
-drop-handle-≃ret (T-AppRight _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-drop-dom ⊢fn))
 drop-handle-≃ret (T-Conv _ _ d)            = drop-handle-≃ret d
 drop-handle-≃ret (T-Weaken _ d)            = drop-handle-≃ret d
 
@@ -641,17 +639,17 @@ U-drop : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
             U.≋ U[ T.ν (b₁ ∷ B₁) B₂ (T.⟪ E [ K `unit ]* ⟫ T.∥ P) ] σ)
 U-drop σ Vσ Γ-S {b₁ = b₁} {B₁ = []} {B₂ = B₂} {E = E} {P = P} ⊢P
   with inv-ν ⊢P
-... | _ , _ , sN , N , _ , _ , C , _ , ⊢body
+... | _ , _ , sN , _ , N , _ , _ , C , _ , ⊢body
   with inv-∥ ⊢body
 ... | _ , _ , _ , ⊢dropT , _
   with strengthen-frame (E ⋯ᶠ* weakenᵣ) (inv-⟪⟫ ⊢dropT)
 ... | _ , (_ , _ , ⊢plug) , _ , _
-  with head-noRet-last (noRet-front-last N) C
+  with head-noRet-last (VP._;_ (new⇒noRet N) VP.end) C
 ... | s , Γ0≡ , Ns
   = ⊥-elim (noRet⇒≄ret Ns (⟨⟩≃ (≃-trans (≃-reflexive (sym Γ0≡)) (drop-handle-≃ret ⊢plug))))
 U-drop {m} {n} σ Vσ Γ-S {b₁ = suc b₁} {B₁ = C@(_ ∷ _)} {B₂ = B₂} {E = E} {P = P} ⊢P
   with inv-ν ⊢P
-... | _ , _ , sN , N , _ , _
+... | _ , _ , sN , _ , N , _ , _
     , cons-ret/acq {s₁ = sh} scra Γ≗ (cons {s₁ = s1ʰ} {s₂ = s2ʰ} ¬sk1 s≃1 Γ≗1 (cons ¬Ss s≃2 _ _)) _ , _ , ⊢body
   with inv-∥ ⊢body
 ... | _ , _ , _ , ⊢dropT , _
@@ -662,7 +660,7 @@ U-drop {m} {n} σ Vσ Γ-S {b₁ = suc b₁} {B₁ = C@(_ ∷ _)} {B₂ = B₂} 
     head≃ret : s1ʰ ≃ ret
     head≃ret = ⟨⟩≃ (≃-trans (≃-reflexive (sym (sym (Γ≗ 0F) ■ sym (Γ≗1 0F)))) (drop-handle-≃ret ⊢plug))
     noRet-sh : NoRet sh
-    noRet-sh = noRet-;-fst (noRet-≃ (EqC.symmetric _≃𝕊_ scra) (noRet-front-last N))
+    noRet-sh = noRet-;-fst (noRet-≃ (EqC.symmetric _≃𝕊_ scra) (VP._;_ (new⇒noRet N) VP.end))
     rt-borrow : RetTip (s1ʰ ; s2ʰ)
     rt-borrow = retTip-≃ (EqC.symmetric _≃𝕊_ s≃1) (noRet-front-cons noRet-sh)
 U-drop {m} {n} σ Vσ Γ-S {b₁ = zero} {B₁ = C@(cHd ∷ cTl)} {B₂ = B₂} {E = E} {P = P} ⊢P =
