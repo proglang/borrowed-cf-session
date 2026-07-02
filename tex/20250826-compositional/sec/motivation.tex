@@ -2,7 +2,31 @@
 \section{Motivation}
 \label{sec:motivation}
 
-TODO: linearity
+Context-free session types (CFSTs) extend regular session types with a
+general sequential composition operator. A type $S_1;S_2$ describes a
+session that first behaves as $S_1$ and then continues as $S_2$. The
+inactive session \lstinline{Skip} is the unit of this composition and
+composition is associative.
+% , that is, \lstinline{Skip};$S = S =
+% S$;\lstinline{Skip} and $(S_1;S_2);S_3 = S_1;(S_2;S_3)$.
+Thus
+\lstinline{Skip} and \lstinline{;} form a monoid up to type
+equality. The \lstinline{End} type indicates the closing of a session.
+
+Sequential composition also interacts with choice in the expected way.
+Appending a continuation to a choice appends it to every branch:
+$(\oplus\{\ell_i:S_i\}_{i\in I});T =
+\oplus\{\ell_i:S_i;T\}_{i\in I}$. The same law holds for external
+choice. These equations are what make non-tail-recursive protocols
+usable as ordinary session types: a continuation can be pushed through
+the structure of a type until it reaches the leaves of a protocol.
+
+As usual for session types, channels are linear resources. A channel
+has to be used exactly once and every communication operation consumes
+the channel at its current type and produces the channel at its
+continuation type. Linearity is what makes the session type track the
+state of the protocol, but it also forces programs to thread channels
+explicitly from one operation to the next.
 
 \subsection{Borrowing from Context-Free Session Types}
 \label{sec:borr-from-cont}
@@ -21,7 +45,7 @@ type Tree = Leaf
 Here is the corresponding session type \lstinline{TreeChannel}:
 \begin{lstlisting}
 type TreeChannel = oplus{
-  Leaf: skip,
+  Leaf: Skip,
   Node: !int; TreeChannel; TreeChannel
 }
 \end{lstlisting}
@@ -56,15 +80,15 @@ they syntactically restrict recursion to tail position. Context-free
 session types lift this restriction as their composition operator $S_1;S_2$ connects
 two sessions sequentially: the composed session comprises the
 actions of $S_1$ followed by the actions of $S_2$.\footnote{One
-  might argue that CFST are close to Honda's original vision for
-  sesssion types \cite{DBLP:conf/concur/Honda93}, which also features
+  might argue that CFSTs are close to Honda's original vision for
+  session types \cite{DBLP:conf/concur/Honda93}, which also features
   symmetric composition.}
 
 \Cref{lst:cfst-api} displays the API of CFSTs. The \lstinline{send},
 \lstinline{recv}, and \lstinline{select} operations are standard for
 sending a message, receiving one, and selecting an alternative in a
 branching session type. The \lstinline{branch} operation maps a channel
-offering different labeled alternatices to a variant type with the
+offering different labeled alternatives to a variant type with the
 same labeled alternatives. Standard pattern matching suffices to
 decode the chosen alternative and continue.
 Given the types and the CFST API, we can implement the serialization function:
@@ -94,33 +118,33 @@ telltale for polymorphic recursion. Finally, recall that channel types
 are linear in CFST, that is, each session-typed variable must be used
 exactly once.
 
-Our new language {\thecalculus} amends both problems. The type
+Our new language {\thecalculus} amends these problems. The type
 definitions remain unchanged, but the implementation of
-\lstinline{sendTree} relies on the session API with borrowing shown in
+\lstinline{sendTreeB} relies on the session API with borrowing shown in
 \cref{lst:bcfst-api}. To make this switch apparent, we present code
 using the \thecalculus API with grey background and golden keywords.
 \lstset{style=eclipse-new}
 \begin{lstlisting}[numbers=left]
-sendTree' : Tree -> TreeChannel -> Skip
-sendTree' Leaf c =          (* c : TreeChannel *)
+sendTreeB : Tree -> TreeChannel -> Skip
+sendTreeB Leaf c =          (* c : TreeChannel *)
   select Leaf c
-sendTree' (Node x l r) c =
+sendTreeB (Node x l r) c =
   let c = select Node c in  (* c : !Int; TreeChannel; TreeChannel *)
   send x &c;                (* c : TreeChannel; TreeChannel *)
-  sendTree l &c;            (* c : TreeChannel *)
-  sendTree r &c
+  sendTreeB l &c;           (* c : TreeChannel *)
+  sendTreeB r &c
 \end{lstlisting}
-What has changed? First, the type is no longer polymorphic over the
+What has changed? First, the type of \lstinline{sendTreeB} is no longer polymorphic over the
 continuation type. Instead, the channel argument \lstinline{c} starts
 out at type \lstinline{TreeChannel} without specifying a
-continuation. The return type is \lstinline{Skip}, which indicates a
-channel without interaction. Values of type \lstinline{Skip} are
+continuation. The return type is \lstinline{Skip}, which indicates an inactive
+channel. Values of type \lstinline{Skip} are
 unrestricted and can be discarded.
 Second, there is no explicit resource
 passing, except for \lstinline{select}. Each use of the borrow notation
 \lstinline{&c} implicitly splits off an initial segment of the session type
 according to the function argument and updates \lstinline{c} to the
-remainder. To see this, consider the type of \lstinline{c}---after
+leftover. To see this, consider the type of \lstinline{c}---after
 splitting off the borrow in the corresponding line---shown in the
 comments. Before the \lstinline{send} operation (line 5--6), the type
 of \lstinline{c} starts with \lstinline{!Int; ...}. ``Taking the
@@ -136,7 +160,11 @@ recursion, either.
 Finally, the channel variable \lstinline{c} can be used in a
 non-linear way, as long as its uses are under borrows, as in
 \lstinline{&c}. The understanding is that the borrows are taken and
-processed according to the evaluation order of the program. 
+processed according to the evaluation order of the program. This view does
+not abandon linearity. Rather, the type system internalizes the
+linear use of the channel: each borrow consumes a distinct prefix of
+the current session type and leaves the residual type for the next use
+of \lstinline{c}.
 
 The reader may ask why \lstinline{select} still adheres to
 resource passing style. The answer is simplicity of our system. While it
@@ -153,21 +181,20 @@ undecidable for CFST~\cite{DBLP:journals/toplas/Padovani19}.
 \subsection{Local and Remote Borrowing}
 \label{sec:local-remote-borr}
 
-We call the style of borrowing demonstrated in
-\cref{sec:borr-from-cont} \emph{local borrowing}, as the borrows remain in the same
-thread and are processed sequentially, following the evaluation order.
+\Cref{sec:borr-from-cont} demonstrated
+ \emph{local borrowing}, where the borrows remain in the same
+thread and they are processed sequentially, following the evaluation order.
 
-In this local setting, we expect the operations on borrows to be
-implemented efficiently in an imperative style. That is, the channel is
-represented by a reference to some data structure (e.g., a file
-descriptor) and each channel operation updates 
-the data structure. This implementation of local borrows is safe because the soundness of
-the type system ensures that the type updates match the real updates
-in the implementation.
+In this local setting, operations on borrows are
+cheap: borrowing merely names the next prefix of the same channel and
+leaves the suffix for the surrounding computation. No other process can
+race with the continuation, so the evaluation order of the program and
+the left-to-right order enforced by typing already provide the required
+sequencing.
 
-However, there may be situations where we want to send a borrow to
-another process. Suppose, for example, a server-side renderer streams
-HTML nodes to a client instead of constructing a complete DOM tree in
+However, in some situations we want to send a borrow to
+another process. As an example, suppose a server-side renderer streams
+HTML nodes to a client instead of constructing a DOM tree in
 memory first. A small protocol for such a renderer is as follows.
 \begin{lstlisting}
 type HtmlChannel = oplus{
@@ -175,7 +202,7 @@ type HtmlChannel = oplus{
   Elem: !String; ChildrenChannel
 }
 type ChildrenChannel = oplus{
-  Done: skip,
+  Done: Skip,
   Child: HtmlChannel; ChildrenChannel
 }
 \end{lstlisting}
@@ -187,8 +214,9 @@ the rest of the child stream.
 
 Now consider a renderer that emits a user panel whose first child is
 computed by another process. We assume that
-\lstinline{renderUserProfile} and \lstinline{renderMsgArea} both render
-one HTML node on a channel of type \lstinline{HtmlChannel; End}.
+\lstinline{renderProfile} and \lstinline{renderMsgArea} render
+one HTML node on a channel of type \lstinline{HtmlChannel; Ret} and
+\lstinline{HtmlChannel; End}, respectively.
 \Cref{lst:rendering-example} contains the code.
 \begin{lstlisting}[numbers=left,float,caption={Rendering example},captionpos=b,label={lst:rendering-example}]
 renderUser : User -> HtmlChannel; End -> Unit
@@ -196,18 +224,18 @@ renderUser user c =
   let c = select Elem c in
   send "div" &c;
   let c = select Child c in
-  fork (lambda() -> renderUserProfile user &c);
+  fork (lambda() -> renderProfile user &c);
   (* c : Acq; ChildrenChannel; End *)
-  renderUserRest user (acquire c)
+  renderRest user (acquire c)
 
-renderUserRest : User -> ChildrenChannel; End -> Unit
-renderUserRest user c =
+renderRest : User -> ChildrenChannel; End -> Unit
+renderRest user c =
   let c = select Child c in
   renderMsgArea user &c;
   close (select Done c)
 
-renderUserProfile : User -> HtmlChannel;Ret -> Unit
-renderUserProfile user c = ... drop c
+renderProfile : User -> HtmlChannel;Ret -> Unit
+renderProfile user c = ... drop c
 \end{lstlisting}
 The function \lstinline{renderUser} starts an HTML element and then
 opens the child stream. It passes a borrow of the
@@ -216,26 +244,24 @@ The continuation renders the remaining children, here a messaging
 area, and then closes the child stream. 
 
 In this case, the borrow under the \lstinline{fork} is a \emph{remote
-  borrow}. Such a borrow must be handled differently: the
+  borrow}. Such a borrow must be handled differently as operations on
+the borrow are not necessarily ordered, anymore: the 
 continuation must \emph{not} start emitting the second child before the
 forked renderer has finished the first child. This synchronization is
-implemented with the \lstinline{acquire} operation. It blocks until the
-borrow created by the fork is completed, i.e., until
-\lstinline{renderUserProfile} finishes sending on the borrowed prefix
-of the channel. The function indicates this situation by calling
-\lstinline{drop} on the channel, which sets a flag which unblocks a
-waiting \lstinline{acquire} on the suffix of the channel.
-Once it is unblocked, the \lstinline{acquire}
-operation returns the current channel end for further operations. The
-communication between \lstinline{drop} and \lstinline{acquire} is
-\emph{asynchronous} whereas normal communication is synchronous in \thecalculus.
+expressed with the \lstinline{acquire} operation. It blocks the
+continuation until the borrowed prefix has been completed by the
+forked process. Conversely, the forked process calls \lstinline{drop}
+when it has finished working on the prefix. Thus \lstinline{drop} and
+\lstinline{acquire} form the synchronization point between the two
+processes; the run-time mechanism that implements this point is
+described in~\cref{sec:impl-local-remote}.
 
 This setup is also reflected in the types that result from a remote
 borrow. Line~7 shows the type of \lstinline{c}'s suffix, which starts
 with an \lstinline{Acq}, and line~16 shows the type of the borrow,
 which ends with \lstinline{Ret}. The types \lstinline{Acq} and
-\lstinline{Ret} only arise from a remote 
-borrowing. The \emph{only} operation on a channel of type
+\lstinline{Ret} only arise from a remote split operation. The
+\emph{only} operation on a channel of type
 \lstinline{Acq; ...} is \lstinline{acquire} and similarly,
 \lstinline{drop} only applies to a channel of type \lstinline{Ret}. 
 
@@ -252,16 +278,16 @@ specification because it is easier to handle in a correctness
 proof. The first step translates the surface 
 language with borrowing operators into our formal calculus
 \thecalculus, which replaces borrowing with explicit functional splitting
-operators. This translation is taken from previous work
+operators. This translation is analogous to a translation in previous work
 \cite{DBLP:journals/pacmpl/SaffrichS0V25}, which gives a formal
 presentation along with a correctness proof. The novelty in our work
 is the presence of \emph{two} splitting operators, one for local borrows and
-one for remote ones. Our discussion starts with the local variant and
-we show the translation of \lstinline{renderUserRest} in
+one for remote borrows. Our discussion starts with the local variant and
+we show the translation of \lstinline{renderRest} in
 \thecalculus. The translation is part of our implementation.
 
 As an example, we use the local part of
-\lstinline{renderUserRest} shown in
+\lstinline{renderRest} shown in
 \cref{fig:local-split-program}.
 Execution proceeds by repeatedly exposing the next local prefix of the
 channel sequence. \Cref{fig:local-split-trace} shows a suffix of its reduction
@@ -271,11 +297,12 @@ from session calculi \cite{Gay_Vasconcelos_2025}. It introduces a
 communication channel with endpoint names \lstinline{c} and 
 \lstinline{d}. We generalize channel abstraction so that each
 compartment \lstinline{[c]} and \lstinline{[d]} contains a
-\emph{binding group}, which binds one or more names.
+\emph{binding group}, which binds one or more names. Its working is
+best illustrated with the example trace.
 
- To keep the trace short, the
-reduction starts after the initial local splits and the selection of
-\lstinline{Child}; the omitted steps only expose the prefix consumed by
+To keep the trace short (\cref{fig:local-split-trace}), the
+reduction starts after the initial local splits; the omitted steps
+only expose the prefix consumed by 
 \lstinline{renderMsgArea}.
 \begin{figure}
 \begin{subfigure}[t]{0.49\linewidth}
@@ -295,7 +322,7 @@ nu[c][d..] in
   (P_d ||
    let c2 = select Child c in
    let c3, c4 = lsplit c2 in
-   renderMsgArea used c3;
+   renderMsgArea user c3;
    close (select Done c4)
 ~> nu[c2][d..] in
   (P_d ||
@@ -320,15 +347,16 @@ nu[c][d..] in
 \caption{Reduction suffix.}
 \label{fig:local-split-trace}
 \end{subfigure}
-\caption{Local splitting in the suffix of \lstinline{renderUserRest}.
-The processes $P_d$, $P_d'$, and $P_d''$ abbreviate client-side
+\caption{Local splitting in the suffix of \lstinline{renderRest}.
+The processes $P_d$ and $P_d'$ abbreviate client-side
 computation on the other endpoint.}
 \label{fig:local-split-reduction}
 \end{figure}
 The split on \lstinline{c2} following the \lstinline{select} \emph{replaces} the
 binder for \lstinline{c2} with two fresh channel names \lstinline{c3}
 and \lstinline{c4}. That is, both binding compartments of the
-\lstinline{nu} contain a \emph{list} of binders and all operations
+\lstinline{nu} contain a \emph{list-like structure} of binders for
+channel names and all operations
 work on these channel names from left to right. To ensure the correct
 sequencing, the semantics does not allow any action on \lstinline{c4} before
 \lstinline{c3} has been consumed. This restriction is supported by
@@ -348,14 +376,13 @@ reduction requires that only one channel name is left in each
 compartment. Under this condition, the channel can be closed and
 eliminated. The figure does not show the transitions of the client $P_d$.
 
-In principle, this semantics would also work for remote
-borrowing. However, to connect to the 
-\lstinline{acquire} primitive, we indicate a remote split with the
+For remote borrowing, we incorporate the 
+\lstinline{acquire} primitive. Hence, we indicate a remote split with the
 symbol ``\lstinline{|}'' in the compartment. As an example, we consider the translation of
 lines 5--7:
 \begin{lstlisting}
   fork (lambda() -> renderProfile user &c);
-  renderUserRest user (acquire c)
+  renderRest user (acquire c)
 \end{lstlisting}
 It translates to the following \thecalculus code.
 \begin{lstlisting}
@@ -363,7 +390,7 @@ It translates to the following \thecalculus code.
 let c1, c2 = rsplit c in   (* c1 : HtmlChannel; Ret *)
                            (* c2 : Acq; ChildrenChannel; End *)
 fork (lambda() -> renderProfile user c1);
-renderUserRest user (acquire c2)
+renderRest user (acquire c2)
 \end{lstlisting}
 The translation inserts an \lstinline{rsplit} because \lstinline{c1}
 and \lstinline{c2} are used in different processes. As their uses are
@@ -373,66 +400,306 @@ explicitly synchronized, the \lstinline{rsplit} returns a normal
 of session type that indicates the requirement for explicit
 synchronization.
 Executing this code takes the following steps (ignoring the activity
-at the other end of the channel).
+at the other end of the channel). The bracketed step abbreviates the
+forked process running \lstinline{renderProfile} until its final
+\lstinline{drop c1}.
 %     nu[c][...]
 %     let c = select Child c in
 %     let c1, c2 = rsplit c in
 %     fork (lambda() -> renderProfile user c1);
-%     renderUserRest user (acquire c2)
+%     renderRest user (acquire c2)
 % ~>
 
 \begin{lstlisting}
     nu[c][...]
     let c1, c2 = rsplit c in
     fork (lambda() -> renderProfile user c1);
-    renderUserRest user (acquire c2)
+    renderRest user (acquire c2)
 ~>
     nu[c1|c2][...]
     fork (lambda() -> renderProfile user c1);
-    renderUserRest user (acquire c2)
+    renderRest user (acquire c2)
 ~>*  [ drop c1 ]
     nu[|c2][...]
-    renderUserRest user (acquire c2)
+    renderRest user (acquire c2)
 ~>
     nu[c2][...]
-    renderUserRest user c2
+    renderRest user c2
 \end{lstlisting}
 In summary, the \lstinline{rsplit} inserts a new binding group \lstinline{[c1|c2]}
-demarcated by ``\lstinline{|}''. The \lstinline{drop} is only enabled
+demarcated by ``\lstinline{|}'' to indicate a remote split. The
+\lstinline{drop} is only enabled 
 if its argument is the last name in a group directly before a
 ``\lstinline{|}''. The \lstinline{acquire} is only
 enabled if the preceding binding group has been processed as in
 \lstinline{[|c2]}. Executing the \lstinline{acquire} in the last step removes the
-exhausted binding group as in \lstinline{[c2]}.
+exhausted binding group and yields \lstinline{[c2]}.
 
 \subsection{Implementing Local and Remote Borrowing}
 \label{sec:impl-local-remote}
 
-We implement the high-level calculus shown so far by translation into
-a low-level run-time calculus, \thertcalculus. The run-time calculus
+We implement the high-level calculus by translation into
+a low-level run-time session calculus with borrowing, \thertcalculus. The run-time calculus
 is a concurrent 
 lambda calculus with the usual session-style communication
 primitives. However, \thertcalculus is untyped and it comes equipped with
-signaling primitives for implementing \lstinline{drop}/\lstinline{acquire}.
+asynchronous signaling primitives for implementing \lstinline{drop}/\lstinline{acquire}.
+The direct semantics from~\cref{sec:direct-semant-chann} records ordering constraints in binding
+groups. The run-time translation realizes the same constraints with
+ordinary channel names and optional synchronization flags that
+implement passing of ownership.
+% \Cref{fig:borrow-lifecycle} summarizes the difference between local
+% and remote borrowing in the implementation.
+
+% \begin{figure}[t]
+% \centering
+% \begin{tikzpicture}[
+%   >=Stealth,
+%   node distance=0.8cm and 1.4cm,
+%   state/.style={draw, rounded corners, align=center, inner sep=3pt, font=\small},
+%   split/.style={draw, rectangle split, rectangle split parts=2,
+%     rectangle split part align={center,center}, rounded corners,
+%     align=center, inner sep=3pt, font=\small},
+%   local split/.style={split, rectangle split part fill={white,black!12}},
+%   sync/.style={draw, rounded corners, align=center, inner sep=3pt, font=\small, fill=black!6},
+%   scope/.style={draw, dashed, rounded corners, inner xsep=0.28cm,
+%     inner ysep=0.22cm},
+%   lab/.style={font=\small}
+% ]
+%   \node[state] (l0) {$c:S_1;S_2$};
+%   \node[local split, right=of l0] (l1)
+%     {$c_1:S_1$\nodepart{two}$c_2:S_2$};
+%   \node[state, right=of l1] (l2) {$c_2:S_2$};
+%   \node[state, right=of l2] (l3) {continue\\with $S_2$};
+
+%   \draw[->] (l0) -- node[lab, above] {\texttt{lsplit}} (l1);
+%   \draw[->] (l1) -- node[lab, above] {use $c_1$} (l2);
+%   \draw[->] (l2) -- node[lab, above] {use $c_2$} (l3);
+
+%   \node[lab, left=0.35cm of l0] {\textbf{local}};
+
+%   \node[state, below=1.65cm of l0] (r0) {$c:S_1;S_2$};
+%   \node[state, right=1.4cm of r0, yshift=0.3cm] (r1a)
+%     {$c_1:S_1;\texttt{Ret}$};
+%   \node[state, below=0.35cm of r1a] (r1b)
+%     {$c_2:\texttt{Acq};S_2$};
+%   \node[state, right=0.95cm of r1a] (rret) {$c_1:\texttt{Ret}$};
+%   \coordinate[right=1.35cm of rret.east] (rdrop);
+%   \node[state, right=3.25cm of r1b.east] (r2) {$c_2:S_2$};
+%   \node[state, right=of r2] (r3) {continue\\with $S_2$};
+%   \coordinate[right=0.55cm of r1b.east] (racq);
+
+%   \coordinate[right=0.45cm of r0.east] (rfork);
+%   \draw[-] (r0.east) -- node[lab, above] {\texttt{rsplit}} (rfork);
+%   \draw[->] (rfork) to[out=25,in=180] (r1a.west);
+%   \draw[->] (rfork) to[out=-25,in=180] (r1b.west);
+%   \draw[->] (r1a) -- node[lab, above] {use $c_1$} (rret);
+%   \draw[-{Stealth[open]}] (rret.east) --
+%     node[lab, above] {\texttt{drop} $c_1$} (rdrop);
+%   \draw[->] (r1b.east) --
+%     node[lab, below, pos=0.7] {\texttt{acquire} $c_2$} (r2);
+%   \draw[->] (r2) -- node[lab, above] {use $c_2$} (r3);
+%   \draw[->, dashed] (rdrop) to[out=-40,in=140]
+%     (racq);
+%   \node[scope, fit=(r1a)(r1b)(rret)(rdrop)(r2)(r3),
+%     inner xsep=0.45cm, inner ysep=0.45cm] (rscope) {};
+%   \node[lab, anchor=north west, xshift=2pt, yshift=-2pt]
+%     at (rscope.north west) {$\varphi z \mapsto \texttt{drop}$};
+%   \node[lab, anchor=south, yshift=0.35cm] at ($(rret.east)!0.5!(rdrop)$)
+%     {$z \mapsto \texttt{acq}$};
+%   \node[lab, anchor=south, yshift=0.08cm] at ($(r1b.east)!0.7!(r2.west)$)
+%     {$z \mapsto \texttt{done}$};
+
+%   \node[lab, left=0.35cm of r0] {\textbf{remote}};
+% \end{tikzpicture}
+% \caption{Lifecycle of local and remote borrows. Local borrowing
+% exposes an ordered prefix and suffix of the same channel, with the
+% suffix inactive while the prefix is used. Remote borrowing inserts a
+% synchronization flag $z$ whose scope encloses both pieces; dropping
+% the prefix enables acquisition of the suffix.}
+% \label{fig:borrow-lifecycle}
+% \end{figure}
+
+\Cref{fig:borrow-lifecycle-msc} summarizes the difference between local
+and remote borrowing in the implementation.
+
+\begin{figure}[t]
+\centering
+\begin{subfigure}[t]{0.225\linewidth}
+\centering
+\vspace{0pt}
+\begin{tikzpicture}[
+  >=Stealth,
+  x=0.775cm,
+  y=0.48cm,
+  head/.style={draw, fill=white, minimum width=1.15cm,
+    minimum height=0.42cm, inner sep=1pt, font=\scriptsize},
+  state/.style={draw, fill=blue!5, align=center, inner sep=2pt,
+    font=\scriptsize, text width=1.45cm},
+  inactive/.style={state, fill=black!12},
+  lifeline/.style={dashed, black!55},
+  activation/.style={draw, fill=black!8},
+  msg/.style={->},
+  lab/.style={font=\scriptsize}
+]
+  \draw[black!70] (-1.0,0.55) rectangle (3.0,-8.4);
+
+  \node[head] (lp) at (0,-0.65) {$P$};
+  \draw[lifeline] (lp.south) -- (0,-8.15);
+  \draw[activation] (-0.07,-1.15) rectangle (0.07,-8.0);
+
+  \node[state] at (1.25,-1.25) {$c:S_1;S_2$};
+  \draw[msg] (0.07,-2.25) -- (0.9,-2.25) --
+    node[lab, right] {} (0.9,-2.65) --
+    node[lab, above, yshift=1ex, xshift=0.25em] {\texttt{lsplit}}
+    (0.07,-2.65);
+  \node[state] at (1.25,-3.45) {$c_1:S_1$};
+  \node[inactive] at (1.25,-4.25) {$c_2:S_2$\\inactive};
+  \draw[msg] (0.07,-5.45) -- (0.9,-5.45) --
+    node[lab, right] {} (0.9,-5.85) --
+    node[lab, above, yshift=1ex] {use $c_1$}
+    (0.07,-5.85);
+  \node[state] at (1.25,-6.45) {$c_2:S_2$};
+  \draw[msg] (0.07,-7.45) -- (0.9,-7.45) --
+    node[lab, right] {} (0.9,-7.85) --
+    node[lab, above, yshift=1ex] {use $c_2$}
+    (0.07,-7.85);
+\end{tikzpicture}
+\caption{Local borrow}
+\label{fig:borrow-lifecycle-msc-local}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.755\linewidth}
+\centering
+\vspace{0pt}
+\begin{tikzpicture}[
+  >=Stealth,
+  x=0.775cm,
+  y=0.52cm,
+  head/.style={draw, fill=white, minimum width=1.25cm,
+    minimum height=0.45cm, inner sep=1pt, font=\scriptsize},
+  flaghead/.style={head, fill=orange!14, draw=orange!65!black},
+  state/.style={draw, fill=blue!5, align=center, inner sep=2pt,
+    font=\scriptsize, text width=1.8cm},
+  flagstate/.style={draw=orange!65!black, fill=orange!14,
+    align=center, inner sep=2pt, font=\scriptsize, text width=1.45cm},
+  lifeline/.style={dashed, black!55},
+  flagline/.style={dashed, orange!65!black},
+  activation/.style={draw, fill=black!8},
+  flagact/.style={draw=orange!65!black, fill=orange!10},
+  msg/.style={->},
+  create/.style={->, dashed},
+  return/.style={->, dashed},
+  lab/.style={font=\scriptsize}
+]
+  \draw[black!70] (-1.0,0.55) rectangle (12.55,-11.55);
+
+  \node[head] (rp) at (0,-0.65) {$P$};
+  \draw[lifeline] (rp.south) -- (0,-11.2);
+  \draw[activation] (-0.08,-1.15) rectangle (0.08,-5.15);
+  \draw[activation] (-0.08,-8.8) rectangle (0.08,-11.0);
+  \node[state] at (1.45,-1.25) {$c:S_1;S_2$};
+
+  \node[flaghead] (rz) at (4.8,-2.35) {$\varphi\,z$};
+  \draw[create] (0.08,-2.35) --
+    node[lab, above] {\texttt{rsplit}: create $z$}
+    (rz.west);
+  \draw[flagline] (rz.south) -- (4.8,-11.2);
+  \draw[flagact] (4.72,-2.85) rectangle (4.88,-8.8);
+  \node[flagstate] at (5.85,-3.15) {$z \mapsto \texttt{drop}$};
+
+  \node[state] at (1.45,-3.55) {$c_2:\texttt{Acq};S_2$};
+  \node[head] (rq) at (9.15,-4.25) {$Q$};
+  \draw[create] (0.08,-4.25) -- node[lab, above] {fork $c_1$} (rq.west);
+  \draw[lifeline] (rq.south) -- (9.15,-8.25);
+  \draw[activation] (9.07,-4.7) rectangle (9.23,-7.9);
+
+  \draw[msg] (0.08,-5.15) -- node[lab, above] {\texttt{acquire} $c_2$}
+    (4.72,-5.15);
+  \node[state, text width=2.2cm] at (10.85,-5.15)
+    {$c_1:S_1;\texttt{Ret}$};
+  \draw[msg] (9.23,-6.45) -- (10.05,-6.45) --
+    node[lab, right] {} (10.05,-6.85) --
+    node[lab, above, yshift=1ex] {use $c_1$}
+    (9.23,-6.85);
+  \draw[msg] (9.07,-7.55) -- node[lab, above] {\texttt{drop} $c_1$}
+    (4.88,-7.55);
+  \node[flagstate] at (5.85,-8.15) {$z \mapsto \texttt{acq}$};
+  \node[flagstate] at (5.85,-8.8) {$z \mapsto \texttt{done}$};
+  \draw[return] (4.72,-8.8) -- node[lab, above] {return} (0.08,-8.8);
+
+  \node[state] at (1.45,-9.35) {$c_2:S_2$};
+  \draw[msg] (0.08,-10.25) -- (0.9,-10.25) --
+    node[lab, right] {} (0.9,-10.65) --
+    node[lab, above, yshift=1ex] {use $c_2$}
+    (0.08,-10.65);
+\end{tikzpicture}
+\caption{Remote borrow}
+\label{fig:borrow-lifecycle-msc-remote}
+\end{subfigure}
+\caption{Message-sequence view of local and remote borrows. Channel state is shown as
+annotations next to the relevant process or flag lifelines. A local
+split keeps the channel state with the original process lifeline; a
+remote split creates a flag lifeline $\varphi\,z$ and forks a process
+for the borrowed prefix.}
+\label{fig:borrow-lifecycle-msc}
+\end{figure}
 
 Specifically, a channel is represented by a triple
-$in \otimes c \otimes out$, where $c$ is a primitive channel name and $in$
-and $out$ point to  optional synchronization processes, for incoming and
-outgoing synchronizations. A synchronization
-process carries one of three different values AA, BB, and CC.
-EXPLAIN.
+$in \otimes c \otimes out$, where $c$ is a primitive channel name and
+$in$ and $out$ are optional names of synchronization flags. The
+incoming flag $in$ records whether the channel must be acquired before
+it can be used. The outgoing flag $out$ records whether the channel
+must be dropped after use. A synchronization binder
+$(\varphi z \mapsto \phi)P$ binds a flag name $z$ in $P$ and stores
+one of three states in $\phi$: \lstinline{drop}, \lstinline{acq}, or
+\lstinline{done}. An \lstinline{rsplit} creates a flag in state
+\lstinline{drop} and a channel creation sets its flag to \lstinline{acq}.
+Intuitively, \lstinline{drop} means that the left, borrowed
+part of a remote split is still active, \lstinline{acq} means that it
+has been dropped and the right, suffix part may acquire, and \lstinline{done}
+means that the synchronization has served its purpose and can be
+removed. This mechanism implements an ownership transfer of the
+primitive channel from the borrowed part to the suffix.
 
-The incoming synchronization process indicates whether the channel has to
-be acquired before using it. The outgoing synchronization process
-tells us whether the channel must be dropped after use.
+Allocation creates a primitive channel pair and one synchronization
+flag for each endpoint. The fresh endpoints carry incoming flags that
+are already in the \lstinline{acq} state. Thus, an initial
+\lstinline{acquire} is required to reduce each channel to normal
+operation, after which a cleanup rule removes the flag from the 
+channel triple by replacing it with \lstinline{*}. Once these optional
+flag components are absent, communication is just ordinary
+session communication: \lstinline{send}/\lstinline{recv},
+\lstinline{select}/\lstinline{branch}, and \lstinline{close}/\lstinline{wait}
+all operate directly on the primitive channel name $c$.
 
-Allocating a channel creates a primitive channel and one
-synchronization channel for each channel end. Channel ends start out
-in state BB, which means they are enabled for an \lstinline{acquire}
-operation. Hence, before running a protocol on a channel, we first
-have to \lstinline{acquire} it. Acquiring a channel sets its incoming
-synchronization flag to a ready state CC, which is expected by all
-normal operations. 
+Local splitting is deliberately cheap (\cref{fig:borrow-lifecycle-msc-local}). The rule for
+\lstinline{lsplit} returns two copies of the same run-time channel
+triple. No new channel is allocated and no synchronization flag
+is introduced. This is sound because the source type system has
+already established the left-to-right use of the two pieces. The
+run-time representation can therefore be imperative: the two pieces are
+aliases for the same underlying channel object, and using the first
+piece advances that object to the state where the second piece starts.
+
+Remote splitting is the only place where new synchronization
+machinery is introduced
+(\cref{fig:borrow-lifecycle-msc-remote}). Splitting a channel
+$in \otimes c \otimes out$ remotely creates a fresh flag $z$ in state
+\lstinline{drop} and returns two channel triples:
+$in \otimes c \otimes z$ for the borrowed prefix, and
+$z \otimes c \otimes out$ for the suffix. The prefix therefore carries
+an outgoing obligation to call \lstinline{drop}; the suffix carries a
+matching incoming obligation to call \lstinline{acquire}. Calling
+\lstinline{drop} changes the flag from \lstinline{drop} to
+\lstinline{acq} and returns immediately, so the notification is
+asynchronous. A later \lstinline{acquire} on the suffix can fire only
+after this state change. It changes the flag to \lstinline{done} and
+returns the channel. A cleanup rule then removes the synchronization
+flag altogether. Thus a remote split pays for exactly the
+synchronization needed to coordinate the two processes operating on
+the channel, whereas a local
+split pays nothing beyond sharing the channel representation.
 
 \subsection{Remarks}
 \label{sec:remarks}

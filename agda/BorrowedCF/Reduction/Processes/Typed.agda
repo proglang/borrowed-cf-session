@@ -72,31 +72,31 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
   R-Exp : e₁ ⋯→ e₂ → ⟪ e₁ ⟫ ─→ₚ ⟪ e₂ ⟫
 
   R-New : (E : Frame* n) →
-    ⟪ E [ K (`new s) · K `unit ]* ⟫
+    ⟪ E [ K (`new s) ·¹ * ]* ⟫
       ─→ₚ
     ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
       ⟪ E ⋯ᶠ* weaken* _ [ (` 1F) ⊗ (` 0F) ]* ⟫
 
   R-Fork : (E : Frame* n) (V : Value e) →
-    ⟪ E [ K `fork · e ]* ⟫
+    ⟪ E [ K `fork ·¹ e ]* ⟫
       ─→ₚ
-    ⟪ E [ K `unit ]* ⟫ ∥ ⟪ e · K `unit ⟫
+    ⟪ E [ * ]* ⟫ ∥ ⟪ e ·¹ * ⟫
 
   R-Com : ∀ {E₁ E₂} → Value e →
     let wkρ = wkₚ (b₁ + sum B₁) (b₂ + sum B₂) in
     ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
-      ((⟪ E₁ ⋯ᶠ* wkρ [ K `send · ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
-        ∥ ⟪ E₂ ⋯ᶠ* wkρ [ K `recv · (` wkʳ n (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
+      ((⟪ E₁ ⋯ᶠ* wkρ [ K `send ·¹ ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
+        ∥ ⟪ E₂ ⋯ᶠ* wkρ [ K `recv ·¹ (` wkʳ n (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
         ∥ (P ⋯ₚ wkρ))
       ─→ₚ
-    ν (b₁ ∷ B₁) (b₂ ∷ B₂) ((⟪ E₁ [ K `unit ]* ⟫ ∥ ⟪ E₂ [ e ]* ⟫) ∥ P)
+    ν (b₁ ∷ B₁) (b₂ ∷ B₂) ((⟪ E₁ [ * ]* ⟫ ∥ ⟪ E₂ [ e ]* ⟫) ∥ P)
 
   R-Choice : ∀ {E₁ E₂ i} →
     let x = 0F in
     let y = wkʳ n (wkˡ (suc b₁ + sum B₁) 0F) in
     ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
-      ((⟪ E₁ [ K (`select i) · (` x) ]* ⟫
-        ∥ ⟪ E₂ [ K `branch · (` y) ]* ⟫)
+      ((⟪ E₁ [ K (`select i) ·¹ (` x) ]* ⟫
+        ∥ ⟪ E₂ [ K `branch ·¹ (` y) ]* ⟫)
         ∥ P)
       ─→ₚ
     ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
@@ -106,36 +106,36 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
 
   R-LSplit : ∀ {E} →
     let module 𝐒 = SplitRenamings B₁ B₂ B in
-    ν (B₁ ++ suc b₁ ∷ B₂) B (⟪ E [ K (`lsplit s) · (` 𝐒.inj 0F) ]* ⟫ ∥ P)
+    ν (B₁ ++ suc b₁ ∷ B₂) B (⟪ E [ K (`lsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ ∥ P)
       ─→ₚ
     ν (B₁ ++ suc (suc b₁) ∷ B₂) B (⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F) ]* ⟫ ∥ (P ⋯ₚ 𝐒.lwk))
 
   R-RSplit : ∀ {E} →
     let module 𝐒 = SplitRenamings B₁ B₂ B in
-    ν (B₁ ++ suc b₁ ∷ B₂) B (⟪ E [ K (`rsplit s) · (` 𝐒.inj 0F) ]* ⟫ ∥ P)
+    ν (B₁ ++ suc b₁ ∷ B₂) B (⟪ E [ K (`rsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ ∥ P)
       ─→ₚ
     ν (B₁ ++ 1 ∷ suc b₁ ∷ B₂) B (⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F) ]* ⟫ ∥ (P ⋯ₚ 𝐒.rwk))
 
   R-Drop : ∀ {E} →
     ν (suc b₁ ∷ B₁) B₂
-      (⟪ E ⋯ᶠ* weakenᵣ [ K `drop · (` 0F) ]* ⟫ ∥ (P ⋯ₚ weakenᵣ))
+      (⟪ E ⋯ᶠ* weakenᵣ [ K `drop ·¹ (` 0F) ]* ⟫ ∥ (P ⋯ₚ weakenᵣ))
       ─→ₚ
     ν (b₁ ∷ B₁) B₂
-      (⟪ E [ K `unit ]* ⟫ ∥ P)
+      (⟪ E [ * ]* ⟫ ∥ P)
 
   R-Acq : ∀ {E} →
     ν (zero ∷ suc b₁ ∷ B₁) B₂
-      (⟪ E [ K `acq · (` 0F) ]* ⟫ ∥ P)
+      (⟪ E [ K `acq ·¹ (` 0F) ]* ⟫ ∥ P)
       ─→ₚ
     ν (suc b₁ ∷ B₁) B₂ (⟪ E [ ` zero ]* ⟫ ∥ P)
 
   R-Close : ∀ {E₁ E₂} →
     ν L.[ 1 ] L.[ 1 ]
-      ( ⟪ E₁ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ _ [ K (`end ‼) · (` 0F) ]* ⟫
-      ∥ ⟪ E₂ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ _ [ K (`end ⁇) · (` 1F) ]* ⟫
+      ( ⟪ E₁ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ _ [ K (`end ‼) ·¹ (` 0F) ]* ⟫
+      ∥ ⟪ E₂ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ _ [ K (`end ⁇) ·¹ (` 1F) ]* ⟫
       )
       ─→ₚ
-    ⟪ E₁ [ K `unit ]* ⟫ ∥ ⟪ E₂ [ K `unit ]* ⟫
+    ⟪ E₁ [ * ]* ⟫ ∥ ⟪ E₂ [ * ]* ⟫
 
   R-Discard :
     ν (suc b ∷ B₁) B₂ (P ⋯ₚ weakenᵣ) ─→ₚ ν (b ∷ B₁) B₂ P
