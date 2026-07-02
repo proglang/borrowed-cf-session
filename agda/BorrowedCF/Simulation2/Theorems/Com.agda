@@ -966,7 +966,7 @@ recv-handle-≃msg {y = y} ⊢fn ⊢arg
 ... | Tᵐ , dom≃ = Tᵐ , ≃-trans (arg-type ⊢arg) (≃-sym dom≃)
 
 recv-handle-≃msg-app : ∀ {N} {Δ : Ctx N}{β}{y : 𝔽 N}{U ϵ}
-  → Δ ; β ⊢ K `recv · (` y) ∶ U ∣ ϵ
+  → Δ ; β ⊢ K `recv ·¹ (` y) ∶ U ∣ ϵ
   → ∃[ Tᵐ ] (Δ y ≃ ⟨ msg ⁇ Tᵐ ⟩)
 recv-handle-≃msg-app (T-AppUnr   _ _ ⊢fn ⊢arg) = recv-handle-≃msg ⊢fn ⊢arg
 recv-handle-≃msg-app (T-AppLin   _ _ ⊢fn ⊢arg) = recv-handle-≃msg ⊢fn ⊢arg
@@ -980,8 +980,8 @@ open T using (_;_⊢ₚ_)
 -- Symmetric crux for the recv side: b₂ ≥ 1.
 com-head≥2 : ∀ {m} {Γ : Ctx m} {γ}{b₁ b₂}{B₁ B₂ : BindGroup}{e}{E₁ E₂}{P}(V : Value e) →
     Γ ; γ ⊢ₚ T.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
-      ((T.⟪ E₁ ⋯ᶠ* TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂) [ K `send · ((e ⋯ TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂)) ⊗ (` 0F)) ]* ⟫
-        T.∥ T.⟪ E₂ ⋯ᶠ* TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂) [ K `recv · (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
+      ((T.⟪ E₁ ⋯ᶠ* TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂) [ K `send ·¹ ((e ⋯ TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂)) ⊗ (` 0F)) ]* ⟫
+        T.∥ T.⟪ E₂ ⋯ᶠ* TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂) [ K `recv ·¹ (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
         T.∥ (P T.⋯ₚ TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂)))
       → ∃[ b₂' ] (b₂ ≡ suc b₂')
 com-head≥2 {b₂ = suc b₂'} V ⊢P = b₂' , refl
@@ -1035,7 +1035,7 @@ send-handle-≃msg ⊢fn ⊢arg
 ... | (_ ⊗ eq) = Tᵐ , ≃-trans Hx≃ eq
 
 send-handle-≃msg-app : ∀ {N} {Δ : Ctx N}{β}{ee}{x : 𝔽 N}{U ϵ}
-  → Δ ; β ⊢ K `send · (ee ⊗ (` x)) ∶ U ∣ ϵ
+  → Δ ; β ⊢ K `send ·¹ (ee ⊗ (` x)) ∶ U ∣ ϵ
   → ∃[ Tᵐ ] (Δ x ≃ ⟨ msg ‼ Tᵐ ⟩)
 send-handle-≃msg-app (T-AppUnr   _ _ ⊢fn ⊢arg) = send-handle-≃msg ⊢fn ⊢arg
 send-handle-≃msg-app (T-AppLin   _ _ ⊢fn ⊢arg) = send-handle-≃msg ⊢fn ⊢arg
@@ -1049,8 +1049,8 @@ msg‼-not-Bounded ()
 
 com-head≥1 : ∀ {m} {Γ : Ctx m} {γ}{b₁ b₂}{B₁ B₂ : BindGroup}{e}{E₁ E₂}{P}(V : Value e) →
     Γ ; γ ⊢ₚ T.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
-      ((T.⟪ E₁ ⋯ᶠ* TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂) [ K `send · ((e ⋯ TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂)) ⊗ (` 0F)) ]* ⟫
-        T.∥ T.⟪ E₂ ⋯ᶠ* TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂) [ K `recv · (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
+      ((T.⟪ E₁ ⋯ᶠ* TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂) [ K `send ·¹ ((e ⋯ TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂)) ⊗ (` 0F)) ]* ⟫
+        T.∥ T.⟪ E₂ ⋯ᶠ* TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂) [ K `recv ·¹ (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
         T.∥ (P T.⋯ₚ TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂)))
       → ∃[ b₁' ] (b₁ ≡ suc b₁')
 com-head≥1 {b₁ = suc b₁'} V ⊢P = b₁' , refl
@@ -1215,21 +1215,21 @@ U-com : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
   → (V : Value e)
   → (let wkρ = TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂) in
      Γ ; γ ⊢ₚ T.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
-       ((T.⟪ E₁ ⋯ᶠ* wkρ [ K `send · ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
-         T.∥ T.⟪ E₂ ⋯ᶠ* wkρ [ K `recv · (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
+       ((T.⟪ E₁ ⋯ᶠ* wkρ [ K `send ·¹ ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
+         T.∥ T.⟪ E₂ ⋯ᶠ* wkρ [ K `recv ·¹ (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
          T.∥ (P T.⋯ₚ wkρ)))
   → (let wkρ = TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂) in
      (U[ T.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
-              ((T.⟪ E₁ ⋯ᶠ* wkρ [ K `send · ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
-                T.∥ T.⟪ E₂ ⋯ᶠ* wkρ [ K `recv · (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
+              ((T.⟪ E₁ ⋯ᶠ* wkρ [ K `send ·¹ ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
+                T.∥ T.⟪ E₂ ⋯ᶠ* wkρ [ K `recv ·¹ (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
                 T.∥ (P T.⋯ₚ wkρ)) ] σ
        UR─→ₚ*
       U[ T.ν (b₁ ∷ B₁) (b₂ ∷ B₂)
               ((T.⟪ E₁ [ K `unit ]* ⟫ T.∥ T.⟪ E₂ [ e ]* ⟫) T.∥ P) ] σ)
      ⊎
      (U[ T.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
-              ((T.⟪ E₁ ⋯ᶠ* wkρ [ K `send · ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
-                T.∥ T.⟪ E₂ ⋯ᶠ* wkρ [ K `recv · (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
+              ((T.⟪ E₁ ⋯ᶠ* wkρ [ K `send ·¹ ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
+                T.∥ T.⟪ E₂ ⋯ᶠ* wkρ [ K `recv ·¹ (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
                 T.∥ (P T.⋯ₚ wkρ)) ] σ
        U.≋
       U[ T.ν (b₁ ∷ B₁) (b₂ ∷ B₂)
@@ -1255,7 +1255,7 @@ U-com {m} {n} σ Vσ Γ-S {b₁ = b₁} {b₂ = b₂} {B₁ = B₁} {B₂ = B₂
     PP : T.Proc (sum B₁′ + sum B₂′ + m)
     PP = P T.⋯ₚ wkρ
     QL : T.Proc (sum B₁′ + sum B₂′ + m)
-    QL = (T.⟪ EE₁ [ K `send · (ee ⊗ (` 0F)) ]* ⟫ T.∥ T.⟪ EE₂ [ K `recv · (` yv) ]* ⟫) T.∥ PP
+    QL = (T.⟪ EE₁ [ K `send ·¹ (ee ⊗ (` 0F)) ]* ⟫ T.∥ T.⟪ EE₂ [ K `recv ·¹ (` yv) ]* ⟫) T.∥ PP
     τ : sum B₁′ + sum B₂′ + m →ₛ syncs B₂′ + (syncs B₁′ + (2 + n))
     τ = leafσ σ B₁′ B₂′
     XL : U.Proc (syncs B₂′ + (syncs B₁′ + (2 + n)))
@@ -1347,7 +1347,7 @@ U-com {m} {n} σ Vσ Γ-S {b₁ = b₁} {b₂ = b₂} {B₁ = B₁} {B₂ = B₂
     eM : Tm (2 + (sB + (sA + n)))
     eM = rn (ee ⋯ τ)
     redexL : U.Proc (2 + (sB + (sA + n)))
-    redexL = (U.⟪ F₁ [ K `send · (eM ⊗ cc₀) ]* ⟫ U.∥ (U.⟪ F₂ [ K `recv · cc₁ ]* ⟫ U.∥ RP))
+    redexL = (U.⟪ F₁ [ K `send ·¹ (eM ⊗ cc₀) ]* ⟫ U.∥ (U.⟪ F₂ [ K `recv ·¹ cc₁ ]* ⟫ U.∥ RP))
     contractumR : U.Proc (2 + (sB + (sA + n)))
     contractumR = (U.⟪ F₁ [ * ]* ⟫ U.∥ (U.⟪ F₂ [ eM ]* ⟫ U.∥ RP))
     VeM : Value eM
@@ -1361,15 +1361,15 @@ U-com {m} {n} σ Vσ Γ-S {b₁ = b₁} {b₂ = b₂} {B₁ = B₁} {B₂ = B₂
       ( cong (λ t → (t ⋯ ρ₁) ⋯ ρ₂) (frame-plug* E τ Vτ)
       ■ cong (_⋯ ρ₂) (frame-plug*ᵣ (frame*-⋯ E τ Vτ) ρ₁)
       ■ frame-plug*ᵣ (frame*-⋯ E τ Vτ ⋯ᶠ* ρ₁) ρ₂ )
-    thread₁≡ : (U[ T.⟪ EE₁ [ K `send · (ee ⊗ (` 0F)) ]* ⟫ ] τ U.⋯ₚ ρ₁) U.⋯ₚ ρ₂
-               ≡ U.⟪ F₁ [ K `send · (eM ⊗ cc₀) ]* ⟫
-    thread₁≡ = threadEq EE₁ (K `send · (ee ⊗ (` 0F)))
-             ■ cong (λ t → U.⟪ F₁ [ K `send · (eM ⊗ t) ]* ⟫) cc₀-eq
-    thread₂≡ : (U[ T.⟪ EE₂ [ K `recv · (` yv) ]* ⟫ ] τ U.⋯ₚ ρ₁) U.⋯ₚ ρ₂
-               ≡ U.⟪ F₂ [ K `recv · cc₁ ]* ⟫
-    thread₂≡ = threadEq EE₂ (K `recv · (` yv))
-             ■ cong (λ t → U.⟪ F₂ [ K `recv · t ]* ⟫) cc₁-eq
-    YL≡ : YL ≡ (U.⟪ F₁ [ K `send · (eM ⊗ cc₀) ]* ⟫ U.∥ U.⟪ F₂ [ K `recv · cc₁ ]* ⟫) U.∥ RP
+    thread₁≡ : (U[ T.⟪ EE₁ [ K `send ·¹ (ee ⊗ (` 0F)) ]* ⟫ ] τ U.⋯ₚ ρ₁) U.⋯ₚ ρ₂
+               ≡ U.⟪ F₁ [ K `send ·¹ (eM ⊗ cc₀) ]* ⟫
+    thread₁≡ = threadEq EE₁ (K `send ·¹ (ee ⊗ (` 0F)))
+             ■ cong (λ t → U.⟪ F₁ [ K `send ·¹ (eM ⊗ t) ]* ⟫) cc₀-eq
+    thread₂≡ : (U[ T.⟪ EE₂ [ K `recv ·¹ (` yv) ]* ⟫ ] τ U.⋯ₚ ρ₁) U.⋯ₚ ρ₂
+               ≡ U.⟪ F₂ [ K `recv ·¹ cc₁ ]* ⟫
+    thread₂≡ = threadEq EE₂ (K `recv ·¹ (` yv))
+             ■ cong (λ t → U.⟪ F₂ [ K `recv ·¹ t ]* ⟫) cc₁-eq
+    YL≡ : YL ≡ (U.⟪ F₁ [ K `send ·¹ (eM ⊗ cc₀) ]* ⟫ U.∥ U.⟪ F₂ [ K `recv ·¹ cc₁ ]* ⟫) U.∥ RP
     YL≡ = cong₂ U._∥_ (cong₂ U._∥_ thread₁≡ thread₂≡) refl
     frontL : U.ν YL U.≋ U.ν redexL
     frontL = U.ν-cong (≡→≋ YL≡ ◅◅ Eq*.symmetric _ U.∥-assoc)

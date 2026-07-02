@@ -93,7 +93,7 @@ descend-absX {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} {ρ = ρ} inj
   0slot : (CB.`_ fzero) ↓ Xd0 ≡ ` fzero
   0slot = ↓-identity-⊆ (CB.`_ fzero) (q⊆p∪q X ⁅ fzero ⁆)
   rhs-img : (join dd (CB.`_ fzero) (𝐂.wk γr)) 𝐂.⋯ (ρ ↑) ≡ join dd (CB.`_ fzero) (𝐂.wk (γr 𝐂.⋯ ρ))
-  rhs-img = join-⋯ {ϕ = ρ ↑} dd (CB.`_ fzero) (𝐂.wk γr) ■ cong₂ (join dd) refl (sym (𝐂.⋯-↑-wk γr ρ))
+  rhs-img = join-⋯ dd {ϕ = ρ ↑} (CB.`_ fzero) (𝐂.wk γr) ■ cong₂ (join dd) refl (sym (𝐂.⋯-↑-wk γr ρ))
   rhs-eq : (join dd (CB.`_ fzero) (𝐂.wk γa)) ↓ Xd0 ≡ (join dd (CB.`_ fzero) (𝐂.wk γr)) 𝐂.⋯ (ρ ↑)
   rhs-eq = ↓-join dd (CB.`_ fzero) (𝐂.wk γa) Xd0
            ■ (cong₂ (join dd) 0slot (wk↓' γa Xd0 ■ cong 𝐂.wk (sym eqr)) ■ sym rhs-img)
@@ -174,7 +174,7 @@ descend-abs2 {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} {T₁ = T₁}
   Fr-eq : Fr′ ↓ Xd0 ≡ Fr′
   Fr-eq = ↓-identity-⊆ Fr′ (⊆-trans Frdom (q⊆p∪q Xtrue fr2))
   rhs-img : (join dd Fr (𝐂.wk (𝐂.wk γr))) 𝐂.⋯ (ρ ↑ ↑) ≡ join dd Fr′ (𝐂.wk (𝐂.wk (γr 𝐂.⋯ ρ)))
-  rhs-img = join-⋯ {ϕ = ρ ↑ ↑} dd Fr (𝐂.wk (𝐂.wk γr)) ■ cong₂ (join dd) Frinv (⋯²-↑-wk γr)
+  rhs-img = join-⋯ dd {ϕ = ρ ↑ ↑} Fr (𝐂.wk (𝐂.wk γr)) ■ cong₂ (join dd) Frinv (⋯²-↑-wk γr)
   rhs-eq : (join dd Fr′ (𝐂.wk (𝐂.wk γa))) ↓ Xd0 ≡ (join dd Fr (𝐂.wk (𝐂.wk γr))) 𝐂.⋯ (ρ ↑ ↑)
   rhs-eq = ↓-join dd Fr′ (𝐂.wk (𝐂.wk γa)) Xd0
            ■ (cong₂ (join dd) Fr-eq (wk²↓ γa Xd0 ■ cong (λ z → 𝐂.wk (𝐂.wk z)) (sym eqr)) ■ sym rhs-img)

@@ -526,7 +526,7 @@ Bφ-red {n} (b ∷ B@(_ ∷ _)) r =
 
 -- φ drop (⟪ F[drop · 𝓒[e × suc x × `0F]] ⟫ ∥ Q) fires RU-Drop to φ acq (⟪ F[*] ⟫ ∥ Q).
 leaf-fire-drop : (F : Frame* (1 + n)) {e : Tm (1 + n)} {x : 𝔽 n} (Q : U.Proc (1 + n)) →
-  U.φ U.drop (U.⟪ F [ K `drop · (((e ⊗ (` (Fin.suc x))) ⊗ (` 0F))) ]* ⟫ U.∥ Q)
+  U.φ U.drop (U.⟪ F [ K `drop ·¹ (((e ⊗ (` (Fin.suc x))) ⊗ (` 0F))) ]* ⟫ U.∥ Q)
     UR─→ₚ*
   U.φ U.acq (U.⟪ F [ K `unit ]* ⟫ U.∥ Q)
 leaf-fire-drop F {e} {x} Q = UR.RU-Drop F ◅ ε
@@ -599,7 +599,7 @@ fn-drop-dom (T-Conv (dom≃ `→ _) _ d) = ≃-trans (fn-drop-dom d) dom≃
 fn-drop-dom (T-Weaken _ d)         = fn-drop-dom d
 
 drop-handle-≃ret : ∀ {N} {Δ : Ctx N}{β}{x : 𝔽 N}{U ϵ}
-  → Δ ; β ⊢ K `drop · (` x) ∶ U ∣ ϵ
+  → Δ ; β ⊢ K `drop ·¹ (` x) ∶ U ∣ ϵ
   → Δ x ≃ ⟨ ret ⟩
 drop-handle-≃ret (T-AppUnr   _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-drop-dom ⊢fn))
 drop-handle-≃ret (T-AppLin   _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-drop-dom ⊢fn))
@@ -632,12 +632,12 @@ U-drop : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
          {E : Frame* (sum (b₁ ∷ B₁) + sum B₂ + m)}
          {P : T.Proc (sum (b₁ ∷ B₁) + sum B₂ + m)}
        → Γ ; g ⊢ₚ T.ν (suc b₁ ∷ B₁) B₂
-           (T.⟪ (E ⋯ᶠ* weakenᵣ) [ K `drop · (` 0F) ]* ⟫ T.∥ (P T.⋯ₚ weakenᵣ))
+           (T.⟪ (E ⋯ᶠ* weakenᵣ) [ K `drop ·¹ (` 0F) ]* ⟫ T.∥ (P T.⋯ₚ weakenᵣ))
        → (U[ T.ν (suc b₁ ∷ B₁) B₂
-             (T.⟪ (E ⋯ᶠ* weakenᵣ) [ K `drop · (` 0F) ]* ⟫ T.∥ (P T.⋯ₚ weakenᵣ)) ] σ
+             (T.⟪ (E ⋯ᶠ* weakenᵣ) [ K `drop ·¹ (` 0F) ]* ⟫ T.∥ (P T.⋯ₚ weakenᵣ)) ] σ
             UR─→ₚ* U[ T.ν (b₁ ∷ B₁) B₂ (T.⟪ E [ K `unit ]* ⟫ T.∥ P) ] σ)
          ⊎ (U[ T.ν (suc b₁ ∷ B₁) B₂
-             (T.⟪ (E ⋯ᶠ* weakenᵣ) [ K `drop · (` 0F) ]* ⟫ T.∥ (P T.⋯ₚ weakenᵣ)) ] σ
+             (T.⟪ (E ⋯ᶠ* weakenᵣ) [ K `drop ·¹ (` 0F) ]* ⟫ T.∥ (P T.⋯ₚ weakenᵣ)) ] σ
             U.≋ U[ T.ν (b₁ ∷ B₁) B₂ (T.⟪ E [ K `unit ]* ⟫ T.∥ P) ] σ)
 U-drop σ Vσ Γ-S {b₁ = b₁} {B₁ = []} {B₂ = B₂} {E = E} {P = P} ⊢P
   with inv-ν ⊢P
@@ -673,7 +673,7 @@ U-drop {m} {n} σ Vσ Γ-S {b₁ = zero} {B₁ = C@(cHd ∷ cTl)} {B₂ = B₂} 
     Pᵂ : T.Proc (sum (suc zero ∷ C) + sum B₂ + m)
     Pᵂ = P T.⋯ₚ weakenᵣ
     QL : T.Proc (sum (suc zero ∷ C) + sum B₂ + m)
-    QL = T.⟪ Eᵂ [ K `drop · (` 0F) ]* ⟫ T.∥ Pᵂ
+    QL = T.⟪ Eᵂ [ K `drop ·¹ (` 0F) ]* ⟫ T.∥ Pᵂ
     QR : T.Proc (sum (zero ∷ C) + sum B₂ + m)
     QR = T.⟪ E [ K `unit ]* ⟫ T.∥ P
     sC = syncs C
@@ -720,7 +720,7 @@ U-drop {m} {n} σ Vσ Γ-S {b₁ = zero} {B₁ = C@(cHd ∷ cTl)} {B₂ = B₂} 
                subst U.Proc eq U.⟪ t ⟫ ≡ U.⟪ subst Tm eq t ⟫
     subst-⟪⟫ refl t = refl
     aTm : Tm (sB₂ + (suc sC + (2 + n)))
-    aTm = (Eᵂ [ K `drop · (` 0F) ]*) ⋯ leafσ σ (suc zero ∷ C) B₂
+    aTm = (Eᵂ [ K `drop ·¹ (` 0F) ]*) ⋯ leafσ σ (suc zero ∷ C) B₂
     bPr : U.Proc (sB₂ + (suc sC + (2 + n)))
     bPr = U[ Pᵂ ] (leafσ σ (suc zero ∷ C) B₂)
     -- the redex thread after subst+renamings
@@ -862,15 +862,15 @@ U-drop {m} {n} σ Vσ Γ-S {b₁ = zero} {B₁ = C@(cHd ∷ cTl)} {B₂ = B₂} 
     subst-⋯ₛ-cod : ∀ {a c d} (q : c ≡ d) (t : Tm a) (s : a →ₛ c) →
                    t ⋯ subst (λ z → a →ₛ z) q s ≡ subst Tm q (t ⋯ s)
     subst-⋯ₛ-cod refl t s = refl
-    redTm≡θ : redTm ≡ (Eᵂ [ K `drop · (` 0F) ]*) ⋯ θ
+    redTm≡θ : redTm ≡ (Eᵂ [ K `drop ·¹ (` 0F) ]*) ⋯ θ
     redTm≡θ =
         cong (λ z → z ⋯ (assocSwapᵣ sC 1 ↑* sB₂) ⋯ assocSwapᵣ sB₂ 1)
-          (sym (subst-⋯ₛ-cod eqC (Eᵂ [ K `drop · (` 0F) ]*) (leafσ σ (suc zero ∷ C) B₂)))
+          (sym (subst-⋯ₛ-cod eqC (Eᵂ [ K `drop ·¹ (` 0F) ]*) (leafσ σ (suc zero ∷ C) B₂)))
       ■ cong (_⋯ assocSwapᵣ sB₂ 1)
-          (fusion (Eᵂ [ K `drop · (` 0F) ]*)
+          (fusion (Eᵂ [ K `drop ·¹ (` 0F) ]*)
             (subst (λ z → (sum (suc zero ∷ C) + sum B₂ + m) →ₛ z) eqC (leafσ σ (suc zero ∷ C) B₂))
             (assocSwapᵣ sC 1 ↑* sB₂))
-      ■ fusion (Eᵂ [ K `drop · (` 0F) ]*)
+      ■ fusion (Eᵂ [ K `drop ·¹ (` 0F) ]*)
           ((subst (λ z → (sum (suc zero ∷ C) + sum B₂ + m) →ₛ z) eqC (leafσ σ (suc zero ∷ C) B₂))
             ·ₖ (assocSwapᵣ sC 1 ↑* sB₂))
           (assocSwapᵣ sB₂ 1)
@@ -881,15 +881,15 @@ U-drop {m} {n} σ Vσ Γ-S {b₁ = zero} {B₁ = C@(cHd ∷ cTl)} {B₂ = B₂} 
     redShapeE = proj₁ handle
     redShapeX : 𝔽 (sB₂ + (sC + (2 + n)))
     redShapeX = proj₁ (proj₂ handle)
-    redShapeEq : redTm ≡ redShapeF [ K `drop · (((redShapeE ⊗ (` (Fin.suc redShapeX))) ⊗ (` (Fin.zero {n = sB₂ + (sC + (2 + n))})))) ]*
+    redShapeEq : redTm ≡ redShapeF [ K `drop ·¹ (((redShapeE ⊗ (` (Fin.suc redShapeX))) ⊗ (` (Fin.zero {n = sB₂ + (sC + (2 + n))})))) ]*
     redShapeEq =
         redTm≡θ
       ■ frame-plug* Eᵂ θ Vθ
-      ■ cong (redShapeF [_]*) (cong (K `drop ·_) (proj₂ (proj₂ handle)))
+      ■ cong (redShapeF [_]*) (cong (K `drop ·¹_) (proj₂ (proj₂ handle)))
     redShape : Σ[ F ∈ Frame* (suc (sB₂ + (sC + (2 + n)))) ]
                Σ[ e ∈ Tm (suc (sB₂ + (sC + (2 + n)))) ]
                Σ[ x ∈ 𝔽 (sB₂ + (sC + (2 + n))) ]
-                 redTm ≡ F [ K `drop · (((e ⊗ (` (Fin.suc x))) ⊗ (` (Fin.zero {n = sB₂ + (sC + (2 + n))})))) ]*
+                 redTm ≡ F [ K `drop ·¹ (((e ⊗ (` (Fin.suc x))) ⊗ (` (Fin.zero {n = sB₂ + (sC + (2 + n))})))) ]*
     redShape = redShapeF , redShapeE , redShapeX , redShapeEq
     Eᶠ : Frame* (suc (sB₂ + (sC + (2 + n))))
     Eᶠ = redShapeF

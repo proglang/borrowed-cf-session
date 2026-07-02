@@ -926,7 +926,7 @@ wrapNE front s₀ (t ◅ ts) back = UR.RU-Struct front s₀ ε ◅ wrapNE ε t t
 -- ν (φ acq (⟪ F[acq · 𝓒[`0F × 1F × e]] ⟫ ∥ Q)) fires RU-Acquire then, under the
 -- ν, RU-Cleanup, yielding ν ((⟪ F[𝓒[`0F×1F×e]] ⟫ ∥ Q) ⋯ₚ ⦅*⦆ₛ).
 leaf-fire : (F : Frame* (3 + n)) {e : Tm (3 + n)} (Q : U.Proc (3 + n)) →
-  U.ν (U.φ U.acq (U.⟪ F [ K `acq · (((` 0F) ⊗ (` 1F)) ⊗ e) ]* ⟫ U.∥ Q))
+  U.ν (U.φ U.acq (U.⟪ F [ K `acq ·¹ (((` 0F) ⊗ (` 1F)) ⊗ e) ]* ⟫ U.∥ Q))
     UR─→ₚ*
   U.ν ((U.⟪ F [ ((` 0F) ⊗ (` 1F)) ⊗ e ]* ⟫ U.∥ Q) U.⋯ₚ ⦅ * ⦆ₛ)
 leaf-fire F {e} Q = UR.RU-Acquire F ◅ UR.RU-Res UR.RU-Cleanup ◅ ε
@@ -1064,16 +1064,21 @@ toℕ-subst𝔽 refl y = refl
 
 -- frame congruence / fusion helpers (copied from Theorems/Splits, which is
 -- unimportable because it carries downstream interaction metas).
-·□-cong : {e₁ e₂ : Tm n} {V₁ : Value e₁} {V₂ : Value e₂} → e₁ ≡ e₂ → (V₁ ·□) ≡ (V₂ ·□)
-·□-cong refl = cong _·□ Value-irr
+app₁-cong : {e₁ e₂ : Tm n} {d : Dir} {V₁ : d ≡ L → Value e₁} {V₂ : d ≡ L → Value e₂}
+          → e₁ ≡ e₂ → app₁ e₁ d V₁ ≡ app₁ e₂ d V₂
+app₁-cong refl = cong (app₁ _ _) (funext λ x → Value-irr)
+
+app₂-cong : {e₁ e₂ : Tm n} {d : Dir} {V₁ : d ≡ 𝟙 ⊎ d ≡ R → Value e₁} {V₂ : d ≡ 𝟙 ⊎ d ≡ R → Value e₂}
+          → e₁ ≡ e₂ → app₂ e₁ d V₁ ≡ app₂ e₂ d V₂
+app₂-cong refl = cong (app₂ _ _) (funext λ x → Value-irr)
 
 ⊗□-cong : {e₁ e₂ : Tm n} {V₁ : Value e₁} {V₂ : Value e₂} → e₁ ≡ e₂ → (V₁ ⊗□) ≡ (V₂ ⊗□)
 ⊗□-cong refl = cong _⊗□ Value-irr
 
 frame-cong : (E : Frame m) {ϕ ψ : m →ₛ n} (Vϕ : VSub ϕ) (Vψ : VSub ψ) → ϕ ≗ ψ →
              frame-⋯ E ϕ Vϕ ≡ frame-⋯ E ψ Vψ
-frame-cong (□· e₂)        Vϕ Vψ eq = cong □·_ (⋯-cong e₂ eq)
-frame-cong (V₁ ·□)        Vϕ Vψ eq = ·□-cong (⋯-cong (vTm V₁) eq)
+frame-cong (app₁ e₂ d V?) Vϕ Vψ eq = app₁-cong (⋯-cong e₂ eq)
+frame-cong (app₂ e₁ d V?) Vϕ Vψ eq = app₂-cong (⋯-cong e₁ eq)
 frame-cong (□⊗ e₂)        Vϕ Vψ eq = cong □⊗_ (⋯-cong e₂ eq)
 frame-cong (V₁ ⊗□)        Vϕ Vψ eq = ⊗□-cong (⋯-cong (vTm V₁) eq)
 frame-cong (□; e₂)        Vϕ Vψ eq = cong □;_ (⋯-cong e₂ eq)
@@ -1087,8 +1092,8 @@ frame-fusion-gen : ∀ {𝓕₁ 𝓕₂ 𝓕} ⦃ K₁ : Kit 𝓕₁ ⦄ ⦃ K�
                    (E : Frame m) {ϕ : m –[ K₁ ]→ m₁} (Vϕ : VSub ϕ) {ξ : m₁ –[ K₂ ]→ p} (Vξ : VSub ξ)
                    (Vϕξ : VSub (ϕ ·ₖ ξ)) →
                    frame-⋯ (frame-⋯ E ϕ Vϕ) ξ Vξ ≡ frame-⋯ E (ϕ ·ₖ ξ) Vϕξ
-frame-fusion-gen (□· e₂)        {ϕ} Vϕ {ξ} Vξ Vϕξ = cong □·_ (fusion e₂ ϕ ξ)
-frame-fusion-gen (V₁ ·□)        {ϕ} Vϕ {ξ} Vξ Vϕξ = ·□-cong (fusion (vTm V₁) ϕ ξ)
+frame-fusion-gen (app₁ e₂ d V?) {ϕ} Vϕ {ξ} Vξ Vϕξ = app₁-cong (fusion e₂ ϕ ξ)
+frame-fusion-gen (app₂ e₁ d V?) {ϕ} Vϕ {ξ} Vξ Vϕξ = app₂-cong (fusion e₁ ϕ ξ)
 frame-fusion-gen (□⊗ e₂)        {ϕ} Vϕ {ξ} Vξ Vϕξ = cong □⊗_ (fusion e₂ ϕ ξ)
 frame-fusion-gen (V₁ ⊗□)        {ϕ} Vϕ {ξ} Vξ Vϕξ = ⊗□-cong (fusion (vTm V₁) ϕ ξ)
 frame-fusion-gen (□; e₂)        {ϕ} Vϕ {ξ} Vξ Vϕξ = cong □;_ (fusion e₂ ϕ ξ)
@@ -1246,10 +1251,10 @@ U-acq : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
       → {g : Struct m} {b₁ : ℕ} {B₁ B₂ : BindGroup}
         {E : Frame* (sum (zero ∷ suc b₁ ∷ B₁) + sum B₂ + m)}
         {P : T.Proc (sum (zero ∷ suc b₁ ∷ B₁) + sum B₂ + m)}
-      → Γ ; g ⊢ₚ T.ν (zero ∷ suc b₁ ∷ B₁) B₂ (T.⟪ E [ K `acq · (` 0F) ]* ⟫ T.∥ P)
-      → (U[ T.ν (zero ∷ suc b₁ ∷ B₁) B₂ (T.⟪ E [ K `acq · (` 0F) ]* ⟫ T.∥ P) ] σ
+      → Γ ; g ⊢ₚ T.ν (zero ∷ suc b₁ ∷ B₁) B₂ (T.⟪ E [ K `acq ·¹ (` 0F) ]* ⟫ T.∥ P)
+      → (U[ T.ν (zero ∷ suc b₁ ∷ B₁) B₂ (T.⟪ E [ K `acq ·¹ (` 0F) ]* ⟫ T.∥ P) ] σ
            UR─→ₚ* U[ T.ν (suc b₁ ∷ B₁) B₂ (T.⟪ E [ ` zero ]* ⟫ T.∥ P) ] σ)
-        ⊎ (U[ T.ν (zero ∷ suc b₁ ∷ B₁) B₂ (T.⟪ E [ K `acq · (` 0F) ]* ⟫ T.∥ P) ] σ
+        ⊎ (U[ T.ν (zero ∷ suc b₁ ∷ B₁) B₂ (T.⟪ E [ K `acq ·¹ (` 0F) ]* ⟫ T.∥ P) ] σ
            U.≋ U[ T.ν (suc b₁ ∷ B₁) B₂ (T.⟪ E [ ` zero ]* ⟫ T.∥ P) ] σ)
 U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P} ⊢P =
   ≋-wrap-⊎ front fire back
@@ -1257,7 +1262,7 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
     C : BindGroup
     C = suc b₁ ∷ B₁
     QL : T.Proc (sum (zero ∷ C) + sum B₂ + m)
-    QL = T.⟪ E [ K `acq · (` 0F) ]* ⟫ T.∥ P
+    QL = T.⟪ E [ K `acq ·¹ (` 0F) ]* ⟫ T.∥ P
     QR : T.Proc (sum C + sum B₂ + m)
     QR = T.⟪ E [ ` zero ]* ⟫ T.∥ P
     -- LHS flattened leaf
@@ -1467,26 +1472,26 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
     eout = proj₁ junc-tr
     Qout : U.Proc (3 + (sB₂ + (sC + n)))
     Qout = rnP (U[ P ] τ)
-    threadEq : LL ≡ U.⟪ F₁ [ K `acq · τ0F ]* ⟫ U.∥ U[ P ] τ
+    threadEq : LL ≡ U.⟪ F₁ [ K `acq ·¹ τ0F ]* ⟫ U.∥ U[ P ] τ
     threadEq = cong (U._∥ U[ P ] τ) (cong U.⟪_⟫ (frame-plug* E τ Vτ))
-    subst-app : ∀ {a b} (eq : a ≡ b) (f t : Tm a) →
-                subst Tm eq (f · t) ≡ subst Tm eq f · subst Tm eq t
-    subst-app refl f t = refl
+    subst-app : ∀ {a b} (eq : a ≡ b) (d : Dir) (f t : Tm a) →
+                subst Tm eq (f ·⟨ d ⟩ t) ≡ subst Tm eq f ·⟨ d ⟩ subst Tm eq t
+    subst-app refl d f t = refl
     subst-K : ∀ {a b} (eq : a ≡ b) (c : _) → subst Tm eq (K c) ≡ K c
     subst-K refl c = refl
-    rnT-Kacq· : (t : Tm (sB₂ + (suc sC + (2 + n)))) → rnT (K `acq · t) ≡ K `acq · rnT t
+    rnT-Kacq· : (t : Tm (sB₂ + (suc sC + (2 + n)))) → rnT (K `acq ·¹ t) ≡ K `acq ·¹ rnT t
     rnT-Kacq· t =
-        cong (λ z → (((z ⋯ ρa) ⋯ ρb) ⋯ ρc) ⋯ ρd) (subst-app eqC (K `acq) t)
-      ■ cong (λ z → (((z · subst Tm eqC t ⋯ ρa) ⋯ ρb) ⋯ ρc) ⋯ ρd) (subst-K eqC `acq)
-    rnT-acq : rnT (K `acq · τ0F) ≡ K `acq · (((` 0F) ⊗ (` 1F)) ⊗ eout)
-    rnT-acq = rnT-Kacq· τ0F ■ cong (K `acq ·_) (proj₂ junc-tr)
-    redexL : LL₃ ≡ U.⟪ Fout [ K `acq · (((` 0F) ⊗ (` 1F)) ⊗ eout) ]* ⟫ U.∥ Qout
+        cong (λ z → (((z ⋯ ρa) ⋯ ρb) ⋯ ρc) ⋯ ρd) (subst-app eqC 𝟙 (K `acq) t)
+      ■ cong (λ z → (((z ·¹ subst Tm eqC t ⋯ ρa) ⋯ ρb) ⋯ ρc) ⋯ ρd) (subst-K eqC `acq)
+    rnT-acq : rnT (K `acq ·¹ τ0F) ≡ K `acq ·¹ (((` 0F) ⊗ (` 1F)) ⊗ eout)
+    rnT-acq = rnT-Kacq· τ0F ■ cong (λ z → K `acq ·¹ z) (proj₂ junc-tr)
+    redexL : LL₃ ≡ U.⟪ Fout [ K `acq ·¹ (((` 0F) ⊗ (` 1F)) ⊗ eout) ]* ⟫ U.∥ Qout
     redexL =
         cong rnP threadEq
-      ■ rnP-∥ (U.⟪ F₁ [ K `acq · τ0F ]* ⟫) (U[ P ] τ)
+      ■ rnP-∥ (U.⟪ F₁ [ K `acq ·¹ τ0F ]* ⟫) (U[ P ] τ)
       ■ cong (U._∥ Qout)
-          ( rnP-⟪⟫ (F₁ [ K `acq · τ0F ]*)
-          ■ cong U.⟪_⟫ (rnT-plug F₁ (K `acq · τ0F) ■ cong (Fout [_]*) rnT-acq) )
+          ( rnP-⟪⟫ (F₁ [ K `acq ·¹ τ0F ]*)
+          ■ cong U.⟪_⟫ (rnT-plug F₁ (K `acq ·¹ τ0F) ■ cong (Fout [_]*) rnT-acq) )
     fired : U.Proc n
     fired = Bφ C (Bφ B₂ (U.ν ((U.⟪ Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]* ⟫ U.∥ Qout) U.⋯ₚ ⦅ * ⦆ₛ)))
     front : U[ T.ν (zero ∷ C) B₂ QL ] σ U.≋ mid
