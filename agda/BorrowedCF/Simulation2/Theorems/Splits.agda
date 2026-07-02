@@ -40,6 +40,8 @@ open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
 open import BorrowedCF.Simulation2.RsplitTransport
   using (⋯-subst₂; ⋯ₚ-subst₂; subst-Tm-uip; toℕ-subst-cod; toℕ-subst₂ᵣ)
+open import BorrowedCF.Simulation2.FrameRename
+  using (⋯ᶠ*-cong; ⋯ᶠ*-fuse; F-σ⋯)
 -- COPIED transpose engine from Simulation2.Congruence (hole-free prefix).
 subst-≋ : ∀ {a b} (eq : a ≡ b) {P Q : U.Proc a} → P U.≋ Q →
           subst U.Proc eq P U.≋ subst U.Proc eq Q
@@ -2904,8 +2906,39 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
             outerRec (U[ P ] τ)
           ■ cong (λ z → subst U.Proc E-cod (subst U.Proc E-dom z U.⋯ₚ (ρρ ↑* 2)))
               (sym pushRPᴿ-fac)
+        -- ===== thread-leaf reconciliation (frame naturality + body triple) =====
+        frameLeafeqᴿ : frame*-⋯ E τ Vτ ⋯ᶠ* Θ ≡ frame*-⋯ (E ⋯ᶠ* 𝐒.rwk) τᴿ Vτᴿ
+        frameLeafeqᴿ = sym
+            ( cong (λ EE → frame*-⋯ (EE ⋯ᶠ* 𝐒.rwk) τᴿ Vτᴿ) Eeq
+            ■ cong (λ EE → frame*-⋯ EE τᴿ Vτᴿ) (⋯ᶠ*-fuse E₀ ρ⁻ 𝐒.rwk)
+            ■ F-⋯f*-fuse E₀ Vτᴿ (·ₖ-VSubᵣ (ρ⁻ ·ₖ 𝐒.rwk) Vτᴿ)
+            ■ frame*-cong E₀ (·ₖ-VSubᵣ (ρ⁻ ·ₖ 𝐒.rwk) Vτᴿ) (λ y → value-⋯ (·ₖ-VSubᵣ ρ⁻ Vτ y) Θ (λ x → V-`))
+                (λ y → sym (leafσ-rwk-id σ B₁ B₂ B b₁ (ρ⁻ y) (ρ⁻-skip y)))
+            ■ sym (F-σ⋯ E₀ (·ₖ-VSubᵣ ρ⁻ Vτ) Θ (λ y → value-⋯ (·ₖ-VSubᵣ ρ⁻ Vτ y) Θ (λ x → V-`)))
+            ■ cong (_⋯ᶠ* Θ) (sym (F-⋯f*-fuse E₀ Vτ (·ₖ-VSubᵣ ρ⁻ Vτ)))
+            ■ cong (λ EE → frame*-⋯ EE τ Vτ ⋯ᶠ* Θ) (sym Eeq) )
+        frame-eq : (Fr ⋯ᶠ* weakenᵣ) ⋯ᶠ* assocSwapᵣ 1 2 ⋯ᶠ* (assocSwapᵣ 1 (syncs B) ↑* 2) ≡ Frᴿ ⋯ᶠ* ρR'
+        frame-eq =
+            ⋯ᶠ*-fuse (frame*-⋯ E τ Vτ ⋯ᶠ* ρ₁ ⋯ᶠ* ρ₂ ⋯ᶠ* weakenᵣ) (assocSwapᵣ 1 2) (assocSwapᵣ 1 (syncs B) ↑* 2)
+          ■ ⋯ᶠ*-fuse (frame*-⋯ E τ Vτ ⋯ᶠ* ρ₁ ⋯ᶠ* ρ₂) weakenᵣ (assocSwapᵣ 1 2 ·ₖ (assocSwapᵣ 1 (syncs B) ↑* 2))
+          ■ ⋯ᶠ*-fuse (frame*-⋯ E τ Vτ ⋯ᶠ* ρ₁) ρ₂ (weakenᵣ ·ₖ (assocSwapᵣ 1 2 ·ₖ (assocSwapᵣ 1 (syncs B) ↑* 2)))
+          ■ ⋯ᶠ*-fuse (frame*-⋯ E τ Vτ) ρ₁ (ρ₂ ·ₖ (weakenᵣ ·ₖ (assocSwapᵣ 1 2 ·ₖ (assocSwapᵣ 1 (syncs B) ↑* 2))))
+          ■ ⋯ᶠ*-cong (frame*-⋯ E τ Vτ) ρL≗ρR
+          ■ sym (⋯ᶠ*-fuse (frame*-⋯ E τ Vτ) Θ (ρ₁ᴿ ·ₖ (ρ₂ᴿ ·ₖ ρR')))
+          ■ sym (⋯ᶠ*-fuse (frame*-⋯ E τ Vτ ⋯ᶠ* Θ) ρ₁ᴿ (ρ₂ᴿ ·ₖ ρR'))
+          ■ sym (⋯ᶠ*-fuse (frame*-⋯ E τ Vτ ⋯ᶠ* Θ ⋯ᶠ* ρ₁ᴿ) ρ₂ᴿ ρR')
+          ■ cong (λ z → z ⋯ᶠ* ρ₁ᴿ ⋯ᶠ* ρ₂ᴿ ⋯ᶠ* ρR') frameLeafeqᴿ
+        thread≡ : U.⟪ ((Fr ⋯ᶠ* weakenᵣ) [ ((wk ccA ⊗ (` 1F)) ⊗ (` 0F)) ⊗ (((` 0F) ⊗ (` 1F)) ⊗ wk ccC) ]*)
+                        ⋯ assocSwapᵣ 1 2 ⋯ (assocSwapᵣ 1 (syncs B) ↑* 2) ⟫
+                  ≡ subst U.Proc E-cod (subst U.Proc E-dom (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫) U.⋯ₚ (ρρ ↑* 2))
+        thread≡ =
+            cong U.⟪_⟫ ( cong (_⋯ (assocSwapᵣ 1 (syncs B) ↑* 2)) (frame-plug*ᵣ (Fr ⋯ᶠ* weakenᵣ) (assocSwapᵣ 1 2))
+                       ■ frame-plug*ᵣ ((Fr ⋯ᶠ* weakenᵣ) ⋯ᶠ* assocSwapᵣ 1 2) (assocSwapᵣ 1 (syncs B) ↑* 2) )
+          ■ cong U.⟪_⟫ (cong₂ _[_]* frame-eq {!!})
+          ■ cong U.⟪_⟫ (sym (frame-plug*ᵣ Frᴿ ρR'))
+          ■ sym (collapseR (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫))
         νInner =
-            cong₂ U._∥_ {!!} Prest≡
+            cong₂ U._∥_ thread≡ Prest≡
           ■ sym ( rhsSplit
                 ■ subst-∥f (λ z → z) (cong SQ (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
                     (subst U.Proc (cong SQ (cong (syncs B +_) e2))
