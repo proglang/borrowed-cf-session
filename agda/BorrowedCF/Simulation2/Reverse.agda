@@ -31,6 +31,9 @@ open import BorrowedCF.Simulation2.ReverseInv
          head⊗′; close-arg-var; pair-not-chan; ⟨⟩≄⊗)
 open import BorrowedCF.Simulation2.InvFrame using (strengthen-frame; inv-app; inv-pair; arg-type)
 open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯)
+open import BorrowedCF.Simulation2.RevComConfine
+  using (frames-𝕀; leftPat-¬before; leftPat-pullOut-∥-≼)
+open import BorrowedCF.Context.Pattern using (LeftPat; CxPat; _[_]𝓅)
 open import BorrowedCF.Simulation2.Theorems.Com
   using (fn-send-dom; pair₂-handle; send-handle-≃msg-app; ⊗≃₂)
 import Data.Sum as Sum
@@ -249,6 +252,24 @@ send-var-⊥ (T-AppUnr _ _ ⊢fn ⊢arg) eq = sv-core ⊢fn ⊢arg eq
 send-var-⊥ (T-AppLin _ _ ⊢fn ⊢arg) eq = sv-core ⊢fn ⊢arg eq
 send-var-⊥ (T-Conv _ _ d) eq = send-var-⊥ d eq
 send-var-⊥ (T-Weaken _ d) eq = send-var-⊥ d eq
+
+-- A well-typed  K send  has an impure (𝕀) latent arrow; hence  K send ·¹ arg  is
+-- impure, so the frame stack above it is LeftPat (frames-𝕀).
+𝕀≤⇒≡ : ∀ {ϵ} → 𝕀 ≤ϵ ϵ → ϵ ≡ 𝕀
+𝕀≤⇒≡ 𝕀≤𝕀 = refl
+
+send-fn-eff-𝕀 : ∀ {N} {Γ : Ctx N} {α : Struct N} {T U a ϵ}
+  → Γ ; α ⊢ K `send ∶ T ⟨ a ⟩→ U ∣ ϵ → Arr.eff a ≡ 𝕀
+send-fn-eff-𝕀 (T-Const (`send _)) = refl
+send-fn-eff-𝕀 (T-Conv (_ `→ _) _ d) = send-fn-eff-𝕀 d
+send-fn-eff-𝕀 (T-Weaken _ d) = send-fn-eff-𝕀 d
+
+send-app-𝕀 : ∀ {N} {Γ : Ctx N} {γ : Struct N} {arg : Tm N} {U ϵ}
+  → Γ ; γ ⊢ K `send ·¹ arg ∶ U ∣ ϵ → ϵ ≡ 𝕀
+send-app-𝕀 (T-AppUnr _ ≤ₐ ⊢fn _) = 𝕀≤⇒≡ (subst (_≤ϵ _) (send-fn-eff-𝕀 ⊢fn) ≤ₐ)
+send-app-𝕀 (T-AppLin _ ≤ₐ ⊢fn _) = 𝕀≤⇒≡ (subst (_≤ϵ _) (send-fn-eff-𝕀 ⊢fn) ≤ₐ)
+send-app-𝕀 (T-Conv _ ≤ d) = 𝕀≤⇒≡ (subst (_≤ϵ _) (send-app-𝕀 d) ≤)
+send-app-𝕀 (T-Weaken _ d) = send-app-𝕀 d
 
 -- WEAK reverse simulation, UP TO ≋ on the input, MULTI-STEP on the typed side
 -- (the exact mirror of the forward sim→ ⊎ codomain in Theorems.agda).  The
@@ -588,7 +609,11 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
   with send-arg-decomp ⊢redexˢ
 ... | Tᵐ , α₂ , Tx , ϵ₂′ , msg≃Tx , ⊢cS
   with close-arg-var cS ⊢cS msg≃Tx (νσ b₁ b₂ σ) (sym cSeq)
-... | xS , refl = {! send pair: cS = ` xS pinned; next frames-𝕀 + count-squeeze + before ⇒ xS≡0F !}
+... | xS , refl
+  with send-app-𝕀 ⊢redexˢ
+... | refl
+  with frames-𝕀 ⊢Fˢ
+... | refl , lpˢ = {! LeftPat lpˢ obtained; next count-squeeze count xS 𝒫ˢ[[]] ≡ 0 + before ⇒ xS≡0F !}
 -- RU-Choice.  Identical shape to RU-Com (ν, ∥-headed body): same inv-U-ν-∥-shape
 --   + U-ν-singleton collapse; RESIDUAL = frameApp-reflect the select/branch
 --   redexes + `inj wrapping on the codomain, mirroring forward U-choice.
