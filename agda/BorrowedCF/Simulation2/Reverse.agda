@@ -27,9 +27,12 @@ open import BorrowedCF.Simulation2.ReverseInv
          rnew-bridge; new-arg-notVar;
          inv-U-ν-∥-shape; U-ν-singleton; νσ; ν-inj;
          νσ-VSub; inv-ν-chanCx; close-bridge;
-         νσ-φfree; νσ-φfree-VSub; U-ν-φfree-eq)
-open import BorrowedCF.Simulation2.InvFrame using (strengthen-frame; inv-app)
+         νσ-φfree; νσ-φfree-VSub; U-ν-φfree-eq;
+         head⊗′; close-arg-var; pair-not-chan; ⟨⟩≄⊗)
+open import BorrowedCF.Simulation2.InvFrame using (strengthen-frame; inv-app; inv-pair; arg-type)
 open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯)
+open import BorrowedCF.Simulation2.Theorems.Com
+  using (fn-send-dom; pair₂-handle; send-handle-≃msg-app; ⊗≃₂)
 import Data.Sum as Sum
 import BorrowedCF.Processes.Typed             as TP
 import BorrowedCF.Processes.Untyped           as UP
@@ -38,7 +41,7 @@ import BorrowedCF.Reduction.Processes.Untyped as UR
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive
   using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
-open import BorrowedCF.Context using (Ctx; Struct)
+open import BorrowedCF.Context using (Ctx; Struct; biasedDir)
 open TP using (_;_⊢ₚ_; inv-⟪⟫; inv-∥; inv-ν; ⊢-≋; bindCtx⇒chanCtx)
 
 ------------------------------------------------------------------------
@@ -195,6 +198,57 @@ inv-U-ν (TP.ν B₁ B₂ P) σ refl = B₁ , B₂ , P , refl , refl
 ------------------------------------------------------------------------
 -- The reverse-simulation statement.
 ------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+-- Send-argument decomposition.  From a well-typed  K send ·¹ (e₁ ⊗ e₂)  the
+-- channel component e₂ is typed at a session type ≃ ⟨ msg ‼ Tᵐ ⟩.  This is the
+-- reverse-direction analogue of send-handle-≃msg that does NOT presuppose the
+-- channel component is already a variable.
+------------------------------------------------------------------------
+pair-decomp : ∀ {N} {Γ : Ctx N} {β : Struct N} {e₁ e₂ : Tm N} {T ϵ}
+  → Γ ; β ⊢ (e₁ ⊗ e₂) ∶ T ∣ ϵ
+  → Σ[ Te ∈ 𝕋 ] Σ[ d ∈ Dir ] Σ[ Tx ∈ 𝕋 ] Σ[ α₂ ∈ Struct N ] Σ[ ϵ₂ ∈ Eff ]
+      (T ≃ (Te ⊗⟨ d ⟩ Tx)) × (Γ ; α₂ ⊢ e₂ ∶ Tx ∣ ϵ₂)
+pair-decomp (T-Pair p/s {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂) =
+  _ , biasedDir p/s , _ , γ₂ , _ , ≃-refl , ⊢e₂
+pair-decomp (T-Conv T≃ _ d) =
+  let Te , dd , Tx , α₂ , ϵ₂ , Teq , ⊢e₂ = pair-decomp d
+  in Te , dd , Tx , α₂ , ϵ₂ , ≃-trans (≃-sym T≃) Teq , ⊢e₂
+pair-decomp (T-Weaken _ d) = pair-decomp d
+
+sad-core : ∀ {N} {Γ : Ctx N} {α β : Struct N} {e₁ e₂ : Tm N} {Targ a Uu ϵ₁ ϵ₂}
+  → Γ ; α ⊢ K `send ∶ Targ ⟨ a ⟩→ Uu ∣ ϵ₁
+  → Γ ; β ⊢ (e₁ ⊗ e₂) ∶ Targ ∣ ϵ₂
+  → Σ[ Tᵐ ∈ 𝕋 ] Σ[ α₂ ∈ Struct N ] Σ[ Tx ∈ 𝕋 ] Σ[ ϵ₂′ ∈ Eff ]
+      (⟨ msg ‼ Tᵐ ⟩ ≃ Tx) × (Γ ; α₂ ⊢ e₂ ∶ Tx ∣ ϵ₂′)
+sad-core ⊢fn ⊢arg with fn-send-dom ⊢fn | pair-decomp ⊢arg
+... | Tᵐ , domeq | Te , d , Tx , α₂ , ϵ₂ , T≃ , ⊢e₂ with ≃-trans domeq T≃
+...   | (_ ⊗ eq) = Tᵐ , α₂ , Tx , ϵ₂ , eq , ⊢e₂
+
+send-arg-decomp : ∀ {N} {Γ : Ctx N} {β : Struct N} {e₁ e₂ : Tm N} {U ϵ}
+  → Γ ; β ⊢ K `send ·¹ (e₁ ⊗ e₂) ∶ U ∣ ϵ
+  → Σ[ Tᵐ ∈ 𝕋 ] Σ[ α₂ ∈ Struct N ] Σ[ Tx ∈ 𝕋 ] Σ[ ϵ₂′ ∈ Eff ]
+      (⟨ msg ‼ Tᵐ ⟩ ≃ Tx) × (Γ ; α₂ ⊢ e₂ ∶ Tx ∣ ϵ₂′)
+send-arg-decomp (T-AppUnr _ _ ⊢fn ⊢arg) = sad-core ⊢fn ⊢arg
+send-arg-decomp (T-AppLin _ _ ⊢fn ⊢arg) = sad-core ⊢fn ⊢arg
+send-arg-decomp (T-Conv _ _ d) = send-arg-decomp d
+send-arg-decomp (T-Weaken _ d) = send-arg-decomp d
+
+-- The send argument is never a BARE channel variable: a channel type ⟨ s ⟩ can
+-- never be ≃ the send domain Tᵐ ⊗¹ ⟨ msg ‼ Tᵐ ⟩ (a ⊗-type).
+sv-core : ∀ {N} {Γ : Ctx N} {α β : Struct N} {x : 𝔽 N} {Targ a Uu ϵ₁ ϵ₂} {s : 𝕊 0}
+  → Γ ; α ⊢ K `send ∶ Targ ⟨ a ⟩→ Uu ∣ ϵ₁
+  → Γ ; β ⊢ (` x) ∶ Targ ∣ ϵ₂ → Γ x ≡ ⟨ s ⟩ → ⊥
+sv-core ⊢fn ⊢arg eq with fn-send-dom ⊢fn
+... | Tᵐ , domeq =
+  ⟨⟩≄⊗ (≃-trans (subst (_≃ _) eq (arg-type ⊢arg)) (≃-sym domeq))
+
+send-var-⊥ : ∀ {N} {Γ : Ctx N} {β : Struct N} {x : 𝔽 N} {U ϵ} {s : 𝕊 0}
+  → Γ ; β ⊢ K `send ·¹ (` x) ∶ U ∣ ϵ → Γ x ≡ ⟨ s ⟩ → ⊥
+send-var-⊥ (T-AppUnr _ _ ⊢fn ⊢arg) eq = sv-core ⊢fn ⊢arg eq
+send-var-⊥ (T-AppLin _ _ ⊢fn ⊢arg) eq = sv-core ⊢fn ⊢arg eq
+send-var-⊥ (T-Conv _ _ d) eq = send-var-⊥ d eq
+send-var-⊥ (T-Weaken _ d) eq = send-var-⊥ d eq
 
 -- WEAK reverse simulation, UP TO ≋ on the input, MULTI-STEP on the typed side
 -- (the exact mirror of the forward sim→ ⊎ codomain in Theorems.agda).  The
@@ -527,8 +581,14 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
            F₂ (sym Req′)
   with 𝒫ˢ , γrˢ , T′ˢ , Uˢ , ϵpˢ , ϵeˢ , ≼ˢ , T≃ˢ , ϵ≤ˢ , ⊢Fˢ , ⊢redexˢ
        ← ⊢[]*⁻¹ F₀ˢ (K `send ·¹ argˢ) (inv-⟪⟫ ⊢PS)
-  with αfnˢ , αargˢ , (_ , _ , ⊢sendˢ) , (_ , _ , ⊢argˢ) , cleˢ ← inv-app ⊢redexˢ =
-  {! CONFINEMENT probe: have ⊢argˢ : Γ′ ; αargˢ ⊢ argˢ ; ⊢Fˢ : frame typing; next inv-pair + xS≡0F. !}
+  with αfnˢ , αargˢ , (_ , _ , ⊢sendˢ) , (_ , _ , ⊢argˢ) , cleˢ ← inv-app ⊢redexˢ
+  with head⊗′ (νσ b₁ b₂ σ) argˢ (sym argeqS)
+... | Sum.inj₁ (xArg , refl) = ⊥-elim (send-var-⊥ ⊢redexˢ (proj₂ (Γ′-S xArg)))
+... | Sum.inj₂ (aS , cS , refl , aSeq , cSeq)
+  with send-arg-decomp ⊢redexˢ
+... | Tᵐ , α₂ , Tx , ϵ₂′ , msg≃Tx , ⊢cS
+  with close-arg-var cS ⊢cS msg≃Tx (νσ b₁ b₂ σ) (sym cSeq)
+... | xS , refl = {! send pair: cS = ` xS pinned; next frames-𝕀 + count-squeeze + before ⇒ xS≡0F !}
 -- RU-Choice.  Identical shape to RU-Com (ν, ∥-headed body): same inv-U-ν-∥-shape
 --   + U-ν-singleton collapse; RESIDUAL = frameApp-reflect the select/branch
 --   redexes + `inj wrapping on the codomain, mirroring forward U-choice.
