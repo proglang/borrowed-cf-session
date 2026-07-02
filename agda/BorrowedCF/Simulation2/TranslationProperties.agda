@@ -128,8 +128,9 @@ chanTriple-mapᶜ θ (e₁ , x , e₂) = refl
 
 Ub-nat : (b : ℕ) (cc : UChan n) (θ : n →ᵣ n′) (j : 𝔽 b) →
          Ub[ b ] cc j ⋯ θ ≡ Ub[ b ] (mapᶜ θ cc) j
-Ub-nat (suc b) (e₁ , c , e₂) θ zero    = refl
-Ub-nat (suc b) (e₁ , c , e₂) θ (suc j) = Ub-nat b (* , c , e₂) θ j
+Ub-nat 1             (e₁ , c , e₂) θ zero    = refl
+Ub-nat (suc (suc b)) (e₁ , c , e₂) θ zero    = refl
+Ub-nat (suc (suc b)) (e₁ , c , e₂) θ (suc j) = Ub-nat (suc b) (* , c , e₂) θ j
 
 ------------------------------------------------------------------------
 -- UB-cong : the φ-nest respects pointwise-equal continuations (≋-variant).
@@ -354,9 +355,10 @@ VSub-subst refl Vσ = Vσ
 chanTriple-V : (cc : UChan n) → VChan cc → Value (chanTriple cc)
 chanTriple-V (e₁ , c , e₂) (Ve₁ , Ve₂) = V-⊗ (V-⊗ Ve₁ V-`) Ve₂
 
-Ub-V : (b : ℕ) (e₁ : Tm n) (c : 𝔽 n) (e₂ : Tm n) → Value e₁ → (j : 𝔽 b) → Value (Ub[ b ] (e₁ , c , e₂) j)
-Ub-V (suc b) e₁ c e₂ Ve₁ zero    = V-⊗ (V-⊗ Ve₁ V-`) V-K
-Ub-V (suc b) e₁ c e₂ Ve₁ (suc j) = Ub-V b (K `unit) c e₂ V-K j
+Ub-V : (b : ℕ) (e₁ : Tm n) (c : 𝔽 n) (e₂ : Tm n) → Value e₁ → Value e₂ → (j : 𝔽 b) → Value (Ub[ b ] (e₁ , c , e₂) j)
+Ub-V 1             e₁ c e₂ Ve₁ Ve₂ zero    = V-⊗ (V-⊗ Ve₁ V-`) Ve₂
+Ub-V (suc (suc b)) e₁ c e₂ Ve₁ Ve₂ zero    = V-⊗ (V-⊗ Ve₁ V-`) V-K
+Ub-V (suc (suc b)) e₁ c e₂ Ve₁ Ve₂ (suc j) = Ub-V (suc b) (K `unit) c e₂ V-K Ve₂ j
 
 Value-subst : ∀ {a b} (eq : a ≡ b) {t : Tm a} → Value t → Value (subst Tm eq t)
 Value-subst refl Vt = Vt
@@ -373,7 +375,7 @@ UB-cong-─→ {n} (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) (Ve₁ , Ve₂) h =
         (h _ (λ y → Value-subst (+-suc (syncs B) _) (argV σ Vσ (splitAt b y))))))
   where
     UbV : (j : 𝔽 b) → Value ((Ub[ b ] (e₁ ⋯ weakenᵣ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ (syncs B)) j)
-    UbV j = value-⋯ (Ub-V b (e₁ ⋯ weakenᵣ) (suc x) (` 0F) (Ve₁ ⋯ᵛ weakenᵣ) j) (weaken* ⦃ Kᵣ ⦄ (syncs B)) (λ z → V-`)
+    UbV j = value-⋯ (Ub-V b (e₁ ⋯ weakenᵣ) (suc x) (` 0F) (Ve₁ ⋯ᵛ weakenᵣ) V-` j) (weaken* ⦃ Kᵣ ⦄ (syncs B)) (λ z → V-`)
     argV : (σ : sum B →ₛ syncs B + suc n) (Vσ : VSub σ)
            (s : 𝔽 b ⊎ 𝔽 (sum B)) →
            Value ([ Ub[ b ] (e₁ ⋯ weakenᵣ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ (syncs B) , σ ]′ s)
