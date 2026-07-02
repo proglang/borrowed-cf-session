@@ -55,23 +55,32 @@ new-drophead-shape :
 new-drophead-shape = refl
 
 -- ============================================================================
--- LSPLIT.  A local split turns one channel into a WIDTH-2 chain; RU-LSplit
--- duplicates the handle into TWO IDENTICAL triples, so the two borrows
--- (index 0F and 1F) of the width-2 chain must translate EQUAL.
+-- LSPLIT (CORRECTED).  The typed lsplit splits ⟨ s ; s′ ⟩ into ⟨ s ⟩ ⊗ ⟨ s′ ⟩ —
+-- two DIFFERENT halves.  The corrected RU-LSplit (origin/main 7c1fc9c) splits:
+--     𝓒[ e₁ × 0F × e₂ ]  →  𝓒[ e₁ × 0F × * ] ⊗ 𝓒[ * × 0F × e₂ ]
+-- (left half keeps the left sync e₁; right half keeps the right sync e₂; the
+-- data channel 0F is shared; unit in the cut positions).  The distributing
+-- translation's two borrows MATCH this split exactly.
+--
+-- (RETRACTION: an earlier version of this file claimed the two borrows must be
+-- IDENTICAL and that the fix broke LSplit.  That premise was WRONG — it rested on
+-- the OLD RU-LSplit which duplicated the handle identically, itself a bug, now
+-- fixed on main.  The distributing translation was correct all along.)
 -- ============================================================================
 
--- The two borrows of a width-2 chain under the NEW Ub:
+-- The two borrows of the split (width-2) chain under the distributing Ub, with
+-- handle triple (e₁ , data , e₂) = (` 0F , 0F , ` 1F):
 w2-borrow0 : Tm 2
-w2-borrow0 = NUb[ 2 ] ((` 0F) , 0F , (` 1F)) 0F     -- = 𝓒[ ` 0F × 0F × * ]
+w2-borrow0 = NUb[ 2 ] ((` 0F) , 0F , (` 1F)) 0F
 w2-borrow1 : Tm 2
-w2-borrow1 = NUb[ 2 ] ((` 0F) , 0F , (` 1F)) 1F     -- = 𝓒[ *    × 0F × ` 1F ]
+w2-borrow1 = NUb[ 2 ] ((` 0F) , 0F , (` 1F)) 1F
 
-w2-borrow0-shape : w2-borrow0 ≡ (((` 0F) ⊗ (` 0F)) ⊗ *)
-w2-borrow0-shape = refl
-w2-borrow1-shape : w2-borrow1 ≡ ((* ⊗ (` 0F)) ⊗ (` 1F))
-w2-borrow1-shape = refl
+-- LEFT borrow  = 𝓒[ e₁ × 0F × * ]  — the corrected RU-LSplit's LEFT half.
+new-lsplit-left-matches  : w2-borrow0 ≡ (((` 0F) ⊗ (` 0F)) ⊗ *)
+new-lsplit-left-matches  = refl
+-- RIGHT borrow = 𝓒[ * × 0F × e₂ ]  — the corrected RU-LSplit's RIGHT half.
+new-lsplit-right-matches : w2-borrow1 ≡ ((* ⊗ (` 0F)) ⊗ (` 1F))
+new-lsplit-right-matches = refl
 
--- The two borrows are NOT identical (left-sync ` 0F vs *): RU-LSplit's identical
--- duplication is still NOT matched.  LSPLIT STILL BROKEN under the new Ub.
-new-lsplit-borrows-differ : w2-borrow0 ≢ w2-borrow1
-new-lsplit-borrows-differ ()
+-- So the distributing translation and the corrected RU-LSplit AGREE on the two
+-- split halves (at the isolated-triple level).  LSplit is consistent again.
