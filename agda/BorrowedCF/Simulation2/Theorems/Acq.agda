@@ -1110,7 +1110,9 @@ open T using (_;_⊢ₚ_)
 --  flag index — the injected handle sits strictly above the nest.)
 U-σ⋯ₛ : ∀ {m n n′} (P : T.Proc m) {σ : m →ₛ n} {τ : n →ₛ n′} →
         U[ P ] σ U.⋯ₚ τ ≡ U[ P ] (σ ·ₖ τ)
-U-σ⋯ₛ P = {!U-σ⋯ₛ!}
+U-σ⋯ₛ T.⟪ e ⟫ {σ} {τ} = cong U.⟪_⟫ (fusion e σ τ)
+U-σ⋯ₛ (P T.∥ Q)       = cong₂ U._∥_ (U-σ⋯ₛ P) (U-σ⋯ₛ Q)
+U-σ⋯ₛ (T.ν B₁ B₂ P)   = {!U-σ⋯ₛ-ν!}
 
 U-acq : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
       → {g : Struct m} {b₁ : ℕ} {B₁ B₂ : BindGroup}
