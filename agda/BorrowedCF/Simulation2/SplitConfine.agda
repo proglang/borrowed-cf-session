@@ -30,7 +30,7 @@ lsplit-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
   {P : 𝐓.Proc (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)} →
   let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ B in
   Γ ; γ ⊢ₚ 𝐓.ν (B₁ ++ suc b₁ ∷ B₂) B
-            (𝐓.⟪ E [ K (`lsplit s) · (` 𝐒.inj 0F) ]* ⟫ 𝐓.∥ P) →
+            (𝐓.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ 𝐓.∥ P) →
   Σ ℕ λ k → Σ (k →ᵣ (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)) λ ρ⁻ →
     (∀ y → ρ⁻ y ≢ 𝐒.inj {suc b₁ ∷ []} {m} 0F)
     × Σ (Frame* k) λ E₀ → (E ≡ E₀ ⋯ᶠ* ρ⁻)
@@ -38,7 +38,7 @@ lsplit-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
 lsplit-confine {m = m} Γ-S {γ = γ} {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P =
   let
     handle = 𝐓R.SplitRenamings.inj B₁ B₂ B {suc b₁ ∷ []} {m} 0F
-    Γ₁ , Γ₂ , s' , _N , _⊢B₁ , _⊢B₂ , C , C' , ⊢body = inv-ν ⊢P
+    Γ₁ , Γ₂ , s' , _p , _N , _⊢B₁ , _⊢B₂ , C , C' , ⊢body = inv-ν ⊢P
     α , β , αβ≼ , ⊢thread , ⊢Ppar = inv-∥ ⊢body
     ⊢term = inv-⟪⟫ ⊢thread
     βplug , (_ , _ , ⊢plug) , support , factor = strengthen-frame E ⊢term
@@ -64,7 +64,7 @@ rsplit-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
   {P : 𝐓.Proc (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)} →
   let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ B in
   Γ ; γ ⊢ₚ 𝐓.ν (B₁ ++ suc b₁ ∷ B₂) B
-            (𝐓.⟪ E [ K (`rsplit s) · (` 𝐒.inj 0F) ]* ⟫ 𝐓.∥ P) →
+            (𝐓.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ 𝐓.∥ P) →
   Σ ℕ λ k → Σ (k →ᵣ (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)) λ ρ⁻ →
     (∀ y → ρ⁻ y ≢ 𝐒.inj {suc b₁ ∷ []} {m} 0F)
     × Σ (Frame* k) λ E₀ → (E ≡ E₀ ⋯ᶠ* ρ⁻)
@@ -72,7 +72,7 @@ rsplit-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
 rsplit-confine {m = m} Γ-S {γ = γ} {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P =
   let
     handle = 𝐓R.SplitRenamings.inj B₁ B₂ B {suc b₁ ∷ []} {m} 0F
-    Γ₁ , Γ₂ , s' , _N , _⊢B₁ , _⊢B₂ , C , C' , ⊢body = inv-ν ⊢P
+    Γ₁ , Γ₂ , s' , _p , _N , _⊢B₁ , _⊢B₂ , C , C' , ⊢body = inv-ν ⊢P
     α , β , αβ≼ , ⊢thread , ⊢Ppar = inv-∥ ⊢body
     ⊢term = inv-⟪⟫ ⊢thread
     βplug , (_ , _ , ⊢plug) , support , factor = strengthen-frame E ⊢term
@@ -97,7 +97,7 @@ acq-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
   {E : Frame* (sum (zero ∷ suc b₁ ∷ B₁) + sum B₂ + m)}
   {P : 𝐓.Proc (sum (zero ∷ suc b₁ ∷ B₁) + sum B₂ + m)} →
   Γ ; γ ⊢ₚ 𝐓.ν (zero ∷ suc b₁ ∷ B₁) B₂
-            (𝐓.⟪ E [ K `acq · (` 0F) ]* ⟫ 𝐓.∥ P) →
+            (𝐓.⟪ E [ K `acq ·¹ (` 0F) ]* ⟫ 𝐓.∥ P) →
   Σ ℕ λ k → Σ (k →ᵣ (sum (zero ∷ suc b₁ ∷ B₁) + sum B₂ + m)) λ ρ⁻ →
     (∀ y → ρ⁻ y ≢ 0F)
     × Σ (Frame* k) λ E₀ → (E ≡ E₀ ⋯ᶠ* ρ⁻)
@@ -106,7 +106,7 @@ acq-confine {m = m} Γ-S {γ = γ} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E 
   let
     handle : 𝔽 (sum (zero ∷ suc b₁ ∷ B₁) + sum B₂ + m)
     handle = 0F
-    Γ₁ , Γ₂ , s' , _N , _⊢B₁ , _⊢B₂ , C , C' , ⊢body = inv-ν ⊢P
+    Γ₁ , Γ₂ , s' , _p , _N , _⊢B₁ , _⊢B₂ , C , C' , ⊢body = inv-ν ⊢P
     α , β , αβ≼ , ⊢thread , ⊢Ppar = inv-∥ ⊢body
     ⊢term = inv-⟪⟫ ⊢thread
     βplug , (_ , _ , ⊢plug) , support , factor = strengthen-frame E ⊢term

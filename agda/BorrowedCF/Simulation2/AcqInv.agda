@@ -21,12 +21,12 @@ fn-acq-dom (T-Conv (dom≃ `→ cod≃) _ d) =
   let s′ , eq = fn-acq-dom d in s′ , ≃-trans eq dom≃
 fn-acq-dom (T-Weaken _ d) = fn-acq-dom d
 
-acq-app-nonUnr : ∀ {N} {Γ : Ctx N} {β : Struct N} {x : 𝔽 N} {T ϵ}
-  → Γ ; β ⊢ K `acq · (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
+acq-app-nonUnr : ∀ {N} {Γ : Ctx N} {β : Struct N} {dir} {x : 𝔽 N} {T ϵ}
+  → Γ ; β ⊢ K `acq ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
 acq-app-nonUnr d = go d
   where
-    go : ∀ {N} {Γ : Ctx N} {β : Struct N} {x : 𝔽 N} {T ϵ}
-       → Γ ; β ⊢ K `acq · (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
+    go : ∀ {N} {Γ : Ctx N} {β : Struct N} {dir} {x : 𝔽 N} {T ϵ}
+       → Γ ; β ⊢ K `acq ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
     go (T-AppUnr _ _ ⊢fn ⊢arg) u =
       let s′ , eq = fn-acq-dom ⊢fn
       in ¬Skips⇒¬Unr-seq (λ ()) (unr-≃ (≃-trans (arg-type ⊢arg) (≃-sym eq)) u)

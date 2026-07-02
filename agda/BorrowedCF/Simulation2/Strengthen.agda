@@ -3,7 +3,7 @@ module BorrowedCF.Simulation2.Strengthen where
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Processes.Typed
-open import BorrowedCF.Types using (𝕋; Eff; Arr)
+open import BorrowedCF.Types using (𝕋; Eff; Arr; Dir; 𝟙; L; R)
 open import BorrowedCF.Context.Base using (Struct; Ctx)
 open import BorrowedCF.Context.Domain using (dom)
 open import BorrowedCF.Context.Domain using (≼⇒dom⊆)
@@ -111,26 +111,26 @@ strengthen-Tm-gen (T-Var x′ _) ρ h inv h∉ =
   in ` y₀ , cong `_ (sym yeq)
 strengthen-Tm-gen {γ = γ} (T-Abs {a = a} _ _ ⊢e) ρ h inv h∉ =
   let e₀ , eq = strengthen-Tm-gen ⊢e (ρ ↑) (suc h) (inv↑ inv) (∉-abs-ctx-Dir (Arr.dir a) γ h∉)
-  in ƛ e₀ , cong ƛ eq
+  in ƛ (Arr.dir a) e₀ , cong (ƛ (Arr.dir a)) eq
 strengthen-Tm-gen {γ = γ} (T-AbsRec _ _ ⊢e) ρ h inv h∉ =
   let e₀ , eq = strengthen-Tm-gen ⊢e (ρ ↑ ↑) (suc (suc h)) (inv↑ (inv↑ inv)) (∉-absrec-ctx γ h∉)
-  in μ (ƛ e₀) , cong μ (cong ƛ eq)
+  in μ (ƛ 𝟙 e₀) , cong μ (cong (ƛ 𝟙) eq)
 strengthen-Tm-gen (T-AppUnr _ _ ⊢e₁ ⊢e₂) ρ h inv h∉ =
   let e₁₀ , eq₁ = strengthen-Tm-gen ⊢e₁ ρ h inv (λ x∈ → h∉ (x∈p∪q⁺ (inj₁ x∈)))
       e₂₀ , eq₂ = strengthen-Tm-gen ⊢e₂ ρ h inv (λ x∈ → h∉ (x∈p∪q⁺ (inj₂ x∈)))
-  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+  in e₁₀ ·¹ e₂₀ , cong₂ (_·⟨ 𝟙 ⟩_) eq₁ eq₂
 strengthen-Tm-gen (T-AppLin _ _ ⊢e₁ ⊢e₂) ρ h inv h∉ =
   let e₁₀ , eq₁ = strengthen-Tm-gen ⊢e₁ ρ h inv (λ x∈ → h∉ (x∈p∪q⁺ (inj₁ x∈)))
       e₂₀ , eq₂ = strengthen-Tm-gen ⊢e₂ ρ h inv (λ x∈ → h∉ (x∈p∪q⁺ (inj₂ x∈)))
-  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+  in e₁₀ ·¹ e₂₀ , cong₂ (_·⟨ 𝟙 ⟩_) eq₁ eq₂
 strengthen-Tm-gen (T-AppLeft _ _ ⊢e₁ ⊢e₂) ρ h inv h∉ =
   let e₁₀ , eq₁ = strengthen-Tm-gen ⊢e₁ ρ h inv (λ x∈ → h∉ (x∈p∪q⁺ (inj₂ x∈)))
       e₂₀ , eq₂ = strengthen-Tm-gen ⊢e₂ ρ h inv (λ x∈ → h∉ (x∈p∪q⁺ (inj₁ x∈)))
-  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+  in e₁₀ ·ᴸ e₂₀ , cong₂ (_·⟨ L ⟩_) eq₁ eq₂
 strengthen-Tm-gen (T-AppRight _ _ ⊢e₁ ⊢e₂) ρ h inv h∉ =
   let e₁₀ , eq₁ = strengthen-Tm-gen ⊢e₁ ρ h inv (λ x∈ → h∉ (x∈p∪q⁺ (inj₁ x∈)))
       e₂₀ , eq₂ = strengthen-Tm-gen ⊢e₂ ρ h inv (λ x∈ → h∉ (x∈p∪q⁺ (inj₂ x∈)))
-  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+  in e₁₀ ·ᴿ e₂₀ , cong₂ (_·⟨ R ⟩_) eq₁ eq₂
 strengthen-Tm-gen (T-Pair p/s {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂) ρ h inv h∉ =
   let x₁ , x₂ = ∉-join-biased⁻ p/s γ₁ γ₂ h∉
       e₁₀ , eq₁ = strengthen-Tm-gen ⊢e₁ ρ h inv x₁
@@ -173,26 +173,26 @@ strengthen-Tm (T-Var x′ _) x x∉ = ` punchOut x≢x′ , cong `_ (sym (punchI
         x≢x′ x≡ = x∉ (subst (λ z → x ∈ ⁅ z ⁆) x≡ (x∈⁅x⁆ x))
 strengthen-Tm {γ = γ} (T-Abs {a = a} _ _ ⊢e) x x∉ =
   let e₀ , eq = strengthen-Tm ⊢e (suc x) (∉-abs-ctx-Dir (Arr.dir a) γ x∉)
-  in ƛ e₀ , cong ƛ (eq ■ ⋯-cong e₀ (pin x))
+  in ƛ (Arr.dir a) e₀ , cong (ƛ (Arr.dir a)) (eq ■ ⋯-cong e₀ (pin x))
 strengthen-Tm {γ = γ} (T-AbsRec _ _ ⊢e) x x∉ =
   let e₀ , eq = strengthen-Tm ⊢e (suc (suc x)) (∉-absrec-ctx γ x∉)
-  in μ (ƛ e₀) , cong μ (cong ƛ (eq ■ ⋯-cong e₀ (pin² x)))
+  in μ (ƛ 𝟙 e₀) , cong μ (cong (ƛ 𝟙) (eq ■ ⋯-cong e₀ (pin² x)))
 strengthen-Tm (T-AppUnr _ _ ⊢e₁ ⊢e₂) x x∉ =
   let e₁₀ , eq₁ = strengthen-Tm ⊢e₁ x (λ x∈ → x∉ (x∈p∪q⁺ (inj₁ x∈)))
       e₂₀ , eq₂ = strengthen-Tm ⊢e₂ x (λ x∈ → x∉ (x∈p∪q⁺ (inj₂ x∈)))
-  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+  in e₁₀ ·¹ e₂₀ , cong₂ (_·⟨ 𝟙 ⟩_) eq₁ eq₂
 strengthen-Tm (T-AppLin _ _ ⊢e₁ ⊢e₂) x x∉ =
   let e₁₀ , eq₁ = strengthen-Tm ⊢e₁ x (λ x∈ → x∉ (x∈p∪q⁺ (inj₁ x∈)))
       e₂₀ , eq₂ = strengthen-Tm ⊢e₂ x (λ x∈ → x∉ (x∈p∪q⁺ (inj₂ x∈)))
-  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+  in e₁₀ ·¹ e₂₀ , cong₂ (_·⟨ 𝟙 ⟩_) eq₁ eq₂
 strengthen-Tm (T-AppLeft _ _ ⊢e₁ ⊢e₂) x x∉ =
   let e₁₀ , eq₁ = strengthen-Tm ⊢e₁ x (λ x∈ → x∉ (x∈p∪q⁺ (inj₂ x∈)))
       e₂₀ , eq₂ = strengthen-Tm ⊢e₂ x (λ x∈ → x∉ (x∈p∪q⁺ (inj₁ x∈)))
-  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+  in e₁₀ ·ᴸ e₂₀ , cong₂ (_·⟨ L ⟩_) eq₁ eq₂
 strengthen-Tm (T-AppRight _ _ ⊢e₁ ⊢e₂) x x∉ =
   let e₁₀ , eq₁ = strengthen-Tm ⊢e₁ x (λ x∈ → x∉ (x∈p∪q⁺ (inj₁ x∈)))
       e₂₀ , eq₂ = strengthen-Tm ⊢e₂ x (λ x∈ → x∉ (x∈p∪q⁺ (inj₂ x∈)))
-  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+  in e₁₀ ·ᴿ e₂₀ , cong₂ (_·⟨ R ⟩_) eq₁ eq₂
 strengthen-Tm (T-Pair p/s {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂) x x∉ =
   let x₁ , x₂ = ∉-join-biased⁻ p/s γ₁ γ₂ x∉
       e₁₀ , eq₁ = strengthen-Tm ⊢e₁ x x₁
@@ -236,7 +236,7 @@ strengthen-Proc-gen (TP-Par ⊢P ⊢Q) ρ h inv h∉ =
   let P₀ , eqP = strengthen-Proc-gen ⊢P ρ h inv (λ x∈ → h∉ (x∈p∪q⁺ (inj₁ x∈)))
       Q₀ , eqQ = strengthen-Proc-gen ⊢Q ρ h inv (λ x∈ → h∉ (x∈p∪q⁺ (inj₂ x∈)))
   in P₀ ∥ Q₀ , cong₂ _∥_ eqP eqQ
-strengthen-Proc-gen {γ = γ} (TP-Res {B₁ = A₁} {B₂ = A₂} N ⊢B₁ ⊢B₂ C C′ ⊢P) ρ h inv h∉ =
+strengthen-Proc-gen {γ = γ} (TP-Res {B₁ = A₁} {B₂ = A₂} N p ⊢B₁ ⊢B₂ C C′ ⊢P) ρ h inv h∉ =
   let P₀ , eq = strengthen-Proc-gen ⊢P (ρ ↑* (sum A₁ + sum A₂)) ((sum A₁ + sum A₂) ↑ʳ h)
                   (inv↑* (sum A₁ + sum A₂) inv) (binder-precond A₁ A₂ γ h h∉)
   in ν A₁ A₂ P₀ , cong (ν A₁ A₂) eq
@@ -307,27 +307,27 @@ strengthen-Tm-gen* (T-Var x′ _) ρ H inv H∉ =
 strengthen-Tm-gen* {γ = γ} (T-Abs {a = a} _ _ ⊢e) ρ H inv H∉ =
   let e₀ , eq = strengthen-Tm-gen* ⊢e (ρ ↑) (H↑ H) (invH↑ inv)
                   (λ { (suc z) hz → ∉-abs-ctx-Dir (Arr.dir a) γ (H∉ z hz) })
-  in ƛ e₀ , cong ƛ eq
+  in ƛ (Arr.dir a) e₀ , cong (ƛ (Arr.dir a)) eq
 strengthen-Tm-gen* {γ = γ} (T-AbsRec _ _ ⊢e) ρ H inv H∉ =
   let e₀ , eq = strengthen-Tm-gen* ⊢e (ρ ↑ ↑) (H↑ (H↑ H)) (invH↑ (invH↑ inv))
                   (λ { (suc (suc z)) hz → ∉-absrec-ctx γ (H∉ z hz) })
-  in μ (ƛ e₀) , cong μ (cong ƛ eq)
+  in μ (ƛ 𝟙 e₀) , cong μ (cong (ƛ 𝟙) eq)
 strengthen-Tm-gen* (T-AppUnr _ _ ⊢e₁ ⊢e₂) ρ H inv H∉ =
   let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₁ x∈)))
       e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₂ x∈)))
-  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+  in e₁₀ ·¹ e₂₀ , cong₂ (_·⟨ 𝟙 ⟩_) eq₁ eq₂
 strengthen-Tm-gen* (T-AppLin _ _ ⊢e₁ ⊢e₂) ρ H inv H∉ =
   let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₁ x∈)))
       e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₂ x∈)))
-  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+  in e₁₀ ·¹ e₂₀ , cong₂ (_·⟨ 𝟙 ⟩_) eq₁ eq₂
 strengthen-Tm-gen* (T-AppLeft _ _ ⊢e₁ ⊢e₂) ρ H inv H∉ =
   let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₂ x∈)))
       e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₁ x∈)))
-  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+  in e₁₀ ·ᴸ e₂₀ , cong₂ (_·⟨ L ⟩_) eq₁ eq₂
 strengthen-Tm-gen* (T-AppRight _ _ ⊢e₁ ⊢e₂) ρ H inv H∉ =
   let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₁ x∈)))
       e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₂ x∈)))
-  in e₁₀ · e₂₀ , cong₂ _·_ eq₁ eq₂
+  in e₁₀ ·ᴿ e₂₀ , cong₂ (_·⟨ R ⟩_) eq₁ eq₂
 strengthen-Tm-gen* (T-Pair p/s {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂) ρ H inv H∉ =
   let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz → let a , _ = ∉-join-biased⁻ p/s γ₁ γ₂ (H∉ z hz) in a)
       e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz → let _ , b = ∉-join-biased⁻ p/s γ₁ γ₂ (H∉ z hz) in b)
@@ -370,7 +370,7 @@ strengthen-Proc-gen* (TP-Par ⊢P ⊢Q) ρ H inv H∉ =
   let P₀ , eqP = strengthen-Proc-gen* ⊢P ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₁ x∈)))
       Q₀ , eqQ = strengthen-Proc-gen* ⊢Q ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₂ x∈)))
   in P₀ ∥ Q₀ , cong₂ _∥_ eqP eqQ
-strengthen-Proc-gen* {γ = γ} (TP-Res {B₁ = A₁} {B₂ = A₂} N ⊢B₁ ⊢B₂ C C′ ⊢P) ρ H inv H∉ =
+strengthen-Proc-gen* {γ = γ} (TP-Res {B₁ = A₁} {B₂ = A₂} N p ⊢B₁ ⊢B₂ C C′ ⊢P) ρ H inv H∉ =
   let P₀ , eq = strengthen-Proc-gen* ⊢P (ρ ↑* (sum A₁ + sum A₂)) (H↑ʳ* (sum A₁ + sum A₂) H)
                   (invH↑ʳ* (sum A₁ + sum A₂) inv)
                   (λ z → λ { (z₀ , zeq , Hz₀) →

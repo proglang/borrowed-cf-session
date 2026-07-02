@@ -1,7 +1,7 @@
 module BorrowedCF.Simulation2.InvFrame where
 
 open import BorrowedCF.Prelude
-open import BorrowedCF.Terms
+open import BorrowedCF.Terms hiding (inv-inj)
 open import BorrowedCF.Types using (𝕋; 𝕊; Eff; Unr; Arr; Dir; Skips; _≃_; ≃-refl; ≃-sym; ≃-trans; unr-≃; _`→_; ⟨_⟩; _;_; _⟨_⟩→_)
 open import BorrowedCF.Context.Base using (Struct; Ctx; ParSeq; _⸴_; `_)
 open import BorrowedCF.Context.Domain using (dom)
@@ -11,6 +11,7 @@ open import BorrowedCF.Simulation2.HandleLinear using (¬Skips⇒¬Unr-seq)
 open import BorrowedCF.Context.Join using (biasedDir; join)
 import BorrowedCF.Context.Substitution as 𝐂S
 open import BorrowedCF.Simulation2.Strengthen using (Inverter; inv↑; strengthen-Tm-gen)
+open import BorrowedCF.Simulation2.Base using (funext)
 open import Data.Fin.Subset using (_∉_)
 
 open Nat.Variables
@@ -20,7 +21,7 @@ open Nat using (_≤_; ≤-refl; ≤-reflexive; ≤-trans; +-comm; +-identityʳ;
 value-reflect : ∀ {m n} (ρ : m →ᵣ n) (e : Tm m) → Value (e ⋯ ρ) → Value e
 value-reflect ρ (` x)        _          = V-`
 value-reflect ρ (K c)        _          = V-K
-value-reflect ρ (ƛ e)        _          = V-λ
+value-reflect ρ (ƛ d e)      _          = V-λ
 value-reflect ρ (e₁ ⊗ e₂) (V-⊗ V₁ V₂) = V-⊗ (value-reflect ρ e₁ V₁) (value-reflect ρ e₂ V₂)
 value-reflect ρ (`inj i e) (V-⊕ V) = V-⊕ (value-reflect ρ e V)
 
@@ -30,8 +31,8 @@ value-reflect ρ (`inj i e) (V-⊕ V) = V-⊕ (value-reflect ρ e V)
 
 -- Inversion of an application typing (peeling Conv / Weaken); returns both
 -- operand typings and the count-superadditivity of the result context.
-inv-app : ∀ {N} {Γ : Ctx N} {α : Struct N} {e₁ e₂ : Tm N} {T ϵ}
-  → Γ ; α ⊢ e₁ · e₂ ∶ T ∣ ϵ
+inv-app : ∀ {N} {Γ : Ctx N} {α : Struct N} {d} {e₁ e₂ : Tm N} {T ϵ}
+  → Γ ; α ⊢ e₁ ·⟨ d ⟩ e₂ ∶ T ∣ ϵ
   → Σ[ α₁ ∈ Struct N ] Σ[ α₂ ∈ Struct N ]
       (∃[ T₁ ] ∃[ ϵ₁ ] Γ ; α₁ ⊢ e₁ ∶ T₁ ∣ ϵ₁)
       × (∃[ T₂ ] ∃[ ϵ₂ ] Γ ; α₂ ⊢ e₂ ∶ T₂ ∣ ϵ₂)
@@ -129,9 +130,13 @@ inv-case (T-Weaken γ≤ d) =
   let γ₁ , γ₂ , p/s , p , q₁ , q₂ , cle = inv-case d
   in γ₁ , γ₂ , p/s , p , q₁ , q₂ , λ h ¬u → ≤-trans (cle h ¬u) (≼⇒count≤ ¬u γ≤)
 
-·□-cong : ∀ {n} {e e' : Tm n} (eq : e ≡ e') (V : Value e) (V' : Value e') → (V ·□) ≡ (V' ·□)
-·□-cong {e = e} eq V V' =
-  subst (λ ee → (V'' : Value ee) → (V ·□) ≡ (V'' ·□)) eq (λ V'' → cong _·□ Value-irr) V'
+app₁-cong : ∀ {n} {e₁ e₂ : Tm n} {d : Dir} {V₁ V₂}
+          → e₁ ≡ e₂ → app₁ e₁ d V₁ ≡ app₁ e₂ d V₂
+app₁-cong refl = cong (app₁ _ _) (funext (λ x → Value-irr))
+
+app₂-cong : ∀ {n} {e₁ e₂ : Tm n} {d : Dir} {V₁ V₂}
+          → e₁ ≡ e₂ → app₂ e₁ d V₁ ≡ app₂ e₂ d V₂
+app₂-cong refl = cong (app₂ _ _) (funext (λ x → Value-irr))
 
 ⊗□-cong : ∀ {n} {e e' : Tm n} (eq : e ≡ e') (V : Value e) (V' : Value e') → (V ⊗□) ≡ (V' ⊗□)
 ⊗□-cong {e = e} eq V V' =
@@ -152,7 +157,7 @@ strengthen-frame : ∀ {N} {Γ : Ctx N} {α : Struct N} {t : Tm N} {T ϵ}
          → {k : ℕ} (ρ : k →ᵣ N) → Inverter ρ h → Σ[ E₀ ∈ Frame* k ] E ≡ E₀ ⋯ᶠ* ρ)
 strengthen-frame [] ⊢t =
   _ , (_ , _ , ⊢t) , (λ h _ → ≤-refl) , (λ h _ _ ρ inv → [] , refl)
-strengthen-frame (L._∷_ (□· e₂) E') ⊢E =
+strengthen-frame (L._∷_ (app₁ e₂ d V?) E') ⊢E =
   let α₁ , α₂ , (_ , _ , ⊢inner) , (_ , _ , ⊢e₂) , cle = inv-app ⊢E
       β , pt , support' , factor' = strengthen-frame E' ⊢inner
   in β , pt ,
@@ -162,9 +167,10 @@ strengthen-frame (L._∷_ (□· e₂) E') ⊢E =
             cα₁≤β = ≤-trans (≤-trans (m≤m+n (count h α₁) (count h α₂)) (cle h ¬u)) cα≤β
             E₀' , E'eq = factor' h ¬u cα₁≤β ρ inv
             e₂₀ , e₂eq = strengthen-Tm-gen ⊢e₂ ρ h inv (count0⇒∉dom α₂ cα₂0)
-        in (L._∷_ (□· e₂₀) E₀') , cong₂ L._∷_ (cong □·_ e₂eq) E'eq)
-strengthen-frame (L._∷_ (_·□ {e₁ = e₁} V) E') ⊢E =
-  let α₁ , α₂ , (_ , _ , ⊢V) , (_ , _ , ⊢inner) , cle = inv-app ⊢E
+        in (L._∷_ (app₁ e₂₀ d (λ x → value-reflect ρ e₂₀ (subst Value e₂eq (V? x)))) E₀') ,
+           cong₂ L._∷_ (app₁-cong e₂eq) E'eq)
+strengthen-frame (L._∷_ (app₂ e₁ d V?) E') ⊢E =
+  let α₁ , α₂ , (_ , _ , ⊢e₁) , (_ , _ , ⊢inner) , cle = inv-app ⊢E
       β , pt , support' , factor' = strengthen-frame E' ⊢inner
   in β , pt ,
      (λ h ¬u → ≤-trans (support' h ¬u) (≤-trans (m≤n+m (count h α₂) (count h α₁)) (cle h ¬u))) ,
@@ -172,9 +178,9 @@ strengthen-frame (L._∷_ (_·□ {e₁ = e₁} V) E') ⊢E =
         let cα₁0 = +≤ʳ⇒0 (count h α₁) (count h α₂) (≤-trans (≤-trans (cle h ¬u) cα≤β) (support' h ¬u))
             cα₂≤β = ≤-trans (≤-trans (m≤n+m (count h α₂) (count h α₁)) (cle h ¬u)) cα≤β
             E₀' , E'eq = factor' h ¬u cα₂≤β ρ inv
-            comp₀ , compeq = strengthen-Tm-gen ⊢V ρ h inv (count0⇒∉dom α₁ cα₁0)
-            V₀ = value-reflect ρ comp₀ (subst Value compeq V)
-        in (L._∷_ (_·□ V₀) E₀') , cong₂ L._∷_ (·□-cong compeq V (V₀ ⋯ᵛ ρ)) E'eq)
+            comp₀ , compeq = strengthen-Tm-gen ⊢e₁ ρ h inv (count0⇒∉dom α₁ cα₁0)
+        in (L._∷_ (app₂ comp₀ d (λ x → value-reflect ρ comp₀ (subst Value compeq (V? x)))) E₀') ,
+           cong₂ L._∷_ (app₂-cong compeq) E'eq)
 strengthen-frame (L._∷_ (□⊗ e₂) E') ⊢E =
   let α₁ , α₂ , (_ , _ , ⊢inner) , (_ , _ , ⊢e₂) , cle = inv-pair ⊢E
       β , pt , support' , factor' = strengthen-frame E' ⊢inner
@@ -285,12 +291,12 @@ arg-type (T-Conv T≃ _ d)  = ≃-trans (arg-type d) T≃
 arg-type (T-Weaken _ d)   = arg-type d
 
 -- The consumed lsplit handle has a non-unrestricted type.
-lsplit-app-nonUnr : ∀ {N} {Γ : Ctx N} {β : Struct N} {s : 𝕊 0} {x : 𝔽 N} {T ϵ}
-  → Γ ; β ⊢ K (`lsplit s) · (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
+lsplit-app-nonUnr : ∀ {N} {Γ : Ctx N} {β : Struct N} {dir} {s : 𝕊 0} {x : 𝔽 N} {T ϵ}
+  → Γ ; β ⊢ K (`lsplit s) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
 lsplit-app-nonUnr d = go d
   where
-    go : ∀ {N} {Γ : Ctx N} {β : Struct N} {s : 𝕊 0} {x : 𝔽 N} {T ϵ}
-       → Γ ; β ⊢ K (`lsplit s) · (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
+    go : ∀ {N} {Γ : Ctx N} {β : Struct N} {dir} {s : 𝕊 0} {x : 𝔽 N} {T ϵ}
+       → Γ ; β ⊢ K (`lsplit s) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
     go (T-AppUnr _ _ ⊢fn ⊢arg) u =
       let ¬Ss , s′ , eq = fn-lsplit-dom ⊢fn
       in ¬Skips⇒¬Unr-seq ¬Ss (unr-≃ (≃-trans (arg-type ⊢arg) (≃-sym eq)) u)
@@ -316,12 +322,12 @@ fn-rsplit-dom (T-Conv (dom≃ `→ cod≃) _ d) =
 fn-rsplit-dom (T-Weaken _ d) = fn-rsplit-dom d
 
 -- The consumed rsplit handle has a non-unrestricted type.
-rsplit-app-nonUnr : ∀ {N} {Γ : Ctx N} {β : Struct N} {s : 𝕊 0} {x : 𝔽 N} {T ϵ}
-  → Γ ; β ⊢ K (`rsplit s) · (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
+rsplit-app-nonUnr : ∀ {N} {Γ : Ctx N} {β : Struct N} {dir} {s : 𝕊 0} {x : 𝔽 N} {T ϵ}
+  → Γ ; β ⊢ K (`rsplit s) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
 rsplit-app-nonUnr d = go d
   where
-    go : ∀ {N} {Γ : Ctx N} {β : Struct N} {s : 𝕊 0} {x : 𝔽 N} {T ϵ}
-       → Γ ; β ⊢ K (`rsplit s) · (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
+    go : ∀ {N} {Γ : Ctx N} {β : Struct N} {dir} {s : 𝕊 0} {x : 𝔽 N} {T ϵ}
+       → Γ ; β ⊢ K (`rsplit s) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
     go (T-AppUnr _ _ ⊢fn ⊢arg) u =
       let ¬Ss , s′ , eq = fn-rsplit-dom ⊢fn
       in ¬Skips⇒¬Unr-seq ¬Ss (unr-≃ (≃-trans (arg-type ⊢arg) (≃-sym eq)) u)
