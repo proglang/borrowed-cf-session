@@ -33,7 +33,7 @@ open import BorrowedCF.Simulation2.InvFrame using (strengthen-frame; inv-app; in
 open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯)
 open import BorrowedCF.Simulation2.RevComConfine
   using (frames-𝕀; leftPat-¬before; leftPat-pullOut-∥-≼)
-open import BorrowedCF.Simulation2.RevComImage using (com-image-block1)
+open import BorrowedCF.Simulation2.RevComImage using (com-image-block1; pos⇒suc)
 open import BorrowedCF.Context.Pattern using (LeftPat; CxPat; _[_]𝓅)
 open import BorrowedCF.Simulation2.Confine using (count; ≼⇒count≤; count-self; count-join-Dir; count-join-PS)
 open import BorrowedCF.Simulation2.Theorems.Com
@@ -610,7 +610,7 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
 --   geometry) is fixed only by the BindCtx chain — the same typing-driven index
 --   pin the forward U-com (Theorems/Com.agda, 962 ln) needs, mirrored.  Large but
 --   UNgated; structural shape/collapse PROVEN above (reuse for Close/Com/Choice).
-sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
+sim←ᵍ {m = m} σ Vσ Γ-S {g = g} {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
   with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
   with inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq
 ... | Sum.inj₂ (Sum.inj₁ refl)
@@ -626,7 +626,7 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
   with PR , Pr , refl , Req , Preq ← inv-U-∥ Prest (νσ b₁ b₂ σ) (sym Resteq)
   with eS , refl , Seq′ ← inv-U-⟪⟫ PS (νσ b₁ b₂ σ) (sym Seq)
   with eR , refl , Req′ ← inv-U-⟪⟫ PR (νσ b₁ b₂ σ) (sym Req)
-  with _ , _ , _ , ⊢PS , ⊢Prest ← inv-∥ ⊢body
+  with αcom , βcom , αβ≼ , ⊢PS , ⊢Prest ← inv-∥ ⊢body
   with _ , _ , _ , ⊢PR , ⊢Pr ← inv-∥ ⊢Prest
   with F₀ˢ , argˢ , refl , FeqS , argeqS
        ← frameApp-reflect Γ′-S eS (inv-⟪⟫ ⊢PS) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) `send
@@ -649,15 +649,21 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
   with frames-𝕀 ⊢Fˢ
 ... | refl , lpˢ
   with com-image-block1 b₁ b₂ σ Vσ xS cSeq
-... | b₁' , refl , z₀ , refl = {! STEP 4/5 (RU-Com).  N2 (com-image-block1) has
-     refined b₁ ≡ suc b₁' and xS ≡ ((z₀ ↑ˡ 0) ↑ˡ (b₂ + 0)) ↑ˡ m (the exact
-     block-1 handle shape count-handle-comᴸ / before-com-binderᴸ expect).
-     N1 = send-chan-nonUnr ⊢cS msg≃Tx : ¬ Unr (Γ′-S xS).
-     N3 = send-arg-count (N1) ⊢redexˢ : 1 ≤ count xS γrˢ.
-     REMAINING: un-anonymize αβ≼ from inv-∥ ⊢body; ¬ Unr (Γ′-S 0F) (block-1 tip is
-     a New session, non-Skips); ¬ before 0F xS γrˢ (leftPat-¬before on lpˢ);
-     then z₀ ≡ 0F by-contra via com-xS-min (count-handle-comᴸ + before-com-binderᴸ)
-     ⇒ xS ≡ 0F ⇒ close as the b₁=b₂=1 path (R-Com + U-com back-bridge, step 5). !}
+... | z , 1≤b₁ , refl
+  with b₁' , refl ← pos⇒suc 1≤b₁ = {! STEP 1+5 (RU-Com).  N2 (com-image-block1)
+     pinned the send channel to block-1: b₁ ≡ suc b₁', z : 𝔽 (suc b₁' + 0), and
+     xS ≡ (z ↑ˡ (b₂ + 0)) ↑ˡ m (exactly count-handle-comᴸ's handle).
+     N1 = send-chan-nonUnr ⊢cS msg≃Tx : ¬ Unr (Γ xS).
+     N3 = send-arg-count N1 ⊢redexˢ : 1 ≤ count xS γrˢ.
+     To pin xS ≡ 0F: feed com-xS-min with count-handle-comᴸ (suc b₁') b₂ g z and
+     before-com-binderᴸ b₁' b₂ g z₀ (z₀ = cast z, z₀ ↑ˡ 0 ≡ z) over the ν body
+     context γinner.  BLOCKER: γinner is bound here via `with … ← inv-ν-chanCx`, so
+     it prints as an opaque `fst` and count-handle-comᴸ's explicit structBinder-∥
+     cannot defeq-match it (close-confine avoids this by taking ⊢P as a parameter /
+     `let`-binding inv-ν, keeping the struct transparent).  So this needs a
+     concrete-struct `com-min` lemma (mirror ReverseConfine.close-confine), plus
+     ¬ Unr (Γ 0F) (block-1 New tip, mirror Theorems.agda:119's ¬u-head) and
+     ¬ before 0F xS γrˢ.  Then reconstruct R-Com and bridge to U[P′]σ (U-com). !}
 -- RU-Choice.  Identical shape to RU-Com (ν, ∥-headed body): same inv-U-ν-∥-shape
 --   + U-ν-singleton collapse; RESIDUAL = frameApp-reflect the select/branch
 --   redexes + `inj wrapping on the codomain, mirroring forward U-choice.
