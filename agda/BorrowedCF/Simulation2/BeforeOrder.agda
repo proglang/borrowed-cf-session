@@ -21,7 +21,11 @@ open import BorrowedCF.Prelude
 open import BorrowedCF.Types
 open import BorrowedCF.Context
 open import BorrowedCF.Context.Base using (AllCx)
-open import BorrowedCF.Simulation2.Confine using (count; unrCx⇒count0; count-≈; count-≈′)
+open import BorrowedCF.Simulation2.Confine using (count; unrCx⇒count0; count-≈; count-≈′; count-self; count-wk-suc)
+open import BorrowedCF.Simulation2.StructDom using (count-structNSeq-lt)
+open import BorrowedCF.Processes.Typed using (structNSeq)
+open import Data.Fin.Properties using (toℕ<n)
+import BorrowedCF.Context.Substitution as 𝐂
 
 open Fin.Patterns
 open Nat.Variables
@@ -194,3 +198,15 @@ before-mono-≼ ¬ux ¬uy (≼-cong-; p q) (inj₂ (inj₁ ba′)) = inj₂ (in
 before-mono-≼ ¬ux ¬uy (≼-cong-; p q) (inj₂ (inj₂ bb′)) = inj₂ (inj₂ (before-mono-≼ ¬ux ¬uy q bb′))
 before-mono-≼ ¬ux ¬uy (≼-cong-∥ p q) (inj₁ ba′) = inj₁ (before-mono-≼ ¬ux ¬uy p ba′)
 before-mono-≼ ¬ux ¬uy (≼-cong-∥ p q) (inj₂ bb′) = inj₂ (before-mono-≼ ¬ux ¬uy q bb′)
+
+
+-- ── a ;-chain structNSeq (suc m) has  before 0F (suc z')  for every later leaf. ──
+before-structNSeq : ∀ m (z′ : 𝔽 m) → before 0F (Fin.suc z′) (structNSeq (suc m))
+before-structNSeq m z′ = inj₁ (0∈ , z∈)
+  where
+    0∈ : 0F ∈ₘ (` (Fin.zero {m}))
+    0∈ eq = case (sym (count-self (Fin.zero {m})) ■ eq) of λ ()
+    ceq : count (Fin.suc z′) (𝐂.wk (structNSeq m)) ≡ 1
+    ceq = count-wk-suc (structNSeq m) z′ ■ count-structNSeq-lt m z′ (toℕ<n z′)
+    z∈ : (Fin.suc z′) ∈ₘ 𝐂.wk (structNSeq m)
+    z∈ eq = case (sym ceq ■ eq) of λ ()
