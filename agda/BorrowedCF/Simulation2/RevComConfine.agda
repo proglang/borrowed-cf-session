@@ -26,7 +26,10 @@ open import BorrowedCF.Simulation2.BeforeOrder using (before; before⇒mem)
 open import BorrowedCF.Context.Join using (join)
 open import BorrowedCF.Context.Pattern using (foldPattern)
 open import Data.List using ([]; _∷_)
-open import BorrowedCF.Simulation2.BeforeOrder using (before-structNSeq; before-⋯ᵣ-inj)
+open import BorrowedCF.Simulation2.BeforeOrder
+  using (before-structNSeq; before-⋯ᵣ-inj; before-mono-≼; count-≼-eq)
+open import BorrowedCF.Simulation2.Confine using (≼⇒count≤)
+open import Data.Sum using ([_,_]′)
 open import BorrowedCF.Processes.Typed using (structBinder; structNSeq; BindGroup)
 import BorrowedCF.Context.Substitution as 𝐂S
 open import Data.Nat.ListAction using (sum)
@@ -35,7 +38,7 @@ open import Data.Fin.Properties using (↑ˡ-injective)
 
 open Nat.Variables
 open Fin.Patterns
-open Nat using (+-assoc)
+open Nat using (+-assoc; _≤_; ≤-trans; m≤m+n; m≤n+m; +-monoˡ-≤; +-monoʳ-≤; +-comm; n≤0⇒n≡0; s≤s⁻¹)
 
 -- ── step 4(a): the send handle's binder-context has 0F ;-before it whenever the
 --    block-1 index z₀ is not the minimal 0F.  The inner binder of
@@ -143,3 +146,43 @@ leftPat-¬before {𝒫 = (R , γ) ∷ 𝒫′} {δ} {z} {xS} (inj₂ refl ∷ lp
   leftPat-¬before lp (proj₁ (+≡0 {count xS (𝒫′ [ [] ]𝓅)} c0)) ¬bδ brest
 leftPat-¬before {𝒫 = (R , γ) ∷ 𝒫′} {δ} {z} {xS} (inj₂ refl ∷ lp) c0 ¬bδ (inj₂ (inj₂ bγ)) =
   proj₂ (before⇒mem γ bγ) (proj₂ (+≡0 {count xS (𝒫′ [ [] ]𝓅)} c0))
+
+-- ── step 4(b): the ASSEMBLED ;-minimality contradiction.  Given the send handle
+--    xS is a live borrow that (i) is confined to the redex (LeftPat frame stack +
+--    count xS γrˢ ≥ 1 + the cross-thread linearity count xS γinner ≡ 1) and (ii)
+--    has 0F ;-before it in the binder (before-com-binderᴸ, i.e. xS ≠ 0F), we reach
+--    a contradiction.  Contrapositive: a well-typed com send handle is ;-minimal.
+--    Combine with before-com-binderᴸ to force z₀ ≡ 0F. ──
+com-xS-min : ∀ {n} {Γ : Ctx n} {𝒫ˢ : CxPat n} {γrˢ α β γinner : Struct n} {xS y : 𝔽 n}
+  → ¬ Unr (Γ xS) → ¬ Unr (Γ y)
+  → LeftPat 𝒫ˢ
+  → Γ ∶ 𝒫ˢ [ γrˢ ]𝓅 ≼ α
+  → Γ ∶ α ∥ β ≼ γinner
+  → count xS γinner ≡ 1
+  → before y xS γinner
+  → 1 ≤ count xS γrˢ
+  → ¬ before y xS γrˢ
+  → ⊥
+com-xS-min {Γ = Γ} {𝒫ˢ} {γrˢ} {α} {β} {γinner} {xS} {y} ¬uxS ¬uy lp ≼ˢ αβ≼ cγ1 bγ 1≤rˢ ¬brˢ =
+  [ (λ bα → ¬bα (before-mono-≼ ¬uy ¬uxS ≼ˢ bα))
+  , (λ bβ → proj₂ (before⇒mem β bβ) cβ0)
+  ]′ (before-mono-≼ ¬uy ¬uxS αβ≼ bγ)
+  where
+    cαβ≤1 : count xS α + count xS β ≤ 1
+    cαβ≤1 = subst (count xS α + count xS β ≤_) cγ1 (≼⇒count≤ {x = xS} ¬uxS αβ≼)
+    cα≤1 : count xS α ≤ 1
+    cα≤1 = ≤-trans (m≤m+n (count xS α) (count xS β)) cαβ≤1
+    cα≡ : count xS α ≡ count xS (𝒫ˢ [ [] ]𝓅) + count xS γrˢ
+    cα≡ = sym (count-≼-eq ¬uxS ≼ˢ) ■ count-plug-add 𝒫ˢ γrˢ xS
+    c𝒫0 : count xS (𝒫ˢ [ [] ]𝓅) ≡ 0
+    c𝒫0 = n≤0⇒n≡0 (s≤s⁻¹
+            (subst (_≤ 1) (+-comm (count xS (𝒫ˢ [ [] ]𝓅)) 1)
+              (≤-trans (+-monoʳ-≤ (count xS (𝒫ˢ [ [] ]𝓅)) 1≤rˢ)
+                (subst (_≤ 1) cα≡ cα≤1))))
+    ¬bα : ¬ before y xS (𝒫ˢ [ γrˢ ]𝓅)
+    ¬bα = leftPat-¬before lp c𝒫0 ¬brˢ
+    1≤α : 1 ≤ count xS α
+    1≤α = ≤-trans 1≤rˢ (subst (count xS γrˢ ≤_) (sym cα≡)
+            (m≤n+m (count xS γrˢ) (count xS (𝒫ˢ [ [] ]𝓅))))
+    cβ0 : count xS β ≡ 0
+    cβ0 = n≤0⇒n≡0 (s≤s⁻¹ (≤-trans (+-monoˡ-≤ (count xS β) 1≤α) cαβ≤1))
