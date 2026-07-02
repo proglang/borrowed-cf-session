@@ -37,6 +37,8 @@ open import BorrowedCF.Simulation2.BlockPerm
 open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
+open import BorrowedCF.Simulation2.RsplitTransport
+  using (⋯-subst₂; ⋯ₚ-subst₂; subst-Tm-uip; toℕ-subst-cod; toℕ-subst₂ᵣ)
 -- COPIED transpose engine from Simulation2.Congruence (hole-free prefix).
 subst-≋ : ∀ {a b} (eq : a ≡ b) {P Q : U.Proc a} → P U.≋ Q →
           subst U.Proc eq P U.≋ subst U.Proc eq Q
@@ -1912,6 +1914,112 @@ canonₛ-rwk0 {N} (e₁ , x , e₂) b₁ B₂ i i≢ =
     ( canonₛ-e₁ b₁ B₂ (` 0F) (wk e₁) (suc x) (wk e₂) i i≢
     ■ sym (canonₛ-nat (suc b₁ ∷ B₂) (e₁ , x , e₂) weakenᵣ i) )
   where sD = syncs (suc b₁ ∷ B₂)
+
+-- syncs of a cons with a nonempty tail bumps by one (definitionally).
+syncs-cons : ∀ (a : ℕ) (B₁' : BindGroup) (c : ℕ) (D : BindGroup) →
+             syncs (a ∷ (B₁' ++ c ∷ D)) ≡ suc (syncs (B₁' ++ c ∷ D))
+syncs-cons a []          c D = refl
+syncs-cons a (b ∷ B₁'') c D = refl
+
+-- sins: the sync-level insertion renaming, sending the ungrown group's syncs to
+-- the rwk-grown group's syncs (which has ONE more φ, from the inserted 1-block).
+-- Recursion on B₁ mirrors drwk: base inserts (weakenᵣ ↑* sD) retyped by +-suc;
+-- the head block conjugates by the two +-suc scope shuffles.
+sins : ∀ (B₁ : BindGroup) (b₁ : ℕ) (B₂ : BindGroup) {N} →
+       syncs (B₁ ++ suc b₁ ∷ B₂) + N →ᵣ syncs (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + N
+sins [] b₁ B₂ {N} =
+  subst (λ z → syncs (suc b₁ ∷ B₂) + N →ᵣ z) (+-suc (syncs (suc b₁ ∷ B₂)) N)
+    (weakenᵣ ↑* syncs (suc b₁ ∷ B₂))
+sins (a ∷ B₁') b₁ B₂ {N} =
+  subst₂ _→ᵣ_
+    (+-suc (syncs (B₁' ++ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a B₁' (suc b₁) B₂)))
+    (+-suc (syncs (B₁' ++ 1 ∷ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a B₁' 1 (suc b₁ ∷ B₂))))
+    (sins B₁' b₁ B₂ {suc N})
+
+-- sins inserts a fresh sync slot at flat position syncs (suc b₁ ∷ B₂) (the
+-- handle-chain's sync count, i.e. the leaf end of the handle block), regardless
+-- of the B₁ prefix: at/above that position toℕ bumps by one.  Induction on B₁.
+sins-toℕ-hi : ∀ (B₁ : BindGroup) (b₁ : ℕ) (B₂ : BindGroup) {N}
+              (j : 𝔽 (syncs (B₁ ++ suc b₁ ∷ B₂) + N)) →
+              syncs (suc b₁ ∷ B₂) Nat.≤ Fin.toℕ j →
+              Fin.toℕ (sins B₁ b₁ B₂ {N} j) ≡ suc (Fin.toℕ j)
+sins-toℕ-hi [] b₁ B₂ {N} j h =
+    toℕ-subst-cod (+-suc (syncs (suc b₁ ∷ B₂)) N) (weakenᵣ ↑* syncs (suc b₁ ∷ B₂)) j
+  ■ toℕ-↑*-ge weakenᵣ (syncs (suc b₁ ∷ B₂)) j h
+  ■ cong (syncs (suc b₁ ∷ B₂) +_) (cong suc (toℕ-reduce≥ j h))
+  ■ Nat.+-suc (syncs (suc b₁ ∷ B₂)) (Fin.toℕ j Nat.∸ syncs (suc b₁ ∷ B₂))
+  ■ cong suc (Nat.m+[n∸m]≡n h)
+sins-toℕ-hi (a ∷ B₁') b₁ B₂ {N} j h =
+    toℕ-subst₂ᵣ pL pR (sins B₁' b₁ B₂ {suc N}) j
+  ■ sins-toℕ-hi B₁' b₁ B₂ {suc N} (subst 𝔽 (sym pL) j)
+      (subst (syncs (suc b₁ ∷ B₂) Nat.≤_) (sym (toℕ-subst𝔽 (sym pL) j)) h)
+  ■ cong suc (toℕ-subst𝔽 (sym pL) j)
+  where
+    pL = +-suc (syncs (B₁' ++ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a B₁' (suc b₁) B₂))
+    pR = +-suc (syncs (B₁' ++ 1 ∷ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a B₁' 1 (suc b₁ ∷ B₂)))
+    toℕ-subst𝔽 : ∀ {a c} (e : a ≡ c) (y : 𝔽 a) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
+    toℕ-subst𝔽 refl y = refl
+
+-- canonₛ-rwk (general): canonₛ on the rwk-grown group, off the consumed handle,
+-- equals the ungrown canonₛ post-composed with the sync-insertion renaming sins.
+canonₛ-rwk : ∀ (B₁ : BindGroup) {N} (cc : UChan N) (b₁ : ℕ) (B₂ : BindGroup)
+             (i : 𝔽 (sum (B₁ ++ suc b₁ ∷ B₂))) →
+             i ≢ Fin.cast (sym (sum-++ B₁ (suc b₁ ∷ B₂))) (sum B₁ ↑ʳ 0F) →
+             canonₛ (B₁ ++ 1 ∷ suc b₁ ∷ B₂) cc (drwk B₁ b₁ B₂ i)
+             ≡ canonₛ (B₁ ++ suc b₁ ∷ B₂) cc i ⋯ sins B₁ b₁ B₂ {N}
+canonₛ-rwk [] {N} cc b₁ B₂ i i≢ =
+    canonₛ-rwk0 cc b₁ B₂ i (λ i≡ → i≢ (i≡ ■ sym cast≡))
+  ■ sym (subst-⋯-cod-local (+-suc (syncs (suc b₁ ∷ B₂)) N)
+           (canonₛ (suc b₁ ∷ B₂) cc i) (weakenᵣ ↑* syncs (suc b₁ ∷ B₂)))
+  where
+    cast≡ : Fin.cast (sym (sum-++ [] (suc b₁ ∷ B₂))) (sum [] ↑ʳ 0F) ≡ 0F
+    cast≡ = refl
+canonₛ-rwk (a ∷ []) {N} (e₁ , x , e₂) b₁ B₂ i i≢
+  with canonₛ-rwk [] {suc N} (` 0F , suc x , wk e₂) b₁ B₂
+... | rec with Fin.splitAt a i in seq
+... | inj₁ p rewrite Fin.splitAt-↑ˡ a p (sum ([] ++ 1 ∷ suc b₁ ∷ B₂)) =
+      cong (subst Tm SS) (sym headCore)
+    ■ sym ( cong (_⋯ sins (a ∷ []) b₁ B₂ {N}) (subst-Tm-uip (+-suc sD N) pL headM)
+          ■ ⋯-subst₂ pL pR headM ρ0
+          ■ subst-Tm-uip pR SS (headM ⋯ ρ0) )
+  where
+    sD = syncs (suc b₁ ∷ B₂)
+    SS  = cong suc (+-suc sD N)
+    ρ0 = sins [] b₁ B₂ {suc N}
+    pL = +-suc (syncs ([] ++ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a [] (suc b₁) B₂))
+    pR = +-suc (syncs ([] ++ 1 ∷ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a [] 1 (suc b₁ ∷ B₂)))
+    hp = Ub[ a ] (wk e₁ , suc x , ` 0F) p
+    headM = hp ⋯ weaken* ⦃ Kᵣ ⦄ sD
+    ptwise : ∀ v → (weaken* ⦃ Kᵣ ⦄ sD ·ₖ ρ0) v ≡ weaken* ⦃ Kᵣ ⦄ (suc sD) v
+    ptwise v = Fin.toℕ-injective
+      ( sins-toℕ-hi [] b₁ B₂ {suc N} (weaken* ⦃ Kᵣ ⦄ sD v)
+          (subst (sD Nat.≤_) (sym (toℕ-weaken*ᵣ sD v)) (Nat.m≤m+n sD (Fin.toℕ v)))
+      ■ cong suc (toℕ-weaken*ᵣ sD v)
+      ■ sym (toℕ-weaken*ᵣ (suc sD) v) )
+    headCore : headM ⋯ ρ0 ≡ hp ⋯ weaken* ⦃ Kᵣ ⦄ (suc sD)
+    headCore = fusion hp (weaken* ⦃ Kᵣ ⦄ sD) ρ0 ■ ⋯-cong hp ptwise
+... | inj₂ r rewrite Fin.splitAt-↑ʳ a (sum ([] ++ 1 ∷ suc b₁ ∷ B₂)) (weakenᵣ r) =
+      cong (subst Tm SS) (rec r r≢0)
+    ■ sym ( cong (_⋯ sins (a ∷ []) b₁ B₂ {N}) (subst-Tm-uip (+-suc sD N) pL leafM)
+          ■ ⋯-subst₂ pL pR leafM ρ0
+          ■ subst-Tm-uip pR SS (leafM ⋯ ρ0) )
+  where
+    sD = syncs (suc b₁ ∷ B₂)
+    SS  = cong suc (+-suc sD N)
+    ρ0 = sins [] b₁ B₂ {suc N}
+    pL = +-suc (syncs ([] ++ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a [] (suc b₁) B₂))
+    pR = +-suc (syncs ([] ++ 1 ∷ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a [] 1 (suc b₁ ∷ B₂)))
+    leafM = canonₛ (suc b₁ ∷ B₂) (` 0F , suc x , wk e₂) r
+    r≢0 : r ≢ 0F
+    r≢0 r≡ = i≢ ( sym (Fin.join-splitAt a (sum ([] ++ suc b₁ ∷ B₂)) i)
+                ■ cong (Fin.join a (sum ([] ++ suc b₁ ∷ B₂))) seq
+                ■ cong (a ↑ʳ_) r≡
+                ■ sym (pos-split a [] b₁ B₂) )
+canonₛ-rwk (a ∷ d ∷ B₁″) {N} (e₁ , x , e₂) b₁ B₂ i i≢
+  with canonₛ-rwk (d ∷ B₁″) {suc N} (` 0F , suc x , wk e₂) b₁ B₂
+... | rec with Fin.splitAt a i in seq
+... | inj₁ p = {!inj1b!}
+... | inj₂ r = {!inj2b!}
 
 
 -- The rsplit-grown bind group's Bφ-prefix carries one extra φ-drop binder (the
