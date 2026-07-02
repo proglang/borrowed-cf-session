@@ -92,9 +92,9 @@ value-no-head (V-⊕ V)     ()
 -- A term that is a value never reduces.
 value-↛ : {t : Tm n} → Value t → {e₂ : Tm n} → ¬ (t ⋯→ e₂)
 value-↛ V (E-□ hred)             = value-no-head V hred
-value-↛ V (E-Ctx (□· _)  red)    with V
+value-↛ V (E-Ctx (app₁ _ _ _)  red)    with V
 ... | ()
-value-↛ V (E-Ctx (_ ·□)  red)    with V
+value-↛ V (E-Ctx (app₂ _ _ _)  red)    with V
 ... | ()
 value-↛ V (E-Ctx (□⊗ _)  red)    with V
 ... | V-⊗ V₁ V₂ = value-↛ V₁ red
@@ -117,7 +117,7 @@ value-↛ V (E-Ctx `case□`of⟨ _ ; _ ⟩ red) with V
 value-⋯⁻¹ : (σ : m →ₛ n) → VSub σ → (e₀ : Tm m) → Value (e₀ ⋯ σ) → Value e₀
 value-⋯⁻¹ σ Vσ (` x)               V = V-`
 value-⋯⁻¹ σ Vσ (K c)               V = V-K
-value-⋯⁻¹ σ Vσ (ƛ e)               V = V-λ
+value-⋯⁻¹ σ Vσ (ƛ d e)             V = V-λ
 value-⋯⁻¹ σ Vσ (e₁ ⊗ e₂) (V-⊗ V₁ V₂) =
   V-⊗ (value-⋯⁻¹ σ Vσ e₁ V₁) (value-⋯⁻¹ σ Vσ e₂ V₂)
 value-⋯⁻¹ σ Vσ (`inj i e)  (V-⊕ V)    = V-⊕ (value-⋯⁻¹ σ Vσ e V)
@@ -345,11 +345,11 @@ sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Fork F V)
   with e₀ , refl , feq ← inv-U-⟪⟫ _ σ (sym eq)
   with F₀ , arg₀ , refl , Feq , argeq
        ← frameApp-reflect Γ-S e₀ (inv-⟪⟫ ⊢P) σ Vσ `fork F (sym feq) =
-  TP.⟪ F₀ [ K `unit ]* ⟫ TP.∥ TP.⟪ arg₀ · K `unit ⟫ , _ ,
+  TP.⟪ F₀ [ K `unit ]* ⟫ TP.∥ TP.⟪ arg₀ ·¹ K `unit ⟫ , _ ,
   TR.R-Fork F₀ (value-⋯⁻¹ σ Vσ arg₀ (subst Value argeq V)) ◅ ε , Sum.inj₁ refl ,
   ≡→≋ (cong₂ UP._∥_
         (cong UP.⟪_⟫ (cong (_[ K `unit ]*) Feq ■ sym (frame-plug* F₀ σ Vσ)))
-        (cong (λ z → UP.⟪ z · K `unit ⟫) argeq))
+        (cong (λ z → UP.⟪ z ·¹ K `unit ⟫) argeq))
 -- RU-New : the LHS redex K (`new s) · * is an applied constant, so the source
 --   frame F₀ + source redex are recovered by frameApp-reflect (c = `new s, arg₀
 --   forced to K `unit since a unit-typed source var is ruled out by ChanCx, like
@@ -412,9 +412,9 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
   with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
   with inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq
 ... | Sum.inj₂ (Sum.inj₁ refl)
-  with _ , _ , _ , _ , _ , _ , () , _ ← inv-ν ⊢P
-... | Sum.inj₂ (Sum.inj₂ refl)
   with _ , _ , _ , _ , _ , _ , _ , () , _ ← inv-ν ⊢P
+... | Sum.inj₂ (Sum.inj₂ refl)
+  with _ , _ , _ , _ , _ , _ , _ , _ , () , _ ← inv-ν ⊢P
 ... | Sum.inj₁ (b₁ , b₂ , refl , refl)
   with _ , _ , Γ′-S , ⊢body ← inv-ν-chanCx Γ-S ⊢P
   with bodyeq′ ← ν-inj (bodyeq ■ U-ν-singleton b₁ b₂ P₀ σ)
