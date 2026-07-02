@@ -524,13 +524,11 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
            F₁ (sym Seq′)
   with F₀ᴿ , argᴿ , refl , FeqR , argeqR
        ← frameApp-reflect Γ′-S eR (inv-⟪⟫ ⊢PR) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) `recv
-           F₂ (sym Req′) =
-  {! RU-Com inj₁: structural inversion DONE (P₀ = ⟪F₀ˢ[send·argˢ]⟫ ∥ (⟪F₀ᴿ[recv·argᴿ]⟫ ∥ Pr)
-     recovered, typed ⊢PS/⊢PR/⊢Pr in binder-extended ChanCx Γ′-S; FeqS/FeqR frame equations;
-     argeqS : e ⊗ 𝓒[e₁×0F×e₁′] ≡ argˢ ⋯ νσ ; argeqR : 𝓒[e₂×1F×e₂′] ≡ argᴿ ⋯ νσ).
-     REMAINING (RevComConfine): (a) argˢ ≡ payloadˢ ⊗ ` xS with xS forced to 0F (send session
-     type ⟨msg ‼ T⟩ + BindCtx chain), argᴿ ≡ ` xR with xR the recv index wkʳ(wkˡ(suc b₁)0F);
-     (b) fire TR.R-Com ; (c) codomain bridge RU-Com-RHS ≋ U[R-Com-RHS]σ. !}
+           F₂ (sym Req′)
+  with 𝒫ˢ , γrˢ , T′ˢ , Uˢ , ϵpˢ , ϵeˢ , ≼ˢ , T≃ˢ , ϵ≤ˢ , ⊢Fˢ , ⊢redexˢ
+       ← ⊢[]*⁻¹ F₀ˢ (K `send ·¹ argˢ) (inv-⟪⟫ ⊢PS)
+  with αfnˢ , αargˢ , (_ , _ , ⊢sendˢ) , (_ , _ , ⊢argˢ) , cleˢ ← inv-app ⊢redexˢ =
+  {! CONFINEMENT probe: have ⊢argˢ : Γ′ ; αargˢ ⊢ argˢ ; ⊢Fˢ : frame typing; next inv-pair + xS≡0F. !}
 -- RU-Choice.  Identical shape to RU-Com (ν, ∥-headed body): same inv-U-ν-∥-shape
 --   + U-ν-singleton collapse; RESIDUAL = frameApp-reflect the select/branch
 --   redexes + `inj wrapping on the codomain, mirroring forward U-choice.
