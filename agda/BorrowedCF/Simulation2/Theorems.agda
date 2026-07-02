@@ -19,7 +19,7 @@ open import BorrowedCF.Simulation2.Congruence using (U-≋)
 open import BorrowedCF.Simulation2.Theorems.Choice using (U-choice)
 open import BorrowedCF.Simulation2.Theorems.Drop using (U-drop)
 open import BorrowedCF.Simulation2.Theorems.Com using (U-com)
-open import BorrowedCF.Simulation2.TranslationProperties using (≡→≋; UB-cong-─→; UB-cong; ≋-subst; ─→-subst; Value-subst; chanTriple-V; VChan; U-⋯ₚ; U-cong)
+open import BorrowedCF.Simulation2.TranslationProperties using (≡→≋; UB-cong-─→; UB-cong; ≋-subst; ─→-subst; Value-subst; chanTriple-V; VChan; U-⋯ₚ; U-cong; Ub-V)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
 import Data.Sum as Sum
 import BorrowedCF.Processes.Typed             as TP
@@ -190,28 +190,20 @@ rnew-bridge : (E : Frame* m) (σ : m →ₛ n) (Vσ : VSub σ) →
 rnew-bridge {m} {n} E σ Vσ =
   ≡→≋ (cong UP.ν (cong (UP.φ UP.acq) (cong (UP.φ UP.acq) (cong UP.⟪_⟫ bodyEq))))
   where
-    cA : Tm (1 + (1 + (2 + n)))
-    cA = chanTriple ((` 0F) , 1F , wk *) ⋯ weaken* ⦃ Kᵣ ⦄ 1
-    cB : Tm (1 + (1 + (2 + n)))
-    cB = chanTriple ((` 0F) , suc (weaken* ⦃ Kᵣ ⦄ 1 1F) , wk *)
     A : 1 →ₛ (1 + (1 + (2 + n)))
-    A = λ _ → cA
+    A = Ub[ 1 ] ((` 0F) , 1F , wk *) ·ₖ weaken* ⦃ Kᵣ ⦄ 1
     B : 1 →ₛ (1 + (1 + (2 + n)))
-    B = λ _ → cB
+    B = Ub[ 1 ] ((` 0F) , suc (weaken* ⦃ Kᵣ ⦄ 1 1F) , wk *)
     Bσ : m →ₛ (1 + (1 + (2 + n)))
     Bσ = λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 1 ⋯ weaken* ⦃ Kᵣ ⦄ 1
     σ′ : (1 + 1 + m) →ₛ (1 + (1 + (2 + n)))
     σ′ = (A ++ₛ B) ++ₛ Bσ
-    VcAch : Value (chanTriple ((` 0F) , 1F , wk *))
-    VcAch = V-⊗ (V-⊗ V-` V-`) (value-⋯ V-K (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`))
-    VcBch : Value (chanTriple ((` 0F) , suc (weaken* ⦃ Kᵣ ⦄ 1 1F) , wk *))
-    VcBch = V-⊗ (V-⊗ V-` V-`) (value-⋯ V-K (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`))
-    VcA : Value cA
-    VcA = value-⋯ VcAch (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`)
     VA : VSub A
-    VA = λ _ → VcA
+    VA j = value-⋯ (Ub-V 1 (` 0F) 1F (wk *) V-` (value-⋯ V-K (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`)) j)
+                   (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`)
     VB : VSub B
-    VB = λ _ → VcBch
+    VB j = Ub-V 1 (` 0F) (suc (weaken* ⦃ Kᵣ ⦄ 1 1F)) (wk *) V-`
+                 (value-⋯ V-K (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`)) j
     Vσ′ : VSub σ′
     Vσ′ = ++ₛ-VSub {σ₁ = A ++ₛ B}
             (++ₛ-VSub {σ₁ = A} VA VB)
@@ -383,12 +375,12 @@ sim→ σ Vσ Γ-S ⊢P (TR.R-Choice {b1} {B1} {b2} {B2} {P} {E₁} {E₂} {i}) 
 --   transpose (canonₛ-handle positional lemma) + frame-plug* → RU-LSplit.
 --   cf. old Simulation/Theorems/LSplit.agda.
 sim→ σ Vσ Γ-S ⊢P TR.R-LSplit =
-  inj₁ {! R-LSplit → RU-LSplit: binder-order transpose + frame-plug*; cf. Simulation/Theorems/LSplit.agda !}
+  inj₁ {! R-LSplit: U-lsplit (Theorems/Splits.agda) is PROVEN 0/0; wire as `U-lsplit σ Vσ Γ-S ⊢P` (replaces this whole inj₁, returns the ⊎ directly) ONCE Splits is hole-free — Agda refuses to import a module with open interaction points, and Splits still carries the 2 U-rsplit leafRec holes. !}
 
 -- R-RSplit: remote split allocates a fresh φ drop.  Needs typing + transpose → RU-RSplit.
 --   cf. old Simulation/Theorems/RSplit.agda.
 sim→ σ Vσ Γ-S ⊢P TR.R-RSplit =
-  inj₁ {! R-RSplit → RU-RSplit: binder-order transpose + frame-plug*; cf. Simulation/Theorems/RSplit.agda !}
+  inj₁ {! R-RSplit: U-rsplit (Theorems/Splits.agda) has 2 leafRec transport holes (canonₛ-rwk / leafσ-rwk-id — rwk inserts a fresh chain re-threading the tail; provable per RsplitSci but ~150 lines). Wire as `U-rsplit σ Vσ Γ-S ⊢P` once Splits is 0/0. !}
 
 -- R-Drop.  Goal (?5):
 --   U[ ν (suc b₁ ∷ B₁) B₂ (⟪ E⋯ᶠ*weakenᵣ [ drop·(`0F) ] ⟫ ∥ (P⋯ₚweakenᵣ)) ] σ
