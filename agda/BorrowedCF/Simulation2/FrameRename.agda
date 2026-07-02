@@ -5,6 +5,7 @@ open import BorrowedCF.Terms
 open import BorrowedCF.Types using (Dir; L; R; 𝟙)
 open import BorrowedCF.Reduction.Base
 open import BorrowedCF.Simulation2.Base using (funext)
+open import BorrowedCF.Simulation2.Frames using (frame*-⋯)
 import Data.Sum as Sum
 import Data.List as L
 
@@ -68,3 +69,9 @@ frame-fusion-gen (`case□`of⟨ e₁ ; e₂ ⟩) {ϕ} Vϕ {ξ} Vξ Vϕξ =
 ⋯ᶠ*-fuse : (E : Frame* m) (ϕ : m →ᵣ p) (ψ : p →ᵣ n) → (E ⋯ᶠ* ϕ) ⋯ᶠ* ψ ≡ E ⋯ᶠ* (ϕ ·ₖ ψ)
 ⋯ᶠ*-fuse []      ϕ ψ = refl
 ⋯ᶠ*-fuse (F ∷ E) ϕ ψ = cong₂ _∷_ (⋯ᶠ-fuse F ϕ ψ) (⋯ᶠ*-fuse E ϕ ψ)
+
+-- frame*-⋯ (substitution) followed by a renaming ⋯ᶠ* fuses (frame analogue of U-σ⋯).
+F-σ⋯ : (E : Frame* m) {σ : m →ₛ p} (Vσ : VSub σ) (ρ : p →ᵣ n) (Vσρ : VSub (σ ·ₖ ρ)) →
+       (frame*-⋯ E σ Vσ) ⋯ᶠ* ρ ≡ frame*-⋯ E (σ ·ₖ ρ) Vσρ
+F-σ⋯ []      Vσ ρ Vσρ = refl
+F-σ⋯ (F ∷ E) Vσ ρ Vσρ = cong₂ _∷_ (frame-fusion-gen F Vσ (λ x → V-`) Vσρ) (F-σ⋯ E Vσ ρ Vσρ)
