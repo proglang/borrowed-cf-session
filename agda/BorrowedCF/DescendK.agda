@@ -70,11 +70,11 @@ fsuc^ (suc k) y = fsuc (fsuc^ k y)
 ↑*-preimage (suc k) {z = fzero}   ()
 ↑*-preimage (suc k) {z = fsuc z′} eq = ↑*-preimage k (suc-injective eq)
 
-freshᵏ : (k : ℕ) → Subset (k + n)
-freshᵏ zero    = ⁅⁆
-freshᵏ (suc k) = inside ∷ freshᵏ k
+freshᵏ : (n k : ℕ) → Subset (k + n)
+freshᵏ n zero    = ⁅⁆
+freshᵏ n (suc k) = inside ∷ freshᵏ n k
 
-fsuc^∉fresh : (k : ℕ) {y : 𝔽 n} → fsuc^ k y ∉ freshᵏ k
+fsuc^∉fresh : (k : ℕ) {y : 𝔽 n} → fsuc^ k y ∉ freshᵏ n k
 fsuc^∉fresh zero            = ∉⊥
 fsuc^∉fresh (suc k) (Vec.there p) = fsuc^∉fresh k p
 
@@ -102,7 +102,7 @@ descend-absK : ∀ {m n} {AD} ⦃ _ : Join AD ⦄ {Γ₁ : Ctx m} {Γ₂ : Ctx n
   (dd : AD) (Fr : Struct (k + m)) (Fr′ : Struct (k + n))
   (A : Struct (k + m)) (γa : Struct n) →
   Fr 𝐂.⋯ (ρ 𝐂.↑* k) ≡ Fr′ →
-  dom Fr′ ⊆ freshᵏ k →
+  dom Fr′ ⊆ freshᵏ n k →
   (Δ ⸴* Γ₂) ∶ (A 𝐂.⋯ (ρ 𝐂.↑* k)) ≼ join dd Fr′ (wk^ k γa) →
   ∃[ γr ] ((Δ ⸴* Γ₁) ∶ A ≼ join dd Fr (wk^ k γr)) × (Γ₂ ∶ (γr 𝐂.⋯ ρ) ≼ γa)
 descend-absK {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {ρ = ρ} k Δ inj-ρ pre dd Fr Fr′ A γa Frinv Frdom ≼b
@@ -111,9 +111,9 @@ descend-absK {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {ρ = ρ} k Δ inj-ρ pre d
   Xtrue : Subset (k + n)
   Xtrue = dom (A 𝐂.⋯ (ρ 𝐂.↑* k))
   Xd0 : Subset (k + n)
-  Xd0 = Xtrue ∪ freshᵏ k
+  Xd0 = Xtrue ∪ freshᵏ n k
   img : ∀ {y} → y ∈ dom (γa ↓ dropᵏ k Xd0) → InImage ρ y
-  img {y} y∈ with x∈p∪q⁻ Xtrue (freshᵏ k) (∈dropᵏ k (↓-dom γa (dropᵏ k Xd0) y∈))
+  img {y} y∈ with x∈p∪q⁻ Xtrue (freshᵏ n k) (∈dropᵏ k (↓-dom γa (dropᵏ k Xd0) y∈))
   ... | inj₁ sy∈   = ↑*-preimage k (proj₂ (dom-⋯-InImage A sy∈))
   ... | inj₂ sy∈fr = contradiction sy∈fr (fsuc^∉fresh k)
   pim = preimage {ϕ = ρ} (γa ↓ dropᵏ k Xd0) img
@@ -121,14 +121,14 @@ descend-absK {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {ρ = ρ} k Δ inj-ρ pre d
   eqr : γr 𝐂.⋯ ρ ≡ γa ↓ dropᵏ k Xd0
   eqr = proj₂ pim
   Fr-eq : Fr′ ↓ Xd0 ≡ Fr′
-  Fr-eq = ↓-identity-⊆ Fr′ (⊆-trans Frdom (q⊆p∪q Xtrue (freshᵏ k)))
+  Fr-eq = ↓-identity-⊆ Fr′ (⊆-trans Frdom (q⊆p∪q Xtrue (freshᵏ n k)))
   rhs-img : (join dd Fr (wk^ k γr)) 𝐂.⋯ (ρ 𝐂.↑* k) ≡ join dd Fr′ (wk^ k (γr 𝐂.⋯ ρ))
   rhs-img = join-⋯ dd {ϕ = ρ 𝐂.↑* k} Fr (wk^ k γr) ■ cong₂ (join dd) Frinv (⋯ᵏ-↑-wk k γr)
   rhs-eq : (join dd Fr′ (wk^ k γa)) ↓ Xd0 ≡ (join dd Fr (wk^ k γr)) 𝐂.⋯ (ρ 𝐂.↑* k)
   rhs-eq = ↓-join dd Fr′ (wk^ k γa) Xd0
            ■ (cong₂ (join dd) Fr-eq (wk^↓ k γa Xd0 ■ cong (wk^ k) (sym eqr)) ■ sym rhs-img)
   lhs-eq : (A 𝐂.⋯ (ρ 𝐂.↑* k)) ↓ Xd0 ≡ A 𝐂.⋯ (ρ 𝐂.↑* k)
-  lhs-eq = ↓-identity-⊆ (A 𝐂.⋯ (ρ 𝐂.↑* k)) (p⊆p∪q (freshᵏ k))
+  lhs-eq = ↓-identity-⊆ (A 𝐂.⋯ (ρ 𝐂.↑* k)) (p⊆p∪q (freshᵏ n k))
   part1 : (Δ ⸴* Γ₁) ∶ A ≼ join dd Fr (wk^ k γr)
   part1 = ≼-⋯⁻¹ {α = A} {β = join dd Fr (wk^ k γr)} {ϕ = ρ 𝐂.↑* k}
             (Inj-↑* k inj-ρ) (λ {x} → ↑*ᵣ-preserves-⇐ k Δ pre {x})
@@ -139,6 +139,9 @@ descend-absK {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {ρ = ρ} k Δ inj-ρ pre d
   unr-true = un-wk^-Unr k Δ (subst (AllCx Unr (Δ ⸴* Γ₂)) wk^-eq
                (allCx-join↓-proj₂ dd (∁ Xtrue) (≼⇒extra-Unr ≼b)))
   unr-part : AllCx Unr Γ₂ (γa ↓ ∁ (dropᵏ k Xd0))
-  unr-part = ↓-⊆ γa (∁⊆ (dropᵏ⊆ k (p⊆p∪q {p = Xtrue} (freshᵏ k)))) unr-true
+  unr-part = ↓-⊆ γa (∁⊆ (dropᵏ⊆ k (p⊆p∪q {p = Xtrue} (freshᵏ n k)))) unr-true
   part2 : Γ₂ ∶ (γr 𝐂.⋯ ρ) ≼ γa
   part2 = subst (Γ₂ ∶_≼ γa) (sym eqr) (↓-strip≼ γa unr-part)
+
+rlift : (k : ℕ) → (m →ᵣ n) → (k + m →ᵣ k + n)
+rlift k ρ = ρ 𝐂.↑* k
