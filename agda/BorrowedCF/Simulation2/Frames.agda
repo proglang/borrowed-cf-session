@@ -9,8 +9,8 @@ open import BorrowedCF.Simulation2.Base
 
 frame-plug₁ : ⦃ K : Kit 𝓕 ⦄ (E : Frame m) {e : Tm m} (ϕ : m –[ K ]→ n) (Vϕ : VSub ϕ) →
               (E [ e ]) ⋯ ϕ ≡ frame-⋯ E ϕ Vϕ [ e ⋯ ϕ ]
-frame-plug₁ (□· e₂)       ϕ Vϕ = refl
-frame-plug₁ (V₁ ·□)       ϕ Vϕ = refl
+frame-plug₁ (app₁ e d V?)  ϕ Vϕ = refl
+frame-plug₁ (app₂ e d V?)  ϕ Vϕ = refl
 frame-plug₁ (□⊗ e₂)       ϕ Vϕ = refl
 frame-plug₁ (V₁ ⊗□)       ϕ Vϕ = refl
 frame-plug₁ (□; e₂)       ϕ Vϕ = refl
@@ -22,8 +22,8 @@ frame-plug₁ (`case□`of⟨ e₁ ; e₂ ⟩) ϕ Vϕ = refl
 -- Head reduction is stable under value substitution.
 
 ─→-⋯ₛ : (σ : m →ₛ n) → VSub σ → {e₁ e₂ : Tm m} → e₁ ─→ e₂ → e₁ ⋯ σ ─→ e₂ ⋯ σ
-─→-⋯ₛ σ Vσ (E-App {e₁} {e₂} V) =
-  subst₂ _─→_ refl (sym (dist-↑-⦅⦆-⋯ e₂ e₁ σ)) (E-App (value-⋯ V σ Vσ))
+─→-⋯ₛ σ Vσ (E-App {a} {_} {b} V) =
+  subst₂ _─→_ refl (sym (dist-↑-⦅⦆-⋯ b a σ)) (E-App (value-⋯ V σ Vσ))
 ─→-⋯ₛ σ Vσ (E-Seq V) = E-Seq (value-⋯ V σ Vσ)
 ─→-⋯ₛ σ Vσ (E-Let {e₁} {e₂} V) =
   subst₂ _─→_ refl (sym (dist-↑-⦅⦆-⋯ e₂ e₁ σ)) (E-Let (value-⋯ V σ Vσ))

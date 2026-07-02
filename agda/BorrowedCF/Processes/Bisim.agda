@@ -62,4 +62,4 @@ U[ ν B₁ B₂ P ] σ =
                          ++ₛ (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₁) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₂)) ))) )
 
 src : 𝐓.Proc 3 → 𝐓.Proc 0
-src P = ν (1 ∷ 1 ∷ []) (1 ∷ []) (⟪ K `drop · (` 0F) ⟫ ∥ P)
+src P = ν (1 ∷ 1 ∷ []) (1 ∷ []) (⟪ K `drop ·¹ (` 0F) ⟫ ∥ P)
