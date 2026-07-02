@@ -2496,6 +2496,19 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
     pushR-Pᴿ = (U[ P T.⋯ₚ 𝐒.rwk ] τᴿ U.⋯ₚ ρ₁ᴿ) U.⋯ₚ ρ₂ᴿ
     pushR-threadEqᴿ : pushR-threadᴿ ≡ U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫
     pushR-threadEqᴿ = threadEqᴿ (E ⋯ᶠ* 𝐒.rwk) ((` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F))
+    -- U-rwk naturality: translating the rwk-renamed residual P is the same as
+    -- translating P and inserting the fresh sync slot (sins ↑* syncs B), because
+    -- P's variables (all images of ρ⁻) avoid the consumed handle, where τ and τᴿ
+    -- agree modulo the insertion by leafσ-rwk-id.
+    Prwkeq : U[ P T.⋯ₚ 𝐒.rwk ] τᴿ ≡ U[ P ] τ U.⋯ₚ (sins B₁ b₁ B₂ {2 + n} ↑* syncs B)
+    Prwkeq =
+        cong (λ p → U[ p T.⋯ₚ 𝐒.rwk ] τᴿ) Peq
+      ■ cong (λ p → U[ p ] τᴿ) (T.fusionₚ P₀ ρ⁻ 𝐒.rwk)
+      ■ U-⋯ₚ P₀
+      ■ U-cong P₀ (λ y → sym (leafσ-rwk-id σ B₁ B₂ B b₁ (ρ⁻ y) (ρ⁻-skip y)))
+      ■ sym (U-σ⋯ P₀)
+      ■ cong (U._⋯ₚ (sins B₁ b₁ B₂ {2 + n} ↑* syncs B)) (sym (U-⋯ₚ P₀))
+      ■ cong (λ p → U[ p ] τ U.⋯ₚ (sins B₁ b₁ B₂ {2 + n} ↑* syncs B)) (sym Peq)
 
     -- ----- the residual bridge (back) -----
     -- Brwk-slide pulls C₁ᴿ's extra φ-drop binder down to the leaf, reducing the
