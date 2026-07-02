@@ -11,7 +11,8 @@ composition is associative.
 % S$;\lstinline{Skip} and $(S_1;S_2);S_3 = S_1;(S_2;S_3)$.
 Thus
 \lstinline{Skip} and \lstinline{;} form a monoid up to type
-equality. The \lstinline{End} type indicates the closing of a session.
+equality. The types \lstinline{Close} and \lstinline{Wait} indicate
+(active and passible) termination of a session.
 
 Sequential composition also interacts with choice in the expected way.
 Appending a continuation to a choice appends it to every branch:
@@ -216,19 +217,19 @@ Now consider a renderer that emits a user panel whose first child is
 computed by another process. We assume that
 \lstinline{renderProfile} and \lstinline{renderMsgArea} render
 one HTML node on a channel of type \lstinline{HtmlChannel; Ret} and
-\lstinline{HtmlChannel; End}, respectively.
+\lstinline{HtmlChannel; Close}, respectively.
 \Cref{lst:rendering-example} contains the code.
 \begin{lstlisting}[numbers=left,float,caption={Rendering example},captionpos=b,label={lst:rendering-example}]
-renderUser : User -> HtmlChannel; End -> Unit
+renderUser : User -> HtmlChannel; Close -> Unit
 renderUser user c =
   let c = select Elem c in
   send "div" &c;
   let c = select Child c in
   fork (lambda() -> renderProfile user &c);
-  (* c : Acq; ChildrenChannel; End *)
+  (* c : Acq; ChildrenChannel; Close *)
   renderRest user (acquire c)
 
-renderRest : User -> ChildrenChannel; End -> Unit
+renderRest : User -> ChildrenChannel; Close -> Unit
 renderRest user c =
   let c = select Child c in
   renderMsgArea user &c;
@@ -386,9 +387,9 @@ lines 5--7:
 \end{lstlisting}
 It translates to the following \thecalculus code.
 \begin{lstlisting}
-(* initially                  c : HtmlChannel; ChildrenChannel; End *)
+(* initially                  c : HtmlChannel; ChildrenChannel; Close *)
 let c1, c2 = rsplit c in   (* c1 : HtmlChannel; Ret *)
-                           (* c2 : Acq; ChildrenChannel; End *)
+                           (* c2 : Acq; ChildrenChannel; Close *)
 fork (lambda() -> renderProfile user c1);
 renderRest user (acquire c2)
 \end{lstlisting}

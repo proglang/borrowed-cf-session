@@ -178,7 +178,7 @@ expression reduction preserves typing.
 \end{proof}
 
 \begin{lemma}[Expression reduction preserves typing]
-  If $\E[1] \Reduces \E[2]$ and 
+  If $\E[1] \EReduce \E[2]$ and
   $\HasType[\Eff[1]]
       {\Ctx}
       {\E[1]}
@@ -235,7 +235,7 @@ process reduction preserves typing.
 
 \clearpage
 \begin{lemma}[Process reduction preserves typing]
-  If $\Proc[1] \Reduces \Proc[2]$ and 
+  If $\Proc[1] \PReduce \Proc[2]$ and
   $\ProcHasType {\Ctx} {\Proc[1]}$
   then 
   $\ProcHasType {\Ctx} {\Proc[2]}$.

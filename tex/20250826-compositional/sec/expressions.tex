@@ -15,8 +15,8 @@ process congruence (\cref{fig:configuration-congruence}).
         \grmor \CWait
         \grmor \CSend
         \grmor \CRecv
-    \\&
-    \grmor \CSplit \grmor \CSSplit
+    \\\grmor&
+     \CSplit \grmor \CSSplit
     \grmor \CDrop \grmor \CAcq
         \grmor \CSelect k
         \grmor \CBranch
@@ -26,7 +26,7 @@ process congruence (\cref{fig:configuration-congruence}).
         \grmor \ESeq\E\E
         \grmor \EPair\E\E
         \grmor \ELetPair{\EVar}{\EVar}{\E}{\E} \\
-      &  \grmor \EInj i \E 
+    \grmor& \EInj i \E
         %\grmor \ECase\E{\EVar}{\E}{\EVar}{\E}
         \grmor \ECase \E {\ECaseBranch* i \EVar \E}
         \grmor \EMu[\EVar] \E
@@ -57,9 +57,9 @@ process congruence (\cref{fig:configuration-congruence}).
               \grmor \EPair \EC\E
               \grmor \EPair \V\EC
               \grmor \EInj{i}\EC
-              \grmor \\
+              \\ \grmor
     & \ELet {\EPair \EVar\EVar}\EC\E
-              \grmor \ECase \E {\ECaseBranch* i \EVar \E}
+              \grmor \ECase \EC {\ECaseBranch* i \EVar \E}
               \tag{Evaluation contexts}
     \\
     \Bind \grmeq&
@@ -113,7 +113,7 @@ process congruence (\cref{fig:configuration-congruence}).
     \RuleExpRedVariantElim \and
     \RuleExpRedCtx
   \end{mathpar}
-  \caption{Expression reduction ($\E \Reduces \E$)}
+  \caption{Expression reduction ($\E \EReduce \E$)}
   \label{fig:expression-reduction}
 \end{figure}
 
@@ -149,7 +149,12 @@ process congruence (\cref{fig:configuration-congruence}).
     \RuleProcRedBind \and
     \RuleProcRedStruct
   \end{mathpar}
-  \caption{Process reduction ($\Proc \Reduces \Proc$)}
+  \caption{Process reduction ($\Proc \PReduce \Proc$)}
   \label{fig:process-reduction}
 \end{figure}
 
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../popl2027.tex"
+%%% End:

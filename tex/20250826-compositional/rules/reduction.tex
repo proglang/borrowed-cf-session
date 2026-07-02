@@ -5,22 +5,22 @@
 
 % E-App
 \DefRule {App} {} {
-  \EApp{(\EAbs \EVar\E)}\V \Reduces \Subs \E\V\EVar
+  \EApp{(\EAbs \EVar\E)}\V \EReduce \Subs \E\V\EVar
 }
 
 % E-Seq
 \DefRule {Seq} {} {
-  \ESeq \V \E \Reduces  \E
+  \ESeq \V \E \EReduce  \E
 }
 
 % E-PairElim
 \DefRule {PairElim} {} {
-  \ELet {\EPair xy} {\EPair uv} \E \Reduces \Subs {\Subs \E vx} uy
+  \ELet {\EPair xy} {\EPair uv} \E \EReduce \Subs {\Subs \E vx} uy
 }
 
 % E-Unfold
 \DefRule {Unfold} {} {
-  \EMu e \Reduces \Subs e {\EMu e} f
+  \EMu e \EReduce \Subs e {\EMu e} f
 }
 
 % E-VariantElim
@@ -28,14 +28,14 @@
   k\in L
 } {
   \ECase [\ell\in L] {(\EInj k \V)} \ECaseBranchDef
-    \Reduces \Subs {\E[k]} \V {\EVar[k]}
+    \EReduce \Subs {\E[k]} \V {\EVar[k]}
 }
 
 % E-Ctx
 \DefRule {Ctx} {
-  \E[1] \Reduces \E[2]
+  \E[1] \EReduce \E[2]
 }{
-  \termcolor{\EC{[\E[1]]}} \Reduces \termcolor{\EC{[\E[2]]}}
+  \termcolor{\EC{[\E[1]]}} \EReduce \termcolor{\EC{[\E[2]]}}
 }
 
 \def\RuleCmdPrefix{RuleProcRed}
@@ -43,9 +43,9 @@
 
 % R-Exp
 \DefRule {Exp} {
-  \E[1] \Reduces \E[2]
+  \E[1] \EReduce \E[2]
 }{
-  \FCapp {\E[1]} \Reduces \FCapp{\E[2]}
+  \FCapp {\E[1]} \PReduce \FCapp{\E[2]}
 }
 
 % R-Discard
@@ -53,42 +53,42 @@
   \EVar \not\in \Fv(\Proc)
 } {
   \PNew {\BSeq{\EVar}{\BindGroup[1]}} {\BindGroup[2]} \Proc
-  \Reduces
+  \PReduce
   \PNew {\BindGroup[1]} {\BindGroup[2]} \Proc
 }
 
 % R-Close
 \DefRule {Close} {} {
   \PNew xy {(\PPar { {\FCapp[1]{\EApp\CTerm x}}} { {\FCapp[2]{\EApp\CWait y}}})} 
-  \Reduces 
+  \PReduce
   \PPar { {\FCapp[1]{\CUnit}}} { {\FCapp[2]{\CUnit}}}
 }
 
 % R-RSplit
 \DefRule {RSplit} {} {
   \PNew {\BSeq{\BindGroup[1]}{\BSeq{\EVar} {\BindGroup[2]}}}{\BindGroup[3]}{ (\PPar{\FCapp{\EApp \CSSplit {x}}}\Proc)}
-  \Reduces 
+  \PReduce
   \PNew {\BPar{\BSeq{\BindGroup[1]}{\EVar[1]}}{\BSeq{\EVar[2]}{\BindGroup[2]}}}{\BindGroup[3]} { ({ \PPar{\FCapp{\EPair{\EVar[1]}{\EVar[2]}}}\Proc})}
 }
 
 % R-LSplit
 \DefRule {LSplit} {} {
   \PNew {\BSeq{\BindGroup[1]}{\BSeq{\EVar} {\BindGroup[2]}}}{\BindGroup[3]}{ (\PPar{\FCapp{\EApp \CSplit {x}}}\Proc)}
-  \Reduces 
+  \PReduce
   \PNew {\BSeq{\BindGroup[1]}{\BSeq{\BSeq{\EVar[1]}{\EVar[2]}} {\BindGroup[2]}}}{\BindGroup[3]} { ({ \PPar{\FCapp{\EPairOrd{\EVar[1]}{\EVar[2]}}}\Proc})}
 }
 
 % R-Drop
 \DefRule {Drop} {} {
   \PNew {\BSeq{\EVar}{\BindGroup[1]}}{\BindGroup[2]}{ (\PPar{\FCapp{\EApp \CDrop {\EVar}}}\Proc)}
-  \Reduces 
+  \PReduce
   \PNew {\BindGroup[1]}{\BindGroup[2]} { ({ \PPar{\FCapp{\CUnit}}\Proc})}
 }
 
 % R-Acquire
 \DefRule {Acquire} {} {
   \PNew {\BPar{\BEmp}{\BSeq{\EVar}{\BindGroup[1]}}}{\BindGroup[2]}{ (\PPar{\FCapp{\EApp \CAcq{\EVar}}}\Proc)}
-  \Reduces 
+  \PReduce
   \PNew {\BSeq{\EVar}{\BindGroup[1]}}{\BindGroup[2]} { ({ \PPar{\FCapp{\EVar}}\Proc})}
 }
 
@@ -98,7 +98,7 @@
   \PNew {\BSeq x{\BindGroup[1]}}{\BSeq y {\BindGroup[2]}}{
     (\PPar{\PPar { {\FCapp[1]{\EApp \CSend {(\EPair\V x)}}}} {
         {\FCapp[2]{\EApp\CRecv y}}}} \Proc)} 
-  \Reduces
+  \PReduce
   \PNew {\BindGroup[1]}{\BindGroup[2]}
   {(\PPar{\PPar{ {\FCapp[1]{\CUnit}}} { {\FCapp[2]{\V}}}} \Proc)}
 }
@@ -111,7 +111,7 @@
         \Proc
     }
   )}
-  \Reduces
+  \PReduce
   \PNew {\BSeq x{\BindGroup[1]}}{\BSeq y {\BindGroup[2]}} {(
     \PPar {\FCapp[1]{x}} {
       \PPar {\FCapp[2]{\EInj k y}}
@@ -123,38 +123,38 @@
 % R-New
 \DefRule {New} {} {
   { {\FCapp{\EApp \CNew \CUnit}}}
-  \Reduces 
+  \PReduce
   \PNew {\BPar{\BEmp}{x}}{\BPar{\BEmp}{y}} { {\FCapp{\EPair xy}}}
 }
 
 % R-Fork
 \DefRule {Fork} {} {
   { {\FCapp{\EApp \CFork \V}}}
-  \Reduces 
+  \PReduce
   \PPar { {\FCapp{\CUnit}}} {\PExp {\EApp\V\CUnit}}
 }
 
 % R-Struct
 \DefRule {Struct} {
   \Proc[1] \equiv \Proc*[1] \\
-  \Proc*[1] \Reduces \Proc*[2] \\
+  \Proc*[1] \PReduce \Proc*[2] \\
   \Proc*[2] \equiv \Proc[2]
 }{
-  \Proc[1] \Reduces \Proc[2]
+  \Proc[1] \PReduce \Proc[2]
 }
 
 % R-Par
 \DefRule {Par} {
-  \Proc[1] \Reduces \Proc[2]
+  \Proc[1] \PReduce \Proc[2]
 }{
-  \PPar {\Proc[1]}{\ProcQ} \Reduces \PPar {\Proc[2]}{\ProcQ}
+  \PPar {\Proc[1]}{\ProcQ} \PReduce \PPar {\Proc[2]}{\ProcQ}
 }
 
 % R-Bind
 \DefRule {Bind} {
-  \Proc[1] \Reduces \Proc[2]
+  \Proc[1] \PReduce \Proc[2]
 }{
-  \PNew{\BindGroup[1]}{\BindGroup[2]} {\Proc[1]} \Reduces \PNew {\BindGroup[1]}{\BindGroup[2]}{\Proc[2]}
+  \PNew{\BindGroup[1]}{\BindGroup[2]} {\Proc[1]} \PReduce \PNew {\BindGroup[1]}{\BindGroup[2]}{\Proc[2]}
 }
 
 %%% Local Variables:
