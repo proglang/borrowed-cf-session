@@ -61,31 +61,31 @@ block2-refute b v ceq
   with a₀ , d₀ , ueq ← Ub-chanTriple (b + 0) * (weaken* ⦃ Kᵣ ⦄ 0 1F) * v
   with () ← proj₂ (⊗-inj (proj₁ (⊗-inj (ceq ■ ueq))))
 
--- The N2 lemma: block-1 image inversion.
+-- A positive nat is a successor (to refine b₁ for the suc-indexed binder lemmas).
+pos⇒suc : ∀ {b} → 1 Nat.≤ b → Σ[ b' ∈ ℕ ] b ≡ suc b'
+pos⇒suc {suc b'} _ = b' , refl
+
+-- The N2 lemma: block-1 image inversion, in the CLEAN count-handle form —
+-- z : 𝔽 (b₁ + 0) with xS ≡ (z ↑ˡ (b₂+0)) ↑ˡ m (exactly count-handle-comᴸ's
+-- handle), plus 1 ≤ b₁.  No subst / no b₁-refinement in the type.
 com-image-block1 : ∀ {m n : ℕ} (b₁ b₂ : ℕ) (σ : m →ₛ n) (Vσ : VSub σ)
   (xS : 𝔽 (b₁ + 0 + (b₂ + 0) + m)) {e₁ e₁′ : Tm (2 + n)}
   → chanTriple (e₁ , 0F , e₁′) ≡ (` xS) ⋯ νσ b₁ b₂ σ
-  → Σ[ b₁' ∈ ℕ ] Σ[ p ∈ b₁ ≡ suc b₁' ] Σ[ z₀ ∈ 𝔽 (suc b₁') ]
-      xS ≡ subst (λ k → 𝔽 (k + 0 + (b₂ + 0) + m)) (sym p)
-             (((z₀ ↑ˡ 0) ↑ˡ (b₂ + 0)) ↑ˡ m)
+  → Σ[ z ∈ 𝔽 (b₁ + 0) ] (1 Nat.≤ b₁) × (xS ≡ (z ↑ˡ (b₂ + 0)) ↑ˡ m)
 com-image-block1 {m} (suc b₁') b₂ σ Vσ xS {e₁} {e₁′} ceq
   with Fin.splitAt (suc b₁' + 0 + (b₂ + 0)) xS in seq
 ... | inj₂ i = ⊥-elim (σreg-mid (Vσ i) (sym ceq))
 ... | inj₁ w
   with Fin.splitAt (suc b₁' + 0) w in weq
 ...   | inj₂ v = ⊥-elim (block2-refute b₂ v ceq)
-...   | inj₁ u = b₁' , refl , z₀ , xSeq
+...   | inj₁ u = u , Nat.s≤s Nat.z≤n , xSeq
   where
-    z₀ : 𝔽 (suc b₁')
-    z₀ = Fin.cast (+-identityʳ (suc b₁')) u
-    z₀↑0≡u : z₀ ↑ˡ 0 ≡ u
-    z₀↑0≡u = toℕ-injective (toℕ-↑ˡ z₀ 0 ■ toℕ-cast (+-identityʳ (suc b₁')) u)
     xS≡w↑ : xS ≡ w ↑ˡ m
     xS≡w↑ = sym (join-splitAt (suc b₁' + 0 + (b₂ + 0)) m xS) ■ cong (join _ m) seq
     w≡u↑ : w ≡ u ↑ˡ (b₂ + 0)
     w≡u↑ = sym (join-splitAt (suc b₁' + 0) (b₂ + 0) w) ■ cong (join _ (b₂ + 0)) weq
-    xSeq : xS ≡ ((z₀ ↑ˡ 0) ↑ˡ (b₂ + 0)) ↑ˡ m
-    xSeq = xS≡w↑ ■ cong (_↑ˡ m) w≡u↑ ■ cong (λ t → (t ↑ˡ (b₂ + 0)) ↑ˡ m) (sym z₀↑0≡u)
+    xSeq : xS ≡ (u ↑ˡ (b₂ + 0)) ↑ˡ m
+    xSeq = xS≡w↑ ■ cong (_↑ˡ m) w≡u↑
 com-image-block1 zero b₂ σ Vσ xS ceq
   with Fin.splitAt (zero + 0 + (b₂ + 0)) xS in seq
 ... | inj₂ i = ⊥-elim (σreg-mid (Vσ i) (sym ceq))
