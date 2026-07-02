@@ -1225,7 +1225,11 @@ U-σ⋯ₛ {n = n} {n′ = n′} (T.ν B₁ B₂ P) {σ} {τ} =
     Ψ : (sB₂ + (sB₁ + (2 + n))) →ₛ (sB₂ + (sB₁ + (2 + n′)))
     Ψ = ((τ ↑* 2) ↑* sB₁) ↑* sB₂
     leaf-eq : (leafσ σ B₁ B₂ ·ₖ Ψ) ≗ leafσ (σ ·ₖ τ) B₁ B₂
-    leaf-eq = {!leaf-eq!}
+    leaf-eq y with Fin.splitAt (sum B₁ + sum B₂) y
+    ... | inj₁ z with Fin.splitAt (sum B₁) z
+    ...   | inj₁ j = {!region1!}
+    ...   | inj₂ k = {!region2!}
+    leaf-eq y | inj₂ i = {!region3!}
 
 U-acq : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
       → {g : Struct m} {b₁ : ℕ} {B₁ B₂ : BindGroup}
