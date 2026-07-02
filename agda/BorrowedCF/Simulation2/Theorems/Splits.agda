@@ -1967,6 +1967,18 @@ sD≤ (a ∷ B₁') {b₁} {B₂} =
   subst (syncs (suc b₁ ∷ B₂) Nat.≤_) (sym (syncs-cons a B₁' (suc b₁) B₂))
     (Nat.≤-trans (sD≤ B₁') (Nat.n≤1+n _))
 
+-- sins turns a weaken by the ungrown handle-group sync count into a weaken by
+-- the grown one (both above the insertion threshold, so shifted by one).
+sins-wk : ∀ (B₁ : BindGroup) (b₁ : ℕ) (B₂ : BindGroup) {N} (v : 𝔽 N) →
+          sins B₁ b₁ B₂ {N} (weaken* ⦃ Kᵣ ⦄ (syncs (B₁ ++ suc b₁ ∷ B₂)) v)
+          ≡ weaken* ⦃ Kᵣ ⦄ (syncs (B₁ ++ 1 ∷ suc b₁ ∷ B₂)) v
+sins-wk B₁ b₁ B₂ {N} v = Fin.toℕ-injective
+  ( sins-toℕ-hi B₁ b₁ B₂ {N} (weaken* ⦃ Kᵣ ⦄ (syncs (B₁ ++ suc b₁ ∷ B₂)) v)
+      (subst (syncs (suc b₁ ∷ B₂) Nat.≤_) (sym (toℕ-weaken*ᵣ (syncs (B₁ ++ suc b₁ ∷ B₂)) v))
+        (Nat.≤-trans (sD≤ B₁) (Nat.m≤m+n (syncs (B₁ ++ suc b₁ ∷ B₂)) (Fin.toℕ v))))
+  ■ cong suc (toℕ-weaken*ᵣ (syncs (B₁ ++ suc b₁ ∷ B₂)) v)
+  ■ sym (toℕ-weaken*ᵣ (syncs (B₁ ++ 1 ∷ suc b₁ ∷ B₂)) v ■ cong (Nat._+ Fin.toℕ v) (syncs-rwk B₁)) )
+
 -- canonₛ-rwk (general): canonₛ on the rwk-grown group, off the consumed handle,
 -- equals the ungrown canonₛ post-composed with the sync-insertion renaming sins.
 canonₛ-rwk : ∀ (B₁ : BindGroup) {N} (cc : UChan N) (b₁ : ℕ) (B₂ : BindGroup)
@@ -2067,6 +2079,48 @@ canonₛ-rwk (a ∷ d ∷ B₁″) {N} (e₁ , x , e₂) b₁ B₂ i i≢
                 ■ cong (a ↑ʳ_) r≡
                 ■ sym (pos-split a (d ∷ B₁″) b₁ B₂) )
 
+
+-- leafσ on the grown group agrees with the ungrown leafσ post-composed with the
+-- sync-insertion renaming (lifted over the B-block binders), away from the handle.
+leafσ-rwk-id : ∀ {m n} (σ : m →ₛ n) (B₁ B₂ B : BindGroup) (b₁ : ℕ)
+               (i : 𝔽 (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)) →
+               i ≢ TR.SplitRenamings.inj B₁ B₂ B {suc b₁ ∷ []} {m} 0F →
+               leafσ σ (B₁ ++ suc b₁ ∷ B₂) B i ⋯ (sins B₁ b₁ B₂ {2 + n} ↑* syncs B)
+               ≡ leafσ σ (B₁ ++ 1 ∷ suc b₁ ∷ B₂) B (TR.SplitRenamings.rwk B₁ B₂ B i)
+leafσ-rwk-id {m} {n} σ B₁ B₂ B b₁ i i≢
+  with Fin.splitAt (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) i in seqo
+... | inj₂ u
+  rewrite leafσ-tail {n = n} σ (B₁ ++ suc b₁ ∷ B₂) B i u seqo
+        | leafσ-tail {n = n} σ (B₁ ++ 1 ∷ suc b₁ ∷ B₂) B (TR.SplitRenamings.rwk B₁ B₂ B i) u
+            (cong (Fin.splitAt (sum (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + sum B))
+               (cong (TR.SplitRenamings.rwk B₁ B₂ B) (sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m) seqo) ■ P3r B₁ B₂ B u)
+            ■ Fin.splitAt-↑ʳ (sum (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + sum B) m u) =
+      sym (⋯-↑*-wk (σ u ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (B₁ ++ suc b₁ ∷ B₂))) (sins B₁ b₁ B₂ {2 + n}) (syncs B))
+    ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)) tCore
+  where
+    tCore : (σ u ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (B₁ ++ suc b₁ ∷ B₂))) ⋯ sins B₁ b₁ B₂ {2 + n}
+            ≡ σ u ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (B₁ ++ 1 ∷ suc b₁ ∷ B₂))
+    tCore = fusion (σ u ⋯ weaken* ⦃ Kᵣ ⦄ 2) (weaken* ⦃ Kᵣ ⦄ (syncs (B₁ ++ suc b₁ ∷ B₂))) (sins B₁ b₁ B₂ {2 + n})
+          ■ ⋯-cong (σ u ⋯ weaken* ⦃ Kᵣ ⦄ 2) (λ v → sins-wk B₁ b₁ B₂ {2 + n} v)
+... | inj₁ db with Fin.splitAt (sum (B₁ ++ suc b₁ ∷ B₂)) db in seqi
+...   | inj₂ w
+  rewrite leafσ-B₁ σ (B₁ ++ suc b₁ ∷ B₂) B i db w seqo seqi
+        | leafσ-B₁ σ (B₁ ++ 1 ∷ suc b₁ ∷ B₂) B (TR.SplitRenamings.rwk B₁ B₂ B i) (sum (B₁ ++ 1 ∷ suc b₁ ∷ B₂) ↑ʳ w) w
+            (cong (Fin.splitAt (sum (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + sum B)) (cong (TR.SplitRenamings.rwk B₁ B₂ B) (sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂)) (sum B)) seqi)) ■ P2r B₁ B₂ B w)
+             ■ Fin.splitAt-↑ˡ (sum (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + sum B) (sum (B₁ ++ 1 ∷ suc b₁ ∷ B₂) ↑ʳ w) m)
+            (Fin.splitAt-↑ʳ (sum (B₁ ++ 1 ∷ suc b₁ ∷ B₂)) (sum B) w) =
+      canonₛ-nat B (K `unit , weaken* ⦃ Kᵣ ⦄ (syncs (B₁ ++ suc b₁ ∷ B₂)) 1F , K `unit) (sins B₁ b₁ B₂ {2 + n}) w
+    ■ cong (λ z → canonₛ B (K `unit , z , K `unit) w) (sins-wk B₁ b₁ B₂ {2 + n} 1F)
+...   | inj₁ d
+  rewrite leafσ-A₁ σ (B₁ ++ suc b₁ ∷ B₂) B i db d seqo seqi
+        | leafσ-A₁ σ (B₁ ++ 1 ∷ suc b₁ ∷ B₂) B (TR.SplitRenamings.rwk B₁ B₂ B i) (drwk B₁ b₁ B₂ d ↑ˡ sum B) (drwk B₁ b₁ B₂ d)
+            (cong (Fin.splitAt (sum (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + sum B)) (cong (TR.SplitRenamings.rwk B₁ B₂ B) (sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂)) (sum B)) seqi)) ■ P1r B₁ B₂ B d)
+             ■ Fin.splitAt-↑ˡ (sum (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + sum B) (drwk B₁ b₁ B₂ d ↑ˡ sum B) m)
+            (Fin.splitAt-↑ˡ (sum (B₁ ++ 1 ∷ suc b₁ ∷ B₂)) (drwk B₁ b₁ B₂ d) (sum B)) =
+      sym (⋯-↑*-wk (canonₛ (B₁ ++ suc b₁ ∷ B₂) (K `unit , 0F , K `unit) d) (sins B₁ b₁ B₂ {2 + n}) (syncs B))
+    ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ (syncs B))
+        (sym (canonₛ-rwk B₁ (K `unit , 0F , K `unit) b₁ B₂ d
+          (λ d≡ → i≢ ((sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂)) (sum B)) seqi)) ■ cong (λ z → (z ↑ˡ sum B) ↑ˡ m) d≡))))
 
 -- The rsplit-grown bind group's Bφ-prefix carries one extra φ-drop binder (the
 -- inserted `1`-block).  That binder slides down past the remaining blocks to the
