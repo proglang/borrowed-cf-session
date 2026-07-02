@@ -613,7 +613,22 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
   with send-app-𝕀 ⊢redexˢ
 ... | refl
   with frames-𝕀 ⊢Fˢ
-... | refl , lpˢ = {! LeftPat lpˢ obtained; next count-squeeze count xS 𝒫ˢ[[]] ≡ 0 + before ⇒ xS≡0F !}
+... | refl , lpˢ = {! STEP-4 ENGINE COMMITTED (RevComConfine / ReverseConfine):
+     • ReverseConfine.count-handle-comᴸ b₁ b₂ γ z : count ((z↑ˡ(b₂+0))↑ˡm) γinner ≡ 1
+       (generic block-1 handle, matches inv-ν γinner definitionally).
+     • RevComConfine.count-plug-add 𝒫ˢ γrˢ xS : count xS 𝒫ˢ[γrˢ] ≡ count xS 𝒫ˢ[[]] + count xS γrˢ.
+     • RevComConfine.before-com-binderᴸ b₁ b₂ γ z₀ (toℕ≢0) : before 0F ((z₀↑ˡ0)↑ˡ(b₂+0)↑ˡm) γinner.
+     • RevComConfine.com-xS-min : LeftPat + ≼ˢ + αβ≼ + count xS γinner≡1 + before y xS γinner
+       + 1≤count xS γrˢ + ¬before y xS γrˢ ⟹ ⊥ (so ¬(xS≠0F), i.e. xS≡0F).
+     REMAINING to close: un-anonymize αβ≼ from `inv-∥ ⊢body`; and extract
+     (N1) ¬u : ¬ Unr (Γ′ xS) from ⊢cS at ⟨s⟩;
+     (N2) the block-1 witness z₀ : 𝔽 (suc b₁') with xS = (z₀↑ˡ0)↑ˡ(b₂+0)↑ˡm, from
+          cSeq : (` xS) ⋯ νσ ≡ chanTriple(*,0F,*) — a νσ-image inversion (only block-1
+          indices map to channel 0F; block-2→1F, m-region→σ-values); this also exposes b₁≥1;
+     (N3) 1 ≤ count xS γrˢ from inv-app ⊢redexˢ + inv-var-count ⊢cS;
+     plus ¬ before 0F xS γrˢ (redex ctx has nothing ;-before the channel).
+     Then z₀≡0F (by-contra via com-xS-min + before-com-binderᴸ) ⇒ close as the b₁=b₂=1
+     path (mirror close-confine ⇒ TR.R-Com ⇒ codomain com-bridge). Step 5 (U-com back-bridge). !}
 -- RU-Choice.  Identical shape to RU-Com (ν, ∥-headed body): same inv-U-ν-∥-shape
 --   + U-ν-singleton collapse; RESIDUAL = frameApp-reflect the select/branch
 --   redexes + `inj wrapping on the codomain, mirroring forward U-choice.
