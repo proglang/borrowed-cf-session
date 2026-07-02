@@ -37,9 +37,9 @@ countTm x (` y) with x Fin.≟ y
 ... | yes _ = 1
 ... | no  _ = 0
 countTm x (K c) = 0
-countTm x (ƛ e) = countTm (suc x) e
+countTm x (ƛ d e) = countTm (suc x) e
 countTm x (μ e) = countTm (suc x) e
-countTm x (e₁ · e₂) = countTm x e₁ + countTm x e₂
+countTm x (e₁ ·⟨ d ⟩ e₂) = countTm x e₁ + countTm x e₂
 countTm x (e₁ ; e₂) = countTm x e₁ + countTm x e₂
 countTm x (e₁ ⊗ e₂) = countTm x e₁ + countTm x e₂
 countTm x (`let e₁ `in e₂) = countTm x e₁ + countTm (suc x) e₂
@@ -57,9 +57,9 @@ countTm-avoid (` y) {ρ} {x} av with x Fin.≟ ρ y
 ... | yes eq = ⊥-elim (av y (sym eq))
 ... | no  _  = refl
 countTm-avoid (K c) av = refl
-countTm-avoid (ƛ e) av = countTm-avoid e (avoid↑ av)
+countTm-avoid (ƛ d e) av = countTm-avoid e (avoid↑ av)
 countTm-avoid (μ e) av = countTm-avoid e (avoid↑ av)
-countTm-avoid (e₁ · e₂) av = cong₂ _+_ (countTm-avoid e₁ av) (countTm-avoid e₂ av)
+countTm-avoid (e₁ ·⟨ d ⟩ e₂) av = cong₂ _+_ (countTm-avoid e₁ av) (countTm-avoid e₂ av)
 countTm-avoid (e₁ ; e₂) av = cong₂ _+_ (countTm-avoid e₁ av) (countTm-avoid e₂ av)
 countTm-avoid (e₁ ⊗ e₂) av = cong₂ _+_ (countTm-avoid e₁ av) (countTm-avoid e₂ av)
 countTm-avoid (`let e₁ `in e₂) av = cong₂ _+_ (countTm-avoid e₁ av) (countTm-avoid e₂ (avoid↑ av))
@@ -211,7 +211,7 @@ conf-Proc : {Γ : Ctx n} {γ : Struct n} {Q : TP.Proc n} {x : 𝔽 n}
           → Γ ; γ ⊢ₚ Q → ¬ Unr (Γ x) → count x γ ≤ countProc x Q
 conf-Proc (TP.TP-Expr ⊢e) ¬u = conf-Tm ⊢e ¬u
 conf-Proc (TP.TP-Par ⊢P ⊢Q) ¬u = +-mono-≤ (conf-Proc ⊢P ¬u) (conf-Proc ⊢Q ¬u)
-conf-Proc {γ = γ} {x = x} (TP.TP-Res {B₁ = B₁} {B₂ = B₂} {Γ₁ = Γ₁} {Γ₂ = Γ₂} N ⊢B₁ ⊢B₂ C C′ ⊢body) ¬u =
+conf-Proc {γ = γ} {x = x} (TP.TP-Res {B₁ = B₁} {B₂ = B₂} N p ⊢B₁ ⊢B₂ {Γ₁ = Γ₁} {Γ₂ = Γ₂} C C′ ⊢body) ¬u =
   ≤-trans (≤-reflexive (sym (countBody-shift B₁ B₂ γ x)))
           (conf-Proc ⊢body ¬u′)
   where
