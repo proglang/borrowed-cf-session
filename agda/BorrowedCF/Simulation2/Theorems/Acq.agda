@@ -1209,11 +1209,55 @@ core-gen {n} D sB₂ x j =
           subst Tm (cong (sB₂ +_) e) (u ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ≡ subst Tm e u ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
     sWk refl u = refl
     aS = assocSwapᵣ sD 1 {2 + n}
+    varˢ : ∀ {mm pp} (σ : mm →ₛ pp) (x : 𝔽 mm) → σ x ≡ (` x) ⋯ σ
+    varˢ σ x = sym (⋯-var x σ)
+    varʳ : ∀ {mm pp} (ρ : mm →ᵣ pp) (x : 𝔽 mm) → (` x) ⋯ ρ ≡ ` (ρ x)
+    varʳ ρ x = ⋯-var x ρ
     swap-collapse : (aS ·ₖ ⦅ K `unit ⦆ₛ) ≗ (⦅ K `unit ⦆ₛ ↑* sD)
     swap-collapse i = {!swap-collapse!}
     wk-swap-collapse : ((weaken* ⦃ Kᵣ ⦄ sB₂ ·ₖ ρb) ·ₖ ⦅ K `unit ⦆ₛ)
                        ≗ (⦅ K `unit ⦆ₛ ·ₖ weaken* ⦃ Kᵣ ⦄ sB₂)
-    wk-swap-collapse v = {!wk-swap-collapse!}
+    wk-swap-collapse v = lhsW v ■ coreW v ■ sym (rhsW v)
+      where
+        lhsW : (w : 𝔽 (suc (sD + (2 + n)))) →
+               ((weaken* ⦃ Kᵣ ⦄ sB₂ ·ₖ ρb) ·ₖ ⦅ K `unit ⦆ₛ) w
+               ≡ ⦅ K `unit ⦆ₛ (ρb (weaken* ⦃ Kᵣ ⦄ sB₂ w))
+        lhsW w =
+            varˢ ((weaken* ⦃ Kᵣ ⦄ sB₂ ·ₖ ρb) ·ₖ ⦅ K `unit ⦆ₛ) w
+          ■ sym (fusion (` w) (weaken* ⦃ Kᵣ ⦄ sB₂ ·ₖ ρb) ⦅ K `unit ⦆ₛ)
+          ■ cong (_⋯ ⦅ K `unit ⦆ₛ) (sym (fusion (` w) (weaken* ⦃ Kᵣ ⦄ sB₂) ρb))
+          ■ cong (λ z → z ⋯ ρb ⋯ ⦅ K `unit ⦆ₛ) (varʳ (weaken* ⦃ Kᵣ ⦄ sB₂) w)
+          ■ cong (_⋯ ⦅ K `unit ⦆ₛ) (varʳ ρb (weaken* ⦃ Kᵣ ⦄ sB₂ w))
+          ■ ⋯-var (ρb (weaken* ⦃ Kᵣ ⦄ sB₂ w)) ⦅ K `unit ⦆ₛ
+        rhsW : (w : 𝔽 (suc (sD + (2 + n)))) →
+               (⦅ K `unit ⦆ₛ ·ₖ weaken* ⦃ Kᵣ ⦄ sB₂) w ≡ (⦅ K `unit ⦆ₛ w) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+        rhsW w =
+            varˢ (⦅ K `unit ⦆ₛ ·ₖ weaken* ⦃ Kᵣ ⦄ sB₂) w
+          ■ sym (fusion (` w) ⦅ K `unit ⦆ₛ (weaken* ⦃ Kᵣ ⦄ sB₂))
+          ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB₂) (⋯-var w ⦅ K `unit ⦆ₛ)
+        coreW : (w : 𝔽 (suc (sD + (2 + n)))) →
+                ⦅ K `unit ⦆ₛ (ρb (weaken* ⦃ Kᵣ ⦄ sB₂ w)) ≡ (⦅ K `unit ⦆ₛ w) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+        coreW zero = cong ⦅ K `unit ⦆ₛ pf0
+          where
+            toℕW0 : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sB₂ (zero {sD + (2 + n)})) ≡ sB₂
+            toℕW0 = toℕ-weaken*ᵣ sB₂ (zero {sD + (2 + n)}) ■ Nat.+-identityʳ sB₂
+            pf0 : ρb (weaken* ⦃ Kᵣ ⦄ sB₂ (zero {sD + (2 + n)})) ≡ zero
+            pf0 = Fin.toℕ-injective
+              ( toℕ-assoc-mid sB₂ 1 (weaken* ⦃ Kᵣ ⦄ sB₂ zero)
+                  (Nat.≤-reflexive (sym toℕW0))
+                  (subst (Nat._< sB₂ + 1) (sym toℕW0) (Nat.≤-reflexive (sym (Nat.+-comm sB₂ 1))))
+              ■ cong (Nat._∸ sB₂) toℕW0 ■ Nat.n∸n≡0 sB₂ )
+        coreW (suc k) = cong ⦅ K `unit ⦆ₛ pfS
+          where
+            toℕWs : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sB₂ (suc k)) ≡ suc (sB₂ + Fin.toℕ k)
+            toℕWs = toℕ-weaken*ᵣ sB₂ (suc k) ■ Nat.+-suc sB₂ (Fin.toℕ k)
+            pfS : ρb (weaken* ⦃ Kᵣ ⦄ sB₂ (suc k)) ≡ suc (weaken* ⦃ Kᵣ ⦄ sB₂ k)
+            pfS = Fin.toℕ-injective
+              ( toℕ-assoc-ge sB₂ 1 (weaken* ⦃ Kᵣ ⦄ sB₂ (suc k))
+                  (subst (sB₂ + 1 Nat.≤_) (sym toℕWs)
+                    (Nat.≤-trans (Nat.≤-reflexive (Nat.+-comm sB₂ 1))
+                                 (Nat.s≤s (Nat.m≤m+n sB₂ (Fin.toℕ k)))))
+              ■ toℕWs ■ cong suc (sym (toℕ-weaken*ᵣ sB₂ k)) )
     pure : cD ⋯ weaken* ⦃ Kᵣ ⦄ sB₂ ⋯ ρa ⋯ ρb ⋯ ⦅ K `unit ⦆ₛ
            ≡ cD ⋯ (⦅ K `unit ⦆ₛ ↑* sD) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
     pure =
