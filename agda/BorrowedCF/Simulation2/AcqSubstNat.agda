@@ -72,3 +72,15 @@ subst₂-cancelₖ refl refl ϕ = refl
 subst-subst-symᵏ : ∀ {a b} (p : a ≡ b) {t : Tm b} →
                    subst Tm p (subst Tm (sym p) t) ≡ t
 subst-subst-symᵏ refl = refl
+
+-- A substitution that fixes a variable y (τ y ≡ ` y′) still fixes it — as a
+-- variable — after being lifted past m inert binders and applied to the
+-- weakened index.  This is the substitution analogue of `varΘ` for the case
+-- where the flag sits in the lifted-identity region.
+varΘ-fixₛ : (m : ℕ) {a b : ℕ} (τ : a →ₛ b) (y : 𝔽 a) (y′ : 𝔽 b) →
+            τ y ≡ ` y′ →
+            (τ ↑* m) (weaken* ⦃ Kᵣ ⦄ m y) ≡ ` (weaken* ⦃ Kᵣ ⦄ m y′)
+varΘ-fixₛ zero    τ y y′ fy = fy
+varΘ-fixₛ (suc m) τ y y′ fy =
+    cong (_⋯ weakenᵣ) (varΘ-fixₛ m τ y y′ fy)
+  ■ ⋯-var (weaken* ⦃ Kᵣ ⦄ m y′) weakenᵣ

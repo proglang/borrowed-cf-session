@@ -41,7 +41,7 @@ open import BorrowedCF.Simulation2.TranslationProperties using (VChan; chanTripl
 open import BorrowedCF.Simulation2.SplitConfine using (acq-confine)
 open import BorrowedCF.Simulation2.AcqSubstNat
   using (subst₂→ₖ; subst-⋯ₚ-codₖ; subst-⋯ₚ-domₖ; liftCastₖ; subst-flipₖ
-        ; subst-⋯ᵏ; subst-⋯-codᵏ; subst₂-cancelₖ; subst-subst-symᵏ)
+        ; subst-⋯ᵏ; subst-⋯-codᵏ; subst₂-cancelₖ; subst-subst-symᵏ; varΘ-fixₛ)
 open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
 open import Relation.Binary.Definitions using (tri<; tri≈; tri>)
@@ -1231,7 +1231,10 @@ U-σ⋯ₛ {n = n} {n′ = n′} (T.ν B₁ B₂ P) {σ} {τ} =
             sym (⋯-↑*-wk (canonₛ B₁ (K `unit , 0F , K `unit) j) ((τ ↑* 2) ↑* sB₁) sB₂)
           ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
               (canonₛ-natₛ B₁ (K `unit) 0F (K `unit) (τ ↑* 2) 0F refl j)
-    ...   | inj₂ k = {!region2!}
+    ...   | inj₂ k =
+            canonₛ-natₛ B₂ (K `unit) (weaken* ⦃ Kᵣ ⦄ sB₁ 1F) (K `unit)
+              ((τ ↑* 2) ↑* sB₁) (weaken* ⦃ Kᵣ ⦄ sB₁ 1F)
+              (varΘ-fixₛ sB₁ (τ ↑* 2) 1F 1F (⋯-var 0F weakenᵣ)) k
     leaf-eq y | inj₂ i =
         sym (⋯-↑*-wk (σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sB₁) ((τ ↑* 2) ↑* sB₁) sB₂)
       ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
