@@ -13,7 +13,7 @@ import BorrowedCF.Context.Substitution as 𝐂
 infix 4 _─→_ _⋯→_
 
 data _─→_ {n} : Tm n → Tm n → Set where
-  E-App : (V : Value e₂) → (ƛ e₁) · e₂ ─→ e₁ ⋯ ⦅ e₂ ⦆
+  E-App : (V : Value e₂) → (ƛ d e₁) ·⟨ d ⟩ e₂ ─→ e₁ ⋯ ⦅ e₂ ⦆
   E-Seq : (V : Value e₁) → e₁ ; e₂ ─→ e₂
   E-Let : Value e₁ → `let e₁ `in e₂ ─→ e₂ ⋯ ⦅ e₁ ⦆
   E-PairElim : (V₁ : Value e₁) (V₂ : Value e₂) → `let⊗ (e₁ ⊗ e₂) `in e ─→ e ⋯ ⦅ wk e₁ ⦆ ⋯ ⦅ e₂ ⦆
@@ -61,7 +61,7 @@ module _ (Γ-S : ChanCx Γ) where
   inv-arr : Value e → Γ ; γ ⊢ e ∶ T ⟨ a ⟩→ U ∣ ϵ →
     ∃[ T′ ] ∃[ U′ ] ∃[ ϵ ] T ≃ T′ × U ≃ U′ × ϵ ≤ϵ Arr.eff a ×
       ((∃[ c ] e ≡ K c × ⊢ c ∶ T′ ⟨ record a { eff = ϵ } ⟩→ U′)
-        ⊎ (∃[ e′ ] e ≡ ƛ e′ × T′ ⸴ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) ⊢ e′ ∶ U′ ∣ ϵ))
+        ⊎ (∃[ e′ ] e ≡ ƛ (Arr.dir a) e′ × T′ ⸴ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) ⊢ e′ ∶ U′ ∣ ϵ))
   inv-arr V (T-Const c) = _ , _ , _ , ≃-refl , ≃-refl , ≤ϵ-refl , inj₁ (_ , refl , c)
   inv-arr V (T-Var x T-eq) = case sym T-eq ■ Γ-S x .proj₂ of λ()
   inv-arr V (T-Abs Γ-unr Γ-mob e) = _ , _ , _ , ≃-refl , ≃-refl , ≤ϵ-refl , inj₂ (_ , refl , e)
@@ -197,7 +197,7 @@ module _ (Γ-S : ChanCx Γ) where
         e′ ⊢⋯ₛ ⊢subₛ (e₁′ ⊢⋯ ⊢weakenᵣ _) (λ U → 𝐂.allCx-⋯ `_ (unr×value⇒unrCx U V₁ e₁′))
                                          (λ m → 𝐂.allCx-⋯ `_ (mobile×value⇒mobCx m V₁ e₁′))
            ⊢⋯ₛ ⊢subₛ e₂′ (λ U → unr×value⇒unrCx U V₂ e₂′) (λ m → mobile×value⇒mobCx m V₂ e₂′)
-  preservation′ (T-AbsRec {γ = γ} {a = a} Γ-unr a-unr e) E-Unfold =
+  preservation′ (T-AbsRec {γ = γ} {a = a} {T = T} {U = U} Γ-unr a-unr e) E-Unfold =
     let γ≤ = begin
            (` 0F) ∥ (` 1F) ∥ 𝐂.wk (𝐂.wk γ) 𝐂.⋯ 𝐂.⦅ γ ⦆ 𝐂.↑    ≡⟨⟩
            (` 0F) ∥ 𝐂.wk γ ∥ (𝐂.wk (𝐂.wk γ) 𝐂.⋯ 𝐂.⦅ γ ⦆ 𝐂.↑)  ≡⟨ cong ((` 0F) ∥ 𝐂.wk γ ∥_) (𝐂.⋯-↑-wk (𝐂.wk γ) 𝐂.⦅ γ ⦆ₛ) ⟨
@@ -208,7 +208,8 @@ module _ (Γ-S : ChanCx Γ) where
            join 𝟙 (` 0F) (𝐂.wk γ)                             ≡⟨ cong (λ d → join d _ _) (Arr.ω⇒𝟙 a a-unr) ⟨
            join (Arr.dir a) (` 0F) (𝐂.wk γ) ∎
     in
-    T-Abs {a = a} (const Γ-unr) (const (UnrCx⇒MobCx Γ-unr))
+    subst (λ d → Γ ; γ ⊢ ƛ d _ ∶ T ⟨ a ⟩→ U ∣ ℙ) (a .Arr.ω⇒𝟙 a-unr)
+      $ T-Abs {a = a} (const Γ-unr) (const (UnrCx⇒MobCx Γ-unr))
       $ T-Weaken γ≤
       $ e ⊢⋯ₛ ⊢↑ (⊢subₛ (T-AbsRec Γ-unr a-unr e) (const Γ-unr) (const (UnrCx⇒MobCx Γ-unr)))
   preservation′ (T-Case p/s {γ₁} {γ₂} e e₁ e₂) (E-SumElim {i = i} V)
@@ -230,14 +231,14 @@ module _ (Γ-S : ChanCx Γ) where
 
   preservation : Γ ; γ ⊢ e ∶ T ∣ ϵ → e ⋯→ e′ → Γ ; γ ⊢ e′ ∶ T ∣ ϵ
   preservation e (E-□ x) = preservation′ e x
-  preservation e E@(E-Ctx (□· _) E₁) with e
+  preservation e E@(E-Ctx (app₁ e₂ d V?) E₁) with e
   ... | T-AppUnr   x ≤ₐ e₁ e₂  = T-AppUnr   x ≤ₐ (preservation e₁ E₁) e₂
   ... | T-AppLin   x ≤ₐ e₁ e₂  = T-AppLin   x ≤ₐ (preservation e₁ E₁) e₂
   ... | T-AppLeft  x ≤ₐ e₁ e₂  = T-AppLeft  x ≤ₐ (preservation e₁ E₁) e₂
   ... | T-AppRight x ≤ₐ e₁ e₂  = T-AppRight x ≤ₐ (preservation e₁ E₁) e₂
   ... | T-Weaken   γ≤ e′    = T-Weaken  γ≤ (preservation e′ E)
   ... | T-Conv     eq ϵ≤ e′ = T-Conv    eq ϵ≤ (preservation e′ E)
-  preservation e E@(E-Ctx (V₁ ·□) E₂) with e
+  preservation e E@(E-Ctx (app₂ e₁ d V?) E₂) with e
   ... | T-AppUnr   x ≤ₐ e₁ e₂  = T-AppUnr   x ≤ₐ e₁ (preservation e₂ E₂)
   ... | T-AppLin   x ≤ₐ e₁ e₂  = T-AppLin   x ≤ₐ e₁ (preservation e₂ E₂)
   ... | T-AppLeft  x ≤ₐ e₁ e₂  = T-AppLeft  x ≤ₐ e₁ (preservation e₂ E₂)
@@ -280,52 +281,52 @@ module _ (Γ-S : ChanCx Γ) where
   progress (T-AbsRec Γ-unr a-unr e) = inj₂ (inj₂ (_ , E-□ E-Unfold))
   progress (T-AppUnr unr-a ≤ₐ e₁ e₂)
     with progress e₁
-  ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (□· _) e₁↛))
-  ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (□· _) e₁→))
+  ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (app₁ _ 𝟙 λ()) e₁↛))
+  ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (app₁ _ 𝟙 λ()) e₁→))
   ... | inj₁ V-e₁
     with progress e₂
-  ... | inj₂ (inj₁ e₂↛)       = inj₂ (inj₁ (E-Ctx (V-e₁ ·□) e₂↛))
-  ... | inj₂ (inj₂ (_ , e₂→)) = inj₂ (inj₂ (_ , E-Ctx (V-e₁ ·□) e₂→))
+  ... | inj₂ (inj₁ e₂↛)       = inj₂ (inj₁ (E-Ctx (app₂ _ 𝟙 λ _ → V-e₁) e₂↛))
+  ... | inj₂ (inj₂ (_ , e₂→)) = inj₂ (inj₂ (_ , E-Ctx (app₂ _ 𝟙 λ _ → V-e₁) e₂→))
   ... | inj₁ V-e₂
     with inv-arr V-e₁ e₁
-  ... | (_ , _ , _ , _ , _ , _ , inj₁ (c , refl , x)) = inj₂ (inj₁ (E-□ (_ , _ , V-e₂ , refl)))
-  ... | (_ , _ , _ , _ , _ , _ , inj₂ (e , refl , x)) = inj₂ (inj₂ (_ , E-□ (E-App V-e₂)))
+  ... | (_ , _ , _ , _ , _ , _ , inj₁ (c , refl , x)) = inj₂ (inj₁ (E-□ (_ , 𝟙 , _ , V-e₂ , refl)))
+  ... | (_ , _ , _ , _ , _ , _ , inj₂ (e , refl , x)) = inj₂ (inj₁ (E-□ (_ , 𝟙 , _ , V-e₂ , refl)))
   progress (T-AppLin lin-a ≤ₐ e₁ e₂)
     with progress e₁
-  ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (□· _) e₁↛))
-  ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (□· _) e₁→))
+  ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (app₁ _ 𝟙 λ()) e₁↛))
+  ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (app₁ _ 𝟙 λ()) e₁→))
   ... | inj₁ V-e₁
     with progress e₂
-  ... | inj₂ (inj₁ e₂↛)       = inj₂ (inj₁ (E-Ctx (V-e₁ ·□) e₂↛))
-  ... | inj₂ (inj₂ (_ , e₂→)) = inj₂ (inj₂ (_ , E-Ctx (V-e₁ ·□) e₂→))
+  ... | inj₂ (inj₁ e₂↛)       = inj₂ (inj₁ (E-Ctx (app₂ _ 𝟙 λ _ → V-e₁) e₂↛))
+  ... | inj₂ (inj₂ (_ , e₂→)) = inj₂ (inj₂ (_ , E-Ctx (app₂ _ 𝟙 λ _ → V-e₁) e₂→))
   ... | inj₁ V-e₂
     with inv-arr V-e₁ e₁
-  ... | (_ , _ , _ , _ , _ , _ , inj₁ (c , refl , x)) = inj₂ (inj₁ (E-□ (_ , _ , V-e₂ , refl)))
-  ... | (_ , _ , _ , _ , _ , _ , inj₂ (e , refl , x)) = inj₂ (inj₂ (_ , E-□ (E-App V-e₂)))
+  ... | (_ , _ , _ , _ , _ , _ , inj₁ (c , refl , x)) = inj₂ (inj₁ (E-□ (_ , 𝟙 , _ , V-e₂ , refl)))
+  ... | (_ , _ , _ , _ , _ , _ , inj₂ (e , refl , x)) = inj₂ (inj₁ (E-□ (_ , 𝟙 , _ , V-e₂ , refl)))
   progress (T-AppLeft a-L ≤ₐ e₁ e₂)
-    with progress e₁
-  ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (□· _) e₁↛))
-  ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (□· _) e₁→))
-  ... | inj₁ V-e₁
     with progress e₂
-  ... | inj₂ (inj₁ e₂↛)       = inj₂ (inj₁ (E-Ctx (V-e₁ ·□) e₂↛))
-  ... | inj₂ (inj₂ (_ , e₂→)) = inj₂ (inj₂ (_ , E-Ctx (V-e₁ ·□) e₂→))
-  ... | inj₁ V-e₂
-    with inv-arr V-e₁ e₁
-  ... | (_ , _ , _ , _ , _ , _ , inj₁ (c , refl , x)) = inj₂ (inj₁ (E-□ (_ , _ , V-e₂ , refl)))
-  ... | (_ , _ , _ , _ , _ , _ , inj₂ (e , refl , x)) = inj₂ (inj₂ (_ , E-□ (E-App V-e₂)))
+  ... | inj₂ (inj₁ e↛)       = inj₂ (inj₁ (E-Ctx (app₂ _ L (λ{ (inj₁ ()); (inj₂ ()) })) e↛))
+  ... | inj₂ (inj₂ (_ , e→)) = inj₂ (inj₂ (_ , E-Ctx (app₂ _ L (λ{ (inj₁ ()); (inj₂ ()) })) e→))
+  ... | inj₁ V₂
+    with progress e₁
+  ... | inj₂ (inj₁ e↛)       = inj₂ (inj₁ (E-Ctx (app₁ _ L (λ _ → V₂)) e↛))
+  ... | inj₂ (inj₂ (_ , e→)) = inj₂ (inj₂ (_ , E-Ctx (app₁ _ L (λ _ → V₂)) e→))
+  ... | inj₁ V₁
+    with inv-arr V₁ e₁
+  ... | (_ , _ , _ , _ , _ , _ , inj₁ (c , refl , x)) = inj₂ (inj₁ (E-□ (K c , L , _ , V₂ , refl)))
+  ... | (_ , _ , _ , _ , _ , _ , inj₂ (e , refl , x)) = inj₂ (inj₁ (E-□ (_ , L , _ , V₂ , refl)))
   progress (T-AppRight a-R ≤ₐ e₁ e₂)
     with progress e₁
-  ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (□· _) e₁↛))
-  ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (□· _) e₁→))
+  ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (app₁ _ R λ()) e₁↛))
+  ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (app₁ _ R λ()) e₁→))
   ... | inj₁ V-e₁
     with progress e₂
-  ... | inj₂ (inj₁ e₂↛)       = inj₂ (inj₁ (E-Ctx (V-e₁ ·□) e₂↛))
-  ... | inj₂ (inj₂ (_ , e₂→)) = inj₂ (inj₂ (_ , E-Ctx (V-e₁ ·□) e₂→))
+  ... | inj₂ (inj₁ e₂↛)       = inj₂ (inj₁ (E-Ctx (app₂ _ R λ _ → V-e₁) e₂↛))
+  ... | inj₂ (inj₂ (_ , e₂→)) = inj₂ (inj₂ (_ , E-Ctx (app₂ _ R λ _ → V-e₁) e₂→))
   ... | inj₁ V-e₂
     with inv-arr V-e₁ e₁
-  ... | (_ , _ , _ , _ , _ , _ , inj₁ (c , refl , x)) = inj₂ (inj₁ (E-□ (_ , _ , V-e₂ , refl)))
-  ... | (_ , _ , _ , _ , _ , _ , inj₂ (e , refl , x)) = inj₂ (inj₂ (_ , E-□ (E-App V-e₂)))
+  ... | (_ , _ , _ , _ , _ , _ , inj₁ (c , refl , x)) = inj₂ (inj₁ (E-□ (_ , R , _ , V-e₂ , refl)))
+  ... | (_ , _ , _ , _ , _ , _ , inj₂ (e , refl , x)) = inj₂ (inj₁ (E-□ (_ , R , _ , V-e₂ , refl)))
   progress (T-Pair p/s seq⇒pure e₁ e₂)
     with progress e₁
   ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (□⊗ _) e₁↛))

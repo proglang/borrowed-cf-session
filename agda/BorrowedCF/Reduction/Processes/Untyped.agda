@@ -18,12 +18,12 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
   RU-Exp : e₁ ⋯→ e₂ → ⟪ e₁ ⟫ ─→ₚ ⟪ e₂ ⟫
 
   RU-Fork : (F : Frame* n) (V : Value e) →
-    ⟪ F [ K `fork · e ]* ⟫
+    ⟪ F [ K `fork ·¹ e ]* ⟫
       ─→ₚ
-    ⟪ F [ * ]* ⟫ ∥ ⟪ e · * ⟫
+    ⟪ F [ * ]* ⟫ ∥ ⟪ e ·¹ * ⟫
 
   RU-New : (F : Frame* n) →
-    ⟪ F [ K (`new s) · * ]* ⟫
+    ⟪ F [ K (`new s) ·¹ * ]* ⟫
       ─→ₚ
     ν (φ acq (φ acq ⟪
       (F ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [
@@ -32,12 +32,12 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
     ⟫ ))
 
   RU-LSplit : (F : Frame* (2 + n)) →
-    ν ( ⟪ F [ K (`lsplit s) · 𝓒[ e₁ × 0F × e₂ ] ]* ⟫ ∥ P )
+    ν ( ⟪ F [ K (`lsplit s) ·¹ 𝓒[ e₁ × 0F × e₂ ] ]* ⟫ ∥ P )
       ─→ₚ
     ν ( ⟪ F [ 𝓒[ e₁ × 0F × * ] ⊗ 𝓒[ * × 0F × e₂ ] ]* ⟫ ∥ P )
 
   RU-RSplit : (F : Frame* (2 + n)) →
-    ν (⟪ F [ K (`rsplit s) · 𝓒[ e₁ × 0F × e₂ ] ]* ⟫ ∥ P)
+    ν (⟪ F [ K (`rsplit s) ·¹ 𝓒[ e₁ × 0F × e₂ ] ]* ⟫ ∥ P)
       ─→ₚ
     ν (φ drop (
       ⟪ (F ⋯ᶠ* weakenᵣ) [
@@ -49,13 +49,13 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
     ))
 
   RU-Drop : (F : Frame* (1 + n)) {x : 𝔽 n} →
-    φ drop (⟪ F [ K `drop · 𝓒[ e × suc x × ` 0F ] ]* ⟫ ∥ P)
+    φ drop (⟪ F [ K `drop ·¹ 𝓒[ e × suc x × ` 0F ] ]* ⟫ ∥ P)
       ─→ₚ
     φ acq (⟪ F [ * ]* ⟫ ∥ P)
 
   RU-Acquire : (F : Frame* (3 + n)) →
     ν (φ acq (
-      ⟪ F [ K `acq · 𝓒[ ` 0F × 1F × e ] ]* ⟫ ∥ P
+      ⟪ F [ K `acq ·¹ 𝓒[ ` 0F × 1F × e ] ]* ⟫ ∥ P
     ))
       ─→ₚ
     ν (φ done (
@@ -63,20 +63,20 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
     ))
 
   RU-Close : ∀ (F₁ F₂ : Frame* n) {e₁ e₁′ e₂ e₂′} →
-    ν ( ⟪ (F₁ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ‼) · 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
-      ∥ ⟪ (F₂ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ⁇) · 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫ )
+    ν ( ⟪ (F₁ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ‼) ·¹ 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
+      ∥ ⟪ (F₂ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ⁇) ·¹ 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫ )
       ─→ₚ
     ⟪ F₁ [ * ]* ⟫ ∥ ⟪ F₂ [ * ]* ⟫
 
   RU-Com : ∀ (F₁ F₂ : Frame* (2 + n)) (V : Value e) {e₁ e₁′ e₂ e₂′} →
-    ν (⟪ F₁ [ K `send · (e ⊗ 𝓒[ e₁ × 0F × e₁′ ]) ]* ⟫
-      ∥ ( ⟪ F₂ [ K `recv · 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫ ∥ P ) )
+    ν (⟪ F₁ [ K `send ·¹ (e ⊗ 𝓒[ e₁ × 0F × e₁′ ]) ]* ⟫
+      ∥ ( ⟪ F₂ [ K `recv ·¹ 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫ ∥ P ) )
       ─→ₚ
     ν ( ⟪ F₁ [ * ]* ⟫ ∥ ( ⟪ F₂ [ e ]* ⟫ ∥ P ) )
 
   RU-Choice : ∀ (F₁ F₂ : Frame* (2 + n)) k {e₁ e₁′ e₂ e₂′} →
-    ν ( ⟪ F₁ [ K (`select k) · 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
-      ∥ ( ⟪ F₂ [ K `branch · 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫
+    ν ( ⟪ F₁ [ K (`select k) ·¹ 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
+      ∥ ( ⟪ F₂ [ K `branch ·¹ 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫
       ∥ P
     ))
       ─→ₚ
