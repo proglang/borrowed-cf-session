@@ -34,6 +34,7 @@ open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯)
 open import BorrowedCF.Simulation2.RevComConfine
   using (frames-𝕀; leftPat-¬before; leftPat-pullOut-∥-≼)
 open import BorrowedCF.Context.Pattern using (LeftPat; CxPat; _[_]𝓅)
+open import BorrowedCF.Simulation2.Confine using (count; ≼⇒count≤; count-self; count-join-Dir; count-join-PS)
 open import BorrowedCF.Simulation2.Theorems.Com
   using (fn-send-dom; pair₂-handle; send-handle-≃msg-app; ⊗≃₂)
 import Data.Sum as Sum
@@ -44,7 +45,7 @@ import BorrowedCF.Reduction.Processes.Untyped as UR
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive
   using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
-open import BorrowedCF.Context using (Ctx; Struct; biasedDir)
+open import BorrowedCF.Context using (Ctx; Struct; biasedDir; _∶_≼_; join)
 open TP using (_;_⊢ₚ_; inv-⟪⟫; inv-∥; inv-ν; ⊢-≋; bindCtx⇒chanCtx)
 
 ------------------------------------------------------------------------
@@ -270,6 +271,38 @@ send-app-𝕀 (T-AppUnr _ ≤ₐ ⊢fn _) = 𝕀≤⇒≡ (subst (_≤ϵ _) (sen
 send-app-𝕀 (T-AppLin _ ≤ₐ ⊢fn _) = 𝕀≤⇒≡ (subst (_≤ϵ _) (send-fn-eff-𝕀 ⊢fn) ≤ₐ)
 send-app-𝕀 (T-Conv _ ≤ d) = 𝕀≤⇒≡ (subst (_≤ϵ _) (send-app-𝕀 d) ≤)
 send-app-𝕀 (T-Weaken _ d) = send-app-𝕀 d
+
+-- N1: the send channel argument (typed at a msg session type) is non-Unr.
+send-chan-nonUnr : ∀ {N} {Γ : Ctx N} {α : Struct N} {x : 𝔽 N} {Tx ϵ} {Tᵐ : 𝕋}
+  → Γ ; α ⊢ ` x ∶ Tx ∣ ϵ → ⟨ msg ‼ Tᵐ ⟩ ≃ Tx → ¬ Unr (Γ x)
+send-chan-nonUnr ⊢x msg≃ u with unr-≃ (≃-sym (≃-trans msg≃ (proj₁ (inv-` ⊢x)))) u
+... | ⟨ () ⟩
+
+invApp-arg : ∀ {N} {Γ : Ctx N} {α β : Struct N} {e₁ e₂ a T U ϵ}
+  → InvApp Γ α β e₁ e₂ a T U ϵ → ∃[ ϵ' ] Γ ; β ⊢ e₂ ∶ T ∣ ϵ'
+invApp-arg (T-AppUnr  _ _ y) = _ , y
+invApp-arg (T-AppLin  _ _ y) = _ , y
+invApp-arg (T-AppLeft _ _ y) = _ , y
+invApp-arg (T-AppRight _ _ y) = _ , y
+
+send-arg-count-chain : ∀ {N} {Γ : Ctx N} {γ : Struct N} {aS : Tm N} {x : 𝔽 N}
+  {a} {α β : Struct N} {T ϵ}
+  → ¬ Unr (Γ x) → Γ ∶ join (Arr.dir a) β α ≼ γ → Γ ; β ⊢ (aS ⊗ (` x)) ∶ T ∣ ϵ → 1 Nat.≤ count x γ
+send-arg-count-chain {γ = γ} {aS = aS} {x = x} {a = a} {α = α} {β = β} ¬u join≼ ⊢arg
+  with p/s , α' , β' , _ , _ , _ , _ , join≼' , _ , _ , _ , _ , ⊢x ← inv-⊗ ⊢arg =
+  let x≼β' = proj₂ (inv-` ⊢x)
+      1≤β' = subst (Nat._≤ count x β') (count-self x) (≼⇒count≤ ¬u x≼β')
+      β'≤joinβ = subst (count x β' Nat.≤_) (sym (count-join-PS p/s x α' β')) (Nat.m≤n+m (count x β') (count x α'))
+      β'≤β = Nat.≤-trans β'≤joinβ (≼⇒count≤ ¬u join≼')
+      β≤joinγ = subst (count x β Nat.≤_) (sym (count-join-Dir (Arr.dir a) x β α)) (Nat.m≤m+n (count x β) (count x α))
+      β≤γ = Nat.≤-trans β≤joinγ (≼⇒count≤ ¬u join≼)
+  in Nat.≤-trans 1≤β' (Nat.≤-trans β'≤β β≤γ)
+
+send-arg-count : ∀ {N} {Γ : Ctx N} {γ : Struct N} {aS : Tm N} {x : 𝔽 N} {U ϵ}
+  → ¬ Unr (Γ x) → Γ ; γ ⊢ K `send ·¹ (aS ⊗ (` x)) ∶ U ∣ ϵ → 1 Nat.≤ count x γ
+send-arg-count ¬u ⊢redex
+  with aa , _ , _ , _ , join≼ , _ , _ , invapp ← inv-· ⊢redex =
+  send-arg-count-chain {a = aa} ¬u join≼ (proj₂ (invApp-arg invapp))
 
 -- WEAK reverse simulation, UP TO ≋ on the input, MULTI-STEP on the typed side
 -- (the exact mirror of the forward sim→ ⊎ codomain in Theorems.agda).  The
