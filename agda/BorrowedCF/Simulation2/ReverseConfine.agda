@@ -128,6 +128,49 @@ count-handle-closeᴸ b₁ b₂ {m} γ = cong₂ _+_ (cong₂ _+_ partA partB) p
     partC = count-weaken*-lo (sum C₁ + sum C₂) γ (Fin.zero {b₁ + 0 + sum C₂ + m}) (s≤s z≤n)
 
 -- ───────────────────────────────────────────────────────────────────────────
+-- count-handle-comᴸ : the GENERIC block-1 handle version of count-handle-closeᴸ.
+-- For the RU-Com send endpoint the consumed handle is some block-1 index z, not
+-- necessarily 0F (νσ maps EVERY block-1 index to chanTriple(*,0F,*)).  The inner
+-- binder context of `ν (b₁ ∷ []) (b₂ ∷ []) _` counts any block-1 handle exactly
+-- once.  Same three-part decomposition as count-handle-closeᴸ but with a free
+-- z : 𝔽 (sum (b₁ ∷ [])) in the first block.
+count-handle-comᴸ : ∀ (b₁ b₂ : ℕ) {m} (γ : Struct m) (z : 𝔽 (b₁ + 0)) →
+  let C₁ = b₁ ∷ []
+      C₂ = b₂ ∷ [] in
+  count ((z ↑ˡ (b₂ + 0)) ↑ˡ m)
+    ( (structBinder C₁ 𝐂S.⋯ᵣ 𝐂S.wkʳ (sum C₂) 𝐂S.⋯ᵣ 𝐂S.wkʳ m)
+    ∥ (structBinder C₂ 𝐂S.⋯ᵣ 𝐂S.wkˡ (sum C₁) 𝐂S.⋯ᵣ 𝐂S.wkʳ m)
+    ∥ (γ 𝐂S.⋯ 𝐂S.weaken* ⦃ 𝐂S.Kᵣ ⦄ (sum C₁ + sum C₂)) ) ≡ 1
+count-handle-comᴸ b₁ b₂ {m} γ z = cong₂ _+_ (cong₂ _+_ partA partB) partC
+  where
+    C₁ : BindGroup
+    C₁ = b₁ ∷ []
+    C₂ : BindGroup
+    C₂ = b₂ ∷ []
+    z<C₁ : Fin.toℕ z < sum C₁
+    z<C₁ = Fin.toℕ<n z
+    partA : count ((z ↑ˡ sum C₂) ↑ˡ m) (structBinder C₁ 𝐂S.⋯ᵣ 𝐂S.wkʳ (sum C₂) 𝐂S.⋯ᵣ 𝐂S.wkʳ m) ≡ 1
+    partA = count-⋯ᵣwkʳ-↑ˡ m (structBinder C₁ 𝐂S.⋯ᵣ 𝐂S.wkʳ (sum C₂)) (z ↑ˡ sum C₂)
+          ■ count-⋯ᵣwkʳ-↑ˡ (sum C₂) (structBinder C₁) z
+          ■ count-structBinder-lt C₁ z z<C₁
+    partB : count ((z ↑ˡ sum C₂) ↑ˡ m) (structBinder C₂ 𝐂S.⋯ᵣ 𝐂S.wkˡ (sum C₁) 𝐂S.⋯ᵣ 𝐂S.wkʳ m) ≡ 0
+    partB = count-⋯ᵣwkʳ-↑ˡ m (structBinder C₂ 𝐂S.⋯ᵣ 𝐂S.wkˡ (sum C₁)) (z ↑ˡ sum C₂)
+          ■ cong (count (z ↑ˡ sum C₂)) (wkˡ≡weaken* (sum C₁) (structBinder C₂))
+          ■ count-weaken*-lo (sum C₁) (structBinder C₂) (z ↑ˡ sum C₂) z↑<C₁
+      where
+        z↑<C₁ : Fin.toℕ (z ↑ˡ sum C₂) < sum C₁
+        z↑<C₁ = subst (_< sum C₁) (sym (toℕ-↑ˡ z (sum C₂))) z<C₁
+        wkˡ≡weaken* : ∀ b {k} (δ : Struct k) → δ 𝐂S.⋯ᵣ 𝐂S.wkˡ b ≡ δ 𝐂S.⋯ 𝐂S.weaken* ⦃ 𝐂S.Kᵣ ⦄ b
+        wkˡ≡weaken* b δ = 𝐂S.⋯-cong δ (λ x → sym (𝐂S.weaken*~wkˡ ⦃ 𝐂S.Kᵣ ⦄ b x))
+    partC : count ((z ↑ˡ sum C₂) ↑ˡ m) (γ 𝐂S.⋯ 𝐂S.weaken* ⦃ 𝐂S.Kᵣ ⦄ (sum C₁ + sum C₂)) ≡ 0
+    partC = count-weaken*-lo (sum C₁ + sum C₂) γ ((z ↑ˡ sum C₂) ↑ˡ m) hdl<
+      where
+        hdl< : Fin.toℕ ((z ↑ˡ sum C₂) ↑ˡ m) < sum C₁ + sum C₂
+        hdl< = subst (_< sum C₁ + sum C₂) (sym (toℕ-↑ˡ (z ↑ˡ sum C₂) m))
+                 (subst (_< sum C₁ + sum C₂) (sym (toℕ-↑ˡ z (sum C₂)))
+                   (<-≤-trans z<C₁ (m≤m+n (sum C₁) (sum C₂))))
+
+-- ───────────────────────────────────────────────────────────────────────────
 -- count-handle-close (R) : the `end ⁇` endpoint consumes the block-2 handle,
 -- at flat position sum (suc b₁ ∷ []) (= the first index of block 2).  Mirrors
 -- HandleCount.count-handle-γinner with the consumed handle in the SECOND block.
