@@ -122,3 +122,71 @@ descend-abs : ∀ {m n} {AD} ⦃ _ : Join AD ⦄ {Γ₁ : Ctx m} {Γ₂ : Ctx n}
 descend-abs {ρ = ρ} inj-ρ pre dd A γa ≼b =
   descend-absX inj-ρ pre dd A γa (dom (A 𝐂.⋯ (ρ ↑))) (dom-⋯-InImage A) ⊆-refl ≼b
 
+Inj-↑↑ : {ϕ : m →ᵣ n} → 𝐂.Inj ϕ → 𝐂.Inj (ϕ ↑ ↑)
+Inj-↑↑ inj = Inj-↑ (Inj-↑ inj)
+
+wk²↓ : (γ : Struct m) (Z : Subset (suc (suc m))) →
+  𝐂.wk (𝐂.wk γ) ↓ Z ≡ 𝐂.wk (𝐂.wk (γ ↓ Vec.tail (Vec.tail Z)))
+wk²↓ γ Z = wk↓' (𝐂.wk γ) Z ■ cong 𝐂.wk (wk↓' γ (Vec.tail Z))
+
+⋯²-↑-wk : (γ : Struct m) {ρ : m →ᵣ n} →
+  𝐂.wk (𝐂.wk γ) 𝐂.⋯ (ρ ↑ ↑) ≡ 𝐂.wk (𝐂.wk (γ 𝐂.⋯ ρ))
+⋯²-↑-wk γ {ρ} = sym (𝐂.⋯-↑-wk (𝐂.wk γ) (ρ ↑)) ■ cong 𝐂.wk (sym (𝐂.⋯-↑-wk γ ρ))
+
+tail²-∁ : (Z : Subset (suc (suc n))) →
+  Vec.tail (Vec.tail (∁ Z)) ≡ ∁ (Vec.tail (Vec.tail Z))
+tail²-∁ Z = cong Vec.tail (tail-∁ Z) ■ tail-∁ (Vec.tail Z)
+
+descend-abs2 : ∀ {m n} {AD} ⦃ _ : Join AD ⦄ {Γ₁ : Ctx m} {Γ₂ : Ctx n} {T₀ T₁ : 𝕋} {ρ : m →ᵣ n} →
+  𝐂.Inj ρ → ρ 𝐂.Preserves[ Unr ] Γ₁ ⇐ Γ₂ →
+  (dd : AD) (Fr : Struct (suc (suc m))) (Fr′ : Struct (suc (suc n)))
+  (A : Struct (suc (suc m))) (γa : Struct n) →
+  Fr 𝐂.⋯ (ρ ↑ ↑) ≡ Fr′ →
+  dom Fr′ ⊆ (⁅ fzero ⁆ ∪ ⁅ fsuc fzero ⁆) →
+  (T₁ ⸴ T₀ ⸴ Γ₂) ∶ (A 𝐂.⋯ (ρ ↑ ↑)) ≼ join dd Fr′ (𝐂.wk (𝐂.wk γa)) →
+  ∃[ γr ] ((T₁ ⸴ T₀ ⸴ Γ₁) ∶ A ≼ join dd Fr (𝐂.wk (𝐂.wk γr))) × (Γ₂ ∶ (γr 𝐂.⋯ ρ) ≼ γa)
+descend-abs2 {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} {T₁ = T₁} {ρ = ρ} inj-ρ pre dd Fr Fr′ A γa Frinv Frdom ≼b
+  = γr , part1 , part2
+  where
+  Xtrue : Subset (suc (suc n))
+  Xtrue = dom (A 𝐂.⋯ (ρ ↑ ↑))
+  fr2 : Subset (suc (suc n))
+  fr2 = ⁅ fzero ⁆ ∪ ⁅ fsuc fzero ⁆
+  Xd0 : Subset (suc (suc n))
+  Xd0 = Xtrue ∪ fr2
+  img : ∀ {y} → y ∈ dom (γa ↓ Vec.tail (Vec.tail Xd0)) → InImage ρ y
+  img {y} y∈ with x∈p∪q⁻ Xtrue fr2 (∈tail {X = Xd0} (∈tail {X = Vec.tail Xd0} (↓-dom γa (Vec.tail (Vec.tail Xd0)) y∈)))
+  ... | inj₁ ssy∈ with dom-⋯-InImage A ssy∈
+  ...   | fsuc (fsuc w) , eq = w , suc-injective (suc-injective eq)
+  img {y} y∈ | inj₂ ssy∈fr with x∈p∪q⁻ ⁅ fzero ⁆ ⁅ fsuc fzero ⁆ ssy∈fr
+  ...   | inj₁ e0 = contradiction (x∈⁅y⁆⇒x≡y fzero e0) λ ()
+  ...   | inj₂ e1 = contradiction (suc-injective (x∈⁅y⁆⇒x≡y (fsuc fzero) e1)) λ ()
+  pim = preimage {ϕ = ρ} (γa ↓ Vec.tail (Vec.tail Xd0)) img
+  γr = proj₁ pim
+  eqr : γr 𝐂.⋯ ρ ≡ γa ↓ Vec.tail (Vec.tail Xd0)
+  eqr = proj₂ pim
+  Fr-eq : Fr′ ↓ Xd0 ≡ Fr′
+  Fr-eq = ↓-identity-⊆ Fr′ (⊆-trans Frdom (q⊆p∪q Xtrue fr2))
+  rhs-img : (join dd Fr (𝐂.wk (𝐂.wk γr))) 𝐂.⋯ (ρ ↑ ↑) ≡ join dd Fr′ (𝐂.wk (𝐂.wk (γr 𝐂.⋯ ρ)))
+  rhs-img = join-⋯ {ϕ = ρ ↑ ↑} dd Fr (𝐂.wk (𝐂.wk γr)) ■ cong₂ (join dd) Frinv (⋯²-↑-wk γr)
+  rhs-eq : (join dd Fr′ (𝐂.wk (𝐂.wk γa))) ↓ Xd0 ≡ (join dd Fr (𝐂.wk (𝐂.wk γr))) 𝐂.⋯ (ρ ↑ ↑)
+  rhs-eq = ↓-join dd Fr′ (𝐂.wk (𝐂.wk γa)) Xd0
+           ■ (cong₂ (join dd) Fr-eq (wk²↓ γa Xd0 ■ cong (λ z → 𝐂.wk (𝐂.wk z)) (sym eqr)) ■ sym rhs-img)
+  lhs-eq : (A 𝐂.⋯ (ρ ↑ ↑)) ↓ Xd0 ≡ A 𝐂.⋯ (ρ ↑ ↑)
+  lhs-eq = ↓-identity-⊆ (A 𝐂.⋯ (ρ ↑ ↑)) (p⊆p∪q fr2)
+  part1 : (T₁ ⸴ T₀ ⸴ Γ₁) ∶ A ≼ join dd Fr (𝐂.wk (𝐂.wk γr))
+  part1 = ≼-⋯⁻¹ {α = A} {β = join dd Fr (𝐂.wk (𝐂.wk γr))} {ϕ = ρ ↑ ↑}
+            (Inj-↑↑ inj-ρ)
+            (λ {x} → ↑ᵣ-preserves-⇐ {ρ = ρ ↑} {Γ₁ = T₀ ⸴ Γ₁} {Γ₂ = T₀ ⸴ Γ₂} {T₀ = T₁}
+                       (λ {x'} → ↑ᵣ-preserves-⇐ {ρ = ρ} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} pre {x'}) {x})
+            (subst₂ ((T₁ ⸴ T₀ ⸴ Γ₂) ∶_≼_) lhs-eq rhs-eq (↓-mono-≼ {X = Xd0} ≼b))
+  wk²-eq : (𝐂.wk (𝐂.wk γa)) ↓ ∁ Xtrue ≡ 𝐂.wk (𝐂.wk (γa ↓ ∁ (Vec.tail (Vec.tail Xtrue))))
+  wk²-eq = wk²↓ γa (∁ Xtrue) ■ cong (λ z → 𝐂.wk (𝐂.wk (γa ↓ z))) (tail²-∁ Xtrue)
+  unr-true : AllCx Unr Γ₂ (γa ↓ ∁ (Vec.tail (Vec.tail Xtrue)))
+  unr-true = un-wk-Unr (un-wk-Unr (subst (AllCx Unr (T₁ ⸴ T₀ ⸴ Γ₂)) wk²-eq
+               (allCx-join↓-proj₂ dd (∁ Xtrue) (≼⇒extra-Unr ≼b))))
+  unr-part : AllCx Unr Γ₂ (γa ↓ ∁ (Vec.tail (Vec.tail Xd0)))
+  unr-part = ↓-⊆ γa (∁⊆ (tail⊆ (tail⊆ (p⊆p∪q {p = Xtrue} fr2)))) unr-true
+  part2 : Γ₂ ∶ (γr 𝐂.⋯ ρ) ≼ γa
+  part2 = subst (Γ₂ ∶_≼ γa) (sym eqr) (↓-strip≼ γa unr-part)
+
