@@ -33,6 +33,7 @@ open import BorrowedCF.Simulation2.InvFrame using (strengthen-frame; inv-app; in
 open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯)
 open import BorrowedCF.Simulation2.RevComConfine
   using (frames-𝕀; leftPat-¬before; leftPat-pullOut-∥-≼)
+open import BorrowedCF.Simulation2.RevComImage using (com-image-block1)
 open import BorrowedCF.Context.Pattern using (LeftPat; CxPat; _[_]𝓅)
 open import BorrowedCF.Simulation2.Confine using (count; ≼⇒count≤; count-self; count-join-Dir; count-join-PS)
 open import BorrowedCF.Simulation2.Theorems.Com
@@ -646,22 +647,17 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
   with send-app-𝕀 ⊢redexˢ
 ... | refl
   with frames-𝕀 ⊢Fˢ
-... | refl , lpˢ = {! STEP-4 ENGINE COMMITTED (RevComConfine / ReverseConfine):
-     • ReverseConfine.count-handle-comᴸ b₁ b₂ γ z : count ((z↑ˡ(b₂+0))↑ˡm) γinner ≡ 1
-       (generic block-1 handle, matches inv-ν γinner definitionally).
-     • RevComConfine.count-plug-add 𝒫ˢ γrˢ xS : count xS 𝒫ˢ[γrˢ] ≡ count xS 𝒫ˢ[[]] + count xS γrˢ.
-     • RevComConfine.before-com-binderᴸ b₁ b₂ γ z₀ (toℕ≢0) : before 0F ((z₀↑ˡ0)↑ˡ(b₂+0)↑ˡm) γinner.
-     • RevComConfine.com-xS-min : LeftPat + ≼ˢ + αβ≼ + count xS γinner≡1 + before y xS γinner
-       + 1≤count xS γrˢ + ¬before y xS γrˢ ⟹ ⊥ (so ¬(xS≠0F), i.e. xS≡0F).
-     REMAINING to close: un-anonymize αβ≼ from `inv-∥ ⊢body`; and extract
-     (N1) ¬u : ¬ Unr (Γ′ xS) from ⊢cS at ⟨s⟩;
-     (N2) the block-1 witness z₀ : 𝔽 (suc b₁') with xS = (z₀↑ˡ0)↑ˡ(b₂+0)↑ˡm, from
-          cSeq : (` xS) ⋯ νσ ≡ chanTriple(*,0F,*) — a νσ-image inversion (only block-1
-          indices map to channel 0F; block-2→1F, m-region→σ-values); this also exposes b₁≥1;
-     (N3) 1 ≤ count xS γrˢ from inv-app ⊢redexˢ + inv-var-count ⊢cS;
-     plus ¬ before 0F xS γrˢ (redex ctx has nothing ;-before the channel).
-     Then z₀≡0F (by-contra via com-xS-min + before-com-binderᴸ) ⇒ close as the b₁=b₂=1
-     path (mirror close-confine ⇒ TR.R-Com ⇒ codomain com-bridge). Step 5 (U-com back-bridge). !}
+... | refl , lpˢ
+  with com-image-block1 b₁ b₂ σ Vσ xS cSeq
+... | b₁' , refl , z₀ , refl = {! STEP 4/5 (RU-Com).  N2 (com-image-block1) has
+     refined b₁ ≡ suc b₁' and xS ≡ ((z₀ ↑ˡ 0) ↑ˡ (b₂ + 0)) ↑ˡ m (the exact
+     block-1 handle shape count-handle-comᴸ / before-com-binderᴸ expect).
+     N1 = send-chan-nonUnr ⊢cS msg≃Tx : ¬ Unr (Γ′-S xS).
+     N3 = send-arg-count (N1) ⊢redexˢ : 1 ≤ count xS γrˢ.
+     REMAINING: un-anonymize αβ≼ from inv-∥ ⊢body; ¬ Unr (Γ′-S 0F) (block-1 tip is
+     a New session, non-Skips); ¬ before 0F xS γrˢ (leftPat-¬before on lpˢ);
+     then z₀ ≡ 0F by-contra via com-xS-min (count-handle-comᴸ + before-com-binderᴸ)
+     ⇒ xS ≡ 0F ⇒ close as the b₁=b₂=1 path (R-Com + U-com back-bridge, step 5). !}
 -- RU-Choice.  Identical shape to RU-Com (ν, ∥-headed body): same inv-U-ν-∥-shape
 --   + U-ν-singleton collapse; RESIDUAL = frameApp-reflect the select/branch
 --   redexes + `inj wrapping on the codomain, mirroring forward U-choice.
