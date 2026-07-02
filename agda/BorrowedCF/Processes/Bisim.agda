@@ -38,8 +38,9 @@ _++ₛ_ : ∀ {a b N} → (a →ₛ N) → (b →ₛ N) → (a + b →ₛ N)
 _++ₛ_ {a} σ₁ σ₂ i = [ σ₁ , σ₂ ]′ (Fin.splitAt a i)
 
 Ub[_] : (b : ℕ) → UChan n → b →ₛ n
-Ub[ suc b ] (e₁ , c , e₂) zero = 𝐔.𝓒[ e₁ × c × * ]
-Ub[ suc b ] (e₁ , c , e₂) (suc x) = Ub[ b ] (* , c , e₂) x
+Ub[ 1 ] (e₁ , c , e₂) zero = 𝐔.𝓒[ e₁ × c × e₂ ]
+Ub[ suc (suc b) ] (e₁ , c , e₂) zero = 𝐔.𝓒[ e₁ × c × * ]
+Ub[ suc (suc b) ] (e₁ , c , e₂) (suc x) = Ub[ suc b ] (* , c , e₂) x
 
 UB[_] : (B : 𝐓.BindGroup) → UChan n → ((sum B →ₛ syncs B + n) → 𝐔.Proc (syncs B + n)) → 𝐔.Proc n
 UB[ [] ] c f = f λ()
@@ -59,3 +60,6 @@ U[ ν B₁ B₂ P ] σ =
         (λ σ₁ → UB[ B₂ ] (* , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , *)
           (λ σ₂ → U[ P ] ( ((λ i → σ₁ i ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₂)) ++ₛ σ₂)
                          ++ₛ (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₁) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₂)) ))) )
+
+src : 𝐓.Proc 3 → 𝐓.Proc 0
+src P = ν (1 ∷ 1 ∷ []) (1 ∷ []) (⟪ K `drop · (` 0F) ⟫ ∥ P)
