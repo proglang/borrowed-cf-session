@@ -38,6 +38,7 @@ open import BorrowedCF.Simulation2.BlockPerm
 open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
+open import Data.List.Properties using (++-assoc)
 open import BorrowedCF.Simulation2.RsplitTransport
   using (⋯-subst₂; ⋯ₚ-subst₂; subst-Tm-uip; toℕ-subst-cod; toℕ-subst₂ᵣ)
 open import BorrowedCF.Simulation2.FrameRename
@@ -2239,6 +2240,87 @@ handle-L-rwk (a ∷ d ∷ B₁″) {N} e₁ x e₂ b₁ B₂ =
     t   = proj₁ (canonₛ-handle (d ∷ B₁″) (` 0F) (suc x) (wk e₂) b₁ B₂)
     pL = +-suc sB N ■ cong (_+ N) (sym (syncs-cons a (d ∷ B₁″) (suc b₁) B₂))
     pR = +-suc sBᴿ N ■ cong (_+ N) (sym (syncs-cons a (d ∷ B₁″) 1 (suc b₁ ∷ B₂)))
+
+ss-Tm : ∀ {x y z : ℕ} (p : x ≡ y) (q : y ≡ z) (t : Tm x) → subst Tm q (subst Tm p t) ≡ subst Tm (p ■ q) t
+ss-Tm refl refl t = refl
+
+subst-`v : ∀ {p q} (e : p ≡ q) (v : 𝔽 p) → subst Tm e (` v) ≡ ` (subst 𝔽 e v)
+subst-`v refl v = refl
+
+-- rsplit grown-handle R-slot: the residual suc b₁-channel's R-slot (prefix B₁++[1],
+-- carried to the C₁ᴿ scope by ++-assoc) = ungrown handle's R-slot ⋯ sins.
+handle-R-rwk : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (b₁ : ℕ) (B₂ : BindGroup) →
+  subst Tm (cong (λ z → syncs z + N) (++-assoc B₁ (1 ∷ []) (suc b₁ ∷ B₂)))
+    (proj₁ (proj₂ (canonₛ-handle (B₁ ++ 1 ∷ []) e₁ x e₂ b₁ B₂)))
+  ≡ proj₁ (proj₂ (canonₛ-handle B₁ e₁ x e₂ b₁ B₂)) ⋯ sins B₁ b₁ B₂ {N}
+handle-R-rwk [] {N} e₁ x e₂ zero     []       = refl
+handle-R-rwk [] {N} e₁ x e₂ (suc b₁) []       = refl
+handle-R-rwk [] {N} e₁ x e₂ zero     (c′ ∷ B) =
+    cong (subst Tm (cong suc (+-suc sB' N))) (subst-`v (+-suc sB' (suc N)) (weaken* ⦃ Kᵣ ⦄ sB' 0F))
+  ■ subst-`v (cong suc (+-suc sB' N)) (subst 𝔽 (+-suc sB' (suc N)) (weaken* ⦃ Kᵣ ⦄ sB' 0F))
+  ■ cong `_ (Fin.toℕ-injective (toℕVL ■ sym toℕVR))
+  ■ sym (cong (_⋯ sins [] zero (c′ ∷ B) {N}) (subst-`v (+-suc sB' N) (weaken* ⦃ Kᵣ ⦄ sB' 0F)))
+  where
+    toℕ-subst𝔽 : ∀ {a c} (e : a ≡ c) (y : 𝔽 a) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
+    toℕ-subst𝔽 refl y = refl
+    sB' = syncs (c′ ∷ B)
+    toℕVL : Fin.toℕ (subst 𝔽 (cong suc (+-suc sB' N)) (subst 𝔽 (+-suc sB' (suc N)) (weaken* ⦃ Kᵣ ⦄ sB' 0F))) ≡ sB'
+    toℕVL = toℕ-subst𝔽 (cong suc (+-suc sB' N)) _ ■ toℕ-subst𝔽 (+-suc sB' (suc N)) _
+          ■ toℕ-weaken*ᵣ sB' 0F ■ Nat.+-identityʳ sB'
+    w : 𝔽 (suc sB' + N)
+    w = subst 𝔽 (+-suc sB' N) (weaken* ⦃ Kᵣ ⦄ sB' 0F)
+    wN : Fin.toℕ w ≡ sB'
+    wN = toℕ-subst𝔽 (+-suc sB' N) (weaken* ⦃ Kᵣ ⦄ sB' 0F) ■ toℕ-weaken*ᵣ sB' 0F ■ Nat.+-identityʳ sB'
+    toℕVR : Fin.toℕ (sins [] zero (c′ ∷ B) {N} w) ≡ sB'
+    toℕVR = toℕ-subst-cod (+-suc (suc sB') N) (weakenᵣ ↑* suc sB') w
+          ■ toℕ-↑*-lt weakenᵣ (suc sB') w (subst (Nat._< suc sB') (sym wN) (Nat.n<1+n sB'))
+          ■ wN
+handle-R-rwk [] {N} e₁ x e₂ (suc b₁) (c′ ∷ B) =
+    cong (subst Tm (cong suc (+-suc (syncs (c′ ∷ B)) N))) (subst-Kunit (+-suc (syncs (c′ ∷ B)) (suc N)))
+  ■ subst-Kunit (cong suc (+-suc (syncs (c′ ∷ B)) N))
+  ■ sym (cong (_⋯ sins [] (suc b₁) (c′ ∷ B)) (subst-Kunit (+-suc (syncs (c′ ∷ B)) N)))
+handle-R-rwk (a ∷ []) {N} e₁ x e₂ b₁ B₂ =
+    massage
+  ■ cong (subst Tm (+-suc sBᴿ N)) (handle-R-rwk [] (` 0F) (suc x) (wk e₂) b₁ B₂)
+  ■ sym ( cong (_⋯ sins (a ∷ []) b₁ B₂ {N}) (subst-Tm-uip (+-suc sB N) pL t)
+        ■ ⋯-subst₂ pL pR t ρ
+        ■ subst-Tm-uip pR (+-suc sBᴿ N) (t ⋯ ρ) )
+  where
+    sB   = syncs ([] ++ suc b₁ ∷ B₂)
+    sBᴿ' = syncs (([] ++ 1 ∷ []) ++ suc b₁ ∷ B₂)
+    sBᴿ  = syncs ([] ++ 1 ∷ suc b₁ ∷ B₂)
+    T'   = proj₁ (proj₂ (canonₛ-handle ([] ++ 1 ∷ []) (` 0F) (suc x) (wk e₂) b₁ B₂))
+    t    = proj₁ (proj₂ (canonₛ-handle [] (` 0F) (suc x) (wk e₂) b₁ B₂))
+    ρ    = sins [] b₁ B₂ {suc N}
+    castB' = cong (λ z → syncs z + suc N) (++-assoc [] (1 ∷ []) (suc b₁ ∷ B₂))
+    castA  = cong (λ z → syncs z + N) (++-assoc (a ∷ []) (1 ∷ []) (suc b₁ ∷ B₂))
+    pL = +-suc sB N ■ cong (_+ N) (sym (syncs-cons a [] (suc b₁) B₂))
+    pR = +-suc sBᴿ N ■ cong (_+ N) (sym (syncs-cons a [] 1 (suc b₁ ∷ B₂)))
+    massage : subst Tm castA (subst Tm (+-suc sBᴿ' N) T') ≡ subst Tm (+-suc sBᴿ N) (subst Tm castB' T')
+    massage = ss-Tm (+-suc sBᴿ' N) castA T'
+            ■ subst-Tm-uip (+-suc sBᴿ' N ■ castA) (castB' ■ +-suc sBᴿ N) T'
+            ■ sym (ss-Tm castB' (+-suc sBᴿ N) T')
+handle-R-rwk (a ∷ d ∷ B₁″) {N} e₁ x e₂ b₁ B₂ =
+    massage
+  ■ cong (subst Tm (+-suc sBᴿ N)) (handle-R-rwk (d ∷ B₁″) (` 0F) (suc x) (wk e₂) b₁ B₂)
+  ■ sym ( cong (_⋯ sins (a ∷ d ∷ B₁″) b₁ B₂ {N}) (subst-Tm-uip (+-suc sB N) pL t)
+        ■ ⋯-subst₂ pL pR t ρ
+        ■ subst-Tm-uip pR (+-suc sBᴿ N) (t ⋯ ρ) )
+  where
+    sB   = syncs ((d ∷ B₁″) ++ suc b₁ ∷ B₂)
+    sBᴿ' = syncs (((d ∷ B₁″) ++ 1 ∷ []) ++ suc b₁ ∷ B₂)
+    sBᴿ  = syncs ((d ∷ B₁″) ++ 1 ∷ suc b₁ ∷ B₂)
+    T'   = proj₁ (proj₂ (canonₛ-handle ((d ∷ B₁″) ++ 1 ∷ []) (` 0F) (suc x) (wk e₂) b₁ B₂))
+    t    = proj₁ (proj₂ (canonₛ-handle (d ∷ B₁″) (` 0F) (suc x) (wk e₂) b₁ B₂))
+    ρ    = sins (d ∷ B₁″) b₁ B₂ {suc N}
+    castB' = cong (λ z → syncs z + suc N) (++-assoc (d ∷ B₁″) (1 ∷ []) (suc b₁ ∷ B₂))
+    castA  = cong (λ z → syncs z + N) (++-assoc (a ∷ d ∷ B₁″) (1 ∷ []) (suc b₁ ∷ B₂))
+    pL = +-suc sB N ■ cong (_+ N) (sym (syncs-cons a (d ∷ B₁″) (suc b₁) B₂))
+    pR = +-suc sBᴿ N ■ cong (_+ N) (sym (syncs-cons a (d ∷ B₁″) 1 (suc b₁ ∷ B₂)))
+    massage : subst Tm castA (subst Tm (+-suc sBᴿ' N) T') ≡ subst Tm (+-suc sBᴿ N) (subst Tm castB' T')
+    massage = ss-Tm (+-suc sBᴿ' N) castA T'
+            ■ subst-Tm-uip (+-suc sBᴿ' N ■ castA) (castB' ■ +-suc sBᴿ N) T'
+            ■ sym (ss-Tm castB' (+-suc sBᴿ N) T')
 
 comm3 : ∀ x y z → x + (y + z) ≡ y + (x + z)
 comm3 x y z = sym (+-assoc x y z) ■ cong (_+ z) (Nat.+-comm x y) ■ +-assoc y x z
