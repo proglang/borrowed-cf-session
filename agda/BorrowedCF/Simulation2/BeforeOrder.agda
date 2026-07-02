@@ -107,3 +107,90 @@ count-≼-eq ¬u (≼-cong-∥ p q) = cong₂ _+_ (count-≼-eq ¬u p) (count-�
 
 mem-≼ᵇ : ¬ Unr (Γ x) → Γ ∶ α ≼ β → x ∈ₘ β → x ∈ₘ α
 mem-≼ᵇ {x = x} {α = α} {β = β} ¬u le = mem-resp {x = x} {β} {α} (sym (count-≼-eq ¬u le))
+
+
+-- ── before is preserved by a single ≈′ step (forward), both leaves non-Unr. ──
+before-resp-eq1 : ¬ Unr (Γ x) → ¬ Unr (Γ y)
+                → Γ ∶ α ≈′ β → before x y α → before x y β
+before-resp-eq1 ¬ux ¬uy (;′-assoc {α = a} {β = b} {γ = c}) (inj₁ (x∈ab , y∈c)) with mem-seqInv {α = a} {b} x∈ab
+... | inj₁ x∈a = inj₁ (x∈a , mem-seqR {α = b} {c} y∈c)
+... | inj₂ x∈b = inj₂ (inj₂ (inj₁ (x∈b , y∈c)))
+before-resp-eq1 ¬ux ¬uy (;′-assoc {α = a} {β = b} {γ = c}) (inj₂ (inj₁ (inj₁ (x∈a , y∈b)))) = inj₁ (x∈a , mem-seqL {α = b} {c} y∈b)
+before-resp-eq1 ¬ux ¬uy (;′-assoc {α = a} {β = b} {γ = c}) (inj₂ (inj₁ (inj₂ (inj₁ ba)))) = inj₂ (inj₁ ba)
+before-resp-eq1 ¬ux ¬uy (;′-assoc {α = a} {β = b} {γ = c}) (inj₂ (inj₁ (inj₂ (inj₂ bb)))) = inj₂ (inj₂ (inj₂ (inj₁ bb)))
+before-resp-eq1 ¬ux ¬uy (;′-assoc {α = a} {β = b} {γ = c}) (inj₂ (inj₂ bc)) = inj₂ (inj₂ (inj₂ (inj₂ bc)))
+before-resp-eq1 ¬ux ¬uy (;′-cong₁ st) (inj₁ (x∈a , y∈b)) = inj₁ (mem-eq1 ¬ux st x∈a , y∈b)
+before-resp-eq1 ¬ux ¬uy (;′-cong₁ st) (inj₂ (inj₁ ba)) = inj₂ (inj₁ (before-resp-eq1 ¬ux ¬uy st ba))
+before-resp-eq1 ¬ux ¬uy (;′-cong₁ st) (inj₂ (inj₂ bb)) = inj₂ (inj₂ bb)
+before-resp-eq1 ¬ux ¬uy (;′-cong₂ st) (inj₁ (x∈a , y∈b)) = inj₁ (x∈a , mem-eq1 ¬uy st y∈b)
+before-resp-eq1 ¬ux ¬uy (;′-cong₂ st) (inj₂ (inj₁ ba)) = inj₂ (inj₁ ba)
+before-resp-eq1 ¬ux ¬uy (;′-cong₂ st) (inj₂ (inj₂ bb)) = inj₂ (inj₂ (before-resp-eq1 ¬ux ¬uy st bb))
+before-resp-eq1 ¬ux ¬uy (∥′-unit {α = a}) (inj₁ ba) = ba
+before-resp-eq1 ¬ux ¬uy (∥′-unit {α = a}) (inj₂ ())
+before-resp-eq1 ¬ux ¬uy (∥′-assoc {α = a} {β = b} {γ = c}) (inj₁ (inj₁ ba)) = inj₁ ba
+before-resp-eq1 ¬ux ¬uy (∥′-assoc {α = a} {β = b} {γ = c}) (inj₁ (inj₂ bb)) = inj₂ (inj₁ bb)
+before-resp-eq1 ¬ux ¬uy (∥′-assoc {α = a} {β = b} {γ = c}) (inj₂ bc) = inj₂ (inj₂ bc)
+before-resp-eq1 ¬ux ¬uy ∥′-comm (inj₁ ba) = inj₂ ba
+before-resp-eq1 ¬ux ¬uy ∥′-comm (inj₂ bb) = inj₁ bb
+before-resp-eq1 ¬ux ¬uy (∥′-cong₁ st) (inj₁ ba) = inj₁ (before-resp-eq1 ¬ux ¬uy st ba)
+before-resp-eq1 ¬ux ¬uy (∥′-cong₁ st) (inj₂ bb) = inj₂ bb
+before-resp-eq1 ¬ux ¬uy (∥′-dup {α = a} U) b = ⊥-elim (mem-not-unrCx ¬ux U (fst (before⇒mem a b)))
+before-resp-eq1 ¬ux ¬uy (∥′-tm-; {α = a} {β = b} U) (inj₁ ba) = inj₂ (inj₁ ba)
+before-resp-eq1 ¬ux ¬uy (∥′-tm-; {α = a} {β = b} U) (inj₂ bb) = inj₂ (inj₂ bb)
+
+-- ── before is preserved by a single ≈′ step (backward). ──
+before-resp-eq1ᵇ : ¬ Unr (Γ x) → ¬ Unr (Γ y)
+                 → Γ ∶ α ≈′ β → before x y β → before x y α
+before-resp-eq1ᵇ ¬ux ¬uy (;′-assoc {α = a} {β = b} {γ = c}) (inj₁ (x∈a , y∈bc)) with mem-seqInv {α = b} {c} y∈bc
+... | inj₁ y∈b = inj₂ (inj₁ (inj₁ (x∈a , y∈b)))
+... | inj₂ y∈c = inj₁ (mem-seqL {α = a} {b} x∈a , y∈c)
+before-resp-eq1ᵇ ¬ux ¬uy (;′-assoc {α = a} {β = b} {γ = c}) (inj₂ (inj₁ ba)) = inj₂ (inj₁ (inj₂ (inj₁ ba)))
+before-resp-eq1ᵇ ¬ux ¬uy (;′-assoc {α = a} {β = b} {γ = c}) (inj₂ (inj₂ (inj₁ (x∈b , y∈c)))) = inj₁ (mem-seqR {α = a} {b} x∈b , y∈c)
+before-resp-eq1ᵇ ¬ux ¬uy (;′-assoc {α = a} {β = b} {γ = c}) (inj₂ (inj₂ (inj₂ (inj₁ bb)))) = inj₂ (inj₁ (inj₂ (inj₂ bb)))
+before-resp-eq1ᵇ ¬ux ¬uy (;′-assoc {α = a} {β = b} {γ = c}) (inj₂ (inj₂ (inj₂ (inj₂ bc)))) = inj₂ (inj₂ bc)
+before-resp-eq1ᵇ ¬ux ¬uy (;′-cong₁ st) (inj₁ (x∈a′ , y∈b)) = inj₁ (mem-eq1ᵇ ¬ux st x∈a′ , y∈b)
+before-resp-eq1ᵇ ¬ux ¬uy (;′-cong₁ st) (inj₂ (inj₁ ba′)) = inj₂ (inj₁ (before-resp-eq1ᵇ ¬ux ¬uy st ba′))
+before-resp-eq1ᵇ ¬ux ¬uy (;′-cong₁ st) (inj₂ (inj₂ bb)) = inj₂ (inj₂ bb)
+before-resp-eq1ᵇ ¬ux ¬uy (;′-cong₂ st) (inj₁ (x∈a , y∈b′)) = inj₁ (x∈a , mem-eq1ᵇ ¬uy st y∈b′)
+before-resp-eq1ᵇ ¬ux ¬uy (;′-cong₂ st) (inj₂ (inj₁ ba)) = inj₂ (inj₁ ba)
+before-resp-eq1ᵇ ¬ux ¬uy (;′-cong₂ st) (inj₂ (inj₂ bb′)) = inj₂ (inj₂ (before-resp-eq1ᵇ ¬ux ¬uy st bb′))
+before-resp-eq1ᵇ ¬ux ¬uy (∥′-unit {α = a}) ba = inj₁ ba
+before-resp-eq1ᵇ ¬ux ¬uy (∥′-assoc {α = a} {β = b} {γ = c}) (inj₁ ba) = inj₁ (inj₁ ba)
+before-resp-eq1ᵇ ¬ux ¬uy (∥′-assoc {α = a} {β = b} {γ = c}) (inj₂ (inj₁ bb)) = inj₁ (inj₂ bb)
+before-resp-eq1ᵇ ¬ux ¬uy (∥′-assoc {α = a} {β = b} {γ = c}) (inj₂ (inj₂ bc)) = inj₂ bc
+before-resp-eq1ᵇ ¬ux ¬uy ∥′-comm (inj₁ bb) = inj₂ bb
+before-resp-eq1ᵇ ¬ux ¬uy ∥′-comm (inj₂ ba) = inj₁ ba
+before-resp-eq1ᵇ ¬ux ¬uy (∥′-cong₁ st) (inj₁ ba′) = inj₁ (before-resp-eq1ᵇ ¬ux ¬uy st ba′)
+before-resp-eq1ᵇ ¬ux ¬uy (∥′-cong₁ st) (inj₂ bb) = inj₂ bb
+before-resp-eq1ᵇ ¬ux ¬uy (∥′-dup {α = a} U) b =
+  ⊥-elim (mem-not-unrCx ¬ux U ([ (λ z → z) , (λ z → z) ]′ (mem-parInv {α = a} {a} (fst (before⇒mem (a ∥ a) b)))))
+before-resp-eq1ᵇ ¬ux ¬uy (∥′-tm-; {α = a} {β = b} U) (inj₁ (x∈a , y∈b)) =
+  [ (λ Ua → ⊥-elim (mem-not-unrCx ¬ux Ua x∈a)) , (λ Ub → ⊥-elim (mem-not-unrCx ¬uy Ub y∈b)) ]′ U
+before-resp-eq1ᵇ ¬ux ¬uy (∥′-tm-; {α = a} {β = b} U) (inj₂ (inj₁ ba)) = inj₁ ba
+before-resp-eq1ᵇ ¬ux ¬uy (∥′-tm-; {α = a} {β = b} U) (inj₂ (inj₂ bb)) = inj₂ bb
+
+before-resp-≈ : ¬ Unr (Γ x) → ¬ Unr (Γ y)
+              → Γ ∶ α ≈ β → before x y α → before x y β
+before-resp-≈ ¬ux ¬uy ε b = b
+before-resp-≈ ¬ux ¬uy (fwd st ◅ rest) b = before-resp-≈ ¬ux ¬uy rest (before-resp-eq1 ¬ux ¬uy st b)
+before-resp-≈ ¬ux ¬uy (bwd st ◅ rest) b = before-resp-≈ ¬ux ¬uy rest (before-resp-eq1ᵇ ¬ux ¬uy st b)
+
+-- ── before is monotone DOWNWARD under ≼ (bigger ⟹ smaller), for non-Unr x,y. ──
+before-mono-≼ : ¬ Unr (Γ x) → ¬ Unr (Γ y)
+              → Γ ∶ α ≼ β → before x y β → before x y α
+before-mono-≼ ¬ux ¬uy (≼-refl eq) b = before-resp-≈ ¬ux ¬uy (≈-sym eq) b
+before-mono-≼ ¬ux ¬uy (≼-∅ {α = β} U) b = ⊥-elim (mem-not-unrCx ¬ux U (fst (before⇒mem β b)))
+before-mono-≼ ¬ux ¬uy (≼-wk {α₁ = a1} {α₂ = a2} {β₁ = b1} {β₂ = b2}) (inj₁ (inj₁ (x∈a1 , y∈b1))) =
+  inj₁ (mem-parL {α = a1} {a2} x∈a1 , mem-parL {α = b1} {b2} y∈b1)
+before-mono-≼ ¬ux ¬uy (≼-wk {α₁ = a1} {α₂ = a2} {β₁ = b1} {β₂ = b2}) (inj₁ (inj₂ (inj₁ ba1))) = inj₂ (inj₁ (inj₁ ba1))
+before-mono-≼ ¬ux ¬uy (≼-wk {α₁ = a1} {α₂ = a2} {β₁ = b1} {β₂ = b2}) (inj₁ (inj₂ (inj₂ bb1))) = inj₂ (inj₂ (inj₁ bb1))
+before-mono-≼ ¬ux ¬uy (≼-wk {α₁ = a1} {α₂ = a2} {β₁ = b1} {β₂ = b2}) (inj₂ (inj₁ (x∈a2 , y∈b2))) =
+  inj₁ (mem-parR {α = a1} {a2} x∈a2 , mem-parR {α = b1} {b2} y∈b2)
+before-mono-≼ ¬ux ¬uy (≼-wk {α₁ = a1} {α₂ = a2} {β₁ = b1} {β₂ = b2}) (inj₂ (inj₂ (inj₁ ba2))) = inj₂ (inj₁ (inj₂ ba2))
+before-mono-≼ ¬ux ¬uy (≼-wk {α₁ = a1} {α₂ = a2} {β₁ = b1} {β₂ = b2}) (inj₂ (inj₂ (inj₂ bb2))) = inj₂ (inj₂ (inj₂ bb2))
+before-mono-≼ ¬ux ¬uy (≼-trans p q) b = before-mono-≼ ¬ux ¬uy p (before-mono-≼ ¬ux ¬uy q b)
+before-mono-≼ ¬ux ¬uy (≼-cong-; p q) (inj₁ (x∈a′ , y∈b′)) = inj₁ (mem-≼ᵇ ¬ux p x∈a′ , mem-≼ᵇ ¬uy q y∈b′)
+before-mono-≼ ¬ux ¬uy (≼-cong-; p q) (inj₂ (inj₁ ba′)) = inj₂ (inj₁ (before-mono-≼ ¬ux ¬uy p ba′))
+before-mono-≼ ¬ux ¬uy (≼-cong-; p q) (inj₂ (inj₂ bb′)) = inj₂ (inj₂ (before-mono-≼ ¬ux ¬uy q bb′))
+before-mono-≼ ¬ux ¬uy (≼-cong-∥ p q) (inj₁ ba′) = inj₁ (before-mono-≼ ¬ux ¬uy p ba′)
+before-mono-≼ ¬ux ¬uy (≼-cong-∥ p q) (inj₂ bb′) = inj₂ (before-mono-≼ ¬ux ¬uy q bb′)
