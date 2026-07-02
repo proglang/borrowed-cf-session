@@ -145,27 +145,43 @@ infix 4 ⊢_∶_
 data ⊢_∶_ : Const → 𝕋 → Set where
   `unit : ⊢ `unit ∶ `⊤
 
-  `fork : ⊢ `fork ∶ (`⊤ →1M `⊤ ∣ 𝕀) →1M `⊤ ∣ ℙ
+  `fork : ⊢ `fork ∶ (`⊤ →1M `⊤ ∣ 𝕀) →*M `⊤ ∣ ℙ
 
-  `new  : New s → ⊢ `new s ∶ `⊤ →1M ⟨ acq ; s ; end ⁇ ⟩ ⊗¹ ⟨ acq ; dual s ; end ‼ ⟩ ∣ ℙ
+  `new  : New s → ⊢ `new s ∶ `⊤ →*M ⟨ acq ; (s ; end ⁇) ⟩ ⊗¹ ⟨ acq ; (dual s ; end ‼) ⟩ ∣ ℙ
 
   `lsplit : ¬ Skips s → (s′ : 𝕊 0) →
-    ⊢ `lsplit s ∶ ⟨ s ; s′ ⟩ →1M ⟨ s ⟩       ⊗ᴸ ⟨ s′ ⟩       ∣ ℙ
+    ⊢ `lsplit s ∶ ⟨ s ; s′ ⟩ →*M ⟨ s ⟩       ⊗ᴸ ⟨ s′ ⟩       ∣ ℙ
   `rsplit : ¬ Skips s → (s′ : 𝕊 0) →
-    ⊢ `rsplit s ∶ ⟨ s ; s′ ⟩ →1M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; s′ ⟩ ∣ ℙ
+    ⊢ `rsplit s ∶ ⟨ s ; s′ ⟩ →*M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; s′ ⟩ ∣ ℙ
 
-  `drop : ⊢ `drop ∶ ⟨ ret ⟩     →1M `⊤    ∣ ℙ
-  `acq  : ⊢ `acq  ∶ ⟨ acq ; s ⟩ →1M ⟨ s ⟩ ∣ ℙ
+  `drop : ⊢ `drop ∶ ⟨ ret ⟩     →*M `⊤    ∣ ℙ
+  `acq  : ⊢ `acq  ∶ ⟨ acq ; s ⟩ →*M ⟨ s ⟩ ∣ ℙ
 
-  `send : Mobile T → ⊢ `send ∶ T ⊗¹ ⟨ msg ‼ T ⟩ →1M `⊤ ∣ 𝕀
-  `recv : Mobile T → ⊢ `recv ∶      ⟨ msg ⁇ T ⟩ →1M  T ∣ 𝕀
+  `send : Mobile T → ⊢ `send ∶ T ⊗¹ ⟨ msg ‼ T ⟩ →*M `⊤ ∣ 𝕀
+  `recv : Mobile T → ⊢ `recv ∶      ⟨ msg ⁇ T ⟩ →*M  T ∣ 𝕀
 
   `select : ∀ {i} →
-    ⊢ `select i ∶ ⟨ brn ‼ s₁ s₂ ⟩ →1M ⟨ if i then s₁ else s₂ ⟩ ∣ 𝕀
+    ⊢ `select i ∶ ⟨ brn ‼ s₁ s₂ ⟩ →*M ⟨ if i then s₁ else s₂ ⟩ ∣ 𝕀
   `branch :
-    ⊢ `branch ∶ ⟨ brn ⁇ s₁ s₂ ⟩ →1M ⟨ s₁ ⟩ ⊕ ⟨ s₂ ⟩ ∣ 𝕀
+    ⊢ `branch ∶ ⟨ brn ⁇ s₁ s₂ ⟩ →*M ⟨ s₁ ⟩ ⊕ ⟨ s₂ ⟩ ∣ 𝕀
 
-  `end  : ⊢ `end p ∶ ⟨ end p ⟩ →1M `⊤ ∣ 𝕀
+  `end  : ⊢ `end p ∶ ⟨ end p ⟩ →*M `⊤ ∣ 𝕀
+
+constFnUnr : ∀ {c} → ⊢ c ∶ T ⟨ a ⟩→ U → Arr.Unr a
+constFnUnr `fork = refl
+constFnUnr (`new x) = refl
+constFnUnr (`lsplit x s′) = refl
+constFnUnr (`rsplit x s′) = refl
+constFnUnr `drop = refl
+constFnUnr `acq = refl
+constFnUnr (`send x) = refl
+constFnUnr (`recv x) = refl
+constFnUnr `select = refl
+constFnUnr `branch = refl
+constFnUnr `end = refl
+
+constFnUnr′ : ∀ {c} → T ≃ U₁ ⟨ a ⟩→ U₂ → ⊢ c ∶ T → Arr.Unr a
+constFnUnr′ (_ `→ _) = constFnUnr
 
 infix 4 _;_⊢_∶_∣_
 
@@ -204,7 +220,7 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
     Γ ; γ₁ ∥ γ₂ ⊢ e₁ · e₂ ∶ U ∣ ϵ
 
   T-AppLin :
-    (a-par : Arr.Par a) →
+    (a-par : Arr.Is𝟙 a) →
     (≤ₐ : Arr.eff a ≤ϵ ϵ) →
     Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ →
     Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ →
@@ -504,7 +520,7 @@ inv-K (T-Weaken γ≤ x) =
 module _ (Γ : Ctx n) (α β : Struct n) (e₁ e₂ : Tm n) (a : Arr) (T U : 𝕋) (ϵ : Eff) where
   data InvApp : Set where
     T-AppUnr   : (a-unr : Arr.Unr a) → Γ ; α ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ → Γ ; β ⊢ e₂ ∶ T ∣ ϵ → InvApp
-    T-AppLin   : (a-par : Arr.Par a) → Γ ; α ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ → Γ ; β ⊢ e₂ ∶ T ∣ ϵ → InvApp
+    T-AppLin   : (a-par : Arr.Is𝟙 a) → Γ ; α ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ → Γ ; β ⊢ e₂ ∶ T ∣ ϵ → InvApp
     T-AppLeft  : (aL : Arr.IsL a) → Γ ; α ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ℙ → Γ ; β ⊢ e₂ ∶ T ∣ ϵ → InvApp
     T-AppRight : (aR : Arr.IsR a) → Γ ; α ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ → Γ ; β ⊢ e₂ ∶ T ∣ ℙ → InvApp
 
@@ -524,7 +540,7 @@ inv-· (T-AppUnr {a = a} {γ₁ = γ₁} {γ₂ = γ₂} a-unr ≤ₐ x y) =
     , T-AppUnr a-unr x y
 inv-· (T-AppLin {a = a} {γ₁ = γ₁} {γ₂ = γ₂} a-par ≤ₐ x y) =
   a , _ , _ , _
-    , ≼-refl (≈-trans (≈-reflexive (cong (λ d → join d γ₂ γ₁) a-par)) ∥-comm)
+    , ≼-refl (≈-trans (≈-reflexive (cong (λ d → join d γ₂ γ₁) (a-par .proj₂))) ∥-comm)
     , ≤ₐ
     , T-AppLin a-par x y
 inv-· (T-AppLeft {a = a} {γ₁ = γ₁} {γ₂ = γ₂} aL ≤ₐ x y) =
@@ -543,6 +559,104 @@ inv-· (T-Conv T≃ ϵ≤ x) =
 inv-· (T-Weaken ≤₁ x) =
   let _ , _ , _ , _ , ≤₂ , xy = inv-· x
    in _ , _ , _ , _ , ≼-trans ≤₂ ≤₁ , xy
+
+inv-·-unr :
+  Γ ; γ ⊢ e₁ · e₂ ∶ U ∣ ϵ →
+  (∀ {γ′ T a ϵ′} → Γ ; γ′ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ′ → Arr.Unr a) →
+  ∃[ a ] ∃[ α ] ∃[ β ] ∃[ T ]
+     Γ ∶ join (Arr.dir a) β α ≼ γ × Arr.eff a ≤ϵ ϵ × Arr.Unr a × Γ ; α ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ × Γ ; β ⊢ e₂ ∶ T ∣ ϵ
+inv-·-unr x is-unr with inv-· x
+... | a , _ , _ , _ , ≤γ , ≤ₐ , T-AppLin (refl , refl) x y = case (is-unr x) of λ()
+... | a , _ , _ , _ , ≤γ , ≤ₐ , T-AppLeft  refl x y = case Arr.ω⇒𝟙 a (is-unr x) of λ()
+... | a , _ , _ , _ , ≤γ , ≤ₐ , T-AppRight refl x y = case Arr.ω⇒𝟙 a (is-unr x) of λ()
+... | a , _ , _ , _ , ≤γ , ≤ₐ , T-AppUnr   refl x y = a , _ , _ , _ , ≤γ , ≤ₐ , refl , x , y
+
+inv-⊗ : Γ ; γ ⊢ e₁ ⊗ e₂ ∶ U ∣ ϵ →
+  ∃[ p/s ] ∃[ α ] ∃[ β ] ∃[ T₁ ] ∃[ T₂ ] ∃[ ϵ₁ ] ∃[ ϵ₂ ]
+    Γ ∶ join p/s α β ≼ γ
+      × T₁ ⊗⟨ biasedDir p/s ⟩ T₂ ≃ U
+      × ϵ₁ ≤ϵ ϵ
+      × Seq⇒Pure p/s ϵ₁ ϵ₂
+      × Γ ; α ⊢ e₁ ∶ T₁ ∣ ϵ₁
+      × Γ ; β ⊢ e₂ ∶ T₂ ∣ ϵ₂
+inv-⊗ (T-Pair p/s seq⇒p x₁ x₂) =
+  _ , _ , _ , _ , _ , _ , _ , ≼-refl refl , ≃-refl , ≤ϵ-refl , seq⇒p , x₁ , x₂
+inv-⊗ (T-Conv T≃ ϵ≤ x) =
+  let _ , _ , _ , _ , _ , _ , _ , ≤γ , eq , ϵ≤′ , x′ = inv-⊗ x in
+  _ , _ , _ , _ , _ , _ , _ , ≤γ , ≃-trans eq T≃ , ≤ϵ-trans ϵ≤′ ϵ≤ , x′
+inv-⊗ (T-Weaken γ≤ x) =
+  let _ , _ , _ , _ , _ , _ , _ , ≤γ , x′ = inv-⊗ x in
+  _ , _ , _ , _ , _ , _ , _ , ≼-trans ≤γ γ≤ , x′
+
+inv-; : Γ ; γ ⊢ e₁ ; e₂ ∶ U ∣ ϵ →
+  ∃[ α ] ∃[ β ] ∃[ T ]
+    Unr T
+      × Γ ∶ α ; β ≼ γ
+      × Γ ; α ⊢ e₁ ∶ T ∣ ϵ
+      × Γ ; β ⊢ e₂ ∶ U ∣ ϵ
+inv-; (T-Seq x x₁ x₂) =
+  _ , _ , _ , x , ≼-refl refl , x₁ , x₂
+inv-; (T-Conv T≃ ϵ≤ x) =
+  let _ , _ , _ , uT , ≤γ , x₁ , x₂ = inv-; x in
+  _ , _ , _ , uT , ≤γ , T-Conv ≃-refl ϵ≤ x₁ , T-Conv T≃ ϵ≤ x₂
+inv-; (T-Weaken γ≤ x) =
+  let _ , _ , _ , uT , ≤γ , x₁ , x₂ = inv-; x in
+  _ , _ , _ , uT , ≼-trans ≤γ γ≤ , x₁ , x₂
+
+inv-`let : {Γ : Ctx n} → Γ ; γ ⊢ `let e₁ `in e₂ ∶ U ∣ ϵ →
+  Σ[ p/s ∈ ParSeq ] ∃[ α ] ∃[ β ] ∃[ T ]
+    Γ ∶ join p/s α β ≼ γ
+      × Γ ; α ⊢ e₁ ∶ T ∣ ϵ
+      × T ⸴ Γ ; join p/s (` zero) (𝐂.wk β) ⊢ e₂ ∶ U ∣ ϵ
+inv-`let (T-Let p/s x x₁) = p/s , _ , _ , _ , ≼-refl refl , x , x₁
+inv-`let (T-Conv T≃ ϵ≤ x) =
+  let p/s , _ , _ , _ , ≤γ , x₁ , x₂ = inv-`let x in
+  p/s , _ , _ , _ , ≤γ , T-Conv ≃-refl ϵ≤ x₁ , T-Conv T≃ ϵ≤ x₂
+inv-`let (T-Weaken γ≤ x) =
+  let p/s , _ , _ , _ , ≤γ , x₁ , x₂ = inv-`let x in
+    p/s , _ , _ , _ , ≼-trans ≤γ γ≤ , x₁ , x₂
+
+inv-`let⊗ : {Γ : Ctx n} → Γ ; γ ⊢ `let⊗ e₁ `in e₂ ∶ U ∣ ϵ →
+  let open Fin.Patterns in
+  Σ[ p/s ∈ ParSeq ] ∃[ d ] ∃[ α ] ∃[ β ] ∃[ T₁ ] ∃[ T₂ ]
+    Γ ∶ join p/s α β ≼ γ
+      × Γ ; α ⊢ e₁ ∶ T₁ ⊗⟨ d ⟩ T₂ ∣ ϵ
+      × T₁ ⸴ T₂ ⸴ Γ ; join p/s (join d (` 0F) (` 1F)) (𝐂.wk (𝐂.wk β)) ⊢ e₂ ∶ U ∣ ϵ
+inv-`let⊗ (T-LetPair p/s x x₁) =
+  p/s , _ , _ , _ , _ , _ , ≼-refl refl , x , x₁
+inv-`let⊗ (T-Conv T≃ ϵ≤ x) =
+  let p/s , _ , _ , _ , _ , _ , ≤γ , x′ , x″ = inv-`let⊗ x in
+  p/s , _ , _ , _ , _ , _ , ≤γ , T-Conv ≃-refl ϵ≤ x′ , T-Conv T≃ ϵ≤ x″
+inv-`let⊗ (T-Weaken γ≤ x) =
+  let p/s , _ , _ , _ , _ , _ , ≤γ , x′ , x″ = inv-`let⊗ x in
+  p/s , _ , _ , _ , _ , _ , ≼-trans ≤γ γ≤ , x′ , x″
+
+inv-inj : ∀ {i} → Γ ; γ ⊢ `inj i e ∶ U ∣ ϵ →
+  ∃[ T₁ ] ∃[ T₂ ]
+    T₁ ⊕ T₂ ≃ U × Γ ; γ ⊢ e ∶ if i then T₁ else T₂ ∣ ϵ
+inv-inj (T-Inj x) =
+  _ , _ , ≃-refl , x
+inv-inj (T-Conv T≃ ϵ≤ x) =
+  let _ , _ , eq , x′ = inv-inj x in
+  _ , _ , ≃-trans eq T≃ , T-Conv ≃-refl ϵ≤ x′
+inv-inj (T-Weaken γ≤ x) =
+  let _ , _ , eq , x′ = inv-inj x in
+  _ , _ , eq , T-Weaken γ≤ x′
+
+inv-`case : {Γ : Ctx n} → Γ ; γ ⊢ `case e `of⟨ e₁ ; e₂ ⟩ ∶ U ∣ ϵ →
+  Σ[ p/s ∈ ParSeq ] ∃[ α ] ∃[ β ] ∃[ T₁ ] ∃[ T₂ ]
+    let β′ = join p/s (` zero) (𝐂.wk β) in
+    Γ ∶ join p/s α β ≼ γ
+      × Γ ; α ⊢ e ∶ T₁ ⊕ T₂ ∣ ϵ
+      × T₁ ⸴ Γ ; β′ ⊢ e₁ ∶ U ∣ ϵ
+      × T₂ ⸴ Γ ; β′ ⊢ e₂ ∶ U ∣ ϵ
+inv-`case (T-Case p/s x x₁ x₂) = p/s , _ , _ , _ , _ , ≼-refl refl , x , x₁ , x₂
+inv-`case (T-Conv T≃ ϵ≤ x) =
+  let p/s , _ , _ , _ , _ , ≤γ , x , x₁ , x₂ = inv-`case x in
+  p/s , _ , _ , _ , _ , ≤γ , T-Conv ≃-refl ϵ≤ x , T-Conv T≃ ϵ≤ x₁ , T-Conv T≃ ϵ≤ x₂
+inv-`case (T-Weaken γ≤ x) =
+  let p/s , _ , _ , _ , _ , ≤γ , x′ = inv-`case x in
+  p/s , _ , _ , _ , _ , ≼-trans ≤γ γ≤ , x′
 
 postulate
   ⊢-det : Γ ; γ ⊢ e ∶ T ∣ ϵ → Γ ; γ ⊢ e ∶ U ∣ ϵ → T ≃ U

@@ -1,5 +1,6 @@
 module BorrowedCF.Types.Syntax where
 
+open import Relation.Binary.Lattice
 open import Algebra.Construct.NaturalChoice.Base
 
 import Relation.Binary.Reasoning.PartialOrder as PO-Reasoning
@@ -107,8 +108,34 @@ module EffProperties where
 
   open import Algebra.Construct.NaturalChoice.MinMaxOp ⊓-MinOperator ⊔-MaxOperator public
 
+  𝕀-maximum : Maximum _≤ϵ_ 𝕀
+  𝕀-maximum ℙ = ℙ≤ϵ
+  𝕀-maximum 𝕀 = 𝕀≤𝕀
+
+  ℙ-minimum : Minimum _≤ϵ_ ℙ
+  ℙ-minimum _ = ℙ≤ϵ
+
+  isLattice : IsLattice _≡_ _≤ϵ_ _⊔ϵ_ _⊓ϵ_
+  isLattice = record
+    { isPartialOrder = ≤-isPartialOrder
+    ; supremum = λ x y → x≤x⊔y x y , x≤y⊔x x y , λ where
+        ℙ ℙ≤ϵ ℙ≤ϵ → ℙ≤ϵ
+        𝕀 _   _   → 𝕀-maximum _
+    ; infimum = λ x y → x⊓y≤x x y , x⊓y≤y x y , λ where
+       ℙ z≤x z≤y → ℙ≤ϵ
+       𝕀 𝕀≤𝕀 𝕀≤𝕀 → 𝕀≤𝕀
+    }
+
+  isBoundedLattice : IsBoundedLattice _≡_ _≤ϵ_ _⊔ϵ_ _⊓ϵ_ 𝕀 ℙ
+  isBoundedLattice = record
+    { isLattice = isLattice
+    ; maximum = 𝕀-maximum
+    ; minimum = ℙ-minimum
+    }
+
 module ≤ϵ-Reasoning = PO-Reasoning EffProperties.≤-poset
 
+open EffProperties using (𝕀-maximum) public
 
 data Lin : Set where
   𝟙 unr : Lin
@@ -126,6 +153,7 @@ record Arr : Set where
 
   IsL = dir ≡ L
   IsR = dir ≡ R
+  Is𝟙 = lin ≡ 𝟙 × dir ≡ 𝟙
 
   field
     ω⇒M : Unr → Mobile
@@ -184,11 +212,16 @@ data Ty where
 pattern _⊗¹_ T U = T ⊗⟨ 𝟙 ⟩ U
 pattern _⊗ᴸ_ T U = T ⊗⟨ L ⟩ U
 
-infixr 15 _→1M_∣_
+infixr 15 _→*M_∣_ _→1M_∣_
+
+_→*M_∣_ : 𝕋 → 𝕋 → Eff → 𝕋
+_→*M_∣_ T U e =
+  let a = record { lin = unr; eff = e ; ω⇒M = λ _ → refl; ω⇒𝟙 = λ _ → refl } in
+  T ⟨ a ⟩→ U
 
 _→1M_∣_ : 𝕋 → 𝕋 → Eff → 𝕋
 _→1M_∣_ T U e =
-  let a = record { lin = unr; eff = e ; ω⇒M = λ _ → refl; ω⇒𝟙 = λ _ → refl } in
+  let a = record { lin = 𝟙; dir = 𝟙; mob = M; eff = e ; ω⇒M = λ(); ω⇒𝟙 = λ() } in
   T ⟨ a ⟩→ U
 
 variable

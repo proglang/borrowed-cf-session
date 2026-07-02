@@ -180,14 +180,13 @@ data _;_⊢ₚ_ (Γ : Ctx n) : Struct n → Proc n → Set where
     Γ ; γ₁ ∥ γ₂ ⊢ₚ P ∥ Q
 
   TP-Res :
-    (N : New s) →
-    (⊢B₁ : ⊢ᴮ B₁) (⊢B₂ : ⊢ᴮ B₂) →
-    (C  : BindCtx (s      ; end ⁇) B₁ Γ₁) →
-    (C′ : BindCtx (dual s ; end ‼) B₂ Γ₂) →
-    (Γ₁ ⸴* Γ₂) ⸴* Γ ; (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n)
-                    ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n)
-                    ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
-      ⊢ₚ P →
+    ∀ (N : New s) (⊢B₁ : ⊢ᴮ B₁) (⊢B₂ : ⊢ᴮ B₂) {Γ₁ Γ₂} →
+      (C  : BindCtx (s      ; end ⁇) B₁ Γ₁) →
+      (C′ : BindCtx (dual s ; end ‼) B₂ Γ₂) →
+      (Γ₁ ⸴* Γ₂) ⸴* Γ ; (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n) -- ` 0F
+                      ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n) -- ` 1F
+                      ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
+          ⊢ₚ P →
     Γ ; γ ⊢ₚ ν B₁ B₂ P
 
   TP-Weaken :
