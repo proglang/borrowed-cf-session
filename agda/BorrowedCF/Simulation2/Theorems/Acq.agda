@@ -1208,16 +1208,22 @@ core-gen {n} D sB₂ x j =
     sWk : ∀ {A B} (e : A ≡ B) (u : Tm A) →
           subst Tm (cong (sB₂ +_) e) (u ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ≡ subst Tm e u ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
     sWk refl u = refl
-    comp-eq : (((weaken* ⦃ Kᵣ ⦄ sB₂ ·ₖ ρa) ·ₖ ρb) ·ₖ ⦅ K `unit ⦆ₛ)
-              ≗ ((⦅ K `unit ⦆ₛ ↑* sD) ·ₖ weaken* ⦃ Kᵣ ⦄ sB₂)
-    comp-eq i = {!comp-eq!}
+    aS = assocSwapᵣ sD 1 {2 + n}
+    swap-collapse : (aS ·ₖ ⦅ K `unit ⦆ₛ) ≗ (⦅ K `unit ⦆ₛ ↑* sD)
+    swap-collapse i = {!swap-collapse!}
+    wk-swap-collapse : ((weaken* ⦃ Kᵣ ⦄ sB₂ ·ₖ ρb) ·ₖ ⦅ K `unit ⦆ₛ)
+                       ≗ (⦅ K `unit ⦆ₛ ·ₖ weaken* ⦃ Kᵣ ⦄ sB₂)
+    wk-swap-collapse v = {!wk-swap-collapse!}
     pure : cD ⋯ weaken* ⦃ Kᵣ ⦄ sB₂ ⋯ ρa ⋯ ρb ⋯ ⦅ K `unit ⦆ₛ
            ≡ cD ⋯ (⦅ K `unit ⦆ₛ ↑* sD) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
-    pure = cong (λ z → z ⋯ ρb ⋯ ⦅ K `unit ⦆ₛ) (fusion cD (weaken* ⦃ Kᵣ ⦄ sB₂) ρa)
-         ■ cong (_⋯ ⦅ K `unit ⦆ₛ) (fusion cD (weaken* ⦃ Kᵣ ⦄ sB₂ ·ₖ ρa) ρb)
-         ■ fusion cD ((weaken* ⦃ Kᵣ ⦄ sB₂ ·ₖ ρa) ·ₖ ρb) ⦅ K `unit ⦆ₛ
-         ■ ⋯-cong cD comp-eq
-         ■ sym (fusion cD (⦅ K `unit ⦆ₛ ↑* sD) (weaken* ⦃ Kᵣ ⦄ sB₂))
+    pure =
+        cong (λ z → z ⋯ ρb ⋯ ⦅ K `unit ⦆ₛ) (sym (⋯-↑*-wk cD aS sB₂))
+      ■ cong (_⋯ ⦅ K `unit ⦆ₛ) (fusion (cD ⋯ aS) (weaken* ⦃ Kᵣ ⦄ sB₂) ρb)
+      ■ fusion (cD ⋯ aS) (weaken* ⦃ Kᵣ ⦄ sB₂ ·ₖ ρb) ⦅ K `unit ⦆ₛ
+      ■ ⋯-cong (cD ⋯ aS) wk-swap-collapse
+      ■ sym (fusion (cD ⋯ aS) ⦅ K `unit ⦆ₛ (weaken* ⦃ Kᵣ ⦄ sB₂))
+      ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+          (fusion cD aS ⦅ K `unit ⦆ₛ ■ ⋯-cong cD swap-collapse)
     step1 : subst Tm (cong (sB₂ +_) (sym (+-suc (syncs D) (suc (suc n)))))
               (subst Tm (+-suc (syncs D) (suc (suc n))) cD ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
             ⋯ (assocSwapᵣ (syncs D) 1 {2 + n} ↑* sB₂)
