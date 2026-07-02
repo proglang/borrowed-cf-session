@@ -2245,7 +2245,7 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
     leafRec : Bφ B ((U.ν (contractumR U.⋯ₚ assocSwapᵣ 1 2)) U.⋯ₚ assocSwapᵣ 1 (syncs B))
               U.≋ subst U.Proc (cong (_+ n) (syncs-rwk B₁) ■ sym (+-suc (syncs C₁) n)) (Bφ B (U.ν (pushR XRᴿ)))
                     U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n}
-    leafRec = Bφ-cong B (Eq*.return U.ν-swap′) ◅◅ ≡→≋ leafRec≡
+    leafRec = ≡→≋ leafRec≡
       where
         EQ′ : syncs C₁ᴿ + n ≡ syncs C₁ + suc n
         EQ′ = cong (_+ n) (syncs-rwk B₁) ■ sym (+-suc (syncs C₁) n)
@@ -2283,7 +2283,7 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
               (cong (U._⋯ₚ (rawR ↑* syncs B)) (subst-ν (cong (syncs B +_) e2) (pushR XRᴿ)))
           ■ subst-ν (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n}))
               (subst U.Proc (cong (2 +_) (cong (syncs B +_) e2)) (pushR XRᴿ) U.⋯ₚ ((rawR ↑* syncs B) ↑* 2))
-        νInner : ((contractumR U.⋯ₚ assocSwapᵣ 1 2) U.⋯ₚ ((assocSwapᵣ 1 (syncs B)) ↑* 2)) U.⋯ₚ swapᵣ 1 1
+        νInner : (contractumR U.⋯ₚ assocSwapᵣ 1 2) U.⋯ₚ ((assocSwapᵣ 1 (syncs B)) ↑* 2)
                  ≡ subst U.Proc (cong (2 +_) (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
                      (subst U.Proc (cong (2 +_) (cong (syncs B +_) e2)) (pushR XRᴿ)
                         U.⋯ₚ ((rawR ↑* syncs B) ↑* 2))
@@ -2311,11 +2311,11 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
                     (subst U.Proc (cong SQ (cong (syncs B +_) e2))
                        (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫) U.⋯ₚ (ρρ ↑* 2))
                     (subst U.Proc (cong SQ (cong (syncs B +_) e2)) pushR-Pᴿ U.⋯ₚ (ρρ ↑* 2)) )
-        bodyEq : U.ν (((contractumR U.⋯ₚ assocSwapᵣ 1 2) U.⋯ₚ (assocSwapᵣ 1 (syncs B) ↑* 2)) U.⋯ₚ swapᵣ 1 1)
+        bodyEq : (U.ν (contractumR U.⋯ₚ assocSwapᵣ 1 2)) U.⋯ₚ assocSwapᵣ 1 (syncs B)
                  ≡ subst U.Proc (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n}))
                      (subst U.Proc (cong (syncs B +_) e2) (U.ν (pushR XRᴿ)) U.⋯ₚ (rawR ↑* syncs B))
         bodyEq = cong U.ν νInner ■ sym rhsνOut
-        leafRec≡ : Bφ B (U.ν (((contractumR U.⋯ₚ assocSwapᵣ 1 2) U.⋯ₚ (assocSwapᵣ 1 (syncs B) ↑* 2)) U.⋯ₚ swapᵣ 1 1))
+        leafRec≡ : Bφ B ((U.ν (contractumR U.⋯ₚ assocSwapᵣ 1 2)) U.⋯ₚ assocSwapᵣ 1 (syncs B))
                    ≡ subst U.Proc EQ′ (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n}
         leafRec≡ = cong (Bφ B) bodyEq ■ sym rhsPush
     innerReconcile =
