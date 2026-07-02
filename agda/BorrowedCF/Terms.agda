@@ -36,9 +36,9 @@ isSplit? (`rsplit x) = yes (x , inj₂ refl)
 data Tm (n : ℕ) : Set where
   `_ : 𝔽 n → Tm n
   K : (c : Const) → Tm n
-  ƛ : (e : Tm (1 + n)) → Tm n
+  ƛ : (d : Dir) (e : Tm (1 + n)) → Tm n
   μ : (e : Tm (1 + n)) → Tm n
-  _·_ : (e₁ e₂ : Tm n) → Tm n
+  _·⟨_⟩_ : (e₁ : Tm n) (d : Dir) (e₂ : Tm n) → Tm n
   _;_ : (e₁ e₂ : Tm n) → Tm n
   _⊗_ : (e₁ : Tm n) (e₂ : Tm n) → Tm n
   `let_`in_ : (e₁ : Tm n) (e₂ : Tm (1 + n)) → Tm n
@@ -47,6 +47,9 @@ data Tm (n : ℕ) : Set where
   `case_`of⟨_;_⟩ : (e : Tm n) (e₁ e₂ : Tm (1 + n)) → Tm n
 
 pattern * = K `unit
+pattern _·ᴸ_ e₁ e₂ = e₁ ·⟨ L ⟩ e₂
+pattern _·ᴿ_ e₁ e₂ = e₁ ·⟨ R ⟩ e₂
+pattern _·¹_ e₁ e₂ = e₁ ·⟨ 𝟙 ⟩ e₂
 
 private variable
   e e₁ e₂ : Tm n
@@ -65,9 +68,9 @@ infixl 5 _⋯_
 _⋯_ : ⦃ K : Kit 𝓕 ⦄ → Tm m → m –[ K ]→ n → Tm n
 (` x) ⋯ ϕ = `/id (ϕ x)
 K c ⋯ ϕ = K c
-ƛ e ⋯ ϕ = ƛ (e ⋯ ϕ ↑)
+ƛ d e ⋯ ϕ = ƛ d (e ⋯ ϕ ↑)
 μ e ⋯ ϕ = μ (e ⋯ ϕ ↑)
-(e · e₁) ⋯ ϕ = (e ⋯ ϕ) · (e₁ ⋯ ϕ)
+(e ·⟨ d ⟩ e₁) ⋯ ϕ = (e ⋯ ϕ) ·⟨ d ⟩ (e₁ ⋯ ϕ)
 (e ; e₁) ⋯ ϕ =  (e ⋯ ϕ) ; (e₁ ⋯ ϕ)
 (e ⊗ e₁) ⋯ ϕ =  (e ⋯ ϕ) ⊗ (e₁ ⋯ ϕ)
 (`let e `in e₁) ⋯ ϕ = `let (e ⋯ ϕ) `in (e₁ ⋯ ϕ ↑)
@@ -78,9 +81,9 @@ K c ⋯ ϕ = K c
 ⋯-id : ⦃ K : Kit 𝓕 ⦄ (e : Tm n) {ϕ : n –[ K ]→ n} → ϕ ≗ idₖ → e ⋯ ϕ ≡ e
 ⋯-id (` x) eq = cong `/id (eq x) ■ `/`-is-` x
 ⋯-id (K c) eq = refl
-⋯-id (ƛ e) eq = cong ƛ (⋯-id e (id↑ eq))
+⋯-id (ƛ d e) eq = cong (ƛ d) (⋯-id e (id↑ eq))
 ⋯-id (μ e) eq = cong μ (⋯-id e (id↑ eq))
-⋯-id (e · e₁) eq = cong₂ _·_ (⋯-id e eq) (⋯-id e₁ eq)
+⋯-id (e ·⟨ d ⟩ e₁) eq = cong₂ _·⟨ d ⟩_ (⋯-id e eq) (⋯-id e₁ eq)
 ⋯-id (e ; e₁) eq = cong₂ _;_ (⋯-id e eq) (⋯-id e₁ eq)
 ⋯-id (e ⊗ e₁) eq = cong₂ _⊗_ (⋯-id e eq) (⋯-id e₁ eq)
 ⋯-id (`let e `in e₁) eq = cong₂ `let_`in_ (⋯-id e eq) (⋯-id e₁ (id↑ eq))
@@ -93,9 +96,9 @@ K c ⋯ ϕ = K c
 ⋯-cong : ⦃ K : Kit 𝓕 ⦄ (e : Tm m) {ϕ₁ ϕ₂ : m –[ K ]→ n} → ϕ₁ ≗ ϕ₂ → e ⋯ ϕ₁ ≡ e ⋯ ϕ₂
 ⋯-cong (` x) eq = cong `/id (eq x)
 ⋯-cong (K c) eq = refl
-⋯-cong (ƛ e) eq = cong ƛ (⋯-cong e (eq ~↑))
+⋯-cong (ƛ d e) eq = cong (ƛ d) (⋯-cong e (eq ~↑))
 ⋯-cong (μ e) eq = cong μ (⋯-cong e (eq ~↑))
-⋯-cong (e · e₁) eq = cong₂ _·_ (⋯-cong e eq) (⋯-cong e₁ eq)
+⋯-cong (e ·⟨ d ⟩ e₁) eq = cong₂ _·⟨ d ⟩_ (⋯-cong e eq) (⋯-cong e₁ eq)
 ⋯-cong (e ; e₁) eq = cong₂ _;_ (⋯-cong e eq) (⋯-cong e₁ eq)
 ⋯-cong (e ⊗ e₁) eq = cong₂ _⊗_ (⋯-cong e eq) (⋯-cong e₁ eq)
 ⋯-cong (`let e `in e₁) eq = cong₂ `let_`in_ (⋯-cong e eq) (⋯-cong e₁ (eq ~↑))
@@ -120,11 +123,11 @@ fusion :
 fusion (` x) ϕ₁ ϕ₂ = sym (&/⋯-⋯ (ϕ₁ x) ϕ₂)
 fusion (x₁ ; x₂) ϕ₁ ϕ₂ = cong₂ _;_ (fusion x₁ ϕ₁ ϕ₂) (fusion x₂ ϕ₁ ϕ₂)
 fusion (K c) ϕ₁ ϕ₂ = refl
-fusion (ƛ e) ϕ₁ ϕ₂ = cong ƛ $
+fusion (ƛ d e) ϕ₁ ϕ₂ = cong (ƛ d) $
   fusion e (ϕ₁ ↑) (ϕ₂ ↑) ■ ⋯-cong e (sym ∘ dist-↑-· ϕ₁ ϕ₂)
 fusion (μ e) ϕ₁ ϕ₂ = cong μ $
   fusion e (ϕ₁ ↑) (ϕ₂ ↑) ■ ⋯-cong e (sym ∘ dist-↑-· ϕ₁ ϕ₂)
-fusion (e₁ · e₂) ϕ₁ ϕ₂ = cong₂ _·_ (fusion e₁ ϕ₁ ϕ₂) (fusion e₂ ϕ₁ ϕ₂)
+fusion (e₁ ·⟨ d ⟩ e₂) ϕ₁ ϕ₂ = cong₂ _·⟨ d ⟩_ (fusion e₁ ϕ₁ ϕ₂) (fusion e₂ ϕ₁ ϕ₂)
 fusion (e₁ ⊗ e₂) ϕ₁ ϕ₂ = cong₂ _⊗_ (fusion e₁ ϕ₁ ϕ₂) (fusion e₂ ϕ₁ ϕ₂)
 fusion (`let e₁ `in e₂) ϕ₁ ϕ₂ = cong₂ `let_`in_ (fusion e₁ ϕ₁ ϕ₂) $
   fusion e₂ (ϕ₁ ↑) (ϕ₂ ↑) ■ ⋯-cong e₂ (sym ∘ dist-↑-· ϕ₁ ϕ₂)
@@ -201,7 +204,7 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
     (Γ-mob : Arr.Mobile a → MobCx Γ γ) →
     T ⸴ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) ⊢ e ∶ U ∣ Arr.eff a →
     ----------------------------------------------------------------
-    Γ ; γ ⊢ ƛ e ∶ T ⟨ a ⟩→ U ∣ ℙ
+    Γ ; γ ⊢ ƛ (Arr.dir a) e ∶ T ⟨ a ⟩→ U ∣ ℙ
 
   T-AbsRec :
     let open Fin.Patterns in
@@ -209,7 +212,7 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
     (a-unr : Arr.Unr a) →
     T ⸴ T ⟨ a ⟩→ U ⸴ Γ ; (` 0F) ∥ (` 1F) ∥ 𝐂.wk (𝐂.wk γ) ⊢ e ∶ U ∣ Arr.eff a →
     --------------------------------------------------------------------------
-    Γ ; γ ⊢ μ (ƛ e) ∶ T ⟨ a ⟩→ U ∣ ℙ
+    Γ ; γ ⊢ μ (ƛ 𝟙 e) ∶ T ⟨ a ⟩→ U ∣ ℙ
 
   T-AppUnr :
     (a-unr : Arr.Unr a) →
@@ -217,31 +220,31 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
     Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ →
     Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ →
     -------------------------------
-    Γ ; γ₁ ∥ γ₂ ⊢ e₁ · e₂ ∶ U ∣ ϵ
+    Γ ; γ₁ ∥ γ₂ ⊢ e₁ ·¹ e₂ ∶ U ∣ ϵ
 
   T-AppLin :
     (a-par : Arr.Is𝟙 a) →
     (≤ₐ : Arr.eff a ≤ϵ ϵ) →
     Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ →
     Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ →
-    ------------------------------
-    Γ ; γ₁ ∥ γ₂ ⊢ e₁ · e₂ ∶ U ∣ ϵ
+    -------------------------------
+    Γ ; γ₁ ∥ γ₂ ⊢ e₁ ·¹ e₂ ∶ U ∣ ϵ
 
   T-AppLeft :
     (aL : Arr.IsL a) →
     (≤ₐ : Arr.eff a ≤ϵ ϵ) →
     Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ℙ →
     Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ϵ →
-    -------------------------------
-    Γ ; (γ₂ ; γ₁) ⊢ e₁ · e₂ ∶ U ∣ ϵ
+    ---------------------------------
+    Γ ; (γ₂ ; γ₁) ⊢ e₁ ·ᴸ e₂ ∶ U ∣ ϵ
 
   T-AppRight :
     (aR : Arr.IsR a) →
     (≤ₐ : Arr.eff a ≤ϵ ϵ) →
     Γ ; γ₁ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ →
     Γ ; γ₂ ⊢ e₂ ∶ T          ∣ ℙ →
-    -------------------------------
-    Γ ; (γ₁ ; γ₂) ⊢ e₁ · e₂ ∶ U ∣ ϵ
+    ---------------------------------
+    Γ ; (γ₁ ; γ₂) ⊢ e₁ ·ᴿ e₂ ∶ U ∣ ϵ
 
   T-Pair : (p/s : ParSeq) {γ₁ γ₂ : Struct n} →
     let d = biasedDir p/s in
@@ -530,46 +533,46 @@ invApp-conv t-eq u-eq ≤ (T-AppLin   a x y) = T-AppLin   a (T-Conv (t-eq `→ u
 invApp-conv t-eq u-eq ≤ (T-AppLeft  a x y) = T-AppLeft  a (T-Conv (t-eq `→ u-eq) ℙ≤ϵ x) (T-Conv t-eq ≤ y)
 invApp-conv t-eq u-eq ≤ (T-AppRight a x y) = T-AppRight a (T-Conv (t-eq `→ u-eq) ≤ x)   (T-Conv t-eq ℙ≤ϵ y)
 
-inv-· : Γ ; γ ⊢ e₁ · e₂ ∶ U ∣ ϵ →
+inv-· : Γ ; γ ⊢ e₁ ·⟨ d ⟩ e₂ ∶ U ∣ ϵ →
   ∃[ a ] ∃[ α ] ∃[ β ] ∃[ T ]
-    Γ ∶ join (Arr.dir a) β α ≼ γ × Arr.eff a ≤ϵ ϵ × InvApp Γ α β e₁ e₂ a T U ϵ
+    Γ ∶ join (Arr.dir a) β α ≼ γ × Arr.dir a ≡ d × Arr.eff a ≤ϵ ϵ × InvApp Γ α β e₁ e₂ a T U ϵ
 inv-· (T-AppUnr {a = a} {γ₁ = γ₁} {γ₂ = γ₂} a-unr ≤ₐ x y) =
   a , _ , _ , _
     , ≼-refl (≈-trans (≈-reflexive (cong (λ d → join d γ₂ γ₁) (Arr.ω⇒𝟙 a a-unr))) ∥-comm)
-    , ≤ₐ
+    , a .Arr.ω⇒𝟙 a-unr , ≤ₐ
     , T-AppUnr a-unr x y
 inv-· (T-AppLin {a = a} {γ₁ = γ₁} {γ₂ = γ₂} a-par ≤ₐ x y) =
   a , _ , _ , _
     , ≼-refl (≈-trans (≈-reflexive (cong (λ d → join d γ₂ γ₁) (a-par .proj₂))) ∥-comm)
-    , ≤ₐ
+    , a-par .proj₂ , ≤ₐ
     , T-AppLin a-par x y
 inv-· (T-AppLeft {a = a} {γ₁ = γ₁} {γ₂ = γ₂} aL ≤ₐ x y) =
     a , _ , _ , _
     , ≼-refl (≈-reflexive (cong (λ d → join d γ₂ γ₁) aL))
-    , ≤ₐ
+    , aL , ≤ₐ
     , T-AppLeft aL x y
 inv-· (T-AppRight {a = a} {γ₁ = γ₁} {γ₂ = γ₂} aR ≤ₐ x y) =
     a , _ , _ , _
     , ≼-refl (≈-reflexive (cong (λ d → join d γ₂ γ₁) aR))
-    , ≤ₐ
+    , aR , ≤ₐ
     , T-AppRight aR x y
 inv-· (T-Conv T≃ ϵ≤ x) =
-  let _ , _ , _ , _ , ≤γ , ≤ₐ , xy = inv-· x
-   in _ , _ , _ , _ , ≤γ , ≤ϵ-trans ≤ₐ ϵ≤ , invApp-conv ≃-refl T≃ ϵ≤ xy
+  let _ , _ , _ , _ , ≤γ , d≡ , ≤ₐ , xy = inv-· x
+   in _ , _ , _ , _ , ≤γ , d≡ , ≤ϵ-trans ≤ₐ ϵ≤ , invApp-conv ≃-refl T≃ ϵ≤ xy
 inv-· (T-Weaken ≤₁ x) =
   let _ , _ , _ , _ , ≤₂ , xy = inv-· x
    in _ , _ , _ , _ , ≼-trans ≤₂ ≤₁ , xy
 
 inv-·-unr :
-  Γ ; γ ⊢ e₁ · e₂ ∶ U ∣ ϵ →
+  Γ ; γ ⊢ e₁ ·¹ e₂ ∶ U ∣ ϵ →
   (∀ {γ′ T a ϵ′} → Γ ; γ′ ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ′ → Arr.Unr a) →
   ∃[ a ] ∃[ α ] ∃[ β ] ∃[ T ]
      Γ ∶ join (Arr.dir a) β α ≼ γ × Arr.eff a ≤ϵ ϵ × Arr.Unr a × Γ ; α ⊢ e₁ ∶ T ⟨ a ⟩→ U ∣ ϵ × Γ ; β ⊢ e₂ ∶ T ∣ ϵ
 inv-·-unr x is-unr with inv-· x
-... | a , _ , _ , _ , ≤γ , ≤ₐ , T-AppLin (refl , refl) x y = case (is-unr x) of λ()
-... | a , _ , _ , _ , ≤γ , ≤ₐ , T-AppLeft  refl x y = case Arr.ω⇒𝟙 a (is-unr x) of λ()
-... | a , _ , _ , _ , ≤γ , ≤ₐ , T-AppRight refl x y = case Arr.ω⇒𝟙 a (is-unr x) of λ()
-... | a , _ , _ , _ , ≤γ , ≤ₐ , T-AppUnr   refl x y = a , _ , _ , _ , ≤γ , ≤ₐ , refl , x , y
+... | a , _ , _ , _ , ≤γ , _ , ≤ₐ , T-AppLin (refl , refl) x y = case (is-unr x) of λ()
+... | a , _ , _ , _ , ≤γ , _ , ≤ₐ , T-AppLeft refl x y = case Arr.ω⇒𝟙 a (is-unr x) of λ()
+... | a , _ , _ , _ , ≤γ , _ , ≤ₐ , T-AppRight refl x y = case Arr.ω⇒𝟙 a (is-unr x) of λ()
+... | a , _ , _ , _ , ≤γ , refl , ≤ₐ , T-AppUnr refl x y = a , _ , _ , _ , ≤γ , ≤ₐ , refl , x , y
 
 inv-⊗ : Γ ; γ ⊢ e₁ ⊗ e₂ ∶ U ∣ ϵ →
   ∃[ p/s ] ∃[ α ] ∃[ β ] ∃[ T₁ ] ∃[ T₂ ] ∃[ ϵ₁ ] ∃[ ϵ₂ ]
@@ -672,7 +675,7 @@ postulate
 -- _⊢⋯⁻¹_ {e = K c} x ⊢ϕ =
 --   let _ , T≃ , ≼γ , ⊢c = inv-K x in
 --   _ , ≼γ , T-Conv T≃ ℙ≤ϵ (T-Const ⊢c)
--- _⊢⋯⁻¹_ {e = ƛ e} x ⊢ϕ = {!!}
+-- _⊢⋯⁻¹_ {e = ƛ d e} x ⊢ϕ = {!!}
 -- _⊢⋯⁻¹_ {e = μ e} x ⊢ϕ = {!!}
 -- _⊢⋯⁻¹_ {e = e · e₁} x ⊢ϕ = {!!}
 -- _⊢⋯⁻¹_ {e = e ; e₁} x ⊢ϕ = {!!}
