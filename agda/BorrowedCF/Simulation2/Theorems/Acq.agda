@@ -1182,6 +1182,53 @@ canonₛ-acq-head {N} (suc b) (c′ ∷ B) e2 =
     jjeq = toℕ-subst𝔽 (+-suc sB (2 + N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 1F))
          ■ toℕ-weaken*ᵣ sB (suc 1F) ■ +-suc sB 1
 
+-- Flag-parametric core of the variable-base transpose (after the ⦅*⦆ₛ
+-- commutation decomposition).  The head endpoint ` 0F collapses to * and the
+-- junction flag drops from (suc x) to x.  Proven by recursion on the group.
+core-gen : ∀ {n} (D : BindGroup) (sB₂ : ℕ) (x : 𝔽 (2 + n)) (j : 𝔽 (sum D)) →
+    subst Tm (cong (sB₂ +_) (sym (+-suc (syncs D) (suc (suc n)))))
+      (subst Tm (+-suc (syncs D) (suc (suc n))) (canonₛ D (` 0F , suc x , K `unit) j) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+    ⋯ (assocSwapᵣ (syncs D) 1 {2 + n} ↑* sB₂)
+    ⋯ assocSwapᵣ sB₂ 1 {syncs D + (2 + n)}
+    ⋯ ⦅ K `unit ⦆ₛ
+  ≡ canonₛ D (K `unit , x , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+core-gen {n} D sB₂ x j =
+    step1
+  ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+      (canonₛ-natₛ D (` 0F) (suc x) (K `unit) ⦅ K `unit ⦆ₛ x refl j)
+  where
+    cD : Tm (syncs D + (3 + n))
+    cD = canonₛ D (` 0F , suc x , K `unit) j
+    sD : ℕ
+    sD = syncs D
+    ρa = assocSwapᵣ sD 1 {2 + n} ↑* sB₂
+    ρb = assocSwapᵣ sB₂ 1 {sD + (2 + n)}
+    ss : ∀ {A B} (p : A ≡ B) (t : Tm A) → subst Tm (sym p) (subst Tm p t) ≡ t
+    ss refl t = refl
+    sWk : ∀ {A B} (e : A ≡ B) (u : Tm A) →
+          subst Tm (cong (sB₂ +_) e) (u ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ≡ subst Tm e u ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+    sWk refl u = refl
+    comp-eq : (((weaken* ⦃ Kᵣ ⦄ sB₂ ·ₖ ρa) ·ₖ ρb) ·ₖ ⦅ K `unit ⦆ₛ)
+              ≗ ((⦅ K `unit ⦆ₛ ↑* sD) ·ₖ weaken* ⦃ Kᵣ ⦄ sB₂)
+    comp-eq i = {!comp-eq!}
+    pure : cD ⋯ weaken* ⦃ Kᵣ ⦄ sB₂ ⋯ ρa ⋯ ρb ⋯ ⦅ K `unit ⦆ₛ
+           ≡ cD ⋯ (⦅ K `unit ⦆ₛ ↑* sD) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+    pure = cong (λ z → z ⋯ ρb ⋯ ⦅ K `unit ⦆ₛ) (fusion cD (weaken* ⦃ Kᵣ ⦄ sB₂) ρa)
+         ■ cong (_⋯ ⦅ K `unit ⦆ₛ) (fusion cD (weaken* ⦃ Kᵣ ⦄ sB₂ ·ₖ ρa) ρb)
+         ■ fusion cD ((weaken* ⦃ Kᵣ ⦄ sB₂ ·ₖ ρa) ·ₖ ρb) ⦅ K `unit ⦆ₛ
+         ■ ⋯-cong cD comp-eq
+         ■ sym (fusion cD (⦅ K `unit ⦆ₛ ↑* sD) (weaken* ⦃ Kᵣ ⦄ sB₂))
+    step1 : subst Tm (cong (sB₂ +_) (sym (+-suc (syncs D) (suc (suc n)))))
+              (subst Tm (+-suc (syncs D) (suc (suc n))) cD ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+            ⋯ (assocSwapᵣ (syncs D) 1 {2 + n} ↑* sB₂)
+            ⋯ assocSwapᵣ sB₂ 1 {syncs D + (2 + n)}
+            ⋯ ⦅ K `unit ⦆ₛ
+          ≡ cD ⋯ (⦅ K `unit ⦆ₛ ↑* syncs D) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
+    step1 = cong (λ z → z ⋯ ρa ⋯ ρb ⋯ ⦅ K `unit ⦆ₛ)
+              ( sWk (sym (+-suc sD (suc (suc n)))) (subst Tm (+-suc sD (suc (suc n))) cD)
+              ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB₂) (ss (+-suc sD (suc (suc n))) cD) )
+          ■ pure
+
 -- Variable-base sibling of canonₛ-↑transpose.  The C-region leaf canonₛ C
 -- (` 0F , 1F , K `unit) j sits behind a foreign front block sB₂ (weaken* sB₂),
 -- and the acq cleanup ⦅ K `unit ⦆ₛ collapses the head-channel variable ` 0F to *.
@@ -1225,7 +1272,7 @@ varC-transpose {n} (b ∷ C)       sB₂ j =
     push = sym (dist-↑-⦅⦆-⋯ (W ⋯ ρc) (K `unit) ρd-base)
          ■ cong (_⋯ ρd-base) (sym (dist-↑-⦅⦆-⋯ W (K `unit) ρc-base))
     core : W ⋯ ⦅ K `unit ⦆ₛ ≡ canonₛ Cg (K `unit , 0F , K `unit) j ⋯ weaken* ⦃ Kᵣ ⦄ sB₂
-    core = {!core!}
+    core = core-gen Cg sB₂ 0F j
 
 open T using (_;_⊢ₚ_)
 

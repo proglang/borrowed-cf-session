@@ -145,3 +145,17 @@ descend-absK {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {ρ = ρ} k Δ inj-ρ pre d
 
 rlift : (k : ℕ) → (m →ᵣ n) → (k + m →ᵣ k + n)
 rlift k ρ = ρ 𝐂.↑* k
+
+open import Data.Fin using (_↑ˡ_)
+open import Data.Vec.Base using () renaming (here to vhere; there to vthere)
+
+↑ˡ-fz : ∀ {k} n → (fzero {k}) ↑ˡ n ≡ fzero {k + n}
+↑ˡ-fz n = refl
+
+↑ˡ∈fresh : (k n : ℕ) (x : 𝔽 k) → (x ↑ˡ n) ∈ freshᵏ n k
+↑ˡ∈fresh (suc k) n fzero    rewrite ↑ˡ-fz {suc k} n = vhere
+↑ˡ∈fresh (suc k) n (fsuc x) = vthere (↑ˡ∈fresh k n x)
+
+dom-⋯wkʳ⊆fresh : ∀ {k} (X : Struct k) {n} → dom (X 𝐂.⋯ᵣ 𝐂.wkʳ n) ⊆ freshᵏ n k
+dom-⋯wkʳ⊆fresh X {n} {y} y∈ with dom-⋯-InImage X {ϕ = 𝐂.wkʳ n} y∈
+... | x , eq = subst (_∈ freshᵏ n _) eq (↑ˡ∈fresh _ n x)
