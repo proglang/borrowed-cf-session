@@ -2160,6 +2160,86 @@ syncs-split []            {b₁} {B₂} = refl
 syncs-split (a ∷ [])      {b₁} {B₂} = cong suc (syncs-split [] {b₁} {B₂})
 syncs-split (a ∷ d ∷ B₁″) {b₁} {B₂} = cong suc (syncs-split (d ∷ B₁″) {b₁} {B₂})
 
+toℕ-subst-domM : ∀ {A A′ Bb} (e : A ≡ A′) (ρ : A →ᵣ Bb) (y : 𝔽 A′) →
+                 Fin.toℕ (subst (λ z → z →ᵣ Bb) e ρ y) ≡ Fin.toℕ (ρ (subst 𝔽 (sym e) y))
+toℕ-subst-domM refl ρ y = refl
+
+-- a weakened term (image of ⋯ weakenᵣ, so avoiding 0F) commutes weaken*(suc k)
+-- with the split weaken* k then weakenᵣ↑*(suc k) (across the +-suc scope bridge).
+weaken-suc-shift : ∀ {N} (u : Tm N) (k : ℕ) →
+  u ⋯ weakenᵣ ⋯ weaken* ⦃ Kᵣ ⦄ (suc k)
+  ≡ subst Tm (+-suc k N) (u ⋯ weakenᵣ ⋯ weaken* ⦃ Kᵣ ⦄ k) ⋯ (weakenᵣ ↑* (suc k))
+weaken-suc-shift {N} u k =
+    fusion u weakenᵣ (weaken* ⦃ Kᵣ ⦄ (suc k))
+  ■ ⋯-cong u ptwise
+  ■ sym (fusion u weakenᵣ (weaken* ⦃ Kᵣ ⦄ k ·ₖ ρ*))
+  ■ sym (fusion (u ⋯ weakenᵣ) (weaken* ⦃ Kᵣ ⦄ k) ρ*)
+  ■ sym (subst-⋯-dom-local (+-suc k N) (u ⋯ weakenᵣ ⋯ weaken* ⦃ Kᵣ ⦄ k) (weakenᵣ ↑* (suc k)))
+  where
+    ρ* : (k + suc N) →ᵣ (suc k + suc N)
+    ρ* = subst (λ z → z →ᵣ (suc k + suc N)) (sym (+-suc k N)) (weakenᵣ ↑* (suc k))
+    ptwise : (weakenᵣ ·ₖ weaken* ⦃ Kᵣ ⦄ (suc k)) ≗ (weakenᵣ ·ₖ (weaken* ⦃ Kᵣ ⦄ k ·ₖ ρ*))
+    ptwise v = Fin.toℕ-injective
+      ( toℕ-weaken*ᵣ (suc k) (weakenᵣ v)
+      ■ sym ( toℕ-subst-domM (sym (+-suc k N)) (weakenᵣ ↑* (suc k)) (weaken* ⦃ Kᵣ ⦄ k (weakenᵣ v))
+            ■ toℕ-↑*-ge weakenᵣ (suc k) w′ q
+            ■ cong (suc k +_) (cong suc redw) ) )
+      where
+        toℕ-subst𝔽M : ∀ {a c} (e : a ≡ c) (y : 𝔽 a) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
+        toℕ-subst𝔽M refl y = refl
+        w′ : 𝔽 (suc k + N)
+        w′ = subst 𝔽 (sym (sym (+-suc k N))) (weaken* ⦃ Kᵣ ⦄ k (weakenᵣ v))
+        w′N : Fin.toℕ w′ ≡ suc (k + Fin.toℕ v)
+        w′N = toℕ-subst𝔽M (sym (sym (+-suc k N))) (weaken* ⦃ Kᵣ ⦄ k (weakenᵣ v))
+            ■ toℕ-weaken*ᵣ k (weakenᵣ v) ■ Nat.+-suc k (Fin.toℕ v)
+        q : suc k Nat.≤ Fin.toℕ w′
+        q = subst (suc k Nat.≤_) (sym w′N) (Nat.s≤s (Nat.m≤m+n k (Fin.toℕ v)))
+        redw : Fin.toℕ (Fin.reduce≥ w′ q) ≡ Fin.toℕ v
+        redw = toℕ-reduce≥ w′ q ■ cong (Nat._∸ suc k) w′N ■ Nat.m+n∸m≡n k (Fin.toℕ v)
+
+-- rsplit grown-handle L-slot: the fresh 1-channel's L-slot = ungrown handle's
+-- L-slot post-composed with sins.  B₁-induction mirroring canonₛ-rwk (the
+-- sins subst₂-conjugation via ⋯-subst₂ / subst-Tm-uip).
+handle-L-rwk : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (b₁ : ℕ) (B₂ : BindGroup) →
+  proj₁ (canonₛ-handle B₁ e₁ x e₂ 0 (suc b₁ ∷ B₂))
+  ≡ proj₁ (canonₛ-handle B₁ e₁ x e₂ b₁ B₂) ⋯ sins B₁ b₁ B₂ {N}
+handle-L-rwk [] {N} e₁ x e₂ zero     []       = ⋯-id (wk e₁) (λ _ → refl)
+handle-L-rwk [] {N} e₁ x e₂ (suc b₁) []       = ⋯-id (wk e₁) (λ _ → refl)
+handle-L-rwk [] {N} e₁ x e₂ zero     (c′ ∷ B) =
+    cong (subst Tm (+-suc (suc (syncs (c′ ∷ B))) N)) (weaken-suc-shift e₁ (syncs (c′ ∷ B)))
+  ■ sym (subst-⋯-cod-local (+-suc (suc (syncs (c′ ∷ B))) N)
+           (subst Tm (+-suc (syncs (c′ ∷ B)) N) (e₁ ⋯ weakenᵣ ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (c′ ∷ B))))
+           (weakenᵣ ↑* (suc (syncs (c′ ∷ B)))))
+handle-L-rwk [] {N} e₁ x e₂ (suc b₁) (c′ ∷ B) =
+    cong (subst Tm (+-suc (suc (syncs (c′ ∷ B))) N)) (weaken-suc-shift e₁ (syncs (c′ ∷ B)))
+  ■ sym (subst-⋯-cod-local (+-suc (suc (syncs (c′ ∷ B))) N)
+           (subst Tm (+-suc (syncs (c′ ∷ B)) N) (e₁ ⋯ weakenᵣ ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (c′ ∷ B))))
+           (weakenᵣ ↑* (suc (syncs (c′ ∷ B)))))
+handle-L-rwk (a ∷ []) {N} e₁ x e₂ b₁ B₂ =
+    cong (subst Tm (+-suc sBᴿ N)) (handle-L-rwk [] (` 0F) (suc x) (wk e₂) b₁ B₂)
+  ■ sym ( cong (_⋯ sins (a ∷ []) b₁ B₂ {N}) (subst-Tm-uip (+-suc sB N) pL t)
+        ■ ⋯-subst₂ pL pR t ρ
+        ■ subst-Tm-uip pR (+-suc sBᴿ N) (t ⋯ ρ) )
+  where
+    sB  = syncs ([] ++ suc b₁ ∷ B₂)
+    sBᴿ = syncs ([] ++ 1 ∷ suc b₁ ∷ B₂)
+    ρ   = sins [] b₁ B₂ {suc N}
+    t   = proj₁ (canonₛ-handle [] (` 0F) (suc x) (wk e₂) b₁ B₂)
+    pL = +-suc sB N ■ cong (_+ N) (sym (syncs-cons a [] (suc b₁) B₂))
+    pR = +-suc sBᴿ N ■ cong (_+ N) (sym (syncs-cons a [] 1 (suc b₁ ∷ B₂)))
+handle-L-rwk (a ∷ d ∷ B₁″) {N} e₁ x e₂ b₁ B₂ =
+    cong (subst Tm (+-suc sBᴿ N)) (handle-L-rwk (d ∷ B₁″) (` 0F) (suc x) (wk e₂) b₁ B₂)
+  ■ sym ( cong (_⋯ sins (a ∷ d ∷ B₁″) b₁ B₂ {N}) (subst-Tm-uip (+-suc sB N) pL t)
+        ■ ⋯-subst₂ pL pR t ρ
+        ■ subst-Tm-uip pR (+-suc sBᴿ N) (t ⋯ ρ) )
+  where
+    sB  = syncs ((d ∷ B₁″) ++ suc b₁ ∷ B₂)
+    sBᴿ = syncs ((d ∷ B₁″) ++ 1 ∷ suc b₁ ∷ B₂)
+    ρ   = sins (d ∷ B₁″) b₁ B₂ {suc N}
+    t   = proj₁ (canonₛ-handle (d ∷ B₁″) (` 0F) (suc x) (wk e₂) b₁ B₂)
+    pL = +-suc sB N ■ cong (_+ N) (sym (syncs-cons a (d ∷ B₁″) (suc b₁) B₂))
+    pR = +-suc sBᴿ N ■ cong (_+ N) (sym (syncs-cons a (d ∷ B₁″) 1 (suc b₁ ∷ B₂)))
+
 comm3 : ∀ x y z → x + (y + z) ≡ y + (x + z)
 comm3 x y z = sym (+-assoc x y z) ■ cong (_+ z) (Nat.+-comm x y) ■ +-assoc y x z
 
