@@ -29,10 +29,11 @@ tail-∁ (b ∷ Z) = refl
 wk↓' : (γ : Struct m) (Z : Subset (suc m)) → 𝐂.wk γ ↓ Z ≡ 𝐂.wk (γ ↓ Vec.tail Z)
 wk↓' γ (b ∷ Z) = ↓-dist-wk γ
 
-↓-join : (d : Dir) (α β : Struct n) (X : Subset n) → (join d α β) ↓ X ≡ join d (α ↓ X) (β ↓ X)
-↓-join 𝟙 α β X = refl
-↓-join L α β X = refl
-↓-join R α β X = refl
+↓-join : ∀ {A} ⦃ _ : Join A ⦄ (d : A) (α β : Struct n) (X : Subset n) → (join d α β) ↓ X ≡ join d (α ↓ X) (β ↓ X)
+↓-join d α β X with joinDir d
+... | 𝟙 = refl
+... | L = refl
+... | R = refl
 
 tail-∪-⁅0⁆ : (Z : Subset (suc n)) → Vec.tail (Z ∪ ⁅ fzero ⁆) ≡ Vec.tail Z
 tail-∪-⁅0⁆ (b ∷ Z) = ∪-identityʳ Z
@@ -42,11 +43,12 @@ tail-∪-⁅0⁆ (b ∷ Z) = ∪-identityʳ Z
 ↑ᵣ-preserves-⇐ pre {fzero}  (` u) = u
 ↑ᵣ-preserves-⇐ pre {fsuc y} (` u) = pre (` u)
 
-allCx-join↓-proj₂ : ∀ {ℓ}{P : Pred 𝕋 ℓ}(d : Dir){α β}(X : Subset n) →
+allCx-join↓-proj₂ : ∀ {ℓ}{P : Pred 𝕋 ℓ}{A} ⦃ _ : Join A ⦄ (d : A){α β}(X : Subset n) →
   AllCx P Γ ((join d α β) ↓ X) → AllCx P Γ (β ↓ X)
-allCx-join↓-proj₂ 𝟙 X (u ∥ v) = v
-allCx-join↓-proj₂ L X (u ; v) = v
-allCx-join↓-proj₂ R X (u ; v) = u
+allCx-join↓-proj₂ d X u with joinDir d
+allCx-join↓-proj₂ d X (u ∥ v) | 𝟙 = v
+allCx-join↓-proj₂ d X (u ; v) | L = v
+allCx-join↓-proj₂ d X (u ; v) | R = u
 
 
 un-wk-Unr : {δ : Struct n} → AllCx Unr (T ⸴ Γ) (𝐂.wk δ) → AllCx Unr Γ δ
@@ -55,9 +57,9 @@ un-wk-Unr = 𝐂.allCx-⋯⁻¹ (λ{ (` u) → u })
 ∈tail : {y : 𝔽 n} {X : Subset (suc n)} → y ∈ Vec.tail X → suc y ∈ X
 ∈tail {X = b ∷ X} y∈ = Vec.there y∈
 
-descend-abs : ∀ {m n} {Γ₁ : Ctx m} {Γ₂ : Ctx n} {T₀ : 𝕋} {ρ : m →ᵣ n} →
+descend-abs : ∀ {m n} {AD} ⦃ _ : Join AD ⦄ {Γ₁ : Ctx m} {Γ₂ : Ctx n} {T₀ : 𝕋} {ρ : m →ᵣ n} →
   𝐂.Inj ρ → ρ 𝐂.Preserves[ Unr ] Γ₁ ⇐ Γ₂ →
-  (dd : Dir) (A : Struct (suc m)) (γa : Struct n) →
+  (dd : AD) (A : Struct (suc m)) (γa : Struct n) →
   (T₀ ⸴ Γ₂) ∶ (A 𝐂.⋯ (ρ ↑)) ≼ join dd (CB.`_ fzero) (𝐂.wk γa) →
   ∃[ γr ] ((T₀ ⸴ Γ₁) ∶ A ≼ join dd (CB.`_ fzero) (𝐂.wk γr)) × (Γ₂ ∶ (γr 𝐂.⋯ ρ) ≼ γa)
 descend-abs {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} {ρ = ρ} inj-ρ pre dd A γa ≼b = γr , part1 , part2

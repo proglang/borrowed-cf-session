@@ -39,6 +39,8 @@ open import BorrowedCF.Simulation2.BlockPerm
 open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯; frame-plug₁; ++ₛ-VSub)
 open import BorrowedCF.Simulation2.TranslationProperties using (VChan; chanTriple-V; Value-subst)
 open import BorrowedCF.Simulation2.SplitConfine using (acq-confine)
+open import BorrowedCF.Simulation2.AcqSubstNat
+  using (subst₂→ₖ; subst-⋯ₚ-codₖ; subst-⋯ₚ-domₖ; liftCastₖ; subst-flipₖ)
 open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
 open import Relation.Binary.Definitions using (tri<; tri≈; tri>)
@@ -561,6 +563,30 @@ Bφ-⋯ {n} {n′} (b ∷ B@(_ ∷ _)) P ρ =
         TP-subst-⋯ₚ-dom (+-suc sB n) P Θ
       ■ cong (P U.⋯ₚ_) Θ⁺eq
       ■ subst-⋯ₚ-cod (sym (+-suc sB n′)) P (ρ ↑* suc sB)
+
+-- Substitution sibling of Bφ-⋯: pushing an *output substitution* through a Bφ
+-- block.  Same proof as Bφ-⋯, using the Kit-polymorphic bookkeeping lemmas.
+Bφ-⋯ₛ : ∀ {n n′} (B : BindGroup) (P : U.Proc (syncs B + n)) (τ : n →ₛ n′) →
+        Bφ B P U.⋯ₚ τ ≡ Bφ B (P U.⋯ₚ (τ ↑* syncs B))
+Bφ-⋯ₛ []            P τ = refl
+Bφ-⋯ₛ (b ∷ [])      P τ = refl
+Bφ-⋯ₛ {n} {n′} (b ∷ B@(_ ∷ _)) P τ =
+  cong (U.φ ϕ[ b ])
+    ( Bφ-⋯ₛ B (subst U.Proc (sym (+-suc (syncs B) n)) P) (τ ↑)
+    ■ cong (Bφ B) bodyeq )
+  where
+    sB = syncs B
+    Θ : (sB + suc n) →ₛ (sB + suc n′)
+    Θ = (τ ↑) ↑* sB
+    Θ⁺eq : subst (λ z → z →ₛ (sB + suc n′)) (+-suc sB n) Θ
+           ≡ subst (λ z → suc (sB + n) →ₛ z) (sym (+-suc sB n′)) (τ ↑* suc sB)
+    Θ⁺eq = subst-flipₖ (+-suc sB n′) (sym (subst₂→ₖ (+-suc sB n) (+-suc sB n′) Θ) ■ liftCastₖ sB τ)
+    bodyeq : (subst U.Proc (sym (+-suc sB n)) P) U.⋯ₚ ((τ ↑) ↑* sB)
+             ≡ subst U.Proc (sym (+-suc sB n′)) (P U.⋯ₚ (τ ↑* suc sB))
+    bodyeq =
+        subst-⋯ₚ-domₖ (+-suc sB n) P Θ
+      ■ cong (P U.⋯ₚ_) Θ⁺eq
+      ■ subst-⋯ₚ-codₖ (sym (+-suc sB n′)) P (τ ↑* suc sB)
 
 -- subst over U.Proc commutes through a φ-binder.
 subst-φ : ∀ {a b} (eq : a ≡ b) {z : U.Flag} (Q : U.Proc (suc a)) →
@@ -1112,7 +1138,23 @@ U-σ⋯ₛ : ∀ {m n n′} (P : T.Proc m) {σ : m →ₛ n} {τ : n →ₛ n′
         U[ P ] σ U.⋯ₚ τ ≡ U[ P ] (σ ·ₖ τ)
 U-σ⋯ₛ T.⟪ e ⟫ {σ} {τ} = cong U.⟪_⟫ (fusion e σ τ)
 U-σ⋯ₛ (P T.∥ Q)       = cong₂ U._∥_ (U-σ⋯ₛ P) (U-σ⋯ₛ Q)
-U-σ⋯ₛ (T.ν B₁ B₂ P)   = {!U-σ⋯ₛ-ν!}
+U-σ⋯ₛ {n = n} {n′ = n′} (T.ν B₁ B₂ P) {σ} {τ} =
+    cong (U._⋯ₚ τ) (Uν-flat σ B₁ B₂ P)
+  ■ cong U.ν
+      ( Bφ-⋯ₛ B₁ (Bφ B₂ (U[ P ] (leafσ σ B₁ B₂))) (τ ↑* 2)
+      ■ cong (Bφ B₁)
+          ( Bφ-⋯ₛ B₂ (U[ P ] (leafσ σ B₁ B₂)) ((τ ↑* 2) ↑* sB₁)
+          ■ cong (Bφ B₂)
+              ( U-σ⋯ₛ P {σ = leafσ σ B₁ B₂} {τ = Ψ}
+              ■ U-cong P leaf-eq ) ) )
+  ■ sym (Uν-flat (σ ·ₖ τ) B₁ B₂ P)
+  where
+    sB₁ = syncs B₁
+    sB₂ = syncs B₂
+    Ψ : (sB₂ + (sB₁ + (2 + n))) →ₛ (sB₂ + (sB₁ + (2 + n′)))
+    Ψ = ((τ ↑* 2) ↑* sB₁) ↑* sB₂
+    leaf-eq : (leafσ σ B₁ B₂ ·ₖ Ψ) ≗ leafσ (σ ·ₖ τ) B₁ B₂
+    leaf-eq = {!leaf-eq!}
 
 U-acq : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
       → {g : Struct m} {b₁ : ℕ} {B₁ B₂ : BindGroup}

@@ -1851,6 +1851,32 @@ P3r B₁ B₂ B {b₁} {m} u = Fin.toℕ-injective
         rhsℕ = Fin.toℕ-↑ʳ (sum (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + sum B) u
              ■ cong (λ z → z + sum B + Fin.toℕ u) (sum-rwk B₁)
 
+-- chainRwk: telescope a slot-equality (at scope suc N, shift sT) through the +-suc
+-- scope-shuffle canonₛ applies when peeling a B₁ chain (scope N).  Identical shape
+-- to chainLwk (reused verbatim); kept separate only for readability of the rwk side.
+chainRwk : ∀ {N} {sT sT′ : ℕ} (sl : sT ≡ sT′)
+           {DA DB : Set} (g : DA → Tm (sT + suc N)) (g′ : DB → Tm (sT′ + suc N))
+           (i : DA) (di : DB) →
+           subst Tm (cong (_+ suc N) sl) (g i) ≡ g′ di →
+           subst Tm (cong (_+ N) (cong suc sl)) (subst Tm (+-suc sT N) (g i))
+           ≡ subst Tm (+-suc sT′ N) (g′ di)
+chainRwk = chainLwk
+
+-- ===== canonₛ-rwk =====
+-- canonₛ on the rwk-grown bind group (with a FRESH width-1 block inserted before the
+-- handle chain), off the consumed handle, equals the transported ungrown canonₛ.
+-- The base case (B₁ = []) is the substantive re-threading obligation the roadmap flags:
+-- the inserted `1`-block becomes the new head, re-threading (` 0F, suc x, wk e₂) through
+-- the whole tail — but away from slot 0F that threading is INVISIBLE (e₁ only read at 0F).
+canonₛ-rwk : ∀ (B₁ : BindGroup) {N} (cc : UChan N) (b₁ : ℕ) (B₂ : BindGroup)
+             (i : 𝔽 (sum (B₁ ++ suc b₁ ∷ B₂))) →
+             i ≢ Fin.cast (sym (sum-++ B₁ (suc b₁ ∷ B₂))) (sum B₁ ↑ʳ 0F) →
+             canonₛ (B₁ ++ 1 ∷ suc b₁ ∷ B₂) cc (drwk B₁ b₁ B₂ i)
+             ≡ subst Tm (cong (_+ N) (sym (syncs-rwk B₁)))
+                 (canonₛ (B₁ ++ suc b₁ ∷ B₂) cc i ⋯ (weakenᵣ ↑* insertSlot B₁ b₁ B₂ i))
+canonₛ-rwk [] {N} (e₁ , x , e₂) b₁ B₂ i i≢ = {!base!}
+canonₛ-rwk (a ∷ B₁') {N} (e₁ , x , e₂) b₁ B₂ i i≢ = {!rec!}
+
 
 -- The rsplit-grown bind group's Bφ-prefix carries one extra φ-drop binder (the
 -- inserted `1`-block).  That binder slides down past the remaining blocks to the
