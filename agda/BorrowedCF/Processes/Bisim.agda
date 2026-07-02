@@ -44,7 +44,7 @@ Ub[ suc (suc b) ] (e₁ , c , e₂) (suc x) = Ub[ suc b ] (* , c , e₂) x
 
 UB[_] : (B : 𝐓.BindGroup) → UChan n → ((sum B →ₛ syncs B + n) → 𝐔.Proc (syncs B + n)) → 𝐔.Proc n
 UB[ [] ] c f = f λ()
-UB[ b ∷ [] ] c f = f λ _ → chanTriple c
+UB[ b ∷ [] ] c f = f (Ub[ b + 0 ] c)
 UB[ b ∷ B@(_ ∷ _) ] (e₁ , x , e₂) f = φ ϕ[ b ] $ UB[ B ] (` 0F , suc x , wk e₂) λ σ →
   subst 𝐔.Proc (sym (+-suc (syncs B) _)) $ f λ y →
     subst Tm (+-suc (syncs B) _) $
