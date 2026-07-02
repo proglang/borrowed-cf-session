@@ -2649,7 +2649,108 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
             cong (subst U.Proc E-cod) (sdom E-dom Z (ρρ ↑* 2))
           ■ sym (subst-⋯ₚ-cod E-cod Z θ1R)
         ρL≗ρR : ρLtot ≗ ρRtot
-        ρL≗ρR i = {!!}
+        ρL≗ρR i = go
+          where
+            toℕ-subst𝔽 : ∀ {a c} (e : a ≡ c) (y : 𝔽 a) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
+            toℕ-subst𝔽 refl y = refl
+            eAR : sAᴿ ≡ suc sA
+            eAR = syncs-rwk B₁
+            sD′≤sA : sD′ Nat.≤ sA
+            sD′≤sA = sD≤ B₁ {b₁} {B₂}
+            sA≤sAᴿ : sA Nat.≤ sAᴿ
+            sA≤sAᴿ = subst (sA Nat.≤_) (sym eAR) (Nat.n≤1+n sA)
+            sD′≤sAᴿ : sD′ Nat.≤ sAᴿ
+            sD′≤sAᴿ = Nat.≤-trans sD′≤sA sA≤sAᴿ
+            v2R : 𝔽 (SQ (syncs B + (sAᴿ + n)))
+            v2R = ρ₂ᴿ (ρ₁ᴿ (Θ i))
+            w2 : 𝔽 (SQ (syncs B + (sD′ + (1 + (L.length B₁ + n)))))
+            w2 = subst 𝔽 (sym (sym E-dom)) v2R
+            lhsSB : Fin.toℕ i Nat.< syncs B → Fin.toℕ (ρLtot i) ≡ 2 + Fin.toℕ i
+            lhsSB p =
+                toℕ-↑*-ge (assocSwapᵣ 1 (syncs B)) 2 X4 q
+              ■ cong (2 +_) (toℕ-assoc-mid 1 (syncs B) (Fin.reduce≥ X4 q) ge lt ■ cong (Nat._∸ 1) redX)
+              where
+                v1 = toℕ-↑*-lt (assocSwapᵣ sA 2) (syncs B) i p
+                v2 = toℕ-assoc-lt (syncs B) 2 (ρ₁ i) (subst (Nat._< syncs B) (sym v1) p) ■ cong (2 +_) v1
+                v3 = cong suc v2
+                v4 = toℕ-assoc-ge 1 2 (weakenᵣ (ρ₂ (ρ₁ i)))
+                       (subst (3 Nat.≤_) (sym v3) (Nat.m≤m+n 3 (Fin.toℕ i))) ■ v3
+                X4 = assocSwapᵣ 1 2 (weakenᵣ (ρ₂ (ρ₁ i)))
+                q  = subst (2 Nat.≤_) (sym v4) (Nat.m≤m+n 2 (1 + Fin.toℕ i))
+                redX = toℕ-reduce≥ X4 q ■ cong (Nat._∸ 2) v4
+                ge = subst (1 Nat.≤_) (sym redX) (Nat.s≤s Nat.z≤n)
+                lt = subst (Nat._< suc (syncs B)) (sym redX) (Nat.s≤s p)
+            rhsSB : Fin.toℕ i Nat.< syncs B → Fin.toℕ (ρRtot i) ≡ 2 + Fin.toℕ i
+            rhsSB p =
+                toℕ-subst-cod E-cod θ1R v2R
+              ■ toℕ-subst-dom (sym E-dom) (ρρ ↑* 2) v2R
+              ■ toℕ-↑*-ge ρρ 2 w2 q2
+              ■ cong (2 +_) (toℕ-↑*-lt rawR (syncs B) (Fin.reduce≥ w2 q2) (subst (Nat._< syncs B) (sym redw2) p) ■ redw2)
+              where
+                r1 = toℕ-↑*-lt (sins B₁ b₁ B₂ {2 + n}) (syncs B) i p
+                r2 = toℕ-↑*-lt (assocSwapᵣ sAᴿ 2) (syncs B) (Θ i) (subst (Nat._< syncs B) (sym r1) p) ■ r1
+                r3 = toℕ-assoc-lt (syncs B) 2 (ρ₁ᴿ (Θ i)) (subst (Nat._< syncs B) (sym r2) p) ■ cong (2 +_) r2
+                w2N = toℕ-subst𝔽 (sym (sym E-dom)) v2R ■ r3
+                q2  = subst (2 Nat.≤_) (sym w2N) (Nat.m≤m+n 2 (Fin.toℕ i))
+                redw2 = toℕ-reduce≥ w2 q2 ■ cong (Nat._∸ 2) w2N
+            lhsSA : syncs B Nat.≤ Fin.toℕ i → Fin.toℕ i Nat.< syncs B + sA → Fin.toℕ (ρLtot i) ≡ 3 + Fin.toℕ i
+            lhsSA sB≤ di<A =
+                toℕ-↑*-ge (assocSwapᵣ 1 (syncs B)) 2 X4 q
+              ■ cong (2 +_) (toℕ-assoc-ge 1 (syncs B) (Fin.reduce≥ X4 q) ge ■ redX)
+              where
+                rdi≡ = toℕ-reduce≥ i sB≤
+                recon = Nat.m+[n∸m]≡n sB≤
+                rd<sA = Nat.+-cancelˡ-< (syncs B) (Fin.toℕ i Nat.∸ syncs B) sA (subst (Nat._< syncs B + sA) (sym recon) di<A)
+                v1 = toℕ-↑*-ge (assocSwapᵣ sA 2) (syncs B) i sB≤
+                   ■ cong (syncs B +_) (toℕ-assoc-lt sA 2 (Fin.reduce≥ i sB≤) (subst (Nat._< sA) (sym rdi≡) rd<sA) ■ cong (2 +_) rdi≡)
+                   ■ comm3 (syncs B) 2 (Fin.toℕ i Nat.∸ syncs B) ■ cong (2 +_) recon
+                v2 = toℕ-assoc-ge (syncs B) 2 (ρ₁ i)
+                       (subst (syncs B + 2 Nat.≤_) (sym v1) (subst (Nat._≤ 2 + Fin.toℕ i) (Nat.+-comm 2 (syncs B)) (Nat.+-monoʳ-≤ 2 sB≤))) ■ v1
+                v3 = cong suc v2
+                v4 = toℕ-assoc-ge 1 2 (weakenᵣ (ρ₂ (ρ₁ i)))
+                       (subst (3 Nat.≤_) (sym v3) (Nat.m≤m+n 3 (Fin.toℕ i))) ■ v3
+                X4 = assocSwapᵣ 1 2 (weakenᵣ (ρ₂ (ρ₁ i)))
+                q  = subst (2 Nat.≤_) (sym v4) (Nat.m≤m+n 2 (1 + Fin.toℕ i))
+                redX = toℕ-reduce≥ X4 q ■ cong (Nat._∸ 2) v4
+                ge = subst (suc (syncs B) Nat.≤_) (sym redX) (Nat.s≤s sB≤)
+            rhsSAlo : syncs B Nat.≤ Fin.toℕ i → Fin.toℕ i Nat.< syncs B + sD′ → Fin.toℕ (ρRtot i) ≡ 3 + Fin.toℕ i
+            rhsSAlo sB≤ di<lo =
+                toℕ-subst-cod E-cod θ1R v2R
+              ■ toℕ-subst-dom (sym E-dom) (ρρ ↑* 2) v2R
+              ■ toℕ-↑*-ge ρρ 2 w2 q2
+              ■ cong (2 +_) ( toℕ-↑*-ge rawR (syncs B) (Fin.reduce≥ w2 q2) sB≤rw
+                            ■ cong (syncs B +_) (toℕ-assoc-lt sD′ 1 (Fin.reduce≥ (Fin.reduce≥ w2 q2) sB≤rw) (subst (Nat._< sD′) (sym rr≡) rd<sD) ■ cong (1 +_) rr≡)
+                            ■ comm3 (syncs B) 1 (Fin.toℕ i Nat.∸ syncs B) ■ cong (1 +_) recon )
+              where
+                rdi≡ = toℕ-reduce≥ i sB≤
+                recon = Nat.m+[n∸m]≡n sB≤
+                rd<sD = Nat.+-cancelˡ-< (syncs B) (Fin.toℕ i Nat.∸ syncs B) sD′ (subst (Nat._< syncs B + sD′) (sym recon) di<lo)
+                rd<sAᴿ = Nat.<-≤-trans rd<sD sD′≤sAᴿ
+                r1 = toℕ-↑*-ge (sins B₁ b₁ B₂ {2 + n}) (syncs B) i sB≤
+                   ■ cong (syncs B +_) (sins-toℕ-lo B₁ b₁ B₂ (Fin.reduce≥ i sB≤) (subst (Nat._< sD′) (sym rdi≡) rd<sD) ■ rdi≡)
+                   ■ recon
+                bnd2 = subst (syncs B Nat.≤_) (sym r1) sB≤
+                redΘ = toℕ-reduce≥ (Θ i) bnd2 ■ cong (Nat._∸ syncs B) r1
+                r2 = toℕ-↑*-ge (assocSwapᵣ sAᴿ 2) (syncs B) (Θ i) bnd2
+                   ■ cong (syncs B +_) (toℕ-assoc-lt sAᴿ 2 (Fin.reduce≥ (Θ i) bnd2) (subst (Nat._< sAᴿ) (sym redΘ) rd<sAᴿ) ■ cong (2 +_) redΘ)
+                   ■ comm3 (syncs B) 2 (Fin.toℕ i Nat.∸ syncs B) ■ cong (2 +_) recon
+                r3 = toℕ-assoc-ge (syncs B) 2 (ρ₁ᴿ (Θ i))
+                       (subst (syncs B + 2 Nat.≤_) (sym r2) (subst (Nat._≤ 2 + Fin.toℕ i) (Nat.+-comm 2 (syncs B)) (Nat.+-monoʳ-≤ 2 sB≤))) ■ r2
+                w2N = toℕ-subst𝔽 (sym (sym E-dom)) v2R ■ r3
+                q2  = subst (2 Nat.≤_) (sym w2N) (Nat.m≤m+n 2 (Fin.toℕ i))
+                redw2 = toℕ-reduce≥ w2 q2 ■ cong (Nat._∸ 2) w2N
+                sB≤rw = subst (syncs B Nat.≤_) (sym redw2) sB≤
+                rr≡ = toℕ-reduce≥ (Fin.reduce≥ w2 q2) sB≤rw ■ cong (Nat._∸ syncs B) redw2
+            go : ρLtot i ≡ ρRtot i
+            go with Fin.toℕ i Nat.<? syncs B
+            ... | yes p = Fin.toℕ-injective (lhsSB p ■ sym (rhsSB p))
+            ... | no ¬p with Fin.toℕ i Nat.<? (syncs B + sD′)
+            ...   | yes qlo = Fin.toℕ-injective (lhsSA (Nat.≮⇒≥ ¬p) (Nat.<-≤-trans qlo (Nat.+-monoʳ-≤ (syncs B) sD′≤sA)) ■ sym (rhsSAlo (Nat.≮⇒≥ ¬p) qlo))
+            ...   | no ¬qlo with Fin.toℕ i Nat.<? (syncs B + sA)
+            ...     | yes rhi = {!!}
+            ...     | no ¬rhi with Fin.toℕ i Nat.<? (syncs B + sA + 2)
+            ...       | yes ttwo = {!!}
+            ...       | no ¬ttwo = {!!}
         outerRec : ∀ (Y : U.Proc (syncs B + (sA + (2 + n)))) →
           Y U.⋯ₚ ρ₁ U.⋯ₚ ρ₂ U.⋯ₚ weakenᵣ U.⋯ₚ assocSwapᵣ 1 2 U.⋯ₚ (assocSwapᵣ 1 (syncs B) ↑* 2)
           ≡ subst U.Proc E-cod
