@@ -33,6 +33,7 @@ open import BorrowedCF.Simulation2.TranslationProperties
 open import BorrowedCF.Simulation2.BlockPerm
   using ( assocSwap-01; R-base-b0; assocSwap-0a; toℕ-R3; toℕ-R3₂; toℕ-R4
         ; toℕ-weaken*ᵣ; toℕ-swapᵣ-mid; toℕ-reduce≥; toℕ-assoc-mid
+        ; toℕ-assoc-lt; toℕ-assoc-ge
         ; toℕ-↑*-ge; toℕ-↑*-lt; commuteS; wkSwap-cancel; assocSwap-invol )
 open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
@@ -1960,6 +1961,25 @@ sins-toℕ-hi (a ∷ B₁') b₁ B₂ {N} j h =
     toℕ-subst𝔽 : ∀ {a c} (e : a ≡ c) (y : 𝔽 a) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
     toℕ-subst𝔽 refl y = refl
 
+-- below the insertion threshold syncs (suc b₁ ∷ B₂), sins preserves toℕ.
+sins-toℕ-lo : ∀ (B₁ : BindGroup) (b₁ : ℕ) (B₂ : BindGroup) {N}
+              (j : 𝔽 (syncs (B₁ ++ suc b₁ ∷ B₂) + N)) →
+              Fin.toℕ j Nat.< syncs (suc b₁ ∷ B₂) →
+              Fin.toℕ (sins B₁ b₁ B₂ {N} j) ≡ Fin.toℕ j
+sins-toℕ-lo [] b₁ B₂ {N} j h =
+    toℕ-subst-cod (+-suc (syncs (suc b₁ ∷ B₂)) N) (weakenᵣ ↑* syncs (suc b₁ ∷ B₂)) j
+  ■ toℕ-↑*-lt weakenᵣ (syncs (suc b₁ ∷ B₂)) j h
+sins-toℕ-lo (a ∷ B₁') b₁ B₂ {N} j h =
+    toℕ-subst₂ᵣ pL pR (sins B₁' b₁ B₂ {suc N}) j
+  ■ sins-toℕ-lo B₁' b₁ B₂ {suc N} (subst 𝔽 (sym pL) j)
+      (subst (Nat._< syncs (suc b₁ ∷ B₂)) (sym (toℕ-subst𝔽 (sym pL) j)) h)
+  ■ toℕ-subst𝔽 (sym pL) j
+  where
+    pL = +-suc (syncs (B₁' ++ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a B₁' (suc b₁) B₂))
+    pR = +-suc (syncs (B₁' ++ 1 ∷ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a B₁' 1 (suc b₁ ∷ B₂)))
+    toℕ-subst𝔽 : ∀ {a c} (e : a ≡ c) (y : 𝔽 a) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
+    toℕ-subst𝔽 refl y = refl
+
 -- the handle-chain sync count bounds the whole grown group's sync count.
 sD≤ : ∀ (B₁ : BindGroup) {b₁ B₂} → syncs (suc b₁ ∷ B₂) Nat.≤ syncs (B₁ ++ suc b₁ ∷ B₂)
 sD≤ []                {b₁} {B₂} = Nat.≤-refl
@@ -2587,8 +2607,68 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
               ■ cong (U._⋯ₚ (ρρ ↑* 2))
                   (subst-∥f (λ z → z) (cong SQ (cong (syncs B +_) e2))
                      (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫) pushR-Pᴿ) )
+        -- ===== outer renaming reconciliation (fresh-φ insertion commutes) =====
+        Θ : (syncs B + (sA + (2 + n))) →ᵣ (syncs B + (sAᴿ + (2 + n)))
+        Θ = sins B₁ b₁ B₂ {2 + n} ↑* syncs B
+        E-dom : (2 + (syncs B + (sAᴿ + n))) ≡ SQ (syncs B + (sD′ + (1 + (L.length B₁ + n))))
+        E-dom = cong SQ (cong (syncs B +_) e2)
+        E-cod : SQ (syncs B + (1 + (sD′ + (L.length B₁ + n)))) ≡ SQ (syncs B + suc (sA + n))
+        E-cod = cong SQ (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n}))
+        θ1R : SQ (syncs B + (sAᴿ + n)) →ᵣ SQ (syncs B + (1 + (sD′ + (L.length B₁ + n))))
+        θ1R = subst (λ z → z →ᵣ SQ (syncs B + (1 + (sD′ + (L.length B₁ + n))))) (sym E-dom) (ρρ ↑* 2)
+        ρR' : SQ (syncs B + (sAᴿ + n)) →ᵣ SQ (syncs B + suc (sA + n))
+        ρR' = subst (λ z → SQ (syncs B + (sAᴿ + n)) →ᵣ z) E-cod θ1R
+        ρLtot : (syncs B + (sA + (2 + n))) →ᵣ (2 + (syncs B + (1 + (sA + n))))
+        ρLtot = ρ₁ ·ₖ (ρ₂ ·ₖ (weakenᵣ ·ₖ (assocSwapᵣ 1 2 ·ₖ (assocSwapᵣ 1 (syncs B) ↑* 2))))
+        ρRtot : (syncs B + (sA + (2 + n))) →ᵣ (2 + (syncs B + suc (sA + n)))
+        ρRtot = Θ ·ₖ (ρ₁ᴿ ·ₖ (ρ₂ᴿ ·ₖ ρR'))
+        sdom : ∀ {a b c} (p : a ≡ b) (Q : U.Proc a) (θ : b →ᵣ c) →
+               subst U.Proc p Q U.⋯ₚ θ ≡ Q U.⋯ₚ subst (λ z → z →ᵣ c) (sym p) θ
+        sdom refl Q θ = refl
+        toℕ-subst-dom : ∀ {A A′ Bb} (e : A ≡ A′) (ρ : A →ᵣ Bb) (y : 𝔽 A′) →
+                        Fin.toℕ (subst (λ z → z →ᵣ Bb) e ρ y) ≡ Fin.toℕ (ρ (subst 𝔽 (sym e) y))
+        toℕ-subst-dom refl ρ y = refl
+        fuseL : ∀ (Y : U.Proc (syncs B + (sA + (2 + n)))) →
+                Y U.⋯ₚ ρ₁ U.⋯ₚ ρ₂ U.⋯ₚ weakenᵣ U.⋯ₚ assocSwapᵣ 1 2 U.⋯ₚ (assocSwapᵣ 1 (syncs B) ↑* 2)
+                ≡ Y U.⋯ₚ ρLtot
+        fuseL Y =
+            U.fusionₚ (Y U.⋯ₚ ρ₁ U.⋯ₚ ρ₂ U.⋯ₚ weakenᵣ) (assocSwapᵣ 1 2) (assocSwapᵣ 1 (syncs B) ↑* 2)
+          ■ U.fusionₚ (Y U.⋯ₚ ρ₁ U.⋯ₚ ρ₂) weakenᵣ (assocSwapᵣ 1 2 ·ₖ (assocSwapᵣ 1 (syncs B) ↑* 2))
+          ■ U.fusionₚ (Y U.⋯ₚ ρ₁) ρ₂ (weakenᵣ ·ₖ (assocSwapᵣ 1 2 ·ₖ (assocSwapᵣ 1 (syncs B) ↑* 2)))
+          ■ U.fusionₚ Y ρ₁ (ρ₂ ·ₖ (weakenᵣ ·ₖ (assocSwapᵣ 1 2 ·ₖ (assocSwapᵣ 1 (syncs B) ↑* 2))))
+        fuseR4 : ∀ (Y : U.Proc (syncs B + (sA + (2 + n)))) →
+                 Y U.⋯ₚ Θ U.⋯ₚ ρ₁ᴿ U.⋯ₚ ρ₂ᴿ U.⋯ₚ ρR' ≡ Y U.⋯ₚ ρRtot
+        fuseR4 Y =
+            U.fusionₚ (Y U.⋯ₚ Θ U.⋯ₚ ρ₁ᴿ) ρ₂ᴿ ρR'
+          ■ U.fusionₚ (Y U.⋯ₚ Θ) ρ₁ᴿ (ρ₂ᴿ ·ₖ ρR')
+          ■ U.fusionₚ Y Θ (ρ₁ᴿ ·ₖ (ρ₂ᴿ ·ₖ ρR'))
+        collapseR : ∀ (Z : U.Proc (SQ (syncs B + (sAᴿ + n)))) →
+                    subst U.Proc E-cod (subst U.Proc E-dom Z U.⋯ₚ (ρρ ↑* 2))
+                    ≡ Z U.⋯ₚ ρR'
+        collapseR Z =
+            cong (subst U.Proc E-cod) (sdom E-dom Z (ρρ ↑* 2))
+          ■ sym (subst-⋯ₚ-cod E-cod Z θ1R)
+        ρL≗ρR : ρLtot ≗ ρRtot
+        ρL≗ρR i = {!!}
+        outerRec : ∀ (Y : U.Proc (syncs B + (sA + (2 + n)))) →
+          Y U.⋯ₚ ρ₁ U.⋯ₚ ρ₂ U.⋯ₚ weakenᵣ U.⋯ₚ assocSwapᵣ 1 2 U.⋯ₚ (assocSwapᵣ 1 (syncs B) ↑* 2)
+          ≡ subst U.Proc E-cod
+              (subst U.Proc E-dom (Y U.⋯ₚ Θ U.⋯ₚ ρ₁ᴿ U.⋯ₚ ρ₂ᴿ) U.⋯ₚ (ρρ ↑* 2))
+        outerRec Y =
+            fuseL Y
+          ■ U.⋯ₚ-cong Y ρL≗ρR
+          ■ sym (fuseR4 Y)
+          ■ sym (collapseR (Y U.⋯ₚ Θ U.⋯ₚ ρ₁ᴿ U.⋯ₚ ρ₂ᴿ))
+        pushRPᴿ-fac : pushR-Pᴿ ≡ U[ P ] τ U.⋯ₚ Θ U.⋯ₚ ρ₁ᴿ U.⋯ₚ ρ₂ᴿ
+        pushRPᴿ-fac = cong (λ z → (z U.⋯ₚ ρ₁ᴿ) U.⋯ₚ ρ₂ᴿ) Prwkeq
+        Prest≡ : RP U.⋯ₚ weakenᵣ U.⋯ₚ assocSwapᵣ 1 2 U.⋯ₚ (assocSwapᵣ 1 (syncs B) ↑* 2)
+                 ≡ subst U.Proc E-cod (subst U.Proc E-dom pushR-Pᴿ U.⋯ₚ (ρρ ↑* 2))
+        Prest≡ =
+            outerRec (U[ P ] τ)
+          ■ cong (λ z → subst U.Proc E-cod (subst U.Proc E-dom z U.⋯ₚ (ρρ ↑* 2)))
+              (sym pushRPᴿ-fac)
         νInner =
-            cong₂ U._∥_ {!!} {!!}
+            cong₂ U._∥_ {!!} Prest≡
           ■ sym ( rhsSplit
                 ■ subst-∥f (λ z → z) (cong SQ (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
                     (subst U.Proc (cong SQ (cong (syncs B +_) e2))
