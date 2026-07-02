@@ -2661,6 +2661,10 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
             sA≤sAᴿ = subst (sA Nat.≤_) (sym eAR) (Nat.n≤1+n sA)
             sD′≤sAᴿ : sD′ Nat.≤ sAᴿ
             sD′≤sAᴿ = Nat.≤-trans sD′≤sA sA≤sAᴿ
+            sB2≤3di : syncs B Nat.≤ Fin.toℕ i → syncs B + 2 Nat.≤ 3 + Fin.toℕ i
+            sB2≤3di h = Nat.≤-trans (Nat.+-monoˡ-≤ 2 h)
+                          (Nat.≤-trans (Nat.+-monoʳ-≤ (Fin.toℕ i) (Nat.n≤1+n 2))
+                                       (Nat.≤-reflexive (Nat.+-comm (Fin.toℕ i) 3)))
             v2R : 𝔽 (SQ (syncs B + (sAᴿ + n)))
             v2R = ρ₂ᴿ (ρ₁ᴿ (Θ i))
             w2 : 𝔽 (SQ (syncs B + (sD′ + (1 + (L.length B₁ + n)))))
@@ -2741,13 +2745,42 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
                 redw2 = toℕ-reduce≥ w2 q2 ■ cong (Nat._∸ 2) w2N
                 sB≤rw = subst (syncs B Nat.≤_) (sym redw2) sB≤
                 rr≡ = toℕ-reduce≥ (Fin.reduce≥ w2 q2) sB≤rw ■ cong (Nat._∸ syncs B) redw2
+            rhsSAhi : syncs B Nat.≤ Fin.toℕ i → syncs B + sD′ Nat.≤ Fin.toℕ i → Fin.toℕ i Nat.< syncs B + sA → Fin.toℕ (ρRtot i) ≡ 3 + Fin.toℕ i
+            rhsSAhi sB≤ sDle di<A =
+                toℕ-subst-cod E-cod θ1R v2R
+              ■ toℕ-subst-dom (sym E-dom) (ρρ ↑* 2) v2R
+              ■ toℕ-↑*-ge ρρ 2 w2 q2
+              ■ cong (2 +_) ( toℕ-↑*-ge rawR (syncs B) (Fin.reduce≥ w2 q2) sB≤rw
+                            ■ cong (syncs B +_) (toℕ-assoc-ge sD′ 1 (Fin.reduce≥ (Fin.reduce≥ w2 q2) sB≤rw) sD1≤rr ■ rr≡)
+                            ■ Nat.+-suc (syncs B) (Fin.toℕ i Nat.∸ syncs B) ■ cong suc recon )
+              where
+                rdi≡ = toℕ-reduce≥ i sB≤
+                recon = Nat.m+[n∸m]≡n sB≤
+                rd<sA = Nat.+-cancelˡ-< (syncs B) (Fin.toℕ i Nat.∸ syncs B) sA (subst (Nat._< syncs B + sA) (sym recon) di<A)
+                rd≥sD = Nat.+-cancelˡ-≤ (syncs B) sD′ (Fin.toℕ i Nat.∸ syncs B) (subst (syncs B + sD′ Nat.≤_) (sym recon) sDle)
+                r1 = toℕ-↑*-ge (sins B₁ b₁ B₂ {2 + n}) (syncs B) i sB≤
+                   ■ cong (syncs B +_) (sins-toℕ-hi B₁ b₁ B₂ (Fin.reduce≥ i sB≤) (subst (sD′ Nat.≤_) (sym rdi≡) rd≥sD) ■ cong suc rdi≡)
+                   ■ Nat.+-suc (syncs B) (Fin.toℕ i Nat.∸ syncs B) ■ cong suc recon
+                bnd2 = subst (syncs B Nat.≤_) (sym r1) (Nat.≤-trans sB≤ (Nat.n≤1+n (Fin.toℕ i)))
+                redΘ = toℕ-reduce≥ (Θ i) bnd2 ■ cong (Nat._∸ syncs B) r1 ■ Nat.+-∸-assoc 1 sB≤
+                sucrd<sAᴿ = subst (suc (Fin.toℕ i Nat.∸ syncs B) Nat.<_) (sym eAR) (Nat.s≤s rd<sA)
+                r2 = toℕ-↑*-ge (assocSwapᵣ sAᴿ 2) (syncs B) (Θ i) bnd2
+                   ■ cong (syncs B +_) (toℕ-assoc-lt sAᴿ 2 (Fin.reduce≥ (Θ i) bnd2) (subst (Nat._< sAᴿ) (sym redΘ) sucrd<sAᴿ) ■ cong (2 +_) redΘ)
+                   ■ comm3 (syncs B) 3 (Fin.toℕ i Nat.∸ syncs B) ■ cong (3 +_) recon
+                r3 = toℕ-assoc-ge (syncs B) 2 (ρ₁ᴿ (Θ i)) (subst (syncs B + 2 Nat.≤_) (sym r2) (sB2≤3di sB≤)) ■ r2
+                w2N = toℕ-subst𝔽 (sym (sym E-dom)) v2R ■ r3
+                q2  = subst (2 Nat.≤_) (sym w2N) (Nat.m≤m+n 2 (1 + Fin.toℕ i))
+                redw2 = toℕ-reduce≥ w2 q2 ■ cong (Nat._∸ 2) w2N
+                sB≤rw = subst (syncs B Nat.≤_) (sym redw2) (Nat.≤-trans sB≤ (Nat.n≤1+n (Fin.toℕ i)))
+                rr≡ = toℕ-reduce≥ (Fin.reduce≥ w2 q2) sB≤rw ■ cong (Nat._∸ syncs B) redw2 ■ Nat.+-∸-assoc 1 sB≤
+                sD1≤rr = Nat.≤-trans (Nat.≤-reflexive (Nat.+-comm sD′ 1)) (subst (suc sD′ Nat.≤_) (sym rr≡) (Nat.s≤s rd≥sD))
             go : ρLtot i ≡ ρRtot i
             go with Fin.toℕ i Nat.<? syncs B
             ... | yes p = Fin.toℕ-injective (lhsSB p ■ sym (rhsSB p))
             ... | no ¬p with Fin.toℕ i Nat.<? (syncs B + sD′)
             ...   | yes qlo = Fin.toℕ-injective (lhsSA (Nat.≮⇒≥ ¬p) (Nat.<-≤-trans qlo (Nat.+-monoʳ-≤ (syncs B) sD′≤sA)) ■ sym (rhsSAlo (Nat.≮⇒≥ ¬p) qlo))
             ...   | no ¬qlo with Fin.toℕ i Nat.<? (syncs B + sA)
-            ...     | yes rhi = {!!}
+            ...     | yes rhi = Fin.toℕ-injective (lhsSA (Nat.≮⇒≥ ¬p) rhi ■ sym (rhsSAhi (Nat.≮⇒≥ ¬p) (Nat.≮⇒≥ ¬qlo) rhi))
             ...     | no ¬rhi with Fin.toℕ i Nat.<? (syncs B + sA + 2)
             ...       | yes ttwo = {!!}
             ...       | no ¬ttwo = {!!}
