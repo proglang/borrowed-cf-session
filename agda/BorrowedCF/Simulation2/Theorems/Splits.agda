@@ -1868,14 +1868,37 @@ chainRwk = chainLwk
 -- The base case (B₁ = []) is the substantive re-threading obligation the roadmap flags:
 -- the inserted `1`-block becomes the new head, re-threading (` 0F, suc x, wk e₂) through
 -- the whole tail — but away from slot 0F that threading is INVISIBLE (e₁ only read at 0F).
-canonₛ-rwk : ∀ (B₁ : BindGroup) {N} (cc : UChan N) (b₁ : ℕ) (B₂ : BindGroup)
-             (i : 𝔽 (sum (B₁ ++ suc b₁ ∷ B₂))) →
-             i ≢ Fin.cast (sym (sum-++ B₁ (suc b₁ ∷ B₂))) (sum B₁ ↑ʳ 0F) →
-             canonₛ (B₁ ++ 1 ∷ suc b₁ ∷ B₂) cc (drwk B₁ b₁ B₂ i)
-             ≡ subst Tm (cong (_+ N) (sym (syncs-rwk B₁)))
-                 (canonₛ (B₁ ++ suc b₁ ∷ B₂) cc i ⋯ (weakenᵣ ↑* insertSlot B₁ b₁ B₂ i))
-canonₛ-rwk [] {N} (e₁ , x , e₂) b₁ B₂ i i≢ = {!base!}
-canonₛ-rwk (a ∷ B₁') {N} (e₁ , x , e₂) b₁ B₂ i i≢ = {!rec!}
+-- Ub[ b ] reads its first slot only at position 0F.  Off 0F it is e₁-independent.
+Ub-e₁ : ∀ (b : ℕ) {N} (a a′ : Tm N) (c : 𝔽 N) (e₂ : Tm N) (j : 𝔽 b) → j ≢ 0F →
+        Ub[ b ] (a , c , e₂) j ≡ Ub[ b ] (a′ , c , e₂) j
+Ub-e₁ 1             a a′ c e₂ 0F      j≢ = ⊥-elim (j≢ refl)
+Ub-e₁ (suc (suc b)) a a′ c e₂ 0F      j≢ = ⊥-elim (j≢ refl)
+Ub-e₁ (suc (suc b)) a a′ c e₂ (suc j) j≢ = refl
+
+-- e₁ (the head data-block's first slot) is only read at position 0F; off 0F the
+-- canonical substitution is independent of it.  Induction mirrors canonₛ.
+canonₛ-e₁ : ∀ (b₁ : ℕ) (B₂ : BindGroup) {N} (a a′ : Tm N) (x : 𝔽 N) (e₂ : Tm N)
+            (i : 𝔽 (sum (suc b₁ ∷ B₂))) → i ≢ 0F →
+            canonₛ (suc b₁ ∷ B₂) (a , x , e₂) i ≡ canonₛ (suc b₁ ∷ B₂) (a′ , x , e₂) i
+canonₛ-e₁ b₁ [] {N} a a′ x e₂ i i≢ =
+  Ub-e₁ (suc b₁ + 0) a a′ x e₂ i i≢
+canonₛ-e₁ b₁ (c ∷ B₂′) {N} a a′ x e₂ i i≢
+  with Fin.splitAt (suc b₁) i in seq
+... | inj₁ p = cong (subst Tm (+-suc sD N))
+                 (cong-head (Ub-e₁ (suc b₁) (wk a) (wk a′) (suc x) (` 0F) p p≢))
+  where
+    sD = syncs (c ∷ B₂′)
+    p≢ : p ≢ 0F
+    p≢ p≡ = i≢ ( sym (Fin.join-splitAt (suc b₁) (sum (c ∷ B₂′)) i)
+               ■ cong (Fin.join (suc b₁) (sum (c ∷ B₂′))) seq
+               ■ cong (_↑ˡ sum (c ∷ B₂′)) p≡ )
+    cong-head : ∀ {u v : Tm (suc b₁ + sum (c ∷ B₂′))} → u ≡ v →
+                [ (λ j → u′ j) , canonₛ (c ∷ B₂′) (` 0F , suc x , wk e₂) ]′ (Fin.splitAt (suc b₁) i)
+                ≡ [ (λ j → u′ j) , canonₛ (c ∷ B₂′) (` 0F , suc x , wk e₂) ]′ (Fin.splitAt (suc b₁) i)
+    cong-head _ = refl
+    u′ : ∀ {A : Set} → A → Tm (suc b₁ + sum (c ∷ B₂′))
+    u′ = λ _ → Ub[ suc b₁ ] (wk a , suc x , ` 0F) p ⋯ weaken* ⦃ Kᵣ ⦄ sD
+... | inj₂ r = refl
 
 
 -- The rsplit-grown bind group's Bφ-prefix carries one extra φ-drop binder (the

@@ -40,7 +40,8 @@ open import BorrowedCF.Simulation2.Frames using (frame-plug*; frame*-⋯; frame-
 open import BorrowedCF.Simulation2.TranslationProperties using (VChan; chanTriple-V; Value-subst)
 open import BorrowedCF.Simulation2.SplitConfine using (acq-confine)
 open import BorrowedCF.Simulation2.AcqSubstNat
-  using (subst₂→ₖ; subst-⋯ₚ-codₖ; subst-⋯ₚ-domₖ; liftCastₖ; subst-flipₖ)
+  using (subst₂→ₖ; subst-⋯ₚ-codₖ; subst-⋯ₚ-domₖ; liftCastₖ; subst-flipₖ
+        ; subst-⋯ᵏ; subst-⋯-codᵏ; subst₂-cancelₖ; subst-subst-symᵏ)
 open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
 open import Relation.Binary.Definitions using (tri<; tri≈; tri>)
@@ -144,6 +145,76 @@ canonₛ-nat {a} {bb} (b ∷ B@(_ ∷ _)) (e1 , x , e2) ρ i
                           (cong₂ _,_ refl (cong₂ _,_ refl (sym (⋯-↑-wk e2 ρ)))) )
 
 ------------------------------------------------------------------------
+------------------------------------------------------------------------
+-- Substitution naturality of canonₛ for closed-flag channels.
+--
+-- Unlike `canonₛ-nat` (which needs `mapᶜ`, hence a renaming), pushing an
+-- *output substitution* τ through canonₛ is fine as long as τ fixes the
+-- junction flag to a variable — which is always the case when τ is a lift
+-- past the ν-binders / φ-nest.  These lemmas thread that hypothesis
+-- (`τ c ≡ ` c′`) explicitly; the channel data components (e₁ , e₂) may be
+-- arbitrary terms and are traversed by τ as usual.
+------------------------------------------------------------------------
+
+-- Ub-nat for a substitution τ that fixes the flag to a variable.
+Ub-natₛ : ∀ {a bb} (b : ℕ) (e₁ : Tm a) (c : 𝔽 a) (e₂ : Tm a)
+          (τ : a →ₛ bb) (c′ : 𝔽 bb) → τ c ≡ ` c′ → (j : 𝔽 b) →
+          Ub[ b ] (e₁ , c , e₂) j ⋯ τ ≡ Ub[ b ] (e₁ ⋯ τ , c′ , e₂ ⋯ τ) j
+Ub-natₛ 1             e₁ c e₂ τ c′ fc zero    =
+  cong (λ z → ((e₁ ⋯ τ) ⊗ z) ⊗ (e₂ ⋯ τ)) (⋯-var c τ ■ fc)
+Ub-natₛ (suc (suc b)) e₁ c e₂ τ c′ fc zero    =
+  cong (λ z → ((e₁ ⋯ τ) ⊗ z) ⊗ K `unit) (⋯-var c τ ■ fc)
+Ub-natₛ (suc (suc b)) e₁ c e₂ τ c′ fc (suc j) =
+  Ub-natₛ (suc b) (K `unit) c e₂ τ c′ fc j
+
+-- ΘrelEqᵍ for a substitution (Kit-polymorphic subst-bookkeeping variant).
+private
+  ΘrelEqᵍₛ : ∀ {a bb} sB (τ : a →ₛ bb) (t : Tm (sB + suc a)) →
+             subst Tm (+-suc sB a) t ⋯ (τ ↑* suc sB)
+             ≡ subst Tm (+-suc sB bb) (t ⋯ ((τ ↑) ↑* sB))
+  ΘrelEqᵍₛ {a} {bb} sB τ t =
+      subst-⋯ᵏ (+-suc sB a) t (τ ↑* suc sB)
+    ■ sym ( cong (λ r → subst Tm (+-suc sB bb) (t ⋯ r)) ΘθEq
+          ■ cong (subst Tm (+-suc sB bb)) (subst-⋯-codᵏ (sym (+-suc sB bb)) t θ⁻)
+          ■ subst-subst-symᵏ (+-suc sB bb) )
+    where
+      θ⁻ : (sB + suc a) →ₛ suc (sB + bb)
+      θ⁻ = subst (λ z → z →ₛ suc (sB + bb)) (sym (+-suc sB a)) (τ ↑* suc sB)
+      ΘθEq : (τ ↑) ↑* sB ≡ subst (λ z → (sB + suc a) →ₛ z) (sym (+-suc sB bb)) θ⁻
+      ΘθEq = sym ( sym (subst₂→ₖ (sym (+-suc sB a)) (sym (+-suc sB bb)) (τ ↑* suc sB))
+                 ■ cong (subst₂ (λ x y → x →ₛ y) (sym (+-suc sB a)) (sym (+-suc sB bb))) (sym (liftCastₖ sB τ))
+                 ■ subst₂-cancelₖ (+-suc sB a) (+-suc sB bb) ((τ ↑) ↑* sB) )
+
+-- canonₛ is natural under a target substitution that fixes the junction flag.
+canonₛ-natₛ : ∀ {a bb} (B : BindGroup) (e₁ : Tm a) (x : 𝔽 a) (e₂ : Tm a)
+              (τ : a →ₛ bb) (x′ : 𝔽 bb) → τ x ≡ ` x′ → (i : 𝔽 (sum B)) →
+              canonₛ B (e₁ , x , e₂) i ⋯ (τ ↑* syncs B)
+              ≡ canonₛ B (e₁ ⋯ τ , x′ , e₂ ⋯ τ) i
+canonₛ-natₛ []            e₁ x e₂ τ x′ fx ()
+canonₛ-natₛ (b ∷ [])      e₁ x e₂ τ x′ fx i = Ub-natₛ (b + 0) e₁ x e₂ τ x′ fx i
+canonₛ-natₛ {a} {bb} (b ∷ B@(_ ∷ _)) e₁ x e₂ τ x′ fx i
+  with Fin.splitAt b i | canonₛ-natₛ B (` 0F) (suc x) (wk e₂) (τ ↑) (suc x′) (cong (_⋯ weakenᵣ) fx)
+... | inj₁ j | _  =
+      ΘrelEqᵍₛ (syncs B) τ ((Ub[ b ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ (syncs B)) j)
+    ■ cong (subst Tm (+-suc (syncs B) bb)) chEq
+  where
+    sB = syncs B
+    -- (τ↑) fixes (suc x) to the variable (suc x′).
+    fsx : (τ ↑) (suc x) ≡ ` (suc x′)
+    fsx = cong (_⋯ weakenᵣ) fx
+    chEq : ((Ub[ b ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB) j) ⋯ ((τ ↑) ↑* sB)
+           ≡ (Ub[ b ] (wk (e₁ ⋯ τ) , suc x′ , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB) j
+    chEq =
+        sym (⋯-↑*-wk (Ub[ b ] (wk e₁ , suc x , ` 0F) j) (τ ↑) sB)
+      ■ cong (_⋯ᵣ weaken* ⦃ Kᵣ ⦄ sB)
+          ( Ub-natₛ b (wk e₁) (suc x) (` 0F) (τ ↑) (suc x′) fsx j
+          ■ cong (λ z → Ub[ b ] (z , suc x′ , ` 0F) j) (sym (⋯-↑-wk e₁ τ)) )
+... | inj₂ k | ih =
+      ΘrelEqᵍₛ (syncs B) τ (canonₛ B (` 0F , suc x , wk e₂) k)
+    ■ cong (subst Tm (+-suc (syncs B) bb))
+        ( ih k
+        ■ cong (λ z → canonₛ B (` 0F , suc x′ , z) k) (sym (⋯-↑-wk e₂ τ)) )
+
 -- canonₛ-↑transpose : absorbs the front-binder ↑-lifted swap chain
 -- ρa·ρb·ρc·ρd (used by R-Acq's leaf reconcile) into the channel triple.
 --
