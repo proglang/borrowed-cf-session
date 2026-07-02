@@ -21,11 +21,28 @@ open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.List.Relation.Unary.All.Properties using (++⁺)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (_,_; proj₁; proj₂)
-open import BorrowedCF.Simulation2.Confine using (count; +≡0)
+open import BorrowedCF.Simulation2.Confine using (count; +≡0; count-join-Dir)
 open import BorrowedCF.Simulation2.BeforeOrder using (before; before⇒mem)
 open import BorrowedCF.Context.Join using (join)
+open import BorrowedCF.Context.Pattern using (foldPattern)
+open import Data.List using ([]; _∷_)
 
 open Nat.Variables
+open Nat using (+-assoc)
+
+-- ── step 3(b): count is ADDITIVE over pattern-plugging.  Plugging δ into the hole
+--    of a frame context 𝒫 adds count z δ on top of the frame-context count (the
+--    frames themselves are unchanged; each level is a `join`, which is
+--    count-additive).  Feeds the squeeze count xS 𝒫[[]] ≡ 0 once count xS 𝒫[δ] ≤ 1
+--    and count xS δ ≥ 1. ──
+count-plug-add : ∀ {n} (𝒫 : CxPat n) (δ : Struct n) (z : 𝔽 n)
+  → count z (𝒫 [ δ ]𝓅) ≡ count z (𝒫 [ [] ]𝓅) + count z δ
+count-plug-add [] δ z = refl
+count-plug-add ((d , γ) ∷ 𝒫) δ z =
+  count-join-Dir d z γ (𝒫 [ δ ]𝓅)
+  ■ cong (count z γ +_) (count-plug-add 𝒫 δ z)
+  ■ sym (+-assoc (count z γ) (count z (𝒫 [ [] ]𝓅)) (count z δ))
+  ■ cong (_+ count z δ) (sym (count-join-Dir d z γ (𝒫 [ [] ]𝓅)))
 
 -- A single frame above an 𝕀 hole: its output effect is 𝕀 and its one CxPat
 -- entry is LeftPat.
