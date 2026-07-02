@@ -125,6 +125,12 @@ descend-abs {ρ = ρ} inj-ρ pre dd A γa ≼b =
 Inj-↑↑ : {ϕ : m →ᵣ n} → 𝐂.Inj ϕ → 𝐂.Inj (ϕ ↑ ↑)
 Inj-↑↑ inj = Inj-↑ (Inj-↑ inj)
 
+dom-join-⊆ : ∀ {n} (d : Dir) (α β : Struct n) → dom (join d α β) ⊆ dom α ∪ dom β
+dom-join-⊆ d α β with joinDir d
+... | 𝟙 = ⊆-refl
+... | L = ⊆-refl
+... | R = λ z∈ → x∈p∪q⁺ (Sum.swap (x∈p∪q⁻ _ _ z∈))
+
 wk²↓ : (γ : Struct m) (Z : Subset (suc (suc m))) →
   𝐂.wk (𝐂.wk γ) ↓ Z ≡ 𝐂.wk (𝐂.wk (γ ↓ Vec.tail (Vec.tail Z)))
 wk²↓ γ Z = wk↓' (𝐂.wk γ) Z ■ cong 𝐂.wk (wk↓' γ (Vec.tail Z))

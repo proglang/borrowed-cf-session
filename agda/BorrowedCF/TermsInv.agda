@@ -101,6 +101,19 @@ inv-case (T-Weaken γ≤ x) =
   let p/s , T₁ , T₂ , U , γ₁ , γ₂ , ϵ₀ , U≃ , e≤ , ≤ , de , d₁ , d₂ = inv-case x in
   p/s , T₁ , T₂ , U , γ₁ , γ₂ , ϵ₀ , U≃ , e≤ , ≼-trans ≤ γ≤ , de , d₁ , d₂
 
+inv-letpair : ∀ {n} {Γ : Ctx n} {γ} {e₁ e₂} {V : 𝕋} {ϵ} → Γ ; γ ⊢ `let⊗ e₁ `in e₂ ∶ V ∣ ϵ →
+  ∃[ p/s ] ∃[ d ] ∃[ T₁ ] ∃[ T₂ ] ∃[ U ] ∃[ γ₁ ] ∃[ γ₂ ] ∃[ ϵ₀ ]
+    (U ≃ V) × (ϵ₀ ≤ϵ ϵ) × Γ ∶ join p/s γ₁ γ₂ ≼ γ
+    × (Γ ; γ₁ ⊢ e₁ ∶ T₁ ⊗⟨ d ⟩ T₂ ∣ ϵ₀)
+    × (T₁ ⸴ T₂ ⸴ Γ ; join p/s (join d (CB.`_ fzero) (CB.`_ (fsuc fzero))) (𝐂.wk (𝐂.wk γ₂)) ⊢ e₂ ∶ U ∣ ϵ₀)
+inv-letpair (T-LetPair p/s x y) = p/s , _ , _ , _ , _ , _ , _ , _ , ≃-refl , ≤ϵ-refl , ≼-refl refl , x , y
+inv-letpair (T-Conv V≃ ϵ≤ x) =
+  let p/s , d , T₁ , T₂ , U , γ₁ , γ₂ , ϵ₀ , U≃ , e≤ , ≤ , x₁ , x₂ = inv-letpair x in
+  p/s , d , T₁ , T₂ , U , γ₁ , γ₂ , ϵ₀ , ≃-trans U≃ V≃ , ≤ϵ-trans e≤ ϵ≤ , ≤ , x₁ , x₂
+inv-letpair (T-Weaken γ≤ x) =
+  let p/s , d , T₁ , T₂ , U , γ₁ , γ₂ , ϵ₀ , U≃ , e≤ , ≤ , x₁ , x₂ = inv-letpair x in
+  p/s , d , T₁ , T₂ , U , γ₁ , γ₂ , ϵ₀ , U≃ , e≤ , ≼-trans ≤ γ≤ , x₁ , x₂
+
 μ-ƛ : ∀ {n} {Γ : Ctx n} {γ} {b} {V : 𝕋} {ϵ} → Γ ; γ ⊢ μ b ∶ V ∣ ϵ → ∃[ b′ ] b ≡ ƛ b′
 μ-ƛ (T-AbsRec _ _ _) = _ , refl
 μ-ƛ (T-Conv _ _ x) = μ-ƛ x
@@ -236,7 +249,20 @@ brₛ↑↑ ⊢ϕ γ = 𝐂.⋯-cong γ (lift-disg (lift-disg (σ≗ϕ ⊢ϕ))) 
       out≼ = subst (λ z → _ ∶ z ≼ _) (sym (join-⋯ p/s γ₁′ γr))
                (≼-trans (≼-join p/s ≼₁ (subst (λ z → _ ∶ z ≼ γ₂) (sym (brₛ ⊢ϕ γr)) p2)) ≤)
   in join p/s γ₁′ γr , out≼ , T-Conv U≃ e≤ (T-Let p/s x′ (T-Weaken p1 y′))
-⊢⋯⁻¹ {e = `let⊗ e₁ `in e₂} inj p ⊢ϕ = {!!}
+⊢⋯⁻¹ {e = `let⊗ e₁ `in e₂} {ϕ = ρ} inj p ⊢ϕ =
+  let p/s , d , T₁ , T₂ , U , γ₁ , γ₂ , ϵ₀ , U≃ , e≤ , ≤ , x , y = inv-letpair p
+      γ₁′ , ≼₁ , x′ = ⊢⋯⁻¹ inj x ⊢ϕ
+      γbb , ≼₂ , y′ = ⊢⋯⁻¹ {e = e₂} {T = U} {ϵ = ϵ₀} {ϕ = ρ ↑ᵣ ↑ᵣ}
+                        (Inj-↑ᵣ (Inj-↑ᵣ inj)) y (⊢↑ (⊢↑ ⊢ϕ))
+      ≼₂ᵣ = subst (λ z → _ ∶ z ≼ _) (brₛ↑↑ ⊢ϕ γbb) ≼₂
+      γr , p1 , p2 = descend-abs2 inj (ϕ-any⇐ ⊢ϕ) p/s
+                       (join d (CB.`_ fzero) (CB.`_ (fsuc fzero))) (join d (CB.`_ fzero) (CB.`_ (fsuc fzero)))
+                       γbb γ₂
+                       (join-⋯ {ϕ = ρ 𝐂.↑ᵣ 𝐂.↑ᵣ} d (CB.`_ fzero) (CB.`_ (fsuc fzero)))
+                       (dom-join-⊆ d (CB.`_ fzero) (CB.`_ (fsuc fzero))) ≼₂ᵣ
+      out≼ = subst (λ z → _ ∶ z ≼ _) (sym (join-⋯ p/s γ₁′ γr))
+               (≼-trans (≼-join p/s ≼₁ (subst (λ z → _ ∶ z ≼ γ₂) (sym (brₛ ⊢ϕ γr)) p2)) ≤)
+  in join p/s γ₁′ γr , out≼ , T-Conv U≃ e≤ (T-LetPair p/s x′ (T-Weaken p1 y′))
 ⊢⋯⁻¹ {e = `inj i e} inj p ⊢ϕ =
   let T , U , γ₀ , ty≃ , ≤ , d = inv-inj p
       γ′ , ≼₀ , d′ = ⊢⋯⁻¹ inj d ⊢ϕ

@@ -1227,7 +1227,10 @@ U-σ⋯ₛ {n = n} {n′ = n′} (T.ν B₁ B₂ P) {σ} {τ} =
     leaf-eq : (leafσ σ B₁ B₂ ·ₖ Ψ) ≗ leafσ (σ ·ₖ τ) B₁ B₂
     leaf-eq y with Fin.splitAt (sum B₁ + sum B₂) y
     ... | inj₁ z with Fin.splitAt (sum B₁) z
-    ...   | inj₁ j = {!region1!}
+    ...   | inj₁ j =
+            sym (⋯-↑*-wk (canonₛ B₁ (K `unit , 0F , K `unit) j) ((τ ↑* 2) ↑* sB₁) sB₂)
+          ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+              (canonₛ-natₛ B₁ (K `unit) 0F (K `unit) (τ ↑* 2) 0F refl j)
     ...   | inj₂ k = {!region2!}
     leaf-eq y | inj₂ i =
         sym (⋯-↑*-wk (σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ sB₁) ((τ ↑* 2) ↑* sB₁) sB₂)
