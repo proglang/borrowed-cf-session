@@ -13,10 +13,17 @@ open import Data.Fin.Subset.Properties using (x∈p⇒x∉∁p; x∉∁p⇒x∈p
 import Data.Vec as Vec
 open import Data.Vec using (_∷_)
 open import Data.Fin.Properties using (suc-injective)
+open import Data.Fin using () renaming (zero to fzero; suc to fsuc)
 open import Data.Bool using (not)
 open import Relation.Nullary using (yes; no)
 
 open Nat.Variables
+
+Inj-↑ᵣ : {ρ : m →ᵣ n} → 𝐂.Inj ρ → 𝐂.Inj (ρ ↑ᵣ)
+Inj-↑ᵣ inj {fzero}  {fzero}  eq = refl
+Inj-↑ᵣ inj {fzero}  {fsuc y} ()
+Inj-↑ᵣ inj {fsuc x} {fzero}  ()
+Inj-↑ᵣ inj {fsuc x} {fsuc y} eq = cong fsuc (inj (suc-injective eq))
 
 inv-ƛ : ∀ {n} {Γ : Ctx n} {γ e} {U : 𝕋} {ϵ} → Γ ; γ ⊢ ƛ e ∶ U ∣ ϵ → ∃[ a ] ∃[ Ta ] ∃[ Ua ] ∃[ γ₀ ]
   (U ≃ Ta ⟨ a ⟩→ Ua) × Γ ∶ γ₀ ≼ γ
@@ -79,6 +86,15 @@ brₛ ⊢ϕ γ = 𝐂.⋯-cong γ (σ≗ϕ ⊢ϕ) ■ 𝐂.conv-⋯ᵣₛ γ
   ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ → ϕ 𝐂.Preserves[ P ] Γ₁ ⇐ Γ₂
 ϕ-any⇐ {P = P} ⊢ϕ {x} (` px) = subst P (proj₂ (⊢ϕ & x)) px
 
+lift-disg : {ρ : m →ᵣ n} {σ : m 𝐂.→ₛ n} →
+  σ ≗ (λ x → CB.`_ (ρ x)) → (σ 𝐂.↑ₛ) ≗ (λ x → CB.`_ ((ρ 𝐂.↑ᵣ) x))
+lift-disg eq fzero    = refl
+lift-disg eq (fsuc y) = cong (𝐂._⋯ᵣ 𝐂.weakenᵣ) (eq y)
+
+brₛ↑ : {ϕ : m →ᵣ n} {σ : _} {Γ₁ : Ctx m} {Γ₂ : Ctx n} →
+  ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ → (γ : Struct (suc m)) → γ 𝐂.⋯ (σ 𝐂.↑ₛ) ≡ γ 𝐂.⋯ᵣ (ϕ 𝐂.↑ᵣ)
+brₛ↑ ⊢ϕ γ = 𝐂.⋯-cong γ (lift-disg (σ≗ϕ ⊢ϕ)) ■ 𝐂.conv-⋯ᵣₛ γ
+
 ⊢⋯⁻¹ : ∀ {m n} {Γ₁ : Ctx m} {Γ₂ : Ctx n} {γ} {e} {T : 𝕋} {ϵ} {ϕ : m →ᵣ n} {σ} →
   𝐂.Inj ϕ → Γ₂ ; γ ⊢ e ⋯ ϕ ∶ T ∣ ϵ → ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ →
   ∃[ γ′ ] Γ₂ ∶ γ′ 𝐂.⋯ σ ≼ γ × Γ₁ ; γ′ ⊢ e ∶ T ∣ ϵ
@@ -89,10 +105,10 @@ brₛ ⊢ϕ γ = 𝐂.⋯-cong γ (σ≗ϕ ⊢ϕ) ■ 𝐂.conv-⋯ᵣₛ γ
 ⊢⋯⁻¹ {e = K c} inj p ⊢ϕ =
   let _ , T≃ , ≼γ , ⊢c = inv-K p in
   _ , ≼γ , T-Conv T≃ ℙ≤ϵ (T-Const ⊢c)
-⊢⋯⁻¹ {e = ƛ e} inj p ⊢ϕ =
+⊢⋯⁻¹ {e = ƛ e} {ϕ = ρ} inj p ⊢ϕ =
   let a , Ta , Ua , γa , T≃ , γa≼γ , uc , mc , d = inv-ƛ p
-      γb′ , ≼b , pb = ⊢⋯⁻¹ {e = e} {T = Ua} {ϵ = Arr.eff a} (Inj-↑ inj) d (⊢↑ ⊢ϕ)
-      ≼bᵣ = subst (λ z → _ ∶ z ≼ _) (brₛ (⊢↑ ⊢ϕ) γb′) ≼b
+      γb′ , ≼b , pb = ⊢⋯⁻¹ {e = e} {T = Ua} {ϵ = Arr.eff a} {ϕ = ρ ↑ᵣ} (Inj-↑ᵣ inj) d (⊢↑ ⊢ϕ)
+      ≼bᵣ = subst (λ z → _ ∶ z ≼ _) (brₛ↑ ⊢ϕ γb′) ≼b
       γr , p1 , p2 = descend-abs inj (ϕ-any⇐ ⊢ϕ) (Arr.dir a) γb′ γa ≼bᵣ
       out≼ = ≼-trans (subst (λ z → _ ∶ z ≼ γa) (sym (brₛ ⊢ϕ γr)) p2) γa≼γ
       uc′ = λ ua → 𝐂.allCx-⋯⁻¹ (ϕ-any⇐ ⊢ϕ) (allCx-strengthen p2 (uc ua))
