@@ -1,0 +1,221 @@
+module BorrowedCF.TermsInv where
+
+open import BorrowedCF.Prelude
+open import BorrowedCF.Types
+open import BorrowedCF.Context
+import BorrowedCF.Context.Substitution as 𝐂
+open import BorrowedCF.Context.Domain
+open import BorrowedCF.Terms hiding (_⊢⋯⁻¹_)
+import BorrowedCF.Context.Base as CB
+open import BorrowedCF.DescendAbs
+open import Data.Fin.Subset using (Subset; ∁; _∈_; ⁅_⁆; _∪_) renaming (⊥ to ⁅⁆)
+open import Data.Fin.Subset.Properties using (x∈p⇒x∉∁p; x∉∁p⇒x∈p; x∈∁p⇒x∉p; _∈?_; x∈⁅x⁆; ⊆-trans; ∪-identityʳ; p⊆p∪q; q⊆p∪q; x∈⁅y⁆⇒x≡y; x∈p∪q⁻)
+import Data.Vec as Vec
+open import Data.Vec using (_∷_)
+open import Data.Fin.Properties using (suc-injective)
+open import Data.Bool using (not)
+open import Relation.Nullary using (yes; no)
+
+open Nat.Variables
+
+inv-ƛ : ∀ {n} {Γ : Ctx n} {γ e} {U : 𝕋} {ϵ} → Γ ; γ ⊢ ƛ e ∶ U ∣ ϵ → ∃[ a ] ∃[ Ta ] ∃[ Ua ] ∃[ γ₀ ]
+  (U ≃ Ta ⟨ a ⟩→ Ua) × Γ ∶ γ₀ ≼ γ
+  × (Arr.Unr a → UnrCx Γ γ₀) × (Arr.Mobile a → MobCx Γ γ₀)
+  × (Ta ⸴ Γ ; join (Arr.dir a) (CB.`_ zero) (𝐂.wk γ₀) ⊢ e ∶ Ua ∣ Arr.eff a)
+inv-ƛ (T-Abs Γ-unr Γ-mob d) =
+  _ , _ , _ , _ , ≃-refl , ≼-refl refl , Γ-unr , Γ-mob , d
+inv-ƛ (T-Conv U≃ ϵ≤ x) =
+  let a , Ta , Ua , γ₀ , arr≃ , ≤ , u , mo , d = inv-ƛ x in
+  a , Ta , Ua , γ₀ , ≃-trans (≃-sym U≃) arr≃ , ≤ , u , mo , d
+inv-ƛ (T-Weaken γ≤ x) =
+  let a , Ta , Ua , γ₀ , arr≃ , ≤ , u , mo , d = inv-ƛ x in
+  a , Ta , Ua , γ₀ , arr≃ , ≼-trans ≤ γ≤ , u , mo , d
+
+
+inv-⊗ : ∀ {n} {Γ : Ctx n} {γ} {e₁ e₂} {V : 𝕋} {ϵ} → Γ ; γ ⊢ e₁ ⊗ e₂ ∶ V ∣ ϵ →
+  ∃[ p/s ] ∃[ T ] ∃[ U ] ∃[ γ₁ ] ∃[ γ₂ ] ∃[ ϵ₁ ] ∃[ ϵ₂ ]
+    (V ≃ T ⊗⟨ biasedDir p/s ⟩ U) × (ϵ₁ ≤ϵ ϵ)
+    × Γ ∶ join (biasedDir p/s) γ₁ γ₂ ≼ γ × Seq⇒Pure p/s ϵ₁ ϵ₂
+    × (Γ ; γ₁ ⊢ e₁ ∶ T ∣ ϵ₁) × (Γ ; γ₂ ⊢ e₂ ∶ U ∣ ϵ₂)
+inv-⊗ (T-Pair p/s s⇒p x y) = p/s , _ , _ , _ , _ , _ , _ , ≃-refl , ≤ϵ-refl , ≼-refl refl , s⇒p , x , y
+inv-⊗ (T-Conv V≃ ϵ≤ x) =
+  let p/s , T , U , γ₁ , γ₂ , ϵ₁ , ϵ₂ , ty≃ , e≤ , ≤ , s⇒p , d₁ , d₂ = inv-⊗ x in
+  p/s , T , U , γ₁ , γ₂ , ϵ₁ , ϵ₂ , ≃-trans (≃-sym V≃) ty≃ , ≤ϵ-trans e≤ ϵ≤ , ≤ , s⇒p , d₁ , d₂
+inv-⊗ (T-Weaken γ≤ x) =
+  let p/s , T , U , γ₁ , γ₂ , ϵ₁ , ϵ₂ , ty≃ , e≤ , ≤ , s⇒p , d₁ , d₂ = inv-⊗ x in
+  p/s , T , U , γ₁ , γ₂ , ϵ₁ , ϵ₂ , ty≃ , e≤ , ≼-trans ≤ γ≤ , s⇒p , d₁ , d₂
+
+inv-seq : ∀ {n} {Γ : Ctx n} {γ} {e₁ e₂} {V : 𝕋} {ϵ} → Γ ; γ ⊢ e₁ ; e₂ ∶ V ∣ ϵ →
+  ∃[ T ] ∃[ U ] ∃[ γ₁ ] ∃[ γ₂ ] ∃[ ϵ₀ ]
+    Unr T × (U ≃ V) × (ϵ₀ ≤ϵ ϵ) × Γ ∶ γ₁ ; γ₂ ≼ γ
+    × (Γ ; γ₁ ⊢ e₁ ∶ T ∣ ϵ₀) × (Γ ; γ₂ ⊢ e₂ ∶ U ∣ ϵ₀)
+inv-seq (T-Seq uT x y) = _ , _ , _ , _ , _ , uT , ≃-refl , ≤ϵ-refl , ≼-refl refl , x , y
+inv-seq (T-Conv V≃ ϵ≤ x) =
+  let T , U , γ₁ , γ₂ , ϵ₀ , uT , U≃ , e≤ , ≤ , d₁ , d₂ = inv-seq x in
+  T , U , γ₁ , γ₂ , ϵ₀ , uT , ≃-trans U≃ V≃ , ≤ϵ-trans e≤ ϵ≤ , ≤ , d₁ , d₂
+inv-seq (T-Weaken γ≤ x) =
+  let T , U , γ₁ , γ₂ , ϵ₀ , uT , U≃ , e≤ , ≤ , d₁ , d₂ = inv-seq x in
+  T , U , γ₁ , γ₂ , ϵ₀ , uT , U≃ , e≤ , ≼-trans ≤ γ≤ , d₁ , d₂
+
+inv-inj : ∀ {n} {Γ : Ctx n} {γ} {i} {e} {V : 𝕋} {ϵ} → Γ ; γ ⊢ `inj i e ∶ V ∣ ϵ →
+  ∃[ T ] ∃[ U ] ∃[ γ₀ ] (V ≃ T ⊕ U) × Γ ∶ γ₀ ≼ γ × (Γ ; γ₀ ⊢ e ∶ (if i then T else U) ∣ ϵ)
+inv-inj (T-Inj x) = _ , _ , _ , ≃-refl , ≼-refl refl , x
+inv-inj (T-Conv V≃ ϵ≤ x) =
+  let T , U , γ₀ , ty≃ , ≤ , d = inv-inj x in
+  T , U , γ₀ , ≃-trans (≃-sym V≃) ty≃ , ≤ , T-Conv ≃-refl ϵ≤ d
+inv-inj (T-Weaken γ≤ x) =
+  let T , U , γ₀ , ty≃ , ≤ , d = inv-inj x in
+  T , U , γ₀ , ty≃ , ≼-trans ≤ γ≤ , d
+
+σ≗ϕ : {ϕ : m →ᵣ n} {σ : _} {Γ₁ : Ctx m} {Γ₂ : Ctx n} →
+  ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ → σ ≗ (λ x → ` (ϕ x))
+σ≗ϕ ⊢ϕ x = proj₁ (⊢ϕ & x)
+
+brₛ : {ϕ : m →ᵣ n} {σ : _} {Γ₁ : Ctx m} {Γ₂ : Ctx n} →
+  ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ → (γ : Struct m) → γ 𝐂.⋯ σ ≡ γ 𝐂.⋯ ϕ
+brₛ ⊢ϕ γ = 𝐂.⋯-cong γ (σ≗ϕ ⊢ϕ) ■ 𝐂.conv-⋯ᵣₛ γ
+
+ϕ-any⇐ : ∀ {ℓ} {P : Pred 𝕋 ℓ} {ϕ : m →ᵣ n} {σ : _} {Γ₁ : Ctx m} {Γ₂ : Ctx n} →
+  ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ → ϕ 𝐂.Preserves[ P ] Γ₁ ⇐ Γ₂
+ϕ-any⇐ {P = P} ⊢ϕ {x} (` px) = subst P (proj₂ (⊢ϕ & x)) px
+
+⊢⋯⁻¹ : ∀ {m n} {Γ₁ : Ctx m} {Γ₂ : Ctx n} {γ} {e} {T : 𝕋} {ϵ} {ϕ : m →ᵣ n} {σ} →
+  𝐂.Inj ϕ → Γ₂ ; γ ⊢ e ⋯ ϕ ∶ T ∣ ϵ → ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ →
+  ∃[ γ′ ] Γ₂ ∶ γ′ 𝐂.⋯ σ ≼ γ × Γ₁ ; γ′ ⊢ e ∶ T ∣ ϵ
+⊢⋯⁻¹ {e = ` x} inj p ⊢ϕ =
+  let T≃ , ≼γ = inv-` p in
+  _ , ≼-respˡ-≈ (≈-reflexive (sym (proj₁ (⊢ϕ & x)))) ≼γ
+    , T-Conv (≃-trans (≃-reflexive (sym (proj₂ (⊢ϕ & x)))) (≃-sym T≃)) ℙ≤ϵ (T-Var _ refl)
+⊢⋯⁻¹ {e = K c} inj p ⊢ϕ =
+  let _ , T≃ , ≼γ , ⊢c = inv-K p in
+  _ , ≼γ , T-Conv T≃ ℙ≤ϵ (T-Const ⊢c)
+⊢⋯⁻¹ {e = ƛ e} inj p ⊢ϕ =
+  let a , Ta , Ua , γa , T≃ , γa≼γ , uc , mc , d = inv-ƛ p
+      γb′ , ≼b , pb = ⊢⋯⁻¹ {e = e} {T = Ua} {ϵ = Arr.eff a} (Inj-↑ inj) d (⊢↑ ⊢ϕ)
+      ≼bᵣ = subst (λ z → _ ∶ z ≼ _) (brₛ (⊢↑ ⊢ϕ) γb′) ≼b
+      γr , p1 , p2 = descend-abs inj (ϕ-any⇐ ⊢ϕ) (Arr.dir a) γb′ γa ≼bᵣ
+      out≼ = ≼-trans (subst (λ z → _ ∶ z ≼ γa) (sym (brₛ ⊢ϕ γr)) p2) γa≼γ
+      uc′ = λ ua → 𝐂.allCx-⋯⁻¹ (ϕ-any⇐ ⊢ϕ) (allCx-strengthen p2 (uc ua))
+      mc′ = λ ma → 𝐂.allCx-⋯⁻¹ (ϕ-any⇐ ⊢ϕ) (allCx-strengthen p2 (mc ma))
+  in γr , out≼ , T-Conv (≃-sym T≃) ℙ≤ϵ (T-Abs uc′ mc′ (T-Weaken p1 pb))
+⊢⋯⁻¹ {e = μ e} inj p ⊢ϕ = {!!}
+⊢⋯⁻¹ {e = e₁ · e₂} inj p ⊢ϕ with inv-· p
+... | a , α , β , _ , ≤γ , eff≤ , T-AppUnr a-unr x y =
+  let α′ , ≼α , x′ = ⊢⋯⁻¹ inj x ⊢ϕ
+      β′ , ≼β , y′ = ⊢⋯⁻¹ inj y ⊢ϕ
+      jeq = subst (λ d → _ ∶ join d β α ≼ _) (Arr.ω⇒𝟙 a a-unr) ≤γ
+  in α′ ∥ β′ , ≼-trans (≼-cong-∥ ≼α ≼β) (≼-trans (≼-refl ∥-comm) jeq) , T-AppUnr a-unr eff≤ x′ y′
+... | a , α , β , _ , ≤γ , eff≤ , T-AppLin a-par x y =
+  let α′ , ≼α , x′ = ⊢⋯⁻¹ inj x ⊢ϕ
+      β′ , ≼β , y′ = ⊢⋯⁻¹ inj y ⊢ϕ
+      jeq = subst (λ d → _ ∶ join d β α ≼ _) a-par ≤γ
+  in α′ ∥ β′ , ≼-trans (≼-cong-∥ ≼α ≼β) (≼-trans (≼-refl ∥-comm) jeq) , T-AppLin a-par eff≤ x′ y′
+... | a , α , β , _ , ≤γ , eff≤ , T-AppLeft aL x y =
+  let α′ , ≼α , x′ = ⊢⋯⁻¹ inj x ⊢ϕ
+      β′ , ≼β , y′ = ⊢⋯⁻¹ inj y ⊢ϕ
+      jeq = subst (λ d → _ ∶ join d β α ≼ _) aL ≤γ
+  in β′ ; α′ , ≼-trans (≼-cong-; ≼β ≼α) jeq , T-AppLeft aL eff≤ x′ y′
+... | a , α , β , _ , ≤γ , eff≤ , T-AppRight aR x y =
+  let α′ , ≼α , x′ = ⊢⋯⁻¹ inj x ⊢ϕ
+      β′ , ≼β , y′ = ⊢⋯⁻¹ inj y ⊢ϕ
+      jeq = subst (λ d → _ ∶ join d β α ≼ _) aR ≤γ
+  in α′ ; β′ , ≼-trans (≼-cong-; ≼α ≼β) jeq , T-AppRight aR eff≤ x′ y′
+⊢⋯⁻¹ {e = e₁ ; e₂} inj p ⊢ϕ =
+  let T , U , γ₁ , γ₂ , ϵ₀ , uT , U≃ , e≤ , ≤ , x , y = inv-seq p
+      γ₁′ , ≼₁ , x′ = ⊢⋯⁻¹ inj x ⊢ϕ
+      γ₂′ , ≼₂ , y′ = ⊢⋯⁻¹ inj y ⊢ϕ
+  in γ₁′ ; γ₂′ , ≼-trans (≼-cong-; ≼₁ ≼₂) ≤ , T-Conv U≃ e≤ (T-Seq uT x′ y′)
+⊢⋯⁻¹ {e = e₁ ⊗ e₂} inj p ⊢ϕ =
+  let p/s , T , U , γ₁ , γ₂ , ϵ₁ , ϵ₂ , ty≃ , e≤ , ≤ , s⇒p , x , y = inv-⊗ p
+      γ₁′ , ≼₁ , x′ = ⊢⋯⁻¹ inj x ⊢ϕ
+      γ₂′ , ≼₂ , y′ = ⊢⋯⁻¹ inj y ⊢ϕ
+  in join (biasedDir p/s) γ₁′ γ₂′
+   , subst (λ z → _ ∶ z ≼ _) (sym (join-⋯ (biasedDir p/s) γ₁′ γ₂′)) (≼-trans (≼-join (biasedDir p/s) ≼₁ ≼₂) ≤)
+   , T-Conv (≃-sym ty≃) e≤ (T-Pair p/s s⇒p x′ y′)
+⊢⋯⁻¹ {e = `let e₁ `in e₂} inj p ⊢ϕ = {!!}
+⊢⋯⁻¹ {e = `let⊗ e₁ `in e₂} inj p ⊢ϕ = {!!}
+⊢⋯⁻¹ {e = `inj i e} inj p ⊢ϕ =
+  let T , U , γ₀ , ty≃ , ≤ , d = inv-inj p
+      γ′ , ≼₀ , d′ = ⊢⋯⁻¹ inj d ⊢ϕ
+  in γ′ , ≼-trans ≼₀ ≤ , T-Conv (≃-sym ty≃) ≤ϵ-refl (T-Inj d′)
+⊢⋯⁻¹ {e = `case e `of⟨ e₁ ; e₂ ⟩} inj p ⊢ϕ = {!!}
+
+
+fvClose : Subset (suc n) → Subset n
+fvClose = Vec.tail
+
+fv : Tm n → Subset n
+fv (` x) = ⁅ x ⁆
+fv (K c) = ⁅⁆
+fv (ƛ e) = fvClose (fv e)
+fv (μ e) = fvClose (fv e)
+fv (e₁ · e₂) = fv e₁ ∪ fv e₂
+fv (e₁ ; e₂) = fv e₁ ∪ fv e₂
+fv (e₁ ⊗ e₂) = fv e₁ ∪ fv e₂
+fv (`let e₁ `in e₂) = fv e₁ ∪ fvClose (fv e₂)
+fv (`let⊗ e₁ `in e₂) = fv e₁ ∪ fvClose (fvClose (fv e₂))
+fv (`inj i e) = fv e
+fv (`case e `of⟨ e₁ ; e₂ ⟩) = fv e ∪ fvClose (fv e₁) ∪ fvClose (fv e₂)
+
+
+wk↓∁ : (γ : Struct m) (T₀ : Subset (suc m)) → 𝐂.wk γ ↓ ∁ T₀ ≡ 𝐂.wk (γ ↓ ∁ (fvClose T₀))
+wk↓∁ γ (b ∷ T₀) = ↓-dist-wk γ
+
+⊢⇒∁fv-Unr : ∀ {n} {Γ : Ctx n} {γ} {e} {T : 𝕋} {ϵ} →
+  Γ ; γ ⊢ e ∶ T ∣ ϵ → AllCx Unr Γ (γ ↓ ∁ (fv e))
+⊢⇒∁fv-Unr (T-Const ⊢c) = []
+⊢⇒∁fv-Unr {Γ = Γ} (T-Var x refl) with x ∈? ∁ ⁅ x ⁆
+... | yes x∈∁ = contradiction (x∈⁅x⁆ x) (x∈∁p⇒x∉p x∈∁)
+... | no  _   = []
+⊢⇒∁fv-Unr (T-Conv T≃ ϵ≤ d) = ⊢⇒∁fv-Unr d
+⊢⇒∁fv-Unr (T-Weaken γ≤ d) = allCx-weaken (λ u → u) (↓-mono-≼ γ≤) (⊢⇒∁fv-Unr d)
+⊢⇒∁fv-Unr {e = ƛ e} (T-Abs {a = a} {γ = γ} Γ-unr Γ-mob d) =
+  un-wk-Unr (subst (AllCx Unr _) (wk↓∁ γ (fv e))
+              (allCx-join↓-proj₂ (Arr.dir a) (∁ (fv e)) (⊢⇒∁fv-Unr d)))
+⊢⇒∁fv-Unr {e = μ (ƛ e)} (T-AbsRec {γ = γ} Γ-unr a-unr d) with ⊢⇒∁fv-Unr d
+... | (_ ∥ _) ∥ w =
+  un-wk-Unr (subst (AllCx Unr _) (wk↓∁ γ (fvClose (fv e)))
+    (un-wk-Unr (subst (AllCx Unr _) (wk↓∁ (𝐂.wk γ) (fv e)) w)))
+⊢⇒∁fv-Unr (T-AppUnr {γ₁ = γ₁} {γ₂ = γ₂} a-unr ≤ₐ d₁ d₂) =
+  ↓-⊆ γ₁ (∁-∪-⊆ˡ _ _) (⊢⇒∁fv-Unr d₁) ∥ ↓-⊆ γ₂ (∁-∪-⊆ʳ _ _) (⊢⇒∁fv-Unr d₂)
+⊢⇒∁fv-Unr (T-AppLin {γ₁ = γ₁} {γ₂ = γ₂} a-par ≤ₐ d₁ d₂) =
+  ↓-⊆ γ₁ (∁-∪-⊆ˡ _ _) (⊢⇒∁fv-Unr d₁) ∥ ↓-⊆ γ₂ (∁-∪-⊆ʳ _ _) (⊢⇒∁fv-Unr d₂)
+⊢⇒∁fv-Unr (T-AppLeft {γ₁ = γ₁} {γ₂ = γ₂} aL ≤ₐ d₁ d₂) =
+  ↓-⊆ γ₂ (∁-∪-⊆ʳ _ _) (⊢⇒∁fv-Unr d₂) ; ↓-⊆ γ₁ (∁-∪-⊆ˡ _ _) (⊢⇒∁fv-Unr d₁)
+⊢⇒∁fv-Unr (T-AppRight {γ₁ = γ₁} {γ₂ = γ₂} aR ≤ₐ d₁ d₂) =
+  ↓-⊆ γ₁ (∁-∪-⊆ˡ _ _) (⊢⇒∁fv-Unr d₁) ; ↓-⊆ γ₂ (∁-∪-⊆ʳ _ _) (⊢⇒∁fv-Unr d₂)
+⊢⇒∁fv-Unr (T-Pair par {γ₁ = γ₁} {γ₂ = γ₂} s⇒p d₁ d₂) =
+  ↓-⊆ γ₁ (∁-∪-⊆ˡ _ _) (⊢⇒∁fv-Unr d₁) ∥ ↓-⊆ γ₂ (∁-∪-⊆ʳ _ _) (⊢⇒∁fv-Unr d₂)
+⊢⇒∁fv-Unr (T-Pair seq {γ₁ = γ₁} {γ₂ = γ₂} s⇒p d₁ d₂) =
+  ↓-⊆ γ₁ (∁-∪-⊆ˡ _ _) (⊢⇒∁fv-Unr d₁) ; ↓-⊆ γ₂ (∁-∪-⊆ʳ _ _) (⊢⇒∁fv-Unr d₂)
+⊢⇒∁fv-Unr {e = `let e₁ `in e₂} (T-Let par {γ₁ = γ₁} {γ₂ = γ₂} d₁ d₂) with ⊢⇒∁fv-Unr d₂
+... | _ ∥ w =
+  ↓-⊆ γ₁ (∁-∪-⊆ˡ _ _) (⊢⇒∁fv-Unr d₁)
+  ∥ ↓-⊆ γ₂ (∁-∪-⊆ʳ _ _) (un-wk-Unr (subst (AllCx Unr _) (wk↓∁ γ₂ (fv e₂)) w))
+⊢⇒∁fv-Unr {e = `let e₁ `in e₂} (T-Let seq {γ₁ = γ₁} {γ₂ = γ₂} d₁ d₂) with ⊢⇒∁fv-Unr d₂
+... | _ ; w =
+  ↓-⊆ γ₁ (∁-∪-⊆ˡ _ _) (⊢⇒∁fv-Unr d₁)
+  ; ↓-⊆ γ₂ (∁-∪-⊆ʳ _ _) (un-wk-Unr (subst (AllCx Unr _) (wk↓∁ γ₂ (fv e₂)) w))
+⊢⇒∁fv-Unr (T-Seq {γ₁ = γ₁} {γ₂ = γ₂} uT d₁ d₂) =
+  ↓-⊆ γ₁ (∁-∪-⊆ˡ _ _) (⊢⇒∁fv-Unr d₁) ; ↓-⊆ γ₂ (∁-∪-⊆ʳ _ _) (⊢⇒∁fv-Unr d₂)
+⊢⇒∁fv-Unr {e = `let⊗ e₁ `in e₂} (T-LetPair par {γ₁ = γ₁} {γ₂ = γ₂} d₁ d₂) with ⊢⇒∁fv-Unr d₂
+... | _ ∥ w =
+  ↓-⊆ γ₁ (∁-∪-⊆ˡ _ _) (⊢⇒∁fv-Unr d₁)
+  ∥ ↓-⊆ γ₂ (∁-∪-⊆ʳ _ _) (un-wk-Unr (subst (AllCx Unr _) (wk↓∁ γ₂ (fvClose (fv e₂)))
+      (un-wk-Unr (subst (AllCx Unr _) (wk↓∁ (𝐂.wk γ₂) (fv e₂)) w))))
+⊢⇒∁fv-Unr {e = `let⊗ e₁ `in e₂} (T-LetPair seq {γ₁ = γ₁} {γ₂ = γ₂} d₁ d₂) with ⊢⇒∁fv-Unr d₂
+... | _ ; w =
+  ↓-⊆ γ₁ (∁-∪-⊆ˡ _ _) (⊢⇒∁fv-Unr d₁)
+  ; ↓-⊆ γ₂ (∁-∪-⊆ʳ _ _) (un-wk-Unr (subst (AllCx Unr _) (wk↓∁ γ₂ (fvClose (fv e₂)))
+      (un-wk-Unr (subst (AllCx Unr _) (wk↓∁ (𝐂.wk γ₂) (fv e₂)) w))))
+⊢⇒∁fv-Unr (T-Inj d) = ⊢⇒∁fv-Unr d
+⊢⇒∁fv-Unr {e = `case e `of⟨ e₁ ; e₂ ⟩} (T-Case par {γ₁ = γ₁} {γ₂ = γ₂} d d₁ d₂) with ⊢⇒∁fv-Unr d₁
+... | _ ∥ w =
+  ↓-⊆ γ₁ (∁-∪-⊆ˡ _ _) (⊢⇒∁fv-Unr d)
+  ∥ ↓-⊆ γ₂ (⊆-trans (∁-∪-⊆ʳ _ _) (∁-∪-⊆ˡ _ _))
+      (un-wk-Unr (subst (AllCx Unr _) (wk↓∁ γ₂ (fv e₁)) w))
+⊢⇒∁fv-Unr {e = `case e `of⟨ e₁ ; e₂ ⟩} (T-Case seq {γ₁ = γ₁} {γ₂ = γ₂} d d₁ d₂) with ⊢⇒∁fv-Unr d₁
+... | _ ; w =
+  ↓-⊆ γ₁ (∁-∪-⊆ˡ _ _) (⊢⇒∁fv-Unr d)
+  ; ↓-⊆ γ₂ (⊆-trans (∁-∪-⊆ʳ _ _) (∁-∪-⊆ˡ _ _))
+      (un-wk-Unr (subst (AllCx Unr _) (wk↓∁ γ₂ (fv e₁)) w))
