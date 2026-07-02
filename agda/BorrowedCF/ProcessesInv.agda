@@ -6,11 +6,15 @@ open import BorrowedCF.Types
 open import BorrowedCF.Context
 import BorrowedCF.Context.Substitution as 𝐂
 open import BorrowedCF.Terms
-open import BorrowedCF.TermsInv using (⊢⋯⁻¹; brₛ; ϕ-any⇐)
+open import BorrowedCF.TermsInv using (⊢⋯⁻¹; brₛ; ϕ-any⇐; Inj-↑ᵣ)
 open import BorrowedCF.DescendK using (descend-absK; wk^; wk^≡weaken*; Inj-↑*; freshᵏ)
 open import BorrowedCF.Processes.Typed
 
 open Nat.Variables
+
+Inj-↑*ₜ : (k : ℕ) {ρ : m →ᵣ n} → 𝐂.Inj ρ → 𝐂.Inj (ρ ↑* k)
+Inj-↑*ₜ zero    inj = inj
+Inj-↑*ₜ (suc k) inj = Inj-↑ᵣ (Inj-↑*ₜ k inj)
 
 ⊢⋯ₚ⁻¹ : ∀ {m n} {Γ₁ : Ctx m} {Γ₂ : Ctx n} {γ} {P} {ϕ : m →ᵣ n} {σ} →
   𝐂.Inj ϕ → Γ₂ ; γ ⊢ₚ P ⋯ₚ ϕ → ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ →
@@ -25,9 +29,9 @@ open Nat.Variables
   in α′ ∥ β′ , ≼-trans (≼-cong-∥ ≤α ≤β) ≤ , TP-Par p₁′ p₂′
 ⊢⋯ₚ⁻¹ {P = ν B₁ B₂ P} inj p ⊢ϕ = {!!}
 
-{- ν-case assembly (BLOCKED on term-vs-𝐂 ↑* instance clash — needs k-ary Inj-↑*ᵣ + brₛ↑* bridge,
-   analogous to the term-level Inj-↑ᵣ/brₛ↑ solution; plus Frinv via 𝐂.wkʳ-cancels-↑* and
-   Frdom via dom(structBinder⋯wkʳ) ⊆ freshᵏ):
+{- ν-case: recursion clash RESOLVED via Inj-↑*ₜ. Remaining: (1) ≼b needs instance-pinned
+   k-ary bridge brₛ↑* (γ′⋯(σ 𝐂.↑*ₛ k) ≡ γ′⋯ᵣ(ϕ 𝐂.↑*ᵣ k), via lift-disg iterated k times);
+   (2) Frinv via 𝐂.wkʳ-cancels-↑*; (3) Frdom via dom(structBinder⋯wkʳ) ⊆ freshᵏ:
 
 ⊢⋯ₚ⁻¹ {m = m} {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {γ = γ} {P = ν B₁ B₂ P} {ϕ = ϕ} inj p ⊢ϕ =
   let Γ₁ᵥ , Γ₂ᵥ , _ , pol , N , ⊢B₁ , ⊢B₂ , C , C′ , p′ = inv-ν p
@@ -37,7 +41,7 @@ open Nat.Variables
           ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ m)
       Fr′ = (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n)
           ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n)
-      γ′ , ≤γ , p″ = ⊢⋯ₚ⁻¹ (Inj-↑* k inj) p′ (⊢↑* Δ ⊢ϕ)
+      γ′ , ≤γ , p″ = ⊢⋯ₚ⁻¹ (Inj-↑*ₜ k inj) p′ (⊢↑* Δ ⊢ϕ)
       ≤γᵣ = subst (λ z → (Δ ⸴* Γ₂) ∶ z ≼ _) (brₛ (⊢↑* Δ ⊢ϕ) γ′) ≤γ
       ≼b = subst (λ z → (Δ ⸴* Γ₂) ∶ (γ′ 𝐂.⋯ (ϕ 𝐂.↑* k)) ≼ join 𝟙 Fr′ z)
              (sym (wk^≡weaken* k γ)) ≤γᵣ
