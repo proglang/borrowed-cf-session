@@ -3100,6 +3100,13 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
           where
             jvtoℕᴿ : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ (syncs B) (proj₁ (proj₂ (proj₂ hcᴿ0)))) ≡ syncs B + (sAᴿ + 0)
             jvtoℕᴿ = toℕ-weaken*ᵣ (syncs B) (proj₁ (proj₂ (proj₂ hcᴿ0))) ■ cong (syncs B +_) (proj₂ (proj₂ (proj₂ (proj₂ hcᴿ0))))
+        slotL0 : proj₁ hcᴿ0 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ≡ proj₁ hc ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ Θ
+        slotL0 = cong (_⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)) (handle-L-rwk B₁ (K `unit) 0F (K `unit) b₁ B₂)
+               ■ ⋯-↑*-wk (proj₁ hc) (sins B₁ b₁ B₂ {2 + n}) (syncs B)
+        Leq0 : ccA ⋯ weakenᵣ ⋯ assocSwapᵣ 1 2 ⋯ (assocSwapᵣ 1 (syncs B) ↑* 2)
+               ≡ proj₁ hcᴿ0 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ ⋯ ρR'
+        Leq0 = outerRec-Tm (proj₁ hc ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B))
+             ■ cong (λ z → z ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ ⋯ ρR') (sym slotL0)
         -- ===== thread-leaf reconciliation (frame naturality + body triple) =====
         frameLeafeqᴿ : frame*-⋯ E τ Vτ ⋯ᶠ* Θ ≡ frame*-⋯ (E ⋯ᶠ* 𝐒.rwk) τᴿ Vτᴿ
         frameLeafeqᴿ = sym
