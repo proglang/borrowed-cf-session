@@ -21,7 +21,7 @@ open import BorrowedCF.Context using (Ctx; Struct)
 open import BorrowedCF.Types using (_≃_; ⟨_⟩; ≃-sym; ≃-trans)
 import BorrowedCF.Simulation2.InvFrame as IF
 open import BorrowedCF.Simulation2.Frames using (frame*-⋯; frame-plug*; ++ₛ-VSub; weaken-VSub)
-open import BorrowedCF.Simulation2.TranslationProperties using (≡→≋)
+open import BorrowedCF.Simulation2.TranslationProperties using (≡→≋; Ub-V)
 import BorrowedCF.Processes.Typed   as TP
 open TP using (_;_⊢ₚ_; inv-ν; bindCtx⇒chanCtx)
 import BorrowedCF.Processes.Untyped as UP
@@ -709,28 +709,20 @@ rnew-bridge : (E : Frame* m) (σ : m →ₛ n) (Vσ : VSub σ) →
 rnew-bridge {m} {n} E σ Vσ =
   ≡→≋ (cong UP.ν (cong (UP.φ UP.acq) (cong (UP.φ UP.acq) (cong UP.⟪_⟫ bodyEq))))
   where
-    cA : Tm (1 + (1 + (2 + n)))
-    cA = chanTriple ((` 0F) , 1F , wk *) ⋯ weaken* ⦃ Kᵣ ⦄ 1
-    cB : Tm (1 + (1 + (2 + n)))
-    cB = chanTriple ((` 0F) , suc (weaken* ⦃ Kᵣ ⦄ 1 1F) , wk *)
     A : 1 →ₛ (1 + (1 + (2 + n)))
-    A = λ _ → cA
+    A = Ub[ 1 ] ((` 0F) , 1F , wk *) ·ₖ weaken* ⦃ Kᵣ ⦄ 1
     B : 1 →ₛ (1 + (1 + (2 + n)))
-    B = λ _ → cB
+    B = Ub[ 1 ] ((` 0F) , suc (weaken* ⦃ Kᵣ ⦄ 1 1F) , wk *)
     Bσ : m →ₛ (1 + (1 + (2 + n)))
     Bσ = λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 1 ⋯ weaken* ⦃ Kᵣ ⦄ 1
     σ′ : (1 + 1 + m) →ₛ (1 + (1 + (2 + n)))
     σ′ = (A ++ₛ B) ++ₛ Bσ
-    VcAch : Value (chanTriple ((` 0F) , 1F , wk *))
-    VcAch = V-⊗ (V-⊗ V-` V-`) (value-⋯ V-K (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`))
-    VcBch : Value (chanTriple ((` 0F) , suc (weaken* ⦃ Kᵣ ⦄ 1 1F) , wk *))
-    VcBch = V-⊗ (V-⊗ V-` V-`) (value-⋯ V-K (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`))
-    VcA : Value cA
-    VcA = value-⋯ VcAch (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`)
     VA : VSub A
-    VA = λ _ → VcA
+    VA j = value-⋯ (Ub-V 1 (` 0F) 1F (wk *) V-` (value-⋯ V-K (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`)) j)
+                   (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`)
     VB : VSub B
-    VB = λ _ → VcBch
+    VB j = Ub-V 1 (` 0F) (suc (weaken* ⦃ Kᵣ ⦄ 1 1F)) (wk *) V-`
+                 (value-⋯ V-K (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`)) j
     Vσ′ : VSub σ′
     Vσ′ = ++ₛ-VSub {σ₁ = A ++ₛ B}
             (++ₛ-VSub {σ₁ = A} VA VB)
@@ -777,8 +769,8 @@ syncs0-shape (b ∷ _ ∷ _)   ()
 -- exactly U[ P₀ ] (νσ b₁ b₂ σ).
 νσ : ∀ {m n} → (b₁ b₂ : ℕ) → (m →ₛ n) → (sum (b₁ ∷ []) + sum (b₂ ∷ []) + m →ₛ 2 + n)
 νσ b₁ b₂ σ =
-  ((λ i → (λ (_ : 𝔽 (sum (b₁ ∷ []))) → chanTriple (* , 0F , *)) i ⋯ weaken* ⦃ Kᵣ ⦄ 0) ++ₛ
-    (λ (_ : 𝔽 (sum (b₂ ∷ []))) → chanTriple (* , weaken* ⦃ Kᵣ ⦄ 0 1F , *)))
+  ((λ i → Ub[ b₁ + 0 ] (* , 0F , *) i ⋯ weaken* ⦃ Kᵣ ⦄ 0) ++ₛ
+    Ub[ b₂ + 0 ] (* , weaken* ⦃ Kᵣ ⦄ 0 1F , *))
   ++ₛ (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 0 ⋯ weaken* ⦃ Kᵣ ⦄ 0)
 
 -- νσ is a value substitution: every component is a chanTriple of values, or
@@ -786,12 +778,12 @@ syncs0-shape (b ∷ _ ∷ _)   ()
 νσ-VSub : ∀ {m n} (b₁ b₂ : ℕ) (σ : m →ₛ n) → VSub σ → VSub (νσ b₁ b₂ σ)
 νσ-VSub b₁ b₂ σ Vσ =
   ++ₛ-VSub
-    {σ₁ = (λ i → (λ (_ : 𝔽 (sum (b₁ ∷ []))) → chanTriple (* , 0F , *)) i ⋯ weaken* ⦃ Kᵣ ⦄ 0) ++ₛ
-          (λ (_ : 𝔽 (sum (b₂ ∷ []))) → chanTriple (* , weaken* ⦃ Kᵣ ⦄ 0 1F , *))}
+    {σ₁ = (λ i → Ub[ b₁ + 0 ] (* , 0F , *) i ⋯ weaken* ⦃ Kᵣ ⦄ 0) ++ₛ
+          Ub[ b₂ + 0 ] (* , weaken* ⦃ Kᵣ ⦄ 0 1F , *)}
     (++ₛ-VSub
-       {σ₁ = (λ i → (λ (_ : 𝔽 (sum (b₁ ∷ []))) → chanTriple (* , 0F , *)) i ⋯ weaken* ⦃ Kᵣ ⦄ 0)}
-       (λ _ → value-⋯ (V-⊗ (V-⊗ V-K V-`) V-K) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`))
-       (λ _ → V-⊗ (V-⊗ V-K V-`) V-K))
+       {σ₁ = (λ i → Ub[ b₁ + 0 ] (* , 0F , *) i ⋯ weaken* ⦃ Kᵣ ⦄ 0)}
+       (λ j → value-⋯ (Ub-V (b₁ + 0) * 0F * V-K V-K j) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`))
+       (λ j → Ub-V (b₂ + 0) * (weaken* ⦃ Kᵣ ⦄ 0 1F) * V-K V-K j))
     (λ i → value-⋯ (value-⋯ (value-⋯ (Vσ i) (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`))
 
 -- U[ ν [b₁] [b₂] P₀ ] σ collapses (no φ binders) to ν (U[ P₀ ] (νσ …)).
@@ -876,11 +868,11 @@ close-bridge E₁ E₂ σ Vσ =
 νσ-φfree B₁ B₂ σ p₁ p₂ with syncs0-shape B₁ p₁ | syncs0-shape B₂ p₂
 ... | Sum.inj₂ (b₁ , refl) | Sum.inj₂ (b₂ , refl) = νσ b₁ b₂ σ
 ... | Sum.inj₂ (b₁ , refl) | Sum.inj₁ refl =
-  ((λ i → (λ (_ : 𝔽 (sum (b₁ ∷ []))) → chanTriple (* , 0F , *)) i ⋯ weaken* ⦃ Kᵣ ⦄ 0) ++ₛ
+  ((λ i → Ub[ b₁ + 0 ] (* , 0F , *) i ⋯ weaken* ⦃ Kᵣ ⦄ 0) ++ₛ
       (λ ())) ++ₛ
       (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 0 ⋯ weaken* ⦃ Kᵣ ⦄ 0)
 ... | Sum.inj₁ refl | Sum.inj₂ (b₂ , refl) =
-  (λ (_ : 𝔽 (sum (b₂ ∷ []))) → chanTriple (* , weaken* ⦃ Kᵣ ⦄ 0 1F , *)) ++ₛ
+  Ub[ b₂ + 0 ] (* , weaken* ⦃ Kᵣ ⦄ 0 1F , *) ++ₛ
       (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 0 ⋯ weaken* ⦃ Kᵣ ⦄ 0)
 ... | Sum.inj₁ refl | Sum.inj₁ refl =
   (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 0 ⋯ weaken* ⦃ Kᵣ ⦄ 0)
@@ -892,16 +884,16 @@ close-bridge E₁ E₂ σ Vσ =
 ... | Sum.inj₂ (b₁ , refl) | Sum.inj₂ (b₂ , refl) = νσ-VSub b₁ b₂ σ Vσ
 ... | Sum.inj₂ (b₁ , refl) | Sum.inj₁ refl =
   ++ₛ-VSub
-      {σ₁ = (λ i → (λ (_ : 𝔽 (sum (b₁ ∷ []))) → chanTriple (* , 0F , *)) i ⋯ weaken* ⦃ Kᵣ ⦄ 0) ++ₛ (λ ())}
+      {σ₁ = (λ i → Ub[ b₁ + 0 ] (* , 0F , *) i ⋯ weaken* ⦃ Kᵣ ⦄ 0) ++ₛ (λ ())}
       (++ₛ-VSub
-        {σ₁ = (λ i → (λ (_ : 𝔽 (sum (b₁ ∷ []))) → chanTriple (* , 0F , *)) i ⋯ weaken* ⦃ Kᵣ ⦄ 0)}
-        (λ _ → value-⋯ (V-⊗ (V-⊗ V-K V-`) V-K) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`))
+        {σ₁ = (λ i → Ub[ b₁ + 0 ] (* , 0F , *) i ⋯ weaken* ⦃ Kᵣ ⦄ 0)}
+        (λ j → value-⋯ (Ub-V (b₁ + 0) * 0F * V-K V-K j) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`))
         (λ ()))
       (λ i → value-⋯ (value-⋯ (value-⋯ (Vσ i) (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`))
 ... | Sum.inj₁ refl | Sum.inj₂ (b₂ , refl) =
   ++ₛ-VSub
-      {σ₁ = (λ (_ : 𝔽 (sum (b₂ ∷ []))) → chanTriple (* , weaken* ⦃ Kᵣ ⦄ 0 1F , *))}
-      (λ _ → V-⊗ (V-⊗ V-K V-`) V-K)
+      {σ₁ = Ub[ b₂ + 0 ] (* , weaken* ⦃ Kᵣ ⦄ 0 1F , *)}
+      (λ j → Ub-V (b₂ + 0) * (weaken* ⦃ Kᵣ ⦄ 0 1F) * V-K V-K j)
       (λ i → value-⋯ (value-⋯ (value-⋯ (Vσ i) (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`))
 ... | Sum.inj₁ refl | Sum.inj₁ refl =
   λ i → value-⋯ (value-⋯ (value-⋯ (Vσ i) (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`)) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`)

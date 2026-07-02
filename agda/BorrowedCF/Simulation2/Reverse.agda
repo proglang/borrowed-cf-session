@@ -56,6 +56,24 @@ _TR─→ₚ*_ : {n : ℕ} → TP.Proc n → TP.Proc n → Set
 _TR─→ₚ*_ = Star TR._─→ₚ_
 
 ------------------------------------------------------------------------
+-- D2 : "one untyped step + an OPTIONAL cleanup".
+--
+--   A single typed step may be TWO untyped steps through an administrative
+--   intermediate flag-state (R-Acq = RU-Acquire ; RU-Cleanup, via the `done`
+--   cell; Theorems.agda:418).  Observing ONE untyped step in reverse can leave
+--   us at that intermediate, which is OUTSIDE every U[_]-image (images carry
+--   only drop/acq flags, never done).  So the reverse codomain lets the OUTPUT
+--   Q take at most ONE further untyped step before matching the image.  The
+--   relation is the GENERAL ≤1-step  (Q ≡ Q′) ⊎ (Q ─→ₚ Q′)  rather than a
+--   RU-Cleanup-restricted one so it composes through RU-Struct (a ≋-wrapped
+--   cleanup is a RU-Struct step, not a literal RU-Cleanup constructor).
+------------------------------------------------------------------------
+
+infix 4 _─→ᶜ?_
+_─→ᶜ?_ : {n : ℕ} → UP.Proc n → UP.Proc n → Set
+Q ─→ᶜ? Q′ = (Q ≡ Q′) Sum.⊎ (Q UR.─→ₚ Q′)
+
+------------------------------------------------------------------------
 -- Expression-reduction REFLECTION through a value substitution.
 --
 --   The reverse of Frames.⋯→-⋯ₛ: substituting VALUES into a term cannot
@@ -187,7 +205,8 @@ inv-U-ν (TP.ν B₁ B₂ P) σ refl = B₁ , B₂ , P , refl , refl
 sim← : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
      → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
      → {R Q : UP.Proc n} → R UP.≋ U[ P ] σ → R UR.─→ₚ Q
-     → Σ[ P′ ∈ TP.Proc m ] (P TR─→ₚ* P′ × Q UP.≋ U[ P′ ] σ)
+     → Σ[ P′ ∈ TP.Proc m ] Σ[ Q′ ∈ UP.Proc n ]
+         (P TR─→ₚ* P′ × Q ─→ᶜ? Q′ × Q′ UP.≋ U[ P′ ] σ)
 
 -- The untyped step has LHS index U[ P ] σ, a stuck application, so a direct
 -- `with` case-split on it gets a SplitError (UnificationStuck).  We generalise:
@@ -199,7 +218,8 @@ sim← : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
 sim←ᵍ : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
       → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
       → {R Q : UP.Proc n} → R ≡ U[ P ] σ → R UR.─→ₚ Q
-      → Σ[ P′ ∈ TP.Proc m ] (P TR─→ₚ* P′ × Q UP.≋ U[ P′ ] σ)
+      → Σ[ P′ ∈ TP.Proc m ] Σ[ Q′ ∈ UP.Proc n ]
+          (P TR─→ₚ* P′ × Q ─→ᶜ? Q′ × Q′ UP.≋ U[ P′ ] σ)
 
 -- syncs-of : the (<=singleton) phi-free shape of a bind group, or a >=2 witness.
 syncs-of : (B : TP.BindGroup)
@@ -217,7 +237,8 @@ simRes : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
        → (X X′ : UP.Proc (2 + n)) → X UR.─→ₚ X′
        → UP.ν X ≡ U[ TP.ν B₁ B₂ P₀ ] σ
        → (syncs B₁ ≡ 0) Sum.⊎ _ → (syncs B₂ ≡ 0) Sum.⊎ _
-       → Σ[ P′ ∈ TP.Proc m ] (TP.ν B₁ B₂ P₀ TR─→ₚ* P′ × UP.ν X′ UP.≋ U[ P′ ] σ)
+       → Σ[ P′ ∈ TP.Proc m ] Σ[ Q′ ∈ UP.Proc n ]
+           (TP.ν B₁ B₂ P₀ TR─→ₚ* P′ × UP.ν X′ ─→ᶜ? Q′ × Q′ UP.≋ U[ P′ ] σ)
 
 -- Public entry, ≋-closed on the input.  When R IS literally the image
 -- (the ε / reflexive prefix) it is the engine at refl; a genuine ≋ prefix
@@ -251,7 +272,7 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Exp {e₁ = e₁} {e₂ = e₂} ste
   -- source typing inv-⟪⟫ ⊢P + ChanCx Γ-S rule out a VSub manufacturing a head
   -- redex at a channel-typed variable.
   with e₀′ , s , refl ← ⋯→-reflect Γ-S e₀ (inv-⟪⟫ ⊢P) σ Vσ step =
-  TP.⟪ e₀′ ⟫ , TR.R-Exp s ◅ ε , ε
+  TP.⟪ e₀′ ⟫ , _ , TR.R-Exp s ◅ ε , Sum.inj₁ refl , ε
 
 ------------------------------------------------------------------------
 -- RU-Par : R = A ∥ B and A steps.  eq + inv-U-∥ gives P = P₁ ∥ P₂ with
@@ -263,8 +284,9 @@ sim←ᵍ σ Vσ Γ-S {P = TP.⟪ e ⟫}     ⊢P () (UR.RU-Par sub)
 sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Par sub)
 sim←ᵍ σ Vσ Γ-S {P = P₁ TP.∥ P₂}   ⊢P refl (UR.RU-Par sub)
   with _ , _ , _ , ⊢P₁ , _ ← inv-∥ ⊢P
-  with P₁′ , step₁ , c₁ ← sim←ᵍ σ Vσ Γ-S ⊢P₁ refl sub =
-  P₁′ TP.∥ P₂ , ⋆-gmap (TP._∥ P₂) TR.R-Par step₁ , UP.∥-cong c₁ ε
+  with P₁′ , Q₁′ , step₁ , cl₁ , c₁ ← sim←ᵍ σ Vσ Γ-S ⊢P₁ refl sub =
+  P₁′ TP.∥ P₂ , Q₁′ UP.∥ U[ P₂ ] σ , ⋆-gmap (TP._∥ P₂) TR.R-Par step₁ ,
+  Sum.map (cong (λ z → z UP.∥ U[ P₂ ] σ)) UR.RU-Par cl₁ , UP.∥-cong c₁ ε
 
 ------------------------------------------------------------------------
 -- RU-Res : R = ν X and X steps (sub : X ─→ₚ X′).  inv-U-ν (now PROVEN with its
@@ -323,8 +345,8 @@ sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Fork F V)
   with e₀ , refl , feq ← inv-U-⟪⟫ _ σ (sym eq)
   with F₀ , arg₀ , refl , Feq , argeq
        ← frameApp-reflect Γ-S e₀ (inv-⟪⟫ ⊢P) σ Vσ `fork F (sym feq) =
-  TP.⟪ F₀ [ K `unit ]* ⟫ TP.∥ TP.⟪ arg₀ · K `unit ⟫ ,
-  TR.R-Fork F₀ (value-⋯⁻¹ σ Vσ arg₀ (subst Value argeq V)) ◅ ε ,
+  TP.⟪ F₀ [ K `unit ]* ⟫ TP.∥ TP.⟪ arg₀ · K `unit ⟫ , _ ,
+  TR.R-Fork F₀ (value-⋯⁻¹ σ Vσ arg₀ (subst Value argeq V)) ◅ ε , Sum.inj₁ refl ,
   ≡→≋ (cong₂ UP._∥_
         (cong UP.⟪_⟫ (cong (_[ K `unit ]*) Feq ■ sym (frame-plug* F₀ σ Vσ)))
         (cong (λ z → UP.⟪ z · K `unit ⟫) argeq))
@@ -355,8 +377,8 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-New {s = s} F)
       = ⊥-elim (new-arg-notVar Γ-S ⊢redex)
 ... | Sum.inj₂ refl =
   TP.ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
-    TP.⟪ (F₀ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 1F) ⊗ (` 0F) ]* ⟫ ,
-  TR.R-New F₀ ◅ ε ,
+    TP.⟪ (F₀ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 1F) ⊗ (` 0F) ]* ⟫ , _ ,
+  TR.R-New F₀ ◅ ε , Sum.inj₁ refl ,
   subst (λ z → UP.ν (UP.φ UP.acq (UP.φ UP.acq UP.⟪
                   (z ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [ _ ]* ⟫))
                 UP.≋ _)
@@ -520,8 +542,11 @@ sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () UR.RU-Cleanup
 --   administrative moves that leave the U[_] image must be handled.
 ------------------------------------------------------------------------
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Struct c₁ inner c₂)
-  with P′ , steps , Q′≋ ← sim← σ Vσ Γ-S ⊢P (Eq*.symmetric _ c₁ ◅◅ ≡→≋ eq) inner =
-  P′ , steps , Eq*.symmetric _ c₂ ◅◅ Q′≋
+  with sim← σ Vσ Γ-S ⊢P (Eq*.symmetric _ c₁ ◅◅ ≡→≋ eq) inner
+... | P′ , Q″ , steps , Sum.inj₁ refl , Q″≋ =
+  P′ , _ , steps , Sum.inj₁ refl , Eq*.symmetric _ c₂ ◅◅ Q″≋
+... | P′ , Q″ , steps , Sum.inj₂ st , Q″≋ =
+  P′ , Q″ , steps , Sum.inj₂ (UR.RU-Struct (Eq*.symmetric _ c₂) st ε) , Q″≋
 
 
 ------------------------------------------------------------------------
@@ -530,9 +555,10 @@ sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Struct c₁ inner c₂)
 -- phi-bearing (some syncs >= 1): documented codomain-≋ blocker.
 simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₁ s₁) (Sum.inj₁ s₂)
   with _ , _ , Γ′-S , ⊢body ← inv-ν-chanCx Γ-S ⊢ₚP
-  with P₀′ , steps , c ← sim←ᵍ (νσ-φfree B₁ B₂ σ s₁ s₂) (νσ-φfree-VSub B₁ B₂ σ Vσ s₁ s₂) Γ′-S ⊢body (ν-inj (bodyeq ■ U-ν-φfree-eq B₁ B₂ P₀ σ s₁ s₂)) sub =
-  TP.ν B₁ B₂ P₀′ , ⋆-gmap (TP.ν B₁ B₂) TR.R-Bind steps
-  , subst (UP.ν X′ UP.≋_) (sym (U-ν-φfree-eq B₁ B₂ P₀′ σ s₁ s₂)) (UP.ν-cong c)
+  with P₀′ , Q₀′ , steps , cl₀ , c ← sim←ᵍ (νσ-φfree B₁ B₂ σ s₁ s₂) (νσ-φfree-VSub B₁ B₂ σ Vσ s₁ s₂) Γ′-S ⊢body (ν-inj (bodyeq ■ U-ν-φfree-eq B₁ B₂ P₀ σ s₁ s₂)) sub =
+  TP.ν B₁ B₂ P₀′ , UP.ν Q₀′ , ⋆-gmap (TP.ν B₁ B₂) TR.R-Bind steps
+  , Sum.map (cong UP.ν) UR.RU-Res cl₀
+  , subst (UP.ν Q₀′ UP.≋_) (sym (U-ν-φfree-eq B₁ B₂ P₀′ σ s₁ s₂)) (UP.ν-cong c)
 simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₂ _) _ =
   {! RU-Res phi-bearing (syncs B₁ >= 1): an admin phi sync-cell move (RU-Drop/Acquire/Cleanup flips a flag) inside the phi-telescope carries U[P]σ OUTSIDE the U[_] image, so it has no R-Bind counterpart at the binder.  Needs the codomain-≋ strengthening (reduction-up-to-≋ on BOTH sides) -- same blocker as RU-Struct / sim← non-ε.  Statement change owned upstream. !}
 simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq _ (Sum.inj₂ _) =
