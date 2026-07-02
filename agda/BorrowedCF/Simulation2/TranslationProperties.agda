@@ -222,8 +222,8 @@ UB-nat : (B : TP.BindGroup) (cc : UChan n) (θ : n →ᵣ n′)
          UB[ B ] cc f UP.⋯ₚ θ ≡ UB[ B ] (mapᶜ θ cc) f′
 UB-nat [] cc θ {f} {f′} h = h (λ ()) ■ cong f′ (funext (λ ()))
 UB-nat (b ∷ []) (e₁ , x , e₂) θ {f} {f′} h =
-  h (λ _ → chanTriple (e₁ , x , e₂))
-  ■ cong f′ (funext (λ _ → chanTriple-mapᶜ θ (e₁ , x , e₂)))
+  h (Ub[ b + 0 ] (e₁ , x , e₂))
+  ■ cong f′ (funext (λ i → Ub-nat (b + 0) (e₁ , x , e₂) θ i))
 UB-nat {n} {n′} (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) θ {f} {f′} h =
   cong (UP.φ ϕ[ b ])
     (UB-nat B (` 0F , suc x , e₂ ⋯ weakenᵣ) (θ ↑) {f = gL} {f′ = gR} contH
@@ -367,7 +367,7 @@ UB-cong-─→ : (B : TP.BindGroup) (cc : UChan n) → VChan cc →
              {f g : (sum B →ₛ syncs B + n) → UP.Proc (syncs B + n)} →
              (∀ σ → VSub σ → f σ UR.─→ₚ g σ) → UB[ B ] cc f UR.─→ₚ UB[ B ] cc g
 UB-cong-─→ [] cc Vcc h = h _ (λ ())
-UB-cong-─→ (b ∷ []) cc Vcc h = h _ (λ _ → chanTriple-V cc Vcc)
+UB-cong-─→ (b ∷ []) (e₁ , c , e₂) (Ve₁ , Ve₂) h = h _ (λ j → Ub-V (b + 0) e₁ c e₂ Ve₁ Ve₂ j)
 UB-cong-─→ {n} (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) (Ve₁ , Ve₂) h =
   UR.RU-Sync
     (UB-cong-─→ B (` 0F , suc x , e₂ ⋯ weakenᵣ) (V-` , Ve₂ ⋯ᵛ weakenᵣ)

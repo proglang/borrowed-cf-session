@@ -227,7 +227,7 @@ Bφ-cong {n} (b ∷ B@(_ ∷ _)) pq = U.φ-cong (Bφ-cong B (subst-≋ (sym (+-s
 -- the canonical leaf substitution fed to f by UB[ B ]
 canonₛ : ∀ {n} (B : BindGroup) → UChan n → (sum B →ₛ syncs B + n)
 canonₛ []            cc = λ ()
-canonₛ (b ∷ [])      cc = λ _ → chanTriple cc
+canonₛ (b ∷ [])      cc = Ub[ b + 0 ] cc
 canonₛ {n} (b ∷ B@(_ ∷ _)) (e1 , x , e2) =
   λ y → subst Tm (+-suc (syncs B) n)
           ([ Ub[ b ] (wk e1 , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ (syncs B)
@@ -273,7 +273,7 @@ private
 canonₛ-nat : ∀ {a bb} (B : BindGroup) (cc : UChan a) (ρ : a →ᵣ bb) (i : 𝔽 (sum B)) →
              canonₛ B cc i ⋯ (ρ ↑* syncs B) ≡ canonₛ B (mapᶜ ρ cc) i
 canonₛ-nat []            cc ρ ()
-canonₛ-nat (b ∷ [])      (e1 , x , e2) ρ i = refl
+canonₛ-nat (b ∷ [])      (e1 , x , e2) ρ i = Ub-nat (b + 0) (e1 , x , e2) ρ i
 canonₛ-nat {a} {bb} (b ∷ B@(_ ∷ _)) (e1 , x , e2) ρ i
   with Fin.splitAt b i | canonₛ-nat B (` 0F , suc x , wk e2) (ρ ↑)
 ... | inj₁ j | _  = ΘrelEqᵍ (syncs B) ρ ((Ub[ b ] (wk e1 , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ (syncs B)) j)

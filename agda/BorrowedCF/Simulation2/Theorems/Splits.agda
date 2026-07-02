@@ -77,7 +77,7 @@ Bφ-cong {n} (b ∷ B@(_ ∷ _)) pq = U.φ-cong (Bφ-cong B (subst-≋ (sym (+-s
 
 canonₛ : ∀ {n} (B : BindGroup) → UChan n → (sum B →ₛ syncs B + n)
 canonₛ []            cc = λ ()
-canonₛ (b ∷ [])      cc = λ _ → chanTriple cc
+canonₛ (b ∷ [])      cc = Ub[ b + 0 ] cc
 canonₛ {n} (b ∷ B@(_ ∷ _)) (e1 , x , e2) =
   λ y → subst Tm (+-suc (syncs B) n)
           ([ Ub[ b ] (wk e1 , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ (syncs B)
@@ -113,7 +113,7 @@ private
 canonₛ-nat : ∀ {a bb} (B : BindGroup) (cc : UChan a) (ρ : a →ᵣ bb) (i : 𝔽 (sum B)) →
              canonₛ B cc i ⋯ (ρ ↑* syncs B) ≡ canonₛ B (mapᶜ ρ cc) i
 canonₛ-nat []            cc ρ ()
-canonₛ-nat (b ∷ [])      (e1 , x , e2) ρ i = refl
+canonₛ-nat (b ∷ [])      (e1 , x , e2) ρ i = Ub-nat (b + 0) (e1 , x , e2) ρ i
 canonₛ-nat {a} {bb} (b ∷ B@(_ ∷ _)) (e1 , x , e2) ρ i
   with Fin.splitAt b i | canonₛ-nat B (` 0F , suc x , wk e2) (ρ ↑)
 ... | inj₁ j | _  = ΘrelEqᵍ (syncs B) ρ chL
@@ -610,7 +610,7 @@ Bφ-lift-step (b ∷ B@(_ ∷ _)) {n} r =
 VSub-canonₛ : ∀ (B : BindGroup) {N} (cc : UChan N) → VChan cc → VSub (canonₛ B cc)
 VSub-canonₛ []            cc            Vcc = λ ()
 VSub-canonₛ (b ∷ [])      (e1 , x , e2) (Ve1 , Ve2) =
-  λ _ → chanTriple-V (e1 , x , e2) (Ve1 , Ve2)
+  λ j → Ub-V (b + 0) e1 x e2 Ve1 Ve2 j
 VSub-canonₛ (b ∷ B@(_ ∷ _)) {N} (e1 , x , e2) (Ve1 , Ve2) i =
   Value-subst (+-suc (syncs B) N)
     (++ₛ-VSub {a = b}
@@ -623,8 +623,10 @@ canonₛ-head-triple : ∀ {N} (b : ℕ) (B : BindGroup) (e1 e2 : Tm N) (x : �
   Σ[ j ∈ 𝔽 (syncs (suc b ∷ B) + N) ]
     (canonₛ (suc b ∷ B) (e1 , x , e2) 0F ≡ (a ⊗ (` j)) ⊗ c)
     × (Fin.toℕ j ≡ syncs (suc b ∷ B) + Fin.toℕ x)
-canonₛ-head-triple b []        e1 e2 x =
+canonₛ-head-triple zero        []        e1 e2 x =
   e1 , e2 , x , refl , refl
+canonₛ-head-triple (suc b)     []        e1 e2 x =
+  e1 , * , x , refl , refl
 canonₛ-head-triple {N} zero (c′ ∷ B) e1 e2 x =
   ( subst Tm (+-suc sB N) (wk e1 ⋯ weaken* ⦃ Kᵣ ⦄ sB)
   , subst Tm (+-suc sB N) ((` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB)
