@@ -15,7 +15,7 @@ open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Types
 open import BorrowedCF.Context
-open import BorrowedCF.Context.Pattern using (LeftPat; CxPat)
+open import BorrowedCF.Context.Pattern using (LeftPat; CxPat; _[_]𝓅)
 open import BorrowedCF.Reduction.Base
 open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.List.Relation.Unary.All.Properties using (++⁺)
@@ -56,3 +56,19 @@ frames-𝕀 (E ∷⟨ U≃ , ϵ≤ ⟩ E*) with frames-𝕀 E*
 ... | refl , lp* with ϵ≤
 ...   | 𝕀≤𝕀 with frame-𝕀 E
 ...     | refl , lp = refl , ++⁺ lp lp*
+
+
+-- The ≈ version (commented out in Context.Pattern) is FALSE: ≼-wk gives only one
+-- direction, ((α∥B);γ ≼ α∥(B;γ)), so pulling the ∥-front out of a LeftPat context
+-- holds only up to ≼, never ≈.  This ≼ version is what the count argument needs.
+leftPat-pullOut-∥-≼ : ∀ {n} {Γ : Ctx n} {𝒫 : CxPat n} {α β : Struct n}
+                    → LeftPat 𝒫 → Γ ∶ 𝒫 [ α ∥ β ]𝓅 ≼ α ∥ 𝒫 [ β ]𝓅
+leftPat-pullOut-∥-≼ {𝒫 = []} [] = ≼-refl ≈-refl
+leftPat-pullOut-∥-≼ {𝒫 = (𝟙 , γ) ∷ 𝒫} {α} {β} (inj₁ refl ∷ lp) =
+  ≼-trans (≼-cong-∥ (≼-refl ≈-refl) (leftPat-pullOut-∥-≼ lp))
+          (≼-refl (≈-trans (≈-sym ∥-assoc)
+                   (≈-trans (∥-cong ∥-comm ≈-refl) ∥-assoc)))
+leftPat-pullOut-∥-≼ {𝒫 = (R , γ) ∷ 𝒫} {α} {β} (inj₂ refl ∷ lp) =
+  ≼-trans (≼-cong-; (leftPat-pullOut-∥-≼ lp) (≼-refl ≈-refl))
+          (≼-trans (≼-refl (;-cong ≈-refl (≈-sym ∥-unit₁)))
+                   (≼-trans ≼-wk (≼-refl (∥-cong ;-unit₂ ≈-refl))))
