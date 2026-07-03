@@ -2322,6 +2322,88 @@ handle-R-rwk (a ∷ d ∷ B₁″) {N} e₁ x e₂ b₁ B₂ =
             ■ subst-Tm-uip (+-suc sBᴿ' N ■ castA) (castB' ■ +-suc sBᴿ N) T'
             ■ sym (ss-Tm castB' (+-suc sBᴿ N) T')
 
+-- canonₛ over two ++-associated lists (same value) transports by subst.
+canonₛ-cast : ∀ {L1 L2 : BindGroup} (p : L1 ≡ L2) {N} (cc : UChan N) (i : 𝔽 (sum L1)) →
+  canonₛ L2 cc (subst (λ L → 𝔽 (sum L)) p i)
+  ≡ subst (λ L → Tm (syncs L + N)) p (canonₛ L1 cc i)
+canonₛ-cast refl cc i = refl
+
+subst-syncs : ∀ {L1 L2 : BindGroup} (p : L1 ≡ L2) {N} (t : Tm (syncs L1 + N)) →
+  subst (λ L → Tm (syncs L + N)) p t ≡ subst Tm (cong (λ z → syncs z + N) p) t
+subst-syncs refl t = refl
+
+-- L-slot of a head-triple whose head channel is (` 0F) is a variable at flat
+-- position syncs (suc b₁ ∷ B₂).
+head-L0-var : ∀ {N} (e2 : Tm (suc N)) (x : 𝔽 (suc N)) (b₁ : ℕ) (B₂ : BindGroup) →
+  Σ[ v ∈ 𝔽 (syncs (suc b₁ ∷ B₂) + suc N) ]
+    (proj₁ (canonₛ-head-triple b₁ B₂ (` 0F) e2 x) ≡ ` v)
+    × (Fin.toℕ v ≡ syncs (suc b₁ ∷ B₂))
+head-L0-var e2 x zero    []       = 0F , refl , refl
+head-L0-var e2 x (suc b) []       = 0F , refl , refl
+head-L0-var {N} e2 x zero (c′ ∷ B) =
+    subst 𝔽 (+-suc sB (suc N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 0F))
+  , subst-`v (+-suc sB (suc N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 0F))
+  , (toℕ-substᶠ (+-suc sB (suc N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 0F))
+      ■ toℕ-weaken*ᵣ sB (suc 0F) ■ Nat.+-comm sB 1)
+  where sB = syncs (c′ ∷ B)
+head-L0-var {N} e2 x (suc b) (c′ ∷ B) =
+    subst 𝔽 (+-suc sB (suc N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 0F))
+  , subst-`v (+-suc sB (suc N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 0F))
+  , (toℕ-substᶠ (+-suc sB (suc N)) (weaken* ⦃ Kᵣ ⦄ sB (suc 0F))
+      ■ toℕ-weaken*ᵣ sB (suc 0F) ■ Nat.+-comm sB 1)
+  where sB = syncs (c′ ∷ B)
+
+-- L-slot of canonₛ-handle on any nonempty prefix is a variable at position
+-- syncs (suc b₁ ∷ B₂) (the handle recurses down to a (` 0F) leaf).
+handle-L-var : ∀ (a : ℕ) (L' : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (b₁ : ℕ) (B₂ : BindGroup) →
+  Σ[ v ∈ 𝔽 (syncs ((a ∷ L') ++ suc b₁ ∷ B₂) + N) ]
+    (proj₁ (canonₛ-handle (a ∷ L') e₁ x e₂ b₁ B₂) ≡ ` v)
+    × (Fin.toℕ v ≡ syncs (suc b₁ ∷ B₂))
+handle-L-var a [] {N} e₁ x e₂ b₁ B₂ with head-L0-var (wk e₂) (suc x) b₁ B₂
+... | vh , eqh , tnh =
+    subst 𝔽 (+-suc sB N) vh
+  , (cong (subst Tm (+-suc sB N)) eqh ■ subst-`v (+-suc sB N) vh)
+  , (toℕ-substᶠ (+-suc sB N) vh ■ tnh)
+  where sB = syncs ([] ++ suc b₁ ∷ B₂)
+handle-L-var a (d ∷ B₁″) {N} e₁ x e₂ b₁ B₂ with handle-L-var d B₁″ (` 0F) (suc x) (wk e₂) b₁ B₂
+... | vh , eqh , tnh =
+    subst 𝔽 (+-suc sB N) vh
+  , (cong (subst Tm (+-suc sB N)) eqh ■ subst-`v (+-suc sB N) vh)
+  , (toℕ-substᶠ (+-suc sB N) vh ■ tnh)
+  where sB = syncs ((d ∷ B₁″) ++ suc b₁ ∷ B₂)
+
+handle-L1-var : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (b₁ : ℕ) (B₂ : BindGroup) →
+  Σ[ v ∈ 𝔽 (syncs ((B₁ ++ 1 ∷ []) ++ suc b₁ ∷ B₂) + N) ]
+    (proj₁ (canonₛ-handle (B₁ ++ 1 ∷ []) e₁ x e₂ b₁ B₂) ≡ ` v)
+    × (Fin.toℕ v ≡ syncs (suc b₁ ∷ B₂))
+handle-L1-var []         {N} e₁ x e₂ b₁ B₂ = handle-L-var 1 [] e₁ x e₂ b₁ B₂
+handle-L1-var (c ∷ B₁')  {N} e₁ x e₂ b₁ B₂ = handle-L-var c (B₁' ++ 1 ∷ []) e₁ x e₂ b₁ B₂
+
+-- R-slot of the fresh 1-channel handle is a variable at position
+-- syncs (suc b₁ ∷ B₂).
+handle-R0-var : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (b₁ : ℕ) (B₂ : BindGroup) →
+  Σ[ v ∈ 𝔽 (syncs (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + N) ]
+    (proj₁ (proj₂ (canonₛ-handle B₁ e₁ x e₂ 0 (suc b₁ ∷ B₂))) ≡ ` v)
+    × (Fin.toℕ v ≡ syncs (suc b₁ ∷ B₂))
+handle-R0-var [] {N} e₁ x e₂ b₁ B₂ =
+    subst 𝔽 (+-suc sD N) (weaken* ⦃ Kᵣ ⦄ sD 0F)
+  , subst-`v (+-suc sD N) (weaken* ⦃ Kᵣ ⦄ sD 0F)
+  , (toℕ-substᶠ (+-suc sD N) (weaken* ⦃ Kᵣ ⦄ sD 0F)
+      ■ toℕ-weaken*ᵣ sD 0F ■ Nat.+-identityʳ sD)
+  where sD = syncs (suc b₁ ∷ B₂)
+handle-R0-var (a ∷ []) {N} e₁ x e₂ b₁ B₂ with handle-R0-var [] (` 0F) (suc x) (wk e₂) b₁ B₂
+... | vh , eqh , tnh =
+    subst 𝔽 (+-suc sB N) vh
+  , (cong (subst Tm (+-suc sB N)) eqh ■ subst-`v (+-suc sB N) vh)
+  , (toℕ-substᶠ (+-suc sB N) vh ■ tnh)
+  where sB = syncs (1 ∷ suc b₁ ∷ B₂)
+handle-R0-var (a ∷ d ∷ B₁″) {N} e₁ x e₂ b₁ B₂ with handle-R0-var (d ∷ B₁″) (` 0F) (suc x) (wk e₂) b₁ B₂
+... | vh , eqh , tnh =
+    subst 𝔽 (+-suc sB N) vh
+  , (cong (subst Tm (+-suc sB N)) eqh ■ subst-`v (+-suc sB N) vh)
+  , (toℕ-substᶠ (+-suc sB N) vh ■ tnh)
+  where sB = syncs ((d ∷ B₁″) ++ 1 ∷ suc b₁ ∷ B₂)
+
 comm3 : ∀ x y z → x + (y + z) ≡ y + (x + z)
 comm3 x y z = sym (+-assoc x y z) ■ cong (_+ z) (Nat.+-comm x y) ■ +-assoc y x z
 
