@@ -2,7 +2,15 @@
 \section{Related Work}
 \label{sec:related-work}
 
-The most closely related work is by \cite{DBLP:journals/pacmpl/SaffrichS0V25}.
+\subsection{Session Types}
+\label{sec:session-types}
+
+CFST \cite{DBLP:conf/icfp/ThiemannV16,DBLP:journals/iandc/AlmeidaMTV22}
+
+%% other notions like Pfenning's et al stuff?
+
+
+The most closely related work is by \citet{DBLP:journals/pacmpl/SaffrichS0V25}.
 They present a similar approach to borrowing, but for regular session types, rather than CFST.
 Our type system is heavily inspired from theirs, as it also relies on
 BI-contexts that enforce a run-time ordering on operations.
@@ -17,6 +25,14 @@ borrows are all remote. Our translation from \thecalculus to a low
 level calculus serves as a blueprint for an implementation and we
 present a simulation result.
 All metatheoretical results are mechanized using the Agda proof assistant.
+
+\subsection{Borrowing}
+\label{sec:borrowing}
+
+Rust
+
+Ahmed and friends
+
 
 %%% Local Variables:
 %%% mode: latex
