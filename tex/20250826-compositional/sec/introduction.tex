@@ -2,12 +2,99 @@
 \section{Introduction}
 \label{sec:introduction}
 
-Session types \cite{Gay_Vasconcelos_2025}
+Concurrency is no longer an implementation detail. To make effective
+use of multi-core hardware and distributed infrastructure, modern
+software systems decompose their work into cooperating activities that
+may run in different threads, on different cores, or on different
+machines. These activities cannot remain isolated: they must exchange
+data, coordinate progress, and agree on the order of their
+interactions. Getting these protocols right is difficult. A missed
+message, an unexpected choice, or a communication step performed in
+the wrong state can turn an otherwise natural decomposition into a
+source of subtle failures. A robust language discipline should
+therefore specify both the data exchanged by concurrent components
+and the order in which those exchanges may occur.
 
-Borrowing
+% TODO [Importance: High; Urgency: High]: Replace the current placeholders with
+% a complete problem statement: session types ensure protocol fidelity, CFSTs
+% make non-tail-recursive protocols expressible, but programming with them still
+% forces resource-passing style and polymorphic recursion.
+% TODO [Importance: High; Urgency: High]: Define borrowing early and concretely:
+% a borrow consumes a prefix of a session and leaves a residual suffix, with the
+% typing discipline internalizing the linear update of the channel.
+% TODO [Importance: High; Urgency: High]: Explain why borrowing for CFSTs is
+% technically different from borrowing for regular session types: sequential
+% composition creates non-tail protocol prefixes, so splitting must work modulo
+% CFST equality and across choices/recursion.
+% TODO [Importance: High; Urgency: High]: Preview the local-vs-remote borrowing
+% distinction from the motivation section, including why local borrows need no
+% synchronization and remote borrows introduce Ret/Acq handover points.
+% TODO [Importance: High; Urgency: Medium]: Turn the comparison with BGV into a
+% precise positioning paragraph: regular rather than context-free session
+% types, semantics by translation rather than direct operational semantics, and
+% uniform remote-style treatment of borrows.
+% TODO [Importance: High; Urgency: High]: Align the contribution list with the
+% body: direct source semantics, declarative type system with BI-contexts,
+% algorithmic typing/constraint solving, target calculus, translation
+% simulation or bisimulation, implementation, and mechanization status.
+% TODO [Importance: Medium; Urgency: High]: State the current status of the
+% metatheory accurately. In particular, distinguish intended type soundness,
+% algorithmic soundness/completeness, and translation simulation/bisimulation
+% from results that are already proved or mechanized.
+% TODO [Importance: Medium; Urgency: Medium]: Introduce the running examples
+% used later, especially tree serialization for local borrows and HTML rendering
+% for remote borrows, so the motivation section does not have to establish all
+% context from scratch.
+% TODO [Importance: Medium; Urgency: Medium]: Add a short paper-organization
+% paragraph once the final section structure is stable.
+% TODO [Importance: Low; Urgency: Medium]: Normalize terminology in the
+% introduction: \thecalculus, context-free session types with borrowing,
+% resource-passing style, local borrow, remote borrow, Ret, and Acq should be
+% introduced before they are used in the contribution bullets.
 
+
+Session types
+\cite{DBLP:conf/concur/Honda93,HondaVK98,Gay_Vasconcelos_2025}
+address precisely this problem: they are a type discipline for
+structured bidirectional communication
+protocols. Their core features are typed, bidirectional message
+exchange and typed choices. They ensure protocol fidelity as well as type soundness,
+when embedded in concurrent lambda calculus. There is significant
+literature on session types, which is well appreciated in some recent 
+surveys and books
+\cite{DBLP:journals/csur/HuttelLVCCDMPRT16,
+  gay17:_behav_types,
+  DBLP:journals/ftpl/AnconaBB0CDGGGH16,
+  Gay_Vasconcelos_2025}. 
+While much recent work concentrates on multi-party session types
+\cite{DBLP:journals/jacm/HondaYC16}, this work is solely concerned
+with binary session types, which govern two-party protocols.
+
+Session types support infinite and unbounded behaviors through
+recursive types almost from the beginning \cite{HondaVK98}. Since
+then, most work has concentrated on \emph{regular} recursive session
+types, where recursion is restricted to tail positions in the
+type. For example, here is the type
+\lstinline|mualpha.&{next:?Int.alpha, quit:End}|
+of a server that receives a list of integers, where the occurrence of
+the recursive \lstinline{alpha} is syntactically restricted to tail
+position. Context-free session types
+\cite{DBLP:conf/icfp/ThiemannV16,DBLP:journals/iandc/AlmeidaMTV22} (CFST)
+have lifted this restriction by adopting a symmetric composition
+operator \lstinline{_;_} rather than prefixing
+\lstinline{?Int._} as in regular session types. Symmetric composition
+enables more expressive communication structures, like trees and
+stacks, but it requires a non-trivial notion of type conversion.
+
+Borrowing has received much attention recently due to its adoption in
+the Rust language \cite{rust-reference}. It refers to methods that regulate the
+ownership transfer of resources between different parts of a
+program. Originally conceived for imperative programming,
 \citet{DBLP:journals/pacmpl/SaffrichS0V25} present a session type
-system with a notion of borrowing. Their calculus BGV is based on regular
+system with a notion of borrowing.
+In this system, a borrow consumes a prefix of a session and leaves a residual suffix, with the
+typing discipline internalizing the linear update of the channel.
+Their calculus BGV is based on regular
 session types \cite{DBLP:conf/esop/LindleyM15} and its semantics is
 given by a translation to a calculus from the literature
 \cite{DBLP:journals/lmcs/KokkeD23}. The approach of the BGV paper has a number of
@@ -19,7 +106,7 @@ borrows that are passed to other processes. This uniformity leads to
 inefficiency because local borrows can elide the synchronization
 machinery needed for remote borrows. 
 
-Context-free session types \cite{DBLP:conf/icfp/ThiemannV16,DBLP:journals/iandc/AlmeidaMTV22}
+
 
 \subsection*{Contributions}
 

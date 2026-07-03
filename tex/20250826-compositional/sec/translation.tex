@@ -100,7 +100,7 @@ $\CAcq$.
     \RuleUProcRedBind     \and
     \RuleUProcRedSync
   \end{mathpar}
-  \caption{Reduction of translated processes}
+  \caption{Reduction of translated processes ($P' \TPReduce Q'$)}
   \label{fig:unr-process-reduction}
 \end{figure}
 
@@ -179,11 +179,16 @@ $\TEChan [\E[1]] \E [\E[2]]$.
   where
     $\ProcQ \TransProc \TProcQ*$,
   it holds
-    $\Proc \Reduces \ProcQ$
+    $\Proc \PReduce \ProcQ$
   iff
-    $\TProc* \Reduces \TProcQ*$.
+    $\TProc* \TPReduce \TProcQ*$.
 
   {\upshape \js{$\Sub$ needs to be restricted: should only substitute channel
   variables with values. Do we need to impose requirements on the inserted
   values?}}
 \end{lemma}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../popl2027.tex"
+%%% End:

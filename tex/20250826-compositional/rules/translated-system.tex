@@ -6,22 +6,22 @@
 
 % RU-Exp
 \DefRule {Exp} {
-  \E[1]  \Reduces \E[2]
+  \E[1]  \EReduce \E[2]
 }{
-  \TFCapp{\E[1]} \Reduces \TFCapp{\E[2]}
+  \TFCapp{\E[1]} \TPReduce \TFCapp{\E[2]}
 }
 
 % RU-Fork
 \DefRule {Fork} {} {
   \TFCapp{\EApp \CFork \V}
-  \Reduces
+  \TPReduce
   \TPPar{\TFCapp\CUnit}{\TPExp{\EApp\V\CUnit}}
 }
 
 % RU-New
 \DefRule {New} {} {
   \TFCapp{\EApp \CNew \CUnit}
-  \Reduces
+  \TPReduce
   \TPNew {
     \TPSync [z_1] \FlagDropped
     \TPSync [z_2] \FlagDropped
@@ -39,7 +39,7 @@
     \TPNew {(
       \TPPar {\TFCapp{\EApp \CSplit {\ChanPat\TEVar}}} \TProc
     )}
-    \Reduces
+    \TPReduce
     \TPNew {(
       \TPPar
         {\TFCapp{\EPair{\ChanPat\TEVar}{\ChanPat\TEVar}}}
@@ -52,7 +52,7 @@
   \TPNew {(
     \TPPar {\TFCapp{\EApp \CSSplit {(\TEChan [e_1] \TEVar [e_2])}}} \TProc
   )}
-  \Reduces
+  \TPReduce
   \TPNew {
     \TPSync \FlagInit (
       \TPPar {
@@ -68,7 +68,7 @@
 % RU-Cleanup
 \DefRule {Cleanup} {} {
   \TPSync \FlagAcquired \TProc
-  \Reduces
+  \TPReduce
   \Subs \TProc \TEVarz \CUnit
 }
 
@@ -77,7 +77,7 @@
     \TPNew {\TPSync \FlagInit (
       \TPPar {\TFCapp{\EApp \CDrop {(\TEChan [\E] \TEVar [\TEVarz])}}} \TProc
     )}
-    \Reduces 
+    \TPReduce
     \TPNew {\TPSync \FlagDropped (
       \TPPar {\TFCapp{\CUnit}} \TProc
     )}
@@ -89,7 +89,7 @@
       \TPSync \FlagDropped 
         (\TPPar {\TFCapp{\EApp \CAcq {(\TEChan [\TEVarz] \TEVar [e])}}} \TProc)
     }
-    \Reduces 
+    \TPReduce
     \TPNew {
       \TPSync \FlagAcquired 
         (\TPPar {\TFCapp{\TEChan [\TEVarz] \TEVar[e]}} \TProc)
@@ -102,7 +102,7 @@
       \TPPar {\TFCapp[1]{\EApp\CTerm {\ChanPat[1]\TEVar}}}
              {\TFCapp[2]{\EApp\CWait {\ChanPat[2]\TEVary}}}
     )}
-    \Reduces 
+    \TPReduce
     \TPPar {\TFCapp[1]{\CUnit}} {\TFCapp[2]{\CUnit}}
 }
 
@@ -112,7 +112,7 @@
     \TPPar {\TFCapp[1]{\EApp {\CSend} {(\EPair \TV {\ChanPat[1]\TEVar})}}} {
     \TPPar {\TFCapp[2]{\EApp {\CRecv} {\ChanPat[2]\TEVary}}} {\TProc}}
   )}
-  \Reduces
+  \TPReduce
   \TPNew {(
     \TPPar {\TFCapp[1]{\CUnit}} {
     \TPPar {\TFCapp[2]{\TV}} {\TProc}}
@@ -125,7 +125,7 @@
     \TPPar {\TFCapp[1]{\EApp {\CSelect k} {\ChanPat[1] \TEVar}}} {
     \TPPar {\TFCapp[2]{\EApp {\CBranch}   {\ChanPat[2] \TEVary}}} {\TProc}}
   )}
-  \Reduces\\\\
+  \TPReduce\\\\
   \TPNew {(
     \TPPar {\TFCapp[1]{\ChanPat[1] \TEVar}} {
     \TPPar {\TFCapp[2]{\EInj k {\ChanPat[2] \TEVary}}} {\TProc}}
@@ -135,30 +135,29 @@
 % RU-Struct
 \DefRule {Struct} {
   \TProc[1] \equiv \TProc*[1] \\
-  \TProc*[1] \Reduces \TProc*[2] \\
+  \TProc*[1] \TPReduce \TProc*[2] \\
   \TProc*[2] \equiv \TProc[2]
 }{
-  \TProc[1] \Reduces \TProc[2]
+  \TProc[1] \TPReduce \TProc[2]
 }
 
 % RU-Par
 \DefRule {Par} {
-  \TProc[1] \Reduces \TProc[2]
+  \TProc[1] \TPReduce \TProc[2]
 }{
-  \TPPar {\TProc[1]}{\TProcQ} \Reduces \TPPar {\TProc[2]}{\TProcQ}
+  \TPPar {\TProc[1]}{\TProcQ} \TPReduce \TPPar {\TProc[2]}{\TProcQ}
 }
 
 % RU-Bind
 \DefRule {Bind} {
-  \TProc[1] \Reduces \TProc[2]
+  \TProc[1] \TPReduce \TProc[2]
 }{
-  \TPNew {\TProc[1]} \Reduces \TPNew {\TProc[2]}
+  \TPNew {\TProc[1]} \TPReduce \TPNew {\TProc[2]}
 }
 
 % RU-Sync
 \DefRule {Sync} {
-  \TProc[1] \Reduces \TProc[2]
+  \TProc[1] \TPReduce \TProc[2]
 }{
-  \TPSync \Flag {\TProc[1]} \Reduces \TPSync \Flag {\TProc[2]}
+  \TPSync \Flag {\TProc[1]} \TPReduce \TPSync \Flag {\TProc[2]}
 }
-
