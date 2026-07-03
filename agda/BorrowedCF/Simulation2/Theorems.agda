@@ -20,6 +20,7 @@ open import BorrowedCF.Simulation2.Theorems.Choice using (U-choice)
 open import BorrowedCF.Simulation2.Theorems.Drop using (U-drop)
 open import BorrowedCF.Simulation2.Theorems.Com using (U-com)
 open import BorrowedCF.Simulation2.Theorems.Acq using (U-acq)
+open import BorrowedCF.Simulation2.Theorems.Splits using (U-lsplit; U-rsplit)
 open import BorrowedCF.Simulation2.TranslationProperties using (≡→≋; UB-cong-─→; UB-cong; ≋-subst; ─→-subst; Value-subst; chanTriple-V; VChan; U-⋯ₚ; U-cong; Ub-V)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
 import Data.Sum as Sum
@@ -404,13 +405,13 @@ sim→ σ Vσ Γ-S ⊢P (TR.R-Choice {b1} {B1} {b2} {B2} {P} {E₁} {E₂} {i}) 
 -- R-LSplit: local split duplicates the triple.  Needs a typing-driven binder-order
 --   transpose (canonₛ-handle positional lemma) + frame-plug* → RU-LSplit.
 --   cf. old Simulation/Theorems/LSplit.agda.
-sim→ σ Vσ Γ-S ⊢P TR.R-LSplit =
-  inj₁ {! R-LSplit: U-lsplit (Theorems/Splits.agda) is PROVEN 0/0; wire as `U-lsplit σ Vσ Γ-S ⊢P` (replaces this whole inj₁, returns the ⊎ directly) ONCE Splits is hole-free — Agda refuses to import a module with open interaction points, and Splits still carries the 2 U-rsplit leafRec holes. !}
+sim→ σ Vσ Γ-S ⊢P (TR.R-LSplit {E = E}) =
+  U-lsplit σ Vσ Γ-S {E = E} ⊢P
 
 -- R-RSplit: remote split allocates a fresh φ drop.  Needs typing + transpose → RU-RSplit.
 --   cf. old Simulation/Theorems/RSplit.agda.
-sim→ σ Vσ Γ-S ⊢P TR.R-RSplit =
-  inj₁ {! R-RSplit: U-rsplit (Theorems/Splits.agda) has 2 leafRec transport holes (canonₛ-rwk / leafσ-rwk-id — rwk inserts a fresh chain re-threading the tail; provable per RsplitSci but ~150 lines). Wire as `U-rsplit σ Vσ Γ-S ⊢P` once Splits is 0/0. !}
+sim→ σ Vσ Γ-S ⊢P (TR.R-RSplit {E = E}) =
+  U-rsplit σ Vσ Γ-S {E = E} ⊢P
 
 -- R-Drop.  Goal (?5):
 --   U[ ν (suc b₁ ∷ B₁) B₂ (⟪ E⋯ᶠ*weakenᵣ [ drop·(`0F) ] ⟫ ∥ (P⋯ₚweakenᵣ)) ] σ
