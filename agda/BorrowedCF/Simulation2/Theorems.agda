@@ -14,7 +14,7 @@ module BorrowedCF.Simulation2.Theorems where
 --   helper lemma / which RU-rule it maps to) for the next agent.
 
 open import BorrowedCF.Simulation2.Base
-open import BorrowedCF.Simulation2.Frames using (⋯→-⋯ₛ; frame-plug*; frame*-⋯; ++ₛ-VSub; weaken-VSub)
+open import BorrowedCF.Simulation2.Frames using (⋯→-⋯ₛ; frame-plug*; frame-plug₁; frame*-⋯; ++ₛ-VSub; weaken-VSub)
 open import BorrowedCF.Simulation2.Congruence using (U-≋)
 open import BorrowedCF.Simulation2.Theorems.Choice using (U-choice)
 open import BorrowedCF.Simulation2.Theorems.Drop using (U-drop)
@@ -54,89 +54,64 @@ wrapNE front s₀ (t ◅ ts) back = UR.RU-Struct front s₀ ε ◅ wrapNE ε t t
 ≋-wrap-⊎ front ε        back = inj₂ (front ◅◅ back)
 ≋-wrap-⊎ front (s ◅ ss) back = inj₁ (wrapNE front s ss back)
 
-open TP using (_;_⊢ₚ_; inv-⟪⟫; inv-∥; inv-ν; ⊢-≋; bindCtx⇒chanCtx)
+open TP using (_;_⊢ₚ_; inv-⟪⟫; inv-∥; inv-ν; ⊢-≋; bindCtx⇒chanCtx; cons-ret/acq; cons; nil)
 
 ------------------------------------------------------------------------
--- R-Discard (b=0, nonempty tail) VACUITY infrastructure.
+-- R-Discard  b₁ = 0 / B₁ nonempty is VACUOUS (the discarded chain would
+-- flip φ drop → φ acq, unreachable by the silent RU-Discard).  Typing forces
+-- the discarded handle ≅ ⟨ skip ⟩, contradicting the cons ¬ Skips marker.
 ------------------------------------------------------------------------
 
-open import BorrowedCF.Simulation2.Confine as CF
-  using ( count; count-self; count0⇒∉dom; ∉dom⇒count0; count-≈; unrCx⇒count0
-        ; count-join-Dir; count-join-PS; count-wk-suc; count-wk-zero)
-open import BorrowedCF.Context using (dom; _∉_; _∈_; UnrCx; biasedDir; join; Dir; ParSeq)
-open import BorrowedCF.Context.Subcontext
-  using (_∶_≼_; ≼-refl; ≼-∅; ≼-wk; ≼-trans; ≼-cong-; ; ≼-cong-∥)
-open import BorrowedCF.Types using (Unr; Arr)
-import BorrowedCF.Context.Substitution as 𝐂S
-import BorrowedCF.Context.Base as B
-open import BorrowedCF.Simulation2.StructDom using (count-⋯ᵣwkʳ-↑ʳ; count-weaken*-shift)
-open import BorrowedCF.Context.Base using (_∥_; _⸴*_) renaming (`_ to `ˢ_)
-open Nat using (_≤_; z≤n; s≤s; ≤-refl; ≤-reflexive; ≤-trans; m≤m+n; m≤n+m
-               ; +-mono-≤; +-identityʳ; +-comm; +-assoc; n≤0⇒n≡0)
+open import BorrowedCF.Types.Equivalence
+  using (_≃𝕊_; ≃-skips; ≃-refl; ≃-sym; ≃-trans; ≃-reflexive)
+open import BorrowedCF.Simulation2.InvFrame using (strengthen-frame; arg-type)
 
--- Linearity-soundness machinery (countTm/countProc/conf-Tm/conf-Proc/...) was
--- hoisted to BorrowedCF.Simulation2.Linearity so SplitConfine can reuse it.
-open import BorrowedCF.Simulation2.Linearity
-  using ( countTm; countTm-avoid; ≼⇒count≥; conf-Tm
-        ; countProc; countProc-avoid; conf-Proc )
+-- frame-plug for a plain renaming (generic over the renaming Kit).
+frame-plug*ᵣ : ∀ {m p} (E : Frame* m) {t : Tm m} (ρ : m →ᵣ p) →
+               (E [ t ]*) ⋯ ρ ≡ (E ⋯ᶠ* ρ) [ t ⋯ ρ ]*
+frame-plug*ᵣ []       ρ = refl
+frame-plug*ᵣ (E ∷ E*) ρ =
+  frame-plug₁ E ρ (λ x → V-`) ■ cong (frame-⋯ E ρ (λ x → V-`) [_]) (frame-plug*ᵣ E* ρ)
 
-open import BorrowedCF.Simulation2.Theorems.B1VacProbe
-  using (NoRet; RetTip; noRet-front-cons; noRet-front-last; retTip-≃; noRet-≃; noRet-;-fst)
-import BorrowedCF.Simulation2.Theorems.B1VacProbe as VP
-open import BorrowedCF.Types.Equivalence using (_≃𝕊_; ≃-skips)
-open import BorrowedCF.Types.Predicates using (New)
-import Relation.Binary.Construct.Closure.Equivalence as EqC
-open import BorrowedCF.Simulation2.StructDom using (count-⋯ᵣwkʳ-↑ˡ; count-structBinder-lt)
-open import BorrowedCF.Simulation2.Strengthen using (skip-weakenᵣ)
+⟨⟩≃ : ∀ {s₁ s₂ : 𝕊 0} → ⟨ s₁ ⟩ ≃ ⟨ s₂ ⟩ → s₁ ≃ s₂
+⟨⟩≃ ⟨ eq ⟩ = eq
 
--- The b=0 / nonempty-tail R-Discard redex ν (1 ∷ x ∷ xs) B₂ (P ⋯ₚ weakenᵣ) is
--- UNTYPEABLE: its head borrow ⟨ sA ⟩ is non-Unr (a ret-tip chain, ¬ Skips), so it
--- has structural count 1 at slot 0F, yet the body P ⋯ₚ weakenᵣ avoids 0F, forcing
--- count 0F = 0.  1 ≤ 0 is absurd.  Hence the case is vacuous.
-discard-b0-vac :
+-- discard : ⟨ skip ⟩ →*M ⊤ — the discarded handle is forced ≅ ⟨ skip ⟩.
+fn-discard-dom : ∀ {N} {Γ : Ctx N} {β : Struct N} {Tᵈ Uu a ϵ}
+  → Γ ; β ⊢ K `discard ∶ Tᵈ ⟨ a ⟩→ Uu ∣ ϵ
+  → ⟨ skip ⟩ ≃ Tᵈ
+fn-discard-dom (T-Const `discard)       = ≃-refl
+fn-discard-dom (T-Conv (dom≃ `→ _) _ d) = ≃-trans (fn-discard-dom d) dom≃
+fn-discard-dom (T-Weaken _ d)           = fn-discard-dom d
+
+discard-handle-≃skip : ∀ {N} {Δ : Ctx N}{β}{x : 𝔽 N}{U ϵ}
+  → Δ ; β ⊢ K `discard ·¹ (` x) ∶ U ∣ ϵ
+  → Δ x ≃ ⟨ skip ⟩
+discard-handle-≃skip (T-AppUnr _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-discard-dom ⊢fn))
+discard-handle-≃skip (T-AppLin _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-discard-dom ⊢fn))
+discard-handle-≃skip (T-Conv _ _ d)          = discard-handle-≃skip d
+discard-handle-≃skip (T-Weaken _ d)          = discard-handle-≃skip d
+
+disc-b0-vac :
   {m : ℕ} {Γ : Ctx m} {g : Struct m} {x : ℕ} {xs B₂ : TP.BindGroup}
+  {E : Frame* (sum (zero ∷ x ∷ xs) + sum B₂ + m)}
   {P : TP.Proc (sum (zero ∷ x ∷ xs) + sum B₂ + m)}
-  → Γ ; g ⊢ₚ TP.ν (suc zero ∷ x ∷ xs) B₂ (P TP.⋯ₚ weakenᵣ) → ⊥
-discard-b0-vac {m} {Γ} {g} {x} {xs} {B₂} {P} ⊢P
-  with inv-ν ⊢P
-... | Γ₁ , Γ₂ , s , p , N , _ , _
-    , TP.cons-ret/acq {s₁ = sf} scra Γ≗
-        (TP.cons {s₁ = sA} {s₂ = sBh} ¬sk1 s≃1 Γ≗1 (TP.nil skB)) tail , _ , ⊢body
-  = Nat.1+n≰n (Nat.≤-trans ge1 le0)
+  → Γ ; g ⊢ₚ TP.ν (suc zero ∷ x ∷ xs) B₂
+      (TP.⟪ (E ⋯ᶠ* weakenᵣ) [ K `discard ·¹ (` 0F) ]* ⟫ TP.∥ (P TP.⋯ₚ weakenᵣ)) → ⊥
+disc-b0-vac {E = E} ⊢P with inv-ν ⊢P
+... | _ , _ , _ , _ , _ , _ , _
+    , cons-ret/acq {s₁ = sh} scra Γ≗ (cons {s₁ = s1ʰ} {s₂ = s2ʰ} ¬sk1 s≃1 Γ≗1 (nil skB)) tail
+    , _ , ⊢body
+  with inv-∥ ⊢body
+... | _ , _ , _ , ⊢discT , _
+  with strengthen-frame (E ⋯ᶠ* weakenᵣ) (inv-⟪⟫ ⊢discT)
+... | _ , (_ , _ , ⊢plug) , _ , _
+  = ¬sk1 (≃-skips s≃1 (Ss1 Skips.; skB))
   where
-    sC₁ = sum (suc zero ∷ x ∷ xs)
-    part1 = TP.structBinder (suc zero ∷ x ∷ xs) 𝐂S.⋯ᵣ 𝐂S.wkʳ (sum B₂) 𝐂S.⋯ᵣ 𝐂S.wkʳ m
-    part2 = TP.structBinder B₂ 𝐂S.⋯ᵣ 𝐂S.wkˡ sC₁ 𝐂S.⋯ᵣ 𝐂S.wkʳ m
-    part3 = g 𝐂S.⋯ 𝐂S.weaken* ⦃ 𝐂S.Kᵣ ⦄ (sum (suc zero ∷ x ∷ xs) + sum B₂)
-    βbody : Struct (sum (suc zero ∷ x ∷ xs) + sum B₂ + m)
-    βbody = part1 ∥ part2 ∥ part3
-    -- head borrow ⟨ sA ⟩ is non-Unr.
-    noRet-sf : NoRet sf
-    noRet-sf = noRet-;-fst (noRet-≃ (EqC.symmetric _≃𝕊_ scra) (VP._;_ (VP.new⇒noRet N) VP.end))
-    ¬SsA : ¬ Skips sA
-    ¬SsA skA = ¬sk1 (≃-skips s≃1 (skA Skips.; skB))
-    ¬Skips⇒¬Unr-head : ¬ Skips sA → ¬ Unr ⟨ sA ⟩
-    ¬Skips⇒¬Unr-head ¬sk ⟨ sk ⟩ = ¬sk sk
-    headeq : Γ₁ 0F ≡ ⟨ sA ⟩
-    headeq = sym (Γ≗ 0F) ■ sym (Γ≗1 0F)
-    ¬u-head : ¬ Unr (Γ₁ 0F)
-    ¬u-head = subst (λ z → ¬ Unr z) (sym headeq) (¬Skips⇒¬Unr-head ¬SsA)
-    ¬u-body : ¬ Unr (((Γ₁ ⸴* Γ₂) ⸴* Γ) 0F)
-    ¬u-body = ¬u-head
-    le0 : count 0F βbody ≤ 0
-    le0 = ≤-trans (conf-Proc ⊢body ¬u-body)
-                  (≤-reflexive (countProc-avoid P skip-weakenᵣ))
-    0Fc : 𝔽 sC₁
-    0Fc = 0F
-    count0-part1 : count 0F part1 ≡ 1
-    count0-part1 =
-      count-⋯ᵣwkʳ-↑ˡ m (TP.structBinder (suc zero ∷ x ∷ xs) 𝐂S.⋯ᵣ 𝐂S.wkʳ (sum B₂)) (0Fc Fin.↑ˡ sum B₂)
-      ■ count-⋯ᵣwkʳ-↑ˡ (sum B₂) (TP.structBinder (suc zero ∷ x ∷ xs)) 0Fc
-      ■ count-structBinder-lt (suc zero ∷ x ∷ xs) 0Fc (s≤s z≤n)
-    ge1 : 1 ≤ count 0F βbody
-    ge1 = ≤-trans (≤-reflexive (sym count0-part1))
-                  (≤-trans (m≤m+n (count 0F part1) (count 0F part2))
-                           (m≤m+n (count 0F part1 + count 0F part2) (count 0F part3)))
+    head≃skip : s1ʰ ≃ skip
+    head≃skip = ⟨⟩≃ (≃-trans (≃-reflexive (sym (sym (Γ≗ 0F) ■ sym (Γ≗1 0F)))) (discard-handle-≃skip ⊢plug))
+    Ss1 : Skips s1ʰ
+    Ss1 = ≃-skips (≃-sym head≃skip) Skips.skip
 
 
 
@@ -352,6 +327,52 @@ UB-cong-⊎ {n} (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) (Ve₁ , Ve₂) h =
               (weaken* ⦃ Kᵣ ⦄ (syncs B)) (λ z → V-`)
     argV σ Vσ (inj₂ k) = Vσ k
 
+-- Fire RU-Discard on the translated thread, lifted through ν and the UB
+-- telescope (mirrors R-Bind's UB-cong-⊎ dispatch); lands on the E[*] shape.
+disc-fire : {m n : ℕ} (σ : m →ₛ n) → VSub σ → (b₁ : ℕ) (B₁ B₂ : TP.BindGroup)
+            (E : Frame* (sum (b₁ ∷ B₁) + sum B₂ + m))
+            (P : TP.Proc (sum (b₁ ∷ B₁) + sum B₂ + m))
+          → (U[ TP.ν (suc b₁ ∷ B₁) B₂
+                 (TP.⟪ (E ⋯ᶠ* weakenᵣ) [ K `discard ·¹ (` 0F) ]* ⟫ TP.∥ (P TP.⋯ₚ weakenᵣ)) ] σ
+              UR─→ₚ* U[ TP.ν (suc b₁ ∷ B₁) B₂
+                 (TP.⟪ (E ⋯ᶠ* weakenᵣ) [ * ]* ⟫ TP.∥ (P TP.⋯ₚ weakenᵣ)) ] σ)
+           ⊎ (U[ TP.ν (suc b₁ ∷ B₁) B₂
+                 (TP.⟪ (E ⋯ᶠ* weakenᵣ) [ K `discard ·¹ (` 0F) ]* ⟫ TP.∥ (P TP.⋯ₚ weakenᵣ)) ] σ
+              UP.≋ U[ TP.ν (suc b₁ ∷ B₁) B₂
+                 (TP.⟪ (E ⋯ᶠ* weakenᵣ) [ * ]* ⟫ TP.∥ (P TP.⋯ₚ weakenᵣ)) ] σ)
+disc-fire {m} {n} σ Vσ b₁ B₁ B₂ E P =
+  [ (λ s → inj₁ (⋆-gmap UP.ν UR.RU-Res s)) , (λ e → inj₂ (UP.ν-cong e)) ]′
+    (UB-cong-⊎ (suc b₁ ∷ B₁) (* , 0F , *) (V-K , V-K)
+      (λ σ₁ Vσ₁ → UB-cong-⊎ B₂ (* , weaken* ⦃ Kᵣ ⦄ (syncs (suc b₁ ∷ B₁)) 1F , *) (V-K , V-K)
+        (λ σ₂ Vσ₂ → inj₁ (leaf-red σ₁ Vσ₁ σ₂ Vσ₂ ◅ ε))))
+  where
+    C : TP.BindGroup
+    C = suc b₁ ∷ B₁
+    Ed : Frame* (sum C + sum B₂ + m)
+    Ed = E ⋯ᶠ* weakenᵣ
+    leafσ' : (σ₁ : sum C →ₛ syncs C + (2 + n))
+             (σ₂ : sum B₂ →ₛ syncs B₂ + (syncs C + (2 + n)))
+           → (sum C + sum B₂ + m →ₛ syncs B₂ + (syncs C + (2 + n)))
+    leafσ' σ₁ σ₂ = ((λ i → σ₁ i ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₂)) ++ₛ σ₂)
+                  ++ₛ (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs C) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₂))
+    leaf-red : (σ₁ : sum C →ₛ syncs C + (2 + n)) (Vσ₁ : VSub σ₁)
+               (σ₂ : sum B₂ →ₛ syncs B₂ + (syncs C + (2 + n))) (Vσ₂ : VSub σ₂)
+             → U[ TP.⟪ (E ⋯ᶠ* weakenᵣ) [ K `discard ·¹ (` 0F) ]* ⟫ TP.∥ (P TP.⋯ₚ weakenᵣ) ] (leafσ' σ₁ σ₂)
+                 UR.─→ₚ U[ TP.⟪ (E ⋯ᶠ* weakenᵣ) [ * ]* ⟫ TP.∥ (P TP.⋯ₚ weakenᵣ) ] (leafσ' σ₁ σ₂)
+    leaf-red σ₁ Vσ₁ σ₂ Vσ₂ = UR.RU-Par thread-red
+      where
+        Vleaf : VSub (leafσ' σ₁ σ₂)
+        Vleaf = ++ₛ-VSub (++ₛ-VSub (weaken-VSub (syncs B₂) Vσ₁) Vσ₂)
+                  (weaken-VSub (syncs B₂) (weaken-VSub (syncs C) (weaken-VSub 2 Vσ)))
+        thread-red : UP.⟪ ((E ⋯ᶠ* weakenᵣ) [ K `discard ·¹ (` 0F) ]*) ⋯ leafσ' σ₁ σ₂ ⟫
+                       UR.─→ₚ UP.⟪ ((E ⋯ᶠ* weakenᵣ) [ * ]*) ⋯ leafσ' σ₁ σ₂ ⟫
+        thread-red = subst₂ UR._─→ₚ_
+            (sym (cong UP.⟪_⟫ (frame-plug* (E ⋯ᶠ* weakenᵣ) {t = K `discard ·¹ (` 0F)} (leafσ' σ₁ σ₂) Vleaf)))
+            (sym (cong UP.⟪_⟫ (frame-plug* (E ⋯ᶠ* weakenᵣ) {t = *} (leafσ' σ₁ σ₂) Vleaf)))
+            (UR.RU-Discard (frame*-⋯ (E ⋯ᶠ* weakenᵣ) (leafσ' σ₁ σ₂) Vleaf)
+                           (value-⋯ (V-` {x = 0F}) (leafσ' σ₁ σ₂) Vleaf))
+
+
 sim→ : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
      → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
      → {P′ : TP.Proc m} → P TR.─→ₚ P′
@@ -490,22 +511,28 @@ sim→ {m = m} {n = n} σ Vσ Γ-S ⊢P (TR.R-Close {E₁ = E₁} {E₂ = E₂})
       cong UP.⟪_⟫ (frame-plug* (E* ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) σ′ Vσ′
                  ■ cong₂ _[_]* (frameEqA E*) (cong (K (`end pol) ·⟨ 𝟙 ⟩_) eq))
 
--- R-Discard: ν (suc b ∷ B₁) B₂ (P ⋯ₚ weakenr) → ν (b ∷ B₁) B₂ P.  NEW rule.  U[ ]
---   on the two sides differs by one φ binder plus a P-renaming; plausibly RU-Cleanup
---   (φ done → subst *) after a structural massage, OR a dedicated argument.  There is
---   NO untyped rule literally named "Discard".
--- R-Discard: administrative.  SILENT on the untyped side: U[LHS]σ ≡ U[RHS]σ
---   definitionally (refl) when the discarded head retains its flag, i.e. for a
---   single chain (B₁ = []) for any b, and for a nonempty tail when b ≥ 1 (the
---   junction flag stays φ drop).  The b = 0 / nonempty-tail sub-case flips
---   φ drop → φ acq and is the one known gap (see DiscardCheck.agda).
-sim→ σ Vσ Γ-S ⊢P (TR.R-Discard {b = b} {B₁ = []} {B₂ = B₂} {P = P}) = inj₂ (disc-single b B₂ P σ)
-sim→ σ Vσ Γ-S ⊢P (TR.R-Discard {b = suc b'} {B₁ = x ∷ xs} {B₂ = B₂} {P = P}) = inj₂ (disc-multi b' x xs B₂ P σ)
--- R-Discard b=0 / nonempty tail: VACUOUS.  The discarded head borrow is a non-Unr
--- ret-tip chain (structural count 1 at slot 0F), but the body P ⋯ₚ weakenᵣ avoids
--- 0F, forcing count 0F = 0 — a linearity contradiction (discard-b0-vac).
-sim→ σ Vσ Γ-S ⊢P (TR.R-Discard {b = zero}  {B₁ = _ ∷ _}) =
-  ⊥-elim (discard-b0-vac ⊢P)
+-- R-Discard (NEW term-consuming rule).  Fire RU-Discard on the translated thread
+-- (lifted through ν + the UB telescope via disc-fire), landing on the
+-- administrative-discard shape (E[*] plugged), then close with the disc ≅-lemma.
+-- b₁ = 0 / B₁ nonempty is vacuous (disc-b0-vac).
+sim→ σ Vσ Γ-S ⊢P (TR.R-Discard {b₁ = b₁} {B₁ = []} {B₂ = B₂} {P = P} {E = E}) =
+  [ (λ s → ≋-wrap-⊎ ε s back) , (λ e → inj₂ (e ◅◅ back)) ]′ (disc-fire σ Vσ b₁ [] B₂ E P)
+  where
+    back : U[ TP.ν (suc b₁ ∷ []) B₂ (TP.⟪ (E ⋯ᶠ* weakenᵣ) [ * ]* ⟫ TP.∥ (P TP.⋯ₚ weakenᵣ)) ] σ
+           UP.≋ U[ TP.ν (b₁ ∷ []) B₂ (TP.⟪ E [ * ]* ⟫ TP.∥ P) ] σ
+    back = subst (λ Q → U[ TP.ν (suc b₁ ∷ []) B₂ Q ] σ UP.≋ U[ TP.ν (b₁ ∷ []) B₂ (TP.⟪ E [ * ]* ⟫ TP.∥ P) ] σ)
+             (sym (cong₂ TP._∥_ (cong TP.⟪_⟫ (sym (frame-plug*ᵣ E weakenᵣ))) refl))
+             (disc-single b₁ B₂ (TP.⟪ E [ * ]* ⟫ TP.∥ P) σ)
+sim→ σ Vσ Γ-S ⊢P (TR.R-Discard {b₁ = suc b'} {B₁ = x ∷ xs} {B₂ = B₂} {P = P} {E = E}) =
+  [ (λ s → ≋-wrap-⊎ ε s back) , (λ e → inj₂ (e ◅◅ back)) ]′ (disc-fire σ Vσ (suc b') (x ∷ xs) B₂ E P)
+  where
+    back : U[ TP.ν (suc (suc b') ∷ x ∷ xs) B₂ (TP.⟪ (E ⋯ᶠ* weakenᵣ) [ * ]* ⟫ TP.∥ (P TP.⋯ₚ weakenᵣ)) ] σ
+           UP.≋ U[ TP.ν (suc b' ∷ x ∷ xs) B₂ (TP.⟪ E [ * ]* ⟫ TP.∥ P) ] σ
+    back = subst (λ Q → U[ TP.ν (suc (suc b') ∷ x ∷ xs) B₂ Q ] σ UP.≋ U[ TP.ν (suc b' ∷ x ∷ xs) B₂ (TP.⟪ E [ * ]* ⟫ TP.∥ P) ] σ)
+             (sym (cong₂ TP._∥_ (cong TP.⟪_⟫ (sym (frame-plug*ᵣ E weakenᵣ))) refl))
+             (disc-multi b' x xs B₂ (TP.⟪ E [ * ]* ⟫ TP.∥ P) σ)
+sim→ σ Vσ Γ-S ⊢P (TR.R-Discard {b₁ = zero} {B₁ = x ∷ xs} {B₂ = B₂} {P = P} {E = E}) =
+  ⊥-elim (disc-b0-vac {x = x} {xs = xs} {B₂ = B₂} {E = E} {P = P} ⊢P)
 
 -- R-Bind: congruence under ν B₁ B₂.  U[ν B₁ B₂ ·] = ν (UB[B₁] (UB[B₂] U[·])); must
 --   recurse under the UB telescope → nested RU-Res/RU-Sync.  Needs a
