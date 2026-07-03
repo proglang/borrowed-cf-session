@@ -34,10 +34,11 @@ explicitly from one operation to the next.
 
 
 Context-free session types enable writing elegant code for
-serializing tree structures.%
-\footnote{We assume session-typed communication over a network
-  or between sandboxed processes, where only primitive data can be
-  passed, but no pointers.}
+serializing tree structures when communication is restricted to
+primitive values.
+% \footnote{We assume session-typed communication over a network
+%   or between sandboxed processes, where only primitive data can be
+%   passed, but no pointers.}
 Consider an example from \citet{DBLP:conf/icfp/ThiemannV16} for serializing binary trees of type \lstinline{Tree}.
 \begin{lstlisting}
 type Tree = Leaf
@@ -64,6 +65,8 @@ branch : &{elli: Si} -> [elli: Si]
 \begin{lstlisting}[style=eclipse-new]
 send : forallalpha. alpha -> !alpha -> Unit
 recv : forallalpha. ?alpha -> alpha
+select ellj : +{elli: Si} -> Sj
+branch : &{elli: Si} -> [elli: Si]
 \end{lstlisting}
     \caption{\thecalculus API}\label{lst:bcfst-api}
   \end{subfigure}
@@ -80,10 +83,11 @@ type is illegal in regular session type systems (e.g.,
 they syntactically restrict recursion to tail position. Context-free
 session types lift this restriction as their composition operator $S_1;S_2$ connects
 two sessions sequentially: the composed session comprises the
-actions of $S_1$ followed by the actions of $S_2$.\footnote{One
-  might argue that CFSTs are close to Honda's original vision for
-  session types \cite{DBLP:conf/concur/Honda93}, which also features
-  symmetric composition.}
+actions of $S_1$ followed by the actions of $S_2$.
+% \footnote{One
+%   might argue that CFSTs are close to Honda's original vision for
+%   session types \cite{DBLP:conf/concur/Honda93}, which also features
+%   symmetric composition.}
 
 \Cref{lst:cfst-api} displays the API of CFSTs. The \lstinline{send},
 \lstinline{recv}, and \lstinline{select} operations are standard for
@@ -115,14 +119,15 @@ polymorphic recursion. To see this, consider the type of
 recursively, we need to instantiate the type argument
 \lstinline{sigma} with \lstinline{TreeChannel; sigma} rather than just
 \lstinline{sigma}, which is the
-telltale for polymorphic recursion. Finally, recall that channel types
-are linear in CFST, that is, each session-typed variable must be used
-exactly once.
+telltale for polymorphic recursion.
 
 Our new language {\thecalculus} amends these problems. The type
 definitions remain unchanged, but the implementation of
 \lstinline{sendTreeB} relies on the session API with borrowing shown in
-\cref{lst:bcfst-api}. To make this switch apparent, we present code
+\cref{lst:bcfst-api}: the \lstinline{send} and \lstinline{recv} adopt
+the borrowing style, but \lstinline{select} and \lstinline{branch}
+remain in resource-passing style (see \cref{sec:remarks} for the
+reason). To make this switch apparent, we present code
 using the \thecalculus API with grey background and golden keywords.
 \lstset{style=eclipse-new}
 \begin{lstlisting}[numbers=left]
@@ -143,9 +148,9 @@ channel. Values of type \lstinline{Skip} are
 unrestricted and can be discarded.
 Second, there is no explicit resource
 passing, except for \lstinline{select}. Each use of the borrow notation
-\lstinline{&c} implicitly splits off an initial segment of the session type
+\lstinline{&c} implicitly splits off a prefix of the session type
 according to the function argument and updates \lstinline{c} to the
-leftover. To see this, consider the type of \lstinline{c}---after
+suffix. To see this, consider the type of \lstinline{c}---after
 splitting off the borrow in the corresponding line---shown in the
 comments. Before the \lstinline{send} operation (line 5--6), the type
 of \lstinline{c} starts with \lstinline{!Int; ...}. ``Taking the
@@ -167,17 +172,6 @@ linear use of the channel: each borrow consumes a distinct prefix of
 the current session type and leaves the residual type for the next use
 of \lstinline{c}.
 
-The reader may ask why \lstinline{select} still adheres to
-resource passing style. The answer is simplicity of our system. While it
-is possible to define \lstinline{select} with a borrowing-based
-interface, supporting it requires subtyping of session types, which is
-undecidable for CFST~\cite{DBLP:journals/toplas/Padovani19}.
-% The downside is that some uses of \lstinline{select} force us to use
-% the \lstinline{drop} primitive, which discharges an exhausted channel
-% borrow of type \lstinline{Ret}. The discharge is part of the
-% \lstinline{send} and \lstinline{recv} operations, so it is rarely
-% needed in practice. Alternatively, the type checker could insert
-% \lstinline{drop} automatically.
 
 \subsection{Local and Remote Borrowing}
 \label{sec:local-remote-borr}
@@ -213,12 +207,16 @@ The \lstinline{Elem} alternative first sends a tag name, and then a sequence of 
 child consumes an \lstinline{HtmlChannel} prefix and then continues with
 the rest of the child stream.
 
-Now consider a renderer that emits a user panel whose first child is
-computed by another process. We assume that
+Now consider a renderer (\Cref{lst:rendering-example}) that emits a user panel whose first child is
+computed by another process while the main thread obtains user
+messages, say, from a database. We assume that
 \lstinline{renderProfile} and \lstinline{renderMsgArea} render
 one HTML node on a channel of type \lstinline{HtmlChannel; Ret} and
-\lstinline{HtmlChannel; Close}, respectively.
-\Cref{lst:rendering-example} contains the code.
+\lstinline{HtmlChannel; Close}, respectively. The type \lstinline{Ret}
+is a new session type that comes with a companion type
+\lstinline{Acq}. They indicate the placement of synchronization
+operations that ensure correct handover of ownership from the borrowed session
+to the session's suffix.
 \begin{lstlisting}[numbers=left,float,caption={Rendering example},captionpos=b,label={lst:rendering-example}]
 renderUser : User -> HtmlChannel; Close -> Unit
 renderUser user c =
@@ -227,12 +225,13 @@ renderUser user c =
   let c = select Child c in
   fork (lambda() -> renderProfile user &c);
   (* c : Acq; ChildrenChannel; Close *)
-  renderRest user (acquire c)
+  let msgs = getMessages user in
+  renderRest msgs (acquire c)
 
-renderRest : User -> ChildrenChannel; Close -> Unit
-renderRest user c =
+renderRest : Messages -> ChildrenChannel; Close -> Unit
+renderRest msgs c =
   let c = select Child c in
-  renderMsgArea user &c;
+  renderMsgArea msgs &c;
   close (select Done c)
 
 renderProfile : User -> HtmlChannel;Ret -> Unit
@@ -249,10 +248,12 @@ In this case, the borrow under the \lstinline{fork} is a \emph{remote
 the borrow are not necessarily ordered, anymore: the 
 continuation must \emph{not} start emitting the second child before the
 forked renderer has finished the first child. This synchronization is
-expressed with the \lstinline{acquire} operation. It blocks the
+expressed with the \lstinline{acquire} operation, which works on a
+channel of type \lstinline{Acq; ...}. It blocks the
 continuation until the borrowed prefix has been completed by the
 forked process. Conversely, the forked process calls \lstinline{drop}
-when it has finished working on the prefix. Thus \lstinline{drop} and
+on a channel of type \lstinline{Ret} when it has finished working on
+the prefix. Thus \lstinline{drop} and
 \lstinline{acquire} form the synchronization point between the two
 processes; the run-time mechanism that implements this point is
 described in~\cref{sec:impl-local-remote}.
@@ -383,7 +384,8 @@ symbol ``\lstinline{|}'' in the compartment. As an example, we consider the tran
 lines 5--7:
 \begin{lstlisting}
   fork (lambda() -> renderProfile user &c);
-  renderRest user (acquire c)
+  let msgs = getMessages user in
+  renderRest msgs (acquire c)
 \end{lstlisting}
 It translates to the following \thecalculus code.
 \begin{lstlisting}
@@ -391,7 +393,8 @@ It translates to the following \thecalculus code.
 let c1, c2 = rsplit c in   (* c1 : HtmlChannel; Ret *)
                            (* c2 : Acq; ChildrenChannel; Close *)
 fork (lambda() -> renderProfile user c1);
-renderRest user (acquire c2)
+let msgs = getMessages user in
+renderRest msgs (acquire c2)
 \end{lstlisting}
 The translation inserts an \lstinline{rsplit} because \lstinline{c1}
 and \lstinline{c2} are used in different processes. As their uses are
@@ -408,24 +411,27 @@ forked process running \lstinline{renderProfile} until its final
 %     let c = select Child c in
 %     let c1, c2 = rsplit c in
 %     fork (lambda() -> renderProfile user c1);
-%     renderRest user (acquire c2)
+%     let msgs = ... in
+%     renderRest msgs (acquire c2)
 % ~>
 
 \begin{lstlisting}
     nu[c][...]
     let c1, c2 = rsplit c in
     fork (lambda() -> renderProfile user c1);
-    renderRest user (acquire c2)
+    let msgs = ... in
+    renderRest msgs (acquire c2)
 ~>
     nu[c1|c2][...]
     fork (lambda() -> renderProfile user c1);
-    renderRest user (acquire c2)
+    let msgs = ... in
+    renderRest msgs (acquire c2)
 ~>*  [ drop c1 ]
     nu[|c2][...]
-    renderRest user (acquire c2)
+    renderRest msgs (acquire c2)
 ~>
     nu[c2][...]
-    renderRest user c2
+    renderRest msgs c2
 \end{lstlisting}
 In summary, the \lstinline{rsplit} inserts a new binding group \lstinline{[c1|c2]}
 demarcated by ``\lstinline{|}'' to indicate a remote split. The
@@ -704,6 +710,29 @@ split pays nothing beyond sharing the channel representation.
 
 \subsection{Remarks}
 \label{sec:remarks}
+
+The reader may ask why \lstinline{select} still adheres to
+resource passing style. The answer is simplicity of our system. While it
+is possible to define \lstinline{select} with a borrowing-based
+interface, supporting it requires subtyping of session types, which is
+undecidable for CFST~\cite{DBLP:journals/toplas/Padovani19} and hence
+not implementable.
+
+For borrowing from regular session
+types~\cite{DBLP:journals/pacmpl/SaffrichS0V25}, a borrowing-style 
+\lstinline{select} operation is possible because subtyping for regular
+session types is decidable.
+
+A borrowing-style \lstinline{branch} operator cannot be supported in \thecalculus
+because this operator externally selects between different continuations.
+
+% The downside is that some uses of \lstinline{select} force us to use
+% the \lstinline{drop} primitive, which discharges an exhausted channel
+% borrow of type \lstinline{Ret}. The discharge is part of the
+% \lstinline{send} and \lstinline{recv} operations, so it is rarely
+% needed in practice. Alternatively, the type checker could insert
+% \lstinline{drop} automatically.
+
 
 All \thecalculus examples are available as part of our supplement. Compared to the
 presentation in this section, the split operators carry type
