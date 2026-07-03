@@ -47,6 +47,9 @@ import BorrowedCF.Processes.Typed             as TP
 import BorrowedCF.Processes.Untyped           as UP
 import BorrowedCF.Reduction.Processes.Typed   as TR
 import BorrowedCF.Reduction.Processes.Untyped as UR
+open import BorrowedCF.Simulation2.RevAdmin
+  using (_─→ᵃ_; _≈_; ≋⇒≈; ─→ᵃ⇒≈; ≈-refl; ≈-trans; ≈-sym;
+         ≈-ν-cong; ≈-φ-cong; ≈-∥-congˡ; a-cleanup; a-sync; a-res; a-par; admin⇒red)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive
   using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
@@ -317,9 +320,9 @@ send-arg-count ¬u ⊢redex
 -- redex may R-Discard* its padding before firing the real step.
 sim← : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
      → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
-     → {R Q : UP.Proc n} → R UP.≋ U[ P ] σ → R UR.─→ₚ Q
+     → {R Q : UP.Proc n} → R ≈ U[ P ] σ → R UR.─→ₚ Q
      → Σ[ P′ ∈ TP.Proc m ] Σ[ Q′ ∈ UP.Proc n ]
-         (P TR─→ₚ* P′ × Q ─→ᶜ? Q′ × Q′ UP.≋ U[ P′ ] σ)
+         (P TR─→ₚ* P′ × Q ─→ᶜ? Q′ × Q′ ≈ U[ P′ ] σ)
 
 -- The untyped step has LHS index U[ P ] σ, a stuck application, so a direct
 -- `with` case-split on it gets a SplitError (UnificationStuck).  We generalise:
@@ -332,7 +335,7 @@ sim←ᵍ : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
       → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
       → {R Q : UP.Proc n} → R ≡ U[ P ] σ → R UR.─→ₚ Q
       → Σ[ P′ ∈ TP.Proc m ] Σ[ Q′ ∈ UP.Proc n ]
-          (P TR─→ₚ* P′ × Q ─→ᶜ? Q′ × Q′ UP.≋ U[ P′ ] σ)
+          (P TR─→ₚ* P′ × Q ─→ᶜ? Q′ × Q′ ≈ U[ P′ ] σ)
 
 -- syncs-of : the (<=singleton) phi-free shape of a bind group, or a >=2 witness.
 syncs-of : (B : TP.BindGroup)
@@ -351,7 +354,7 @@ simRes : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
        → UP.ν X ≡ U[ TP.ν B₁ B₂ P₀ ] σ
        → (syncs B₁ ≡ 0) Sum.⊎ _ → (syncs B₂ ≡ 0) Sum.⊎ _
        → Σ[ P′ ∈ TP.Proc m ] Σ[ Q′ ∈ UP.Proc n ]
-           (TP.ν B₁ B₂ P₀ TR─→ₚ* P′ × UP.ν X′ ─→ᶜ? Q′ × Q′ UP.≋ U[ P′ ] σ)
+           (TP.ν B₁ B₂ P₀ TR─→ₚ* P′ × UP.ν X′ ─→ᶜ? Q′ × Q′ ≈ U[ P′ ] σ)
 
 -- Public entry, ≋-closed on the input.  When R IS literally the image
 -- (the ε / reflexive prefix) it is the engine at refl; a genuine ≋ prefix
@@ -399,7 +402,7 @@ sim←ᵍ σ Vσ Γ-S {P = P₁ TP.∥ P₂}   ⊢P refl (UR.RU-Par sub)
   with _ , _ , _ , ⊢P₁ , _ ← inv-∥ ⊢P
   with P₁′ , Q₁′ , step₁ , cl₁ , c₁ ← sim←ᵍ σ Vσ Γ-S ⊢P₁ refl sub =
   P₁′ TP.∥ P₂ , Q₁′ UP.∥ U[ P₂ ] σ , ⋆-gmap (TP._∥ P₂) TR.R-Par step₁ ,
-  Sum.map (cong (λ z → z UP.∥ U[ P₂ ] σ)) UR.RU-Par cl₁ , UP.∥-cong c₁ ε
+  Sum.map (cong (λ z → z UP.∥ U[ P₂ ] σ)) UR.RU-Par cl₁ , ≈-∥-congˡ c₁
 
 ------------------------------------------------------------------------
 -- RU-Res : R = ν X and X steps (sub : X ─→ₚ X′).  inv-U-ν (now PROVEN with its
@@ -460,9 +463,9 @@ sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Fork F V)
        ← frameApp-reflect Γ-S e₀ (inv-⟪⟫ ⊢P) σ Vσ `fork F (sym feq) =
   TP.⟪ F₀ [ K `unit ]* ⟫ TP.∥ TP.⟪ arg₀ ·¹ K `unit ⟫ , _ ,
   TR.R-Fork F₀ (value-⋯⁻¹ σ Vσ arg₀ (subst Value argeq V)) ◅ ε , Sum.inj₁ refl ,
-  ≡→≋ (cong₂ UP._∥_
+  ≋⇒≈ (≡→≋ (cong₂ UP._∥_
         (cong UP.⟪_⟫ (cong (_[ K `unit ]*) Feq ■ sym (frame-plug* F₀ σ Vσ)))
-        (cong (λ z → UP.⟪ z ·¹ K `unit ⟫) argeq))
+        (cong (λ z → UP.⟪ z ·¹ K `unit ⟫) argeq)))
 -- RU-New : the LHS redex K (`new s) · * is an applied constant, so the source
 --   frame F₀ + source redex are recovered by frameApp-reflect (c = `new s, arg₀
 --   forced to K `unit since a unit-typed source var is ruled out by ChanCx, like
@@ -492,10 +495,10 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-New {s = s} F)
   TP.ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
     TP.⟪ (F₀ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 1F) ⊗ (` 0F) ]* ⟫ , _ ,
   TR.R-New F₀ ◅ ε , Sum.inj₁ refl ,
-  subst (λ z → UP.ν (UP.φ UP.acq (UP.φ UP.acq UP.⟪
+  ≋⇒≈ (subst (λ z → UP.ν (UP.φ UP.acq (UP.φ UP.acq UP.⟪
                   (z ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [ _ ]* ⟫))
                 UP.≋ _)
-        (sym Feq) (rnew-bridge F₀ σ Vσ)
+        (sym Feq) (rnew-bridge F₀ σ Vσ))
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-LSplit F) =
   {! RU-LSplit → TR.R-LSplit: inv-U-ν + recognise the U[_]-image of the lsplit redex inside the φ-nest. Design point: B-shape / SplitRenamings.inj alignment (cf. forward LSplit.agda). !}
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-RSplit F) =
@@ -740,9 +743,9 @@ sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () UR.RU-Cleanup
 --   administrative moves that leave the U[_] image must be handled.
 ------------------------------------------------------------------------
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Struct c₁ inner c₂)
-  with sim← σ Vσ Γ-S ⊢P (Eq*.symmetric _ c₁ ◅◅ ≡→≋ eq) inner
+  with sim← σ Vσ Γ-S ⊢P (≋⇒≈ (Eq*.symmetric _ c₁ ◅◅ ≡→≋ eq)) inner
 ... | P′ , Q″ , steps , Sum.inj₁ refl , Q″≋ =
-  P′ , _ , steps , Sum.inj₁ refl , Eq*.symmetric _ c₂ ◅◅ Q″≋
+  P′ , _ , steps , Sum.inj₁ refl , ≋⇒≈ (Eq*.symmetric _ c₂) ◅◅ Q″≋
 ... | P′ , Q″ , steps , Sum.inj₂ st , Q″≋ =
   P′ , Q″ , steps , Sum.inj₂ (UR.RU-Struct (Eq*.symmetric _ c₂) st ε) , Q″≋
 
@@ -756,7 +759,7 @@ simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₁ s₁) (S
   with P₀′ , Q₀′ , steps , cl₀ , c ← sim←ᵍ (νσ-φfree B₁ B₂ σ s₁ s₂) (νσ-φfree-VSub B₁ B₂ σ Vσ s₁ s₂) Γ′-S ⊢body (ν-inj (bodyeq ■ U-ν-φfree-eq B₁ B₂ P₀ σ s₁ s₂)) sub =
   TP.ν B₁ B₂ P₀′ , UP.ν Q₀′ , ⋆-gmap (TP.ν B₁ B₂) TR.R-Bind steps
   , Sum.map (cong UP.ν) UR.RU-Res cl₀
-  , subst (UP.ν Q₀′ UP.≋_) (sym (U-ν-φfree-eq B₁ B₂ P₀′ σ s₁ s₂)) (UP.ν-cong c)
+  , subst (UP.ν Q₀′ ≈_) (sym (U-ν-φfree-eq B₁ B₂ P₀′ σ s₁ s₂)) (≈-ν-cong c)
 simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₂ _) _ =
   {! RU-Res phi-bearing (syncs B₁ >= 1): an admin phi sync-cell move (RU-Drop/Acquire/Cleanup flips a flag) inside the phi-telescope carries U[P]σ OUTSIDE the U[_] image, so it has no R-Bind counterpart at the binder.  Needs the codomain-≋ strengthening (reduction-up-to-≋ on BOTH sides) -- same blocker as RU-Struct / sim← non-ε.  Statement change owned upstream. !}
 simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq _ (Sum.inj₂ _) =
