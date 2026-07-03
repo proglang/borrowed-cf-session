@@ -118,13 +118,13 @@ module _ (Γ-S : ChanCx Γ) where
     allCx-weaken unr⇒P γ≤ $ tpred×value⇒allCx ps≃ pa⇒M/U unr⇒P P V x
 
   unr×value⇒unrCx : Unr T → Value e → Γ ; γ ⊢ e ∶ T ∣ ϵ → UnrCx Γ γ
-  unr×value⇒unrCx = tpred×value⇒allCx ≃-skips (inj₁ λ U → U , id) id
+  unr×value⇒unrCx = tpred×value⇒allCx (λ _ ()) (inj₁ λ U → U , id) id
 
   mobile×value⇒mobCx : Mobile T → Value e → Γ ; γ ⊢ e ∶ T ∣ ϵ → MobCx Γ γ
   mobile×value⇒mobCx = tpred×value⇒allCx
-    (λ eq → Sum.map (≃-skips eq) (Π.map₂ (Π.map₂ (≃-trans (≃-sym eq)))))
+    (λ eq → Π.map₂ (Π.map₂ (≃-trans (≃-sym eq))))
     (inj₂ (λ M → M , id))
-    (tpred-map (λ {a} → Arr.ω⇒M a) inj₁)
+    (tpred-map (λ {a} → Arr.ω⇒M a) (λ ()))
 
   preservation′ : Γ ; γ ⊢ e ∶ T ∣ ϵ → e ─→ e′ → Γ ; γ ⊢ e′ ∶ T ∣ ϵ
   preservation′ (T-AppUnr {a = a} unr-a ≤ₐ f e) (E-App V)

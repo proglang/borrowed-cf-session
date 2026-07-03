@@ -53,14 +53,15 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
       ─→ₚ
     φ acq (⟪ F [ * ]* ⟫ ∥ P)
 
+  RU-Discard : (F : Frame* n) (V : Value e) →
+    ⟪ F [ K `discard ·¹ e ]* ⟫ ─→ₚ ⟪ F [ * ]* ⟫
+
   RU-Acquire : (F : Frame* (3 + n)) →
     ν (φ acq (
       ⟪ F [ K `acq ·¹ 𝓒[ ` 0F × 1F × e ] ]* ⟫ ∥ P
     ))
       ─→ₚ
-    ν (φ done (
-      ⟪ F [ 𝓒[ ` 0F × 1F × e ] ]* ⟫ ∥ P
-    ))
+    ν ((⟪ F [ 𝓒[ ` 0F × 1F × e ] ]* ⟫ ∥ P) ⋯ₚ ⦅ * ⦆ₛ)
 
   RU-Close : ∀ (F₁ F₂ : Frame* n) {e₁ e₁′ e₂ e₂′} →
     ν ( ⟪ (F₁ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ‼) ·¹ 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
@@ -84,9 +85,6 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
       ∥ ( ⟪ F₂ [ `inj k 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫
       ∥ P
     ))
-
-  RU-Cleanup :
-    φ done P ─→ₚ P ⋯ₚ ⦅ * ⦆ₛ
 
   RU-Par :
     P ─→ₚ P′ →

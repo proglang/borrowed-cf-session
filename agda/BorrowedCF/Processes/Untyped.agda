@@ -14,7 +14,7 @@ open Nat.Variables
 infix 14 _∥_
 
 data Flag : Set where
-  drop acq done : Flag
+  drop acq : Flag
 
 data Proc (n : ℕ) : Set where
   ⟪_⟫ : (e : Tm n) → Proc n

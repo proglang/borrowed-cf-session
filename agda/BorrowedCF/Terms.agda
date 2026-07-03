@@ -12,7 +12,7 @@ open import BorrowedCF.FinKits as Kits using (Scoped) public
 open Nat.Variables
 
 data Const : Set where
-  `unit `fork `send `recv `drop `acq : Const
+  `unit `fork `send `recv `drop `acq `discard : Const
   `end : Pol → Const
   `new : 𝕊 0 → Const
   `lsplit `rsplit : 𝕊 0 → Const
@@ -26,6 +26,7 @@ isSplit? `send = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
 isSplit? `recv = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
 isSplit? `drop = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
 isSplit? `acq = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
+isSplit? `discard = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
 isSplit? (`end x) = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
 isSplit? (`new x) = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
 isSplit? (`select x) = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
@@ -147,6 +148,7 @@ infix 4 ⊢_∶_
 
 data ⊢_∶_ : Const → 𝕋 → Set where
   `unit : ⊢ `unit ∶ `⊤
+  `discard : ⊢ `discard ∶ ⟨ skip ⟩ →*M `⊤ ∣ ℙ
 
   `fork : ⊢ `fork ∶ (`⊤ →1M `⊤ ∣ 𝕀) →*M `⊤ ∣ ℙ
 
@@ -176,6 +178,7 @@ constFnUnr (`new x) = refl
 constFnUnr (`lsplit x s′) = refl
 constFnUnr (`rsplit x s′) = refl
 constFnUnr `drop = refl
+constFnUnr `discard = refl
 constFnUnr `acq = refl
 constFnUnr (`send x) = refl
 constFnUnr (`recv x) = refl

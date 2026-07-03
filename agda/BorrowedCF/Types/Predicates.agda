@@ -124,21 +124,21 @@ tpred? pa? ps? (t ⟨ a ⟩→ u) = map′ arr (λ{ (arr pa) → pa }) (pa? a)
 tpred? pa? ps? (t ⊗⟨ d ⟩ u) = map′ (uncurry _⊗_) (λ{ (pt ⊗ pu) → pt , pu }) (tpred? pa? ps? t ×-dec tpred? pa? ps? u)
 tpred? pa? ps? (t ⊕ u) = map′ (uncurry _⊕_) (λ{ (pt ⊕ pu) → pt , pu }) (tpred? pa? ps? t ×-dec tpred? pa? ps? u)
 
-Mobile = TPred Arr.Mobile (Skips ∪ λ s → ∃[ s′ ] Bounded s′ × s ≃ acq ; s′)
+Mobile = TPred Arr.Mobile (λ s → ∃[ s′ ] Bounded s′ × s ≃ acq ; s′)
 
-Unr = TPred Arr.Unr Skips
+Unr = TPred Arr.Unr (λ _ → ⊥)
 
 unr⇒mobile : Unr ⊆ Mobile
-unr⇒mobile = tpred-map (λ {a} → Arr.ω⇒M a) inj₁
+unr⇒mobile = tpred-map (λ {a} → Arr.ω⇒M a) (λ ())
 
 mobile-≃ : Mobile Respects _≃_
-mobile-≃ = tpred-≃ λ eq → Sum.map (≃-skips eq) (Π.map₂ (Π.map₂ (≃-trans (≃-sym eq))))
+mobile-≃ = tpred-≃ λ eq → Π.map₂ (Π.map₂ (≃-trans (≃-sym eq)))
 
 unr-≃ : Unr Respects _≃_
-unr-≃ = tpred-≃ ≃-skips
+unr-≃ = tpred-≃ λ _ ()
 
 unr? : Un.Decidable Unr
-unr? = tpred? lin? skips?
+unr? = tpred? lin? (λ _ → no λ ())
   where lin? : ∀ a → Dec (Arr.Unr a)
         lin? a with Arr.lin a
         ... | 𝟙 = no λ()
