@@ -514,10 +514,40 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-New {s = s} F)
                   (z ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [ _ ]* ⟫))
                 UP.≋ _)
         (sym Feq) (rnew-bridge F₀ σ Vσ))
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-LSplit F) =
-  {! RU-LSplit → TR.R-LSplit: inv-U-ν + recognise the U[_]-image of the lsplit redex inside the φ-nest. Design point: B-shape / SplitRenamings.inj alignment (cf. forward LSplit.agda). !}
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-RSplit F) =
-  {! RU-RSplit → TR.R-RSplit: inv-U-ν + φ-drop allocation match (RSplit allocates a fresh unset φ). Design point: 1∷suc b₁ binder insertion. !}
+sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-LSplit {s = s} {e₁ = e₁} {e₂ = e₂} {P = P₁} F)
+  with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
+  with inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq
+... | Sum.inj₂ (Sum.inj₁ refl)
+  with _ , _ , _ , _ , _ , _ , _ , () , _ ← inv-ν ⊢P
+... | Sum.inj₂ (Sum.inj₂ refl)
+  with _ , _ , _ , _ , _ , _ , _ , _ , () , _ ← inv-ν ⊢P
+... | Sum.inj₁ (b₁ , b₂ , refl , refl)
+  with _ , _ , Γ′-S , ⊢body ← inv-ν-chanCx Γ-S ⊢P
+  with bodyeq′ ← ν-inj (bodyeq ■ U-ν-singleton b₁ b₂ P₀ σ)
+  with PL , P₁t , refl , Leq , Resteq ← inv-U-∥ P₀ (νσ b₁ b₂ σ) (sym bodyeq′)
+  with eL , refl , Leq′ ← inv-U-⟪⟫ PL (νσ b₁ b₂ σ) (sym Leq)
+  with _ , _ , _ , ⊢PL , ⊢P₁t ← inv-∥ ⊢body
+  with F₀ , argᴸ , refl , Feq , argeq
+       ← frameApp-reflect Γ′-S eL (inv-⟪⟫ ⊢PL) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) (`lsplit s)
+           F (sym Leq′) =
+  {! RU-LSplit reconstruct !}
+sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-RSplit {s = s} {e₁ = e₁} {e₂ = e₂} {P = P₁} F)
+  with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
+  with inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq
+... | Sum.inj₂ (Sum.inj₁ refl)
+  with _ , _ , _ , _ , _ , _ , _ , () , _ ← inv-ν ⊢P
+... | Sum.inj₂ (Sum.inj₂ refl)
+  with _ , _ , _ , _ , _ , _ , _ , _ , () , _ ← inv-ν ⊢P
+... | Sum.inj₁ (b₁ , b₂ , refl , refl)
+  with _ , _ , Γ′-S , ⊢body ← inv-ν-chanCx Γ-S ⊢P
+  with bodyeq′ ← ν-inj (bodyeq ■ U-ν-singleton b₁ b₂ P₀ σ)
+  with PL , P₁t , refl , Leq , Resteq ← inv-U-∥ P₀ (νσ b₁ b₂ σ) (sym bodyeq′)
+  with eL , refl , Leq′ ← inv-U-⟪⟫ PL (νσ b₁ b₂ σ) (sym Leq)
+  with _ , _ , _ , ⊢PL , ⊢P₁t ← inv-∥ ⊢body
+  with F₀ , argᴸ , refl , Feq , argeq
+       ← frameApp-reflect Γ′-S eL (inv-⟪⟫ ⊢PL) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) (`rsplit s)
+           F (sym Leq′) =
+  {! RU-RSplit reconstruct !}
 -- RU-Drop : R = φ drop (…).  φ-headed, so vacuous at top level (U[_] heads with
 -- ⟪⟫/∥/ν only); only reachable under an inner RU-Sync/RU-Res recursion.
 sim←ᵍ σ Vσ Γ-S {P = TP.⟪ e ⟫}     ⊢P () (UR.RU-Drop F)
