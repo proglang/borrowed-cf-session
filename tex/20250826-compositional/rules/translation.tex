@@ -49,7 +49,7 @@
     [\Sub[1] \cup \Sub[2]]
 }
 
-% Tr-BindSeq
+% Tr-BindChannels
 \DefRule {Channels} {
   \Bind \Downarrow \Bind* \\
   \Bind* \TransBind \Sub
@@ -59,10 +59,10 @@
 
 % Tr-BindSeq
 \DefRule {Seq} {
-  \Bind[1] \TransBind {\Sub[1]} \\
-  \Bind[2] \TransBind {\Sub[2]} \\
+  \Bind[1] \TransBind[\TEChan[\E[1]]{\TEVar}] {\Sub[1]} \\
+  \Bind[2] \TransBind[\TEChan{\TEVar}[\E[2]]] {\Sub[2]} \\
 }{
-  \BSeq{\Bind[1]}{\Bind[2]} \TransBind {\Sub[1] \cup \Sub[2]}
+  \BSeq{\Bind[1]}{\Bind[2]} \TransBind[\TEChan[\E[1]]{\TEVar}[\E[2]]] {\Sub[1] \cup \Sub[2]}
 }
 
 % Tr-BindVar

@@ -37,12 +37,12 @@
 % RU-LSplit
 \DefRule {LSplit} {} {
     \TPNew {(
-      \TPPar {\TFCapp{\EApp \CSplit {\ChanPat\TEVar}}} \TProc
+      \TPPar {\TFCapp{\EApp \CSplit {(\TEChan[\E[1]]{\TEVar}[\E[2]])}}} \TProc
     )}
     \TPReduce
     \TPNew {(
       \TPPar
-        {\TFCapp{\EPair{\ChanPat\TEVar}{\ChanPat\TEVar}}}
+        {\TFCapp{\EPair{(\TEChan[\E[1]]{\TEVar})}{(\TEChan{\TEVar}[\E[2]])}}}
         \TProc
     )}
 }
