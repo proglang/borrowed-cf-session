@@ -7,7 +7,7 @@ module BorrowedCF.Simulation.RevGrindA where
 open import BorrowedCF.Simulation.Base
 open import BorrowedCF.Context
 open import BorrowedCF.Context.Pattern using (CxPat; _[_]𝓅)
-open import BorrowedCF.Simulation.Confine using (count; count-self; count-join-PS; ≼⇒count≤)
+open import BorrowedCF.Simulation.Confine using (count; count-self; count-join-PS; count-join-Dir; ≼⇒count≤)
 open import BorrowedCF.Simulation.BeforeOrder using (before; before⇒mem; before-mono-≼)
 open import BorrowedCF.Simulation.RevComConfine using (count-plug-add)
 open import BorrowedCF.Simulation.Theorems.ComHelpers2 using (fn-send-dom)
@@ -127,3 +127,115 @@ com-¬before {Γ = Γ} {γrˢ} {αcom} {βcom} {γinner} {𝒫ˢ} {aS} {xS} {y}
       in ⊥-elim (2≰1 (≤-trans 2≤pair
                        (≤-trans pair≤β
                          (≤-trans β≤ba (≤-trans ba≤γrˢ γrˢ≤1)))))
+
+
+------------------------------------------------------------------------
+-- Bare-variable channel-op front-forcing helpers (select / branch).
+-- Analogues of the send-* lemmas, but the argument is a BARE channel
+-- variable ` x (not a pair), so the derivations are simpler.
+------------------------------------------------------------------------
+
+𝕀≤⇒≡𝕀 : ∀ {ϵ} → 𝕀 ≤ϵ ϵ → ϵ ≡ 𝕀
+𝕀≤⇒≡𝕀 𝕀≤𝕀 = refl
+
+-- select ------------------------------------------------------------------
+select-fn-eff-𝕀 : ∀ {N} {Γ : Ctx N} {α : Struct N} {T U a ϵ} {i}
+  → Γ ; α ⊢ K (`select i) ∶ T ⟨ a ⟩→ U ∣ ϵ → Arr.eff a ≡ 𝕀
+select-fn-eff-𝕀 (T-Const `select) = refl
+select-fn-eff-𝕀 (T-Conv (_ `→ _) _ d) = select-fn-eff-𝕀 d
+select-fn-eff-𝕀 (T-Weaken _ d) = select-fn-eff-𝕀 d
+
+select-app-𝕀 : ∀ {N} {Γ : Ctx N} {γ : Struct N} {arg : Tm N} {U ϵ} {i}
+  → Γ ; γ ⊢ K (`select i) ·¹ arg ∶ U ∣ ϵ → ϵ ≡ 𝕀
+select-app-𝕀 (T-AppUnr _ ≤ₐ ⊢fn _) = 𝕀≤⇒≡𝕀 (subst (_≤ϵ _) (select-fn-eff-𝕀 ⊢fn) ≤ₐ)
+select-app-𝕀 (T-AppLin _ ≤ₐ ⊢fn _) = 𝕀≤⇒≡𝕀 (subst (_≤ϵ _) (select-fn-eff-𝕀 ⊢fn) ≤ₐ)
+select-app-𝕀 (T-Conv _ ≤ d) = 𝕀≤⇒≡𝕀 (subst (_≤ϵ _) (select-app-𝕀 d) ≤)
+select-app-𝕀 (T-Weaken _ d) = select-app-𝕀 d
+
+select-fn-dom : ∀ {N} {Γ : Ctx N} {α : Struct N} {T U a ϵ} {i}
+  → Γ ; α ⊢ K (`select i) ∶ T ⟨ a ⟩→ U ∣ ϵ
+  → Σ[ s₁ ∈ 𝕊 0 ] Σ[ s₂ ∈ 𝕊 0 ] (⟨ brn ‼ s₁ s₂ ⟩ ≃ T)
+select-fn-dom (T-Const `select) = _ , _ , ≃-refl
+select-fn-dom (T-Conv (dom≃ `→ _) _ d) = let s₁ , s₂ , eq = select-fn-dom d in s₁ , s₂ , ≃-trans eq dom≃
+select-fn-dom (T-Weaken _ d) = select-fn-dom d
+
+sad-select : ∀ {N} {Γ : Ctx N} {α β : Struct N} {arg : Tm N} {Targ Uu ϵ₁ ϵ₂ a} {i}
+  → Γ ; α ⊢ K (`select i) ∶ Targ ⟨ a ⟩→ Uu ∣ ϵ₁
+  → Γ ; β ⊢ arg ∶ Targ ∣ ϵ₂
+  → Σ[ s₁ ∈ 𝕊 0 ] Σ[ s₂ ∈ 𝕊 0 ] Σ[ β' ∈ Struct N ] Σ[ R ∈ 𝕋 ] Σ[ ϵ' ∈ Eff ]
+      (⟨ brn ‼ s₁ s₂ ⟩ ≃ R) × (Γ ; β' ⊢ arg ∶ R ∣ ϵ')
+sad-select {β = β} ⊢fn ⊢arg with select-fn-dom ⊢fn
+... | s₁ , s₂ , domeq = s₁ , s₂ , β , _ , _ , domeq , ⊢arg
+
+select-arg-decomp : ∀ {N} {Γ : Ctx N} {γ : Struct N} {arg : Tm N} {U ϵ} {i}
+  → Γ ; γ ⊢ K (`select i) ·¹ arg ∶ U ∣ ϵ
+  → Σ[ s₁ ∈ 𝕊 0 ] Σ[ s₂ ∈ 𝕊 0 ] Σ[ β' ∈ Struct N ] Σ[ R ∈ 𝕋 ] Σ[ ϵ' ∈ Eff ]
+      (⟨ brn ‼ s₁ s₂ ⟩ ≃ R) × (Γ ; β' ⊢ arg ∶ R ∣ ϵ')
+select-arg-decomp (T-AppUnr _ _ ⊢fn ⊢arg) = sad-select ⊢fn ⊢arg
+select-arg-decomp (T-AppLin _ _ ⊢fn ⊢arg) = sad-select ⊢fn ⊢arg
+select-arg-decomp (T-Conv _ _ d) = select-arg-decomp d
+select-arg-decomp (T-Weaken _ d) = select-arg-decomp d
+
+-- branch ------------------------------------------------------------------
+branch-fn-eff-𝕀 : ∀ {N} {Γ : Ctx N} {α : Struct N} {T U a ϵ}
+  → Γ ; α ⊢ K `branch ∶ T ⟨ a ⟩→ U ∣ ϵ → Arr.eff a ≡ 𝕀
+branch-fn-eff-𝕀 (T-Const `branch) = refl
+branch-fn-eff-𝕀 (T-Conv (_ `→ _) _ d) = branch-fn-eff-𝕀 d
+branch-fn-eff-𝕀 (T-Weaken _ d) = branch-fn-eff-𝕀 d
+
+branch-app-𝕀 : ∀ {N} {Γ : Ctx N} {γ : Struct N} {arg : Tm N} {U ϵ}
+  → Γ ; γ ⊢ K `branch ·¹ arg ∶ U ∣ ϵ → ϵ ≡ 𝕀
+branch-app-𝕀 (T-AppUnr _ ≤ₐ ⊢fn _) = 𝕀≤⇒≡𝕀 (subst (_≤ϵ _) (branch-fn-eff-𝕀 ⊢fn) ≤ₐ)
+branch-app-𝕀 (T-AppLin _ ≤ₐ ⊢fn _) = 𝕀≤⇒≡𝕀 (subst (_≤ϵ _) (branch-fn-eff-𝕀 ⊢fn) ≤ₐ)
+branch-app-𝕀 (T-Conv _ ≤ d) = 𝕀≤⇒≡𝕀 (subst (_≤ϵ _) (branch-app-𝕀 d) ≤)
+branch-app-𝕀 (T-Weaken _ d) = branch-app-𝕀 d
+
+branch-fn-dom : ∀ {N} {Γ : Ctx N} {α : Struct N} {T U a ϵ}
+  → Γ ; α ⊢ K `branch ∶ T ⟨ a ⟩→ U ∣ ϵ
+  → Σ[ s₁ ∈ 𝕊 0 ] Σ[ s₂ ∈ 𝕊 0 ] (⟨ brn ⁇ s₁ s₂ ⟩ ≃ T)
+branch-fn-dom (T-Const `branch) = _ , _ , ≃-refl
+branch-fn-dom (T-Conv (dom≃ `→ _) _ d) = let s₁ , s₂ , eq = branch-fn-dom d in s₁ , s₂ , ≃-trans eq dom≃
+branch-fn-dom (T-Weaken _ d) = branch-fn-dom d
+
+sad-branch : ∀ {N} {Γ : Ctx N} {α β : Struct N} {arg : Tm N} {Targ Uu ϵ₁ ϵ₂ a}
+  → Γ ; α ⊢ K `branch ∶ Targ ⟨ a ⟩→ Uu ∣ ϵ₁
+  → Γ ; β ⊢ arg ∶ Targ ∣ ϵ₂
+  → Σ[ s₁ ∈ 𝕊 0 ] Σ[ s₂ ∈ 𝕊 0 ] Σ[ β' ∈ Struct N ] Σ[ R ∈ 𝕋 ] Σ[ ϵ' ∈ Eff ]
+      (⟨ brn ⁇ s₁ s₂ ⟩ ≃ R) × (Γ ; β' ⊢ arg ∶ R ∣ ϵ')
+sad-branch {β = β} ⊢fn ⊢arg with branch-fn-dom ⊢fn
+... | s₁ , s₂ , domeq = s₁ , s₂ , β , _ , _ , domeq , ⊢arg
+
+branch-arg-decomp : ∀ {N} {Γ : Ctx N} {γ : Struct N} {arg : Tm N} {U ϵ}
+  → Γ ; γ ⊢ K `branch ·¹ arg ∶ U ∣ ϵ
+  → Σ[ s₁ ∈ 𝕊 0 ] Σ[ s₂ ∈ 𝕊 0 ] Σ[ β' ∈ Struct N ] Σ[ R ∈ 𝕋 ] Σ[ ϵ' ∈ Eff ]
+      (⟨ brn ⁇ s₁ s₂ ⟩ ≃ R) × (Γ ; β' ⊢ arg ∶ R ∣ ϵ')
+branch-arg-decomp (T-AppUnr _ _ ⊢fn ⊢arg) = sad-branch ⊢fn ⊢arg
+branch-arg-decomp (T-AppLin _ _ ⊢fn ⊢arg) = sad-branch ⊢fn ⊢arg
+branch-arg-decomp (T-Conv _ _ d) = branch-arg-decomp d
+branch-arg-decomp (T-Weaken _ d) = branch-arg-decomp d
+
+-- bare-variable argument count + precedence ------------------------------
+barevar-arg-count : ∀ {N} {Γ : Ctx N} {γ : Struct N} {x : 𝔽 N} {c U ϵ}
+  → ¬ Unr (Γ x) → Γ ; γ ⊢ K c ·¹ (` x) ∶ U ∣ ϵ → 1 ≤ count x γ
+barevar-arg-count {x = x} ¬u ⊢redex
+  with aa , α , β , T , join≼ , _ , _ , invapp ← inv-· ⊢redex
+  with _ , ⊢x ← invApp-arg invapp =
+  let x≼β = proj₂ (inv-` ⊢x)
+      1≤β = subst (Nat._≤ count x β) (count-self x) (≼⇒count≤ ¬u x≼β)
+      β≤joinγ = subst (count x β Nat.≤_) (sym (count-join-Dir (Arr.dir aa) x β α)) (m≤m+n (count x β) (count x α))
+      β≤γ = ≤-trans β≤joinγ (≼⇒count≤ ¬u join≼)
+  in ≤-trans 1≤β β≤γ
+
+choice-¬before : ∀ {N} {Γ : Ctx N} {γrˢ : Struct N} {x y : 𝔽 N} {c U ϵ}
+  → ¬ Unr (Γ x) → ¬ Unr (Γ y)
+  → Γ ; γrˢ ⊢ K c ·¹ (` x) ∶ U ∣ ϵ
+  → ¬ before y x γrˢ
+choice-¬before {x = x} {y = y} ¬ux ¬uy ⊢redex bfr
+  with inv-· ⊢redex
+... | a , α , β , T , ≤γ , dir≡ , ≤ₐ , invapp
+  with subst (λ d → before y x (join d β α)) dir≡ (before-mono-≼ ¬uy ¬ux ≤γ bfr)
+... | inj₂ bα =
+      let _ , _ , []≼α , _ = inv-K (proj₂ (invApp-fn invapp))
+      in before-mono-≼ ¬uy ¬ux []≼α bα
+... | inj₁ bβ =
+      before-mono-≼ ¬uy ¬ux (proj₂ (inv-` (proj₂ (invApp-arg invapp)))) bβ
