@@ -362,7 +362,22 @@ simRes : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
 -- RU-Struct case) and is left a noted hole.
 sim← σ Vσ Γ-S ⊢P ε red = sim←ᵍ σ Vσ Γ-S ⊢P refl red
 sim← σ Vσ Γ-S ⊢P (c ◅ cs) red =
-  {! reverse-U-≋: a non-reflexive ≋ prefix R ≋ U[P]σ need not factor through the U[_] image (φ-nest admin ν-swap/ν-comm/φ-cong leave the image); needs a U[_]-normal-form confluence lemma.  Same blocker as RU-Struct.  NOTE: the route `sim← cs (RU-Struct (sym c) red ε)` typechecks but FAILS termination — sim←ᵍ's RU-Struct case calls sim← back with a freshly-grown ≋ chain, so the mutual sim←/sim←ᵍ recursion has no structural descent metric (the untyped derivation `red` is wrapped LARGER here while it only shrinks in RU-Struct's `inner`).  Closing this requires a well-founded measure (≋-chain length) or the confluence lemma, not a direct delegation. !}
+  {! reverse-U-≋ / confluence.  The ≈ codomain (RevAdmin) is now in place, but the
+     INPUT prefix (a genuine ≋/admin link `c`) still cannot be discharged.  The
+     transport route `sim← cs (≋-step c red)` (≋-step = RU-Struct (sym c) red ε,
+     CongBisim) typechecks but FAILS termination: CongBisim.≋-sim only gives the
+     TRIVIAL bisimulation (reduct kept fixed by wrapping red in a fresh RU-Struct),
+     so sim←ᵍ's RU-Struct case regenerates a length-1 chain each bounce and the
+     mutual sim←/sim←ᵍ recursion has no descent metric (red is re-wrapped LARGER).
+     KEY INSIGHT for closing this: a DERIVATION-TRANSFORMING confluence lemma
+       ≋′-sim-strong : R ≋′ R′ → R ─→ Q → Σ Q′. (R′ ─→ Q′) × Q ≋ Q′
+     that replays the reduction CONSTRUCTOR past the ≋′ generator (RU-Com ↦ RU-Com
+     at the reassociated position, NOT a RU-Struct wrapper) WOULD terminate: then
+     sim← recurses on the strictly-shorter chain `cs` with a genuine-constructor
+     red₁, and sim←ᵍ dispatches red₁ to its real case (the 8 channel holes) instead
+     of looping on RU-Struct.  That confluence lemma is a large separate development
+     (case analysis ≋′ × ─→ₚ + a size measure for the WF recursion); it is NOT
+     provided by the ≈ statement change alone. !}
 
 ------------------------------------------------------------------------
 -- RU-Exp : R = ⟪ e₁ ⟫ steps by an expression reduction e₁ ⋯→ e₂.
@@ -761,6 +776,20 @@ simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₁ s₁) (S
   , Sum.map (cong UP.ν) UR.RU-Res cl₀
   , subst (UP.ν Q₀′ ≈_) (sym (U-ν-φfree-eq B₁ B₂ P₀′ σ s₁ s₂)) (≈-ν-cong c)
 simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₂ _) _ =
-  {! RU-Res phi-bearing (syncs B₁ >= 1): an admin phi sync-cell move (RU-Drop/Acquire/Cleanup flips a flag) inside the phi-telescope carries U[P]σ OUTSIDE the U[_] image, so it has no R-Bind counterpart at the binder.  Needs the codomain-≋ strengthening (reduction-up-to-≋ on BOTH sides) -- same blocker as RU-Struct / sim← non-ε.  Statement change owned upstream. !}
+  {! RU-Res phi-bearing (syncs B₁ >= 1).  REVISED FINDING: the ≈ codomain (RevAdmin
+     ─→ᵃ / ─→ᵃ⇒≈) is in place, but the admin-ABSORPTION the change was meant to enable
+     has NOTHING to absorb here.  X ≡ (φ-telescope of the PRISTINE image
+     U[ν B₁ B₂ P₀]σ), whose sync-cell flags are ϕ[b] ∈ {acq(b=0), drop(b≥1)} — NEVER
+     `done`.  So on this X: RU-Cleanup is VACUOUS (needs a `done` cell); RU-Drop
+     consumes a REAL drop redex (⇒ a typed R-Drop, observable, not admin); RU-Sync
+     DESCENDS to a genuine channel/drop operation inside U[P₀].  I.e. `sub` is
+     OBSERVABLE (typed-corresponding), not administrative — there is no `X ─→ᵃ X′` to
+     feed ─→ᵃ⇒≈.  Closing this needs the REVERSE φ-nest reflection engine (peel each
+     φ, reflect the inner op via sim←ᵍ at the deeper leaf, re-wrap; it bottoms out at
+     the 8 deferred channel holes), NOT admin absorption.  Pure-admin ─→ᵃ moves
+     (RU-Cleanup on `done`, the acq→done half of R-Acq) arise only as intermediate
+     CODOMAIN states of a forward step, never as a sim← INPUT (pristine image). !}
 simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq _ (Sum.inj₂ _) =
-  {! RU-Res phi-bearing (syncs B₂ >= 1): see syncs B₁ >= 1 case -- same admin-phi codomain-≋ blocker. !}
+  {! RU-Res phi-bearing (syncs B₂ >= 1): see syncs B₁ >= 1 case — same finding: a
+     pristine φ-telescope has no fireable pure-admin move, so `sub` is observable and
+     needs the reverse φ-nest reflection engine, not ─→ᵃ absorption. !}
