@@ -38,6 +38,7 @@ open import BorrowedCF.Simulation.BeforeOrder using (before)
 import BorrowedCF.Context.Substitution as 𝐂S
 open import Data.Nat.ListAction using (sum)
 open import BorrowedCF.Simulation.RevComImage using (com-image-block1; pos⇒suc)
+open import BorrowedCF.Simulation.RevGrindA using (chanCx-¬Unr; com-¬before)
 open import BorrowedCF.Context.Pattern using (LeftPat; CxPat; _[_]𝓅)
 open import BorrowedCF.Simulation.Confine using (count; ≼⇒count≤; count-self; count-join-Dir; count-join-PS)
 open import BorrowedCF.Simulation.Theorems.Com
@@ -285,14 +286,6 @@ send-chan-nonUnr : ∀ {N} {Γ : Ctx N} {α : Struct N} {x : 𝔽 N} {Tx ϵ} {T�
   → Γ ; α ⊢ ` x ∶ Tx ∣ ϵ → ⟨ msg ‼ Tᵐ ⟩ ≃ Tx → ¬ Unr (Γ x)
 send-chan-nonUnr ⊢x msg≃ u with unr-≃ (≃-sym (≃-trans msg≃ (proj₁ (inv-` ⊢x)))) u
 ... | ⟨ () ⟩
-
--- Every channel-context entry is a channel type ⟨ s ⟩, and Unr ⟨ s ⟩ is
--- uninhabited (Unr = TPred Arr.Unr (λ _ → ⊥): channels are NEVER unrestricted
--- under the linear-skip calculus).  So a ChanCx entry is always non-Unr.
-chanCx-¬Unr : ∀ {N} {Γ : Ctx N} → ChanCx Γ → (x : 𝔽 N) → ¬ Unr (Γ x)
-chanCx-¬Unr Γ-S x u with Γ-S x
-... | s , eq with subst Unr eq u
-...   | ⟨ () ⟩
 
 invApp-arg : ∀ {N} {Γ : Ctx N} {α β : Struct N} {e₁ e₂ a T U ϵ}
   → InvApp Γ α β e₁ e₂ a T U ϵ → ∃[ ϵ' ] Γ ; β ⊢ e₂ ∶ T ∣ ϵ'
@@ -738,7 +731,7 @@ sim←ᵍ {m = m} σ Vσ Γ-S {g = g} {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
                   lpˢ ≼ˢ αβ≼ cnt1
                   (subst (λ zz → before 0F ((zz Fin.↑ˡ (b₂ + 0)) Fin.↑ˡ m) Sbind) z₀↑0≡z
                     (before-com-binderᴸ b₁' b₂ g z₀ ne))
-                  1≤c {! ¬ before 0F xS γrˢ !}
+                  1≤c (com-¬before {𝒫ˢ = 𝒫ˢ} ¬uxS (chanCx-¬Unr Γ′-S 0F) ⊢redexˢ ≼ˢ αβ≼ cnt1)
     z₀≡0F : z₀ ≡ 0F
     z₀≡0F with Fin.toℕ z₀ Nat.≟ 0
     ... | yes e0 = Fin.toℕ-injective e0
