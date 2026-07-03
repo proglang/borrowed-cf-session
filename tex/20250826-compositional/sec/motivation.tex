@@ -12,7 +12,7 @@ composition is associative.
 Thus
 \lstinline{Skip} and \lstinline{;} form a monoid up to type
 equality. The types \lstinline{Close} and \lstinline{Wait} indicate
-(active and passible) termination of a session.
+(active and passive) termination of a session.
 
 Sequential composition also interacts with choice in the expected way.
 Appending a continuation to a choice appends it to every branch:
@@ -212,7 +212,7 @@ computed by another process while the main thread obtains user
 messages, say, from a database. We assume that
 \lstinline{renderProfile} and \lstinline{renderMsgArea} render
 one HTML node on a channel of type \lstinline{HtmlChannel; Ret} and
-\lstinline{HtmlChannel; Close}, respectively. The type \lstinline{Ret}
+\lstinline{HtmlChannel}, respectively. The type \lstinline{Ret}
 is a new session type that comes with a companion type
 \lstinline{Acq}. They indicate the placement of synchronization
 operations that ensure correct handover of ownership from the borrowed session
@@ -245,7 +245,7 @@ area, and then closes the child stream.
 
 In this case, the borrow under the \lstinline{fork} is a \emph{remote
   borrow}. Such a borrow must be handled differently as operations on
-the borrow are not necessarily ordered, anymore: the 
+the borrow are no longer necessarily ordered: the 
 continuation must \emph{not} start emitting the second child before the
 forked renderer has finished the first child. This synchronization is
 expressed with the \lstinline{acquire} operation, which works on a
@@ -277,16 +277,19 @@ before we move on to a low level implementation of the two concepts in
 \Cref{sec:borr-from-cont} already suggests an implementation strategy
 for local borrowing. However, we start with an abstract
 specification because it is easier to handle in a correctness
-proof. The first step translates the surface 
-language with borrowing operators into our formal calculus
-\thecalculus, which replaces borrowing with explicit functional splitting
+proof. The specification works on a elaborated surface 
+language \thecalculus, where elaboration replaces borrowing with
+explicit functional splitting 
 operators. This translation is analogous to a translation in previous work
 \cite{DBLP:journals/pacmpl/SaffrichS0V25}, which gives a formal
 presentation along with a correctness proof. The novelty in our work
-is the presence of \emph{two} splitting operators, one for local borrows and
-one for remote borrows. Our discussion starts with the local variant and
+is the presence of \emph{two} operators, \lstinline{lsplit} for local
+borrows and \lstinline{rsplit} for remote borrows. Borrows used in the
+same thread elaborate to \lstinline{lsplit} while borrows used across
+\lstinline{fork} or sent to another process elaborate to
+\lstinline{rsplit}.  Our discussion starts with the local variant and 
 we show the translation of \lstinline{renderRest} in
-\thecalculus. The translation is part of our implementation.
+\thecalculus.
 
 As an example, we use the local part of
 \lstinline{renderRest} shown in
@@ -303,7 +306,7 @@ compartment \lstinline{[c]} and \lstinline{[d]} contains a
 best illustrated with the example trace.
 
 To keep the trace short (\cref{fig:local-split-trace}), the
-reduction starts after the initial local splits; the omitted steps
+reduction starts at the local suffix in \lstinline{renderRest}; the omitted steps
 only expose the prefix consumed by 
 \lstinline{renderMsgArea}.
 \begin{figure}
@@ -660,7 +663,11 @@ it can be used. The outgoing flag $out$ records whether the channel
 must be dropped after use. A synchronization binder
 $(\varphi z \mapsto \phi)P$ binds a flag name $z$ in $P$ and stores
 one of three states in $\phi$: \lstinline{drop}, \lstinline{acq}, or
-\lstinline{done}. An \lstinline{rsplit} creates a flag in state
+\lstinline{done}. This flag $z$ implements the separator in
+\lstinline{nu[c1|c2][...]}. It is placed as the outgoing flag of the
+borrowed prefix and the incoming flag of the suffix.
+
+An \lstinline{rsplit} creates a flag in state
 \lstinline{drop} and a channel creation sets its flag to \lstinline{acq}.
 Intuitively, \lstinline{drop} means that the left, borrowed
 part of a remote split is still active, \lstinline{acq} means that it
@@ -680,11 +687,11 @@ session communication: \lstinline{send}/\lstinline{recv},
 \lstinline{select}/\lstinline{branch}, and \lstinline{close}/\lstinline{wait}
 all operate directly on the primitive channel name $c$.
 
-Local splitting is deliberately cheap (\cref{fig:borrow-lifecycle-msc-local}). The rule for
+\Cref{fig:borrow-lifecycle-msc-local} shows the lifecycle of a local borrow. The rule for
 \lstinline{lsplit} returns two copies of the same run-time channel
 triple. No new channel is allocated and no synchronization flag
-is introduced. This is sound because the source type system has
-already established the left-to-right use of the two pieces. The
+is introduced. This simple approach has no overhead and is sound
+because the source type system has already established the left-to-right use of the two pieces. The
 run-time representation can therefore be imperative: the two pieces are
 aliases for the same underlying channel object, and using the first
 piece advances that object to the state where the second piece starts.
@@ -723,8 +730,9 @@ types~\cite{DBLP:journals/pacmpl/SaffrichS0V25}, a borrowing-style
 \lstinline{select} operation is possible because subtyping for regular
 session types is decidable.
 
-A borrowing-style \lstinline{branch} operator cannot be supported in \thecalculus
-because this operator externally selects between different continuations.
+A borrowing-style \lstinline{branch} operator (external choice) cannot be supported in \thecalculus.
+This operator selects between different continuations at run time and
+the residual channel depends on this run-time choice.
 
 % The downside is that some uses of \lstinline{select} force us to use
 % the \lstinline{drop} primitive, which discharges an exhausted channel
