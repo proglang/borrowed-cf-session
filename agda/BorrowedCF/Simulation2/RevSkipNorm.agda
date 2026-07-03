@@ -16,6 +16,13 @@ open import BorrowedCF.Simulation2.Base
 -- (block-shift / Ub-star-const / disc-single) is re-derived here from the
 -- hole-free TranslationProperties primitives.
 open import BorrowedCF.Simulation2.TranslationProperties using (U-⋯ₚ; U-cong; UB-cong; ≡→≋)
+-- U-ν-swap (block permutation is U[_]-invariant up to ≋) lives in the hole-free,
+-- committed Theorems/Com module; swapₚ-inv (there-and-back block swap cancels)
+-- is re-derived self-contained in RevSwapInv.  Together they drive block-2
+-- normalization: a block-2 borrow is discarded by swapping the two blocks
+-- (ν-swap sandwich) so R-Discard / disc-single fire on the now-block-1 borrow.
+open import BorrowedCF.Simulation2.RevSwapInv using (swapₚ-inv)
+open import BorrowedCF.Simulation2.Theorems.Com using (U-ν-swap)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive
   using (Star; ε; _◅_; _◅◅_)
 open import Data.Sum using ([_,_]′)
@@ -81,3 +88,52 @@ normalize-block1 zero    b B₂ P σ = ε , ε
 normalize-block1 (suc k) b B₂ P σ =
   let chain , eqv = normalize-block1 k b B₂ P σ
   in TR.R-Discard ◅ chain , disc-single (k + b) B₂ (wkⁿ k b B₂ P) σ ◅◅ eqv
+
+-- ── block-2 normalization (ν-swap sandwich) ─────────────────────────────────
+-- Block-2 has no direct discard rule, so a leading unused block-2 borrow is
+-- stripped by (1) swapping the two blocks (ν-swap), (2) R-Discard on the now
+-- block-1 borrow, (3) swapping back.  wk2 packages the body as the swap
+-- conjugation of the block-1 head weakening (wkⁿ), so the two ν-swaps of each
+-- step cancel via swapₚ-inv onto exactly the wkⁿ / R-Discard shape.
+
+wk2 : ∀ (k b : ℕ) (B₁ : TP.BindGroup) {n : ℕ}
+    → TP.Proc (sum B₁ + (b + 0) + n) → TP.Proc (sum B₁ + (k + b + 0) + n)
+wk2 k b B₁ P = wkⁿ k b B₁ (P ⋯ₚ swapᵣ (sum B₁) (b + 0)) ⋯ₚ swapᵣ (k + b + 0) (sum B₁)
+
+-- normalize-block2 : discard the k leading (unused) block-2 borrows, giving a
+-- TR─→ₚ* chain to the k-shorter second block, with U[_]-invariance (≋) at every
+-- step.  Mirrors normalize-block1 but for the second bind block.
+normalize-block2 : ∀ (k b : ℕ) (B₁ : TP.BindGroup) {n m} (P : TP.Proc (sum B₁ + (b + 0) + n))
+                   (σ : n →ₛ m)
+  → Star TR._─→ₚ_ (TP.ν B₁ (k + b ∷ []) (wk2 k b B₁ P)) (TP.ν B₁ (b ∷ []) P)
+      × (U[ TP.ν B₁ (k + b ∷ []) (wk2 k b B₁ P) ] σ UP.≋ U[ TP.ν B₁ (b ∷ []) P ] σ)
+normalize-block2 zero b B₁ P σ =
+  subst (λ z → Star TR._─→ₚ_ (TP.ν B₁ (b ∷ []) z) (TP.ν B₁ (b ∷ []) P)) (sym wk2-0) ε ,
+  ≡→≋ (cong (λ z → U[ TP.ν B₁ (b ∷ []) z ] σ) wk2-0)
+  where
+    wk2-0 : wk2 zero b B₁ P ≡ P
+    wk2-0 = swapₚ-inv {sum B₁} {b + 0} P
+normalize-block2 (suc k) b B₁ P σ =
+  let chain , eqv = normalize-block2 k b B₁ P σ
+  in disc2-step ◅ chain , disc2-single ◅◅ eqv
+  where
+    P' = P ⋯ₚ swapᵣ (sum B₁) (b + 0)
+
+    disc2-step : TP.ν B₁ (suc k + b ∷ []) (wk2 (suc k) b B₁ P)
+                   TR.─→ₚ TP.ν B₁ (k + b ∷ []) (wk2 k b B₁ P)
+    disc2-step = TR.R-Struct
+      (subst (λ z → TP._≋_ (TP.ν B₁ (suc k + b ∷ []) (wk2 (suc k) b B₁ P))
+                           (TP.ν (suc k + b ∷ []) B₁ z))
+             (swapₚ-inv {suc k + b + 0} {sum B₁} (wkⁿ k b B₁ P' ⋯ₚ weakenᵣ))
+             (TP.ν-swap {B₁ = B₁} {B₂ = suc k + b ∷ []} {P = wk2 (suc k) b B₁ P}))
+      TR.R-Discard
+      (TP.ν-swap {B₁ = k + b ∷ []} {B₂ = B₁} {P = wkⁿ k b B₁ P'})
+
+    disc2-single : U[ TP.ν B₁ (suc k + b ∷ []) (wk2 (suc k) b B₁ P) ] σ
+                     UP.≋ U[ TP.ν B₁ (k + b ∷ []) (wk2 k b B₁ P) ] σ
+    disc2-single =
+      U-ν-swap σ {B₁ = B₁} {B₂ = suc k + b ∷ []} {P = wk2 (suc k) b B₁ P}
+      ◅◅ ≡→≋ (cong (λ z → U[ TP.ν (suc k + b ∷ []) B₁ z ] σ)
+                   (swapₚ-inv {suc k + b + 0} {sum B₁} (wkⁿ k b B₁ P' ⋯ₚ weakenᵣ)))
+      ◅◅ disc-single (k + b) B₁ (wkⁿ k b B₁ P') σ
+      ◅◅ U-ν-swap σ {B₁ = k + b ∷ []} {B₂ = B₁} {P = wkⁿ k b B₁ P'}
