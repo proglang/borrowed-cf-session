@@ -293,3 +293,6 @@ new-dual (brn x y) = brn (new-dual x) (new-dual y)
 new-dual (mu x) = mu (new-dual x)
 new-dual (x ; y) = new-dual x ; new-dual y
 new-dual skip = skip
+
+¬new-end : ¬ New (s ; end p)
+¬new-end (x ; ())

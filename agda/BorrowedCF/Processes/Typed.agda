@@ -1,3 +1,5 @@
+{-# OPTIONS --allow-unsolved-metas #-}
+
 module BorrowedCF.Processes.Typed where
 
 open import Data.Nat.ListAction using (sum)
@@ -137,7 +139,7 @@ structBinder [] = []
 structBinder (b ∷ B) = (structNSeq b 𝐂.⋯ᵣ 𝐂.wkʳ (sum B)) ∥ (structBinder B 𝐂.⋯ᵣ 𝐂.wkˡ b)
 
 data BindCtx′ (s : 𝕊 0) : ∀ n → Ctx n → Set where
-  nil : Skips s → BindCtx′ s 0 λ()
+  nil : Skips s → BindCtx′ s 0 Γ
   cons : ∀ {b} {Γ Γ′} (¬skips : ¬ Skips s) (s≃ : s₁ ; s₂ ≃ s) (Γ≗ : ⟨ s₁ ⟩ ⸴ Γ′ ≗ Γ) →
     BindCtx′ s₂ b Γ′ → BindCtx′ s (suc b) Γ
 
@@ -163,6 +165,43 @@ bindCtx⇒chanCtx {B = b ∷ _} (cons-ret/acq {Γ₁ = Γ₁} {Γ₂} s≃ Γ≗
 ... | inj₁ x₁ = Π.map₂ (λ eq′ → sym (Γ≗ x) ■ cong [ Γ₁ , Γ₂ ] eq ■ eq′) (bindCtx′⇒chanCtx b₁ x₁)
 ... | inj₂ x₂ = Π.map₂ (λ eq′ → sym (Γ≗ x) ■ cong [ Γ₁ , Γ₂ ] eq ■ eq′) (bindCtx⇒chanCtx b₂ x₂)
 bindCtx⇒chanCtx {B = b ∷ _} (cons-acq b′) x = bindCtx⇒chanCtx b′ x
+
+bindCtx-B≢[] : ¬ BindCtx s [] Γ
+bindCtx-B≢[] ()
+
+bindCtx′-Γ≗ : Γ₁ ≗ Γ₂ → BindCtx′ s n Γ₁ → BindCtx′ s n Γ₂
+bindCtx′-Γ≗ eq (nil x) = nil x
+bindCtx′-Γ≗ eq (cons ¬skips s≃ Γ≗ C) = cons ¬skips s≃ (λ k → Γ≗ k ■ eq k) C
+
+bindCtx-Γ≗ : Γ₁ ≗ Γ₂ → BindCtx s B Γ₁ → BindCtx s B Γ₂
+bindCtx-Γ≗ eq (last x) = last (bindCtx′-Γ≗ (λ k → eq (wkʳ 0 k)) x)
+bindCtx-Γ≗ eq (cons-ret/acq s≃ Γ≗ x C) = cons-ret/acq s≃ (λ k → Γ≗ k ■ eq k) x C
+bindCtx-Γ≗ eq (cons-acq C) = cons-acq (bindCtx-Γ≗ eq C)
+
+bindCtx′-≃ : s₁ ≃ s₂ → BindCtx′ s₁ n Γ → BindCtx′ s₂ n Γ
+bindCtx′-≃ eq (nil x) = nil (≃-skips eq x)
+bindCtx′-≃ eq (cons ¬skips s≃ Γ≗ C) = cons (¬skips ∘ ≃-skips (≃-sym eq)) (≃-trans s≃ eq) Γ≗ C
+
+bindCtx-≃ : s₁ ≃ s₂ → BindCtx s₁ B Γ → BindCtx s₂ B Γ
+bindCtx-≃ eq (last x) = last (bindCtx′-≃ eq x)
+bindCtx-≃ eq (cons-ret/acq s≃ Γ≗ x C) = cons-ret/acq (≃-trans s≃ eq) Γ≗ x C
+bindCtx-≃ eq (cons-acq C) = cons-acq (bindCtx-≃ (≃-; refl eq) C)
+
+bindCtx-drop : ∀ {b} {Γ} → New s → Γ zero ≃ ⟨ ret ⟩ → BindCtx (s ; end p) (suc b ∷ B) Γ →
+  b ≡ 0 × B ≢ [] × BindCtx (s ; end p) (0 ∷ B) λ x → Γ (suc b ↑ʳ x)
+bindCtx-drop {Γ = Γ} N eq (last (cons ¬skips s≃ Γ≗ x))
+  with ⟨ eq′ ⟩ ← ≃-trans (≃-reflexive (Γ≗ zero)) eq
+  = let ret;s₂≃s;end = ≃-trans (≃-sym (≃-; eq′ ≃-refl)) s≃ in
+    -- ret;s₂ ≃ s;end  ==> derive ∃s′.  ret;x ≃ s /\ x;end ≃ s₂  ==> conclude New (ret;x) !!!
+    {!!}
+bindCtx-drop N eq (cons-ret/acq s≃ Γ≗ (cons ¬skips s≃′ Γ′≗ (nil x)) C)
+  with ⟨ eq′ ⟩ ← ≃-trans (≃-reflexive (Γ′≗ zero ■ Γ≗ zero)) eq
+  = let foo = ≃-trans s≃′ (≃-; {!!} {!!}) in
+    refl , (λ { refl → bindCtx-B≢[] C })
+         , cons-acq (bindCtx-Γ≗ (Γ≗ ∘ suc) (bindCtx-≃ (≃-; refl (≃-trans {!!} s≃)) C))
+bindCtx-drop N eq (cons-ret/acq s≃₁ Γ₁≗ (cons ¬skips₂ s≃₂ Γ₂≗ (cons ¬skips₃ s≃₃ Γ₃≗ x)) C)
+  with ⟨ eq′ ⟩ ← ≃-trans (≃-reflexive (Γ₂≗ zero ■ Γ₁≗ zero)) eq
+  = {!s≃₁!}
 
 ⊢ᴮ_ : Pred BindGroup _
 ⊢ᴮ B = All NonZero (L.drop 1 B)
@@ -194,6 +233,10 @@ data _;_⊢ₚ_ (Γ : Ctx n) : Struct n → Proc n → Set where
     Γ ; γ₁ ⊢ₚ P →
     Γ ; γ₂ ⊢ₚ P
 
+infixl 5 _⊢≗ₚ_
+
+postulate
+  _⊢≗ₚ_ : Γ₁ ; γ ⊢ₚ P → Γ₁ ≗ Γ₂ → Γ₂ ; γ ⊢ₚ P
 
 subst-γₚ : γ₁ ≡ γ₂ → Γ ; γ₁ ⊢ₚ P → Γ ; γ₂ ⊢ₚ P
 subst-γₚ refl x = x
