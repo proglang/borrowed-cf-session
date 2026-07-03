@@ -3189,6 +3189,68 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
                ≡ proj₁ hcᴿ0 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ ⋯ ρR'
         Leq0 = outerRec-Tm (proj₁ hc ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B))
              ■ cong (λ z → z ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ ⋯ ρR') (sym slotL0)
+        -- grown handle inj1 (residual suc b₁-channel) triple decomposition (mirror of ccTripleᴿ0).
+        hcᴿ1 = canonₛ-handle (B₁ ++ 1 ∷ []) (K `unit) 0F (K `unit) b₁ B₂
+        passocᴿ : (B₁ ++ 1 ∷ []) ++ suc b₁ ∷ B₂ ≡ C₁ᴿ
+        passocᴿ = ++-assoc B₁ (1 ∷ []) (suc b₁ ∷ B₂)
+        castRRᴿ : syncs ((B₁ ++ 1 ∷ []) ++ suc b₁ ∷ B₂) + (2 + n) ≡ syncs C₁ᴿ + (2 + n)
+        castRRᴿ = cong (λ z → syncs z + (2 + n)) passocᴿ
+        posᴿ1 : 𝔽 (sum ((B₁ ++ 1 ∷ []) ++ suc b₁ ∷ B₂))
+        posᴿ1 = Fin.cast (sym (sum-++ (B₁ ++ 1 ∷ []) (suc b₁ ∷ B₂))) (sum (B₁ ++ 1 ∷ []) ↑ʳ 0F)
+        j0ᴿ = proj₁ (proj₂ (proj₂ hcᴿ1))
+        castposᴿ1 : 𝔽 (sum C₁ᴿ)
+        castposᴿ1 = Fin.cast (sym (sum-++ B₁ (1 ∷ suc b₁ ∷ B₂))) (sum B₁ ↑ʳ 1F)
+        τᴿinj1 : τᴿ (𝐒.inj 1F) ≡ canonₛ C₁ᴿ (K `unit , 0F , K `unit) castposᴿ1 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)
+        τᴿinj1 =
+            cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁ᴿ + sum B) (castposᴿ1 ↑ˡ sum B) m)
+          ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁ᴿ) castposᴿ1 (sum B))
+        posEqᴿ : castposᴿ1 ≡ subst (λ L → 𝔽 (sum L)) passocᴿ posᴿ1
+        posEqᴿ = Fin.toℕ-injective
+          ( (Fin.toℕ-cast (sym (sum-++ B₁ (1 ∷ suc b₁ ∷ B₂))) (sum B₁ ↑ʳ 1F) ■ Fin.toℕ-↑ʳ (sum B₁) 1F)
+          ■ sym ( tf𝔽 passocᴿ posᴿ1
+                ■ Fin.toℕ-cast (sym (sum-++ (B₁ ++ 1 ∷ []) (suc b₁ ∷ B₂))) (sum (B₁ ++ 1 ∷ []) ↑ʳ 0F)
+                ■ Fin.toℕ-↑ʳ (sum (B₁ ++ 1 ∷ [])) 0F
+                ■ Nat.+-identityʳ (sum (B₁ ++ 1 ∷ []))
+                ■ sum-++ B₁ (1 ∷ []) ) )
+          where
+            tf𝔽 : ∀ {L1 L2 : BindGroup} (p : L1 ≡ L2) (y : 𝔽 (sum L1)) →
+                  Fin.toℕ (subst (λ L → 𝔽 (sum L)) p y) ≡ Fin.toℕ y
+            tf𝔽 refl y = refl
+        canonᴿ1-decomp : canonₛ C₁ᴿ (K `unit , 0F , K `unit) castposᴿ1
+                         ≡ ((subst Tm castRRᴿ (proj₁ hcᴿ1)) ⊗ (` subst 𝔽 castRRᴿ j0ᴿ))
+                           ⊗ subst Tm castRRᴿ (proj₁ (proj₂ hcᴿ1))
+        canonᴿ1-decomp =
+            cong (canonₛ C₁ᴿ (K `unit , 0F , K `unit)) posEqᴿ
+          ■ canonₛ-cast passocᴿ (K `unit , 0F , K `unit) posᴿ1
+          ■ subst-syncs passocᴿ (canonₛ ((B₁ ++ 1 ∷ []) ++ suc b₁ ∷ B₂) (K `unit , 0F , K `unit) posᴿ1)
+          ■ cong (subst Tm castRRᴿ) (proj₁ (proj₂ (proj₂ (proj₂ hcᴿ1))))
+          ■ substTripⱼ castRRᴿ (proj₁ hcᴿ1) j0ᴿ (proj₁ (proj₂ hcᴿ1))
+        ccTripleᴿ1 : rnᴿ (τᴿ (𝐒.inj 1F))
+                     ≡ ((subst Tm castRRᴿ (proj₁ hcᴿ1) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ) ⊗ (` 0F))
+                       ⊗ (subst Tm castRRᴿ (proj₁ (proj₂ hcᴿ1)) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ)
+        ccTripleᴿ1 =
+            cong rnᴿ (τᴿinj1 ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)) canonᴿ1-decomp)
+          ■ cong (λ z → ((subst Tm castRRᴿ (proj₁ hcᴿ1) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ) ⊗ (` z))
+                        ⊗ (subst Tm castRRᴿ (proj₁ (proj₂ hcᴿ1)) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ))
+              (Fin.toℕ-injective (assocPush-junc sAᴿ (syncs B) 0 (weaken* ⦃ Kᵣ ⦄ (syncs B) (subst 𝔽 castRRᴿ j0ᴿ)) jvtoℕᴿ1 (Nat.s≤s Nat.z≤n)))
+          where
+            jvtoℕᴿ1 : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ (syncs B) (subst 𝔽 castRRᴿ j0ᴿ)) ≡ syncs B + (sAᴿ + 0)
+            jvtoℕᴿ1 = toℕ-weaken*ᵣ (syncs B) (subst 𝔽 castRRᴿ j0ᴿ)
+                    ■ cong (syncs B +_)
+                        ( tf𝔽 castRRᴿ j0ᴿ
+                        ■ proj₂ (proj₂ (proj₂ (proj₂ hcᴿ1)))
+                        ■ cong (_+ 0) (cong syncs passocᴿ) )
+              where
+                tf𝔽 : ∀ {p q} (e : p ≡ q) (y : 𝔽 p) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
+                tf𝔽 refl y = refl
+        slotR1 : subst Tm castRRᴿ (proj₁ (proj₂ hcᴿ1)) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)
+                 ≡ proj₁ (proj₂ hc) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ Θ
+        slotR1 = cong (_⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)) (handle-R-rwk B₁ (K `unit) 0F (K `unit) b₁ B₂)
+               ■ ⋯-↑*-wk (proj₁ (proj₂ hc)) (sins B₁ b₁ B₂ {2 + n}) (syncs B)
+        Req1 : ccC ⋯ weakenᵣ ⋯ assocSwapᵣ 1 2 ⋯ (assocSwapᵣ 1 (syncs B) ↑* 2)
+               ≡ subst Tm castRRᴿ (proj₁ (proj₂ hcᴿ1)) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ ⋯ ρR'
+        Req1 = outerRec-Tm (proj₁ (proj₂ hc) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B))
+             ■ cong (λ z → z ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ ⋯ ρR') (sym slotR1)
         -- ===== thread-leaf reconciliation (frame naturality + body triple) =====
         frameLeafeqᴿ : frame*-⋯ E τ Vτ ⋯ᶠ* Θ ≡ frame*-⋯ (E ⋯ᶠ* 𝐒.rwk) τᴿ Vτᴿ
         frameLeafeqᴿ = sym
