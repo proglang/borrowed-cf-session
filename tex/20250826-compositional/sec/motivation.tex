@@ -277,8 +277,8 @@ before we move on to a low level implementation of the two concepts in
 \Cref{sec:borr-from-cont} already suggests an implementation strategy
 for local borrowing. However, we start with an abstract
 specification because it is easier to handle in a correctness
-proof. The specification works on a elaborated surface 
-language \thecalculus, where elaboration replaces borrowing with
+proof. The specification works on an elaborated core 
+language, \thecalculus, where elaboration replaces borrowing with
 explicit functional splitting 
 operators. This translation is analogous to a translation in previous work
 \cite{DBLP:journals/pacmpl/SaffrichS0V25}, which gives a formal
@@ -306,16 +306,14 @@ compartment \lstinline{[c]} and \lstinline{[d]} contains a
 best illustrated with the example trace.
 
 To keep the trace short (\cref{fig:local-split-trace}), the
-reduction starts at the local suffix in \lstinline{renderRest}; the omitted steps
-only expose the prefix consumed by 
-\lstinline{renderMsgArea}.
+reduction starts at the local suffix in \lstinline{renderRest}.
 \begin{figure}
 \begin{subfigure}[t]{0.49\linewidth}
 \begin{lstlisting}[numbers=left]
 K(c) =
   let c2 = select Child c in
   let c3, c4 = lsplit c2 in
-  renderMsgArea user c3;
+  renderMsgArea msgs c3;
   close (select Done c4)
 \end{lstlisting}
 \caption{Translated program.}
@@ -327,16 +325,16 @@ nu[c][d..] in
   (P_d ||
    let c2 = select Child c in
    let c3, c4 = lsplit c2 in
-   renderMsgArea user c3;
+   renderMsgArea msgs c3;
    close (select Done c4)
 ~> nu[c2][d..] in
   (P_d ||
    let c3, c4 = lsplit c2 in
-   renderMsgArea user c3;
+   renderMsgArea msgs c3;
    close (select Done c4)
 ~> nu[c3;c4][d..] in
   (P_d ||
-   renderMsgArea user c3;
+   renderMsgArea msgs c3;
    close (select Done c4)
 ~> nu[c4][d..] in
   (P_d ||
@@ -400,12 +398,10 @@ let msgs = getMessages user in
 renderRest msgs (acquire c2)
 \end{lstlisting}
 The translation inserts an \lstinline{rsplit} because \lstinline{c1}
-and \lstinline{c2} are used in different processes. As their uses are
-explicitly synchronized, the \lstinline{rsplit} returns a normal
-(linear) pair of channels. The type of the second channel
-\lstinline{c2} starts with an \lstinline{Acq} type, a special form
-of session type that indicates the requirement for explicit
-synchronization.
+and \lstinline{c2} are used in different processes. The
+\lstinline{rsplit} returns an ordinary (linear) pair of channels
+because synchronization is made explicit using the \lstinline{Acq} and
+\lstinline{Ret} types.
 Executing this code takes the following steps (ignoring the activity
 at the other end of the channel). The bracketed step abbreviates the
 forked process running \lstinline{renderProfile} until its final
@@ -458,77 +454,6 @@ The direct semantics from~\cref{sec:direct-semant-chann} records ordering constr
 groups. The run-time translation realizes the same constraints with
 ordinary channel names and optional synchronization flags that
 implement passing of ownership.
-% \Cref{fig:borrow-lifecycle} summarizes the difference between local
-% and remote borrowing in the implementation.
-
-% \begin{figure}[t]
-% \centering
-% \begin{tikzpicture}[
-%   >=Stealth,
-%   node distance=0.8cm and 1.4cm,
-%   state/.style={draw, rounded corners, align=center, inner sep=3pt, font=\small},
-%   split/.style={draw, rectangle split, rectangle split parts=2,
-%     rectangle split part align={center,center}, rounded corners,
-%     align=center, inner sep=3pt, font=\small},
-%   local split/.style={split, rectangle split part fill={white,black!12}},
-%   sync/.style={draw, rounded corners, align=center, inner sep=3pt, font=\small, fill=black!6},
-%   scope/.style={draw, dashed, rounded corners, inner xsep=0.28cm,
-%     inner ysep=0.22cm},
-%   lab/.style={font=\small}
-% ]
-%   \node[state] (l0) {$c:S_1;S_2$};
-%   \node[local split, right=of l0] (l1)
-%     {$c_1:S_1$\nodepart{two}$c_2:S_2$};
-%   \node[state, right=of l1] (l2) {$c_2:S_2$};
-%   \node[state, right=of l2] (l3) {continue\\with $S_2$};
-
-%   \draw[->] (l0) -- node[lab, above] {\texttt{lsplit}} (l1);
-%   \draw[->] (l1) -- node[lab, above] {use $c_1$} (l2);
-%   \draw[->] (l2) -- node[lab, above] {use $c_2$} (l3);
-
-%   \node[lab, left=0.35cm of l0] {\textbf{local}};
-
-%   \node[state, below=1.65cm of l0] (r0) {$c:S_1;S_2$};
-%   \node[state, right=1.4cm of r0, yshift=0.3cm] (r1a)
-%     {$c_1:S_1;\texttt{Ret}$};
-%   \node[state, below=0.35cm of r1a] (r1b)
-%     {$c_2:\texttt{Acq};S_2$};
-%   \node[state, right=0.95cm of r1a] (rret) {$c_1:\texttt{Ret}$};
-%   \coordinate[right=1.35cm of rret.east] (rdrop);
-%   \node[state, right=3.25cm of r1b.east] (r2) {$c_2:S_2$};
-%   \node[state, right=of r2] (r3) {continue\\with $S_2$};
-%   \coordinate[right=0.55cm of r1b.east] (racq);
-
-%   \coordinate[right=0.45cm of r0.east] (rfork);
-%   \draw[-] (r0.east) -- node[lab, above] {\texttt{rsplit}} (rfork);
-%   \draw[->] (rfork) to[out=25,in=180] (r1a.west);
-%   \draw[->] (rfork) to[out=-25,in=180] (r1b.west);
-%   \draw[->] (r1a) -- node[lab, above] {use $c_1$} (rret);
-%   \draw[-{Stealth[open]}] (rret.east) --
-%     node[lab, above] {\texttt{drop} $c_1$} (rdrop);
-%   \draw[->] (r1b.east) --
-%     node[lab, below, pos=0.7] {\texttt{acquire} $c_2$} (r2);
-%   \draw[->] (r2) -- node[lab, above] {use $c_2$} (r3);
-%   \draw[->, dashed] (rdrop) to[out=-40,in=140]
-%     (racq);
-%   \node[scope, fit=(r1a)(r1b)(rret)(rdrop)(r2)(r3),
-%     inner xsep=0.45cm, inner ysep=0.45cm] (rscope) {};
-%   \node[lab, anchor=north west, xshift=2pt, yshift=-2pt]
-%     at (rscope.north west) {$\varphi z \mapsto \texttt{drop}$};
-%   \node[lab, anchor=south, yshift=0.35cm] at ($(rret.east)!0.5!(rdrop)$)
-%     {$z \mapsto \texttt{acq}$};
-%   \node[lab, anchor=south, yshift=0.08cm] at ($(r1b.east)!0.7!(r2.west)$)
-%     {$z \mapsto \texttt{done}$};
-
-%   \node[lab, left=0.35cm of r0] {\textbf{remote}};
-% \end{tikzpicture}
-% \caption{Lifecycle of local and remote borrows. Local borrowing
-% exposes an ordered prefix and suffix of the same channel, with the
-% suffix inactive while the prefix is used. Remote borrowing inserts a
-% synchronization flag $z$ whose scope encloses both pieces; dropping
-% the prefix enables acquisition of the suffix.}
-% \label{fig:borrow-lifecycle}
-% \end{figure}
 
 \Cref{fig:borrow-lifecycle-msc} summarizes the difference between local
 and remote borrowing in the implementation.
@@ -719,7 +644,7 @@ split pays nothing beyond sharing the channel representation.
 \label{sec:remarks}
 
 The reader may ask why \lstinline{select} still adheres to
-resource passing style. The answer is simplicity of our system. While it
+resource-passing style. The answer is simplicity of our system. While it
 is possible to define \lstinline{select} with a borrowing-based
 interface, supporting it requires subtyping of session types, which is
 undecidable for CFST~\cite{DBLP:journals/toplas/Padovani19} and hence
