@@ -362,22 +362,32 @@ simRes : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
 -- RU-Struct case) and is left a noted hole.
 sim← σ Vσ Γ-S ⊢P ε red = sim←ᵍ σ Vσ Γ-S ⊢P refl red
 sim← σ Vσ Γ-S ⊢P (c ◅ cs) red =
-  {! reverse-U-≋ / confluence.  The ≈ codomain (RevAdmin) is now in place, but the
-     INPUT prefix (a genuine ≋/admin link `c`) still cannot be discharged.  The
-     transport route `sim← cs (≋-step c red)` (≋-step = RU-Struct (sym c) red ε,
-     CongBisim) typechecks but FAILS termination: CongBisim.≋-sim only gives the
-     TRIVIAL bisimulation (reduct kept fixed by wrapping red in a fresh RU-Struct),
-     so sim←ᵍ's RU-Struct case regenerates a length-1 chain each bounce and the
-     mutual sim←/sim←ᵍ recursion has no descent metric (red is re-wrapped LARGER).
-     KEY INSIGHT for closing this: a DERIVATION-TRANSFORMING confluence lemma
-       ≋′-sim-strong : R ≋′ R′ → R ─→ Q → Σ Q′. (R′ ─→ Q′) × Q ≋ Q′
-     that replays the reduction CONSTRUCTOR past the ≋′ generator (RU-Com ↦ RU-Com
-     at the reassociated position, NOT a RU-Struct wrapper) WOULD terminate: then
-     sim← recurses on the strictly-shorter chain `cs` with a genuine-constructor
-     red₁, and sim←ᵍ dispatches red₁ to its real case (the 8 channel holes) instead
-     of looping on RU-Struct.  That confluence lemma is a large separate development
-     (case analysis ≋′ × ─→ₚ + a size measure for the WF recursion); it is NOT
-     provided by the ≈ statement change alone. !}
+  {! reverse-U-≋ / confluence.  MACHINE-CONFIRMED (2026-07) the reduction-transport
+     route is NON-TERMINATING, matching RevCongStrong.∥-red-inv.  Wiring
+       sim← (c ◅ cs) red = ⟨ transport red across c via RevPhiNest.≋*-sim,
+                             recurse sim← cs (transported red) ⟩
+     typechecks EXCEPT termination: Agda flags
+       sim←ᵍ σ Vσ Γ-S ⊢P refl (≋*-sim (sym c₁ ◅◅ ≡→≋ eq) inner .proj₂.proj₁)
+     i.e. sim←ᵍ's RU-Struct case bounces through sim←, re-entering sim←ᵍ with the
+     TRANSPORTED reduction, which is NOT structurally smaller than `inner`: the
+     ∥-comm fallback of ≋*-sim wraps a left-reduction in a fresh RU-Struct (─→ₚ has
+     no right-∥ rule → the generator cannot be genuinely replayed; ∥-red-inv), so
+     ∣transported∣ can EXCEED ∣inner∣.  No well-founded measure on reduction size
+     survives, and the chain length is not preserved across the bounce.  The
+     ≋-harmony engine (RevPhiNest.≋*-sim) is sound and hole-free, but wiring it here
+     provably loops.
+
+     A TERMINATING closure needs the φ-DECOMPOSITION (NOT reduction transport):
+     recognise every ≋-generator that maps images to images (∥-comm/assoc/unit,
+     ν-ext/swap/comm — via inv-U-∥/inv-U-ν + U[_]'s ∥/ν homomorphism, keeping R and
+     `red` FIXED, varying only the ≋-related SOURCE P′) so the ∥-comm loop never
+     arises; the ONLY image-escaping image-adjacent generator is νφ-comm (U-not-φ
+     rules out φ-comm/φ-ext as image-adjacent), handled by pushing φ inside ν with a
+     φ-head-count measure.  That νφ-comm sub-case needs `─→ₚ` renaming-stability
+     (red-⋯ₚ, absent from the codebase) to replay the inner reduction under the
+     assocSwapᵣ 1 2 of νφ-comm.  This is a research-scale ≋-confluence/normalisation
+     development, not a single-module fix; RevUCong already machine-proves the strict
+     form is FALSE. !}
 
 ------------------------------------------------------------------------
 -- RU-Exp : R = ⟪ e₁ ⟫ steps by an expression reduction e₁ ⋯→ e₂.
