@@ -49,7 +49,7 @@ import BorrowedCF.Reduction.Processes.Typed   as TR
 import BorrowedCF.Reduction.Processes.Untyped as UR
 open import BorrowedCF.Simulation2.RevAdmin
   using (_─→ᵃ_; _≈_; ≋⇒≈; ─→ᵃ⇒≈; ≈-refl; ≈-trans; ≈-sym;
-         ≈-ν-cong; ≈-φ-cong; ≈-∥-congˡ; a-cleanup; a-sync; a-res; a-par; admin⇒red)
+         ≈-ν-cong; ≈-φ-cong; ≈-∥-congˡ; a-sync; a-res; a-par; admin⇒red)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive
   using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
@@ -776,12 +776,11 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Choice F₁ F₂ k)
   {! RU-Choice inj₁: structural inversion DONE (P₀ = ⟪F₀ˢ[select k·argˢ]⟫ ∥ (⟪F₀ᴿ[branch·argᴿ]⟫ ∥ Pr)).
      REMAINING (RevChoiceConfine, mirror RevComConfine): argˢ ≡ ` xS forced 0F, argᴿ ≡ ` xR the
      branch index; fire TR.R-Choice; codomain bridge with `inj k wrapping. !}
--- RU-Cleanup : R = φ done P.  U[_] never heads with φ (clauses are ⟪⟫/∥/ν), so
--- eq : φ done P ≡ U[ Pₛ ] σ is absurd by case on Pₛ.  VACUOUS at top level
--- (only reachable under an inner RU-Res recursion, where the φ is real).
-sim←ᵍ σ Vσ Γ-S {P = TP.⟪ e ⟫}     ⊢P () UR.RU-Cleanup
-sim←ᵍ σ Vσ Γ-S {P = P TP.∥ Q}     ⊢P () UR.RU-Cleanup
-sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () UR.RU-Cleanup
+-- RU-Discard : R = ⟪ F [ discard · e ]* ⟫ steps to ⟪ F [ * ]* ⟫ (silent term
+-- consuming a leading skip/discard).  ⟪⟫-headed, so mirrors RU-Fork/RU-Exp; the
+-- typed counterpart is TR.R-Discard.  Left a noted hole for the reverse.
+sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Discard F V) =
+  {! RU-Discard → TR.R-Discard: reflect the discard redex + skip-consuming codomain. !}
 
 ------------------------------------------------------------------------
 -- RU-Struct : R ≋ R′, inner : R′ ─→ₚ Q′, c₂ : Q′ ≋ Q  ⊢  R ─→ₚ Q.

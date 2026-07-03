@@ -98,13 +98,11 @@ red-⋯ₚ ρ (RU-Par r)   = RU-Par (red-⋯ₚ ρ r)
 red-⋯ₚ ρ (RU-Res r)   = RU-Res (red-⋯ₚ (ρ ↑* 2) r)
 red-⋯ₚ ρ (RU-Sync r)  = RU-Sync (red-⋯ₚ (ρ ↑) r)
 red-⋯ₚ ρ (RU-Struct c₁ r c₂) = RU-Struct (c₁ ≋-⋯ ρ) (red-⋯ₚ ρ r) (c₂ ≋-⋯ ρ)
-red-⋯ₚ {m} {n} ρ (RU-Cleanup {P = P}) =
-  subst (φ done (P ⋯ₚ ρ ↑) ─→ₚ_) cleanupEq RU-Cleanup
-  where
-    cleanupEq : (P ⋯ₚ ρ ↑) ⋯ₚ ⦅ * ⦆ₛ ≡ (P ⋯ₚ ⦅ * ⦆ₛ) ⋯ₚ ρ
-    cleanupEq = fusionₚ P (ρ ↑) ⦅ * ⦆ₛ
-              ■ ⋯ₚ-cong P (sym ∘ dist-↑-⦅⦆ * ρ)
-              ■ sym (fusionₚ P ⦅ * ⦆ₛ ρ)
+red-⋯ₚ ρ (RU-Discard {e = e} F V) =
+  subst₂ _─→ₚ_
+    (cong ⟪_⟫ (sym (fp* F ρ {t = K `discard ·¹ e})))
+    (cong ⟪_⟫ (sym (fp* F ρ {t = *})))
+    (RU-Discard (F ⋯ᶠ* ρ) (value-⋯ V ρ (λ x → V-`)))
 red-⋯ₚ ρ (RU-Fork {e = e} F V) =
   subst₂ _─→ₚ_
     (cong ⟪_⟫ (sym (fp* F ρ {t = K `fork ·¹ e})))
@@ -128,9 +126,19 @@ red-⋯ₚ ρ (RU-Acquire {e = e} {P = P} F) =
   subst₂ _─→ₚ_
     (cong (λ z → ν (φ acq (⟪ z ⟫ ∥ (P ⋯ₚ ρ ↑* 2 ↑))))
           (sym (fp* F (ρ ↑* 2 ↑) {t = K `acq ·¹ 𝓒[ ` 0F × 1F × e ]})))
-    (cong (λ z → ν (φ done (⟪ z ⟫ ∥ (P ⋯ₚ ρ ↑* 2 ↑))))
-          (sym (fp* F (ρ ↑* 2 ↑) {t = 𝓒[ ` 0F × 1F × e ]})))
+    (cong ν
+       (cong (_⋯ₚ ⦅ * ⦆ₛ)
+          (cong (λ z → ⟪ z ⟫ ∥ (P ⋯ₚ ρ ↑* 2 ↑))
+                (sym (fp* F (ρ ↑* 2 ↑) {t = 𝓒[ ` 0F × 1F × e ]})))
+        ■ acqEq))
     (RU-Acquire (F ⋯ᶠ* ρ ↑* 2 ↑))
+  where
+    Body : Proc (3 + _)
+    Body = ⟪ F [ 𝓒[ ` 0F × 1F × e ] ]* ⟫ ∥ P
+    acqEq : (Body ⋯ₚ ρ ↑* 2 ↑) ⋯ₚ ⦅ * ⦆ₛ ≡ (Body ⋯ₚ ⦅ * ⦆ₛ) ⋯ₚ ρ ↑* 2
+    acqEq = fusionₚ Body (ρ ↑* 2 ↑) ⦅ * ⦆ₛ
+          ■ ⋯ₚ-cong Body (sym ∘ dist-↑-⦅⦆ * (ρ ↑* 2))
+          ■ sym (fusionₚ Body ⦅ * ⦆ₛ (ρ ↑* 2))
 red-⋯ₚ ρ (RU-Com {e = e} {P = P} F₁ F₂ V {e₁ = e₁} {e₁′ = e₁′} {e₂ = e₂} {e₂′ = e₂′}) =
   subst₂ _─→ₚ_
     (cong₂ (λ z w → ν (⟪ z ⟫ ∥ (⟪ w ⟫ ∥ (P ⋯ₚ ρ ↑* 2))))

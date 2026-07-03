@@ -31,7 +31,6 @@ open Nat.Variables
 infix 4 _─→ᵃ_
 
 data _─→ᵃ_ {n} : Proc n → Proc n → Set where
-  a-cleanup : ∀ {P}            → φ done P ─→ᵃ P ⋯ₚ ⦅ * ⦆ₛ
   a-sync    : ∀ {x} {P Q}      → P ─→ᵃ Q → φ x P ─→ᵃ φ x Q
   a-res     : ∀ {P Q}          → P ─→ᵃ Q → ν P   ─→ᵃ ν Q
   a-par     : ∀ {P Q R}        → P ─→ᵃ Q → P ∥ R ─→ᵃ Q ∥ R
@@ -39,7 +38,6 @@ data _─→ᵃ_ {n} : Proc n → Proc n → Set where
 -- Every administrative move IS an untyped reduction (so ≈ is a subrelation of
 -- ─→ₚ*-up-to-≋, and soundness of ≈ can be checked against the reduction).
 admin⇒red : ∀ {n} {P Q : Proc n} → P ─→ᵃ Q → P UR.─→ₚ Q
-admin⇒red a-cleanup  = UR.RU-Cleanup
 admin⇒red (a-sync a) = UR.RU-Sync (admin⇒red a)
 admin⇒red (a-res a)  = UR.RU-Res  (admin⇒red a)
 admin⇒red (a-par a)  = UR.RU-Par  (admin⇒red a)

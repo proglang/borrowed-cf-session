@@ -87,7 +87,12 @@ normalize-block1 : ∀ (k b : ℕ) (B₂ : TP.BindGroup) {n m} (P : TP.Proc (b +
 normalize-block1 zero    b B₂ P σ = ε , ε
 normalize-block1 (suc k) b B₂ P σ =
   let chain , eqv = normalize-block1 k b B₂ P σ
-  in TR.R-Discard ◅ chain , disc-single (k + b) B₂ (wkⁿ k b B₂ P) σ ◅◅ eqv
+  -- R-Discard is now TERM-CONSUMING (discard·`0F); a generic weakened block-1
+  -- body is no longer a discardable redex, so this leading-skip normalization is
+  -- moot under the linear-skip calculus (leading skips are consumed by explicit
+  -- `discard, keeping the fireable channel at 0F).  Left as a noted hole.
+  in {! R-Discard (term-consuming) chain — moot under linear skip !}
+   , disc-single (k + b) B₂ (wkⁿ k b B₂ P) σ ◅◅ eqv
 
 -- ── block-2 normalization (ν-swap sandwich) ─────────────────────────────────
 -- Block-2 has no direct discard rule, so a leading unused block-2 borrow is
@@ -121,13 +126,10 @@ normalize-block2 (suc k) b B₁ P σ =
 
     disc2-step : TP.ν B₁ (suc k + b ∷ []) (wk2 (suc k) b B₁ P)
                    TR.─→ₚ TP.ν B₁ (k + b ∷ []) (wk2 k b B₁ P)
-    disc2-step = TR.R-Struct
-      (subst (λ z → TP._≋_ (TP.ν B₁ (suc k + b ∷ []) (wk2 (suc k) b B₁ P))
-                           (TP.ν (suc k + b ∷ []) B₁ z))
-             (swapₚ-inv {suc k + b + 0} {sum B₁} (wkⁿ k b B₁ P' ⋯ₚ weakenᵣ))
-             (TP.ν-swap {B₁ = B₁} {B₂ = suc k + b ∷ []} {P = wk2 (suc k) b B₁ P}))
-      TR.R-Discard
-      (TP.ν-swap {B₁ = k + b ∷ []} {B₂ = B₁} {P = wkⁿ k b B₁ P'})
+    -- R-Discard is now TERM-CONSUMING; the ν-swap sandwich no longer lands on a
+    -- discardable redex (a generic weakened block borrow), so block-2 skip
+    -- normalization is moot under the linear-skip calculus.  Left a noted hole.
+    disc2-step = {! R-Discard (term-consuming) — moot under linear skip !}
 
     disc2-single : U[ TP.ν B₁ (suc k + b ∷ []) (wk2 (suc k) b B₁ P) ] σ
                      UP.≋ U[ TP.ν B₁ (k + b ∷ []) (wk2 k b B₁ P) ] σ

@@ -27,7 +27,7 @@ open Fin.Patterns
 -- and the flag ` 0F both exist under the φ binder).
 flagSrc : U.Proc 1
 flagSrc = φ U.drop
-            ( ⟪ [] [ K `drop · ((* ⊗ (` suc 0F)) ⊗ (` 0F)) ]* ⟫
+            ( ⟪ [] [ K `drop ·¹ ((* ⊗ (` suc 0F)) ⊗ (` 0F)) ]* ⟫
             ∥ ⟪ K `unit ⟫ )
 
 -- It fires RU-Drop; the constructor DEFINES the reduct.
