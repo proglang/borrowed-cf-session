@@ -25,10 +25,11 @@ and the order in which those exchanges may occur.
 % DONE [Importance: High; Urgency: High]: Define borrowing early and concretely:
 % a borrow consumes a prefix of a session and leaves a residual suffix, with the
 % typing discipline internalizing the linear update of the channel.
-% TODO [Importance: High; Urgency: High]: Explain why borrowing for CFSTs is
-% technically different from borrowing for regular session types: sequential
-% composition creates non-tail protocol prefixes, so splitting must work modulo
-% CFST equality and across choices/recursion.
+% PARTIAL [Importance: High; Urgency: High]: Explain why borrowing for CFSTs is
+% technically different from borrowing for regular session types. The tree
+% example now shows continuation polymorphism and distribution over choice, but
+% the introduction still needs a sharper sentence about splitting modulo CFST
+% equality and recursion.
 % PARTIAL [Importance: High; Urgency: High]: Preview the local-vs-remote
 % borrowing distinction from the motivation section. The current introduction
 % contrasts BGV's uniform treatment with local borrows, but it still needs the
@@ -37,24 +38,29 @@ and the order in which those exchanges may occur.
 % precise positioning paragraph: regular rather than context-free session
 % types, semantics by translation rather than direct operational semantics, and
 % uniform remote-style treatment of borrows.
-% TODO [Importance: High; Urgency: High]: Align the contribution list with the
-% body: direct source semantics, declarative type system with BI-contexts,
-% algorithmic typing/constraint solving, target calculus, translation
-% simulation or bisimulation, implementation, and mechanization status.
+% PARTIAL [Importance: High; Urgency: High]: Align the contribution list with
+% the body. It mentions the source semantics, BI-context typing, target
+% calculus, translation, implementation, and metatheory, but it still omits
+% algorithmic typing/constraint solving and should clarify simulation vs.
+% bisimulation and mechanization status.
 % TODO [Importance: Medium; Urgency: High]: State the current status of the
 % metatheory accurately. In particular, distinguish intended type soundness,
 % algorithmic soundness/completeness, and translation simulation/bisimulation
 % from results that are already proved or mechanized.
-% TODO [Importance: Medium; Urgency: Medium]: Introduce the running examples
-% used later, especially tree serialization for local borrows and HTML rendering
-% for remote borrows, so the motivation section does not have to establish all
-% context from scratch.
+% PARTIAL [Importance: Medium; Urgency: Medium]: Introduce the running examples
+% used later. Tree serialization is now introduced in the introduction, but the
+% HTML rendering example for remote borrows is not.
 % TODO [Importance: Medium; Urgency: Medium]: Add a short paper-organization
 % paragraph once the final section structure is stable.
-% TODO [Importance: Low; Urgency: Medium]: Normalize terminology in the
-% introduction: \thecalculus, context-free session types with borrowing,
-% resource-passing style, local borrow, remote borrow, Ret, and Acq should be
-% introduced before they are used in the contribution bullets.
+% PARTIAL [Importance: Low; Urgency: Medium]: Normalize terminology in the
+% introduction. Resource-passing style, local borrow, and remote borrow now
+% appear in prose, but \thecalculus, context-free session types with borrowing,
+% Ret, and Acq still need controlled introductions before the contribution
+% bullets or should be omitted from the introduction.
+% TODO [Importance: Medium; Urgency: Medium]: Decide how much of the tree
+% serialization example belongs in the introduction versus the motivation
+% section. The two sections now cover the same example, so one should probably
+% become a short preview and the other should carry the detailed walkthrough.
 
 Session types
 \cite{DBLP:conf/concur/Honda93,HondaVK98,Gay_Vasconcelos_2025}
@@ -177,7 +183,26 @@ sendTreeB (Node x l r) c =
   sendTreeB l &c;           (* c : <*\underline{TreeChannel}*> *)
   sendTreeB r &c
 \end{lstlisting}
+The function \lstinline{sendTreeB} uses \emph{local borrows} because
+their uses are confined to a single process, their order of use
+defined by the evaluation order, and guaranteed by our type system.
+\Cref{sec:local-remote-borr} discusses an example using \emph{remote
+  borrows} which are allowed to cross process boundaries. Their uses
+need some synchronization because they are not constrained by a
+sequential evaluation order.
 
+While the \lstinline{sendTreeB} example looks simple and smooth, the
+move from regular 
+session types to CFSTs makes borrowing technically more delicate. In a
+regular session type, the prefix consumed by a borrow is exposed by
+the syntactic structure of the type as well as unfolding
+recursion. For CFSTs, however, the desired 
+prefix may only become visible after reassociating sequential
+composition, eliminating \lstinline{Skip}, distributing continuations
+through choices, or unfolding recursion.  Thus splitting a borrow from
+a CFST must be defined modulo the equational theory of CFSTs and
+computing the residual suffix from the original type and the borrowed
+prefix is a significant task.
 
 \subsection*{Contributions}
 
