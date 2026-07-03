@@ -11,25 +11,29 @@ data, coordinate progress, and agree on the order of their
 interactions. Getting these protocols right is difficult. A missed
 message, an unexpected choice, or a communication step performed in
 the wrong state can turn an otherwise natural decomposition into a
-source of subtle failures. A robust language discipline should
-therefore specify both the data exchanged by concurrent components
+source of subtle failures. A robust discipline should
+therefore specify the data exchanged by concurrent components
 and the order in which those exchanges may occur.
 
-% TODO [Importance: High; Urgency: High]: Replace the current placeholders with
-% a complete problem statement: session types ensure protocol fidelity, CFSTs
-% make non-tail-recursive protocols expressible, but programming with them still
-% forces resource-passing style and polymorphic recursion.
-% TODO [Importance: High; Urgency: High]: Define borrowing early and concretely:
+% DONE [Importance: High; Urgency: High]: Replace the initial placeholders for
+% session types and context-free session types with prose that introduces
+% protocol fidelity, binary session types, regular recursion, and CFSTs.
+% DONE [Importance: High; Urgency: High]: Complete the problem statement by
+% explaining the remaining programming pain point of plain CFSTs: they make
+% non-tail-recursive protocols expressible, but still force resource-passing
+% style and polymorphic recursion.
+% DONE [Importance: High; Urgency: High]: Define borrowing early and concretely:
 % a borrow consumes a prefix of a session and leaves a residual suffix, with the
 % typing discipline internalizing the linear update of the channel.
 % TODO [Importance: High; Urgency: High]: Explain why borrowing for CFSTs is
 % technically different from borrowing for regular session types: sequential
 % composition creates non-tail protocol prefixes, so splitting must work modulo
 % CFST equality and across choices/recursion.
-% TODO [Importance: High; Urgency: High]: Preview the local-vs-remote borrowing
-% distinction from the motivation section, including why local borrows need no
-% synchronization and remote borrows introduce Ret/Acq handover points.
-% TODO [Importance: High; Urgency: Medium]: Turn the comparison with BGV into a
+% PARTIAL [Importance: High; Urgency: High]: Preview the local-vs-remote
+% borrowing distinction from the motivation section. The current introduction
+% contrasts BGV's uniform treatment with local borrows, but it still needs the
+% positive story for this paper and should mention Ret/Acq handover points.
+% DONE [Importance: High; Urgency: Medium]: Turn the comparison with BGV into a
 % precise positioning paragraph: regular rather than context-free session
 % types, semantics by translation rather than direct operational semantics, and
 % uniform remote-style treatment of borrows.
@@ -51,7 +55,6 @@ and the order in which those exchanges may occur.
 % introduction: \thecalculus, context-free session types with borrowing,
 % resource-passing style, local borrow, remote borrow, Ret, and Acq should be
 % introduced before they are used in the contribution bullets.
-
 
 Session types
 \cite{DBLP:conf/concur/Honda93,HondaVK98,Gay_Vasconcelos_2025}
@@ -76,20 +79,21 @@ then, most work has concentrated on \emph{regular} recursive session
 types, where recursion is restricted to tail positions in the
 type. For example, here is the type
 \lstinline|mualpha.&{next:?Int.alpha, quit:End}|
-of a server that receives a list of integers, where the occurrence of
+of a server that receives a list of integers. The occurrence of
 the recursive \lstinline{alpha} is syntactically restricted to tail
-position. Context-free session types
+position because regular session types are built by composing prefixes
+as in \lstinline{?Int._}. Context-free session types
 \cite{DBLP:conf/icfp/ThiemannV16,DBLP:journals/iandc/AlmeidaMTV22} (CFST)
 have lifted this restriction by adopting a symmetric composition
-operator \lstinline{_;_} rather than prefixing
-\lstinline{?Int._} as in regular session types. Symmetric composition
-enables more expressive communication structures, like trees and
-stacks, but it requires a non-trivial notion of type conversion.
+operator \lstinline{_;_} instead. This operator
+enables tree- and stack-shaped communication protocols, but it also
+makes type conversion non-trivial because continuations must be
+identified modulo the algebraic laws of sequential composition.
 
 Borrowing has received much attention recently due to its adoption in
-the Rust language \cite{rust-reference}. It refers to methods that regulate the
-ownership transfer of resources between different parts of a
-program. Originally conceived for imperative programming,
+the Rust language \cite{rust-reference}. It refers to mechanisms that
+grant temporary access to a resource without transferring ownership of
+that resource. Originally conceived for imperative programming,
 \citet{DBLP:journals/pacmpl/SaffrichS0V25} present a session type
 system with a notion of borrowing.
 In this system, a borrow consumes a prefix of a session and leaves a residual suffix, with the
@@ -106,6 +110,73 @@ borrows that are passed to other processes. This uniformity leads to
 inefficiency because local borrows can elide the synchronization
 machinery needed for remote borrows. 
 
+This work promotes the ideas of borrowing for regular session types
+\cite{DBLP:journals/pacmpl/SaffrichS0V25} to CFST. While CFST's
+symmetric composition enables more expressive protocols, it does not
+liberate functional session type programming from resource-passing
+style. To see this, consider a typed protocol to serialize a binary
+tree. The tree structure is given by the type \lstinline{Tree}.
+\begin{lstlisting}
+type Tree = Leaf | Node int Tree Tree
+\end{lstlisting}
+The corresponding session type for serialization of \lstinline{Tree}
+is context-free because the first recursive use of
+\lstinline{TreeChannel} is not in tail position.
+\begin{lstlisting}
+type TreeChannel = oplus{
+  Leaf: Skip,
+  Node: !int; TreeChannel; TreeChannel
+}
+\end{lstlisting}
+The \lstinline{Skip} type is the type of an exhausted channel. It is
+the neutral element for composition, which is associative. The
+implementation of \lstinline{sendTree} below confirms our worries
+about resource-passing style. The channel is threaded linearly through
+the \lstinline{sendTree} function. Moreover, we abstract over the
+continuation type \lstinline{sigma} to obtain a compositional interface.
+\begin{lstlisting}[numbers=left]
+sendTree : Tree -> forallsigma.TreeChannel;sigma -> sigma
+sendTree Leaf c =          (* c  : TreeChannel; sigma *)
+  select Leaf c            (*    : Skip; sigma = sigma *)
+sendTree (Node x l r) c =  (* c  : TreeChannel; sigma *)
+  let c1 = select Node c   (* c1 : !int; TreeChannel; TreeChannel; sigma *)
+      c2 = send x c1       (* c2 : TreeChannel; TreeChannel; sigma *)
+      c3 = sendTree l c2   (* c3 : TreeChannel; sigma *)
+      c4 = sendTree r c3   (* c4 : sigma *)
+  in  c4
+\end{lstlisting}
+Looking closely at the types, we see some significant complexity:
+\lstinline{sendTree} employs polymorphic recursion
+(\lstinline{sendTree l c2} is invoked with
+\lstinline{sigma = TreeChannel; sigma}, whereas \lstinline{sendTree r c3} is invoked
+with \lstinline{sigma = sigma}) and that composition must distribute
+over choice (see the type change across the \lstinline{select}
+operations).
+
+At first glance, it appears that CFST is the natural fit for
+borrowing. As composition is symmetric, each use of the composition
+operator is a natural breakpoint where a borrow can start or end. As
+an example, consider the signature of the implementation of tree
+serialization using CFST with borrowing in the function
+\lstinline{sendTreeB}. 
+\begin{lstlisting}
+sendTreeB : Tree -> TreeChannel -> Skip
+\end{lstlisting}
+The signature says concisely that the function takes a channel borrow,
+on which it will run the \lstinline{TreeChannel} protocol; it does not
+mention the continuation type, which corresponds to the suffix of the
+borrow. Moreover, the function body does not require polymorphic
+recursion because the function is monomorphic. The comment always
+gives the type of \lstinline{c} for the following line. The
+underlining indicates the prefix of the type taken by the next borrow
+operation \lstinline{&c}.
+\begin{lstlisting}[escapeinside={<*}{*>}]
+sendTreeB (Node x l r) c =
+  let c = select Node c in  (* c : <*\underline{!Int}*>; TreeChannel; TreeChannel *)
+  send x &c;                (* c : <*\underline{TreeChannel}*>; TreeChannel *)
+  sendTreeB l &c;           (* c : <*\underline{TreeChannel}*> *)
+  sendTreeB r &c
+\end{lstlisting}
 
 
 \subsection*{Contributions}
