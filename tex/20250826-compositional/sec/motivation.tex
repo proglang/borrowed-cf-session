@@ -646,9 +646,10 @@ split pays nothing beyond sharing the channel representation.
 The reader may ask why \lstinline{select} still adheres to
 resource-passing style. The answer is simplicity of our system. While it
 is possible to define \lstinline{select} with a borrowing-based
-interface, supporting it requires subtyping of session types, which is
-undecidable for CFST~\cite{DBLP:journals/toplas/Padovani19} and hence
-not implementable.
+interface, supporting it requires subtyping of session types. While
+subtyping is fine in theory, it turns out that it is undecidable for
+CFST~\cite{DBLP:journals/toplas/Padovani19}. Hence, it cannot be the
+basis for a complete type checker.
 
 For borrowing from regular session
 types~\cite{DBLP:journals/pacmpl/SaffrichS0V25}, a borrowing-style 
