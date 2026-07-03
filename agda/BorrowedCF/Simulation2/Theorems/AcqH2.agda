@@ -186,13 +186,13 @@ wrapNE front s₀ (t ◅ ts) back = UR.RU-Struct front s₀ ε ◅ wrapNE ε t t
 ≋-wrap-⊎ front ε        back = inj₂ (front ◅◅ back)
 ≋-wrap-⊎ front (s ◅ ss) back = inj₁ (wrapNE front s ss back)
 
--- ν (φ acq (⟪ F[acq · 𝓒[`0F × 1F × e]] ⟫ ∥ Q)) fires RU-Acquire then, under the
--- ν, RU-Cleanup, yielding ν ((⟪ F[𝓒[`0F×1F×e]] ⟫ ∥ Q) ⋯ₚ ⦅*⦆ₛ).
+-- ν (φ acq (⟪ F[acq · 𝓒[`0F × 1F × e]] ⟫ ∥ Q)) fires the merged RU-Acquire
+-- (acq→gone) directly, yielding ν ((⟪ F[𝓒[`0F×1F×e]] ⟫ ∥ Q) ⋯ₚ ⦅*⦆ₛ).
 leaf-fire : (F : Frame* (3 + n)) {e : Tm (3 + n)} (Q : U.Proc (3 + n)) →
   U.ν (U.φ U.acq (U.⟪ F [ K `acq ·¹ (((` 0F) ⊗ (` 1F)) ⊗ e) ]* ⟫ U.∥ Q))
     UR─→ₚ*
   U.ν ((U.⟪ F [ ((` 0F) ⊗ (` 1F)) ⊗ e ]* ⟫ U.∥ Q) U.⋯ₚ ⦅ * ⦆ₛ)
-leaf-fire F {e} Q = UR.RU-Acquire F ◅ UR.RU-Res UR.RU-Cleanup ◅ ε
+leaf-fire F {e} Q = UR.RU-Acquire F ◅ ε
 
 -- Star-congruences for the untyped reduction under φ binders and substs, to
 -- propagate the leaf firing back out through the Bφ blocks.
