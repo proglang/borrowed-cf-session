@@ -329,6 +329,16 @@ Ub-before (suc (suc w1)) (suc (suc w2)) e₁ e₂ e₂' c (suc p) zero     lt1 l
 Ub-before (suc (suc w1)) (suc (suc w2)) e₁ e₂ e₂' c (suc p) (suc p') lt1 lt2 eq =
   Ub-before (suc w1) (suc w2) * e₂ e₂' c p p' (Nat.s≤s⁻¹ lt1) (Nat.s≤s⁻¹ lt2) (Nat.suc-injective eq)
 
+-- Ub peels a nonempty prefix: at a position ≥ pre, the first pre slots (which
+-- carry e₁) are consumed to *, leaving Ub over the residual width.
+Ub-after : ∀ (pre w' : ℕ) {N} (e₁ e₂ : Tm N) (c : 𝔽 N) (j : 𝔽 (pre + suc w')) (k : 𝔽 (suc w')) →
+           1 Nat.≤ pre → Fin.toℕ j ≡ pre + Fin.toℕ k →
+           Ub[ pre + suc w' ] (e₁ , c , e₂) j ≡ Ub[ suc w' ] (* , c , e₂) k
+Ub-after (suc zero)      w' e₁ e₂ c (suc j') k _ eq =
+  cong (Ub[ suc w' ] (* , c , e₂)) (Fin.toℕ-injective (Nat.suc-injective eq))
+Ub-after (suc (suc pre)) w' e₁ e₂ c (suc j') k _ eq =
+  Ub-after (suc pre) w' * e₂ c j' k (Nat.s≤s Nat.z≤n) (Nat.suc-injective eq)
+
 canonₛ-rwk0q : ∀ {N} (cc : UChan N) (q b₁ : ℕ) (B₂ : BindGroup)
              (i : 𝔽 (sum ((q + suc b₁) ∷ B₂))) →
              i ≢ ((q ↑ʳ 0F) ↑ˡ sum B₂) →
