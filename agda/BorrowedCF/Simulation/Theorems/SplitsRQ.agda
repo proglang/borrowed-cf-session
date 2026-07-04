@@ -310,3 +310,123 @@ sins-wkq B₁ q b₁ B₂ {N} v = Fin.toℕ-injective
         (Nat.≤-trans (sD≤q B₁ q) (Nat.m≤m+n (syncs (B₁ ++ (q + suc b₁) ∷ B₂)) (Fin.toℕ v))))
   ■ cong suc (toℕ-weaken*ᵣ (syncs (B₁ ++ (q + suc b₁) ∷ B₂)) v)
   ■ sym (toℕ-weaken*ᵣ (syncs (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂)) v ■ cong (Nat._+ Fin.toℕ v) (syncs-rwkq B₁ q)) )
+
+-- ============================================================================
+--   canonₛ-rwk0q / canonₛ-rwkq : q-generalized canonₛ split naturality.  Off
+--   the position-q handle, splitting block (q+suc b₁) → (q+1) ∷ suc b₁ inserts a
+--   fresh sync (sinsq) into the canonical substitution.  Mirrors canonₛ-rwk.
+-- ============================================================================
+canonₛ-rwk0q : ∀ {N} (cc : UChan N) (q b₁ : ℕ) (B₂ : BindGroup)
+             (i : 𝔽 (sum ((q + suc b₁) ∷ B₂))) →
+             i ≢ ((q ↑ʳ 0F) ↑ˡ sum B₂) →
+             canonₛ ((q + 1) ∷ suc b₁ ∷ B₂) cc (drwkq [] q b₁ B₂ i)
+             ≡ canonₛ ((q + suc b₁) ∷ B₂) cc i ⋯ sinsq [] q b₁ B₂ {N}
+canonₛ-rwk0q {N} cc zero    b₁ B₂ i i≢ =
+    canonₛ-rwk0 cc b₁ B₂ i i≢
+  ■ subst-Tm-uip (+-suc sD N) COD₀ (canonₛ (suc b₁ ∷ B₂) cc i ⋯ (weakenᵣ ↑* sD))
+  ■ sym (subst-⋯-cod-local COD₀ (canonₛ (suc b₁ ∷ B₂) cc i) (weakenᵣ ↑* sD))
+  where
+    sD = syncs (suc b₁ ∷ B₂)
+    COD₀ = +-suc sD N ■ cong (_+ N) (cong suc (syncs-head-irrel (suc b₁) (suc b₁) B₂))
+canonₛ-rwk0q {N} cc (suc q) b₁ B₂ i i≢ = {!!}
+
+canonₛ-rwkq : ∀ (B₁ : BindGroup) {N} (cc : UChan N) (q b₁ : ℕ) (B₂ : BindGroup)
+             (i : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂))) →
+             i ≢ Fin.cast (sym (sum-++ B₁ ((q + suc b₁) ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂)) →
+             canonₛ (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) cc (drwkq B₁ q b₁ B₂ i)
+             ≡ canonₛ (B₁ ++ (q + suc b₁) ∷ B₂) cc i ⋯ sinsq B₁ q b₁ B₂ {N}
+canonₛ-rwkq [] {N} cc q b₁ B₂ i i≢ =
+    canonₛ-rwk0q cc q b₁ B₂ i (λ i≡ → i≢ (i≡ ■ sym cast≡q))
+  where
+    cast≡q : Fin.cast (sym (sum-++ [] ((q + suc b₁) ∷ B₂))) (sum [] ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂)) ≡ ((q ↑ʳ 0F) ↑ˡ sum B₂)
+    cast≡q = Fin.toℕ-injective
+      ( Fin.toℕ-cast (sym (sum-++ [] ((q + suc b₁) ∷ B₂))) (sum [] ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
+      ■ Fin.toℕ-↑ʳ (sum []) ((q ↑ʳ 0F) ↑ˡ sum B₂) )
+canonₛ-rwkq (a ∷ []) {N} (e₁ , x , e₂) q b₁ B₂ i i≢
+  with canonₛ-rwkq [] {suc N} (` 0F , suc x , wk e₂) q b₁ B₂
+... | rec with Fin.splitAt a i in seq
+... | inj₁ p rewrite Fin.splitAt-↑ˡ a p (sum ([] ++ (q + 1) ∷ suc b₁ ∷ B₂)) =
+      cong (subst Tm SS) (sym headCore)
+    ■ sym ( cong (_⋯ sinsq (a ∷ []) q b₁ B₂ {N}) (subst-Tm-uip (+-suc sD N) pL headM)
+          ■ ⋯-subst₂ pL pR headM ρ0
+          ■ subst-Tm-uip pR SS (headM ⋯ ρ0) )
+  where
+    sD  = syncs ([] ++ (q + suc b₁) ∷ B₂)
+    sDʳ = syncs ([] ++ (q + 1) ∷ suc b₁ ∷ B₂)
+    SS  = +-suc sDʳ N
+    ρ0 = sinsq [] q b₁ B₂ {suc N}
+    pL = +-suc (syncs ([] ++ (q + suc b₁) ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a [] (q + suc b₁) B₂))
+    pR = +-suc (syncs ([] ++ (q + 1) ∷ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a [] (q + 1) (suc b₁ ∷ B₂)))
+    hp = Ub[ a ] (wk e₁ , suc x , ` 0F) p
+    headM = hp ⋯ weaken* ⦃ Kᵣ ⦄ sD
+    ptwise : ∀ v → (weaken* ⦃ Kᵣ ⦄ sD ·ₖ ρ0) v ≡ weaken* ⦃ Kᵣ ⦄ sDʳ v
+    ptwise v = Fin.toℕ-injective
+      ( sins-toℕ-hiq [] q b₁ B₂ {suc N} (weaken* ⦃ Kᵣ ⦄ sD v)
+          (subst (syncs (suc b₁ ∷ B₂) Nat.≤_) (sym (toℕ-weaken*ᵣ sD v))
+            (Nat.≤-trans (sD≤q [] q) (Nat.m≤m+n sD (Fin.toℕ v))))
+      ■ cong suc (toℕ-weaken*ᵣ sD v)
+      ■ sym (toℕ-weaken*ᵣ sDʳ v ■ cong (Nat._+ Fin.toℕ v) (syncs-rwkq [] q)) )
+    headCore : headM ⋯ ρ0 ≡ hp ⋯ weaken* ⦃ Kᵣ ⦄ sDʳ
+    headCore = fusion hp (weaken* ⦃ Kᵣ ⦄ sD) ρ0 ■ ⋯-cong hp ptwise
+... | inj₂ r rewrite Fin.splitAt-↑ʳ a (sum ([] ++ (q + 1) ∷ suc b₁ ∷ B₂)) (drwkq [] q b₁ B₂ r) =
+      cong (subst Tm SS) (rec r r≢h)
+    ■ sym ( cong (_⋯ sinsq (a ∷ []) q b₁ B₂ {N}) (subst-Tm-uip (+-suc sD N) pL leafM)
+          ■ ⋯-subst₂ pL pR leafM ρ0
+          ■ subst-Tm-uip pR SS (leafM ⋯ ρ0) )
+  where
+    sD  = syncs ([] ++ (q + suc b₁) ∷ B₂)
+    sDʳ = syncs ([] ++ (q + 1) ∷ suc b₁ ∷ B₂)
+    SS  = +-suc sDʳ N
+    ρ0 = sinsq [] q b₁ B₂ {suc N}
+    pL = +-suc (syncs ([] ++ (q + suc b₁) ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a [] (q + suc b₁) B₂))
+    pR = +-suc (syncs ([] ++ (q + 1) ∷ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a [] (q + 1) (suc b₁ ∷ B₂)))
+    leafM = canonₛ ((q + suc b₁) ∷ B₂) (` 0F , suc x , wk e₂) r
+    r≢h : r ≢ Fin.cast (sym (sum-++ [] ((q + suc b₁) ∷ B₂))) (sum [] ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
+    r≢h r≡ = i≢ ( sym (Fin.join-splitAt a (sum ([] ++ (q + suc b₁) ∷ B₂)) i)
+                ■ cong (Fin.join a (sum ([] ++ (q + suc b₁) ∷ B₂))) seq
+                ■ cong (a ↑ʳ_) r≡
+                ■ sym (pos-split-gen a [] (q + suc b₁) B₂ ((q ↑ʳ 0F) ↑ˡ sum B₂)) )
+canonₛ-rwkq (a ∷ d ∷ B₁″) {N} (e₁ , x , e₂) q b₁ B₂ i i≢
+  with canonₛ-rwkq (d ∷ B₁″) {suc N} (` 0F , suc x , wk e₂) q b₁ B₂
+... | rec with Fin.splitAt a i in seq
+... | inj₁ p rewrite Fin.splitAt-↑ˡ a p (sum ((d ∷ B₁″) ++ (q + 1) ∷ suc b₁ ∷ B₂)) =
+      cong (subst Tm SS) (sym headCore)
+    ■ sym ( cong (_⋯ sinsq (a ∷ d ∷ B₁″) q b₁ B₂ {N}) (subst-Tm-uip (+-suc sD N) pL headM)
+          ■ ⋯-subst₂ pL pR headM ρ0
+          ■ subst-Tm-uip pR SS (headM ⋯ ρ0) )
+  where
+    sD  = syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)
+    sDʳ = syncs ((d ∷ B₁″) ++ (q + 1) ∷ suc b₁ ∷ B₂)
+    SS  = +-suc sDʳ N
+    ρ0  = sinsq (d ∷ B₁″) q b₁ B₂ {suc N}
+    pL = +-suc (syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a (d ∷ B₁″) (q + suc b₁) B₂))
+    pR = +-suc (syncs ((d ∷ B₁″) ++ (q + 1) ∷ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a (d ∷ B₁″) (q + 1) (suc b₁ ∷ B₂)))
+    hp = Ub[ a ] (wk e₁ , suc x , ` 0F) p
+    headM = hp ⋯ weaken* ⦃ Kᵣ ⦄ sD
+    ptwise : ∀ v → (weaken* ⦃ Kᵣ ⦄ sD ·ₖ ρ0) v ≡ weaken* ⦃ Kᵣ ⦄ sDʳ v
+    ptwise v = Fin.toℕ-injective
+      ( sins-toℕ-hiq (d ∷ B₁″) q b₁ B₂ {suc N} (weaken* ⦃ Kᵣ ⦄ sD v)
+          (subst (syncs (suc b₁ ∷ B₂) Nat.≤_) (sym (toℕ-weaken*ᵣ sD v))
+            (Nat.≤-trans (sD≤q (d ∷ B₁″) q) (Nat.m≤m+n sD (Fin.toℕ v))))
+      ■ cong suc (toℕ-weaken*ᵣ sD v)
+      ■ sym (toℕ-weaken*ᵣ sDʳ v ■ cong (Nat._+ Fin.toℕ v) (syncs-rwkq (d ∷ B₁″) q)) )
+    headCore : headM ⋯ ρ0 ≡ hp ⋯ weaken* ⦃ Kᵣ ⦄ sDʳ
+    headCore = fusion hp (weaken* ⦃ Kᵣ ⦄ sD) ρ0 ■ ⋯-cong hp ptwise
+... | inj₂ r rewrite Fin.splitAt-↑ʳ a (sum ((d ∷ B₁″) ++ (q + 1) ∷ suc b₁ ∷ B₂)) (drwkq (d ∷ B₁″) q b₁ B₂ r) =
+      cong (subst Tm SS) (rec r r≢h)
+    ■ sym ( cong (_⋯ sinsq (a ∷ d ∷ B₁″) q b₁ B₂ {N}) (subst-Tm-uip (+-suc sD N) pL leafM)
+          ■ ⋯-subst₂ pL pR leafM ρ0
+          ■ subst-Tm-uip pR SS (leafM ⋯ ρ0) )
+  where
+    sD  = syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)
+    sDʳ = syncs ((d ∷ B₁″) ++ (q + 1) ∷ suc b₁ ∷ B₂)
+    SS  = +-suc sDʳ N
+    ρ0  = sinsq (d ∷ B₁″) q b₁ B₂ {suc N}
+    pL = +-suc (syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a (d ∷ B₁″) (q + suc b₁) B₂))
+    pR = +-suc (syncs ((d ∷ B₁″) ++ (q + 1) ∷ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a (d ∷ B₁″) (q + 1) (suc b₁ ∷ B₂)))
+    leafM = canonₛ ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂) (` 0F , suc x , wk e₂) r
+    r≢h : r ≢ Fin.cast (sym (sum-++ (d ∷ B₁″) ((q + suc b₁) ∷ B₂))) (sum (d ∷ B₁″) ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
+    r≢h r≡ = i≢ ( sym (Fin.join-splitAt a (sum ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) i)
+                ■ cong (Fin.join a (sum ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂))) seq
+                ■ cong (a ↑ʳ_) r≡
+                ■ sym (pos-split-gen a (d ∷ B₁″) (q + suc b₁) B₂ ((q ↑ʳ 0F) ↑ˡ sum B₂)) )
