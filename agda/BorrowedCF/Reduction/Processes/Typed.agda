@@ -20,7 +20,7 @@ open Variables
 open Fin.Patterns
 
 private variable
-  b b₁ b₂ : ℕ
+  b b₁ b₂ q : ℕ
 
 wkₚ : ∀ a c → a + c + n →ᵣ suc a + suc c + n
 wkₚ {n} a c =
@@ -46,17 +46,36 @@ private
   reassoc-r₂ = solve 5 (λ s b B C n →
     s :+ (con 1 :+ (con 1 :+ b :+ B :+ C :+ n)) := s :+ (con 1 :+ (con 1 :+ b) :+ B) :+ C :+ n) refl
 
+  -- k-generalized (interior split at block-position k): sum B₁ + k plays the
+  -- role of sum B₁ in the front-only versions above.
+  reassoc-lk₁ : ∀ s k b B C n → s + (k + suc b + B) + C + n ≡ s + k + 1 + (b + B + C + n)
+  reassoc-lk₁ = solve 6 (λ s k b B C n →
+    s :+ (k :+ (con 1 :+ b) :+ B) :+ C :+ n := s :+ k :+ con 1 :+ (b :+ B :+ C :+ n)) refl
+  reassoc-lk₂ : ∀ s k b B C n → s + k + 1 + suc (b + B + C + n) ≡ s + (k + suc (suc b) + B) + C + n
+  reassoc-lk₂ = solve 6 (λ s k b B C n →
+    s :+ k :+ con 1 :+ (con 1 :+ (b :+ B :+ C :+ n)) := s :+ (k :+ (con 1 :+ (con 1 :+ b)) :+ B) :+ C :+ n) refl
+  reassoc-rk₁ : ∀ s k b B C n → s + (k + suc b + B) + C + n ≡ s + k + (suc b + B + C + n)
+  reassoc-rk₁ = solve 6 (λ s k b B C n →
+    s :+ (k :+ (con 1 :+ b) :+ B) :+ C :+ n := s :+ k :+ (con 1 :+ b :+ B :+ C :+ n)) refl
+  reassoc-rk₂ : ∀ s k b B C n → s + k + suc (suc b + B + C + n) ≡ s + (k + suc (suc b) + B) + C + n
+  reassoc-rk₂ = solve 6 (λ s k b B C n →
+    s :+ k :+ (con 1 :+ (con 1 :+ b :+ B :+ C :+ n)) := s :+ (k :+ (con 1 :+ (con 1 :+ b)) :+ B) :+ C :+ n) refl
+
 module SplitRenamings (B₁ B₂ B′ : BindGroup) where
   inj : 𝔽 (sum (B ++ B₂)) → 𝔽 (sum (B₁ ++ B ++ B₂) + sum B′ + n)
   inj {B} {n} z = Fin.cast (sym (sum-++ B₁ (B ++ B₂))) (sum B₁ ↑ʳ z) ↑ˡ sum B′ ↑ˡ n
 
-  lwk : sum (B₁ ++ suc b ∷ B₂) + sum B′ + n →ᵣ sum (B₁ ++ suc (suc b) ∷ B₂) + sum B′ + n
-  lwk {b} {n} = Fin.cast eq₂ ∘ ins (sum B₁ + 1) {b + sum B₂ + sum B′ + n} ∘ Fin.cast eq₁
+  -- position j of a single middle block of width w, as a full-scope variable.
+  atk : ∀ {w n} → 𝔽 w → 𝔽 (sum (B₁ ++ w ∷ B₂) + sum B′ + n)
+  atk {w} {n} j = inj {B = w ∷ []} {n} (j ↑ˡ sum B₂)
+
+  lwk : sum (B₁ ++ (q + suc b) ∷ B₂) + sum B′ + n →ᵣ sum (B₁ ++ (q + suc (suc b)) ∷ B₂) + sum B′ + n
+  lwk {q} {b} {n} = Fin.cast eq₂ ∘ ins (sum B₁ + q + 1) {b + sum B₂ + sum B′ + n} ∘ Fin.cast eq₁
     where
-      eq₁ : sum (B₁ ++ suc b ∷ B₂) + sum B′ + n ≡ sum B₁ + 1 + (b + sum B₂ + sum B′ + n)
-      eq₁ rewrite sum-++ B₁ (suc b ∷ B₂) = reassoc-l₁ (sum B₁) b (sum B₂) (sum B′) n
-      eq₂ : sum B₁ + 1 + suc (b + sum B₂ + sum B′ + n) ≡ sum (B₁ ++ suc (suc b) ∷ B₂) + sum B′ + n
-      eq₂ rewrite sum-++ B₁ (suc (suc b) ∷ B₂) = reassoc-l₂ (sum B₁) b (sum B₂) (sum B′) n
+      eq₁ : sum (B₁ ++ (q + suc b) ∷ B₂) + sum B′ + n ≡ sum B₁ + q + 1 + (b + sum B₂ + sum B′ + n)
+      eq₁ rewrite sum-++ B₁ ((q + suc b) ∷ B₂) = reassoc-lk₁ (sum B₁) q b (sum B₂) (sum B′) n
+      eq₂ : sum B₁ + q + 1 + suc (b + sum B₂ + sum B′ + n) ≡ sum (B₁ ++ (q + suc (suc b)) ∷ B₂) + sum B′ + n
+      eq₂ rewrite sum-++ B₁ ((q + suc (suc b)) ∷ B₂) = reassoc-lk₂ (sum B₁) q b (sum B₂) (sum B′) n
 
   rwk : sum (B₁ ++ suc b ∷ B₂) + sum B′ + n →ᵣ sum (B₁ ++ 1 ∷ suc b ∷ B₂) + sum B′ + n
   rwk {b} {n} = Fin.cast eq₂ ∘ ins (sum B₁) {suc b + sum B₂ + sum B′ + n} ∘ Fin.cast eq₁
@@ -106,9 +125,9 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
 
   R-LSplit : ∀ {E} →
     let module 𝐒 = SplitRenamings B₁ B₂ B in
-    ν (B₁ ++ suc b₁ ∷ B₂) B (⟪ E [ K (`lsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ ∥ P)
+    ν (B₁ ++ (q + suc b₁) ∷ B₂) B (⟪ E [ K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ ∥ P)
       ─→ₚ
-    ν (B₁ ++ suc (suc b₁) ∷ B₂) B (⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F) ]* ⟫ ∥ (P ⋯ₚ 𝐒.lwk))
+    ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.atk (q ↑ʳ 0F)) ⊗ (` 𝐒.atk (q ↑ʳ 1F)) ]* ⟫ ∥ (P ⋯ₚ 𝐒.lwk))
 
   R-RSplit : ∀ {E} →
     let module 𝐒 = SplitRenamings B₁ B₂ B in
