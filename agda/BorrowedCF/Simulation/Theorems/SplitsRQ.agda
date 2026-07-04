@@ -238,7 +238,10 @@ P3rq B₁ B₂ B {q} {b₁} {m} u = Fin.toℕ-injective
 -- ============================================================================
 sinsq : ∀ (B₁ : BindGroup) (q b₁ : ℕ) (B₂ : BindGroup) {N} →
         syncs (B₁ ++ (q + suc b₁) ∷ B₂) + N →ᵣ syncs (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) + N
-sinsq []        q b₁ B₂ {N} j = sins [] b₁ B₂ {N} (Fin.cast (cong (_+ N) (syncs-head-irrel (q + suc b₁) (suc b₁) B₂)) j)
+sinsq []        q b₁ B₂ {N} =
+  subst (λ z → syncs ((q + suc b₁) ∷ B₂) + N →ᵣ z)
+    (+-suc (syncs ((q + suc b₁) ∷ B₂)) N ■ cong (_+ N) (cong suc (syncs-head-irrel (q + suc b₁) (suc b₁) B₂)))
+    (weakenᵣ ↑* syncs ((q + suc b₁) ∷ B₂))
 sinsq (a ∷ B₁') q b₁ B₂ {N} =
   subst₂ _→ᵣ_
     (+-suc (syncs (B₁' ++ (q + suc b₁) ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a B₁' (q + suc b₁) B₂)))
@@ -254,9 +257,15 @@ sins-toℕ-hiq : ∀ (B₁ : BindGroup) (q b₁ : ℕ) (B₂ : BindGroup) {N}
               syncs (suc b₁ ∷ B₂) Nat.≤ Fin.toℕ j →
               Fin.toℕ (sinsq B₁ q b₁ B₂ {N} j) ≡ suc (Fin.toℕ j)
 sins-toℕ-hiq []        q b₁ B₂ {N} j h =
-    sins-toℕ-hi [] b₁ B₂ {N} (Fin.cast ee j) (subst (syncs (suc b₁ ∷ B₂) Nat.≤_) (sym (Fin.toℕ-cast ee j)) h)
-  ■ cong suc (Fin.toℕ-cast ee j)
-  where ee = cong (_+ N) (syncs-head-irrel (q + suc b₁) (suc b₁) B₂)
+    toℕ-subst-cod COD (weakenᵣ ↑* SD) j
+  ■ toℕ-↑*-ge weakenᵣ SD j h'
+  ■ cong (SD +_) (cong suc (toℕ-reduce≥ j h'))
+  ■ Nat.+-suc SD (Fin.toℕ j Nat.∸ SD)
+  ■ cong suc (Nat.m+[n∸m]≡n h')
+  where SD  = syncs ((q + suc b₁) ∷ B₂)
+        COD = +-suc SD N ■ cong (_+ N) (cong suc (syncs-head-irrel (q + suc b₁) (suc b₁) B₂))
+        h' : SD Nat.≤ Fin.toℕ j
+        h' = subst (Nat._≤ Fin.toℕ j) (syncs-head-irrel (suc b₁) (q + suc b₁) B₂) h
 sins-toℕ-hiq (a ∷ B₁') q b₁ B₂ {N} j h =
     toℕ-subst₂ᵣ pL pR (sinsq B₁' q b₁ B₂ {suc N}) j
   ■ sins-toℕ-hiq B₁' q b₁ B₂ {suc N} (subst 𝔽 (sym pL) j)
@@ -271,9 +280,12 @@ sins-toℕ-loq : ∀ (B₁ : BindGroup) (q b₁ : ℕ) (B₂ : BindGroup) {N}
               Fin.toℕ j Nat.< syncs (suc b₁ ∷ B₂) →
               Fin.toℕ (sinsq B₁ q b₁ B₂ {N} j) ≡ Fin.toℕ j
 sins-toℕ-loq []        q b₁ B₂ {N} j h =
-    sins-toℕ-lo [] b₁ B₂ {N} (Fin.cast ee j) (subst (Nat._< syncs (suc b₁ ∷ B₂)) (sym (Fin.toℕ-cast ee j)) h)
-  ■ Fin.toℕ-cast ee j
-  where ee = cong (_+ N) (syncs-head-irrel (q + suc b₁) (suc b₁) B₂)
+    toℕ-subst-cod COD (weakenᵣ ↑* SD) j
+  ■ toℕ-↑*-lt weakenᵣ SD j h'
+  where SD  = syncs ((q + suc b₁) ∷ B₂)
+        COD = +-suc SD N ■ cong (_+ N) (cong suc (syncs-head-irrel (q + suc b₁) (suc b₁) B₂))
+        h' : Fin.toℕ j Nat.< SD
+        h' = subst (Fin.toℕ j Nat.<_) (syncs-head-irrel (suc b₁) (q + suc b₁) B₂) h
 sins-toℕ-loq (a ∷ B₁') q b₁ B₂ {N} j h =
     toℕ-subst₂ᵣ pL pR (sinsq B₁' q b₁ B₂ {suc N}) j
   ■ sins-toℕ-loq B₁' q b₁ B₂ {suc N} (subst 𝔽 (sym pL) j)
