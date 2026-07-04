@@ -32,8 +32,10 @@ open import BorrowedCF.Simulation.RsplitTransport
   using (⋯-subst₂; ⋯ₚ-subst₂; subst-Tm-uip; toℕ-subst-cod; toℕ-subst₂ᵣ)
 open import BorrowedCF.Simulation.FrameRename
   using (⋯ᶠ*-cong; ⋯ᶠ*-fuse; F-σ⋯)
+open import Data.Nat.Solver using (module +-*-Solver)
+open +-*-Solver using (solve; _:=_; _:+_; con)
 
-open import BorrowedCF.Simulation.Theorems.SplitsH1 public
+open import BorrowedCF.Simulation.Theorems.SplitsLQ public
 
 subst-∥f : (h : ℕ → ℕ) {x y : ℕ} (eq : x ≡ y) (P Q : U.Proc (h x)) →
            subst (λ z → U.Proc (h z)) eq (P U.∥ Q)
@@ -66,38 +68,40 @@ ss-U refl refl = refl
 
 -- Bφ on the grown bind group equals Bφ on the ungrown one (the flag-list shapes
 -- match; only the domain scope shifts by syncs-lwk).  Induction on B₁.
-Bφ-lwk : ∀ (B₁ : BindGroup) {b₁ : ℕ} {B₂ : BindGroup} {a : ℕ}
-         (Y : U.Proc (syncs (B₁ ++ suc b₁ ∷ B₂) + a)) →
-         Bφ (B₁ ++ suc b₁ ∷ B₂) Y
-         ≡ Bφ (B₁ ++ suc (suc b₁) ∷ B₂) (subst U.Proc (cong (_+ a) (syncs-lwk B₁)) Y)
-Bφ-lwk []        {b₁} {[]}      Y = refl
-Bφ-lwk []        {b₁} {b' ∷ B'} Y = refl
-Bφ-lwk (a ∷ [])      {b₁} {B₂} {aa} Y =
+Bφ-lwk : ∀ (B₁ : BindGroup) {q b₁ : ℕ} {B₂ : BindGroup} {a : ℕ}
+         (Y : U.Proc (syncs (B₁ ++ (q + suc b₁) ∷ B₂) + a)) →
+         Bφ (B₁ ++ (q + suc b₁) ∷ B₂) Y
+         ≡ Bφ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) (subst U.Proc (cong (_+ a) (syncs-lwkq B₁)) Y)
+Bφ-lwk []        {q} {b₁} {[]}      Y = refl
+Bφ-lwk []        {q} {b₁} {b' ∷ B'} Y =
+  cong (λ f → U.φ f _)
+    (cong ϕ[_] (Nat.+-suc q b₁) ■ sym (cong ϕ[_] (Nat.+-suc q (suc b₁))))
+Bφ-lwk (a ∷ [])      {q} {b₁} {B₂} {aa} Y =
   cong (U.φ ϕ[ a ])
-    ( Bφ-lwk [] {b₁} {B₂} (subst U.Proc (sym (+-suc (syncs ([] ++ suc b₁ ∷ B₂)) aa)) Y)
-    ■ cong (Bφ ([] ++ suc (suc b₁) ∷ B₂)) bodyeq )
+    ( Bφ-lwk [] {q} {b₁} {B₂} (subst U.Proc (sym (+-suc (syncs ([] ++ (q + suc b₁) ∷ B₂)) aa)) Y)
+    ■ cong (Bφ ([] ++ (q + suc (suc b₁)) ∷ B₂)) bodyeq )
   where
-    aa-eq = cong (_+ aa) (syncs-lwk (a ∷ []) {b₁} {B₂})
-    bodyeq : subst U.Proc (cong (_+ suc aa) (syncs-lwk [] {b₁} {B₂}))
-               (subst U.Proc (sym (+-suc (syncs ([] ++ suc b₁ ∷ B₂)) aa)) Y)
-             ≡ subst U.Proc (sym (+-suc (syncs ([] ++ suc (suc b₁) ∷ B₂)) aa))
+    aa-eq = cong (_+ aa) (syncs-lwkq (a ∷ []) {q} {b₁} {B₂})
+    bodyeq : subst U.Proc (cong (_+ suc aa) (syncs-lwkq [] {q} {b₁} {B₂}))
+               (subst U.Proc (sym (+-suc (syncs ([] ++ (q + suc b₁) ∷ B₂)) aa)) Y)
+             ≡ subst U.Proc (sym (+-suc (syncs ([] ++ (q + suc (suc b₁)) ∷ B₂)) aa))
                  (subst U.Proc aa-eq Y)
-    bodyeq = ss-U (sym (+-suc (syncs ([] ++ suc b₁ ∷ B₂)) aa)) (cong (_+ suc aa) (syncs-lwk [] {b₁} {B₂})) {t = Y}
+    bodyeq = ss-U (sym (+-suc (syncs ([] ++ (q + suc b₁) ∷ B₂)) aa)) (cong (_+ suc aa) (syncs-lwkq [] {q} {b₁} {B₂})) {t = Y}
            ■ cong (λ e → subst U.Proc e Y) (uipℕ _ _)
-           ■ sym (ss-U aa-eq (sym (+-suc (syncs ([] ++ suc (suc b₁) ∷ B₂)) aa)) {t = Y})
-Bφ-lwk (a ∷ d ∷ B₁″) {b₁} {B₂} {aa} Y =
+           ■ sym (ss-U aa-eq (sym (+-suc (syncs ([] ++ (q + suc (suc b₁)) ∷ B₂)) aa)) {t = Y})
+Bφ-lwk (a ∷ d ∷ B₁″) {q} {b₁} {B₂} {aa} Y =
   cong (U.φ ϕ[ a ])
-    ( Bφ-lwk (d ∷ B₁″) {b₁} {B₂} (subst U.Proc (sym (+-suc (syncs ((d ∷ B₁″) ++ suc b₁ ∷ B₂)) aa)) Y)
-    ■ cong (Bφ ((d ∷ B₁″) ++ suc (suc b₁) ∷ B₂)) bodyeq )
+    ( Bφ-lwk (d ∷ B₁″) {q} {b₁} {B₂} (subst U.Proc (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) aa)) Y)
+    ■ cong (Bφ ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) bodyeq )
   where
-    aa-eq = cong (_+ aa) (syncs-lwk (a ∷ d ∷ B₁″) {b₁} {B₂})
-    bodyeq : subst U.Proc (cong (_+ suc aa) (syncs-lwk (d ∷ B₁″) {b₁} {B₂}))
-               (subst U.Proc (sym (+-suc (syncs ((d ∷ B₁″) ++ suc b₁ ∷ B₂)) aa)) Y)
-             ≡ subst U.Proc (sym (+-suc (syncs ((d ∷ B₁″) ++ suc (suc b₁) ∷ B₂)) aa))
+    aa-eq = cong (_+ aa) (syncs-lwkq (a ∷ d ∷ B₁″) {q} {b₁} {B₂})
+    bodyeq : subst U.Proc (cong (_+ suc aa) (syncs-lwkq (d ∷ B₁″) {q} {b₁} {B₂}))
+               (subst U.Proc (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) aa)) Y)
+             ≡ subst U.Proc (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) aa))
                  (subst U.Proc aa-eq Y)
-    bodyeq = ss-U (sym (+-suc (syncs ((d ∷ B₁″) ++ suc b₁ ∷ B₂)) aa)) (cong (_+ suc aa) (syncs-lwk (d ∷ B₁″) {b₁} {B₂})) {t = Y}
+    bodyeq = ss-U (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) aa)) (cong (_+ suc aa) (syncs-lwkq (d ∷ B₁″) {q} {b₁} {B₂})) {t = Y}
            ■ cong (λ e → subst U.Proc e Y) (uipℕ _ _)
-           ■ sym (ss-U aa-eq (sym (+-suc (syncs ((d ∷ B₁″) ++ suc (suc b₁) ∷ B₂)) aa)) {t = Y})
+           ■ sym (ss-U aa-eq (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) aa)) {t = Y})
 
 subst-wkB : ∀ (sB : ℕ) {a b N} (eq : a ≡ b) (t : Tm (a + N)) →
             subst (λ j → Tm (sB + (j + N))) eq (t ⋯ weaken* ⦃ Kᵣ ⦄ sB)
@@ -109,62 +113,62 @@ subst-cong+ : ∀ {a b N} (eq : a ≡ b) (t : Tm (a + N)) →
 subst-cong+ refl t = refl
 
 -- leafσ on the grown bind group agrees with the transported ungrown leafσ away
--- from the consumed handle inj 0F (lwk just inserts the new data slot).
-leafσ-lwk-id : ∀ {m n} (σ : m →ₛ n) (B₁ B₂ B : BindGroup) (b₁ : ℕ)
-               (i : 𝔽 (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)) →
-               i ≢ TR.SplitRenamings.inj B₁ B₂ B {suc b₁ ∷ []} {m} 0F →
-               subst (λ j → Tm (syncs B + (j + (2 + n)))) (syncs-lwk B₁)
-                 (leafσ σ (B₁ ++ suc b₁ ∷ B₂) B i)
-               ≡ leafσ σ (B₁ ++ suc (suc b₁) ∷ B₂) B (TR.SplitRenamings.lwk B₁ B₂ B i)
-leafσ-lwk-id {m} {n} σ B₁ B₂ B b₁ i i≢
-  with Fin.splitAt (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) i in seqo
+-- from the consumed handle atk (q ↑ʳ 0F) (lwk just inserts the new data slot).
+leafσ-lwk-id : ∀ {m n} (σ : m →ₛ n) (B₁ B₂ B : BindGroup) (q b₁ : ℕ)
+               (i : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) →
+               i ≢ TR.SplitRenamings.atk B₁ B₂ B {q + suc b₁} {m} (q ↑ʳ 0F) →
+               subst (λ j → Tm (syncs B + (j + (2 + n)))) (syncs-lwkq B₁)
+                 (leafσ σ (B₁ ++ (q + suc b₁) ∷ B₂) B i)
+               ≡ leafσ σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m} i)
+leafσ-lwk-id {m} {n} σ B₁ B₂ B q b₁ i i≢
+  with Fin.splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) i in seqo
 ... | inj₂ u
-  rewrite leafσ-tail {n = n} σ (B₁ ++ suc b₁ ∷ B₂) B i u seqo
-        | leafσ-tail {n = n} σ (B₁ ++ suc (suc b₁) ∷ B₂) B (TR.SplitRenamings.lwk B₁ B₂ B i) u
-            (cong (Fin.splitAt (sum (B₁ ++ suc (suc b₁) ∷ B₂) + sum B))
-               (cong (TR.SplitRenamings.lwk B₁ B₂ B) (sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m) seqo) ■ P3 B₁ B₂ B u)
-            ■ Fin.splitAt-↑ʳ (sum (B₁ ++ suc (suc b₁) ∷ B₂) + sum B) m u) = σ-coh
+  rewrite leafσ-tail {n = n} σ (B₁ ++ (q + suc b₁) ∷ B₂) B i u seqo
+        | leafσ-tail {n = n} σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m} i) u
+            (cong (Fin.splitAt (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B))
+               (cong (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo) ■ P3q B₁ B₂ B {q} {b₁} {m} u)
+            ■ Fin.splitAt-↑ʳ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B) m u) = σ-coh
   where
-    sA  = syncs (B₁ ++ suc b₁ ∷ B₂)
-    sA′ = syncs (B₁ ++ suc (suc b₁) ∷ B₂)
+    sA  = syncs (B₁ ++ (q + suc b₁) ∷ B₂)
+    sA′ = syncs (B₁ ++ (q + suc (suc b₁)) ∷ B₂)
     sB  = syncs B
-    ieq : i ≡ (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) ↑ʳ u
-    ieq = sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m i)
-        ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m) seqo
+    ieq : i ≡ (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) ↑ʳ u
+    ieq = sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i)
+        ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo
     σfn : (j : ℕ) → Tm (sB + (j + (2 + n)))
     σfn j = σ u ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ j ⋯ weaken* ⦃ Kᵣ ⦄ sB
-    σ-coh : subst (λ j → Tm (sB + (j + (2 + n)))) (syncs-lwk B₁) (σfn sA) ≡ σfn sA′
-    σ-coh = cohh (syncs-lwk B₁)
+    σ-coh : subst (λ j → Tm (sB + (j + (2 + n)))) (syncs-lwkq B₁) (σfn sA) ≡ σfn sA′
+    σ-coh = cohh (syncs-lwkq B₁)
       where cohh : ∀ {s′} (eq : sA ≡ s′) → subst (λ j → Tm (sB + (j + (2 + n)))) eq (σfn sA) ≡ σfn s′
             cohh refl = refl
-... | inj₁ db with Fin.splitAt (sum (B₁ ++ suc b₁ ∷ B₂)) db in seqi
+... | inj₁ db with Fin.splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) db in seqi
 ...   | inj₂ w
-  rewrite leafσ-B₁ σ (B₁ ++ suc b₁ ∷ B₂) B i db w seqo seqi
-        | leafσ-B₁ σ (B₁ ++ suc (suc b₁) ∷ B₂) B (TR.SplitRenamings.lwk B₁ B₂ B i) (sum (B₁ ++ suc (suc b₁) ∷ B₂) ↑ʳ w) w
-            (cong (Fin.splitAt (sum (B₁ ++ suc (suc b₁) ∷ B₂) + sum B)) (cong (TR.SplitRenamings.lwk B₁ B₂ B) (sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂)) (sum B)) seqi)) ■ P2 B₁ B₂ B w)
-             ■ Fin.splitAt-↑ˡ (sum (B₁ ++ suc (suc b₁) ∷ B₂) + sum B) (sum (B₁ ++ suc (suc b₁) ∷ B₂) ↑ʳ w) m)
-            (Fin.splitAt-↑ʳ (sum (B₁ ++ suc (suc b₁) ∷ B₂)) (sum B) w) = canonB-coh
+  rewrite leafσ-B₁ σ (B₁ ++ (q + suc b₁) ∷ B₂) B i db w seqo seqi
+        | leafσ-B₁ σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m} i) (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) ↑ʳ w) w
+            (cong (Fin.splitAt (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B)) (cong (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B)) seqi)) ■ P2q B₁ B₂ B {q} {b₁} {m} w)
+             ■ Fin.splitAt-↑ˡ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B) (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) ↑ʳ w) m)
+            (Fin.splitAt-↑ʳ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂)) (sum B) w) = canonB-coh
   where
-    sA  = syncs (B₁ ++ suc b₁ ∷ B₂)
-    sA′ = syncs (B₁ ++ suc (suc b₁) ∷ B₂)
+    sA  = syncs (B₁ ++ (q + suc b₁) ∷ B₂)
+    sA′ = syncs (B₁ ++ (q + suc (suc b₁)) ∷ B₂)
     sB  = syncs B
     cfn : (j : ℕ) → Tm (sB + (j + (2 + n)))
     cfn j = canonₛ B (K `unit , weaken* ⦃ Kᵣ ⦄ j 1F , K `unit) w
-    canonB-coh : subst (λ j → Tm (sB + (j + (2 + n)))) (syncs-lwk B₁) (cfn sA) ≡ cfn sA′
-    canonB-coh = cohh (syncs-lwk B₁)
+    canonB-coh : subst (λ j → Tm (sB + (j + (2 + n)))) (syncs-lwkq B₁) (cfn sA) ≡ cfn sA′
+    canonB-coh = cohh (syncs-lwkq B₁)
       where cohh : ∀ {s′} (eq : sA ≡ s′) → subst (λ j → Tm (sB + (j + (2 + n)))) eq (cfn sA) ≡ cfn s′
             cohh refl = refl
 ...   | inj₁ d
-  rewrite leafσ-A₁ σ (B₁ ++ suc b₁ ∷ B₂) B i db d seqo seqi
-        | leafσ-A₁ σ (B₁ ++ suc (suc b₁) ∷ B₂) B (TR.SplitRenamings.lwk B₁ B₂ B i) (dlwk B₁ b₁ B₂ d ↑ˡ sum B) (dlwk B₁ b₁ B₂ d)
-            (cong (Fin.splitAt (sum (B₁ ++ suc (suc b₁) ∷ B₂) + sum B)) (cong (TR.SplitRenamings.lwk B₁ B₂ B) (sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂)) (sum B)) seqi)) ■ P1 B₁ B₂ B d)
-             ■ Fin.splitAt-↑ˡ (sum (B₁ ++ suc (suc b₁) ∷ B₂) + sum B) (dlwk B₁ b₁ B₂ d ↑ˡ sum B) m)
-            (Fin.splitAt-↑ˡ (sum (B₁ ++ suc (suc b₁) ∷ B₂)) (dlwk B₁ b₁ B₂ d) (sum B)) =
-      subst-wkB (syncs B) (syncs-lwk B₁) (canonₛ (B₁ ++ suc b₁ ∷ B₂) (K `unit , 0F , K `unit) d)
+  rewrite leafσ-A₁ σ (B₁ ++ (q + suc b₁) ∷ B₂) B i db d seqo seqi
+        | leafσ-A₁ σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m} i) (dlwkq B₁ q b₁ B₂ d ↑ˡ sum B) (dlwkq B₁ q b₁ B₂ d)
+            (cong (Fin.splitAt (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B)) (cong (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B)) seqi)) ■ P1q B₁ B₂ B {q} {b₁} {m} d)
+             ■ Fin.splitAt-↑ˡ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B) (dlwkq B₁ q b₁ B₂ d ↑ˡ sum B) m)
+            (Fin.splitAt-↑ˡ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂)) (dlwkq B₁ q b₁ B₂ d) (sum B)) =
+      subst-wkB (syncs B) (syncs-lwkq B₁) (canonₛ (B₁ ++ (q + suc b₁) ∷ B₂) (K `unit , 0F , K `unit) d)
     ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ (syncs B))
-        ( sym (subst-cong+ (syncs-lwk B₁) (canonₛ (B₁ ++ suc b₁ ∷ B₂) (K `unit , 0F , K `unit) d))
-        ■ canonₛ-lwk B₁ (K `unit , 0F , K `unit) b₁ B₂ d
-            (λ d≡ → i≢ ((sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ suc b₁ ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ suc b₁ ∷ B₂)) (sum B)) seqi)) ■ cong (λ z → (z ↑ˡ sum B) ↑ˡ m) d≡)) )
+        ( sym (subst-cong+ (syncs-lwkq B₁) (canonₛ (B₁ ++ (q + suc b₁) ∷ B₂) (K `unit , 0F , K `unit) d))
+        ■ canonₛ-lwkq B₁ (K `unit , 0F , K `unit) q b₁ B₂ d
+            (λ d≡ → i≢ ((sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B)) seqi)) ■ cong (λ z → (z ↑ˡ sum B) ↑ˡ m) d≡)) )
 
 substP-∘ : ∀ {kk kk′} (fg : ℕ → ℕ) (e : kk ≡ kk′) (X : U.Proc (fg kk)) →
            subst U.Proc (cong fg e) X ≡ subst (λ j → U.Proc (fg j)) e X
@@ -191,167 +195,284 @@ module _ where
            subst Tm (cong (_+ suc N) e) X ≡ Y →
            subst Tm (cong (_+ N) (cong suc e)) (subst Tm (+-suc s N) X) ≡ subst Tm (+-suc s′ N) Y
   chainT {N} refl {X} refl = refl
-  -- convert a borrow-1 computation stated at flat index 1F into the ↑ʳ-cast form
-  -- canonₛ-handle-b1 needs (B₁ = [] case only).
-  cast0-1F : ∀ {N} (w : ℕ) (B₂ : BindGroup) (cc : UChan N)
-             {T : Tm (syncs (suc (suc w) ∷ B₂) + N)} →
-             canonₛ (suc (suc w) ∷ B₂) cc 1F ≡ T →
-             canonₛ (suc (suc w) ∷ B₂) cc
-               (Fin.cast (sym (sum-++ [] (suc (suc w) ∷ B₂))) (sum [] ↑ʳ 1F)) ≡ T
-  cast0-1F {N} w B₂ cc {T} eq =
-    subst (λ z → canonₛ (suc (suc w) ∷ B₂) cc z ≡ T)
-      (sym (Fin.toℕ-injective (Fin.toℕ-cast (sym (sum-++ [] (suc (suc w) ∷ B₂))) (sum [] ↑ʳ jj)
-           ■ Fin.toℕ-↑ʳ (sum []) jj))) eq
-    where jj : 𝔽 (sum (suc (suc w) ∷ B₂))
-          jj = 1F
 
-canonₛ-handle-b1 : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (b₁ : ℕ) (B₂ : BindGroup) →
-  Σ[ a ∈ Tm (syncs (B₁ ++ suc (suc b₁) ∷ B₂) + N) ]
-  Σ[ c ∈ Tm (syncs (B₁ ++ suc (suc b₁) ∷ B₂) + N) ]
-  Σ[ j ∈ 𝔽 (syncs (B₁ ++ suc (suc b₁) ∷ B₂) + N) ]
-    (canonₛ (B₁ ++ suc (suc b₁) ∷ B₂) (e₁ , x , e₂)
-        (Fin.cast (sym (sum-++ B₁ (suc (suc b₁) ∷ B₂))) (sum B₁ ↑ʳ 1F))
+Ub-L-* : ∀ w {N} (e2 : Tm N) (c : 𝔽 N) (p : 𝔽 w) → proj₁ (Ub-triple w * e2 c p) ≡ *
+Ub-L-* (suc zero)    e2 c zero    = refl
+Ub-L-* (suc zero)    e2 c (suc ())
+Ub-L-* (suc (suc b)) e2 c zero    = refl
+Ub-L-* (suc (suc b)) e2 c (suc x) = Ub-L-* (suc b) e2 c x
+
+Ub-L-pos>0 : ∀ w {N} (e1 e2 : Tm N) (c : 𝔽 N) (p : 𝔽 w) →
+             0 Nat.< Fin.toℕ p → proj₁ (Ub-triple w e1 e2 c p) ≡ *
+Ub-L-pos>0 (suc zero)    e1 e2 c zero    ()
+Ub-L-pos>0 (suc zero)    e1 e2 c (suc ())
+Ub-L-pos>0 (suc (suc b)) e1 e2 c zero    ()
+Ub-L-pos>0 (suc (suc b)) e1 e2 c (suc x) lt = Ub-L-* (suc b) e2 c x
+
+Ub-L-pos0 : ∀ w {N} (e1 e2 : Tm N) (c : 𝔽 N) (p : 𝔽 w) →
+            Fin.toℕ p ≡ 0 → proj₁ (Ub-triple w e1 e2 c p) ≡ e1
+Ub-L-pos0 (suc zero)    e1 e2 c zero    eq = refl
+Ub-L-pos0 (suc zero)    e1 e2 c (suc ())
+Ub-L-pos0 (suc (suc b)) e1 e2 c zero    eq = refl
+Ub-L-pos0 (suc (suc b)) e1 e2 c (suc x) ()
+
+Ub-R-far : ∀ w {N} (e1 e2 : Tm N) (c : 𝔽 N) (p : 𝔽 w) →
+           suc (Fin.toℕ p) Nat.< w → proj₁ (proj₂ (Ub-triple w e1 e2 c p)) ≡ *
+Ub-R-far (suc zero)    e1 e2 c zero    (Nat.s≤s ())
+Ub-R-far (suc zero)    e1 e2 c (suc ())
+Ub-R-far (suc (suc b)) e1 e2 c zero    lt = refl
+Ub-R-far (suc (suc b)) e1 e2 c (suc x) lt = Ub-R-far (suc b) * e2 c x (Nat.s≤s⁻¹ lt)
+
+Ub-R-last : ∀ w {N} (e1 e2 : Tm N) (c : 𝔽 N) (p : 𝔽 w) →
+            suc (Fin.toℕ p) ≡ w → proj₁ (proj₂ (Ub-triple w e1 e2 c p)) ≡ e2
+Ub-R-last (suc zero)    e1 e2 c zero    eq = refl
+Ub-R-last (suc zero)    e1 e2 c (suc ())
+Ub-R-last (suc (suc b)) e1 e2 c zero    ()
+Ub-R-last (suc (suc b)) e1 e2 c (suc x) eq = Ub-R-last (suc b) * e2 c x (Nat.suc-injective eq)
+
+canonₛ-head-tripleq-b1 : ∀ (q b₁ : ℕ) (B₂ : BindGroup) {N} (e1 e2 : Tm N) (x : 𝔽 N) →
+  Σ[ a ∈ Tm (syncs ((q + suc (suc b₁)) ∷ B₂) + N) ] Σ[ c ∈ Tm (syncs ((q + suc (suc b₁)) ∷ B₂) + N) ]
+  Σ[ j ∈ 𝔽 (syncs ((q + suc (suc b₁)) ∷ B₂) + N) ]
+    (canonₛ ((q + suc (suc b₁)) ∷ B₂) (e1 , x , e2) ((q ↑ʳ 1F) ↑ˡ sum B₂) ≡ (a ⊗ (` j)) ⊗ c)
+    × (Fin.toℕ j ≡ syncs ((q + suc (suc b₁)) ∷ B₂) + Fin.toℕ x)
+canonₛ-head-tripleq-b1 q b₁ [] e1 e2 x
+  with Ub-triple ((q + suc (suc b₁)) + 0) e1 e2 x ((q ↑ʳ 1F) ↑ˡ 0)
+... | a , e2' , ubeq = a , e2' , x , ubeq , refl
+canonₛ-head-tripleq-b1 q b₁ (c′ ∷ B) {N} e1 e2 x
+  with Ub-triple (q + suc (suc b₁)) (wk e1) (` 0F) (suc x) (q ↑ʳ 1F)
+... | a , e2' , ubeq =
+  ( subst Tm (+-suc sB N) (a ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+  , subst Tm (+-suc sB N) (e2' ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+  , subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))
+  , tripeq , junceq )
+  where
+    sB = syncs (c′ ∷ B)
+    spliteq : splitAt (q + suc (suc b₁)) ((q ↑ʳ 1F) ↑ˡ sum (c′ ∷ B)) ≡ inj₁ (q ↑ʳ 1F)
+    spliteq = Fin.splitAt-↑ˡ (q + suc (suc b₁)) (q ↑ʳ 1F) (sum (c′ ∷ B))
+    tripeq : canonₛ ((q + suc (suc b₁)) ∷ c′ ∷ B) (e1 , x , e2) ((q ↑ʳ 1F) ↑ˡ sum (c′ ∷ B))
+             ≡ (subst Tm (+-suc sB N) (a ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+                 ⊗ (` subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))))
+                 ⊗ subst Tm (+-suc sB N) (e2' ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+    tripeq = cong (subst Tm (+-suc sB N))
+               (cong [ Ub[ q + suc (suc b₁) ] (wk e1 , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB
+                     , canonₛ (c′ ∷ B) (` 0F , suc x , wk e2) ]′ spliteq
+               ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) ubeq)
+           ■ substTripⱼ (+-suc sB N) (a ⋯ weaken* ⦃ Kᵣ ⦄ sB) (weaken* ⦃ Kᵣ ⦄ sB (suc x)) (e2' ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+    junceq : Fin.toℕ (subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))) ≡ suc sB + Fin.toℕ x
+    junceq = toℕ-substᶠ (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))
+           ■ toℕ-weaken*ᵣ sB (suc x)
+           ■ +-suc sB (Fin.toℕ x)
+
+canonₛ-handleq-b1 : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (q b₁ : ℕ) (B₂ : BindGroup) →
+  Σ[ a ∈ Tm (syncs (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + N) ]
+  Σ[ c ∈ Tm (syncs (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + N) ]
+  Σ[ j ∈ 𝔽 (syncs (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + N) ]
+    (canonₛ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) (e₁ , x , e₂)
+        (Fin.cast (sym (sum-++ B₁ ((q + suc (suc b₁)) ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 1F) ↑ˡ sum B₂)))
        ≡ (a ⊗ (` j)) ⊗ c)
-    × (Fin.toℕ j ≡ syncs (B₁ ++ suc (suc b₁) ∷ B₂) + Fin.toℕ x)
-canonₛ-handle-b1 [] {N} e₁ x e₂ zero []  =
-  * , e₂ , x , cast0-1F zero [] (e₁ , x , e₂) refl , refl
-canonₛ-handle-b1 [] {N} e₁ x e₂ (suc b₁) []  =
-  * , * , x , cast0-1F (suc b₁) [] (e₁ , x , e₂) refl , refl
-canonₛ-handle-b1 [] {N} e₁ x e₂ zero (c′ ∷ B) =
-  subst Tm (+-suc sB N) (* ⋯ weaken* ⦃ Kᵣ ⦄ sB)
-  , subst Tm (+-suc sB N) ((` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB)
-  , subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))
-  , cast0-1F zero (c′ ∷ B) (e₁ , x , e₂) tripeq , junceq
+    × (Fin.toℕ j ≡ syncs (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + Fin.toℕ x)
+canonₛ-handleq-b1 [] {N} e₁ x e₂ q b₁ B₂ =
+  proj₁ h , proj₁ (proj₂ h) , proj₁ (proj₂ (proj₂ h))
+  , castidx (proj₁ (proj₂ (proj₂ (proj₂ h))))
+  , proj₂ (proj₂ (proj₂ (proj₂ h)))
   where
-    sB = syncs (c′ ∷ B)
-    tripeq : canonₛ (suc (suc zero) ∷ c′ ∷ B) (e₁ , x , e₂) 1F
-             ≡ (subst Tm (+-suc sB N) (* ⋯ weaken* ⦃ Kᵣ ⦄ sB)
-                 ⊗ (` subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))))
-                 ⊗ subst Tm (+-suc sB N) ((` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB)
-    tripeq = substTripⱼ (+-suc sB N) (* ⋯ weaken* ⦃ Kᵣ ⦄ sB) (weaken* ⦃ Kᵣ ⦄ sB (suc x)) ((` 0F) ⋯ weaken* ⦃ Kᵣ ⦄ sB)
-    junceq : Fin.toℕ (subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))) ≡ suc sB + Fin.toℕ x
-    junceq = toℕ-substᶠ (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x)) ■ toℕ-weaken*ᵣ sB (suc x) ■ +-suc sB (Fin.toℕ x)
-canonₛ-handle-b1 [] {N} e₁ x e₂ (suc b₁) (c′ ∷ B) =
-  subst Tm (+-suc sB N) (* ⋯ weaken* ⦃ Kᵣ ⦄ sB)
-  , subst Tm (+-suc sB N) (* ⋯ weaken* ⦃ Kᵣ ⦄ sB)
-  , subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))
-  , cast0-1F (suc b₁) (c′ ∷ B) (e₁ , x , e₂) tripeq , junceq
-  where
-    sB = syncs (c′ ∷ B)
-    tripeq : canonₛ (suc (suc (suc b₁)) ∷ c′ ∷ B) (e₁ , x , e₂) 1F
-             ≡ (subst Tm (+-suc sB N) (* ⋯ weaken* ⦃ Kᵣ ⦄ sB)
-                 ⊗ (` subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))))
-                 ⊗ subst Tm (+-suc sB N) (* ⋯ weaken* ⦃ Kᵣ ⦄ sB)
-    tripeq = substTripⱼ (+-suc sB N) (* ⋯ weaken* ⦃ Kᵣ ⦄ sB) (weaken* ⦃ Kᵣ ⦄ sB (suc x)) (* ⋯ weaken* ⦃ Kᵣ ⦄ sB)
-    junceq : Fin.toℕ (subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))) ≡ suc sB + Fin.toℕ x
-    junceq = toℕ-substᶠ (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x)) ■ toℕ-weaken*ᵣ sB (suc x) ■ +-suc sB (Fin.toℕ x)
-canonₛ-handle-b1 (a ∷ [])      {N} e₁ x e₂ b₁ B₂
-  with canonₛ-handle-b1 [] (` 0F) (suc x) (wk e₂) b₁ B₂
+    h = canonₛ-head-tripleq-b1 q b₁ B₂ e₁ e₂ x
+    castidx : canonₛ ((q + suc (suc b₁)) ∷ B₂) (e₁ , x , e₂) ((q ↑ʳ 1F) ↑ˡ sum B₂)
+                ≡ (proj₁ h ⊗ (` proj₁ (proj₂ (proj₂ h)))) ⊗ proj₁ (proj₂ h) →
+              canonₛ ((q + suc (suc b₁)) ∷ B₂) (e₁ , x , e₂)
+                (Fin.cast (sym (sum-++ [] ((q + suc (suc b₁)) ∷ B₂))) (sum [] ↑ʳ ((q ↑ʳ 1F) ↑ˡ sum B₂)))
+                ≡ (proj₁ h ⊗ (` proj₁ (proj₂ (proj₂ h)))) ⊗ proj₁ (proj₂ h)
+    castidx = subst (λ z → canonₛ ((q + suc (suc b₁)) ∷ B₂) (e₁ , x , e₂) z
+                            ≡ (proj₁ h ⊗ (` proj₁ (proj₂ (proj₂ h)))) ⊗ proj₁ (proj₂ h))
+                (sym (Fin.toℕ-injective (Fin.toℕ-cast (sym (sum-++ [] ((q + suc (suc b₁)) ∷ B₂))) (sum [] ↑ʳ ((q ↑ʳ 1F) ↑ˡ sum B₂)))))
+canonₛ-handleq-b1 (a ∷ []) {N} e₁ x e₂ q b₁ B₂
+  with canonₛ-handleq-b1 [] (` 0F) (suc x) (wk e₂) q b₁ B₂
 ... | rec =
   subst Tm (+-suc sB N) (proj₁ rec)
   , subst Tm (+-suc sB N) (proj₁ (proj₂ rec))
   , subst 𝔽 (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))
-  , tripeq , junceq
+  , tripeq
+  , junceq
   where
-    sB = syncs ([] ++ suc (suc b₁) ∷ B₂)
-    cp  = Fin.cast (sym (sum-++ (a ∷ []) (suc (suc b₁) ∷ B₂))) (sum (a ∷ []) ↑ʳ 1F)
-    cp′ = Fin.cast (sym (sum-++ [] (suc (suc b₁) ∷ B₂))) (sum [] ↑ʳ 1F)
+    sB = syncs (([]) ++ (q + suc (suc b₁)) ∷ B₂)
+    cp  = Fin.cast (sym (sum-++ (a ∷ ([])) ((q + suc (suc b₁)) ∷ B₂))) (sum (a ∷ ([])) ↑ʳ ((q ↑ʳ 1F) ↑ˡ sum B₂))
+    cp′ = Fin.cast (sym (sum-++ ([]) ((q + suc (suc b₁)) ∷ B₂))) (sum ([]) ↑ʳ ((q ↑ʳ 1F) ↑ˡ sum B₂))
     spliteq : Fin.splitAt a cp ≡ inj₂ cp′
-    spliteq = cong (Fin.splitAt a) (pos-split-gen a [] (suc (suc b₁)) B₂ 1F)
-            ■ Fin.splitAt-↑ʳ a (sum ([] ++ suc (suc b₁) ∷ B₂)) cp′
-    tripeq : canonₛ (a ∷ [] ++ suc (suc b₁) ∷ B₂) (e₁ , x , e₂) cp
+    spliteq = cong (Fin.splitAt a) (pos-split-gen a ([]) (q + suc (suc b₁)) B₂ ((q ↑ʳ 1F) ↑ˡ sum B₂))
+            ■ Fin.splitAt-↑ʳ a (sum (([]) ++ (q + suc (suc b₁)) ∷ B₂)) cp′
+    tripeq : canonₛ (a ∷ ([]) ++ (q + suc (suc b₁)) ∷ B₂) (e₁ , x , e₂) cp
              ≡ (subst Tm (+-suc sB N) (proj₁ rec)
                  ⊗ (` subst 𝔽 (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))))
                  ⊗ subst Tm (+-suc sB N) (proj₁ (proj₂ rec))
     tripeq = cong (subst Tm (+-suc sB N))
                (cong [ Ub[ a ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB
-                     , canonₛ ([] ++ suc (suc b₁) ∷ B₂) (` 0F , suc x , wk e₂) ]′ spliteq
+                     , canonₛ (([]) ++ (q + suc (suc b₁)) ∷ B₂) (` 0F , suc x , wk e₂) ]′ spliteq
                ■ proj₁ (proj₂ (proj₂ (proj₂ rec))))
            ■ substTripⱼ (+-suc sB N) (proj₁ rec) (proj₁ (proj₂ (proj₂ rec))) (proj₁ (proj₂ rec))
     junceq : Fin.toℕ (subst 𝔽 (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))) ≡ suc sB + Fin.toℕ x
     junceq = toℕ-substᶠ (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))
-           ■ proj₂ (proj₂ (proj₂ (proj₂ rec))) ■ +-suc sB (Fin.toℕ x)
-canonₛ-handle-b1 (a ∷ d ∷ B₁″) {N} e₁ x e₂ b₁ B₂
-  with canonₛ-handle-b1 (d ∷ B₁″) (` 0F) (suc x) (wk e₂) b₁ B₂
+           ■ proj₂ (proj₂ (proj₂ (proj₂ rec)))
+           ■ +-suc sB (Fin.toℕ x)
+canonₛ-handleq-b1 (a ∷ d ∷ B₁″) {N} e₁ x e₂ q b₁ B₂
+  with canonₛ-handleq-b1 (d ∷ B₁″) (` 0F) (suc x) (wk e₂) q b₁ B₂
 ... | rec =
   subst Tm (+-suc sB N) (proj₁ rec)
   , subst Tm (+-suc sB N) (proj₁ (proj₂ rec))
   , subst 𝔽 (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))
-  , tripeq , junceq
+  , tripeq
+  , junceq
   where
-    sB = syncs ((d ∷ B₁″) ++ suc (suc b₁) ∷ B₂)
-    cp  = Fin.cast (sym (sum-++ (a ∷ d ∷ B₁″) (suc (suc b₁) ∷ B₂))) (sum (a ∷ d ∷ B₁″) ↑ʳ 1F)
-    cp′ = Fin.cast (sym (sum-++ (d ∷ B₁″) (suc (suc b₁) ∷ B₂))) (sum (d ∷ B₁″) ↑ʳ 1F)
+    sB = syncs ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)
+    cp  = Fin.cast (sym (sum-++ (a ∷ (d ∷ B₁″)) ((q + suc (suc b₁)) ∷ B₂))) (sum (a ∷ (d ∷ B₁″)) ↑ʳ ((q ↑ʳ 1F) ↑ˡ sum B₂))
+    cp′ = Fin.cast (sym (sum-++ (d ∷ B₁″) ((q + suc (suc b₁)) ∷ B₂))) (sum (d ∷ B₁″) ↑ʳ ((q ↑ʳ 1F) ↑ˡ sum B₂))
     spliteq : Fin.splitAt a cp ≡ inj₂ cp′
-    spliteq = cong (Fin.splitAt a) (pos-split-gen a (d ∷ B₁″) (suc (suc b₁)) B₂ 1F)
-            ■ Fin.splitAt-↑ʳ a (sum ((d ∷ B₁″) ++ suc (suc b₁) ∷ B₂)) cp′
-    tripeq : canonₛ (a ∷ (d ∷ B₁″) ++ suc (suc b₁) ∷ B₂) (e₁ , x , e₂) cp
+    spliteq = cong (Fin.splitAt a) (pos-split-gen a (d ∷ B₁″) (q + suc (suc b₁)) B₂ ((q ↑ʳ 1F) ↑ˡ sum B₂))
+            ■ Fin.splitAt-↑ʳ a (sum ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) cp′
+    tripeq : canonₛ (a ∷ (d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂) (e₁ , x , e₂) cp
              ≡ (subst Tm (+-suc sB N) (proj₁ rec)
                  ⊗ (` subst 𝔽 (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))))
                  ⊗ subst Tm (+-suc sB N) (proj₁ (proj₂ rec))
     tripeq = cong (subst Tm (+-suc sB N))
                (cong [ Ub[ a ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB
-                     , canonₛ ((d ∷ B₁″) ++ suc (suc b₁) ∷ B₂) (` 0F , suc x , wk e₂) ]′ spliteq
+                     , canonₛ ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂) (` 0F , suc x , wk e₂) ]′ spliteq
                ■ proj₁ (proj₂ (proj₂ (proj₂ rec))))
            ■ substTripⱼ (+-suc sB N) (proj₁ rec) (proj₁ (proj₂ (proj₂ rec))) (proj₁ (proj₂ rec))
     junceq : Fin.toℕ (subst 𝔽 (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))) ≡ suc sB + Fin.toℕ x
     junceq = toℕ-substᶠ (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))
-           ■ proj₂ (proj₂ (proj₂ (proj₂ rec))) ■ +-suc sB (Fin.toℕ x)
+           ■ proj₂ (proj₂ (proj₂ (proj₂ rec)))
+           ■ +-suc sB (Fin.toℕ x)
 
--- ungrown handle left slot = grown handle borrow-0 left slot (invariant under growth).
-handle-L-lwk : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (b₁ : ℕ) (B₂ : BindGroup) →
-  subst Tm (cong (_+ N) (syncs-lwk B₁))
-    (proj₁ (canonₛ-handle B₁ e₁ x e₂ b₁ B₂))
-  ≡ proj₁ (canonₛ-handle B₁ e₁ x e₂ (suc b₁) B₂)
-handle-L-lwk []        {N} e₁ x e₂ zero    []      = refl
-handle-L-lwk []        {N} e₁ x e₂ (suc b₁) []      = refl
-handle-L-lwk []        {N} e₁ x e₂ zero    (c′ ∷ B) = refl
-handle-L-lwk []        {N} e₁ x e₂ (suc b₁) (c′ ∷ B) = refl
-handle-L-lwk (a ∷ [])      {N} e₁ x e₂ b₁ B₂ =
-  chainT (syncs-lwk [] {b₁} {B₂}) (handle-L-lwk [] (` 0F) (suc x) (wk e₂) b₁ B₂)
-handle-L-lwk (a ∷ d ∷ B₁″) {N} e₁ x e₂ b₁ B₂ =
-  chainT (syncs-lwk (d ∷ B₁″) {b₁} {B₂}) (handle-L-lwk (d ∷ B₁″) (` 0F) (suc x) (wk e₂) b₁ B₂)
+-- toℕ of the handle positions
+private
+  toℕ↑0 : ∀ q {r} → Fin.toℕ (q ↑ʳ (Fin.zero {n = r})) ≡ q
+  toℕ↑0 q = Fin.toℕ-↑ʳ q Fin.zero ■ Nat.+-identityʳ q
+  toℕ↑1 : ∀ q {r} → Fin.toℕ (q ↑ʳ (Fin.suc (Fin.zero {n = r}))) ≡ suc q
+  toℕ↑1 q = Fin.toℕ-↑ʳ q (Fin.suc Fin.zero) ■ Nat.+-comm q 1
+  toℕ↑0ˡ : ∀ q {r z} → Fin.toℕ ((q ↑ʳ (Fin.zero {n = r})) ↑ˡ z) ≡ q
+  toℕ↑0ˡ q {r} {z} = Fin.toℕ-↑ˡ (q ↑ʳ Fin.zero) z ■ toℕ↑0 q
+  toℕ↑1ˡ : ∀ q {r z} → Fin.toℕ ((q ↑ʳ (Fin.suc (Fin.zero {n = r}))) ↑ˡ z) ≡ suc q
+  toℕ↑1ˡ q {r} {z} = Fin.toℕ-↑ˡ (q ↑ʳ (Fin.suc Fin.zero)) z ■ toℕ↑1 q
 
--- ungrown handle right slot = grown handle borrow-1 right slot.
-handle-R-lwk : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (b₁ : ℕ) (B₂ : BindGroup) →
-  subst Tm (cong (_+ N) (syncs-lwk B₁))
-    (proj₁ (proj₂ (canonₛ-handle B₁ e₁ x e₂ b₁ B₂)))
-  ≡ proj₁ (proj₂ (canonₛ-handle-b1 B₁ e₁ x e₂ b₁ B₂))
-handle-R-lwk []        {N} e₁ x e₂ zero    []      = refl
-handle-R-lwk []        {N} e₁ x e₂ (suc b₁) []      = refl
-handle-R-lwk []        {N} e₁ x e₂ zero    (c′ ∷ B) = refl
-handle-R-lwk []        {N} e₁ x e₂ (suc b₁) (c′ ∷ B) = refl
-handle-R-lwk (a ∷ [])      {N} e₁ x e₂ b₁ B₂ =
-  chainT (syncs-lwk [] {b₁} {B₂}) (handle-R-lwk [] (` 0F) (suc x) (wk e₂) b₁ B₂)
-handle-R-lwk (a ∷ d ∷ B₁″) {N} e₁ x e₂ b₁ B₂ =
-  chainT (syncs-lwk (d ∷ B₁″) {b₁} {B₂}) (handle-R-lwk (d ∷ B₁″) (` 0F) (suc x) (wk e₂) b₁ B₂)
+private
+  0<n : ∀ {n} → n ≢ 0 → 0 Nat.< n
+  0<n {zero}  ne = ⊥-elim (ne refl)
+  0<n {suc n} ne = Nat.s≤s Nat.z≤n
 
--- grown handle borrow-0 right slot is * (width ≥ 2 drops e₂).
-handle-R0-* : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (b₁ : ℕ) (B₂ : BindGroup) →
-  proj₁ (proj₂ (canonₛ-handle B₁ e₁ x e₂ (suc b₁) B₂)) ≡ *
-handle-R0-* []        {N} e₁ x e₂ b₁ []      = refl
-handle-R0-* []        {N} e₁ x e₂ b₁ (c′ ∷ B) = subst-Kunit (+-suc (syncs (c′ ∷ B)) N)
-handle-R0-* (a ∷ [])      {N} e₁ x e₂ b₁ B₂ =
-  cong (subst Tm (+-suc (syncs ([] ++ suc (suc b₁) ∷ B₂)) N)) (handle-R0-* [] (` 0F) (suc x) (wk e₂) b₁ B₂)
-  ■ subst-Kunit (+-suc (syncs ([] ++ suc (suc b₁) ∷ B₂)) N)
-handle-R0-* (a ∷ d ∷ B₁″) {N} e₁ x e₂ b₁ B₂ =
-  cong (subst Tm (+-suc (syncs ((d ∷ B₁″) ++ suc (suc b₁) ∷ B₂)) N)) (handle-R0-* (d ∷ B₁″) (` 0F) (suc x) (wk e₂) b₁ B₂)
-  ■ subst-Kunit (+-suc (syncs ((d ∷ B₁″) ++ suc (suc b₁) ∷ B₂)) N)
+-- L slot at equal positions is width-independent.
+UbL-grow-gen : ∀ {w w'} {N} (e1 e2 : Tm N) (c : 𝔽 N) (p : 𝔽 w) (p' : 𝔽 w') →
+  Fin.toℕ p ≡ Fin.toℕ p' →
+  proj₁ (Ub-triple w e1 e2 c p) ≡ proj₁ (Ub-triple w' e1 e2 c p')
+UbL-grow-gen {w} {w'} e1 e2 c p p' pp with Fin.toℕ p Nat.≟ 0
+... | yes eq0 = Ub-L-pos0 w e1 e2 c p eq0 ■ sym (Ub-L-pos0 w' e1 e2 c p' (sym pp ■ eq0))
+... | no ¬eq0 = Ub-L-pos>0 w e1 e2 c p (0<n ¬eq0)
+              ■ sym (Ub-L-pos>0 w' e1 e2 c p' (0<n (λ e → ¬eq0 (pp ■ e))))
 
--- grown handle borrow-1 left slot is * (distributing head/leaf both drop the left slot).
-handle-b1-L-* : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (b₁ : ℕ) (B₂ : BindGroup) →
-  proj₁ (canonₛ-handle-b1 B₁ e₁ x e₂ b₁ B₂) ≡ *
-handle-b1-L-* []        {N} e₁ x e₂ zero    []      = refl
-handle-b1-L-* []        {N} e₁ x e₂ (suc b₁) []      = refl
-handle-b1-L-* []        {N} e₁ x e₂ zero    (c′ ∷ B) = subst-Kunit (+-suc (syncs (c′ ∷ B)) N)
-handle-b1-L-* []        {N} e₁ x e₂ (suc b₁) (c′ ∷ B) = subst-Kunit (+-suc (syncs (c′ ∷ B)) N)
-handle-b1-L-* (a ∷ [])      {N} e₁ x e₂ b₁ B₂ =
-  cong (subst Tm (+-suc (syncs ([] ++ suc (suc b₁) ∷ B₂)) N)) (handle-b1-L-* [] (` 0F) (suc x) (wk e₂) b₁ B₂)
-  ■ subst-Kunit (+-suc (syncs ([] ++ suc (suc b₁) ∷ B₂)) N)
-handle-b1-L-* (a ∷ d ∷ B₁″) {N} e₁ x e₂ b₁ B₂ =
-  cong (subst Tm (+-suc (syncs ((d ∷ B₁″) ++ suc (suc b₁) ∷ B₂)) N)) (handle-b1-L-* (d ∷ B₁″) (` 0F) (suc x) (wk e₂) b₁ B₂)
-  ■ subst-Kunit (+-suc (syncs ((d ∷ B₁″) ++ suc (suc b₁) ∷ B₂)) N)
+handle-L-lwkq : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (q b₁ : ℕ) (B₂ : BindGroup) →
+  subst Tm (cong (_+ N) (syncs-lwkq B₁))
+    (proj₁ (canonₛ-handleq B₁ e₁ x e₂ q b₁ B₂))
+  ≡ proj₁ (canonₛ-handleq B₁ e₁ x e₂ q (suc b₁) B₂)
+handle-L-lwkq []        {N} e₁ x e₂ q b₁ []      =
+  UbL-grow-gen e₁ e₂ x ((q ↑ʳ 0F) ↑ˡ 0) ((q ↑ʳ 0F) ↑ˡ 0) (toℕ↑0ˡ q ■ sym (toℕ↑0ˡ q))
+handle-L-lwkq []        {N} e₁ x e₂ q b₁ (c′ ∷ B) =
+  cong (λ z → subst Tm (+-suc (syncs (c′ ∷ B)) N) (z ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (c′ ∷ B))))
+    (UbL-grow-gen (wk e₁) (` 0F) (suc x) (q ↑ʳ 0F) (q ↑ʳ 0F) (toℕ↑0 q ■ sym (toℕ↑0 q)))
+handle-L-lwkq (a ∷ [])      {N} e₁ x e₂ q b₁ B₂ =
+  chainT (syncs-lwkq [] {q} {b₁} {B₂}) (handle-L-lwkq [] (` 0F) (suc x) (wk e₂) q b₁ B₂)
+handle-L-lwkq (a ∷ d ∷ B₁″) {N} e₁ x e₂ q b₁ B₂ =
+  chainT (syncs-lwkq (d ∷ B₁″) {q} {b₁} {B₂}) (handle-L-lwkq (d ∷ B₁″) (` 0F) (suc x) (wk e₂) q b₁ B₂)
 
+private
+  lt-far : ∀ q b → suc q Nat.< q + suc (suc b)
+  lt-far q b = subst (suc (suc q) Nat.≤_) (sym (Nat.+-suc q (suc b) ■ cong suc (Nat.+-suc q b)))
+                 (Nat.s≤s (Nat.s≤s (Nat.m≤m+n q b)))
+
+-- grown borrow-0 R slot is * (remaining suc (suc b₁) ≥ 2).
+handle-R0-*q : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (q b₁ : ℕ) (B₂ : BindGroup) →
+  proj₁ (proj₂ (canonₛ-handleq B₁ e₁ x e₂ q (suc b₁) B₂)) ≡ *
+handle-R0-*q []        {N} e₁ x e₂ q b₁ []      =
+  Ub-R-far ((q + suc (suc b₁)) + 0) e₁ e₂ x ((q ↑ʳ 0F) ↑ˡ 0)
+    (subst (λ k → suc k Nat.< (q + suc (suc b₁)) + 0) (sym (toℕ↑0ˡ q))
+      (subst (suc q Nat.<_) (sym (Nat.+-identityʳ (q + suc (suc b₁)))) (lt-far q b₁)))
+handle-R0-*q []        {N} e₁ x e₂ q b₁ (c′ ∷ B) =
+  cong (λ z → subst Tm (+-suc (syncs (c′ ∷ B)) N) (z ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (c′ ∷ B))))
+    (Ub-R-far (q + suc (suc b₁)) (wk e₁) (` 0F) (suc x) (q ↑ʳ 0F)
+      (subst (λ k → suc k Nat.< q + suc (suc b₁)) (sym (toℕ↑0 q)) (lt-far q b₁)))
+  ■ subst-Kunit (+-suc (syncs (c′ ∷ B)) N)
+handle-R0-*q (a ∷ [])      {N} e₁ x e₂ q b₁ B₂ =
+  cong (subst Tm (+-suc (syncs (([]) ++ (q + suc (suc b₁)) ∷ B₂)) N)) (handle-R0-*q [] (` 0F) (suc x) (wk e₂) q b₁ B₂)
+  ■ subst-Kunit (+-suc (syncs (([]) ++ (q + suc (suc b₁)) ∷ B₂)) N)
+handle-R0-*q (a ∷ d ∷ B₁″) {N} e₁ x e₂ q b₁ B₂ =
+  cong (subst Tm (+-suc (syncs ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) N)) (handle-R0-*q (d ∷ B₁″) (` 0F) (suc x) (wk e₂) q b₁ B₂)
+  ■ subst-Kunit (+-suc (syncs ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) N)
+
+-- grown borrow-1 L slot is * (position q+1 > 0).
+handle-b1-L-*q : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (q b₁ : ℕ) (B₂ : BindGroup) →
+  proj₁ (canonₛ-handleq-b1 B₁ e₁ x e₂ q b₁ B₂) ≡ *
+handle-b1-L-*q []        {N} e₁ x e₂ q b₁ []      =
+  Ub-L-pos>0 ((q + suc (suc b₁)) + 0) e₁ e₂ x ((q ↑ʳ 1F) ↑ˡ 0)
+    (subst (0 Nat.<_) (sym (toℕ↑1ˡ q)) (Nat.s≤s Nat.z≤n))
+handle-b1-L-*q []        {N} e₁ x e₂ q b₁ (c′ ∷ B) =
+  cong (λ z → subst Tm (+-suc (syncs (c′ ∷ B)) N) (z ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (c′ ∷ B))))
+    (Ub-L-pos>0 (q + suc (suc b₁)) (wk e₁) (` 0F) (suc x) (q ↑ʳ 1F)
+      (subst (0 Nat.<_) (sym (toℕ↑1 q)) (Nat.s≤s Nat.z≤n)))
+  ■ subst-Kunit (+-suc (syncs (c′ ∷ B)) N)
+handle-b1-L-*q (a ∷ [])      {N} e₁ x e₂ q b₁ B₂ =
+  cong (subst Tm (+-suc (syncs (([]) ++ (q + suc (suc b₁)) ∷ B₂)) N)) (handle-b1-L-*q [] (` 0F) (suc x) (wk e₂) q b₁ B₂)
+  ■ subst-Kunit (+-suc (syncs (([]) ++ (q + suc (suc b₁)) ∷ B₂)) N)
+handle-b1-L-*q (a ∷ d ∷ B₁″) {N} e₁ x e₂ q b₁ B₂ =
+  cong (subst Tm (+-suc (syncs ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) N)) (handle-b1-L-*q (d ∷ B₁″) (` 0F) (suc x) (wk e₂) q b₁ B₂)
+  ■ subst-Kunit (+-suc (syncs ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) N)
+
+private
+  mkLast : ∀ {w} {N} (e1 e2 : Tm N) (c : 𝔽 N) (p : 𝔽 w) (k : ℕ) →
+           Fin.toℕ p ≡ k → w ≡ suc k → proj₁ (proj₂ (Ub-triple w e1 e2 c p)) ≡ e2
+  mkLast e1 e2 c p k tp we = Ub-R-last _ e1 e2 c p (cong suc tp ■ sym we)
+  mkFar : ∀ {w} {N} (e1 e2 : Tm N) (c : 𝔽 N) (p : 𝔽 w) (k rem : ℕ) →
+          Fin.toℕ p ≡ k → w ≡ suc (suc k) + rem → proj₁ (proj₂ (Ub-triple w e1 e2 c p)) ≡ *
+  mkFar e1 e2 c p k rem tp we =
+    Ub-R-far _ e1 e2 c p
+      (subst (suc (Fin.toℕ p) Nat.<_) (sym we)
+        (subst (λ z → suc z Nat.< suc (suc k) + rem) (sym tp) (Nat.m≤m+n (suc (suc k)) rem)))
+  wl0  : ∀ q → (q + suc 0) + 0 ≡ suc q
+  wl0  q = solve 1 (λ q → (q :+ (con 1 :+ con 0)) :+ con 0 := con 1 :+ q) refl q
+  wl1  : ∀ q → (q + suc (suc 0)) + 0 ≡ suc (suc q)
+  wl1  q = solve 1 (λ q → (q :+ (con 1 :+ (con 1 :+ con 0))) :+ con 0 := con 1 :+ (con 1 :+ q)) refl q
+  wf0  : ∀ q b → (q + suc (suc b)) + 0 ≡ suc (suc q) + b
+  wf0  q b = solve 2 (λ q b → (q :+ (con 1 :+ (con 1 :+ b))) :+ con 0 := (con 1 :+ (con 1 :+ q)) :+ b) refl q b
+  wf1  : ∀ q b → (q + suc (suc (suc b))) + 0 ≡ suc (suc (suc q)) + b
+  wf1  q b = solve 2 (λ q b → (q :+ (con 1 :+ (con 1 :+ (con 1 :+ b)))) :+ con 0 := (con 1 :+ (con 1 :+ (con 1 :+ q))) :+ b) refl q b
+  wl0′ : ∀ q → q + suc 0 ≡ suc q
+  wl0′ q = solve 1 (λ q → q :+ (con 1 :+ con 0) := con 1 :+ q) refl q
+  wl1′ : ∀ q → q + suc (suc 0) ≡ suc (suc q)
+  wl1′ q = solve 1 (λ q → q :+ (con 1 :+ (con 1 :+ con 0)) := con 1 :+ (con 1 :+ q)) refl q
+  wf0′ : ∀ q b → q + suc (suc b) ≡ suc (suc q) + b
+  wf0′ q b = solve 2 (λ q b → q :+ (con 1 :+ (con 1 :+ b)) := (con 1 :+ (con 1 :+ q)) :+ b) refl q b
+  wf1′ : ∀ q b → q + suc (suc (suc b)) ≡ suc (suc (suc q)) + b
+  wf1′ q b = solve 2 (λ q b → q :+ (con 1 :+ (con 1 :+ (con 1 :+ b))) := (con 1 :+ (con 1 :+ (con 1 :+ q))) :+ b) refl q b
+
+-- ungrown handle R slot = grown borrow-1 handle R slot (both (b₁=0 ? e₂ : *)).
+handle-R-lwkq : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (q b₁ : ℕ) (B₂ : BindGroup) →
+  subst Tm (cong (_+ N) (syncs-lwkq B₁))
+    (proj₁ (proj₂ (canonₛ-handleq B₁ e₁ x e₂ q b₁ B₂)))
+  ≡ proj₁ (proj₂ (canonₛ-handleq-b1 B₁ e₁ x e₂ q b₁ B₂))
+handle-R-lwkq []        {N} e₁ x e₂ q zero    []      =
+  mkLast e₁ e₂ x ((q ↑ʳ 0F) ↑ˡ 0) q (toℕ↑0ˡ q) (wl0 q)
+  ■ sym (mkLast e₁ e₂ x ((q ↑ʳ 1F) ↑ˡ 0) (suc q) (toℕ↑1ˡ q) (wl1 q))
+handle-R-lwkq []        {N} e₁ x e₂ q (suc b₁) []      =
+  mkFar e₁ e₂ x ((q ↑ʳ 0F) ↑ˡ 0) q b₁ (toℕ↑0ˡ q) (wf0 q b₁)
+  ■ sym (mkFar e₁ e₂ x ((q ↑ʳ 1F) ↑ˡ 0) (suc q) b₁ (toℕ↑1ˡ q) (wf1 q b₁))
+handle-R-lwkq []        {N} e₁ x e₂ q zero    (c′ ∷ B) =
+  cong (λ z → subst Tm (+-suc (syncs (c′ ∷ B)) N) (z ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (c′ ∷ B))))
+    ( mkLast (wk e₁) (` 0F) (suc x) (q ↑ʳ 0F) q (toℕ↑0 q) (wl0′ q)
+    ■ sym (mkLast (wk e₁) (` 0F) (suc x) (q ↑ʳ 1F) (suc q) (toℕ↑1 q) (wl1′ q)) )
+handle-R-lwkq []        {N} e₁ x e₂ q (suc b₁) (c′ ∷ B) =
+  cong (λ z → subst Tm (+-suc (syncs (c′ ∷ B)) N) (z ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (c′ ∷ B))))
+    ( mkFar (wk e₁) (` 0F) (suc x) (q ↑ʳ 0F) q b₁ (toℕ↑0 q) (wf0′ q b₁)
+    ■ sym (mkFar (wk e₁) (` 0F) (suc x) (q ↑ʳ 1F) (suc q) b₁ (toℕ↑1 q) (wf1′ q b₁)) )
+handle-R-lwkq (a ∷ [])      {N} e₁ x e₂ q b₁ B₂ =
+  chainT (syncs-lwkq [] {q} {b₁} {B₂}) (handle-R-lwkq [] (` 0F) (suc x) (wk e₂) q b₁ B₂)
+handle-R-lwkq (a ∷ d ∷ B₁″) {N} e₁ x e₂ q b₁ B₂ =
+  chainT (syncs-lwkq (d ∷ B₁″) {q} {b₁} {B₂}) (handle-R-lwkq (d ∷ B₁″) (` 0F) (suc x) (wk e₂) q b₁ B₂)
 
 open T using (_;_⊢ₚ_)
 
@@ -439,36 +560,36 @@ transport-⋯f* fg gg ρ refl E = refl
 
 
 U-lsplit : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
-  → {γ : Struct m} {B₁ B₂ B : BindGroup} {b₁ : ℕ} {s : 𝕊 0}
-  → {E : Frame* (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)}
-  → {P : T.Proc (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)}
+  → {γ : Struct m} {B₁ B₂ B : BindGroup} {q b₁ : ℕ} {s : 𝕊 0}
+  → {E : Frame* (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
+  → {P : T.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
   → (let module 𝐒 = TR.SplitRenamings B₁ B₂ B in
-     Γ ; γ ⊢ₚ T.ν (B₁ ++ suc b₁ ∷ B₂) B
-                 (T.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ T.∥ P))
+     Γ ; γ ⊢ₚ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+                 (T.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P))
   → (let module 𝐒 = TR.SplitRenamings B₁ B₂ B in
-     (U[ T.ν (B₁ ++ suc b₁ ∷ B₂) B
-              (T.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ T.∥ P) ] σ
+     (U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+              (T.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P) ] σ
        UR─→ₚ*
-      U[ T.ν (B₁ ++ suc (suc b₁) ∷ B₂) B
-              (T.⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.lwk)) ] σ)
+      U[ T.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
+              (T.⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.atk (q ↑ʳ 0F)) ⊗ (` 𝐒.atk (q ↑ʳ 1F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.lwk)) ] σ)
      ⊎
-     (U[ T.ν (B₁ ++ suc b₁ ∷ B₂) B
-              (T.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ T.∥ P) ] σ
+     (U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+              (T.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P) ] σ
        U.≋
-      U[ T.ν (B₁ ++ suc (suc b₁) ∷ B₂) B
-              (T.⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.lwk)) ] σ))
-U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
-  with lsplit-confine Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
+      U[ T.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
+              (T.⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.atk (q ↑ʳ 0F)) ⊗ (` 𝐒.atk (q ↑ʳ 1F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.lwk)) ] σ))
+U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
+  with lsplit-confine Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
 ... | k , ρ⁻ , ρ⁻-skip , E₀ , Eeq , P₀ , Peq = ≋-wrap-⊎ front fire back
   where
     module 𝐒 = TR.SplitRenamings B₁ B₂ B
     C₁ C₁′ : BindGroup
-    C₁  = B₁ ++ suc b₁ ∷ B₂
-    C₁′ = B₁ ++ suc (suc b₁) ∷ B₂
+    C₁  = B₁ ++ (q + suc b₁) ∷ B₂
+    C₁′ = B₁ ++ (q + suc (suc b₁)) ∷ B₂
     QL : T.Proc (sum C₁ + sum B + m)
-    QL = T.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ T.∥ P
+    QL = T.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P
     QR : T.Proc (sum C₁′ + sum B + m)
-    QR = T.⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.lwk)
+    QR = T.⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.atk (q ↑ʳ 0F)) ⊗ (` 𝐒.atk (q ↑ʳ 1F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.lwk)
     sA sA′ sB : ℕ
     sA  = syncs C₁
     sA′ = syncs C₁′
@@ -504,13 +625,13 @@ U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
     front : U[ T.ν C₁ B QL ] σ U.≋ Bφ C₁ (Bφ B (U.ν (push XL)))
     front = ≡→≋ (Uν-flat σ C₁ B QL) ◅◅ ν↓ XL
     castpos : 𝔽 (sum C₁)
-    castpos = Fin.cast (sym (sum-++ B₁ (suc b₁ ∷ B₂))) (sum B₁ ↑ʳ 0F)
+    castpos = Fin.cast (sym (sum-++ B₁ ((q + suc b₁) ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
     -- the lsplit handle translated at the leaf.
-    hc = canonₛ-handle B₁ (K `unit) 0F (K `unit) b₁ B₂
+    hc = canonₛ-handleq B₁ (K `unit) 0F (K `unit) q b₁ B₂
     cc : Tm (2 + (sB + (sA + n)))
-    cc = rn (τ (𝐒.inj 0F))
+    cc = rn (τ (𝐒.atk (q ↑ʳ 0F)))
     -- τ (inj 0F) = canonₛ C₁ cc1 castpos ⋯ weaken* sB
-    τinj0 : τ (𝐒.inj 0F) ≡ canonₛ C₁ (K `unit , 0F , K `unit) castpos ⋯ weaken* ⦃ Kᵣ ⦄ sB
+    τinj0 : τ (𝐒.atk (q ↑ʳ 0F)) ≡ canonₛ C₁ (K `unit , 0F , K `unit) castpos ⋯ weaken* ⦃ Kᵣ ⦄ sB
     τinj0 =
         cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁ + sum B) (castpos ↑ˡ sum B) m)
       ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁) castpos (sum B))
@@ -537,7 +658,7 @@ U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
       ■ frame-plug*ᵣ (frame*-⋯ Ef τ Vτ ⋯ᶠ* ρ₁) ρ₂ )
     YL≡ : push XL ≡ U.⟪ Fr [ K (`lsplit s) ·¹ cc ]* ⟫ U.∥ RP
     YL≡ = cong₂ U._∥_
-            (threadEq E (K (`lsplit s) ·¹ (` 𝐒.inj 0F)))
+            (threadEq E (K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F))))
             refl
     ccA ccC : Tm (2 + (sB + (sA + n)))
     ccA = proj₁ hc ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁ ⋯ ρ₂
@@ -582,12 +703,12 @@ U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
     rhs : U[ T.ν C₁′ B QR ] σ U.≋ Bφ C₁′ (Bφ B (U.ν (pushR XR′)))
     rhs = ≡→≋ (Uν-flat σ C₁′ B QR) ◅◅ ν↓′ XR′
     e1 : sA ≡ sA′
-    e1 = syncs-lwk B₁
+    e1 = syncs-lwkq B₁
     -- the transported contractum at the leaf must match pushR XR′.
     eqP : (2 + (sB + (sA + n))) ≡ (2 + (sB + (sA′ + n)))
     eqP = cong (2 +_) (cong (sB +_) (cong (_+ n) e1))
     pushR-thread : U.Proc (2 + (sB + (sA′ + n)))
-    pushR-thread = (U[ T.⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F) ]* ⟫ ] τ′ U.⋯ₚ (assocSwapᵣ sA′ 2 ↑* sB)) U.⋯ₚ assocSwapᵣ sB 2
+    pushR-thread = (U[ T.⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.atk (q ↑ʳ 0F)) ⊗ (` 𝐒.atk (q ↑ʳ 1F)) ]* ⟫ ] τ′ U.⋯ₚ (assocSwapᵣ sA′ 2 ↑* sB)) U.⋯ₚ assocSwapᵣ sB 2
     pushR-P : U.Proc (2 + (sB + (sA′ + n)))
     pushR-P = (U[ P T.⋯ₚ 𝐒.lwk ] τ′ U.⋯ₚ (assocSwapᵣ sA′ 2 ↑* sB)) U.⋯ₚ assocSwapᵣ sB 2
     ρ₁′ : (sB + (sA′ + (2 + n))) →ᵣ (sB + (2 + (sA′ + n)))
@@ -605,13 +726,13 @@ U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
       ( cong (λ t → (t ⋯ ρ₁′) ⋯ ρ₂′) (frame-plug* Ef τ′ Vτ′)
       ■ cong (_⋯ ρ₂′) (frame-plug*ᵣ (frame*-⋯ Ef τ′ Vτ′) ρ₁′)
       ■ frame-plug*ᵣ (frame*-⋯ Ef τ′ Vτ′ ⋯ᶠ* ρ₁′) ρ₂′ )
-    pushR-threadEq : pushR-thread ≡ U.⟪ Fr′ [ rn′ (τ′ (𝐒.inj 0F)) ⊗ rn′ (τ′ (𝐒.inj 1F)) ]* ⟫
-    pushR-threadEq = threadEq′ (E ⋯ᶠ* 𝐒.lwk) ((` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F))
+    pushR-threadEq : pushR-thread ≡ U.⟪ Fr′ [ rn′ (τ′ (𝐒.atk (q ↑ʳ 0F))) ⊗ rn′ (τ′ (𝐒.atk (q ↑ʳ 1F))) ]* ⟫
+    pushR-threadEq = threadEq′ (E ⋯ᶠ* 𝐒.lwk) ((` 𝐒.atk (q ↑ʳ 0F)) ⊗ (` 𝐒.atk (q ↑ʳ 1F)))
     -- the grown handle (inj 0F in C₁′), pushed, has junction 0F: same chanTriple shape as cc.
-    hc′ = canonₛ-handle B₁ {N = 2 + n} (K `unit) 0F (K `unit) (suc b₁) B₂
+    hc′ = canonₛ-handleq B₁ {N = 2 + n} (K `unit) 0F (K `unit) q (suc b₁) B₂
     castpos′ : 𝔽 (sum C₁′)
-    castpos′ = Fin.cast (sym (sum-++ B₁ (suc (suc b₁) ∷ B₂))) (sum B₁ ↑ʳ 0F)
-    τ′inj0 : τ′ (𝐒.inj 0F) ≡ canonₛ C₁′ (K `unit , 0F , K `unit) castpos′ ⋯ weaken* ⦃ Kᵣ ⦄ sB
+    castpos′ = Fin.cast (sym (sum-++ B₁ ((q + suc (suc b₁)) ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
+    τ′inj0 : τ′ (𝐒.atk (q ↑ʳ 0F)) ≡ canonₛ C₁′ (K `unit , 0F , K `unit) castpos′ ⋯ weaken* ⦃ Kᵣ ⦄ sB
     τ′inj0 =
         cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′ + sum B) (castpos′ ↑ˡ sum B) m)
       ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′) castpos′ (sum B))
@@ -639,7 +760,7 @@ U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
           ■ frame*-cong E₀ (·ₖ-VSubᵣ ρ⁻ (subst-VSub (λ j → sB + (j + (2 + n))) e1 Vτ))
                            (·ₖ-VSubᵣ ρ⁻ (·ₖ-VSubᵣ 𝐒.lwk Vτ′))
               (λ y → substσ-app (λ j → sB + (j + (2 + n))) e1 τ (ρ⁻ y)
-                   ■ leafσ-lwk-id σ B₁ B₂ B b₁ (ρ⁻ y) (ρ⁻-skip y))
+                   ■ leafσ-lwk-id σ B₁ B₂ B q b₁ (ρ⁻ y) (ρ⁻-skip y))
           ■ sym (F-⋯f*-fuse E₀ (·ₖ-VSubᵣ 𝐒.lwk Vτ′) (·ₖ-VSubᵣ ρ⁻ (·ₖ-VSubᵣ 𝐒.lwk Vτ′)))
           ■ cong (λ EE → frame*-⋯ EE (𝐒.lwk ·ₖ τ′) (·ₖ-VSubᵣ 𝐒.lwk Vτ′)) (sym Eeq)
           ■ sym (F-⋯f*-fuse E Vτ′ (·ₖ-VSubᵣ 𝐒.lwk Vτ′))
@@ -654,15 +775,15 @@ U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
               ( transport-⋯f* (λ j → sB + (j + (2 + n))) (λ j → sB + (2 + (j + n))) (λ j → assocSwapᵣ j 2 {n} ↑* sB) e1 (frame*-⋯ E τ Vτ)
               ■ cong (λ z → z ⋯ᶠ* (assocSwapᵣ sA′ 2 {n} ↑* sB)) frameLeafeq )
         castpos1′ : 𝔽 (sum C₁′)
-        castpos1′ = Fin.cast (sym (sum-++ B₁ (suc (suc b₁) ∷ B₂))) (sum B₁ ↑ʳ 1F)
-        τ′inj1 : τ′ (𝐒.inj 1F) ≡ canonₛ C₁′ (K `unit , 0F , K `unit) castpos1′ ⋯ weaken* {{ Kᵣ }} sB
+        castpos1′ = Fin.cast (sym (sum-++ B₁ ((q + suc (suc b₁)) ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 1F) ↑ˡ sum B₂))
+        τ′inj1 : τ′ (𝐒.atk (q ↑ʳ 1F)) ≡ canonₛ C₁′ (K `unit , 0F , K `unit) castpos1′ ⋯ weaken* {{ Kᵣ }} sB
         τ′inj1 =
             cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′ + sum B) (castpos1′ ↑ˡ sum B) m)
           ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′) castpos1′ (sum B))
         -- grown handle borrow-1 triple (left slot *, right slot = grown borrow-1 R-slot).
-        hb1 = canonₛ-handle-b1 B₁ {N = 2 + n} (K `unit) 0F (K `unit) b₁ B₂
+        hb1 = canonₛ-handleq-b1 B₁ {N = 2 + n} (K `unit) 0F (K `unit) q b₁ B₂
         -- pushed grown borrow-0 triple: right slot is * (grown width ≥ 2).
-        hc′triple : rn′ (τ′ (𝐒.inj 0F))
+        hc′triple : rn′ (τ′ (𝐒.atk (q ↑ʳ 0F)))
                     ≡ ((proj₁ hc′ ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) ⊗ (` 0F))
                       ⊗ (proj₁ (proj₂ hc′) ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′)
         hc′triple =
@@ -674,7 +795,7 @@ U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
             jvtoℕ′ : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hc′)))) ≡ sB + (sA′ + 0)
             jvtoℕ′ = toℕ-weaken*ᵣ sB (proj₁ (proj₂ (proj₂ hc′))) ■ cong (sB +_) (proj₂ (proj₂ (proj₂ (proj₂ hc′))))
         -- pushed grown borrow-1 triple.
-        hc′triple1 : rn′ (τ′ (𝐒.inj 1F))
+        hc′triple1 : rn′ (τ′ (𝐒.atk (q ↑ʳ 1F)))
                      ≡ ((proj₁ hb1 ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) ⊗ (` 0F))
                        ⊗ (proj₁ (proj₂ hb1) ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′)
         hc′triple1 =
@@ -687,13 +808,13 @@ U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
             jv1toℕ = toℕ-weaken*ᵣ sB (proj₁ (proj₂ (proj₂ hb1))) ■ cong (sB +_) (proj₂ (proj₂ (proj₂ (proj₂ hb1))))
         -- slot correspondences under handle growth.
         L-inv : subst Tm (cong (_+ (2 + n)) e1) (proj₁ hc) ≡ proj₁ hc′
-        L-inv = handle-L-lwk B₁ (K `unit) 0F (K `unit) b₁ B₂
+        L-inv = handle-L-lwkq B₁ (K `unit) 0F (K `unit) q b₁ B₂
         R0-* : proj₁ (proj₂ hc′) ≡ *
-        R0-* = handle-R0-* B₁ (K `unit) 0F (K `unit) b₁ B₂
+        R0-* = handle-R0-*q B₁ (K `unit) 0F (K `unit) q b₁ B₂
         R-corr : subst Tm (cong (_+ (2 + n)) e1) (proj₁ (proj₂ hc)) ≡ proj₁ (proj₂ hb1)
-        R-corr = handle-R-lwk B₁ (K `unit) 0F (K `unit) b₁ B₂
+        R-corr = handle-R-lwkq B₁ (K `unit) 0F (K `unit) q b₁ B₂
         L0-* : proj₁ hb1 ≡ *
-        L0-* = handle-b1-L-* B₁ (K `unit) 0F (K `unit) b₁ B₂
+        L0-* = handle-b1-L-*q B₁ (K `unit) 0F (K `unit) q b₁ B₂
         -- push a single ungrown slot (with its wk sB) forward to the grown side.
         pushSlot : (t : Tm (sA + (2 + n))) {t′ : Tm (sA′ + (2 + n))}
                    → subst Tm (cong (_+ (2 + n)) e1) t ≡ t′
@@ -715,7 +836,7 @@ U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
           where go : ∀ {s′} (eq : sA ≡ s′) → subst (λ j → Tm (2 + (sB + (j + n)))) eq * ≡ *
                 go refl = refl
         bodyTransport : subst (λ j → Tm (hF j)) e1 (ccL0 ⊗ ccR0)
-                        ≡ rn′ (τ′ (𝐒.inj 0F)) ⊗ rn′ (τ′ (𝐒.inj 1F))
+                        ≡ rn′ (τ′ (𝐒.atk (q ↑ʳ 0F))) ⊗ rn′ (τ′ (𝐒.atk (q ↑ʳ 1F)))
         bodyTransport =
             subst-⊗f hF e1 ccL0 ccR0
           ■ cong₂ _⊗_
@@ -729,13 +850,13 @@ U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
               ■ sym hc′triple1₀ )
           where
             -- grown borrow-0 triple with right slot rewritten to *.
-            hc′triple₀ : rn′ (τ′ (𝐒.inj 0F))
+            hc′triple₀ : rn′ (τ′ (𝐒.atk (q ↑ʳ 0F)))
                          ≡ ((proj₁ hc′ ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) ⊗ (` 0F)) ⊗ *
             hc′triple₀ = hc′triple
               ■ cong (λ z → ((proj₁ hc′ ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) ⊗ (` 0F)) ⊗ z)
                   (cong (λ w → w ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) R0-*)
             -- grown borrow-1 triple with left slot rewritten to *.
-            hc′triple1₀ : rn′ (τ′ (𝐒.inj 1F))
+            hc′triple1₀ : rn′ (τ′ (𝐒.atk (q ↑ʳ 1F)))
                           ≡ ((* ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) ⊗ (` 0F))
                             ⊗ (proj₁ (proj₂ hb1) ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′)
             hc′triple1₀ = hc′triple1
@@ -754,7 +875,7 @@ U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
       ■ cong (λ p → U[ p ] (subst (λ j → (sum C₁ + sum B + m) →ₛ (sB + (j + (2 + n)))) e1 τ)) Peq
       ■ U-⋯ₚ P₀
       ■ U-cong P₀ (λ y → substσ-app (λ j → sB + (j + (2 + n))) e1 τ (ρ⁻ y)
-                       ■ leafσ-lwk-id σ B₁ B₂ B b₁ (ρ⁻ y) (ρ⁻-skip y))
+                       ■ leafσ-lwk-id σ B₁ B₂ B q b₁ (ρ⁻ y) (ρ⁻-skip y))
       ■ sym (U-⋯ₚ P₀)
       ■ cong (λ p → U[ p ] (𝐒.lwk ·ₖ τ′)) (sym Peq)
       ■ sym (U-⋯ₚ P)
@@ -779,7 +900,7 @@ U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
       ■ cong₂ U._∥_ redexRec PrestRec )
     middleReconcile : Bφ C₁ (Bφ B (U.ν contractumR)) U.≋ Bφ C₁′ (Bφ B (U.ν (pushR XR′)))
     middleReconcile =
-         ≡→≋ (Bφ-lwk B₁ {b₁} {B₂} {a = n} (Bφ B (U.ν contractumR)))
+         ≡→≋ (Bφ-lwk B₁ {q} {b₁} {B₂} {a = n} (Bφ B (U.ν contractumR)))
       ◅◅ Bφ-cong C₁′
            ( ≡→≋ ( subst-Bφ (cong (_+ n) e1) B (U.ν contractumR)
                  ■ cong (Bφ B) (subst-ν (cong (sB +_) (cong (_+ n) e1)) contractumR) )
