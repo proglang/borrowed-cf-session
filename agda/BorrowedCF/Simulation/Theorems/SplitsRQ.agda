@@ -23,8 +23,23 @@ open import Data.Nat.ListAction.Properties using (sum-++)
 open import Data.Nat.Solver using (module +-*-Solver)
 open +-*-Solver using (solve; _:=_; _:+_; con)
 open import BorrowedCF.Simulation.BlockPerm
-  using ( toℕ-weaken*ᵣ; toℕ-reduce≥; toℕ-↑*-ge; toℕ-↑*-lt )
+  using ( assocSwap-01; R-base-b0; assocSwap-0a; toℕ-R3; toℕ-R3₂; toℕ-R4
+        ; toℕ-weaken*ᵣ; toℕ-swapᵣ-mid; toℕ-reduce≥; toℕ-assoc-mid
+        ; toℕ-assoc-lt; toℕ-assoc-ge
+        ; toℕ-↑*-ge; toℕ-↑*-lt; commuteS; wkSwap-cancel; assocSwap-invol )
 open import BorrowedCF.Processes.Bisim using (syncs)
+open import Data.List.Properties using (++-assoc)
+import Relation.Binary.Construct.Closure.Equivalence as Eq*
+open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_; _◅◅_)
+open import BorrowedCF.Simulation.TranslationProperties
+  using (UB-nat; mapᶜ; U-cong; U-⋯ₚ; U-σ⋯)
+  renaming ( subst-⋯ₚ-dom to TP-subst-⋯ₚ-dom
+           ; subst-⋯-cod to subst-⋯-cod-local
+           ; subst-⋯ to subst-⋯-dom-local )
+open import BorrowedCF.Simulation.RsplitTransport
+  using (⋯-subst₂; ⋯ₚ-subst₂; subst-Tm-uip; toℕ-subst-cod; toℕ-subst₂ᵣ)
+
+open import BorrowedCF.Simulation.Theorems.SplitsH3 public
 
 -- ============================================================================
 --   syncs / sum bookkeeping for the two-block rsplit reshape.
@@ -206,3 +221,80 @@ P3rq B₁ B₂ B {q} {b₁} {m} u = Fin.toℕ-injective
         sB₁+q≤ : ∀ (B₁ : T.BindGroup) → sum B₁ + q Nat.≤ sum (B₁ ++ (q + suc b₁) ∷ B₂)
         sB₁+q≤ B₁ = subst (sum B₁ + q Nat.≤_) (sym (sum-++ B₁ ((q + suc b₁) ∷ B₂)))
                       (Nat.+-monoʳ-≤ (sum B₁) (Nat.≤-trans (Nat.m≤m+n q (suc b₁)) (Nat.m≤m+n (q + suc b₁) (sum B₂))))
+
+-- ============================================================================
+--   φ-drop bookkeeping: both split blocks have width ≥ 1, so their φ = drop.
+-- ============================================================================
+ϕq1-drop : ∀ (q : ℕ) → ϕ[ q + 1 ] ≡ U.drop
+ϕq1-drop q = cong ϕ[_] (Nat.+-comm q 1)
+
+ϕqsb-drop : ∀ (q b₁ : ℕ) → ϕ[ q + suc b₁ ] ≡ U.drop
+ϕqsb-drop q b₁ = cong ϕ[_] (Nat.+-suc q b₁)
+
+-- ============================================================================
+--   sinsq : q-generalized sync-insertion renaming (the fresh φ from the split).
+--   Inserts at flat position syncs (suc b₁ ∷ B₂) (leaf-side sync count), same as
+--   the position-0 sins; the base case coincides with sins definitionally.
+-- ============================================================================
+sinsq : ∀ (B₁ : BindGroup) (q b₁ : ℕ) (B₂ : BindGroup) {N} →
+        syncs (B₁ ++ (q + suc b₁) ∷ B₂) + N →ᵣ syncs (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) + N
+sinsq []        q b₁ B₂ {N} j = sins [] b₁ B₂ {N} (Fin.cast (cong (_+ N) (syncs-head-irrel (q + suc b₁) (suc b₁) B₂)) j)
+sinsq (a ∷ B₁') q b₁ B₂ {N} =
+  subst₂ _→ᵣ_
+    (+-suc (syncs (B₁' ++ (q + suc b₁) ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a B₁' (q + suc b₁) B₂)))
+    (+-suc (syncs (B₁' ++ (q + 1) ∷ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a B₁' (q + 1) (suc b₁ ∷ B₂))))
+    (sinsq B₁' q b₁ B₂ {suc N})
+
+private
+  toℕ-subst𝔽q : ∀ {a c} (e : a ≡ c) (y : 𝔽 a) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
+  toℕ-subst𝔽q refl y = refl
+
+sins-toℕ-hiq : ∀ (B₁ : BindGroup) (q b₁ : ℕ) (B₂ : BindGroup) {N}
+              (j : 𝔽 (syncs (B₁ ++ (q + suc b₁) ∷ B₂) + N)) →
+              syncs (suc b₁ ∷ B₂) Nat.≤ Fin.toℕ j →
+              Fin.toℕ (sinsq B₁ q b₁ B₂ {N} j) ≡ suc (Fin.toℕ j)
+sins-toℕ-hiq []        q b₁ B₂ {N} j h =
+    sins-toℕ-hi [] b₁ B₂ {N} (Fin.cast ee j) (subst (syncs (suc b₁ ∷ B₂) Nat.≤_) (sym (Fin.toℕ-cast ee j)) h)
+  ■ cong suc (Fin.toℕ-cast ee j)
+  where ee = cong (_+ N) (syncs-head-irrel (q + suc b₁) (suc b₁) B₂)
+sins-toℕ-hiq (a ∷ B₁') q b₁ B₂ {N} j h =
+    toℕ-subst₂ᵣ pL pR (sinsq B₁' q b₁ B₂ {suc N}) j
+  ■ sins-toℕ-hiq B₁' q b₁ B₂ {suc N} (subst 𝔽 (sym pL) j)
+      (subst (syncs (suc b₁ ∷ B₂) Nat.≤_) (sym (toℕ-subst𝔽q (sym pL) j)) h)
+  ■ cong suc (toℕ-subst𝔽q (sym pL) j)
+  where
+    pL = +-suc (syncs (B₁' ++ (q + suc b₁) ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a B₁' (q + suc b₁) B₂))
+    pR = +-suc (syncs (B₁' ++ (q + 1) ∷ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a B₁' (q + 1) (suc b₁ ∷ B₂)))
+
+sins-toℕ-loq : ∀ (B₁ : BindGroup) (q b₁ : ℕ) (B₂ : BindGroup) {N}
+              (j : 𝔽 (syncs (B₁ ++ (q + suc b₁) ∷ B₂) + N)) →
+              Fin.toℕ j Nat.< syncs (suc b₁ ∷ B₂) →
+              Fin.toℕ (sinsq B₁ q b₁ B₂ {N} j) ≡ Fin.toℕ j
+sins-toℕ-loq []        q b₁ B₂ {N} j h =
+    sins-toℕ-lo [] b₁ B₂ {N} (Fin.cast ee j) (subst (Nat._< syncs (suc b₁ ∷ B₂)) (sym (Fin.toℕ-cast ee j)) h)
+  ■ Fin.toℕ-cast ee j
+  where ee = cong (_+ N) (syncs-head-irrel (q + suc b₁) (suc b₁) B₂)
+sins-toℕ-loq (a ∷ B₁') q b₁ B₂ {N} j h =
+    toℕ-subst₂ᵣ pL pR (sinsq B₁' q b₁ B₂ {suc N}) j
+  ■ sins-toℕ-loq B₁' q b₁ B₂ {suc N} (subst 𝔽 (sym pL) j)
+      (subst (Nat._< syncs (suc b₁ ∷ B₂)) (sym (toℕ-subst𝔽q (sym pL) j)) h)
+  ■ toℕ-subst𝔽q (sym pL) j
+  where
+    pL = +-suc (syncs (B₁' ++ (q + suc b₁) ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a B₁' (q + suc b₁) B₂))
+    pR = +-suc (syncs (B₁' ++ (q + 1) ∷ suc b₁ ∷ B₂)) N ■ cong (_+ N) (sym (syncs-cons a B₁' (q + 1) (suc b₁ ∷ B₂)))
+
+sD≤q : ∀ (B₁ : BindGroup) (q : ℕ) {b₁ B₂} → syncs (suc b₁ ∷ B₂) Nat.≤ syncs (B₁ ++ (q + suc b₁) ∷ B₂)
+sD≤q []        q {b₁} {B₂} = Nat.≤-reflexive (syncs-head-irrel (suc b₁) (q + suc b₁) B₂)
+sD≤q (a ∷ B₁') q {b₁} {B₂} =
+  subst (syncs (suc b₁ ∷ B₂) Nat.≤_) (sym (syncs-cons a B₁' (q + suc b₁) B₂))
+    (Nat.≤-trans (sD≤q B₁' q) (Nat.n≤1+n _))
+
+sins-wkq : ∀ (B₁ : BindGroup) (q b₁ : ℕ) (B₂ : BindGroup) {N} (v : 𝔽 N) →
+          sinsq B₁ q b₁ B₂ {N} (weaken* ⦃ Kᵣ ⦄ (syncs (B₁ ++ (q + suc b₁) ∷ B₂)) v)
+          ≡ weaken* ⦃ Kᵣ ⦄ (syncs (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂)) v
+sins-wkq B₁ q b₁ B₂ {N} v = Fin.toℕ-injective
+  ( sins-toℕ-hiq B₁ q b₁ B₂ {N} (weaken* ⦃ Kᵣ ⦄ (syncs (B₁ ++ (q + suc b₁) ∷ B₂)) v)
+      (subst (syncs (suc b₁ ∷ B₂) Nat.≤_) (sym (toℕ-weaken*ᵣ (syncs (B₁ ++ (q + suc b₁) ∷ B₂)) v))
+        (Nat.≤-trans (sD≤q B₁ q) (Nat.m≤m+n (syncs (B₁ ++ (q + suc b₁) ∷ B₂)) (Fin.toℕ v))))
+  ■ cong suc (toℕ-weaken*ᵣ (syncs (B₁ ++ (q + suc b₁) ∷ B₂)) v)
+  ■ sym (toℕ-weaken*ᵣ (syncs (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂)) v ■ cong (Nat._+ Fin.toℕ v) (syncs-rwkq B₁ q)) )
