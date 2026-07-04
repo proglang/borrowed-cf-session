@@ -32,7 +32,7 @@ open import Data.List.Properties using (++-assoc)
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_; _◅◅_)
 open import BorrowedCF.Simulation.TranslationProperties
-  using (UB-nat; mapᶜ; U-cong; U-⋯ₚ; U-σ⋯)
+  using (UB-nat; Ub-nat; mapᶜ; U-cong; U-⋯ₚ; U-σ⋯)
   renaming ( subst-⋯ₚ-dom to TP-subst-⋯ₚ-dom
            ; subst-⋯-cod to subst-⋯-cod-local
            ; subst-⋯ to subst-⋯-dom-local )
@@ -339,6 +339,143 @@ Ub-after (suc zero)      w' e₁ e₂ c (suc j') k _ eq =
 Ub-after (suc (suc pre)) w' e₁ e₂ c (suc j') k _ eq =
   Ub-after (suc pre) w' * e₂ c j' k (Nat.s≤s Nat.z≤n) (Nat.suc-injective eq)
 
+-- ============================================================================
+--   Front-drop for the in-scope canonₛ (mirrors ComHelpers1.canonₛ-suc-shift,
+--   whose canonₛ is a different module).  Prepending one slot to the *-headed
+--   head block at a shifted index drops to the smaller head block.
+-- ============================================================================
+Ub-fdrop : ∀ {N} (m : ℕ) (x : 𝔽 N) (e2 : Tm N) (j : 𝔽 m) →
+           Ub[ suc m ] (* , x , e2) (Fin.suc j) ≡ Ub[ m ] (* , x , e2) j
+Ub-fdrop zero    x e2 ()
+Ub-fdrop (suc m) x e2 j = refl
+
+canonₛ-fdrop : ∀ {N} (b : ℕ) (B : BindGroup) (x : 𝔽 N) (e2 : Tm N) (j : 𝔽 (b + sum B)) →
+               canonₛ (suc b ∷ B) (* , x , e2) (Fin.suc j)
+               ≡ subst (λ z → Tm (z + N)) (syncs-head-irrel b (suc b) B) (canonₛ (b ∷ B) (* , x , e2) j)
+canonₛ-fdrop b []          x e2 j = Ub-fdrop (b + 0) x e2 j
+canonₛ-fdrop {N} b (d ∷ B) x e2 j with Fin.splitAt b j
+... | inj₁ j′ = cong (λ t → subst Tm (+-suc (syncs (d ∷ B)) N) (t ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (d ∷ B))))
+                     (Ub-fdrop b (suc x) (` 0F) j′)
+... | inj₂ _  = refl
+
+-- ============================================================================
+--   sinsq-front : sinsq at (suc q) equals sinsq at q, up to the domain
+--   transport that the front-drop of the RHS head block introduces.  Both are
+--   fixed by their toℕ action (sins-toℕ-loq/hiq), independent of q.
+-- ============================================================================
+subst-cong+N : ∀ {N a a'} (σ : a ≡ a') (t : Tm (a + N)) →
+               subst (λ z → Tm (z + N)) σ t ≡ subst Tm (cong (_+ N) σ) t
+subst-cong+N refl t = refl
+
+toℕ-substᵈ : ∀ {D A A'} (e : A' ≡ A) (ρ : A' →ᵣ D) (v : 𝔽 A) →
+             Fin.toℕ (subst (λ w → w →ᵣ D) e ρ v) ≡ Fin.toℕ (ρ (subst 𝔽 (sym e) v))
+toℕ-substᵈ refl ρ v = refl
+
+sinsq-front : ∀ (q b₁ : ℕ) (B₂ : BindGroup) {N} (T : Tm (syncs ((q + suc b₁) ∷ B₂) + N)) →
+              T ⋯ sinsq [] q b₁ B₂ {N}
+              ≡ subst (λ z → Tm (z + N)) (syncs-head-irrel (q + suc b₁) (suc (q + suc b₁)) B₂) T
+                ⋯ sinsq [] (suc q) b₁ B₂ {N}
+sinsq-front q b₁ B₂ {N} T =
+    ⋯-cong T (λ v → Fin.toℕ-injective (sym (ptwise v)))
+  ■ sym (subst-⋯-dom-local (cong (_+ N) σ) T (sinsq [] (suc q) b₁ B₂ {N}))
+  ■ cong (_⋯ sinsq [] (suc q) b₁ B₂ {N}) (sym (subst-cong+N σ T))
+  where
+    σ  = syncs-head-irrel (q + suc b₁) (suc (q + suc b₁)) B₂
+    sT = syncs (suc b₁ ∷ B₂)
+    D  = syncs ((suc q + 1) ∷ suc b₁ ∷ B₂) + N
+    e' = sym (cong (_+ N) σ)
+    ρ2 : syncs ((q + suc b₁) ∷ B₂) + N →ᵣ D
+    ρ2 = subst (λ w → w →ᵣ D) e' (sinsq [] (suc q) b₁ B₂ {N})
+    ptwise : ∀ v → Fin.toℕ (ρ2 v) ≡ Fin.toℕ (sinsq [] q b₁ B₂ {N} v)
+    ptwise v with Fin.toℕ v Nat.<? sT
+    ... | yes lt =
+          toℕ-substᵈ e' (sinsq [] (suc q) b₁ B₂ {N}) v
+        ■ sins-toℕ-loq [] (suc q) b₁ B₂ (subst 𝔽 (sym e') v)
+            (subst (Nat._< sT) (sym (toℕ-subst𝔽q (sym e') v)) lt)
+        ■ toℕ-subst𝔽q (sym e') v
+        ■ sym (sins-toℕ-loq [] q b₁ B₂ v lt)
+    ... | no ¬lt =
+          toℕ-substᵈ e' (sinsq [] (suc q) b₁ B₂ {N}) v
+        ■ sins-toℕ-hiq [] (suc q) b₁ B₂ (subst 𝔽 (sym e') v)
+            (subst (sT Nat.≤_) (sym (toℕ-subst𝔽q (sym e') v)) (Nat.≮⇒≥ ¬lt))
+        ■ cong suc (toℕ-subst𝔽q (sym e') v)
+        ■ sym (sins-toℕ-hiq [] q b₁ B₂ v (Nat.≮⇒≥ ¬lt))
+
+-- The head-slot sync reconciliation for the cons case: the tail-sync weakening
+-- of the head chanTriple (K₀ weakened, off the fresh 0-slot) shifts by one under
+-- sinsq, matching the grown tail-sync weakening.  Factored through weakenᵣ so the
+-- pointwise renaming equality only touches positions ≥ 1 (where sinsq bumps).
+head-sync : ∀ {N} (K₀ : Tm N) (q b₁ c : ℕ) (B : BindGroup) →
+  subst Tm (+-suc (syncs (suc b₁ ∷ c ∷ B)) N) (wk K₀ ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (suc b₁ ∷ c ∷ B)))
+  ≡ subst Tm (+-suc (syncs (c ∷ B)) N) (wk K₀ ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (c ∷ B)))
+    ⋯ sinsq [] (suc q) b₁ (c ∷ B) {N}
+head-sync {N} K₀ q b₁ c B =
+    sym (subst-⋯-cod-local (+-suc sT N) (wk K₀) (weaken* ⦃ Kᵣ ⦄ sT))
+  ■ fusion K₀ weakenᵣ ρL
+  ■ ⋯-cong K₀ ptwise
+  ■ sym (fusion K₀ weakenᵣ ρR)
+  ■ sym (fusion (wk K₀) (weaken* ⦃ Kᵣ ⦄ sB) ρR')
+  ■ sym (subst-⋯-dom-local (+-suc sB N) (wk K₀ ⋯ weaken* ⦃ Kᵣ ⦄ sB) (sinsq [] (suc q) b₁ (c ∷ B) {N}))
+  where
+    sT  = syncs (suc b₁ ∷ c ∷ B)
+    sB  = syncs (c ∷ B)
+    Cd  = syncs ((suc q + 1) ∷ suc b₁ ∷ c ∷ B) + N
+    ρL  = subst (λ z → suc N →ᵣ z) (+-suc sT N) (weaken* ⦃ Kᵣ ⦄ sT)
+    ρR' = subst (λ w → w →ᵣ Cd) (sym (+-suc sB N)) (sinsq [] (suc q) b₁ (c ∷ B) {N})
+    ρR  = weaken* ⦃ Kᵣ ⦄ sB ·ₖ ρR'
+    ptwise : ∀ w → (weakenᵣ ·ₖ ρL) w ≡ (weakenᵣ ·ₖ ρR) w
+    ptwise w = Fin.toℕ-injective (lhsℕ ■ sym rhsℕ)
+      where
+        tw≡ : Fin.toℕ (weakenᵣ w) ≡ suc (Fin.toℕ w)
+        tw≡ = refl
+        lhsℕ : Fin.toℕ ((weakenᵣ ·ₖ ρL) w) ≡ sT + suc (Fin.toℕ w)
+        lhsℕ = toℕ-subst-cod (+-suc sT N) (weaken* ⦃ Kᵣ ⦄ sT) (weakenᵣ w)
+             ■ toℕ-weaken*ᵣ sT (weakenᵣ w)
+             ■ cong (sT +_) tw≡
+        pos≡ : Fin.toℕ (subst 𝔽 (sym (sym (+-suc sB N))) (weaken* ⦃ Kᵣ ⦄ sB (weakenᵣ w))) ≡ sB + suc (Fin.toℕ w)
+        pos≡ = toℕ-subst𝔽q (sym (sym (+-suc sB N))) (weaken* ⦃ Kᵣ ⦄ sB (weakenᵣ w))
+             ■ toℕ-weaken*ᵣ sB (weakenᵣ w)
+             ■ cong (sB +_) tw≡
+        hbound : sT Nat.≤ Fin.toℕ (subst 𝔽 (sym (sym (+-suc sB N))) (weaken* ⦃ Kᵣ ⦄ sB (weakenᵣ w)))
+        hbound = subst (sT Nat.≤_) (sym pos≡)
+                   (subst (sT Nat.≤_) (sym (Nat.+-suc sB (Fin.toℕ w)))
+                     (Nat.s≤s (Nat.m≤m+n sB (Fin.toℕ w))))
+        rhsℕ : Fin.toℕ ((weakenᵣ ·ₖ ρR) w) ≡ sT + suc (Fin.toℕ w)
+        rhsℕ = toℕ-substᵈ (sym (+-suc sB N)) (sinsq [] (suc q) b₁ (c ∷ B) {N}) (weaken* ⦃ Kᵣ ⦄ sB (weakenᵣ w))
+             ■ sins-toℕ-hiq [] (suc q) b₁ (c ∷ B) (subst 𝔽 (sym (sym (+-suc sB N))) (weaken* ⦃ Kᵣ ⦄ sB (weakenᵣ w))) hbound
+             ■ cong suc pos≡
+
+rwk0q-base : ∀ {N} (e₁ e₂ : Tm N) (x : 𝔽 N) (q b₁ : ℕ) (B₂ : BindGroup) →
+             canonₛ ((suc q + 1) ∷ suc b₁ ∷ B₂) (e₁ , x , e₂) 0F
+             ≡ canonₛ ((suc q + suc b₁) ∷ B₂) (e₁ , x , e₂) 0F ⋯ sinsq [] (suc q) b₁ B₂ {N}
+rwk0q-base {N} e₁ e₂ x q b₁ []  =
+    ⋯-id (Ub[ suc q + 1 ] (wk e₁ , suc x , ` 0F) 0F) (λ _ → refl)
+  ■ Ub-before (suc q + 1) (suc q + suc b₁ + 0) (wk e₁) (` 0F) * (suc x) 0F 0F
+      (Nat.s≤s (Nat.m≤n+m 1 q))
+      (Nat.s≤s (Nat.≤-trans (Nat.s≤s Nat.z≤n) (Nat.≤-trans (Nat.m≤n+m (suc b₁) q) (Nat.m≤m+n (q + suc b₁) 0)))) refl
+  ■ sym (Ub-nat (suc q + suc b₁ + 0) (e₁ , x , *) weakenᵣ 0F)
+  ■ sym (cong (_⋯ weakenᵣ)
+      (Ub-before (suc q + suc b₁ + 0) (suc q + suc b₁ + 0) e₁ e₂ * x 0F 0F
+        (Nat.s≤s (Nat.≤-trans (Nat.s≤s Nat.z≤n) (Nat.≤-trans (Nat.m≤n+m (suc b₁) q) (Nat.m≤m+n (q + suc b₁) 0))))
+        (Nat.s≤s (Nat.≤-trans (Nat.s≤s Nat.z≤n) (Nat.≤-trans (Nat.m≤n+m (suc b₁) q) (Nat.m≤m+n (q + suc b₁) 0)))) refl))
+rwk0q-base {N} e₁ e₂ x q b₁ (c ∷ B) =
+    cong (λ K → subst Tm (+-suc sT N) (K ⋯ weaken* ⦃ Kᵣ ⦄ sT)) headL
+  ■ head-sync K₀' q b₁ c B
+  ■ cong (λ K → subst Tm (+-suc sB N) (K ⋯ weaken* ⦃ Kᵣ ⦄ sB) ⋯ sinsq [] (suc q) b₁ (c ∷ B) {N}) (sym headR)
+  where
+    sT  = syncs (suc b₁ ∷ c ∷ B)
+    sB  = syncs (c ∷ B)
+    K₀' = Ub[ suc q + suc b₁ ] (e₁ , x , *) 0F
+    headL : Ub[ suc q + 1 ] (wk e₁ , suc x , ` 0F) 0F ≡ wk K₀'
+    headL = Ub-before (suc q + 1) (suc q + suc b₁) (wk e₁) (` 0F) * (suc x) 0F 0F
+              (Nat.s≤s (Nat.m≤n+m 1 q)) (Nat.s≤s (Nat.≤-trans (Nat.s≤s Nat.z≤n) (Nat.m≤n+m (suc b₁) q))) refl
+          ■ sym (Ub-nat (suc q + suc b₁) (e₁ , x , *) weakenᵣ 0F)
+    headR : Ub[ suc q + suc b₁ ] (wk e₁ , suc x , ` 0F) 0F ≡ wk K₀'
+    headR = Ub-before (suc q + suc b₁) (suc q + suc b₁) (wk e₁) (` 0F) * (suc x) 0F 0F
+              (Nat.s≤s (Nat.≤-trans (Nat.s≤s Nat.z≤n) (Nat.m≤n+m (suc b₁) q)))
+              (Nat.s≤s (Nat.≤-trans (Nat.s≤s Nat.z≤n) (Nat.m≤n+m (suc b₁) q))) refl
+          ■ sym (Ub-nat (suc q + suc b₁) (e₁ , x , *) weakenᵣ 0F)
+
 canonₛ-rwk0q : ∀ {N} (cc : UChan N) (q b₁ : ℕ) (B₂ : BindGroup)
              (i : 𝔽 (sum ((q + suc b₁) ∷ B₂))) →
              i ≢ ((q ↑ʳ 0F) ↑ˡ sum B₂) →
@@ -351,17 +488,24 @@ canonₛ-rwk0q {N} cc zero    b₁ B₂ i i≢ =
   where
     sD = syncs (suc b₁ ∷ B₂)
     COD₀ = +-suc sD N ■ cong (_+ N) (cong suc (syncs-head-irrel (suc b₁) (suc b₁) B₂))
-canonₛ-rwk0q {N} cc (suc q) b₁ B₂ i i≢ = mainEq ■ sym rhsConv
+canonₛ-rwk0q {N} (e₁ , x , e₂) (suc q) b₁ B₂ 0F       i≢ = rwk0q-base e₁ e₂ x q b₁ B₂
+canonₛ-rwk0q {N} (e₁ , x , e₂) (suc q) b₁ B₂ (suc i′) i≢ =
+    frontL
+  ■ canonₛ-rwk0q (* , x , e₂) q b₁ B₂ i′ i′≢
+  ■ sinsq-front q b₁ B₂ (canonₛ ((q + suc b₁) ∷ B₂) (* , x , e₂) i′)
+  ■ sym (cong (_⋯ sinsq [] (suc q) b₁ B₂ {N}) frontR)
   where
-    SDR = syncs ((suc q + suc b₁) ∷ B₂)
-    COD = +-suc SDR N ■ cong (_+ N) (cong suc (syncs-head-irrel (suc q + suc b₁) (suc b₁) B₂))
-    rhsConv : canonₛ ((suc q + suc b₁) ∷ B₂) cc i ⋯ sinsq [] (suc q) b₁ B₂ {N}
-              ≡ subst Tm COD (canonₛ ((suc q + suc b₁) ∷ B₂) (mapᶜ weakenᵣ cc) i)
-    rhsConv = subst-⋯-cod-local COD (canonₛ ((suc q + suc b₁) ∷ B₂) cc i) (weakenᵣ ↑* SDR)
-            ■ cong (subst Tm COD) (canonₛ-nat ((suc q + suc b₁) ∷ B₂) cc weakenᵣ i)
-    mainEq : canonₛ ((suc q + 1) ∷ suc b₁ ∷ B₂) cc (drwkq [] (suc q) b₁ B₂ i)
-             ≡ subst Tm COD (canonₛ ((suc q + suc b₁) ∷ B₂) (mapᶜ weakenᵣ cc) i)
-    mainEq = {!!}
+    i′≢ : i′ ≢ ((q ↑ʳ 0F) ↑ˡ sum B₂)
+    i′≢ e = i≢ (cong Fin.suc e)
+    frontL : canonₛ ((suc q + 1) ∷ suc b₁ ∷ B₂) (e₁ , x , e₂) (Fin.suc (drwkq [] q b₁ B₂ i′))
+             ≡ canonₛ ((q + 1) ∷ suc b₁ ∷ B₂) (* , x , e₂) (drwkq [] q b₁ B₂ i′)
+    frontL = canonₛ-e₁ (q + 1) (suc b₁ ∷ B₂) e₁ * x e₂ (Fin.suc (drwkq [] q b₁ B₂ i′)) (λ ())
+           ■ canonₛ-fdrop (q + 1) (suc b₁ ∷ B₂) x e₂ (drwkq [] q b₁ B₂ i′)
+    frontR : canonₛ ((suc q + suc b₁) ∷ B₂) (e₁ , x , e₂) (Fin.suc i′)
+             ≡ subst (λ z → Tm (z + N)) (syncs-head-irrel (q + suc b₁) (suc (q + suc b₁)) B₂)
+                 (canonₛ ((q + suc b₁) ∷ B₂) (* , x , e₂) i′)
+    frontR = canonₛ-e₁ (q + suc b₁) B₂ e₁ * x e₂ (Fin.suc i′) (λ ())
+           ■ canonₛ-fdrop (q + suc b₁) B₂ x e₂ i′
 
 canonₛ-rwkq : ∀ (B₁ : BindGroup) {N} (cc : UChan N) (q b₁ : ℕ) (B₂ : BindGroup)
              (i : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂))) →
