@@ -35,6 +35,7 @@ open import BorrowedCF.Simulation.RevLSplit
   using (lsplit-go; lsplit-arg-chan; fin-split)
 open import BorrowedCF.Simulation.RevRSplit
   using (rsplit-go; rsplit-arg-chan)
+open import BorrowedCF.Simulation.RevCom using (com-go)
 open import BorrowedCF.Simulation.RevComConfine
   using (frames-𝕀; leftPat-¬before; leftPat-pullOut-∥-≼; before-com-binderᴸ; com-xS-min)
 open import BorrowedCF.Simulation.ReverseConfine using (count-handle-comᴸ)
@@ -714,47 +715,8 @@ sim←ᵍ {m = m} σ Vσ Γ-S {g = g} {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
   with F₀ᴿ , argᴿ , refl , FeqR , argeqR
        ← frameApp-reflect Γ′-S eR (inv-⟪⟫ ⊢PR) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) `recv
            F₂ (sym Req′)
-  with 𝒫ˢ , γrˢ , T′ˢ , Uˢ , ϵpˢ , ϵeˢ , ≼ˢ , T≃ˢ , ϵ≤ˢ , ⊢Fˢ , ⊢redexˢ
-       ← ⊢[]*⁻¹ F₀ˢ (K `send ·¹ argˢ) (inv-⟪⟫ ⊢PS)
-  with αfnˢ , αargˢ , (_ , _ , ⊢sendˢ) , (_ , _ , ⊢argˢ) , cleˢ ← inv-app ⊢redexˢ
-  with head⊗′ (νσ b₁ b₂ σ) argˢ (sym argeqS)
-... | Sum.inj₁ (xArg , refl) = ⊥-elim (send-var-⊥ ⊢redexˢ (proj₂ (Γ′-S xArg)))
-... | Sum.inj₂ (aS , cS , refl , aSeq , cSeq)
-  with send-arg-decomp ⊢redexˢ
-... | Tᵐ , α₂ , Tx , ϵ₂′ , msg≃Tx , ⊢cS
-  with close-arg-var cS ⊢cS msg≃Tx (νσ b₁ b₂ σ) (sym cSeq)
-... | xS , refl
-  with send-app-𝕀 ⊢redexˢ
-... | refl
-  with frames-𝕀 ⊢Fˢ
-... | refl , lpˢ
-  with com-image-block1 b₁ b₂ σ Vσ xS cSeq
-... | z , 1≤b₁ , refl
-  with b₁' , refl ← pos⇒suc 1≤b₁ = {! STEP 5: xS≡0F pins the send handle (xS ≡ 0F
-       below); reconstruct the typed R-Com redex + U-com back-bridge, close ─→ᶜ?. !}
-  where
-    ¬uxS = send-chan-nonUnr ⊢cS msg≃Tx
-    1≤c  = send-arg-count ¬uxS ⊢redexˢ
-    cnt1 = count-handle-comᴸ (suc b₁') b₂ g z
-    z₀   = Fin.cast (+-identityʳ (suc b₁')) z
-    z₀↑0≡z : z₀ Fin.↑ˡ 0 ≡ z
-    z₀↑0≡z = Fin.toℕ-injective (Fin.toℕ-↑ˡ z₀ 0 ■ Fin.toℕ-cast (+-identityʳ (suc b₁')) z)
-    Sbind = (structBinder (suc b₁' ∷ []) 𝐂S.⋯ᵣ 𝐂S.wkʳ (sum (b₂ ∷ [])) 𝐂S.⋯ᵣ 𝐂S.wkʳ m)
-          Struct.∥ (structBinder (b₂ ∷ []) 𝐂S.⋯ᵣ 𝐂S.wkˡ (sum (suc b₁' ∷ [])) 𝐂S.⋯ᵣ 𝐂S.wkʳ m)
-          Struct.∥ (g 𝐂S.⋯ 𝐂S.weaken* ⦃ 𝐂S.Kᵣ ⦄ (sum (suc b₁' ∷ []) + sum (b₂ ∷ [])))
-    contra : Fin.toℕ z₀ ≢ 0 → ⊥
-    contra ne = com-xS-min ¬uxS (chanCx-¬Unr Γ′-S 0F)
-                  lpˢ ≼ˢ αβ≼ cnt1
-                  (subst (λ zz → before 0F ((zz Fin.↑ˡ (b₂ + 0)) Fin.↑ˡ m) Sbind) z₀↑0≡z
-                    (before-com-binderᴸ b₁' b₂ g z₀ ne))
-                  1≤c (com-¬before {𝒫ˢ = 𝒫ˢ} ¬uxS (chanCx-¬Unr Γ′-S 0F) ⊢redexˢ ≼ˢ αβ≼ cnt1)
-    z₀≡0F : z₀ ≡ 0F
-    z₀≡0F with Fin.toℕ z₀ Nat.≟ 0
-    ... | yes e0 = Fin.toℕ-injective e0
-    ... | no  ne = ⊥-elim (contra ne)
-    xS≡0F : ((z Fin.↑ˡ (b₂ + 0)) Fin.↑ˡ m) ≡ 0F
-    xS≡0F = cong (λ zz → (zz Fin.↑ˡ (b₂ + 0)) Fin.↑ˡ m) (sym z₀↑0≡z)
-          ■ cong (λ zz → ((zz Fin.↑ˡ 0) Fin.↑ˡ (b₂ + 0)) Fin.↑ˡ m) z₀≡0F
+  = com-go σ Vσ Γ-S b₁ b₂ V ⊢P FeqS argeqS FeqR argeqR Preq
+
 -- RU-Choice.  Identical shape to RU-Com (ν, ∥-headed body): same inv-U-ν-∥-shape
 --   + U-ν-singleton collapse; RESIDUAL = frameApp-reflect the select/branch
 --   redexes + `inj wrapping on the codomain, mirroring forward U-choice.
