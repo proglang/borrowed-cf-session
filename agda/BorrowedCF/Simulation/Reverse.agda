@@ -31,6 +31,8 @@ open import BorrowedCF.Simulation.ReverseInv
          head⊗′; close-arg-var; pair-not-chan; ⟨⟩≄⊗)
 open import BorrowedCF.Simulation.InvFrame using (strengthen-frame; inv-app; inv-pair; arg-type)
 open import BorrowedCF.Simulation.Frames using (frame-plug*; frame*-⋯)
+open import BorrowedCF.Simulation.RevLSplit
+  using (lsplit-go; lsplit-arg-chan; fin-split)
 open import BorrowedCF.Simulation.RevComConfine
   using (frames-𝕀; leftPat-¬before; leftPat-pullOut-∥-≼; before-com-binderᴸ; com-xS-min)
 open import BorrowedCF.Simulation.ReverseConfine using (count-handle-comᴸ)
@@ -540,8 +542,14 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-LSplit {s = s} {e₁ = e₁} {e₂ 
   with _ , _ , _ , ⊢PL , ⊢P₁t ← inv-∥ ⊢body
   with F₀ , argᴸ , refl , Feq , argeq
        ← frameApp-reflect Γ′-S eL (inv-⟪⟫ ⊢PL) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) (`lsplit s)
-           F (sym Leq′) =
-  {! RU-LSplit reconstruct !}
+           F (sym Leq′)
+  with _ , (_ , _ , ⊢plug) , _ , _ ← strengthen-frame F₀ (inv-⟪⟫ ⊢PL)
+  with _ , _ , _ , _ , ⊢argᴸ , ch ← lsplit-arg-chan ⊢plug
+  with x , argᴸ≡ ← close-arg-var argᴸ ⊢argᴸ ch (νσ b₁ b₂ σ) (sym argeq)
+  with z , _ , xeq ← com-image-block1 b₁ b₂ σ Vσ x (argeq ■ cong (_⋯ νσ b₁ b₂ σ) argᴸ≡)
+  with b₁' , b₁≡ ← fin-split b₁ z =
+  lsplit-go σ Vσ (Fin.toℕ z) b₁' b₂ Γ-S b₁ b₁≡ z refl
+    (argᴸ≡ ■ cong `_ xeq) ⊢P Feq argeq Resteq
 sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-RSplit {s = s} {e₁ = e₁} {e₂ = e₂} {P = P₁} F)
   with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
   with inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq
