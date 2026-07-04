@@ -38,6 +38,7 @@ open import BorrowedCF.Simulation.Theorems.Com using (fn-send-dom)
 open import BorrowedCF.Context using (Ctx; Struct; join; biasedDir; _∶_≼_)
 import BorrowedCF.Context as 𝐂
 import BorrowedCF.Context.Substitution as 𝐂S
+open import BorrowedCF.Context.Pattern using (CxPat; _[_]𝓅)
 open import BorrowedCF.Reduction.Base using (ChanCx)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_)
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
@@ -498,4 +499,99 @@ com-go {m} {n} σ Vσ {Γ} Γ-S {g} b₁ b₂ {F₀ˢ} {F₀ᴿ} {argˢ} {argᴿ
         × ( (U.ν (U.⟪ F₁ [ * ]* ⟫ U.∥ (U.⟪ F₂ [ e ]* ⟫ U.∥ P₁)) ≡ Q′)
             Sum.⊎ (U.ν (U.⟪ F₁ [ * ]* ⟫ U.∥ (U.⟪ F₂ [ e ]* ⟫ U.∥ P₁)) UR.─→ₚ Q′) )
         × (Q′ ≈ U[ P′ ] σ)
-    finish refl refl = {!!}
+    finish refl refl =
+      let
+        a = b₁' + 0
+        c = b₂' + 0
+        wkρ = TR.wkₚ {n = m} a c
+        HH = Hcom a c m
+        invρ = inv-wkₚ a c m
+        νσ0 = νσ (suc b₁') (suc b₂') σ
+        Vνσ0 = νσ-VSub (suc b₁') (suc b₂') σ Vσ
+        νσ1 = νσ b₁' b₂' σ
+        Vνσ1 = νσ-VSub b₁' b₂' σ Vσ
+        -- linearity bookkeeping for the two consumed handles
+        c0γ = count-handle-comᴸ (suc b₁') (suc b₂') g 0F
+        cRγ = count-handle-comᴿ (suc b₁') (suc b₂') g 0F
+        1≤rˢ0 = send-arg-count ¬u0 ⊢redexˢ
+        1≤αS0 = subst (1 Nat.≤_) (count-≼-eq ¬u0 ≼ˢ)
+                  (Nat.≤-trans 1≤rˢ0
+                    (subst (count 0F γrˢ Nat.≤_) (sym (count-plug-add 𝒫ˢ γrˢ 0F))
+                      (Nat.m≤n+m (count 0F γrˢ) (count 0F (𝒫ˢ [ Struct.[] ]𝓅)))))
+        tot0 = subst ((count 0F αS + count 0F βrest) Nat.≤_) c0γ (≼⇒count≤ ¬u0 ≼₁)
+        cβrest0 = Nat.n≤0⇒n≡0 (Nat.s≤s⁻¹ (Nat.≤-trans (Nat.+-monoˡ-≤ (count 0F βrest) 1≤αS0) tot0))
+        s2z = Nat.n≤0⇒n≡0 (subst ((count 0F αR + count 0F βP) Nat.≤_) cβrest0 (≼⇒count≤ ¬u0 ≼₂))
+        cαR0 = proj₁ (+≡0 {count 0F αR} s2z)
+        cβP0 = proj₂ (+≡0 {count 0F αR} s2z)
+        cαS0≤1 = Nat.≤-trans (Nat.m≤m+n (count 0F αS) (count 0F βrest)) tot0
+        1≤αRR = subst (1 Nat.≤_) (count-≼-eq ¬uyR ≼ᴿ)
+                  (Nat.≤-trans 1≤cᴿ
+                    (subst (count posR γrᴿ Nat.≤_) (sym (count-plug-add 𝒫ᴿ γrᴿ posR))
+                      (Nat.m≤n+m (count posR γrᴿ) (count posR (𝒫ᴿ [ Struct.[] ]𝓅)))))
+        subRc = ≼⇒count≤ {x = posR} ¬uyR ≼₂
+        1≤βrestR = Nat.≤-trans 1≤αRR (Nat.≤-trans (Nat.m≤m+n (count posR αR) (count posR βP)) subRc)
+        totR = subst ((count posR αS + count posR βrest) Nat.≤_) cRγ (≼⇒count≤ ¬uyR ≼₁)
+        cαSR = Nat.n≤0⇒n≡0 (Nat.s≤s⁻¹ (subst (Nat._≤ 1) (Nat.+-comm (count posR αS) 1)
+                 (Nat.≤-trans (Nat.+-monoʳ-≤ (count posR αS) 1≤βrestR) totR)))
+        βrestR≤1 = Nat.≤-trans (Nat.m≤n+m (count posR βrest) (count posR αS)) totR
+        cβPR = Nat.n≤0⇒n≡0 (Nat.s≤s⁻¹ (Nat.≤-trans (Nat.+-monoˡ-≤ (count posR βP) 1≤αRR)
+                 (Nat.≤-trans subRc βrestR≤1)))
+        cαRR≤1 = Nat.≤-trans (Nat.m≤m+n (count posR αR) (count posR βP)) (Nat.≤-trans subRc βrestR≤1)
+        -- strengthen the send thread frame
+        βpS , (TS₀ , ϵS₀ , ⊢plugS) , supS , facS = strengthen-frame* F₀ˢ (inv-⟪⟫ ⊢PS) HH
+        1≤βpS0 = send-arg-count ¬u0 ⊢plugS
+        hypS = λ { h (Sum.inj₁ refl) → ¬u0 , Nat.≤-trans cαS0≤1 1≤βpS0
+                 ; h (Sum.inj₂ refl) → ¬uyR , subst (Nat._≤ count posR βpS) (sym cαSR) Nat.z≤n }
+        E₁ , Eeq₁ = facS hypS wkρ invρ
+        -- strengthen the recv thread frame
+        βpR , (TR₀ , ϵR₀ , ⊢plugR) , supR , facR = strengthen-frame* F₀ᴿ (inv-⟪⟫ ⊢PR) HH
+        1≤βpRR = barevar-arg-count ¬uyR ⊢plugR
+        hypR = λ { h (Sum.inj₁ refl) → ¬u0 , subst (Nat._≤ count 0F βpR) (sym cαR0) Nat.z≤n
+                 ; h (Sum.inj₂ refl) → ¬uyR , Nat.≤-trans cαRR≤1 1≤βpRR }
+        E₂ , Eeq₂ = facR hypR wkρ invρ
+        -- strengthen the message
+        αfn , αarg , _fnT , (Tp , ϵp , ⊢pairS) , cleS = inv-app ⊢plugS
+        p/s , αaS , βc0 , T₁ , T₂ , ϵa , ϵb , join≼pr , _ , _ , _ , ⊢aSty , ⊢c0ty = inv-⊗ ⊢pairS
+        βpS0≤1 = Nat.≤-trans (supS 0F ¬u0) cαS0≤1
+        1≤βc0 : 1 Nat.≤ count 0F βc0
+        1≤βc0 = subst (Nat._≤ count 0F βc0) (count-self (Fin.zero {b₁' + 0 + suc (b₂' + 0) + m})) (≼⇒count≤ ¬u0 (proj₂ (inv-` ⊢c0ty)))
+        pair0 = Nat.≤-trans
+                  (subst (Nat._≤ count 0F αarg) (count-join-PS p/s 0F αaS βc0) (≼⇒count≤ ¬u0 join≼pr))
+                  (Nat.≤-trans (Nat.m≤n+m (count 0F αarg) (count 0F αfn)) (cleS 0F ¬u0))
+        cαaS0 = Nat.n≤0⇒n≡0 (Nat.s≤s⁻¹ (subst (Nat._≤ 1) (Nat.+-comm (count 0F αaS) 1)
+                  (Nat.≤-trans (Nat.+-monoʳ-≤ (count 0F αaS) 1≤βc0)
+                    (Nat.≤-trans pair0 βpS0≤1))))
+        cβpSR = Nat.n≤0⇒n≡0 (subst (count posR βpS Nat.≤_) cαSR (supS posR ¬uyR))
+        cαaSR = Nat.n≤0⇒n≡0 (subst (count posR αaS Nat.≤_) cβpSR
+                  (Nat.≤-trans (Nat.m≤m+n (count posR αaS) (count posR βc0))
+                    (Nat.≤-trans
+                      (subst (Nat._≤ count posR αarg) (count-join-PS p/s posR αaS βc0) (≼⇒count≤ ¬uyR join≼pr))
+                      (Nat.≤-trans (Nat.m≤n+m (count posR αarg) (count posR αfn)) (cleS posR ¬uyR)))))
+        H∉aS = λ { h (Sum.inj₁ refl) → count0⇒∉dom αaS cαaS0 ; h (Sum.inj₂ refl) → count0⇒∉dom αaS cαaSR }
+        eM , eMeq = strengthen-Tm-gen* ⊢aSty wkρ HH invρ H∉aS
+        -- strengthen the rest
+        H∉P = λ { h (Sum.inj₁ refl) → count0⇒∉dom βP cβP0 ; h (Sum.inj₂ refl) → count0⇒∉dom βP cβPR }
+        P'0 , Peq = strengthen-Proc-gen* ⊢Pr wkρ HH invρ H∉P
+        VeM = value-⋯ᵣ⁻¹ wkρ eM (subst Value eMeq (value-⋯⁻¹ᶜ νσ0 Vνσ0 aS (subst Value aSeq V)))
+        -- the typed step
+        P′ = T.ν (b₁' ∷ []) (b₂' ∷ []) (T.⟪ E₁ [ * ]* ⟫ T.∥ (T.⟪ E₂ [ eM ]* ⟫ T.∥ P'0))
+        srcEq = cong₂ (λ SF ST → T.ν (suc b₁' ∷ []) (suc b₂' ∷ []) (SF T.∥ ST))
+                  (cong₂ (λ Xf Xm → T.⟪ Xf [ K `send ·¹ (Xm ⊗ (` 0F)) ]* ⟫) Eeq₁ eMeq)
+                  (cong₂ (λ Yf YP → T.⟪ Yf [ K `recv ·¹ (` (Fin.suc ((b₁' + 0 ↑ʳ 0F) ↑ˡ m))) ]* ⟫ T.∥ YP) Eeq₂ Peq)
+        step0 = TR.R-Struct (T.ν-cong T.∥-assoc)
+                  (TR.R-Com {b₁ = b₁'} {B₁ = []} {b₂ = b₂'} {B₂ = []} {P = P'0} {E₁ = E₁} {E₂ = E₂} VeM)
+                  (T.ν-cong (Eq*.symmetric T._≋′_ T.∥-assoc)) ◅ ε
+        step = subst (λ Z → Star TR._─→ₚ_ Z P′) (sym srcEq) step0
+        -- the recon equality
+        fchain₁ = FeqS ■ cong (λ X → frame*-⋯ X νσ0 Vνσ0) Eeq₁
+                ■ F-⋯f*-fuse E₁ {ρ = wkρ} {τ = νσ0} Vνσ0 (·ₖ-VSubᵣ wkρ Vνσ0)
+                ■ frame*-cong E₁ (·ₖ-VSubᵣ wkρ Vνσ0) Vνσ1 (com-νσ-wk b₁' b₂' σ)
+        fchain₂ = FeqR ■ cong (λ X → frame*-⋯ X νσ0 Vνσ0) Eeq₂
+                ■ F-⋯f*-fuse E₂ {ρ = wkρ} {τ = νσ0} Vνσ0 (·ₖ-VSubᵣ wkρ Vνσ0)
+                ■ frame*-cong E₂ (·ₖ-VSubᵣ wkρ Vνσ0) Vνσ1 (com-νσ-wk b₁' b₂' σ)
+        e-eq = aSeq ■ cong (_⋯ νσ0) eMeq ■ fusion eM wkρ νσ0 ■ ⋯-cong eM (com-νσ-wk b₁' b₂' σ)
+        restEq = Preq ■ cong (λ p → U[ p ] νσ0) Peq ■ U-⋯ₚ P'0 ■ U-cong P'0 (com-νσ-wk b₁' b₂' σ)
+        thread₁ = cong U.⟪_⟫ (cong (_[ * ]*) fchain₁ ■ sym (frame-plug* E₁ νσ1 Vνσ1))
+        thread₂ = cong U.⟪_⟫ (cong₂ _[_]* fchain₂ e-eq ■ sym (frame-plug* E₂ νσ1 Vνσ1))
+        recon = cong U.ν (cong₂ U._∥_ thread₁ (cong₂ U._∥_ thread₂ restEq))
+      in P′ , _ , step , Sum.inj₁ refl , ≋⇒≈ (≡→≋ recon)
