@@ -45,40 +45,40 @@ open import BorrowedCF.Simulation.FrameRename
   using (⋯ᶠ*-cong; ⋯ᶠ*-fuse; F-σ⋯)
 
 open T using (_;_⊢ₚ_)
-open import BorrowedCF.Simulation.Theorems.SplitsH3 public
+open import BorrowedCF.Simulation.Theorems.SplitsRQ2 public
 
 U-rsplit : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
-  → {γ : Struct m} {B₁ B₂ B : BindGroup} {b₁ : ℕ} {s : 𝕊 0}
-  → {E : Frame* (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)}
-  → {P : T.Proc (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)}
+  → {γ : Struct m} {B₁ B₂ B : BindGroup} {q b₁ : ℕ} {s : 𝕊 0}
+  → {E : Frame* (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
+  → {P : T.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
   → (let module 𝐒 = TR.SplitRenamings B₁ B₂ B in
-     Γ ; γ ⊢ₚ T.ν (B₁ ++ suc b₁ ∷ B₂) B
-                 (T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ T.∥ P))
+     Γ ; γ ⊢ₚ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+                 (T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P))
   → (let module 𝐒 = TR.SplitRenamings B₁ B₂ B in
-     (U[ T.ν (B₁ ++ suc b₁ ∷ B₂) B
-              (T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ T.∥ P) ] σ
+     (U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+              (T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P) ] σ
        UR─→ₚ*
-      U[ T.ν (B₁ ++ 1 ∷ suc b₁ ∷ B₂) B
-              (T.⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.rwk)) ] σ)
+      U[ T.ν (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B
+              (T.⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))) ⊗ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.rwk)) ] σ)
      ⊎
-     (U[ T.ν (B₁ ++ suc b₁ ∷ B₂) B
-              (T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ T.∥ P) ] σ
+     (U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+              (T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P) ] σ
        U.≋
-      U[ T.ν (B₁ ++ 1 ∷ suc b₁ ∷ B₂) B
-              (T.⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.rwk)) ] σ))
-U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
-  with rsplit-confine Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
+      U[ T.ν (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B
+              (T.⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))) ⊗ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.rwk)) ] σ))
+U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
+  with rsplit-confine Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
 ... | k , ρ⁻ , ρ⁻-skip , E₀ , Eeq , P₀ , Peq =
       inj₁ (wrapNE front (Bφ-lift-step C₁ (Bφ-lift-step B leaf-fire)) ε back)
   where
     module 𝐒 = TR.SplitRenamings B₁ B₂ B
     C₁ C₁ᴿ : BindGroup
-    C₁  = B₁ ++ suc b₁ ∷ B₂
-    C₁ᴿ = B₁ ++ 1 ∷ suc b₁ ∷ B₂
+    C₁  = B₁ ++ (q + suc b₁) ∷ B₂
+    C₁ᴿ = B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂
     QL : T.Proc (sum C₁ + sum B + m)
-    QL = T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ T.∥ P
+    QL = T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P
     QR : T.Proc (sum C₁ᴿ + sum B + m)
-    QR = T.⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.rwk)
+    QR = T.⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))) ⊗ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.rwk)
     sA sAᴿ sB : ℕ
     sA  = syncs C₁
     sAᴿ = syncs C₁ᴿ
@@ -114,11 +114,11 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
     front : U[ T.ν C₁ B QL ] σ U.≋ Bφ C₁ (Bφ B (U.ν (push XL)))
     front = ≡→≋ (Uν-flat σ C₁ B QL) ◅◅ ν↓ XL
     castpos : 𝔽 (sum C₁)
-    castpos = Fin.cast (sym (sum-++ B₁ (suc b₁ ∷ B₂))) (sum B₁ ↑ʳ 0F)
-    hc = canonₛ-handle B₁ (K `unit) 0F (K `unit) b₁ B₂
+    castpos = Fin.cast (sym (sum-++ B₁ ((q + suc b₁) ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
+    hc = canonₛ-handleq B₁ (K `unit) 0F (K `unit) q b₁ B₂
     cc : Tm (2 + (sB + (sA + n)))
-    cc = rn (τ (𝐒.inj 0F))
-    τinj0 : τ (𝐒.inj 0F) ≡ canonₛ C₁ (K `unit , 0F , K `unit) castpos ⋯ weaken* ⦃ Kᵣ ⦄ sB
+    cc = rn (τ (𝐒.atk (q ↑ʳ 0F)))
+    τinj0 : τ (𝐒.atk (q ↑ʳ 0F)) ≡ canonₛ C₁ (K `unit , 0F , K `unit) castpos ⋯ weaken* ⦃ Kᵣ ⦄ sB
     τinj0 =
         cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁ + sum B) (castpos ↑ˡ sum B) m)
       ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁) castpos (sum B))
@@ -145,7 +145,7 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
       ■ frame-plug*ᵣ (frame*-⋯ Ef τ Vτ ⋯ᶠ* ρ₁) ρ₂ )
     YL≡ : push XL ≡ U.⟪ Fr [ K (`rsplit s) ·¹ cc ]* ⟫ U.∥ RP
     YL≡ = cong₂ U._∥_
-            (threadEq E (K (`rsplit s) ·¹ (` 𝐒.inj 0F)))
+            (threadEq E (K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F))))
             refl
     redexL : U.Proc (2 + (sB + (sA + n)))
     redexL = U.⟪ Fr [ K (`rsplit s) ·¹ cc ]* ⟫ U.∥ RP
@@ -210,61 +210,61 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
       ■ cong (_⋯ ρ₂ᴿ) (frame-plug*ᵣ (frame*-⋯ Ef τᴿ Vτᴿ) ρ₁ᴿ)
       ■ frame-plug*ᵣ (frame*-⋯ Ef τᴿ Vτᴿ ⋯ᶠ* ρ₁ᴿ) ρ₂ᴿ )
     pushR-threadᴿ : U.Proc (2 + (sB + (sAᴿ + n)))
-    pushR-threadᴿ = (U[ T.⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F) ]* ⟫ ] τᴿ U.⋯ₚ ρ₁ᴿ) U.⋯ₚ ρ₂ᴿ
+    pushR-threadᴿ = (U[ T.⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))) ⊗ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)) ]* ⟫ ] τᴿ U.⋯ₚ ρ₁ᴿ) U.⋯ₚ ρ₂ᴿ
     pushR-Pᴿ : U.Proc (2 + (sB + (sAᴿ + n)))
     pushR-Pᴿ = (U[ P T.⋯ₚ 𝐒.rwk ] τᴿ U.⋯ₚ ρ₁ᴿ) U.⋯ₚ ρ₂ᴿ
-    pushR-threadEqᴿ : pushR-threadᴿ ≡ U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫
-    pushR-threadEqᴿ = threadEqᴿ (E ⋯ᶠ* 𝐒.rwk) ((` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F))
+    pushR-threadEqᴿ : pushR-threadᴿ ≡ U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂)))) ⊗ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F))) ]* ⟫
+    pushR-threadEqᴿ = threadEqᴿ (E ⋯ᶠ* 𝐒.rwk) ((` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))) ⊗ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)))
     -- U-rwk naturality: translating the rwk-renamed residual P is the same as
     -- translating P and inserting the fresh sync slot (sins ↑* syncs B), because
     -- P's variables (all images of ρ⁻) avoid the consumed handle, where τ and τᴿ
     -- agree modulo the insertion by leafσ-rwk-id.
-    Prwkeq : U[ P T.⋯ₚ 𝐒.rwk ] τᴿ ≡ U[ P ] τ U.⋯ₚ (sins B₁ b₁ B₂ {2 + n} ↑* syncs B)
+    Prwkeq : U[ P T.⋯ₚ 𝐒.rwk ] τᴿ ≡ U[ P ] τ U.⋯ₚ (sinsq B₁ q b₁ B₂ {2 + n} ↑* syncs B)
     Prwkeq =
         cong (λ p → U[ p T.⋯ₚ 𝐒.rwk ] τᴿ) Peq
       ■ cong (λ p → U[ p ] τᴿ) (T.fusionₚ P₀ ρ⁻ 𝐒.rwk)
       ■ U-⋯ₚ P₀
-      ■ U-cong P₀ (λ y → sym (leafσ-rwk-id σ B₁ B₂ B b₁ (ρ⁻ y) (ρ⁻-skip y)))
+      ■ U-cong P₀ (λ y → sym (leafσ-rwk-idq σ B₁ B₂ B q b₁ (ρ⁻ y) (ρ⁻-skip y)))
       ■ sym (U-σ⋯ P₀)
-      ■ cong (U._⋯ₚ (sins B₁ b₁ B₂ {2 + n} ↑* syncs B)) (sym (U-⋯ₚ P₀))
-      ■ cong (λ p → U[ p ] τ U.⋯ₚ (sins B₁ b₁ B₂ {2 + n} ↑* syncs B)) (sym Peq)
+      ■ cong (U._⋯ₚ (sinsq B₁ q b₁ B₂ {2 + n} ↑* syncs B)) (sym (U-⋯ₚ P₀))
+      ■ cong (λ p → U[ p ] τ U.⋯ₚ (sinsq B₁ q b₁ B₂ {2 + n} ↑* syncs B)) (sym Peq)
 
     -- ----- the residual bridge (back) -----
     -- Brwk-slide pulls C₁ᴿ's extra φ-drop binder down to the leaf, reducing the
     -- reconcile to commuting that φ-drop past (Bφ B ; ν) and matching the leaf.
     slid : Bφ C₁ᴿ (Bφ B (U.ν (pushR XRᴿ)))
-           U.≋ Bφ C₁ (U.φ U.drop (subst U.Proc (cong (_+ n) (syncs-rwk B₁) ■ sym (+-suc (syncs C₁) n)) (Bφ B (U.ν (pushR XRᴿ)))
-                                    U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n}))
-    slid = Brwk-slide B₁ {b₁} {B₂} {n} (Bφ B (U.ν (pushR XRᴿ)))
+           U.≋ Bφ C₁ (U.φ U.drop (subst U.Proc (cong (_+ n) (syncs-rwkq B₁ q) ■ sym (+-suc (syncs C₁) n)) (Bφ B (U.ν (pushR XRᴿ)))
+                                    U.⋯ₚ sw-castq B₁ {q} {b₁} {B₂} {n}))
+    slid = Brwk-slideq B₁ {q} {b₁} {B₂} {n} (Bφ B (U.ν (pushR XRᴿ)))
     innerReconcile : Bφ B (U.ν (U.φ U.drop contractumR))
-                     U.≋ U.φ U.drop (subst U.Proc (cong (_+ n) (syncs-rwk B₁) ■ sym (+-suc (syncs C₁) n)) (Bφ B (U.ν (pushR XRᴿ)))
-                                      U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n})
+                     U.≋ U.φ U.drop (subst U.Proc (cong (_+ n) (syncs-rwkq B₁ q) ■ sym (+-suc (syncs C₁) n)) (Bφ B (U.ν (pushR XRᴿ)))
+                                      U.⋯ₚ sw-castq B₁ {q} {b₁} {B₂} {n})
     -- pushR XRᴿ splits into the grown thread + P, with the thread expanded via
     -- the proven pushR-threadEqᴿ.  (Reusable building block for leafRec.)
     pushR-bodyᴿ : pushR XRᴿ
-                  ≡ U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫ U.∥ pushR-Pᴿ
+                  ≡ U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂)))) ⊗ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F))) ]* ⟫ U.∥ pushR-Pᴿ
     pushR-bodyᴿ = cong₂ U._∥_ pushR-threadEqᴿ refl
     leafRec : Bφ B ((U.ν (contractumR U.⋯ₚ assocSwapᵣ 1 2)) U.⋯ₚ assocSwapᵣ 1 (syncs B))
-              U.≋ subst U.Proc (cong (_+ n) (syncs-rwk B₁) ■ sym (+-suc (syncs C₁) n)) (Bφ B (U.ν (pushR XRᴿ)))
-                    U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n}
+              U.≋ subst U.Proc (cong (_+ n) (syncs-rwkq B₁ q) ■ sym (+-suc (syncs C₁) n)) (Bφ B (U.ν (pushR XRᴿ)))
+                    U.⋯ₚ sw-castq B₁ {q} {b₁} {B₂} {n}
     leafRec = ≡→≋ leafRec≡
       where
         EQ′ : syncs C₁ᴿ + n ≡ syncs C₁ + suc n
-        EQ′ = cong (_+ n) (syncs-rwk B₁) ■ sym (+-suc (syncs C₁) n)
+        EQ′ = cong (_+ n) (syncs-rwkq B₁ q) ■ sym (+-suc (syncs C₁) n)
         sD′ : ℕ
-        sD′ = syncs (suc b₁ ∷ B₂)
+        sD′ = syncs ((q + suc b₁) ∷ B₂)
         rawR : (sD′ + (1 + (L.length B₁ + n))) →ᵣ (1 + (sD′ + (L.length B₁ + n)))
         rawR = assocSwapᵣ sD′ 1 {L.length B₁ + n}
-        rhsR≡ : subst U.Proc EQ′ (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n}
-                ≡ subst U.Proc (sw-cod B₁ {b₁} {B₂} {n})
-                    (subst U.Proc (EQ′ ■ sw-dom B₁ {b₁} {B₂} {n}) (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ rawR)
-        rhsR≡ = cast-⋯2 (sw-dom B₁ {b₁} {B₂} {n}) (sw-cod B₁ {b₁} {B₂} {n}) (subst U.Proc EQ′ (Bφ B (U.ν (pushR XRᴿ)))) rawR
-             ■ cong (λ w → subst U.Proc (sw-cod B₁ {b₁} {B₂} {n}) (w U.⋯ₚ rawR))
-                 (ss-U EQ′ (sw-dom B₁ {b₁} {B₂} {n}) {t = Bφ B (U.ν (pushR XRᴿ))})
+        rhsR≡ : subst U.Proc EQ′ (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ sw-castq B₁ {q} {b₁} {B₂} {n}
+                ≡ subst U.Proc (sw-codq B₁ {q} {b₁} {B₂} {n})
+                    (subst U.Proc (EQ′ ■ sw-domq B₁ {q} {b₁} {B₂} {n}) (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ rawR)
+        rhsR≡ = cast-⋯2 (sw-domq B₁ {q} {b₁} {B₂} {n}) (sw-codq B₁ {q} {b₁} {B₂} {n}) (subst U.Proc EQ′ (Bφ B (U.ν (pushR XRᴿ)))) rawR
+             ■ cong (λ w → subst U.Proc (sw-codq B₁ {q} {b₁} {B₂} {n}) (w U.⋯ₚ rawR))
+                 (ss-U EQ′ (sw-domq B₁ {q} {b₁} {B₂} {n}) {t = Bφ B (U.ν (pushR XRᴿ))})
         e2 : syncs C₁ᴿ + n ≡ sD′ + (1 + (L.length B₁ + n))
-        e2 = EQ′ ■ sw-dom B₁ {b₁} {B₂} {n}
-        rhsPush : subst U.Proc EQ′ (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n}
-                  ≡ Bφ B (subst U.Proc (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n}))
+        e2 = EQ′ ■ sw-domq B₁ {q} {b₁} {B₂} {n}
+        rhsPush : subst U.Proc EQ′ (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ sw-castq B₁ {q} {b₁} {B₂} {n}
+                  ≡ Bφ B (subst U.Proc (cong (syncs B +_) (sw-codq B₁ {q} {b₁} {B₂} {n}))
                             (subst U.Proc (cong (syncs B +_) e2) (U.ν (pushR XRᴿ)) U.⋯ₚ (rawR ↑* syncs B)))
         rhsInner : subst U.Proc e2 (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ rawR
                    ≡ Bφ B (subst U.Proc (cong (syncs B +_) e2) (U.ν (pushR XRᴿ)) U.⋯ₚ (rawR ↑* syncs B))
@@ -272,21 +272,21 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
             cong (U._⋯ₚ rawR) (subst-Bφ e2 B (U.ν (pushR XRᴿ)))
           ■ Bφ-⋯ B (subst U.Proc (cong (syncs B +_) e2) (U.ν (pushR XRᴿ))) rawR
         rhsPush = rhsR≡
-                ■ cong (subst U.Proc (sw-cod B₁ {b₁} {B₂} {n})) rhsInner
-                ■ subst-Bφ (sw-cod B₁ {b₁} {B₂} {n}) B
+                ■ cong (subst U.Proc (sw-codq B₁ {q} {b₁} {B₂} {n})) rhsInner
+                ■ subst-Bφ (sw-codq B₁ {q} {b₁} {B₂} {n}) B
                     (subst U.Proc (cong (syncs B +_) e2) (U.ν (pushR XRᴿ)) U.⋯ₚ (rawR ↑* syncs B))
-        rhsνOut : subst U.Proc (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n}))
+        rhsνOut : subst U.Proc (cong (syncs B +_) (sw-codq B₁ {q} {b₁} {B₂} {n}))
                      (subst U.Proc (cong (syncs B +_) e2) (U.ν (pushR XRᴿ)) U.⋯ₚ (rawR ↑* syncs B))
-                  ≡ U.ν (subst U.Proc (cong (2 +_) (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
+                  ≡ U.ν (subst U.Proc (cong (2 +_) (cong (syncs B +_) (sw-codq B₁ {q} {b₁} {B₂} {n})))
                           (subst U.Proc (cong (2 +_) (cong (syncs B +_) e2)) (pushR XRᴿ)
                              U.⋯ₚ ((rawR ↑* syncs B) ↑* 2)))
         rhsνOut =
-            cong (subst U.Proc (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
+            cong (subst U.Proc (cong (syncs B +_) (sw-codq B₁ {q} {b₁} {B₂} {n})))
               (cong (U._⋯ₚ (rawR ↑* syncs B)) (subst-ν (cong (syncs B +_) e2) (pushR XRᴿ)))
-          ■ subst-ν (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n}))
+          ■ subst-ν (cong (syncs B +_) (sw-codq B₁ {q} {b₁} {B₂} {n}))
               (subst U.Proc (cong (2 +_) (cong (syncs B +_) e2)) (pushR XRᴿ) U.⋯ₚ ((rawR ↑* syncs B) ↑* 2))
         νInner : (contractumR U.⋯ₚ assocSwapᵣ 1 2) U.⋯ₚ ((assocSwapᵣ 1 (syncs B)) ↑* 2)
-                 ≡ subst U.Proc (cong (2 +_) (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
+                 ≡ subst U.Proc (cong (2 +_) (cong (syncs B +_) (sw-codq B₁ {q} {b₁} {B₂} {n})))
                      (subst U.Proc (cong (2 +_) (cong (syncs B +_) e2)) (pushR XRᴿ)
                         U.⋯ₚ ((rawR ↑* syncs B) ↑* 2))
         SQ : ℕ → ℕ
@@ -294,25 +294,25 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
         ρρ : (syncs B + (sD′ + (1 + (L.length B₁ + n)))) →ᵣ (syncs B + (1 + (sD′ + (L.length B₁ + n))))
         ρρ = (rawR ↑* syncs B)
         -- distribute RHS subst/⋯ over the ∥ of pushR-bodyᴿ
-        rhsSplit : subst U.Proc (cong SQ (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
+        rhsSplit : subst U.Proc (cong SQ (cong (syncs B +_) (sw-codq B₁ {q} {b₁} {B₂} {n})))
                      (subst U.Proc (cong SQ (cong (syncs B +_) e2)) (pushR XRᴿ) U.⋯ₚ (ρρ ↑* 2))
-                   ≡ subst U.Proc (cong SQ (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
+                   ≡ subst U.Proc (cong SQ (cong (syncs B +_) (sw-codq B₁ {q} {b₁} {B₂} {n})))
                        ( (subst U.Proc (cong SQ (cong (syncs B +_) e2))
-                           (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫) U.⋯ₚ (ρρ ↑* 2))
+                           (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂)))) ⊗ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F))) ]* ⟫) U.⋯ₚ (ρρ ↑* 2))
                        U.∥ (subst U.Proc (cong SQ (cong (syncs B +_) e2)) pushR-Pᴿ U.⋯ₚ (ρρ ↑* 2)) )
         rhsSplit =
-            cong (subst U.Proc (cong SQ (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n}))))
+            cong (subst U.Proc (cong SQ (cong (syncs B +_) (sw-codq B₁ {q} {b₁} {B₂} {n}))))
               ( cong (λ z → (subst U.Proc (cong SQ (cong (syncs B +_) e2)) z) U.⋯ₚ (ρρ ↑* 2)) pushR-bodyᴿ
               ■ cong (U._⋯ₚ (ρρ ↑* 2))
                   (subst-∥f (λ z → z) (cong SQ (cong (syncs B +_) e2))
-                     (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫) pushR-Pᴿ) )
+                     (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂)))) ⊗ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F))) ]* ⟫) pushR-Pᴿ) )
         -- ===== outer renaming reconciliation (fresh-φ insertion commutes) =====
         Θ : (syncs B + (sA + (2 + n))) →ᵣ (syncs B + (sAᴿ + (2 + n)))
-        Θ = sins B₁ b₁ B₂ {2 + n} ↑* syncs B
+        Θ = sinsq B₁ q b₁ B₂ {2 + n} ↑* syncs B
         E-dom : (2 + (syncs B + (sAᴿ + n))) ≡ SQ (syncs B + (sD′ + (1 + (L.length B₁ + n))))
         E-dom = cong SQ (cong (syncs B +_) e2)
         E-cod : SQ (syncs B + (1 + (sD′ + (L.length B₁ + n)))) ≡ SQ (syncs B + suc (sA + n))
-        E-cod = cong SQ (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n}))
+        E-cod = cong SQ (cong (syncs B +_) (sw-codq B₁ {q} {b₁} {B₂} {n}))
         θ1R : SQ (syncs B + (sAᴿ + n)) →ᵣ SQ (syncs B + (1 + (sD′ + (L.length B₁ + n))))
         θ1R = subst (λ z → z →ᵣ SQ (syncs B + (1 + (sD′ + (L.length B₁ + n))))) (sym E-dom) (ρρ ↑* 2)
         ρR' : SQ (syncs B + (sAᴿ + n)) →ᵣ SQ (syncs B + suc (sA + n))
@@ -353,9 +353,9 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
             toℕ-subst𝔽 : ∀ {a c} (e : a ≡ c) (y : 𝔽 a) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
             toℕ-subst𝔽 refl y = refl
             eAR : sAᴿ ≡ suc sA
-            eAR = syncs-rwk B₁
+            eAR = syncs-rwkq B₁ q
             sD′≤sA : sD′ Nat.≤ sA
-            sD′≤sA = sD≤ B₁ {b₁} {B₂}
+            sD′≤sA = subst (Nat._≤ sA) (syncs-head-irrel (suc b₁) (q + suc b₁) B₂) (sD≤q B₁ q {b₁} {B₂})
             sA≤sAᴿ : sA Nat.≤ sAᴿ
             sA≤sAᴿ = subst (sA Nat.≤_) (sym eAR) (Nat.n≤1+n sA)
             sD′≤sAᴿ : sD′ Nat.≤ sAᴿ
@@ -370,8 +370,8 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
             w2 = subst 𝔽 (sym (sym E-dom)) v2R
             lhsSB : Fin.toℕ i Nat.< syncs B → Fin.toℕ (ρLtot i) ≡ 2 + Fin.toℕ i
             lhsSB p =
-                toℕ-↑*-ge (assocSwapᵣ 1 (syncs B)) 2 X4 q
-              ■ cong (2 +_) (toℕ-assoc-mid 1 (syncs B) (Fin.reduce≥ X4 q) ge lt ■ cong (Nat._∸ 1) redX)
+                toℕ-↑*-ge (assocSwapᵣ 1 (syncs B)) 2 X4 qb
+              ■ cong (2 +_) (toℕ-assoc-mid 1 (syncs B) (Fin.reduce≥ X4 qb) ge lt ■ cong (Nat._∸ 1) redX)
               where
                 v1 = toℕ-↑*-lt (assocSwapᵣ sA 2) (syncs B) i p
                 v2 = toℕ-assoc-lt (syncs B) 2 (ρ₁ i) (subst (Nat._< syncs B) (sym v1) p) ■ cong (2 +_) v1
@@ -379,8 +379,8 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
                 v4 = toℕ-assoc-ge 1 2 (weakenᵣ (ρ₂ (ρ₁ i)))
                        (subst (3 Nat.≤_) (sym v3) (Nat.m≤m+n 3 (Fin.toℕ i))) ■ v3
                 X4 = assocSwapᵣ 1 2 (weakenᵣ (ρ₂ (ρ₁ i)))
-                q  = subst (2 Nat.≤_) (sym v4) (Nat.m≤m+n 2 (1 + Fin.toℕ i))
-                redX = toℕ-reduce≥ X4 q ■ cong (Nat._∸ 2) v4
+                qb  = subst (2 Nat.≤_) (sym v4) (Nat.m≤m+n 2 (1 + Fin.toℕ i))
+                redX = toℕ-reduce≥ X4 qb ■ cong (Nat._∸ 2) v4
                 ge = subst (1 Nat.≤_) (sym redX) (Nat.s≤s Nat.z≤n)
                 lt = subst (Nat._< suc (syncs B)) (sym redX) (Nat.s≤s p)
             rhsSB : Fin.toℕ i Nat.< syncs B → Fin.toℕ (ρRtot i) ≡ 2 + Fin.toℕ i
@@ -390,7 +390,7 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
               ■ toℕ-↑*-ge ρρ 2 w2 q2
               ■ cong (2 +_) (toℕ-↑*-lt rawR (syncs B) (Fin.reduce≥ w2 q2) (subst (Nat._< syncs B) (sym redw2) p) ■ redw2)
               where
-                r1 = toℕ-↑*-lt (sins B₁ b₁ B₂ {2 + n}) (syncs B) i p
+                r1 = toℕ-↑*-lt (sinsq B₁ q b₁ B₂ {2 + n}) (syncs B) i p
                 r2 = toℕ-↑*-lt (assocSwapᵣ sAᴿ 2) (syncs B) (Θ i) (subst (Nat._< syncs B) (sym r1) p) ■ r1
                 r3 = toℕ-assoc-lt (syncs B) 2 (ρ₁ᴿ (Θ i)) (subst (Nat._< syncs B) (sym r2) p) ■ cong (2 +_) r2
                 w2N = toℕ-subst𝔽 (sym (sym E-dom)) v2R ■ r3
@@ -398,8 +398,8 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
                 redw2 = toℕ-reduce≥ w2 q2 ■ cong (Nat._∸ 2) w2N
             lhsSA : syncs B Nat.≤ Fin.toℕ i → Fin.toℕ i Nat.< syncs B + sA → Fin.toℕ (ρLtot i) ≡ 3 + Fin.toℕ i
             lhsSA sB≤ di<A =
-                toℕ-↑*-ge (assocSwapᵣ 1 (syncs B)) 2 X4 q
-              ■ cong (2 +_) (toℕ-assoc-ge 1 (syncs B) (Fin.reduce≥ X4 q) ge ■ redX)
+                toℕ-↑*-ge (assocSwapᵣ 1 (syncs B)) 2 X4 qb
+              ■ cong (2 +_) (toℕ-assoc-ge 1 (syncs B) (Fin.reduce≥ X4 qb) ge ■ redX)
               where
                 rdi≡ = toℕ-reduce≥ i sB≤
                 recon = Nat.m+[n∸m]≡n sB≤
@@ -413,8 +413,8 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
                 v4 = toℕ-assoc-ge 1 2 (weakenᵣ (ρ₂ (ρ₁ i)))
                        (subst (3 Nat.≤_) (sym v3) (Nat.m≤m+n 3 (Fin.toℕ i))) ■ v3
                 X4 = assocSwapᵣ 1 2 (weakenᵣ (ρ₂ (ρ₁ i)))
-                q  = subst (2 Nat.≤_) (sym v4) (Nat.m≤m+n 2 (1 + Fin.toℕ i))
-                redX = toℕ-reduce≥ X4 q ■ cong (Nat._∸ 2) v4
+                qb  = subst (2 Nat.≤_) (sym v4) (Nat.m≤m+n 2 (1 + Fin.toℕ i))
+                redX = toℕ-reduce≥ X4 qb ■ cong (Nat._∸ 2) v4
                 ge = subst (suc (syncs B) Nat.≤_) (sym redX) (Nat.s≤s sB≤)
             rhsSAlo : syncs B Nat.≤ Fin.toℕ i → Fin.toℕ i Nat.< syncs B + sD′ → Fin.toℕ (ρRtot i) ≡ 3 + Fin.toℕ i
             rhsSAlo sB≤ di<lo =
@@ -429,8 +429,8 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
                 recon = Nat.m+[n∸m]≡n sB≤
                 rd<sD = Nat.+-cancelˡ-< (syncs B) (Fin.toℕ i Nat.∸ syncs B) sD′ (subst (Nat._< syncs B + sD′) (sym recon) di<lo)
                 rd<sAᴿ = Nat.<-≤-trans rd<sD sD′≤sAᴿ
-                r1 = toℕ-↑*-ge (sins B₁ b₁ B₂ {2 + n}) (syncs B) i sB≤
-                   ■ cong (syncs B +_) (sins-toℕ-lo B₁ b₁ B₂ (Fin.reduce≥ i sB≤) (subst (Nat._< sD′) (sym rdi≡) rd<sD) ■ rdi≡)
+                r1 = toℕ-↑*-ge (sinsq B₁ q b₁ B₂ {2 + n}) (syncs B) i sB≤
+                   ■ cong (syncs B +_) (sins-toℕ-loq B₁ q b₁ B₂ (Fin.reduce≥ i sB≤) (Nat.<-≤-trans (subst (Nat._< sD′) (sym rdi≡) rd<sD) (Nat.≤-reflexive (sym (syncs-head-irrel (suc b₁) (q + suc b₁) B₂)))) ■ rdi≡)
                    ■ recon
                 bnd2 = subst (syncs B Nat.≤_) (sym r1) sB≤
                 redΘ = toℕ-reduce≥ (Θ i) bnd2 ■ cong (Nat._∸ syncs B) r1
@@ -457,8 +457,8 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
                 recon = Nat.m+[n∸m]≡n sB≤
                 rd<sA = Nat.+-cancelˡ-< (syncs B) (Fin.toℕ i Nat.∸ syncs B) sA (subst (Nat._< syncs B + sA) (sym recon) di<A)
                 rd≥sD = Nat.+-cancelˡ-≤ (syncs B) sD′ (Fin.toℕ i Nat.∸ syncs B) (subst (syncs B + sD′ Nat.≤_) (sym recon) sDle)
-                r1 = toℕ-↑*-ge (sins B₁ b₁ B₂ {2 + n}) (syncs B) i sB≤
-                   ■ cong (syncs B +_) (sins-toℕ-hi B₁ b₁ B₂ (Fin.reduce≥ i sB≤) (subst (sD′ Nat.≤_) (sym rdi≡) rd≥sD) ■ cong suc rdi≡)
+                r1 = toℕ-↑*-ge (sinsq B₁ q b₁ B₂ {2 + n}) (syncs B) i sB≤
+                   ■ cong (syncs B +_) (sins-toℕ-hiq B₁ q b₁ B₂ (Fin.reduce≥ i sB≤) (Nat.≤-trans (Nat.≤-reflexive (syncs-head-irrel (suc b₁) (q + suc b₁) B₂)) (subst (sD′ Nat.≤_) (sym rdi≡) rd≥sD)) ■ cong suc rdi≡)
                    ■ Nat.+-suc (syncs B) (Fin.toℕ i Nat.∸ syncs B) ■ cong suc recon
                 bnd2 = subst (syncs B Nat.≤_) (sym r1) (Nat.≤-trans sB≤ (Nat.n≤1+n (Fin.toℕ i)))
                 redΘ = toℕ-reduce≥ (Θ i) bnd2 ■ cong (Nat._∸ syncs B) r1 ■ Nat.+-∸-assoc 1 sB≤
@@ -504,8 +504,8 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
                 rd<sA2 = Nat.+-cancelˡ-< (syncs B) (Fin.toℕ i Nat.∸ syncs B) (sA + 2) (subst (Nat._< syncs B + (sA + 2)) (sym recon) (subst (Fin.toℕ i Nat.<_) (Nat.+-assoc (syncs B) sA 2) di<T))
                 t2<2 = Nat.+-cancelˡ-< sA ((Fin.toℕ i Nat.∸ syncs B) Nat.∸ sA) 2 (subst (Nat._< sA + 2) (sym (Nat.m+[n∸m]≡n sA≤rd)) rd<sA2)
                 sD≤rd = Nat.≤-trans sD′≤sA sA≤rd
-                r1 = toℕ-↑*-ge (sins B₁ b₁ B₂ {2 + n}) (syncs B) i sB≤
-                   ■ cong (syncs B +_) (sins-toℕ-hi B₁ b₁ B₂ (Fin.reduce≥ i sB≤) (subst (sD′ Nat.≤_) (sym rdi≡) sD≤rd) ■ cong suc rdi≡)
+                r1 = toℕ-↑*-ge (sinsq B₁ q b₁ B₂ {2 + n}) (syncs B) i sB≤
+                   ■ cong (syncs B +_) (sins-toℕ-hiq B₁ q b₁ B₂ (Fin.reduce≥ i sB≤) (Nat.≤-trans (Nat.≤-reflexive (syncs-head-irrel (suc b₁) (q + suc b₁) B₂)) (subst (sD′ Nat.≤_) (sym rdi≡) sD≤rd)) ■ cong suc rdi≡)
                 bnd2 = subst (syncs B Nat.≤_) (sym r1) (Nat.m≤m+n (syncs B) (suc (Fin.toℕ i Nat.∸ syncs B)))
                 redΘ = toℕ-reduce≥ (Θ i) bnd2 ■ cong (Nat._∸ syncs B) r1 ■ Nat.m+n∸m≡n (syncs B) (suc (Fin.toℕ i Nat.∸ syncs B))
                 sucrd≥sAᴿ = subst (Nat._≤ suc (Fin.toℕ i Nat.∸ syncs B)) (sym eAR) (Nat.s≤s sA≤rd)
@@ -518,8 +518,8 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
                 w2N = toℕ-subst𝔽 (sym (sym E-dom)) v2R ■ r3
             lhsN : syncs B + sA + 2 Nat.≤ Fin.toℕ i → Fin.toℕ (ρLtot i) ≡ suc (Fin.toℕ i)
             lhsN sBsA2≤ =
-                toℕ-↑*-ge (assocSwapᵣ 1 (syncs B)) 2 X4 q
-              ■ cong (2 +_) (toℕ-assoc-ge 1 (syncs B) (Fin.reduce≥ X4 q) (subst (1 + syncs B Nat.≤_) (sym redX) B1≤) ■ redX)
+                toℕ-↑*-ge (assocSwapᵣ 1 (syncs B)) 2 X4 qb
+              ■ cong (2 +_) (toℕ-assoc-ge 1 (syncs B) (Fin.reduce≥ X4 qb) (subst (1 + syncs B Nat.≤_) (sym redX) B1≤) ■ redX)
               ■ cong suc (Nat.m+[n∸m]≡n oneleq)
               where
                 sB≤ = Nat.≤-trans (Nat.≤-trans (Nat.m≤m+n (syncs B) sA) (Nat.m≤m+n (syncs B + sA) 2)) sBsA2≤
@@ -536,8 +536,8 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
                 v3 = cong suc v2
                 v4 = toℕ-assoc-ge 1 2 (weakenᵣ (ρ₂ (ρ₁ i))) (subst (3 Nat.≤_) (sym v3) (Nat.s≤s two≤di)) ■ v3
                 X4 = assocSwapᵣ 1 2 (weakenᵣ (ρ₂ (ρ₁ i)))
-                q  = subst (2 Nat.≤_) (sym v4) (Nat.≤-trans two≤di (Nat.n≤1+n (Fin.toℕ i)))
-                redX = toℕ-reduce≥ X4 q ■ cong (Nat._∸ 2) v4
+                qb  = subst (2 Nat.≤_) (sym v4) (Nat.≤-trans two≤di (Nat.n≤1+n (Fin.toℕ i)))
+                redX = toℕ-reduce≥ X4 qb ■ cong (Nat._∸ 2) v4
             rhsN : syncs B + sA + 2 Nat.≤ Fin.toℕ i → Fin.toℕ (ρRtot i) ≡ suc (Fin.toℕ i)
             rhsN sBsA2≤ =
                 toℕ-subst-cod E-cod θ1R v2R
@@ -556,8 +556,8 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
                 two≤di = Nat.≤-trans (Nat.m≤n+m 2 (syncs B + sA)) sBsA2≤
                 oneleq = Nat.≤-trans (Nat.n≤1+n 1) two≤di
                 sD≤rd = Nat.≤-trans sD′≤sA (Nat.≤-trans (Nat.m≤m+n sA 2) sA2≤rd)
-                r1 = toℕ-↑*-ge (sins B₁ b₁ B₂ {2 + n}) (syncs B) i sB≤
-                   ■ cong (syncs B +_) (sins-toℕ-hi B₁ b₁ B₂ (Fin.reduce≥ i sB≤) (subst (sD′ Nat.≤_) (sym rdi≡) sD≤rd) ■ cong suc rdi≡)
+                r1 = toℕ-↑*-ge (sinsq B₁ q b₁ B₂ {2 + n}) (syncs B) i sB≤
+                   ■ cong (syncs B +_) (sins-toℕ-hiq B₁ q b₁ B₂ (Fin.reduce≥ i sB≤) (Nat.≤-trans (Nat.≤-reflexive (syncs-head-irrel (suc b₁) (q + suc b₁) B₂)) (subst (sD′ Nat.≤_) (sym rdi≡) sD≤rd)) ■ cong suc rdi≡)
                    ■ Nat.+-suc (syncs B) (Fin.toℕ i Nat.∸ syncs B) ■ cong suc recon
                 bnd2 = subst (syncs B Nat.≤_) (sym r1) (Nat.≤-trans sB≤ (Nat.n≤1+n (Fin.toℕ i)))
                 redΘ = toℕ-reduce≥ (Θ i) bnd2 ■ cong (Nat._∸ syncs B) r1 ■ Nat.+-∸-assoc 1 sB≤
@@ -617,14 +617,14 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
                 ■ fusion (t ⋯ Θ) ρ₁ᴿ (ρ₂ᴿ ·ₖ ρR')
                 ■ fusion t Θ (ρ₁ᴿ ·ₖ (ρ₂ᴿ ·ₖ ρR')) )
         -- grown handle inj0 (fresh 1-channel) triple decomposition (mirror of ccTriple).
-        hcᴿ0 = canonₛ-handle B₁ (K `unit) 0F (K `unit) 0 (suc b₁ ∷ B₂)
+        hcᴿ0 = canonₛ-handleq B₁ (K `unit) 0F (K `unit) q 0 (suc b₁ ∷ B₂)
         castposᴿ0 : 𝔽 (sum C₁ᴿ)
-        castposᴿ0 = Fin.cast (sym (sum-++ B₁ (1 ∷ suc b₁ ∷ B₂))) (sum B₁ ↑ʳ 0F)
-        τᴿinj0 : τᴿ (𝐒.inj 0F) ≡ canonₛ C₁ᴿ (K `unit , 0F , K `unit) castposᴿ0 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)
+        castposᴿ0 = Fin.cast (sym (sum-++ B₁ ((q + 1) ∷ suc b₁ ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂)))
+        τᴿinj0 : τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))) ≡ canonₛ C₁ᴿ (K `unit , 0F , K `unit) castposᴿ0 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)
         τᴿinj0 =
             cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁ᴿ + sum B) (castposᴿ0 ↑ˡ sum B) m)
           ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁ᴿ) castposᴿ0 (sum B))
-        ccTripleᴿ0 : rnᴿ (τᴿ (𝐒.inj 0F))
+        ccTripleᴿ0 : rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))))
                      ≡ ((proj₁ hcᴿ0 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ) ⊗ (` 0F))
                        ⊗ (proj₁ (proj₂ hcᴿ0) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ)
         ccTripleᴿ0 =
@@ -636,35 +636,38 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
             jvtoℕᴿ : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ (syncs B) (proj₁ (proj₂ (proj₂ hcᴿ0)))) ≡ syncs B + (sAᴿ + 0)
             jvtoℕᴿ = toℕ-weaken*ᵣ (syncs B) (proj₁ (proj₂ (proj₂ hcᴿ0))) ■ cong (syncs B +_) (proj₂ (proj₂ (proj₂ (proj₂ hcᴿ0))))
         slotL0 : proj₁ hcᴿ0 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ≡ proj₁ hc ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ Θ
-        slotL0 = cong (_⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)) (handle-L-rwk B₁ (K `unit) 0F (K `unit) b₁ B₂)
-               ■ ⋯-↑*-wk (proj₁ hc) (sins B₁ b₁ B₂ {2 + n}) (syncs B)
+        slotL0 = cong (_⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)) (handle-L-rwkq B₁ (K `unit) 0F (K `unit) q b₁ B₂)
+               ■ ⋯-↑*-wk (proj₁ hc) (sinsq B₁ q b₁ B₂ {2 + n}) (syncs B)
         Leq0 : ccA ⋯ weakenᵣ ⋯ assocSwapᵣ 1 2 ⋯ (assocSwapᵣ 1 (syncs B) ↑* 2)
                ≡ proj₁ hcᴿ0 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ ⋯ ρR'
         Leq0 = outerRec-Tm (proj₁ hc ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B))
              ■ cong (λ z → z ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ ⋯ ρR') (sym slotL0)
         -- grown handle inj1 (residual suc b₁-channel) triple decomposition (mirror of ccTripleᴿ0).
-        hcᴿ1 = canonₛ-handle (B₁ ++ 1 ∷ []) (K `unit) 0F (K `unit) b₁ B₂
-        passocᴿ : (B₁ ++ 1 ∷ []) ++ suc b₁ ∷ B₂ ≡ C₁ᴿ
-        passocᴿ = ++-assoc B₁ (1 ∷ []) (suc b₁ ∷ B₂)
-        castRRᴿ : syncs ((B₁ ++ 1 ∷ []) ++ suc b₁ ∷ B₂) + (2 + n) ≡ syncs C₁ᴿ + (2 + n)
+        hcᴿ1 = canonₛ-handle (B₁ ++ (q + 1) ∷ []) (K `unit) 0F (K `unit) b₁ B₂
+        passocᴿ : (B₁ ++ (q + 1) ∷ []) ++ suc b₁ ∷ B₂ ≡ C₁ᴿ
+        passocᴿ = ++-assoc B₁ ((q + 1) ∷ []) (suc b₁ ∷ B₂)
+        castRRᴿ : syncs ((B₁ ++ (q + 1) ∷ []) ++ suc b₁ ∷ B₂) + (2 + n) ≡ syncs C₁ᴿ + (2 + n)
         castRRᴿ = cong (λ z → syncs z + (2 + n)) passocᴿ
-        posᴿ1 : 𝔽 (sum ((B₁ ++ 1 ∷ []) ++ suc b₁ ∷ B₂))
-        posᴿ1 = Fin.cast (sym (sum-++ (B₁ ++ 1 ∷ []) (suc b₁ ∷ B₂))) (sum (B₁ ++ 1 ∷ []) ↑ʳ 0F)
+        posᴿ1 : 𝔽 (sum ((B₁ ++ (q + 1) ∷ []) ++ suc b₁ ∷ B₂))
+        posᴿ1 = Fin.cast (sym (sum-++ (B₁ ++ (q + 1) ∷ []) (suc b₁ ∷ B₂))) (sum (B₁ ++ (q + 1) ∷ []) ↑ʳ 0F)
         j0ᴿ = proj₁ (proj₂ (proj₂ hcᴿ1))
         castposᴿ1 : 𝔽 (sum C₁ᴿ)
-        castposᴿ1 = Fin.cast (sym (sum-++ B₁ (1 ∷ suc b₁ ∷ B₂))) (sum B₁ ↑ʳ 1F)
-        τᴿinj1 : τᴿ (𝐒.inj 1F) ≡ canonₛ C₁ᴿ (K `unit , 0F , K `unit) castposᴿ1 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)
+        castposᴿ1 = Fin.cast (sym (sum-++ B₁ ((q + 1) ∷ suc b₁ ∷ B₂))) (sum B₁ ↑ʳ ((q + 1) ↑ʳ 0F))
+        τᴿinj1 : τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)) ≡ canonₛ C₁ᴿ (K `unit , 0F , K `unit) castposᴿ1 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)
         τᴿinj1 =
             cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁ᴿ + sum B) (castposᴿ1 ↑ˡ sum B) m)
           ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁ᴿ) castposᴿ1 (sum B))
         posEqᴿ : castposᴿ1 ≡ subst (λ L → 𝔽 (sum L)) passocᴿ posᴿ1
         posEqᴿ = Fin.toℕ-injective
-          ( (Fin.toℕ-cast (sym (sum-++ B₁ (1 ∷ suc b₁ ∷ B₂))) (sum B₁ ↑ʳ 1F) ■ Fin.toℕ-↑ʳ (sum B₁) 1F)
+          ( (Fin.toℕ-cast (sym (sum-++ B₁ ((q + 1) ∷ suc b₁ ∷ B₂))) (sum B₁ ↑ʳ ((q + 1) ↑ʳ 0F))
+             ■ Fin.toℕ-↑ʳ (sum B₁) ((q + 1) ↑ʳ 0F)
+             ■ cong (sum B₁ +_) (Fin.toℕ-↑ʳ (q + 1) 0F ■ Nat.+-identityʳ (q + 1)))
           ■ sym ( tf𝔽 passocᴿ posᴿ1
-                ■ Fin.toℕ-cast (sym (sum-++ (B₁ ++ 1 ∷ []) (suc b₁ ∷ B₂))) (sum (B₁ ++ 1 ∷ []) ↑ʳ 0F)
-                ■ Fin.toℕ-↑ʳ (sum (B₁ ++ 1 ∷ [])) 0F
-                ■ Nat.+-identityʳ (sum (B₁ ++ 1 ∷ []))
-                ■ sum-++ B₁ (1 ∷ []) ) )
+                ■ Fin.toℕ-cast (sym (sum-++ (B₁ ++ (q + 1) ∷ []) (suc b₁ ∷ B₂))) (sum (B₁ ++ (q + 1) ∷ []) ↑ʳ 0F)
+                ■ Fin.toℕ-↑ʳ (sum (B₁ ++ (q + 1) ∷ [])) 0F
+                ■ Nat.+-identityʳ (sum (B₁ ++ (q + 1) ∷ []))
+                ■ sum-++ B₁ ((q + 1) ∷ [])
+                ■ cong (sum B₁ +_) (Nat.+-identityʳ (q + 1)) ) )
           where
             tf𝔽 : ∀ {L1 L2 : BindGroup} (p : L1 ≡ L2) (y : 𝔽 (sum L1)) →
                   Fin.toℕ (subst (λ L → 𝔽 (sum L)) p y) ≡ Fin.toℕ y
@@ -675,10 +678,10 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
         canonᴿ1-decomp =
             cong (canonₛ C₁ᴿ (K `unit , 0F , K `unit)) posEqᴿ
           ■ canonₛ-cast passocᴿ (K `unit , 0F , K `unit) posᴿ1
-          ■ subst-syncs passocᴿ (canonₛ ((B₁ ++ 1 ∷ []) ++ suc b₁ ∷ B₂) (K `unit , 0F , K `unit) posᴿ1)
+          ■ subst-syncs passocᴿ (canonₛ ((B₁ ++ (q + 1) ∷ []) ++ suc b₁ ∷ B₂) (K `unit , 0F , K `unit) posᴿ1)
           ■ cong (subst Tm castRRᴿ) (proj₁ (proj₂ (proj₂ (proj₂ hcᴿ1))))
           ■ substTripⱼ castRRᴿ (proj₁ hcᴿ1) j0ᴿ (proj₁ (proj₂ hcᴿ1))
-        ccTripleᴿ1 : rnᴿ (τᴿ (𝐒.inj 1F))
+        ccTripleᴿ1 : rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)))
                      ≡ ((subst Tm castRRᴿ (proj₁ hcᴿ1) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ) ⊗ (` 0F))
                        ⊗ (subst Tm castRRᴿ (proj₁ (proj₂ hcᴿ1)) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ)
         ccTripleᴿ1 =
@@ -698,8 +701,8 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
                 tf𝔽 refl y = refl
         slotR1 : subst Tm castRRᴿ (proj₁ (proj₂ hcᴿ1)) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)
                  ≡ proj₁ (proj₂ hc) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ Θ
-        slotR1 = cong (_⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)) (handle-R-rwk B₁ (K `unit) 0F (K `unit) b₁ B₂)
-               ■ ⋯-↑*-wk (proj₁ (proj₂ hc)) (sins B₁ b₁ B₂ {2 + n}) (syncs B)
+        slotR1 = cong (_⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)) (handle-R-rwkq B₁ (K `unit) 0F (K `unit) q b₁ B₂)
+               ■ ⋯-↑*-wk (proj₁ (proj₂ hc)) (sinsq B₁ q b₁ B₂ {2 + n}) (syncs B)
         Req1 : ccC ⋯ weakenᵣ ⋯ assocSwapᵣ 1 2 ⋯ (assocSwapᵣ 1 (syncs B) ↑* 2)
                ≡ subst Tm castRRᴿ (proj₁ (proj₂ hcᴿ1)) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ ⋯ ρR'
         Req1 = outerRec-Tm (proj₁ (proj₂ hc) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B))
@@ -726,17 +729,17 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
             z0 = tf𝔽b (sym (sym E-dom)) 0F
         Y0-toℕ : Fin.toℕ ((assocSwapᵣ 1 (syncs B) {sA + n} ↑* 2) (assocSwapᵣ 1 2 {syncs B + (sA + n)} 0F)) ≡ 2 + syncs B
         Y0-toℕ =
-            toℕ-↑*-ge (assocSwapᵣ 1 (syncs B) {sA + n}) 2 X0 q
-          ■ cong (2 +_) (toℕ-assoc-lt 1 (syncs B) (Fin.reduce≥ X0 q) rd<1 ■ cong (syncs B +_) rd0 ■ Nat.+-identityʳ (syncs B))
+            toℕ-↑*-ge (assocSwapᵣ 1 (syncs B) {sA + n}) 2 X0 qb
+          ■ cong (2 +_) (toℕ-assoc-lt 1 (syncs B) (Fin.reduce≥ X0 qb) rd<1 ■ cong (syncs B +_) rd0 ■ Nat.+-identityʳ (syncs B))
           where
             X0 = assocSwapᵣ 1 2 {syncs B + (sA + n)} 0F
             innr : Fin.toℕ X0 ≡ 2
             innr = toℕ-assoc-lt 1 2 {syncs B + (sA + n)} 0F (Nat.s≤s Nat.z≤n)
-            q : 2 Nat.≤ Fin.toℕ X0
-            q = subst (2 Nat.≤_) (sym innr) Nat.≤-refl
-            rd0 : Fin.toℕ (Fin.reduce≥ X0 q) ≡ 0
-            rd0 = toℕ-reduce≥ X0 q ■ cong (Nat._∸ 2) innr
-            rd<1 : Fin.toℕ (Fin.reduce≥ X0 q) Nat.< 1
+            qb : 2 Nat.≤ Fin.toℕ X0
+            qb = subst (2 Nat.≤_) (sym innr) Nat.≤-refl
+            rd0 : Fin.toℕ (Fin.reduce≥ X0 qb) ≡ 0
+            rd0 = toℕ-reduce≥ X0 qb ■ cong (Nat._∸ 2) innr
+            rd<1 : Fin.toℕ (Fin.reduce≥ X0 qb) Nat.< 1
             rd<1 = subst (Nat._< 1) (sym rd0) (Nat.s≤s Nat.z≤n)
         varComposite : ∀ (w : 𝔽 (sAᴿ + (2 + n))) → Fin.toℕ w ≡ sD′ →
                        Fin.toℕ (ρR' (ρ₂ᴿ (ρ₁ᴿ (weaken* ⦃ Kᵣ ⦄ (syncs B) w)))) ≡ 2 + syncs B
@@ -758,7 +761,7 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
             rdw≡ : Fin.toℕ (Fin.reduce≥ wsB sB≤wsB) ≡ sD′
             rdw≡ = toℕ-reduce≥ wsB sB≤wsB ■ cong (Nat._∸ syncs B) wsB≡ ■ Nat.m+n∸m≡n (syncs B) sD′
             sD′<sAᴿ : sD′ Nat.< sAᴿ
-            sD′<sAᴿ = subst (suc sD′ Nat.≤_) (sym (syncs-rwk B₁)) (Nat.s≤s (sD≤ B₁ {b₁} {B₂}))
+            sD′<sAᴿ = subst (suc sD′ Nat.≤_) (sym (syncs-rwkq B₁ q)) (Nat.s≤s (subst (Nat._≤ sA) (syncs-head-irrel (suc b₁) (q + suc b₁) B₂) (sD≤q B₁ q {b₁} {B₂})))
             ρ₁≡ : Fin.toℕ (ρ₁ᴿ wsB) ≡ syncs B + (2 + sD′)
             ρ₁≡ = toℕ-↑*-ge (assocSwapᵣ sAᴿ 2) (syncs B) wsB sB≤wsB
                 ■ cong (syncs B +_) (toℕ-assoc-lt sAᴿ 2 (Fin.reduce≥ wsB sB≤wsB) (subst (Nat._< sAᴿ) (sym rdw≡) sD′<sAᴿ) ■ cong (2 +_) rdw≡)
@@ -784,34 +787,34 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
         mid : (` ((assocSwapᵣ 1 (syncs B) {sA + n} ↑* 2) (assocSwapᵣ 1 2 {syncs B + (sA + n)} 1F))) ≡ (` 0F) ⋯ ρR'
         mid = cong `_ (Fin.toℕ-injective (mid-lhs-toℕ ■ sym mid-rhs-toℕ))
         inj0-triple : ((wk ccA ⊗ (` 1F)) ⊗ (` 0F)) ⋯ assocSwapᵣ 1 2 ⋯ (assocSwapᵣ 1 (syncs B) ↑* 2)
-                      ≡ rnᴿ (τᴿ (𝐒.inj 0F)) ⋯ ρR'
+                      ≡ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂)))) ⋯ ρR'
         inj0-triple = cong₂ _⊗_ (cong₂ _⊗_ Leq0 mid) r0 ■ sym (cong (_⋯ ρR') ccTripleᴿ0)
           where
-            v0 = proj₁ (handle-R0-var B₁ (K `unit) 0F (K `unit) b₁ B₂)
-            eq0 = proj₁ (proj₂ (handle-R0-var B₁ (K `unit) 0F (K `unit) b₁ B₂))
-            tn0 = proj₂ (proj₂ (handle-R0-var B₁ (K `unit) 0F (K `unit) b₁ B₂))
+            v0 = proj₁ (handle-R0-varq B₁ (K `unit) 0F (K `unit) q b₁ B₂)
+            eq0 = proj₁ (proj₂ (handle-R0-varq B₁ (K `unit) 0F (K `unit) q b₁ B₂))
+            tn0 = proj₂ (proj₂ (handle-R0-varq B₁ (K `unit) 0F (K `unit) q b₁ B₂)) ■ syncs-head-irrel (suc b₁) (q + suc b₁) B₂
             r0 : (` ((assocSwapᵣ 1 (syncs B) {sA + n} ↑* 2) (assocSwapᵣ 1 2 {syncs B + (sA + n)} 0F)))
                  ≡ proj₁ (proj₂ hcᴿ0) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ ⋯ ρR'
             r0 = cong `_ (Fin.toℕ-injective (Y0-toℕ ■ sym (varComposite v0 tn0)))
                ■ sym (cong (λ t → t ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ ⋯ ρR') eq0)
         inj1-triple : (((` 0F) ⊗ (` 1F)) ⊗ wk ccC) ⋯ assocSwapᵣ 1 2 ⋯ (assocSwapᵣ 1 (syncs B) ↑* 2)
-                      ≡ rnᴿ (τᴿ (𝐒.inj 1F)) ⋯ ρR'
+                      ≡ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F))) ⋯ ρR'
         inj1-triple = cong₂ _⊗_ (cong₂ _⊗_ l1 mid) Req1 ■ sym (cong (_⋯ ρR') ccTripleᴿ1)
           where
-            v1 = proj₁ (handle-L1-var B₁ (K `unit) 0F (K `unit) b₁ B₂)
-            eq1 = proj₁ (proj₂ (handle-L1-var B₁ (K `unit) 0F (K `unit) b₁ B₂))
-            tn1 = proj₂ (proj₂ (handle-L1-var B₁ (K `unit) 0F (K `unit) b₁ B₂))
+            v1 = proj₁ (handle-L1-varq B₁ (K `unit) 0F (K `unit) q b₁ B₂)
+            eq1 = proj₁ (proj₂ (handle-L1-varq B₁ (K `unit) 0F (K `unit) q b₁ B₂))
+            tn1 = proj₂ (proj₂ (handle-L1-varq B₁ (K `unit) 0F (K `unit) q b₁ B₂))
             L1var : subst Tm castRRᴿ (proj₁ hcᴿ1) ≡ ` (subst 𝔽 castRRᴿ v1)
             L1var = cong (subst Tm castRRᴿ) eq1 ■ subst-`v castRRᴿ v1
             w1tn : Fin.toℕ (subst 𝔽 castRRᴿ v1) ≡ sD′
-            w1tn = tf𝔽b castRRᴿ v1 ■ tn1
+            w1tn = tf𝔽b castRRᴿ v1 ■ tn1 ■ syncs-head-irrel (suc b₁) (q + suc b₁) B₂
             l1 : (` ((assocSwapᵣ 1 (syncs B) {sA + n} ↑* 2) (assocSwapᵣ 1 2 {syncs B + (sA + n)} 0F)))
                  ≡ subst Tm castRRᴿ (proj₁ hcᴿ1) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ ⋯ ρR'
             l1 = cong `_ (Fin.toℕ-injective (Y0-toℕ ■ sym (varComposite (subst 𝔽 castRRᴿ v1) w1tn)))
                ■ sym (cong (λ t → t ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B) ⋯ ρ₁ᴿ ⋯ ρ₂ᴿ ⋯ ρR') L1var)
         body-eq : (((wk ccA ⊗ (` 1F)) ⊗ (` 0F)) ⊗ (((` 0F) ⊗ (` 1F)) ⊗ wk ccC))
                     ⋯ assocSwapᵣ 1 2 ⋯ (assocSwapᵣ 1 (syncs B) ↑* 2)
-                  ≡ (rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F))) ⋯ ρR'
+                  ≡ (rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂)))) ⊗ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)))) ⋯ ρR'
         body-eq = cong₂ _⊗_ inj0-triple inj1-triple
         -- ===== thread-leaf reconciliation (frame naturality + body triple) =====
         frameLeafeqᴿ : frame*-⋯ E τ Vτ ⋯ᶠ* Θ ≡ frame*-⋯ (E ⋯ᶠ* 𝐒.rwk) τᴿ Vτᴿ
@@ -820,7 +823,7 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
             ■ cong (λ EE → frame*-⋯ EE τᴿ Vτᴿ) (⋯ᶠ*-fuse E₀ ρ⁻ 𝐒.rwk)
             ■ F-⋯f*-fuse E₀ Vτᴿ (·ₖ-VSubᵣ (ρ⁻ ·ₖ 𝐒.rwk) Vτᴿ)
             ■ frame*-cong E₀ (·ₖ-VSubᵣ (ρ⁻ ·ₖ 𝐒.rwk) Vτᴿ) (λ y → value-⋯ (·ₖ-VSubᵣ ρ⁻ Vτ y) Θ (λ x → V-`))
-                (λ y → sym (leafσ-rwk-id σ B₁ B₂ B b₁ (ρ⁻ y) (ρ⁻-skip y)))
+                (λ y → sym (leafσ-rwk-idq σ B₁ B₂ B q b₁ (ρ⁻ y) (ρ⁻-skip y)))
             ■ sym (F-σ⋯ E₀ (·ₖ-VSubᵣ ρ⁻ Vτ) Θ (λ y → value-⋯ (·ₖ-VSubᵣ ρ⁻ Vτ y) Θ (λ x → V-`)))
             ■ cong (_⋯ᶠ* Θ) (sym (F-⋯f*-fuse E₀ Vτ (·ₖ-VSubᵣ ρ⁻ Vτ)))
             ■ cong (λ EE → frame*-⋯ EE τ Vτ ⋯ᶠ* Θ) (sym Eeq) )
@@ -837,26 +840,26 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {
           ■ cong (λ z → z ⋯ᶠ* ρ₁ᴿ ⋯ᶠ* ρ₂ᴿ ⋯ᶠ* ρR') frameLeafeqᴿ
         thread≡ : U.⟪ ((Fr ⋯ᶠ* weakenᵣ) [ ((wk ccA ⊗ (` 1F)) ⊗ (` 0F)) ⊗ (((` 0F) ⊗ (` 1F)) ⊗ wk ccC) ]*)
                         ⋯ assocSwapᵣ 1 2 ⋯ (assocSwapᵣ 1 (syncs B) ↑* 2) ⟫
-                  ≡ subst U.Proc E-cod (subst U.Proc E-dom (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫) U.⋯ₚ (ρρ ↑* 2))
+                  ≡ subst U.Proc E-cod (subst U.Proc E-dom (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂)))) ⊗ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F))) ]* ⟫) U.⋯ₚ (ρρ ↑* 2))
         thread≡ =
             cong U.⟪_⟫ ( cong (_⋯ (assocSwapᵣ 1 (syncs B) ↑* 2)) (frame-plug*ᵣ (Fr ⋯ᶠ* weakenᵣ) (assocSwapᵣ 1 2))
                        ■ frame-plug*ᵣ ((Fr ⋯ᶠ* weakenᵣ) ⋯ᶠ* assocSwapᵣ 1 2) (assocSwapᵣ 1 (syncs B) ↑* 2) )
           ■ cong U.⟪_⟫ (cong₂ _[_]* frame-eq body-eq)
           ■ cong U.⟪_⟫ (sym (frame-plug*ᵣ Frᴿ ρR'))
-          ■ sym (collapseR (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫))
+          ■ sym (collapseR (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂)))) ⊗ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F))) ]* ⟫))
         νInner =
             cong₂ U._∥_ thread≡ Prest≡
           ■ sym ( rhsSplit
-                ■ subst-∥f (λ z → z) (cong SQ (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n})))
+                ■ subst-∥f (λ z → z) (cong SQ (cong (syncs B +_) (sw-codq B₁ {q} {b₁} {B₂} {n})))
                     (subst U.Proc (cong SQ (cong (syncs B +_) e2))
-                       (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj 0F)) ⊗ rnᴿ (τᴿ (𝐒.inj 1F)) ]* ⟫) U.⋯ₚ (ρρ ↑* 2))
+                       (U.⟪ Frᴿ [ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂)))) ⊗ rnᴿ (τᴿ (𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F))) ]* ⟫) U.⋯ₚ (ρρ ↑* 2))
                     (subst U.Proc (cong SQ (cong (syncs B +_) e2)) pushR-Pᴿ U.⋯ₚ (ρρ ↑* 2)) )
         bodyEq : (U.ν (contractumR U.⋯ₚ assocSwapᵣ 1 2)) U.⋯ₚ assocSwapᵣ 1 (syncs B)
-                 ≡ subst U.Proc (cong (syncs B +_) (sw-cod B₁ {b₁} {B₂} {n}))
+                 ≡ subst U.Proc (cong (syncs B +_) (sw-codq B₁ {q} {b₁} {B₂} {n}))
                      (subst U.Proc (cong (syncs B +_) e2) (U.ν (pushR XRᴿ)) U.⋯ₚ (rawR ↑* syncs B))
         bodyEq = cong U.ν νInner ■ sym rhsνOut
         leafRec≡ : Bφ B ((U.ν (contractumR U.⋯ₚ assocSwapᵣ 1 2)) U.⋯ₚ assocSwapᵣ 1 (syncs B))
-                   ≡ subst U.Proc EQ′ (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ sw-cast B₁ {b₁} {B₂} {n}
+                   ≡ subst U.Proc EQ′ (Bφ B (U.ν (pushR XRᴿ))) U.⋯ₚ sw-castq B₁ {q} {b₁} {B₂} {n}
         leafRec≡ = cong (Bφ B) bodyEq ■ sym rhsPush
     innerReconcile =
          Bφ-cong B (Eq*.return U.νφ-comm′)
