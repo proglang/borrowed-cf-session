@@ -191,3 +191,142 @@ P3q B₁ B₂ B {q} {b₁} {m} u = Fin.toℕ-injective
         rhsℕ : Fin.toℕ ((sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B) ↑ʳ u) ≡ suc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + Fin.toℕ u)
         rhsℕ = Fin.toℕ-↑ʳ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B) u
              ■ cong (λ z → z + sum B + Fin.toℕ u) (sum-lwkq B₁)
+
+-- ============================================================================
+--   Position-q handle triple.  Ub[q + suc b] distributes: at the shifted
+--   position q ↑ʳ 0F it is a channel triple whose junction is the channel c.
+-- ============================================================================
+Ub-triple : ∀ w {N} (e1 e2 : Tm N) (c : 𝔽 N) (i : 𝔽 w) →
+  Σ[ a ∈ Tm N ] Σ[ e2' ∈ Tm N ] Ub[ w ] (e1 , c , e2) i ≡ (a ⊗ (` c)) ⊗ e2'
+Ub-triple zero          e1 e2 c ()
+Ub-triple (suc zero)    e1 e2 c zero    = e1 , e2 , refl
+Ub-triple (suc zero)    e1 e2 c (suc ())
+Ub-triple (suc (suc b)) e1 e2 c zero    = e1 , * , refl
+Ub-triple (suc (suc b)) e1 e2 c (suc x) = Ub-triple (suc b) * e2 c x
+
+private
+  substTripL : ∀ {p qq} (eq : p ≡ qq) (A : Tm p) (jj : 𝔽 p) (C : Tm p) →
+               subst Tm eq ((A ⊗ (` jj)) ⊗ C)
+               ≡ (subst Tm eq A ⊗ (` subst 𝔽 eq jj)) ⊗ subst Tm eq C
+  substTripL refl A jj C = refl
+  toℕ-subst𝔽L : ∀ {p qq} (e : p ≡ qq) (y : 𝔽 p) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
+  toℕ-subst𝔽L refl y = refl
+
+-- canonₛ at the position-q handle of the single split block (prefix []),
+-- a chanTriple whose junction sits at flat position syncs + toℕ x.
+canonₛ-head-tripleq : ∀ (q b₁ : ℕ) (B₂ : BindGroup) {N} (e1 e2 : Tm N) (x : 𝔽 N) →
+  Σ[ a ∈ Tm (syncs ((q + suc b₁) ∷ B₂) + N) ] Σ[ c ∈ Tm (syncs ((q + suc b₁) ∷ B₂) + N) ]
+  Σ[ j ∈ 𝔽 (syncs ((q + suc b₁) ∷ B₂) + N) ]
+    (canonₛ ((q + suc b₁) ∷ B₂) (e1 , x , e2) ((q ↑ʳ 0F) ↑ˡ sum B₂) ≡ (a ⊗ (` j)) ⊗ c)
+    × (Fin.toℕ j ≡ syncs ((q + suc b₁) ∷ B₂) + Fin.toℕ x)
+canonₛ-head-tripleq q b₁ [] e1 e2 x
+  with Ub-triple ((q + suc b₁) + 0) e1 e2 x ((q ↑ʳ 0F) ↑ˡ 0)
+... | a , e2' , ubeq = a , e2' , x , ubeq , refl
+canonₛ-head-tripleq q b₁ (c′ ∷ B) {N} e1 e2 x
+  with Ub-triple (q + suc b₁) (wk e1) (` 0F) (suc x) (q ↑ʳ 0F)
+... | a , e2' , ubeq =
+  ( subst Tm (+-suc sB N) (a ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+  , subst Tm (+-suc sB N) (e2' ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+  , subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))
+  , tripeq , junceq )
+  where
+    sB = syncs (c′ ∷ B)
+    spliteq : splitAt (q + suc b₁) ((q ↑ʳ 0F) ↑ˡ sum (c′ ∷ B)) ≡ inj₁ (q ↑ʳ 0F)
+    spliteq = Fin.splitAt-↑ˡ (q + suc b₁) (q ↑ʳ 0F) (sum (c′ ∷ B))
+    tripeq : canonₛ ((q + suc b₁) ∷ c′ ∷ B) (e1 , x , e2) ((q ↑ʳ 0F) ↑ˡ sum (c′ ∷ B))
+             ≡ (subst Tm (+-suc sB N) (a ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+                 ⊗ (` subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))))
+                 ⊗ subst Tm (+-suc sB N) (e2' ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+    tripeq = cong (subst Tm (+-suc sB N))
+               (cong [ Ub[ q + suc b₁ ] (wk e1 , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB
+                     , canonₛ (c′ ∷ B) (` 0F , suc x , wk e2) ]′ spliteq
+               ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) ubeq)
+           ■ substTripL (+-suc sB N) (a ⋯ weaken* ⦃ Kᵣ ⦄ sB) (weaken* ⦃ Kᵣ ⦄ sB (suc x)) (e2' ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+    junceq : Fin.toℕ (subst 𝔽 (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))) ≡ suc sB + Fin.toℕ x
+    junceq = toℕ-subst𝔽L (+-suc sB N) (weaken* ⦃ Kᵣ ⦄ sB (suc x))
+           ■ toℕ-weaken*ᵣ sB (suc x)
+           ■ +-suc sB (Fin.toℕ x)
+
+-- ============================================================================
+--   canonₛ-handleq : the position-q handle triple over a whole prefix B₁.
+--   Mirrors canonₛ-handle (SplitsH1) but at block position q (base =
+--   canonₛ-head-tripleq, and pos-split-gen replaces pos-split).
+-- ============================================================================
+canonₛ-handleq : ∀ (B₁ : BindGroup) {N} (e₁ : Tm N) (x : 𝔽 N) (e₂ : Tm N) (q b₁ : ℕ) (B₂ : BindGroup) →
+  Σ[ a ∈ Tm (syncs (B₁ ++ (q + suc b₁) ∷ B₂) + N) ]
+  Σ[ c ∈ Tm (syncs (B₁ ++ (q + suc b₁) ∷ B₂) + N) ]
+  Σ[ j ∈ 𝔽 (syncs (B₁ ++ (q + suc b₁) ∷ B₂) + N) ]
+    (canonₛ (B₁ ++ (q + suc b₁) ∷ B₂) (e₁ , x , e₂)
+        (Fin.cast (sym (sum-++ B₁ ((q + suc b₁) ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂)))
+       ≡ (a ⊗ (` j)) ⊗ c)
+    × (Fin.toℕ j ≡ syncs (B₁ ++ (q + suc b₁) ∷ B₂) + Fin.toℕ x)
+canonₛ-handleq [] {N} e₁ x e₂ q b₁ B₂ =
+  proj₁ h , proj₁ (proj₂ h) , proj₁ (proj₂ (proj₂ h))
+  , castidx (proj₁ (proj₂ (proj₂ (proj₂ h))))
+  , proj₂ (proj₂ (proj₂ (proj₂ h)))
+  where
+    h = canonₛ-head-tripleq q b₁ B₂ e₁ e₂ x
+    castidx : canonₛ ((q + suc b₁) ∷ B₂) (e₁ , x , e₂) ((q ↑ʳ 0F) ↑ˡ sum B₂)
+                ≡ (proj₁ h ⊗ (` proj₁ (proj₂ (proj₂ h)))) ⊗ proj₁ (proj₂ h) →
+              canonₛ ((q + suc b₁) ∷ B₂) (e₁ , x , e₂)
+                (Fin.cast (sym (sum-++ [] ((q + suc b₁) ∷ B₂))) (sum [] ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂)))
+                ≡ (proj₁ h ⊗ (` proj₁ (proj₂ (proj₂ h)))) ⊗ proj₁ (proj₂ h)
+    castidx = subst (λ z → canonₛ ((q + suc b₁) ∷ B₂) (e₁ , x , e₂) z
+                            ≡ (proj₁ h ⊗ (` proj₁ (proj₂ (proj₂ h)))) ⊗ proj₁ (proj₂ h))
+                (sym (Fin.toℕ-injective (Fin.toℕ-cast (sym (sum-++ [] ((q + suc b₁) ∷ B₂))) (sum [] ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂)))))
+canonₛ-handleq (a ∷ []) {N} e₁ x e₂ q b₁ B₂
+  with canonₛ-handleq [] (` 0F) (suc x) (wk e₂) q b₁ B₂
+... | rec =
+  subst Tm (+-suc sB N) (proj₁ rec)
+  , subst Tm (+-suc sB N) (proj₁ (proj₂ rec))
+  , subst 𝔽 (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))
+  , tripeq
+  , junceq
+  where
+    sB = syncs (([]) ++ (q + suc b₁) ∷ B₂)
+    cp  = Fin.cast (sym (sum-++ (a ∷ ([])) ((q + suc b₁) ∷ B₂))) (sum (a ∷ ([])) ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
+    cp′ = Fin.cast (sym (sum-++ ([]) ((q + suc b₁) ∷ B₂))) (sum ([]) ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
+    spliteq : Fin.splitAt a cp ≡ inj₂ cp′
+    spliteq = cong (Fin.splitAt a) (pos-split-gen a ([]) (q + suc b₁) B₂ ((q ↑ʳ 0F) ↑ˡ sum B₂))
+            ■ Fin.splitAt-↑ʳ a (sum (([]) ++ (q + suc b₁) ∷ B₂)) cp′
+    tripeq : canonₛ (a ∷ ([]) ++ (q + suc b₁) ∷ B₂) (e₁ , x , e₂) cp
+             ≡ (subst Tm (+-suc sB N) (proj₁ rec)
+                 ⊗ (` subst 𝔽 (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))))
+                 ⊗ subst Tm (+-suc sB N) (proj₁ (proj₂ rec))
+    tripeq = cong (subst Tm (+-suc sB N))
+               (cong [ Ub[ a ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB
+                     , canonₛ (([]) ++ (q + suc b₁) ∷ B₂) (` 0F , suc x , wk e₂) ]′ spliteq
+               ■ proj₁ (proj₂ (proj₂ (proj₂ rec))))
+           ■ substTripL (+-suc sB N) (proj₁ rec) (proj₁ (proj₂ (proj₂ rec))) (proj₁ (proj₂ rec))
+    junceq : Fin.toℕ (subst 𝔽 (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))) ≡ suc sB + Fin.toℕ x
+    junceq = toℕ-subst𝔽L (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))
+           ■ proj₂ (proj₂ (proj₂ (proj₂ rec)))
+           ■ +-suc sB (Fin.toℕ x)
+canonₛ-handleq (a ∷ d ∷ B₁″) {N} e₁ x e₂ q b₁ B₂
+  with canonₛ-handleq (d ∷ B₁″) (` 0F) (suc x) (wk e₂) q b₁ B₂
+... | rec =
+  subst Tm (+-suc sB N) (proj₁ rec)
+  , subst Tm (+-suc sB N) (proj₁ (proj₂ rec))
+  , subst 𝔽 (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))
+  , tripeq
+  , junceq
+  where
+    sB = syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)
+    cp  = Fin.cast (sym (sum-++ (a ∷ (d ∷ B₁″)) ((q + suc b₁) ∷ B₂))) (sum (a ∷ (d ∷ B₁″)) ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
+    cp′ = Fin.cast (sym (sum-++ (d ∷ B₁″) ((q + suc b₁) ∷ B₂))) (sum (d ∷ B₁″) ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
+    spliteq : Fin.splitAt a cp ≡ inj₂ cp′
+    spliteq = cong (Fin.splitAt a) (pos-split-gen a (d ∷ B₁″) (q + suc b₁) B₂ ((q ↑ʳ 0F) ↑ˡ sum B₂))
+            ■ Fin.splitAt-↑ʳ a (sum ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) cp′
+    tripeq : canonₛ (a ∷ (d ∷ B₁″) ++ (q + suc b₁) ∷ B₂) (e₁ , x , e₂) cp
+             ≡ (subst Tm (+-suc sB N) (proj₁ rec)
+                 ⊗ (` subst 𝔽 (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))))
+                 ⊗ subst Tm (+-suc sB N) (proj₁ (proj₂ rec))
+    tripeq = cong (subst Tm (+-suc sB N))
+               (cong [ Ub[ a ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sB
+                     , canonₛ ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂) (` 0F , suc x , wk e₂) ]′ spliteq
+               ■ proj₁ (proj₂ (proj₂ (proj₂ rec))))
+           ■ substTripL (+-suc sB N) (proj₁ rec) (proj₁ (proj₂ (proj₂ rec))) (proj₁ (proj₂ rec))
+    junceq : Fin.toℕ (subst 𝔽 (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))) ≡ suc sB + Fin.toℕ x
+    junceq = toℕ-subst𝔽L (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))
+           ■ proj₂ (proj₂ (proj₂ (proj₂ rec)))
+           ■ +-suc sB (Fin.toℕ x)
