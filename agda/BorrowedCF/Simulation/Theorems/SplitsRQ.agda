@@ -124,3 +124,85 @@ drwkq-hi (a ∷ B₁') q b₁ B₂ j h with drwkq-hi B₁' q b₁ B₂
         boundr : sum B₁' + q Nat.≤ Fin.toℕ r
         boundr = Nat.+-cancelˡ-≤ a (sum B₁' + q) (Fin.toℕ r)
                    (subst (a + (sum B₁' + q) Nat.≤_) jℕ (subst (Nat._≤ Fin.toℕ j) assoc2 h))
+
+-- ============================================================================
+--   𝐒rwkq / P1rq / P2rq / P3rq : reconcile Typed's rwk (insert at sum B₁ + q)
+--   with the data renaming drwkq on the three splitAt regions (A₁/B/tail).
+-- ============================================================================
+𝐒rwkq-lo : ∀ (B₁ B₂ B : T.BindGroup) {q b₁ m : ℕ}
+            (x : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) →
+            Fin.toℕ x Nat.< sum B₁ + q →
+            Fin.toℕ (TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m} x) ≡ Fin.toℕ x
+𝐒rwkq-lo B₁ B₂ B {q} {b₁} {m} x lt =
+    Fin.toℕ-cast _ _
+  ■ toℕ-↑*-lt weakenᵣ (sum B₁ + q) (Fin.cast _ x) lt′
+  ■ Fin.toℕ-cast _ x
+  where lt′ : Fin.toℕ (Fin.cast _ x) Nat.< sum B₁ + q
+        lt′ = subst (Nat._< sum B₁ + q) (sym (Fin.toℕ-cast _ x)) lt
+
+𝐒rwkq-hi : ∀ (B₁ B₂ B : T.BindGroup) {q b₁ m : ℕ}
+            (x : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) →
+            sum B₁ + q Nat.≤ Fin.toℕ x →
+            Fin.toℕ (TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m} x) ≡ suc (Fin.toℕ x)
+𝐒rwkq-hi B₁ B₂ B {q} {b₁} {m} x h =
+    Fin.toℕ-cast _ _
+  ■ toℕ-↑*-ge weakenᵣ (sum B₁ + q) (Fin.cast _ x) h′
+  ■ cong (sum B₁ + q +_) (cong suc (toℕ-reduce≥ (Fin.cast _ x) h′ ■ cong (Nat._∸ (sum B₁ + q)) (Fin.toℕ-cast _ x)))
+  ■ Nat.+-suc (sum B₁ + q) (Fin.toℕ x Nat.∸ (sum B₁ + q))
+  ■ cong suc (Nat.m+[n∸m]≡n h)
+  where h′ : sum B₁ + q Nat.≤ Fin.toℕ (Fin.cast _ x)
+        h′ = subst (sum B₁ + q Nat.≤_) (sym (Fin.toℕ-cast _ x)) h
+
+P1rq : ∀ (B₁ B₂ B : T.BindGroup) {q b₁ m : ℕ} (d : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂))) →
+     TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m} ((d ↑ˡ sum B) ↑ˡ m)
+     ≡ (drwkq B₁ q b₁ B₂ d ↑ˡ sum B) ↑ˡ m
+P1rq B₁ B₂ B {q} {b₁} {m} d with Fin.toℕ d Nat.<? sum B₁ + q
+... | yes lt = Fin.toℕ-injective
+      ( 𝐒rwkq-lo B₁ B₂ B _ (subst (Nat._< sum B₁ + q) (sym posℕ) lt)
+      ■ posℕ ■ sym (rhsℕ ■ drwkq-lo B₁ q b₁ B₂ d lt) )
+  where posℕ : Fin.toℕ ((d ↑ˡ sum B) ↑ˡ m) ≡ Fin.toℕ d
+        posℕ = Fin.toℕ-↑ˡ (d ↑ˡ sum B) m ■ Fin.toℕ-↑ˡ d (sum B)
+        rhsℕ : Fin.toℕ ((drwkq B₁ q b₁ B₂ d ↑ˡ sum B) ↑ˡ m) ≡ Fin.toℕ (drwkq B₁ q b₁ B₂ d)
+        rhsℕ = Fin.toℕ-↑ˡ (drwkq B₁ q b₁ B₂ d ↑ˡ sum B) m ■ Fin.toℕ-↑ˡ (drwkq B₁ q b₁ B₂ d) (sum B)
+... | no ¬lt = Fin.toℕ-injective
+      ( 𝐒rwkq-hi B₁ B₂ B _ (subst (sum B₁ + q Nat.≤_) (sym posℕ) h≤)
+      ■ cong suc posℕ ■ sym (rhsℕ ■ drwkq-hi B₁ q b₁ B₂ d h≤) )
+  where h≤ : sum B₁ + q Nat.≤ Fin.toℕ d
+        h≤ = Nat.≮⇒≥ ¬lt
+        posℕ : Fin.toℕ ((d ↑ˡ sum B) ↑ˡ m) ≡ Fin.toℕ d
+        posℕ = Fin.toℕ-↑ˡ (d ↑ˡ sum B) m ■ Fin.toℕ-↑ˡ d (sum B)
+        rhsℕ : Fin.toℕ ((drwkq B₁ q b₁ B₂ d ↑ˡ sum B) ↑ˡ m) ≡ Fin.toℕ (drwkq B₁ q b₁ B₂ d)
+        rhsℕ = Fin.toℕ-↑ˡ (drwkq B₁ q b₁ B₂ d ↑ˡ sum B) m ■ Fin.toℕ-↑ˡ (drwkq B₁ q b₁ B₂ d) (sum B)
+
+P2rq : ∀ (B₁ B₂ B : T.BindGroup) {q b₁ m : ℕ} (w : 𝔽 (sum B)) →
+     TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m} ((sum (B₁ ++ (q + suc b₁) ∷ B₂) ↑ʳ w) ↑ˡ m)
+     ≡ (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) ↑ʳ w) ↑ˡ m
+P2rq B₁ B₂ B {q} {b₁} {m} w = Fin.toℕ-injective
+      ( 𝐒rwkq-hi B₁ B₂ B _ (subst (sum B₁ + q Nat.≤_) (sym posℕ)
+                            (Nat.≤-trans (sB₁+q≤ B₁) (Nat.m≤m+n _ (Fin.toℕ w))))
+      ■ cong suc posℕ ■ sym rhsℕ )
+  where posℕ : Fin.toℕ ((sum (B₁ ++ (q + suc b₁) ∷ B₂) ↑ʳ w) ↑ˡ m) ≡ sum (B₁ ++ (q + suc b₁) ∷ B₂) + Fin.toℕ w
+        posℕ = Fin.toℕ-↑ˡ (sum (B₁ ++ (q + suc b₁) ∷ B₂) ↑ʳ w) m ■ Fin.toℕ-↑ʳ (sum (B₁ ++ (q + suc b₁) ∷ B₂)) w
+        rhsℕ : Fin.toℕ ((sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) ↑ʳ w) ↑ˡ m) ≡ suc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + Fin.toℕ w)
+        rhsℕ = Fin.toℕ-↑ˡ (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) ↑ʳ w) m
+             ■ Fin.toℕ-↑ʳ (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂)) w
+             ■ cong (Nat._+ Fin.toℕ w) (sum-rwkq B₁ q)
+        sB₁+q≤ : ∀ (B₁ : T.BindGroup) → sum B₁ + q Nat.≤ sum (B₁ ++ (q + suc b₁) ∷ B₂)
+        sB₁+q≤ B₁ = subst (sum B₁ + q Nat.≤_) (sym (sum-++ B₁ ((q + suc b₁) ∷ B₂)))
+                      (Nat.+-monoʳ-≤ (sum B₁) (Nat.≤-trans (Nat.m≤m+n q (suc b₁)) (Nat.m≤m+n (q + suc b₁) (sum B₂))))
+
+P3rq : ∀ (B₁ B₂ B : T.BindGroup) {q b₁ m : ℕ} (u : 𝔽 m) →
+     TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m} ((sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) ↑ʳ u)
+     ≡ (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) + sum B) ↑ʳ u
+P3rq B₁ B₂ B {q} {b₁} {m} u = Fin.toℕ-injective
+      ( 𝐒rwkq-hi B₁ B₂ B _ (subst (sum B₁ + q Nat.≤_) (sym posℕ)
+                            (Nat.≤-trans (Nat.≤-trans (sB₁+q≤ B₁) (Nat.m≤m+n _ (sum B))) (Nat.m≤m+n _ (Fin.toℕ u))))
+      ■ cong suc posℕ ■ sym rhsℕ )
+  where posℕ : Fin.toℕ ((sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) ↑ʳ u) ≡ sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + Fin.toℕ u
+        posℕ = Fin.toℕ-↑ʳ (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) u
+        rhsℕ : Fin.toℕ ((sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) + sum B) ↑ʳ u) ≡ suc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + Fin.toℕ u)
+        rhsℕ = Fin.toℕ-↑ʳ (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) + sum B) u
+             ■ cong (λ z → z + sum B + Fin.toℕ u) (sum-rwkq B₁ q)
+        sB₁+q≤ : ∀ (B₁ : T.BindGroup) → sum B₁ + q Nat.≤ sum (B₁ ++ (q + suc b₁) ∷ B₂)
+        sB₁+q≤ B₁ = subst (sum B₁ + q Nat.≤_) (sym (sum-++ B₁ ((q + suc b₁) ∷ B₂)))
+                      (Nat.+-monoʳ-≤ (sum B₁) (Nat.≤-trans (Nat.m≤m+n q (suc b₁)) (Nat.m≤m+n (q + suc b₁) (sum B₂))))
