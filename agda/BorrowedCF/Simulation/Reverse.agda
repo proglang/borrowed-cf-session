@@ -36,6 +36,7 @@ open import BorrowedCF.Simulation.RevLSplit
 open import BorrowedCF.Simulation.RevRSplit
   using (rsplit-go; rsplit-arg-chan)
 open import BorrowedCF.Simulation.RevCom using (com-go)
+open import BorrowedCF.Simulation.RevChoice using (choice-go)
 open import BorrowedCF.Simulation.RevComConfine
   using (frames-𝕀; leftPat-¬before; leftPat-pullOut-∥-≼; before-com-binderᴸ; com-xS-min)
 open import BorrowedCF.Simulation.ReverseConfine using (count-handle-comᴸ)
@@ -741,10 +742,8 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Choice F₁ F₂ k)
            F₁ (sym Seq′)
   with F₀ᴿ , argᴿ , refl , FeqR , argeqR
        ← frameApp-reflect Γ′-S eR (inv-⟪⟫ ⊢PR) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) `branch
-           F₂ (sym Req′) =
-  {! RU-Choice inj₁: structural inversion DONE (P₀ = ⟪F₀ˢ[select k·argˢ]⟫ ∥ (⟪F₀ᴿ[branch·argᴿ]⟫ ∥ Pr)).
-     REMAINING (RevChoiceConfine, mirror RevComConfine): argˢ ≡ ` xS forced 0F, argᴿ ≡ ` xR the
-     branch index; fire TR.R-Choice; codomain bridge with `inj k wrapping. !}
+           F₂ (sym Req′)
+  = choice-go σ Vσ Γ-S b₁ b₂ k ⊢P FeqS argeqS FeqR argeqR Preq
 -- RU-Discard : R = ⟪ F [ discard · e ]* ⟫ steps to ⟪ F [ * ]* ⟫ (silent term
 -- consuming a leading skip/discard).  ⟪⟫-headed, so mirrors RU-Fork/RU-Exp; the
 -- typed counterpart is TR.R-Discard.  Left a noted hole for the reverse.
