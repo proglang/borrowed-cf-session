@@ -60,6 +60,11 @@ private
   reassoc-rk₂ : ∀ s k b B C n → s + k + suc (suc b + B + C + n) ≡ s + (k + suc (suc b) + B) + C + n
   reassoc-rk₂ = solve 6 (λ s k b B C n →
     s :+ k :+ (con 1 :+ (con 1 :+ b :+ B :+ C :+ n)) := s :+ (k :+ (con 1 :+ (con 1 :+ b)) :+ B) :+ C :+ n) refl
+  -- rsplit at interior position k: the input block k + suc b splits into the two
+  -- blocks (k + 1) ∷ suc b (a fresh sync boundary lands between them).
+  reassoc-rwk₂ : ∀ s k b B C n → s + k + suc (suc b + B + C + n) ≡ s + ((k + 1) + (suc b + B)) + C + n
+  reassoc-rwk₂ = solve 6 (λ s k b B C n →
+    s :+ k :+ (con 1 :+ (con 1 :+ b :+ B :+ C :+ n)) := s :+ ((k :+ con 1) :+ (con 1 :+ b :+ B)) :+ C :+ n) refl
 
 module SplitRenamings (B₁ B₂ B′ : BindGroup) where
   inj : 𝔽 (sum (B ++ B₂)) → 𝔽 (sum (B₁ ++ B ++ B₂) + sum B′ + n)
@@ -77,13 +82,13 @@ module SplitRenamings (B₁ B₂ B′ : BindGroup) where
       eq₂ : sum B₁ + q + 1 + suc (b + sum B₂ + sum B′ + n) ≡ sum (B₁ ++ (q + suc (suc b)) ∷ B₂) + sum B′ + n
       eq₂ rewrite sum-++ B₁ ((q + suc (suc b)) ∷ B₂) = reassoc-lk₂ (sum B₁) q b (sum B₂) (sum B′) n
 
-  rwk : sum (B₁ ++ suc b ∷ B₂) + sum B′ + n →ᵣ sum (B₁ ++ 1 ∷ suc b ∷ B₂) + sum B′ + n
-  rwk {b} {n} = Fin.cast eq₂ ∘ ins (sum B₁) {suc b + sum B₂ + sum B′ + n} ∘ Fin.cast eq₁
+  rwk : sum (B₁ ++ (q + suc b) ∷ B₂) + sum B′ + n →ᵣ sum (B₁ ++ (q + 1) ∷ suc b ∷ B₂) + sum B′ + n
+  rwk {q} {b} {n} = Fin.cast eq₂ ∘ ins (sum B₁ + q) {suc b + sum B₂ + sum B′ + n} ∘ Fin.cast eq₁
     where
-      eq₁ : sum (B₁ ++ suc b ∷ B₂) + sum B′ + n ≡ sum B₁ + (suc b + sum B₂ + sum B′ + n)
-      eq₁ rewrite sum-++ B₁ (suc b ∷ B₂) = reassoc-r₁ (sum B₁) b (sum B₂) (sum B′) n
-      eq₂ : sum B₁ + suc (suc b + sum B₂ + sum B′ + n) ≡ sum (B₁ ++ 1 ∷ suc b ∷ B₂) + sum B′ + n
-      eq₂ rewrite sum-++ B₁ (1 ∷ suc b ∷ B₂) = reassoc-r₂ (sum B₁) b (sum B₂) (sum B′) n
+      eq₁ : sum (B₁ ++ (q + suc b) ∷ B₂) + sum B′ + n ≡ sum B₁ + q + (suc b + sum B₂ + sum B′ + n)
+      eq₁ rewrite sum-++ B₁ ((q + suc b) ∷ B₂) = reassoc-rk₁ (sum B₁) q b (sum B₂) (sum B′) n
+      eq₂ : sum B₁ + q + suc (suc b + sum B₂ + sum B′ + n) ≡ sum (B₁ ++ (q + 1) ∷ suc b ∷ B₂) + sum B′ + n
+      eq₂ rewrite sum-++ B₁ ((q + 1) ∷ suc b ∷ B₂) = reassoc-rwk₂ (sum B₁) q b (sum B₂) (sum B′) n
 
 infix 4 _─→ₚ_
 
@@ -131,9 +136,9 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
 
   R-RSplit : ∀ {E} →
     let module 𝐒 = SplitRenamings B₁ B₂ B in
-    ν (B₁ ++ suc b₁ ∷ B₂) B (⟪ E [ K (`rsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ ∥ P)
+    ν (B₁ ++ (q + suc b₁) ∷ B₂) B (⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ ∥ P)
       ─→ₚ
-    ν (B₁ ++ 1 ∷ suc b₁ ∷ B₂) B (⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj 0F) ⊗ (` 𝐒.inj 1F) ]* ⟫ ∥ (P ⋯ₚ 𝐒.rwk))
+    ν (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B (⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))) ⊗ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)) ]* ⟫ ∥ (P ⋯ₚ 𝐒.rwk))
 
   R-Drop : ∀ {E} →
     ν (suc b₁ ∷ B₁) B₂
