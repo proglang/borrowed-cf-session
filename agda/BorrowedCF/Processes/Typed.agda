@@ -266,7 +266,7 @@ inv-ν : {Γ : Ctx n} → Γ ; γ ⊢ₚ ν B₁ B₂ P →
 inv-ν (TP-Res N p ⊢B₁ ⊢B₂ C C′ P) = _ , _ , _ , _ , N , ⊢B₁ , ⊢B₂ , C , C′ , P
 inv-ν (TP-Weaken γ≤ p) =
   let Γ₁ , Γ₂ , _ , _ , N , ⊢B₁ , ⊢B₂ , C , C′ , p′ = inv-ν p in
-  _ , _ , _ , _ , N , ⊢B₁ , ⊢B₂ , C , C′ , TP-Weaken (≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.wk*-preserves (Γ₁ ⸴* Γ₂)) γ≤)) p′
+  _ , _ , _ , _ , N , ⊢B₁ , ⊢B₂ , C , C′ , TP-Weaken (≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.wk*-preserves (Γ₁ ⸴* Γ₂)) (𝐂.wk*-preserves (Γ₁ ⸴* Γ₂)) γ≤)) p′
 
 infixl 5 _⊢⋯ₚ_
 
@@ -289,7 +289,7 @@ _⊢⋯ₚ_ {γ = γ} {σ = σ} (TP-Res {B₁ = B₁} {B₂ = B₂} N p ⊢B₁ 
           ■ 𝐂.conv-⋯ᵣₛ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁))))
         (sym (𝐂.⋯-↑*-wk γ σ (sum B₁ + sum B₂))))
     $ P ⊢⋯ₚ ⊢↑* _ ⊢ϕ
-TP-Weaken γ≤ p ⊢⋯ₚ ⊢ϕ = TP-Weaken (𝐂.≼-⋯ (&-unr ⊢ϕ) γ≤) (p ⊢⋯ₚ ⊢ϕ)
+TP-Weaken γ≤ p ⊢⋯ₚ ⊢ϕ = TP-Weaken (𝐂.≼-⋯ (&-unr ⊢ϕ) (&-mob ⊢ϕ) γ≤) (p ⊢⋯ₚ ⊢ϕ)
 
 infixl 5 _⊢⋯ₚ⁻¹_
 

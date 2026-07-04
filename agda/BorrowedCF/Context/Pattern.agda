@@ -114,25 +114,51 @@ leftPat-pullOut-∥ (inj₂ refl ∷ L𝒫) = {!!}
 
 open ≼-Reasoning
 
-restrictContext : (𝒫 : CxPat n) (γ : Struct n) → Γ ∶ 𝒫 [ γ ]𝓅 ≼ γ ∥ 𝒫 [ [] ]𝓅
-restrictContext [] γ = ≼-refl (≈-sym ∥-unit₂)
-restrictContext ((L , α) ∷ 𝒫) γ =
-  let IH = restrictContext 𝒫 γ in begin
+pullOutMobile : (𝒫 : CxPat n) {γ : Struct n} → MobCx Γ γ → Γ ∶ 𝒫 [ γ ]𝓅 ≈ γ ∥ 𝒫 [ [] ]𝓅
+pullOutMobile [] m = ≈-sym ∥-unit₂
+pullOutMobile ((L , α) ∷ 𝒫) m =
+  let IH = pullOutMobile 𝒫 m in begin-equality
+  α ; 𝒫 [ _ ]𝓅         ≈⟨ ;-cong refl IH ⟩
+  α ; (_ ∥ 𝒫 [ [] ]𝓅)  ≈⟨ ;-cong refl (∥/;-transmute (inj₁ m)) ⟩
+  α ; (_ ; 𝒫 [ [] ]𝓅)  ≈⟨ ;-assoc ⟨
+  (α ; _) ; 𝒫 [ [] ]𝓅  ≈⟨ ;-cong (;-commMob (inj₂ m)) refl ⟩
+  (_ ; α) ; 𝒫 [ [] ]𝓅  ≈⟨ ;-assoc ⟩
+  _ ; (α ; 𝒫 [ [] ]𝓅)  ≈⟨ ∥/;-transmute (inj₁ m) ⟨
+  _ ∥ (α ; 𝒫 [ [] ]𝓅)  ∎
+pullOutMobile ((R , α) ∷ 𝒫) m = 
+  let IH = pullOutMobile 𝒫 m in begin-equality
+  𝒫 [ _ ]𝓅 ; α         ≈⟨ ;-cong IH refl ⟩
+  (_ ∥ 𝒫 [ [] ]𝓅) ; α  ≈⟨ ;-cong (∥/;-transmute (inj₁ m)) refl ⟩
+  (_ ; 𝒫 [ [] ]𝓅) ; α  ≈⟨ ;-assoc ⟩
+  _ ; (𝒫 [ [] ]𝓅 ; α)  ≈⟨ ∥/;-transmute (inj₁ m) ⟨
+  _ ∥ (𝒫 [ [] ]𝓅 ; α)  ∎
+pullOutMobile ((𝟙 , α) ∷ 𝒫) m =
+  let IH = pullOutMobile 𝒫 m in begin-equality
+  α ∥ 𝒫 [ _ ]𝓅         ≈⟨ ∥-cong refl IH ⟩
+  α ∥ (_ ∥ 𝒫 [ [] ]𝓅)  ≈⟨ ∥-assoc ⟨
+  (α ∥ _) ∥ 𝒫 [ [] ]𝓅  ≈⟨ ∥-cong ∥-comm refl ⟩
+  (_ ∥ α) ∥ 𝒫 [ [] ]𝓅  ≈⟨ ∥-assoc ⟩
+  _ ∥ (α ∥ 𝒫 [ [] ]𝓅)  ∎
+
+pullOut-≼ : (𝒫 : CxPat n) (γ : Struct n) → Γ ∶ 𝒫 [ γ ]𝓅 ≼ γ ∥ 𝒫 [ [] ]𝓅
+pullOut-≼ [] γ = ≼-refl (≈-sym ∥-unit₂)
+pullOut-≼ ((L , α) ∷ 𝒫) γ =
+  let IH = pullOut-≼ 𝒫 γ in begin
   α ; 𝒫 [ γ ]𝓅                ≲⟨ ≼-cong-; (≼-refl refl) IH ⟩
   α ; (γ ∥ 𝒫 [ [] ]𝓅)         ≈⟨ ;-cong ∥-unit₁ refl ⟨
   ([] ∥ α) ; (γ ∥ 𝒫 [ [] ]𝓅)  ≲⟨ ≼-wk ⟩
   ([] ; γ) ∥ (α ; 𝒫 [ [] ]𝓅)  ≈⟨ ∥-cong ;-unit₁ refl ⟩
   γ ∥ (α ; 𝒫 [ [] ]𝓅)         ∎
-restrictContext ((R , α) ∷ 𝒫) γ =
-  let IH = restrictContext 𝒫 γ in begin
+pullOut-≼ ((R , α) ∷ 𝒫) γ =
+  let IH = pullOut-≼ 𝒫 γ in begin
   𝒫 [ γ ]𝓅 ; α                ≲⟨ ≼-cong-; IH (≼-refl refl) ⟩
   (γ ∥ 𝒫 [ [] ]𝓅) ; α         ≈⟨ ;-cong ∥-comm ∥-unit₂ ⟨
   (𝒫 [ [] ]𝓅 ∥ γ) ; (α ∥ [])  ≲⟨ ≼-wk ⟩
   (𝒫 [ [] ]𝓅 ; α) ∥ (γ ; [])  ≈⟨ ∥-cong refl ;-unit₂ ⟩
   (𝒫 [ [] ]𝓅 ; α) ∥ γ         ≈⟨ ∥-comm ⟩
   γ ∥ (𝒫 [ [] ]𝓅 ; α)         ∎
-restrictContext ((𝟙 , α) ∷ 𝒫) γ =
-  let IH = restrictContext 𝒫 γ in begin
+pullOut-≼ ((𝟙 , α) ∷ 𝒫) γ =
+  let IH = pullOut-≼ 𝒫 γ in begin
   α ∥ 𝒫 [ γ ]𝓅         ≲⟨ ≼-cong-∥ (≼-refl refl) IH ⟩
   α ∥ (γ ∥ 𝒫 [ [] ]𝓅)  ≈⟨ ≈-trans (≈-sym ∥-assoc) (≈-trans (∥-cong ∥-comm refl) ∥-assoc) ⟩
   γ ∥ (α ∥ 𝒫 [ [] ]𝓅)  ∎

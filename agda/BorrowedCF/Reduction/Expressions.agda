@@ -39,6 +39,24 @@ value⇒pure (V-⊕ V) (T-Inj x) = T-Inj (value⇒pure V x)
 value⇒pure V (T-Conv eq ϵ≤ x) = T-Conv eq ≤ϵ-refl (value⇒pure V x)
 value⇒pure V (T-Weaken γ≤ x) = T-Weaken γ≤ (value⇒pure V x)
 
+inv-unr : Value e → Unr T → Γ ; γ ⊢ e ∶ T ∣ ϵ → UnrCx Γ γ
+inv-unr V U (T-Const ⊢c) = []
+inv-unr V U (T-Var x refl) = ` U
+inv-unr V-λ (arr Ua) (T-Abs Γ-unr Γ-mob e) = Γ-unr Ua
+inv-unr (V-⊗ V₁ V₂) (U₁ ⊗ U₂) (T-Pair p/s seq⇒p e₁ e₂) = allCx-join⁺ p/s (inv-unr V₁ U₁ e₁) (inv-unr V₂ U₂ e₂)
+inv-unr (V-⊕ V) (U₁ ⊕ U₂) (T-Inj {i = i} e) = inv-unr V (if[ Unr ] i then U₁ else U₂) e
+inv-unr V U (T-Conv T≃ ϵ≤ e) = inv-unr V (unr-≃ (≃-sym T≃) U) e
+inv-unr V U (T-Weaken γ≤ e) = unrCx-weaken γ≤ (inv-unr V U e)
+
+inv-mob : Value e → Mobile T →  Γ ; γ ⊢ e ∶ T ∣ ϵ → MobCx Γ γ
+inv-mob V m (T-Const ⊢c) = []
+inv-mob V m (T-Var x refl) = ` m
+inv-mob V (arr x) (T-Abs Γ-unr Γ-mob e) = Γ-mob x
+inv-mob (V-⊗ V V₁) (m ⊗ m₁) (T-Pair p/s seq⇒p e e₁) = allCx-join⁺ p/s (inv-mob V m e) (inv-mob V₁ m₁ e₁)
+inv-mob (V-⊕ V) (m ⊕ m₁) (T-Inj {i = i} e) = inv-mob V (if[ Mobile ] i then m else m₁) e
+inv-mob V m (T-Conv T≃ ϵ≤ e) = inv-mob V (mobile-≃ (≃-sym T≃) m) e
+inv-mob V m (T-Weaken γ≤ e) = allCx-weaken unr⇒mobile γ≤ (inv-mob V m e)
+
 module _ (Γ-S : ChanCx Γ) where
   open Fin.Patterns
   open ≼-Reasoning
@@ -48,15 +66,6 @@ module _ (Γ-S : ChanCx Γ) where
   inv-`⊤ V (T-Conv `⊤ ϵ≤ e) = inv-`⊤ V e
   inv-`⊤ V (T-Weaken γ≤ e)  = Π.map₂ (λ z → ≼-trans z γ≤) (inv-`⊤ V e)
   inv-`⊤ V (T-Var x T-eq)   = case sym T-eq ■ Γ-S x .proj₂ of λ()
-
-  inv-unr : Value e → Unr T → Γ ; γ ⊢ e ∶ T ∣ ϵ → UnrCx Γ γ
-  inv-unr V U (T-Const ⊢c) = []
-  inv-unr V U (T-Var x refl) = ` U
-  inv-unr V-λ (arr Ua) (T-Abs Γ-unr Γ-mob e) = Γ-unr Ua
-  inv-unr (V-⊗ V₁ V₂) (U₁ ⊗ U₂) (T-Pair p/s seq⇒p e₁ e₂) = allCx-join⁺ p/s (inv-unr V₁ U₁ e₁) (inv-unr V₂ U₂ e₂)
-  inv-unr (V-⊕ V) (U₁ ⊕ U₂) (T-Inj {i = i} e) = inv-unr V (if[ Unr ] i then U₁ else U₂) e
-  inv-unr V U (T-Conv T≃ ϵ≤ e) = inv-unr V (unr-≃ (≃-sym T≃) U) e
-  inv-unr V U (T-Weaken γ≤ e) = unrCx-weaken γ≤ (inv-unr V U e)
 
   inv-arr : Value e → Γ ; γ ⊢ e ∶ T ⟨ a ⟩→ U ∣ ϵ →
     ∃[ T′ ] ∃[ U′ ] ∃[ ϵ ] T ≃ T′ × U ≃ U′ × ϵ ≤ϵ Arr.eff a ×
@@ -73,7 +82,7 @@ module _ (Γ-S : ChanCx Γ) where
   ... | _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₁ x
     = _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₁ x
   ... | _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₂ (_ , eq , x)
-    = _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₂ (_ , eq , T-Weaken (≼-join (Arr.dir a) (≼-refl refl) (𝐂.≼-⋯ 𝐂.wk-preserves γ≤)) x)
+    = _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₂ (_ , eq , T-Weaken (≼-join (Arr.dir a) (≼-refl refl) (𝐂.≼-⋯ 𝐂.wk-preserves 𝐂.wk-preserves γ≤)) x)
 
   value×⊗⇒⊗ : Value e → Γ ; γ ⊢ e ∶ T ⊗⟨ d ⟩ U ∣ ϵ → ∃[ e₁ ] ∃[ e₂ ] e ≡ e₁ ⊗ e₂
   value×⊗⇒⊗ V (T-Var x T-eq) = case sym T-eq ■ Γ-S x .proj₂ of λ()

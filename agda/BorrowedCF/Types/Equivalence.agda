@@ -145,33 +145,28 @@ data Atom {n} : 𝕊 n → Set where
 
 
 
-atom-refl-;-skips⁻¹ : Atom s → (s′ : 𝕊 n) → s ≃ s ; s′ → Skips s′
-atom-refl-;-skips⁻¹ `- (` x) eq = {!!}
-atom-refl-;-skips⁻¹ end (` x) eq = {!!}
-atom-refl-;-skips⁻¹ msg (` x) eq = {!!}
-atom-refl-;-skips⁻¹ ret (` x) eq = {!!}
-atom-refl-;-skips⁻¹ acq (` x) eq = {!!}
-atom-refl-;-skips⁻¹ ``- (` x) eq = {!!}
-atom-refl-;-skips⁻¹ a (end p) eq = {!!}
-atom-refl-;-skips⁻¹ a (msg p t) eq = {!!}
-atom-refl-;-skips⁻¹ a (brn p s₁ s₂) eq = {!!}
-atom-refl-;-skips⁻¹ a (mu s) eq = {!!}
-atom-refl-;-skips⁻¹ a (s₁ ; s₂) eq = {!!}
-atom-refl-;-skips⁻¹ a skip eq = {!!}
-atom-refl-;-skips⁻¹ a ret eq = {!!}
-atom-refl-;-skips⁻¹ a acq eq = {!!}
-atom-refl-;-skips⁻¹ a (`` α) eq = {!!}
+-- atom-refl-;-skips⁻¹ : Atom s → (s′ : 𝕊 n) → s ≃ s ; s′ → Skips s′
+-- atom-refl-;-skips⁻¹ a (` x) eq = {!!}
+-- atom-refl-;-skips⁻¹ a (end p) eq = {!!}
+-- atom-refl-;-skips⁻¹ a (msg p t) eq = {!!}
+-- atom-refl-;-skips⁻¹ a (brn p s₁ s₂) eq = {!!}
+-- atom-refl-;-skips⁻¹ a (mu s) eq = {!!}
+-- atom-refl-;-skips⁻¹ a (s₁ ; s₂) eq = {!!}
+-- atom-refl-;-skips⁻¹ a skip eq = {!!}
+-- atom-refl-;-skips⁻¹ a ret eq = {!!}
+-- atom-refl-;-skips⁻¹ a acq eq = {!!}
+-- atom-refl-;-skips⁻¹ a (`` α) eq = {!!}
 
--- atom-refl-;-skips⁻¹ : Atom s → s ≃ s ; s′ → Skips s′
--- atom-refl-;-skips⁻¹ `-  (fwd () ◅ eq)
--- atom-refl-;-skips⁻¹ end (fwd () ◅ eq)
--- atom-refl-;-skips⁻¹ msg (fwd () ◅ eq)
--- atom-refl-;-skips⁻¹ ret (fwd () ◅ eq)
--- atom-refl-;-skips⁻¹ acq (fwd () ◅ eq)
--- atom-refl-;-skips⁻¹ ``- (fwd () ◅ eq)
--- atom-refl-;-skips⁻¹ `-  (bwd x ◅ eq) = {!!}
--- atom-refl-;-skips⁻¹ end (bwd x ◅ eq) = {!!}
--- atom-refl-;-skips⁻¹ msg (bwd x ◅ eq) = {!!}
--- atom-refl-;-skips⁻¹ ret (bwd x ◅ eq) = {!!}
--- atom-refl-;-skips⁻¹ acq (bwd x ◅ eq) = {!!}
--- atom-refl-;-skips⁻¹ ``- (bwd x ◅ eq) = {!!}
+-- -- atom-refl-;-skips⁻¹ : Atom s → s ≃ s ; s′ → Skips s′
+-- -- atom-refl-;-skips⁻¹ `-  (fwd () ◅ eq)
+-- -- atom-refl-;-skips⁻¹ end (fwd () ◅ eq)
+-- -- atom-refl-;-skips⁻¹ msg (fwd () ◅ eq)
+-- -- atom-refl-;-skips⁻¹ ret (fwd () ◅ eq)
+-- -- atom-refl-;-skips⁻¹ acq (fwd () ◅ eq)
+-- -- atom-refl-;-skips⁻¹ ``- (fwd () ◅ eq)
+-- -- atom-refl-;-skips⁻¹ `-  (bwd x ◅ eq) = {!!}
+-- -- atom-refl-;-skips⁻¹ end (bwd x ◅ eq) = {!!}
+-- -- atom-refl-;-skips⁻¹ msg (bwd x ◅ eq) = {!!}
+-- -- atom-refl-;-skips⁻¹ ret (bwd x ◅ eq) = {!!}
+-- -- atom-refl-;-skips⁻¹ acq (bwd x ◅ eq) = {!!}
+-- -- atom-refl-;-skips⁻¹ ``- (bwd x ◅ eq) = {!!}

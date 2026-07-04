@@ -112,19 +112,27 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
   ↑-preserves ⦃ K ⦄ p⇒ {zero}  px = subst (AllCx P _) (sym (`/`-is-` ⦃ K ⦄ zero)) (` px)
   ↑-preserves ⦃ K ⦄ p⇒ {suc x} px = subst (AllCx P _) (wk-`/id _) (allCx-wk (p⇒ px))
 
-≈′-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} → ϕ Preserves[ Unr ] Γ₁ ⇒ Γ₂ → Γ₁ ∶ α ≈′ β → Γ₂ ∶ α ⋯ ϕ ≈′ β ⋯ ϕ
-≈′-⋯ σ-unr ;′-assoc = ;′-assoc
-≈′-⋯ σ-unr (;′-cong₁ x) = ;′-cong₁ (≈′-⋯ σ-unr x)
-≈′-⋯ σ-unr (;′-cong₂ x) = ;′-cong₂ (≈′-⋯ σ-unr x)
-≈′-⋯ σ-unr ∥′-unit = ∥′-unit
-≈′-⋯ σ-unr ∥′-assoc = ∥′-assoc
-≈′-⋯ σ-unr ∥′-comm = ∥′-comm
-≈′-⋯ σ-unr (∥′-cong₁ x) = ∥′-cong₁ (≈′-⋯ σ-unr x)
-≈′-⋯ σ-unr (∥′-dup U) = ∥′-dup (allCx-⋯ σ-unr U)
-≈′-⋯ σ-unr (∥′-tm-; U) = ∥′-tm-; (Sum.map (allCx-⋯ σ-unr) (allCx-⋯ σ-unr) U)
+≈′-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} →
+  ϕ Preserves[ Unr ] Γ₁ ⇒ Γ₂ →
+  ϕ Preserves[ Mobile ] Γ₁ ⇒ Γ₂ →
+  Γ₁ ∶ α ≈′ β →
+  Γ₂ ∶ α ⋯ ϕ ≈′ β ⋯ ϕ
+≈′-⋯ σ-unr σ-mob ;′-assoc = ;′-assoc
+≈′-⋯ σ-unr σ-mob (;′-cong₁ x) = ;′-cong₁ (≈′-⋯ σ-unr σ-mob x)
+≈′-⋯ σ-unr σ-mob (;′-cong₂ x) = ;′-cong₂ (≈′-⋯ σ-unr σ-mob x)
+≈′-⋯ σ-unr σ-mob ∥′-unit = ∥′-unit
+≈′-⋯ σ-unr σ-mob ∥′-assoc = ∥′-assoc
+≈′-⋯ σ-unr σ-mob ∥′-comm = ∥′-comm
+≈′-⋯ σ-unr σ-mob (∥′-cong₁ x) = ∥′-cong₁ (≈′-⋯ σ-unr σ-mob x)
+≈′-⋯ σ-unr σ-mob (∥′-dup U) = ∥′-dup (allCx-⋯ σ-unr U)
+≈′-⋯ σ-unr σ-mob (∥′-tm-; U) = ∥′-tm-; (Sum.map (allCx-⋯ σ-mob) (allCx-⋯ σ-mob) U)
 
-≈-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} → ϕ Preserves[ Unr ] Γ₁ ⇒ Γ₂ → Γ₁ ∶ α ≈ β → Γ₂ ∶ α ⋯ ϕ ≈ β ⋯ ϕ
-≈-⋯ ϕ-unr = Eq*.gmap _ (≈′-⋯ ϕ-unr)
+≈-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} →
+  ϕ Preserves[ Unr ] Γ₁ ⇒ Γ₂ →
+  ϕ Preserves[ Mobile ] Γ₁ ⇒ Γ₂ →
+  Γ₁ ∶ α ≈ β →
+  Γ₂ ∶ α ⋯ ϕ ≈ β ⋯ ϕ
+≈-⋯ ϕ-unr ϕ-mob = Eq*.gmap _ (≈′-⋯ ϕ-unr ϕ-mob)
 
 ≈′-inv-[] : Γ ∶ α ∥ β ≈′ [] → Γ ∶ α ≈ [] × Γ ∶ β ≈ []
 ≈′-inv-[] ∥′-unit = refl , refl
@@ -135,18 +143,23 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
 ∥′-dup⁻¹ : ∀ {x y z} → Γ ∶ ` x ≈′ (` y) ∥ (` z) → x ≡ y × x ≡ z × Unr (Γ x)
 ∥′-dup⁻¹ (∥′-dup (` U)) = refl , refl , U
 
-≈′-⋯⁻¹ : {ϕ : m →ᵣ n} → Inj ϕ → ϕ Preserves[ Unr ] Γ₁ ⇐ Γ₂ → Γ₂ ∶ α ⋯ ϕ ≈′ β ⋯ ϕ → Γ₁ ∶ α ≈′ β
-≈′-⋯⁻¹ {α = α} {β} {ϕ = ϕ} inj-ϕ unr-ϕ x with α ⋯ ϕ in eqᵃ | β ⋯ ϕ in eqᵇ
+≈′-⋯⁻¹ : {ϕ : m →ᵣ n} →
+  Inj ϕ →
+  ϕ Preserves[ Unr ] Γ₁ ⇐ Γ₂ →
+  ϕ Preserves[ Mobile ] Γ₁ ⇐ Γ₂ →
+  Γ₂ ∶ α ⋯ ϕ ≈′ β ⋯ ϕ →
+  Γ₁ ∶ α ≈′ β
+≈′-⋯⁻¹ {α = α} {β} {ϕ = ϕ} inj-ϕ unr-ϕ mob-ϕ x with α ⋯ ϕ in eqᵃ | β ⋯ ϕ in eqᵇ
 
-≈′-⋯⁻¹ {α = α₁ ; α₂} {β₁ ; β₂} inj-ϕ unr-ϕ (;′-cong₁ x) | ϕα | ϕβ
+≈′-⋯⁻¹ {α = α₁ ; α₂} {β₁ ; β₂} inj-ϕ unr-ϕ mob-ϕ (;′-cong₁ x) | ϕα | ϕβ
   rewrite ⋯-injective {α = α₂} {β₂} inj-ϕ (;-injective eqᵃ .proj₂ ■ sym (;-injective eqᵇ .proj₂))
-  = ;′-cong₁ (≈′-⋯⁻¹ inj-ϕ unr-ϕ (subst₂ (_ ∶_≈′_) (sym (;-injective eqᵃ .proj₁)) (sym (;-injective eqᵇ .proj₁)) x))
+  = ;′-cong₁ (≈′-⋯⁻¹ inj-ϕ unr-ϕ mob-ϕ (subst₂ (_ ∶_≈′_) (sym (;-injective eqᵃ .proj₁)) (sym (;-injective eqᵇ .proj₁)) x))
 
-≈′-⋯⁻¹ {α = α₁ ; α₂} {β₁ ; β₂} inj-ϕ unr-ϕ (;′-cong₂ x) | ϕα | ϕβ
+≈′-⋯⁻¹ {α = α₁ ; α₂} {β₁ ; β₂} inj-ϕ unr-ϕ mob-ϕ (;′-cong₂ x) | ϕα | ϕβ
   rewrite ⋯-injective {α = α₁} {β₁} inj-ϕ (;-injective eqᵃ .proj₁ ■ sym (;-injective eqᵇ .proj₁))
-  = ;′-cong₂ (≈′-⋯⁻¹ inj-ϕ unr-ϕ (subst₂ (_ ∶_≈′_) (sym (;-injective eqᵃ .proj₂)) (sym (;-injective eqᵇ .proj₂)) x))
+  = ;′-cong₂ (≈′-⋯⁻¹ inj-ϕ unr-ϕ mob-ϕ (subst₂ (_ ∶_≈′_) (sym (;-injective eqᵃ .proj₂)) (sym (;-injective eqᵇ .proj₂)) x))
 
-≈′-⋯⁻¹ {α = (α₁ ; β₁) ; γ₁} {α₂ ; (β₂ ; γ₂)} inj-ϕ unr-ϕ ;′-assoc | ϕα | ϕβ
+≈′-⋯⁻¹ {α = (α₁ ; β₁) ; γ₁} {α₂ ; (β₂ ; γ₂)} inj-ϕ unr-ϕ mob-ϕ ;′-assoc | ϕα | ϕβ
   with eqᵃ′ , refl ← ;-injective eqᵃ
   with refl , refl ← ;-injective eqᵃ′
   rewrite ⋯-injective {α = α₂} {α₁} inj-ϕ (;-injective eqᵇ .proj₁)
@@ -154,11 +167,11 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
   rewrite ⋯-injective {α = γ₂} {γ₁} inj-ϕ (;-injective (;-injective eqᵇ .proj₂) .proj₂)
   = ;′-assoc
 
-≈′-⋯⁻¹ {α = α ∥ []} {β} inj-ϕ unr-ϕ ∥′-unit | ϕα | ϕβ
+≈′-⋯⁻¹ {α = α ∥ []} {β} inj-ϕ unr-ϕ mob-ϕ ∥′-unit | ϕα | ϕβ
   rewrite ⋯-injective {α = α} {β} inj-ϕ (∥-injective eqᵃ .proj₁ ■ sym eqᵇ)
   = ∥′-unit
 
-≈′-⋯⁻¹ {α = (α₁ ∥ β₁) ∥ γ₁} {α₂ ∥ (β₂ ∥ γ₂)} inj-ϕ unr-ϕ ∥′-assoc | ϕα | ϕβ
+≈′-⋯⁻¹ {α = (α₁ ∥ β₁) ∥ γ₁} {α₂ ∥ (β₂ ∥ γ₂)} inj-ϕ unr-ϕ mob-ϕ ∥′-assoc | ϕα | ϕβ
   with eqᵃ′ , refl ← ∥-injective eqᵃ
   with refl , refl ← ∥-injective eqᵃ′
   rewrite ⋯-injective {α = α₂} {α₁} inj-ϕ (∥-injective eqᵇ .proj₁)
@@ -166,38 +179,42 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
   rewrite ⋯-injective {α = γ₂} {γ₁} inj-ϕ (∥-injective (∥-injective eqᵇ .proj₂) .proj₂)
   = ∥′-assoc
 
-≈′-⋯⁻¹ {α = α₁ ∥ α₂} {β₁ ∥ β₂} inj-ϕ unr-ϕ ∥′-comm | ϕα | ϕβ
+≈′-⋯⁻¹ {α = α₁ ∥ α₂} {β₁ ∥ β₂} inj-ϕ unr-ϕ mob-ϕ ∥′-comm | ϕα | ϕβ
   using α₁≡α , α₂≡β ← ∥-injective eqᵃ
   using β₁≡β , β₂≡α ← ∥-injective eqᵇ
   rewrite ⋯-injective {α = α₁} {β₂} inj-ϕ (α₁≡α ■ sym β₂≡α)
   rewrite ⋯-injective {α = α₂} {β₁} inj-ϕ (α₂≡β ■ sym β₁≡β)
   = ∥′-comm
 
-≈′-⋯⁻¹ {α = α₁ ∥ α₂} {β₁ ∥ β₂} inj-ϕ unr-ϕ (∥′-cong₁ x) | ϕα | ϕβ
+≈′-⋯⁻¹ {α = α₁ ∥ α₂} {β₁ ∥ β₂} inj-ϕ unr-ϕ mob-ϕ (∥′-cong₁ x) | ϕα | ϕβ
   rewrite ⋯-injective {α = α₂} {β₂} inj-ϕ (∥-injective eqᵃ .proj₂ ■ sym (∥-injective eqᵇ .proj₂))
-  = ∥′-cong₁ (≈′-⋯⁻¹ inj-ϕ unr-ϕ (subst₂ (_ ∶_≈′_) (sym (∥-injective eqᵃ .proj₁)) (sym (∥-injective eqᵇ .proj₁)) x))
+  = ∥′-cong₁ (≈′-⋯⁻¹ inj-ϕ unr-ϕ mob-ϕ (subst₂ (_ ∶_≈′_) (sym (∥-injective eqᵃ .proj₁)) (sym (∥-injective eqᵇ .proj₁)) x))
 
-≈′-⋯⁻¹ {α = α} {β₁ ∥ β₂} {ϕ = ϕ} inj-ϕ unr-ϕ (∥′-dup U) | ϕα | ϕβ
+≈′-⋯⁻¹ {α = α} {β₁ ∥ β₂} {ϕ = ϕ} inj-ϕ unr-ϕ mob-ϕ (∥′-dup U) | ϕα | ϕβ
   rewrite sym eqᵃ
   rewrite ⋯-injective {α = β₁} {α} inj-ϕ (∥-injective eqᵇ .proj₁)
   rewrite ⋯-injective {α = β₂} {α} inj-ϕ (∥-injective eqᵇ .proj₂)
   = ∥′-dup (allCx-⋯⁻¹ unr-ϕ U)
 
-≈′-⋯⁻¹ {α = α₁ ∥ α₂} {β₁ ; β₂} {ϕ = ϕ} inj-ϕ unr-ϕ (∥′-tm-; U) | ϕα | ϕβ
+≈′-⋯⁻¹ {α = α₁ ∥ α₂} {β₁ ; β₂} {ϕ = ϕ} inj-ϕ unr-ϕ mob-ϕ (∥′-tm-; U) | ϕα | ϕβ
   with refl , refl ← ∥-injective eqᵃ
   rewrite ⋯-injective {α = β₁} {α₁} inj-ϕ (;-injective eqᵇ .proj₁)
   rewrite ⋯-injective {α = β₂} {α₂} inj-ϕ (;-injective eqᵇ .proj₂)
-  = ∥′-tm-; (Sum.map (allCx-⋯⁻¹ unr-ϕ) (allCx-⋯⁻¹ unr-ϕ) U)
+  = ∥′-tm-; (Sum.map (allCx-⋯⁻¹ mob-ϕ) (allCx-⋯⁻¹ mob-ϕ) U)
 
 -- ≈-⋯⁻¹ and ≼-⋯⁻¹ (inverse renaming for ≈ / ≼) are proven in
 -- BorrowedCF.Context.Domain, which has the `dom` machinery they need.
 
-≼-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} → ϕ Preserves[ Unr ] Γ₁ ⇒ Γ₂ → Γ₁ ∶ α ≼ β → Γ₂ ∶ α ⋯ ϕ ≼ β ⋯ ϕ
-≼-⋯ σ-unr (≼-refl eq)    = ≼-refl (≈-⋯ σ-unr eq)
-≼-⋯ σ-unr ≼-wk           = ≼-wk
-≼-⋯ σ-unr (≼-∅ U)        = ≼-∅ (allCx-⋯ σ-unr U)
-≼-⋯ σ-unr (≼-trans  x y) = ≼-trans (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
-≼-⋯ σ-unr (≼-cong-; x y) = ≼-cong-; (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
-≼-⋯ σ-unr (≼-cong-∥ x y) = ≼-cong-∥ (≼-⋯ σ-unr x) (≼-⋯ σ-unr y)
+≼-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} →
+  ϕ Preserves[ Unr ] Γ₁ ⇒ Γ₂ →
+  ϕ Preserves[ Mobile ] Γ₁ ⇒ Γ₂ →
+  Γ₁ ∶ α ≼ β →
+  Γ₂ ∶ α ⋯ ϕ ≼ β ⋯ ϕ
+≼-⋯ σ-unr σ-mob (≼-refl eq)    = ≼-refl (≈-⋯ σ-unr σ-mob eq)
+≼-⋯ σ-unr σ-mob ≼-wk           = ≼-wk
+≼-⋯ σ-unr σ-mob (≼-∅ U)        = ≼-∅ (allCx-⋯ σ-unr U)
+≼-⋯ σ-unr σ-mob (≼-trans  x y) = ≼-trans (≼-⋯ σ-unr σ-mob x) (≼-⋯ σ-unr σ-mob y)
+≼-⋯ σ-unr σ-mob (≼-cong-; x y) = ≼-cong-; (≼-⋯ σ-unr σ-mob x) (≼-⋯ σ-unr σ-mob y)
+≼-⋯ σ-unr σ-mob (≼-cong-∥ x y) = ≼-cong-∥ (≼-⋯ σ-unr σ-mob x) (≼-⋯ σ-unr σ-mob y)
 
 

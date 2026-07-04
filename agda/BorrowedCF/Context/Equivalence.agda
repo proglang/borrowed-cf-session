@@ -32,7 +32,7 @@ data _∶_≈′_ (Γ : Ctx n) : Struct n → Struct n → Set where
   ∥′-comm  : Γ ∶ α ∥ β ≈′ β ∥ α
   ∥′-cong₁ : Γ ∶ α ≈′ α′ → Γ ∶ α ∥ β ≈′ α′ ∥ β
   ∥′-dup   : (U : UnrCx Γ α) → Γ ∶ α ≈′ α ∥ α
-  ∥′-tm-;  : (U : UnrCx Γ α ⊎ UnrCx Γ β) → Γ ∶ α ∥ β ≈′ α ; β
+  ∥′-tm-;  : (U : MobCx Γ α ⊎ MobCx Γ β) → Γ ∶ α ∥ β ≈′ α ; β
 
 infix 4 _∶_≈_
 
@@ -69,7 +69,7 @@ open ≈-Equivalence
 ∥-cong : Γ ∶ α ≈ α′ → Γ ∶ β ≈ β′ → Γ ∶ α ∥ β ≈ α′ ∥ β′
 ∥-cong xs ys = Eq*.gmap (_∥ _) ∥′-cong₁ xs ◅◅ ∥-comm ◅◅ Eq*.gmap (_∥ _) ∥′-cong₁ ys ◅◅ ∥-comm
 
-∥/;-transmute : UnrCx Γ α ⊎ UnrCx Γ β → Γ ∶ α ∥ β ≈ α ; β
+∥/;-transmute : MobCx Γ α ⊎ MobCx Γ β → Γ ∶ α ∥ β ≈ α ; β
 ∥/;-transmute U = Eq*.return (∥′-tm-; U)
 
 ;-unit₁ : Γ ∶ [] ; α ≈ α
@@ -78,8 +78,8 @@ open ≈-Equivalence
 ;-unit₂ : Γ ∶ α ; [] ≈ α
 ;-unit₂ = ≈-sym (∥/;-transmute (inj₂ [])) ◅◅ ∥-unit₂
 
-;-commUnr : UnrCx Γ α ⊎ UnrCx Γ β → Γ ∶ α ; β ≈ β ; α
-;-commUnr Uα/Uβ = ≈-sym (∥/;-transmute Uα/Uβ) ◅◅ ∥-comm ◅◅ ∥/;-transmute (Sum.swap Uα/Uβ)
+;-commMob : MobCx Γ α ⊎ MobCx Γ β → Γ ∶ α ; β ≈ β ; α
+;-commMob Uα/Uβ = ≈-sym (∥/;-transmute Uα/Uβ) ◅◅ ∥-comm ◅◅ ∥/;-transmute (Sum.swap Uα/Uβ)
 
 ;-assoc : Γ ∶ (α ; β) ; γ ≈ α ; (β ; γ)
 ;-assoc = Eq*.return ;′-assoc
@@ -89,8 +89,8 @@ open ≈-Equivalence
 
 module ≈-Reasoning {n} {Γ : Ctx n} = SetoidReasoning (≈-setoid Γ)
 
-≈-map⁺ : {f : 𝕋 → 𝕋} → (Unr ⊆ Unr ∘ f) → Γ ∶ α ≈ β → f ∘ Γ ∶ α ≈ β
-≈-map⁺ {f = f} Uf = Eq*.map go
+≈-map⁺ : {f : 𝕋 → 𝕋} → Unr ⊆ Unr ∘ f → Mobile ⊆ Mobile ∘ f → Γ ∶ α ≈ β → f ∘ Γ ∶ α ≈ β
+≈-map⁺ {f = f} Uf Mf = Eq*.map go
   where
   go : (Γ ∶_≈′_) ⇒ (f ∘ Γ ∶_≈′_)
   go ;′-assoc = ;′-assoc
@@ -101,7 +101,7 @@ module ≈-Reasoning {n} {Γ : Ctx n} = SetoidReasoning (≈-setoid Γ)
   go ∥′-comm = ∥′-comm
   go (∥′-cong₁ x) = ∥′-cong₁ (go x)
   go (∥′-dup U) = ∥′-dup (allCx-gmap Uf U)
-  go (∥′-tm-; U) = ∥′-tm-; (Sum.map (allCx-gmap Uf) (allCx-gmap Uf) U)
+  go (∥′-tm-; U) = ∥′-tm-; (Sum.map (allCx-gmap Mf) (allCx-gmap Mf) U)
 
 ≈-≗ : Γ₁ ≗ Γ₂ → Γ₁ ∶ α ≈ β → Γ₂ ∶ α ≈ β
 ≈-≗ {Γ₁ = Γ₁} {Γ₂ = Γ₂} eq = Eq*.map go where
@@ -197,13 +197,14 @@ unjoinUnr Γ (α ; β) =
   let open ≈-Reasoning in
   let α₁ , α₂ , α₁₂≈α , uα₁ , ¬uα₂ = unjoinUnr Γ α in
   let β₁ , β₂ , β₁₂≈β , uβ₁ , ¬uβ₂ = unjoinUnr Γ β in
-  let eq = begin (α₁ ; β₁) ∥ (α₂ ; β₂)  ≈⟨ ∥/;-transmute (inj₁ (uα₁ ; uβ₁)) ⟩
+  let eq = begin (α₁ ; β₁) ∥ (α₂ ; β₂)  ≈⟨ ∥/;-transmute (inj₁ (UnrCx⇒MobCx uα₁ ; UnrCx⇒MobCx uβ₁)) ⟩
                  (α₁ ; β₁) ; (α₂ ; β₂)  ≈⟨ ;-assoc ⟨
                  α₁ ; β₁ ; α₂ ; β₂      ≈⟨ ;-cong ;-assoc refl ⟩
-                 α₁ ; (β₁ ; α₂) ; β₂    ≈⟨ ;-cong (;-cong refl (;-commUnr (inj₁ uβ₁))) refl ⟩
+                 α₁ ; (β₁ ; α₂) ; β₂    ≈⟨ ;-cong (;-cong refl (;-commMob (inj₁ (UnrCx⇒MobCx uβ₁)))) refl ⟩
                  α₁ ; (α₂ ; β₁) ; β₂    ≈⟨ ;-cong ;-assoc refl ⟨
                  α₁ ; α₂ ; β₁ ; β₂      ≈⟨ ;-assoc ⟩
-                 (α₁ ; α₂) ; (β₁ ; β₂)  ≈⟨ ;-cong (∥/;-transmute (inj₁ uα₁)) (∥/;-transmute (inj₁ uβ₁)) ⟨
+                 (α₁ ; α₂) ; (β₁ ; β₂)  ≈⟨ ;-cong (∥/;-transmute (inj₁ (UnrCx⇒MobCx uα₁)))
+                                                  (∥/;-transmute (inj₁ (UnrCx⇒MobCx uβ₁))) ⟨
                  (α₁ ∥ α₂) ; (β₁ ∥ β₂)  ≈⟨ ;-cong α₁₂≈α β₁₂≈β ⟩
                  α ; β ∎
   in

@@ -205,18 +205,20 @@ preservationₚ {Γ = Γ} {γ} Γ-S p (R-New {s = s} E)
         (begin  (𝒫 ⋯𝓅 𝐂.weaken* 2) [ (` 0F) ∥ (` 1F) ]𝓅
                   ≡⟨ {!!} ⟩ -- mediate between Kₛ (top) and Kᵣ (bottom)
                 (𝒫 ⋯𝓅 𝐂.weaken* 2) [ (` 0F) ∥ (` 1F) ]𝓅
-                  ≲⟨ restrictContext (𝒫 ⋯𝓅 𝐂.weaken* 2) (` 0F ∥ ` 1F) ⟩
+                  ≲⟨ pullOut-≼ (𝒫 ⋯𝓅 𝐂.weaken* 2) (` 0F ∥ ` 1F) ⟩
                 (` 0F) ∥ (` 1F) ∥ (𝒫 ⋯𝓅 𝐂.weaken* 2) [ [] ]𝓅
                   ≡⟨ cong (_ ∥_) ([-]-dist-⋯ 𝒫 [] (𝐂.weaken* 2)) ⟨
                 (` 0F) ∥ (` 1F) ∥ (𝒫 [ [] ]𝓅 𝐂.⋯ᵣ 𝐂.weaken* 2)
                    ≲⟨ ≼-cong-∥
                         (≼-refl refl)
-                        (𝐂.≼-⋯ (𝐂.wk*-preserves {m = 2} _) ([-]𝓅-≼ 𝒫 (≼-trans (≼-∅ ([] ∥ [])) (≼-cong-∥ []≤γ-* []≤γ-new))))
+                        (𝐂.≼-⋯ (𝐂.wk*-preserves {m = 2} _)
+                               (𝐂.wk*-preserves {m = 2} _)
+                               ([-]𝓅-≼ 𝒫 (≼-trans (≼-∅ ([] ∥ [])) (≼-cong-∥ []≤γ-* []≤γ-new))))
                    ⟩
                 (` 0F) ∥ (` 1F) ∥ (𝒫 [ γ-* ∥ γ-new ]𝓅 𝐂.⋯ᵣ 𝐂.weaken* 2)
-                   ≲⟨ ≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.wk*-preserves {m = 2} _) ([-]𝓅-≼ 𝒫 ≤γ′)) ⟩
+                   ≲⟨ ≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.wk*-preserves {m = 2} _) (𝐂.wk*-preserves {m = 2} _) ([-]𝓅-≼ 𝒫 ≤γ′)) ⟩
                 (` 0F) ∥ (` 1F) ∥ (𝒫 [ γ′ ]𝓅 𝐂.⋯ᵣ 𝐂.weaken* 2)
-                   ≲⟨ ≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.wk*-preserves {m = 2} _) ≤γ) ⟩
+                   ≲⟨ ≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.wk*-preserves {m = 2} _) (𝐂.wk*-preserves {m = 2} _) ≤γ) ⟩
                 (` 0F) ∥ (` 1F) ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* 2)
                    ≈⟨ 𝐂.∥-cong (𝐂.∥-cong 𝐂.;-unit₂ 𝐂.;-unit₂) refl ⟨
                 (` 0F) ; [] ∥ ((` 1F) ; []) ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* 2)
@@ -232,12 +234,11 @@ preservationₚ {γ = γ} Γ-S p (R-Fork {e = e} E V)
 ... | a , γ-fork , γ-e , _ , ≤γ′ , ≤ₐ , refl , ⊢fork , ⊢e
   with _ , eq₁ `→ eq₂ , []≤γ-fork , `fork ← inv-K ⊢fork
   = TP-Weaken
-      (begin  𝒫 [ [] ]𝓅 ∥ (γ-e ∥ []) ≈⟨ 𝐂.∥-cong refl ∥-unit₂ ⟩
-              𝒫 [ [] ]𝓅 ∥ γ-e        ≲⟨ {!!} ⟩
-              𝒫 [ γ-e ]𝓅             ≈⟨ [-]𝓅-≈ 𝒫 ∥-unit₂ ⟨
-              𝒫 [ γ-e ∥ [] ]𝓅        ≲⟨ [-]𝓅-≼ 𝒫 (≼-cong-∥ (≼-refl refl) []≤γ-fork) ⟩
-              𝒫 [ γ-e ∥ γ-fork ]𝓅    ≲⟨ [-]𝓅-≼ 𝒫 ≤γ′ ⟩
-              𝒫 [ γ′ ]𝓅              ≲⟨ ≤γ ⟩
+      (begin  𝒫 [ [] ]𝓅 ∥ (γ-e ∥ [])  ≈⟨ 𝐂.∥-comm ⟩
+              (γ-e ∥ []) ∥ 𝒫 [ [] ]𝓅  ≈⟨ pullOutMobile 𝒫 (inv-mob V (arr refl) (T-Conv (≃-sym eq₁) ≤ϵ-refl ⊢e) ∥ []) ⟨
+              𝒫 [ γ-e ∥ [] ]𝓅         ≲⟨ [-]𝓅-≼ 𝒫 (≼-cong-∥ (≼-refl refl) []≤γ-fork) ⟩
+              𝒫 [ γ-e ∥ γ-fork ]𝓅     ≲⟨ [-]𝓅-≼ 𝒫 ≤γ′ ⟩
+              𝒫 [ γ′ ]𝓅               ≲⟨ ≤γ ⟩
               γ ∎)
       (TP-Par (TP-Expr (T-Conv eq ϵ≤ ⊢⟨ ⊢E [ T-Conv eq₂ ≤ₐ (T-Const `unit) ]*⟩))
               (TP-Expr (T-AppLin (refl , refl) 𝕀≤𝕀 (T-Conv (≃-sym eq₁) (𝕀-maximum _) ⊢e) (T-Conv `⊤ ℙ≤ϵ (T-Const `unit)))))

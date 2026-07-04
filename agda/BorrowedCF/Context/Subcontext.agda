@@ -80,13 +80,13 @@ module _ where
   unrCx-weaken : Γ ∶ α ≼ β → UnrCx Γ α → UnrCx Γ β
   unrCx-weaken = allCx-weaken id
 
-  ≼-map⁺ : {f : 𝕋 → 𝕋} → (Unr ⊆ Unr ∘ f) → Γ ∶ α ≼ β → f ∘ Γ ∶ α ≼ β
-  ≼-map⁺ Uf (≼-refl x) = ≼-refl (≈-map⁺ Uf x)
-  ≼-map⁺ Uf (≼-∅ x) = ≼-∅ (allCx-gmap Uf x)
-  ≼-map⁺ Uf ≼-wk = ≼-wk
-  ≼-map⁺ Uf (≼-trans x x₁) = ≼-trans (≼-map⁺ Uf x) (≼-map⁺ Uf x₁)
-  ≼-map⁺ Uf (≼-cong-; x x₁) = ≼-cong-; (≼-map⁺ Uf x) (≼-map⁺ Uf x₁)
-  ≼-map⁺ Uf (≼-cong-∥ x x₁) = ≼-cong-∥ (≼-map⁺ Uf x) (≼-map⁺ Uf x₁)
+  ≼-map⁺ : {f : 𝕋 → 𝕋} → (Unr ⊆ Unr ∘ f) → (Mobile ⊆ Mobile ∘ f) → Γ ∶ α ≼ β → f ∘ Γ ∶ α ≼ β
+  ≼-map⁺ Uf Mf (≼-refl x) = ≼-refl (≈-map⁺ Uf Mf x)
+  ≼-map⁺ Uf Mf (≼-∅ x) = ≼-∅ (allCx-gmap Uf x)
+  ≼-map⁺ Uf Mf ≼-wk = ≼-wk
+  ≼-map⁺ Uf Mf (≼-trans x x₁) = ≼-trans (≼-map⁺ Uf Mf x) (≼-map⁺ Uf Mf x₁)
+  ≼-map⁺ Uf Mf (≼-cong-; x x₁) = ≼-cong-; (≼-map⁺ Uf Mf x) (≼-map⁺ Uf Mf x₁)
+  ≼-map⁺ Uf Mf (≼-cong-∥ x x₁) = ≼-cong-∥ (≼-map⁺ Uf Mf x) (≼-map⁺ Uf Mf x₁)
 
 {-
 _≼?_ : Bin.Decidable (Γ ∶_≼_)
