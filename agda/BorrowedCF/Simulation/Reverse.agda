@@ -58,7 +58,7 @@ import BorrowedCF.Reduction.Processes.Typed   as TR
 import BorrowedCF.Reduction.Processes.Untyped as UR
 open import BorrowedCF.Simulation.RevAdmin
   using (_─→ᵃ_; _≈_; ≋⇒≈; ─→ᵃ⇒≈; ≈-refl; ≈-trans; ≈-sym;
-         ≈-ν-cong; ≈-φ-cong; ≈-∥-congˡ; a-sync; a-res; a-par; admin⇒red)
+         ≈-ν-cong; ≈-φ-cong; ≈-∥-congˡ; a-discard; a-sync; a-res; a-par; admin⇒red)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive
   using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
@@ -687,8 +687,9 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Choice F₁ F₂ k)
 -- RU-Discard : R = ⟪ F [ discard · e ]* ⟫ steps to ⟪ F [ * ]* ⟫ (silent term
 -- consuming a leading skip/discard).  ⟪⟫-headed, so mirrors RU-Fork/RU-Exp; the
 -- typed counterpart is TR.R-Discard.  Left a noted hole for the reverse.
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Discard F V) =
-  {! RU-Discard → TR.R-Discard: reflect the discard redex + skip-consuming codomain. !}
+sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Discard F V) =
+  P , _ , ε , Sum.inj₁ refl ,
+  subst (UP.⟪ F [ * ]* ⟫ ≈_) eq (≈-sym (─→ᵃ⇒≈ (a-discard F V)))
 
 ------------------------------------------------------------------------
 -- RU-Struct : R ≋ R′, inner : R′ ─→ₚ Q′, c₂ : Q′ ≋ Q  ⊢  R ─→ₚ Q.

@@ -14,6 +14,7 @@ open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Types
 open import BorrowedCF.Processes.Untyped
+open import BorrowedCF.Reduction.Base using (Frame*; _[_]*; Value)
 import BorrowedCF.Reduction.Processes.Untyped as UR
 
 import Data.Sum as Sum
@@ -31,6 +32,11 @@ open Nat.Variables
 infix 4 _─→ᵃ_
 
 data _─→ᵃ_ {n} : Proc n → Proc n → Set where
+  -- Silent GC of a spent ⟨skip⟩ handle.  A thread-local discard has no typed
+  -- counterpart when the handle is ambient (machine evidence:
+  -- Simulation.DiscardProbe), so it is administrative by the definition above.
+  a-discard : ∀ {e} (F : Frame* n) (V : Value e) →
+              ⟪ F [ K `discard ·¹ e ]* ⟫ ─→ᵃ ⟪ F [ K `unit ]* ⟫
   a-sync    : ∀ {x} {P Q}      → P ─→ᵃ Q → φ x P ─→ᵃ φ x Q
   a-res     : ∀ {P Q}          → P ─→ᵃ Q → ν P   ─→ᵃ ν Q
   a-par     : ∀ {P Q R}        → P ─→ᵃ Q → P ∥ R ─→ᵃ Q ∥ R
@@ -38,6 +44,7 @@ data _─→ᵃ_ {n} : Proc n → Proc n → Set where
 -- Every administrative move IS an untyped reduction (so ≈ is a subrelation of
 -- ─→ₚ*-up-to-≋, and soundness of ≈ can be checked against the reduction).
 admin⇒red : ∀ {n} {P Q : Proc n} → P ─→ᵃ Q → P UR.─→ₚ Q
+admin⇒red (a-discard F V) = UR.RU-Discard F V
 admin⇒red (a-sync a) = UR.RU-Sync (admin⇒red a)
 admin⇒red (a-res a)  = UR.RU-Res  (admin⇒red a)
 admin⇒red (a-par a)  = UR.RU-Par  (admin⇒red a)
