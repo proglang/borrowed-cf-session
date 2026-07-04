@@ -60,37 +60,37 @@ lsplit-confine {m = m} Γ-S {γ = γ} {B₁ = B₁} {B₂ = B₂} {B = B} {q = q
 
 -- Confinement of the rsplit redex.
 rsplit-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
-  {B₁ B₂ B : 𝐓.BindGroup} {b₁ : ℕ} {s : 𝕊 0}
-  {E : Frame* (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)}
-  {P : 𝐓.Proc (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)} →
+  {B₁ B₂ B : 𝐓.BindGroup} {q b₁ : ℕ} {s : 𝕊 0}
+  {E : Frame* (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
+  {P : 𝐓.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)} →
   let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ B in
-  Γ ; γ ⊢ₚ 𝐓.ν (B₁ ++ suc b₁ ∷ B₂) B
-            (𝐓.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.inj 0F) ]* ⟫ 𝐓.∥ P) →
-  Σ ℕ λ k → Σ (k →ᵣ (sum (B₁ ++ suc b₁ ∷ B₂) + sum B + m)) λ ρ⁻ →
-    (∀ y → ρ⁻ y ≢ 𝐒.inj {suc b₁ ∷ []} {m} 0F)
+  Γ ; γ ⊢ₚ 𝐓.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+            (𝐓.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk {q + suc b₁} {m} (q ↑ʳ 0F)) ]* ⟫ 𝐓.∥ P) →
+  Σ ℕ λ k → Σ (k →ᵣ (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) λ ρ⁻ →
+    (∀ y → ρ⁻ y ≢ 𝐒.atk {q + suc b₁} {m} (q ↑ʳ 0F))
     × Σ (Frame* k) λ E₀ → (E ≡ E₀ ⋯ᶠ* ρ⁻)
         × Σ (𝐓.Proc k) λ P₀ → P ≡ P₀ 𝐓.⋯ₚ ρ⁻
-rsplit-confine {m = m} Γ-S {γ = γ} {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P =
+rsplit-confine {m = m} Γ-S {γ = γ} {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P =
   let
-    handle = 𝐓R.SplitRenamings.inj B₁ B₂ B {suc b₁ ∷ []} {m} 0F
+    handle = 𝐓R.SplitRenamings.atk B₁ B₂ B {q + suc b₁} {m} (q ↑ʳ 0F)
     Γ₁ , Γ₂ , s' , _p , _N , _⊢B₁ , _⊢B₂ , C , C' , ⊢body = inv-ν ⊢P
     α , β , αβ≼ , ⊢thread , ⊢Ppar = inv-∥ ⊢body
     ⊢term = inv-⟪⟫ ⊢thread
     βplug , (_ , _ , ⊢plug) , support , factor = strengthen-frame E ⊢term
     ¬u = rsplit-app-nonUnr ⊢plug
     αfn , αarg , (_ , _ , ⊢fn) , (_ , _ , ⊢arg) , cle-plug = inv-app ⊢plug
-    c-αβ≤1 = subst (count handle α + count handle β ≤_) (count-handle-γinner B₁ B₂ B b₁ γ)
+    c-αβ≤1 = subst (count handle α + count handle β ≤_) (count-handle-γinnerq B₁ B₂ B q b₁ γ)
                    (≼⇒count≤ {x = handle} ¬u αβ≼)
     1≤αarg = subst (_≤ count handle αarg) (count-self handle) (inv-var-count ⊢arg handle ¬u)
     1≤βplug = ≤-trans 1≤αarg (≤-trans (m≤n+m (count handle αarg) (count handle αfn)) (cle-plug handle ¬u))
     1≤α = ≤-trans 1≤βplug (support handle ¬u)
     α≤βplug = ≤-trans (≤-trans (m≤m+n (count handle α) (count handle β)) c-αβ≤1) 1≤βplug
     cβ0 = n≤0⇒n≡0 (s≤s⁻¹ (≤-trans (+-monoˡ-≤ (count handle β) 1≤α) c-αβ≤1))
-    ρ⁻ , inv-mp , skip-mp = mk-thin (sum B₁) ((b₁ + sum B₂) + sum B + m) (splitN-eq B₁ B₂ B b₁)
-    inv-h = subst (Inverter ρ⁻) (mp≡handle B₁ B₂ B b₁) inv-mp
+    ρ⁻ , inv-mp , skip-mp = mk-thin (sum B₁ + q) ((b₁ + sum B₂) + sum B + m) (splitN-eqq B₁ B₂ B q b₁)
+    inv-h = subst (Inverter ρ⁻) (mp≡handleq B₁ B₂ B q b₁) inv-mp
     E₀ , Eeq = factor handle ¬u α≤βplug ρ⁻ inv-h
     P₀ , Peq = strengthen-Proc-gen ⊢Ppar ρ⁻ handle inv-h (count0⇒∉dom β cβ0)
-  in _ , ρ⁻ , (λ y → subst (λ z → ρ⁻ y ≢ z) (mp≡handle B₁ B₂ B b₁) (skip-mp y)) , E₀ , Eeq , P₀ , Peq
+  in _ , ρ⁻ , (λ y → subst (λ z → ρ⁻ y ≢ z) (mp≡handleq B₁ B₂ B q b₁) (skip-mp y)) , E₀ , Eeq , P₀ , Peq
 
 -- Confinement of the acq redex (consumed handle 0F at the front of zero ; suc b₁ ; B₁).
 acq-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
