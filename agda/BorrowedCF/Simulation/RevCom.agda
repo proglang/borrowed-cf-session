@@ -36,6 +36,8 @@ open import BorrowedCF.Simulation.Confine
   using (count; ≼⇒count≤; count-self; count-join-Dir; count-join-PS; count0⇒∉dom; +≡0)
 open import BorrowedCF.Simulation.Theorems.Com using (fn-send-dom)
 open import BorrowedCF.Context using (Ctx; Struct; join; biasedDir; _∶_≼_)
+import BorrowedCF.Context as 𝐂
+import BorrowedCF.Context.Substitution as 𝐂S
 open import BorrowedCF.Reduction.Base using (ChanCx)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_)
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
@@ -386,3 +388,114 @@ recv-app-𝕀 (T-AppUnr _ ≤ₐ ⊢fn _) = 𝕀≤⇒≡ (subst (_≤ϵ _) (rec
 recv-app-𝕀 (T-AppLin _ ≤ₐ ⊢fn _) = 𝕀≤⇒≡ (subst (_≤ϵ _) (recv-fn-eff-𝕀 ⊢fn) ≤ₐ)
 recv-app-𝕀 (T-Conv _ ≤ d) = 𝕀≤⇒≡ (subst (_≤ϵ _) (recv-app-𝕀 d) ≤)
 recv-app-𝕀 (T-Weaken _ d) = recv-app-𝕀 d
+
+------------------------------------------------------------------------
+-- com-go : the reverse RU-Com engine.
+------------------------------------------------------------------------
+
+com-go :
+  ∀ {m n} (σ : m →ₛ n) (Vσ : VSub σ) {Γ : Ctx m} (Γ-S : ChanCx Γ) {g : Struct m}
+    (b₁ b₂ : ℕ)
+    {F₀ˢ F₀ᴿ : Frame* (sum (b₁ ∷ []) + sum (b₂ ∷ []) + m)}
+    {argˢ argᴿ : Tm (sum (b₁ ∷ []) + sum (b₂ ∷ []) + m)}
+    {Pr : T.Proc (sum (b₁ ∷ []) + sum (b₂ ∷ []) + m)}
+    {F₁ F₂ : Frame* (2 + n)} {e e₁ e₁′ e₂ e₂′ : Tm (2 + n)} {P₁ : U.Proc (2 + n)}
+    (V : Value e)
+  → Γ ; g ⊢ₚ T.ν (b₁ ∷ []) (b₂ ∷ [])
+       (T.⟪ F₀ˢ [ K `send ·¹ argˢ ]* ⟫ T.∥ (T.⟪ F₀ᴿ [ K `recv ·¹ argᴿ ]* ⟫ T.∥ Pr))
+  → F₁ ≡ frame*-⋯ F₀ˢ (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ)
+  → (e ⊗ ((e₁ ⊗ (` 0F)) ⊗ e₁′)) ≡ argˢ ⋯ νσ b₁ b₂ σ
+  → F₂ ≡ frame*-⋯ F₀ᴿ (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ)
+  → ((e₂ ⊗ (` 1F)) ⊗ e₂′) ≡ argᴿ ⋯ νσ b₁ b₂ σ
+  → P₁ ≡ U[ Pr ] (νσ b₁ b₂ σ)
+  → Σ[ P′ ∈ T.Proc m ] Σ[ Q′ ∈ U.Proc n ]
+      ( Star TR._─→ₚ_
+          (T.ν (b₁ ∷ []) (b₂ ∷ [])
+            (T.⟪ F₀ˢ [ K `send ·¹ argˢ ]* ⟫ T.∥ (T.⟪ F₀ᴿ [ K `recv ·¹ argᴿ ]* ⟫ T.∥ Pr))) P′ )
+      × ( (U.ν (U.⟪ F₁ [ * ]* ⟫ U.∥ (U.⟪ F₂ [ e ]* ⟫ U.∥ P₁)) ≡ Q′)
+          Sum.⊎ (U.ν (U.⟪ F₁ [ * ]* ⟫ U.∥ (U.⟪ F₂ [ e ]* ⟫ U.∥ P₁)) UR.─→ₚ Q′) )
+      × (Q′ ≈ U[ P′ ] σ)
+com-go {m} {n} σ Vσ {Γ} Γ-S {g} b₁ b₂ {F₀ˢ} {F₀ᴿ} {argˢ} {argᴿ} {Pr}
+       {F₁} {F₂} {e} {e₁} {e₁′} {e₂} {e₂′} {P₁} V ⊢P FeqS argeqS FeqR argeqR Preq
+  with Γ₁ , Γ₂ , s' , p' , Nnew , ⊢B₁ , ⊢B₂ , C , C′ , ⊢body ← inv-ν ⊢P
+  with Γ′-S ← chanCx-⸴* (chanCx-⸴* (bindCtx⇒chanCtx C) (bindCtx⇒chanCtx C′)) Γ-S
+  with αS , βrest , ≼₁ , ⊢PS , ⊢Prest ← inv-∥ ⊢body
+  with αR , βP , ≼₂ , ⊢PR , ⊢Pr ← inv-∥ ⊢Prest
+  with 𝒫ˢ , γrˢ , _ , _ , _ , _ , ≼ˢ , _ , _ , ⊢Fˢ , ⊢redexˢ
+       ← ⊢[]*⁻¹ F₀ˢ (K `send ·¹ argˢ) (inv-⟪⟫ ⊢PS)
+  with head⊗′ (νσ b₁ b₂ σ) argˢ (sym argeqS)
+... | Sum.inj₁ (x , refl) = ⊥-elim (send-var-⊥ ⊢redexˢ (proj₂ (Γ′-S x)))
+... | Sum.inj₂ (aS , cS , refl , aSeq , cSeq)
+  with Tᵐ , α₂ , Tx , ϵ₂′ , msg≃Tx , ⊢cS ← send-arg-decomp ⊢redexˢ
+  with xS , refl ← close-arg-var cS ⊢cS msg≃Tx (νσ b₁ b₂ σ) (sym cSeq)
+  with refl ← send-app-𝕀 ⊢redexˢ
+  with refl , lpˢ ← frames-𝕀 ⊢Fˢ
+  with z , 1≤b₁ , refl ← com-image-block1 b₁ b₂ σ Vσ xS cSeq
+  with b₁' , refl ← pos⇒suc 1≤b₁
+  with 𝒫ᴿ , γrᴿ , _ , _ , _ , _ , ≼ᴿ , _ , _ , ⊢Fᴿ , ⊢redexᴿ
+       ← ⊢[]*⁻¹ F₀ᴿ (K `recv ·¹ argᴿ) (inv-⟪⟫ ⊢PR)
+  with Tᵐʳ , βrr , Txʳ , ϵrr , msg⁇≃ , ⊢argᴿty ← recv-arg-decomp ⊢redexᴿ
+  with xR , refl ← close-arg-var argᴿ ⊢argᴿty msg⁇≃ (νσ (suc b₁') b₂ σ) (sym argeqR)
+  with refl ← recv-app-𝕀 ⊢redexᴿ
+  with refl , lpᴿ ← frames-𝕀 ⊢Fᴿ
+  with w , 1≤b₂ , refl ← recv-image-block2 (suc b₁') b₂ σ Vσ xR argeqR
+  with b₂' , refl ← pos⇒suc 1≤b₂
+  = finish z≡0F w≡0F
+  where
+    Sb : Struct (sum (suc b₁' ∷ []) + sum (suc b₂' ∷ []) + m)
+    Sb = (T.structBinder (suc b₁' ∷ []) 𝐂S.⋯ᵣ 𝐂S.wkʳ (sum (suc b₂' ∷ [])) 𝐂S.⋯ᵣ 𝐂S.wkʳ m)
+         Struct.∥ (T.structBinder (suc b₂' ∷ []) 𝐂S.⋯ᵣ 𝐂S.wkˡ (sum (suc b₁' ∷ [])) 𝐂S.⋯ᵣ 𝐂S.wkʳ m)
+         Struct.∥ (g 𝐂S.⋯ 𝐂S.weaken* ⦃ 𝐂S.Kᵣ ⦄ (sum (suc b₁' ∷ []) + sum (suc b₂' ∷ [])))
+
+    ¬u0 = chanCx-¬Unr Γ′-S 0F
+
+    -- send-side front-forcing (mirror of Reverse.agda's RU-Com where-block).
+    ¬uxS = send-chan-nonUnr ⊢cS msg≃Tx
+    1≤c  = send-arg-count ¬uxS ⊢redexˢ
+    cnt1 = count-handle-comᴸ (suc b₁') (suc b₂') g z
+    z₀   = Fin.cast (+-identityʳ (suc b₁')) z
+    z₀↑0≡z : z₀ ↑ˡ 0 ≡ z
+    z₀↑0≡z = toℕ-injective (toℕ-↑ˡ z₀ 0 ■ toℕ-cast (+-identityʳ (suc b₁')) z)
+    contra : Fin.toℕ z₀ ≢ 0 → ⊥
+    contra ne = com-xS-min ¬uxS ¬u0 lpˢ ≼ˢ ≼₁ cnt1
+                  (subst (λ zz → before 0F ((zz ↑ˡ (suc b₂' + 0)) ↑ˡ m) Sb) z₀↑0≡z
+                    (before-com-binderᴸ b₁' (suc b₂') g z₀ ne))
+                  1≤c (com-¬before {𝒫ˢ = 𝒫ˢ} ¬uxS ¬u0 ⊢redexˢ ≼ˢ ≼₁ cnt1)
+    z≡0F : z ≡ 0F
+    z≡0F with Fin.toℕ z₀ Nat.≟ 0
+    ... | yes e0 = toℕ-injective (sym (toℕ-cast (+-identityʳ (suc b₁')) z) ■ e0)
+    ... | no  ne = ⊥-elim (contra ne)
+
+    -- recv-side front-forcing (block-2 mirror).
+    posR : 𝔽 (sum (suc b₁' ∷ []) + sum (suc b₂' ∷ []) + m)
+    posR = ((suc b₁' + 0) ↑ʳ (Fin.zero {b₂' + 0})) ↑ˡ m
+    ¬uxR = chanCx-¬Unr Γ′-S (((suc b₁' + 0) ↑ʳ w) ↑ˡ m)
+    ¬uyR = chanCx-¬Unr Γ′-S posR
+    1≤cᴿ = barevar-arg-count ¬uxR ⊢redexᴿ
+    cnt1ᴿ = count-handle-comᴿ (suc b₁') (suc b₂') g w
+    w₀   = Fin.cast (+-identityʳ (suc b₂')) w
+    w₀↑0≡w : w₀ ↑ˡ 0 ≡ w
+    w₀↑0≡w = toℕ-injective (toℕ-↑ˡ w₀ 0 ■ toℕ-cast (+-identityʳ (suc b₂')) w)
+    combined≼ =
+      𝐂.≼-trans (𝐂.≼-refl (𝐂.≈-trans (𝐂.≈-sym 𝐂.∥-assoc) 𝐂.∥-comm))
+        (𝐂.≼-trans (𝐂.≼-cong-∥ (𝐂.≼-refl 𝐂.≈-refl) ≼₂) ≼₁)
+    contraᴿ : Fin.toℕ w₀ ≢ 0 → ⊥
+    contraᴿ ne = com-xS-min ¬uxR ¬uyR lpᴿ ≼ᴿ combined≼ cnt1ᴿ
+                   (subst (λ ww → before posR (((suc b₁' + 0) ↑ʳ ww) ↑ˡ m) Sb) w₀↑0≡w
+                     (before-com-binderᴿ (suc b₁') b₂' g w₀ ne))
+                   1≤cᴿ (choice-¬before ¬uxR ¬uyR ⊢redexᴿ)
+    w≡0F : w ≡ 0F
+    w≡0F with Fin.toℕ w₀ Nat.≟ 0
+    ... | yes e0 = toℕ-injective (sym (toℕ-cast (+-identityʳ (suc b₂')) w) ■ e0)
+    ... | no  ne = ⊥-elim (contraᴿ ne)
+
+    finish : z ≡ 0F → w ≡ 0F →
+      Σ[ P′ ∈ T.Proc m ] Σ[ Q′ ∈ U.Proc n ]
+        ( Star TR._─→ₚ_
+            (T.ν (suc b₁' ∷ []) (suc b₂' ∷ [])
+              (T.⟪ F₀ˢ [ K `send ·¹ (aS ⊗ (` ((z ↑ˡ (suc b₂' + 0)) ↑ˡ m))) ]* ⟫
+               T.∥ (T.⟪ F₀ᴿ [ K `recv ·¹ (` (((suc b₁' + 0) ↑ʳ w) ↑ˡ m)) ]* ⟫ T.∥ Pr))) P′ )
+        × ( (U.ν (U.⟪ F₁ [ * ]* ⟫ U.∥ (U.⟪ F₂ [ e ]* ⟫ U.∥ P₁)) ≡ Q′)
+            Sum.⊎ (U.ν (U.⟪ F₁ [ * ]* ⟫ U.∥ (U.⟪ F₂ [ e ]* ⟫ U.∥ P₁)) UR.─→ₚ Q′) )
+        × (Q′ ≈ U[ P′ ] σ)
+    finish refl refl = {!!}
