@@ -330,3 +330,250 @@ canonₛ-handleq (a ∷ d ∷ B₁″) {N} e₁ x e₂ q b₁ B₂
     junceq = toℕ-subst𝔽L (+-suc sB N) (proj₁ (proj₂ (proj₂ rec)))
            ■ proj₂ (proj₂ (proj₂ (proj₂ rec)))
            ■ +-suc sB (Fin.toℕ x)
+
+-- ============================================================================
+--   Ub-growth helpers for the B₁ = [] base of canonₛ-lwkq.  shiftq inserts a
+--   new data slot right after handle position h; Ub-grow shows this growth is
+--   invisible to Ub[_] away from the handle.
+-- ============================================================================
+shiftq : ∀ {w} (h : ℕ) (j : 𝔽 w) → 𝔽 (suc w)
+shiftq zero    zero    = zero
+shiftq zero    (suc x) = Fin.suc (Fin.suc x)
+shiftq (suc h) zero    = zero
+shiftq (suc h) (suc x) = Fin.suc (shiftq h x)
+
+toℕ-shiftq : ∀ {w} (h : ℕ) (j : 𝔽 w) → Fin.toℕ j Nat.< suc h → Fin.toℕ (shiftq h j) ≡ Fin.toℕ j
+toℕ-shiftq zero    zero    lt = refl
+toℕ-shiftq zero    (suc x) (Nat.s≤s ())
+toℕ-shiftq (suc h) zero    lt = refl
+toℕ-shiftq (suc h) (suc x) lt = cong suc (toℕ-shiftq h x (Nat.s≤s⁻¹ lt))
+
+toℕ-shiftq-hi : ∀ {w} (h : ℕ) (j : 𝔽 w) → suc h Nat.≤ Fin.toℕ j → Fin.toℕ (shiftq h j) ≡ suc (Fin.toℕ j)
+toℕ-shiftq-hi zero    (suc x) le = refl
+toℕ-shiftq-hi (suc h) zero    ()
+toℕ-shiftq-hi (suc h) (suc x) le = cong suc (toℕ-shiftq-hi h x (Nat.s≤s⁻¹ le))
+
+Ub-reindex : ∀ {w'} (W : ℕ) (weq : w' ≡ W) {N} (cc : UChan N) (j' : 𝔽 w') (k : 𝔽 W) →
+             Fin.toℕ j' ≡ Fin.toℕ k → Ub[ w' ] cc j' ≡ Ub[ W ] cc k
+Ub-reindex W refl cc j' k eqn = cong (Ub[ W ] cc) (Fin.toℕ-injective eqn)
+
+Ub-grow : ∀ w (h : ℕ) {N} (cc : UChan N) (j : 𝔽 w) → h Nat.< w → Fin.toℕ j ≢ h →
+          Ub[ w ] cc j ≡ Ub[ suc w ] cc (shiftq h j)
+Ub-grow zero          h cc () h<w j≢h
+Ub-grow (suc zero)    zero    cc zero    h<w          j≢h = ⊥-elim (j≢h refl)
+Ub-grow (suc zero)    (suc h) cc zero    (Nat.s≤s ()) j≢h
+Ub-grow (suc (suc b)) zero    cc zero    h<w          j≢h = ⊥-elim (j≢h refl)
+Ub-grow (suc (suc b)) (suc h) cc zero    h<w          j≢h = refl
+Ub-grow (suc (suc b)) zero    (e1 , c , e2) (suc x) h<w j≢h = refl
+Ub-grow (suc (suc b)) (suc h) (e1 , c , e2) (suc x) h<w j≢h =
+  Ub-grow (suc b) h (* , c , e2) x (Nat.s≤s⁻¹ h<w) (λ eq → j≢h (cong suc eq))
+
+Ub-grow' : ∀ w (w' h : ℕ) {N} (cc : UChan N) (j : 𝔽 w) (j' : 𝔽 w') →
+           w' ≡ suc w → h Nat.< w → Fin.toℕ j ≢ h → Fin.toℕ j' ≡ Fin.toℕ (shiftq h j) →
+           Ub[ w ] cc j ≡ Ub[ w' ] cc j'
+Ub-grow' w w' h cc j j' w'eq h<w j≢h j'eq =
+    Ub-grow w h cc j h<w j≢h
+  ■ Ub-reindex w' (sym w'eq) cc (shiftq h j) j' (sym j'eq)
+
+-- splitAt characterised by toℕ (reverse of splitAt-↑ˡ / splitAt-↑ʳ).
+splitAt-inj₁-toℕ : ∀ A {B} (x : 𝔽 (A + B)) (y : 𝔽 A) → Fin.toℕ x ≡ Fin.toℕ y →
+                   Fin.splitAt A x ≡ inj₁ y
+splitAt-inj₁-toℕ A {B} x y e =
+  subst (λ z → Fin.splitAt A z ≡ inj₁ y)
+    (sym (Fin.toℕ-injective (e ■ sym (Fin.toℕ-↑ˡ y B))))
+    (Fin.splitAt-↑ˡ A y B)
+
+splitAt-inj₂-toℕ : ∀ A {B} (x : 𝔽 (A + B)) (k : 𝔽 B) → Fin.toℕ x ≡ A + Fin.toℕ k →
+                   Fin.splitAt A x ≡ inj₂ k
+splitAt-inj₂-toℕ A {B} x k e =
+  subst (λ z → Fin.splitAt A z ≡ inj₂ k)
+    (sym (Fin.toℕ-injective (e ■ sym (Fin.toℕ-↑ʳ A k))))
+    (Fin.splitAt-↑ʳ A B k)
+
+-- ============================================================================
+--   canonₛ-lwkq : q-generalized canonₛ-lwk.  Growth of the single split block
+--   (q + suc b₁) ∷ B₂ → (q + suc (suc b₁)) ∷ B₂ is invisible to canonₛ away
+--   from the position-q handle, where dlwkq inserts the new slot at block
+--   position q+1 (flat sum B₁ + q + 1).  Mirrors canonₛ-lwk (SplitsH1).
+-- ============================================================================
+canonₛ-lwkq : ∀ (B₁ : BindGroup) {N} (cc : UChan N) (q b₁ : ℕ) (B₂ : BindGroup)
+              (i : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂))) →
+              i ≢ Fin.cast (sym (sum-++ B₁ ((q + suc b₁) ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂)) →
+              subst Tm (cong (_+ N) (syncs-lwkq B₁)) (canonₛ (B₁ ++ (q + suc b₁) ∷ B₂) cc i)
+              ≡ canonₛ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) cc (dlwkq B₁ q b₁ B₂ i)
+canonₛ-lwkq [] {N} cc zero    b₁ B₂ i i≢ =
+  subst (λ pf → subst Tm (cong (_+ N) pf) (canonₛ (suc b₁ ∷ B₂) cc i)
+                ≡ canonₛ (suc (suc b₁) ∷ B₂) cc (dlwk [] b₁ B₂ i))
+    (uipℕ (syncs-lwk [] {b₁} {B₂}) (syncs-lwkq [] {zero} {b₁} {B₂}))
+    (canonₛ-lwk [] cc b₁ B₂ i i≢)
+canonₛ-lwkq [] {N} cc (suc q) b₁ [] i i≢ =
+    Ub-grow ((suc q + suc b₁) + 0) (suc q) cc i pw i≢toℕ
+  ■ Ub-reindex ((suc q + suc (suc b₁)) + 0)
+      (sym (sum-lwkq [] {suc q} {b₁} {[]})) cc
+      (shiftq (suc q) i) (dlwkq [] (suc q) b₁ [] i) toℕeq
+  where
+    pw : suc q Nat.< (suc q + suc b₁) + 0
+    pw = Nat.s≤s (subst (suc q Nat.≤_) (sym (Nat.+-identityʳ (q + suc b₁)))
+                   (subst (suc q Nat.≤_) (sym (Nat.+-suc q b₁)) (Nat.s≤s (Nat.m≤m+n q b₁))))
+    i≢toℕ : Fin.toℕ i ≢ suc q
+    i≢toℕ e = i≢ (Fin.toℕ-injective
+      ( e
+      ■ sym ( Fin.toℕ-cast (sym (sum-++ [] ((suc q + suc b₁) ∷ []))) (sum [] ↑ʳ ((suc q ↑ʳ 0F) ↑ˡ sum []))
+            ■ Fin.toℕ-↑ʳ (sum []) ((suc q ↑ʳ 0F) ↑ˡ sum [])
+            ■ Fin.toℕ-↑ˡ (suc q ↑ʳ 0F) (sum [])
+            ■ Fin.toℕ-↑ʳ (suc q) 0F
+            ■ Nat.+-identityʳ (suc q) )))
+    sqp1 : suc q + 1 ≡ suc (suc q)
+    sqp1 = Nat.+-comm (suc q) 1
+    toℕeq : Fin.toℕ (shiftq (suc q) i) ≡ Fin.toℕ (dlwkq [] (suc q) b₁ [] i)
+    toℕeq with Fin.toℕ i Nat.<? suc (suc q)
+    ... | yes lt = toℕ-shiftq (suc q) i lt
+                 ■ sym (dlwkq-lo [] (suc q) b₁ [] i (subst (Fin.toℕ i Nat.<_) (sym sqp1) lt))
+    ... | no ¬lt = toℕ-shiftq-hi (suc q) i (Nat.≮⇒≥ ¬lt)
+                 ■ sym (dlwkq-hi [] (suc q) b₁ [] i (subst (Nat._≤ Fin.toℕ i) (sym sqp1) (Nat.≮⇒≥ ¬lt)))
+canonₛ-lwkq [] {N} (e₁ , x , e₂) (suc q) b₁ (c' ∷ B) i i≢ =
+  cong (subst Tm (+-suc sB2 N)) bracket-eq
+  where
+    sB2  = syncs (c' ∷ B)
+    ccU  = (wk e₁ , suc x , ` 0F)
+    ccr  = (` 0F , suc x , wk e₂)
+    triL = Ub[ suc q + suc b₁ ] ccU ·ₖ weaken* ⦃ Kᵣ ⦄ sB2
+    triR = Ub[ suc q + suc (suc b₁) ] ccU ·ₖ weaken* ⦃ Kᵣ ⦄ sB2
+    G  = [ triL , canonₛ {n = suc N} (c' ∷ B) ccr ]′
+    G′ = [ triR , canonₛ {n = suc N} (c' ∷ B) ccr ]′
+    sqp1 : suc q + 1 ≡ suc (suc q)
+    sqp1 = Nat.+-comm (suc q) 1
+    w'eq : suc q + suc (suc b₁) ≡ suc (suc q + suc b₁)
+    w'eq = cong suc (Nat.+-suc q (suc b₁))
+    h<w : suc q Nat.< suc q + suc b₁
+    h<w = Nat.s≤s (subst (suc q Nat.≤_) (sym (Nat.+-suc q b₁)) (Nat.s≤s (Nat.m≤m+n q b₁)))
+    i≢toℕ : Fin.toℕ i ≢ suc q
+    i≢toℕ e = i≢ (Fin.toℕ-injective
+      ( e
+      ■ sym ( Fin.toℕ-cast (sym (sum-++ [] ((suc q + suc b₁) ∷ (c' ∷ B)))) (sum [] ↑ʳ ((suc q ↑ʳ 0F) ↑ˡ sum (c' ∷ B)))
+            ■ Fin.toℕ-↑ʳ (sum []) ((suc q ↑ʳ 0F) ↑ˡ sum (c' ∷ B))
+            ■ Fin.toℕ-↑ˡ (suc q ↑ʳ 0F) (sum (c' ∷ B))
+            ■ Fin.toℕ-↑ʳ (suc q) 0F
+            ■ Nat.+-identityʳ (suc q) )))
+    bracket-eq : G (Fin.splitAt (suc q + suc b₁) i)
+               ≡ G′ (Fin.splitAt (suc q + suc (suc b₁)) (dlwkq [] (suc q) b₁ (c' ∷ B) i))
+    bracket-eq with Fin.splitAt (suc q + suc b₁) i in seq
+    ... | inj₁ p =
+          cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB2)
+               (Ub-grow' (suc q + suc b₁) (suc q + suc (suc b₁)) (suc q) ccU p j' w'eq h<w
+                  (λ e → i≢toℕ (toℕ-i≡p ■ e)) j'eq)
+        ■ sym (cong G′ split1)
+      where
+        j' : 𝔽 (suc q + suc (suc b₁))
+        j' = Fin.cast (sym w'eq) (shiftq (suc q) p)
+        j'eq : Fin.toℕ j' ≡ Fin.toℕ (shiftq (suc q) p)
+        j'eq = Fin.toℕ-cast (sym w'eq) (shiftq (suc q) p)
+        toℕ-i≡p : Fin.toℕ i ≡ Fin.toℕ p
+        toℕ-i≡p = cong Fin.toℕ (sym (Fin.join-splitAt (suc q + suc b₁) (sum (c' ∷ B)) i)
+                              ■ cong (Fin.join (suc q + suc b₁) (sum (c' ∷ B))) seq)
+                ■ Fin.toℕ-↑ˡ p (sum (c' ∷ B))
+        dsh : Fin.toℕ (dlwkq [] (suc q) b₁ (c' ∷ B) i) ≡ Fin.toℕ (shiftq (suc q) p)
+        dsh with Fin.toℕ i Nat.<? suc (suc q)
+        ... | yes lt = dlwkq-lo [] (suc q) b₁ (c' ∷ B) i (subst (Fin.toℕ i Nat.<_) (sym sqp1) lt)
+                     ■ toℕ-i≡p
+                     ■ sym (toℕ-shiftq (suc q) p (subst (Nat._< suc (suc q)) toℕ-i≡p lt))
+        ... | no ¬lt = dlwkq-hi [] (suc q) b₁ (c' ∷ B) i (subst (Nat._≤ Fin.toℕ i) (sym sqp1) (Nat.≮⇒≥ ¬lt))
+                     ■ cong suc toℕ-i≡p
+                     ■ sym (toℕ-shiftq-hi (suc q) p (subst (suc (suc q) Nat.≤_) toℕ-i≡p (Nat.≮⇒≥ ¬lt)))
+        split1 : Fin.splitAt (suc q + suc (suc b₁)) (dlwkq [] (suc q) b₁ (c' ∷ B) i) ≡ inj₁ j'
+        split1 = splitAt-inj₁-toℕ (suc q + suc (suc b₁)) (dlwkq [] (suc q) b₁ (c' ∷ B) i) j'
+                   (dsh ■ sym j'eq)
+    ... | inj₂ k = sym (cong G′ split2)
+      where
+        toℕ-i≡ : Fin.toℕ i ≡ (suc q + suc b₁) + Fin.toℕ k
+        toℕ-i≡ = cong Fin.toℕ (sym (Fin.join-splitAt (suc q + suc b₁) (sum (c' ∷ B)) i)
+                             ■ cong (Fin.join (suc q + suc b₁) (sum (c' ∷ B))) seq)
+               ■ Fin.toℕ-↑ʳ (suc q + suc b₁) k
+        bound : suc q + 1 Nat.≤ Fin.toℕ i
+        bound = subst (suc q + 1 Nat.≤_) (sym toℕ-i≡)
+                  (Nat.≤-trans (Nat.+-monoʳ-≤ (suc q) (Nat.s≤s Nat.z≤n))
+                    (Nat.m≤m+n (suc q + suc b₁) (Fin.toℕ k)))
+        toℕ-dlwkq≡ : Fin.toℕ (dlwkq [] (suc q) b₁ (c' ∷ B) i) ≡ (suc q + suc (suc b₁)) + Fin.toℕ k
+        toℕ-dlwkq≡ = dlwkq-hi [] (suc q) b₁ (c' ∷ B) i bound
+                   ■ cong suc toℕ-i≡
+                   ■ cong suc (sym (cong (Nat._+ Fin.toℕ k) (Nat.+-suc q (suc b₁))))
+        split2 : Fin.splitAt (suc q + suc (suc b₁)) (dlwkq [] (suc q) b₁ (c' ∷ B) i) ≡ inj₂ k
+        split2 = splitAt-inj₂-toℕ (suc q + suc (suc b₁)) (dlwkq [] (suc q) b₁ (c' ∷ B) i) k toℕ-dlwkq≡
+canonₛ-lwkq (a ∷ []) {N} (e₁ , x , e₂) q b₁ B₂ i i≢
+  with canonₛ-lwkq ([]) (` 0F , suc x , wk e₂) q b₁ B₂
+... | rec with Fin.splitAt a i in seq
+... | inj₁ p =
+      chainLwk sl G G′ (inj₁ p) (inj₁ p) headCoh
+    ■ cong (subst Tm (+-suc sT′ N)) (sym (cong G′ (Fin.splitAt-↑ˡ a p (sum (([]) ++ (q + suc (suc b₁)) ∷ B₂)))))
+  where
+    sT  = syncs (([]) ++ (q + suc b₁) ∷ B₂)
+    sT′ = syncs (([]) ++ (q + suc (suc b₁)) ∷ B₂)
+    sl   = syncs-lwkq ([]) {q} {b₁} {B₂}
+    triL = Ub[ a ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sT
+    triR = Ub[ a ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sT′
+    cc-r = ((` 0F) , suc x , e₂ ⋯ weakenᵣ)
+    G  = [ triL , canonₛ {n = suc N} (([]) ++ (q + suc b₁) ∷ B₂) cc-r ]′
+    G′ = [ triR , canonₛ {n = suc N} (([]) ++ (q + suc (suc b₁)) ∷ B₂) cc-r ]′
+    headCoh : subst Tm (cong (_+ suc N) sl) (G (inj₁ p)) ≡ G′ (inj₁ p)
+    headCoh = triCoh sl
+      where
+        triCoh : ∀ {ss ss′} (e : ss ≡ ss′) →
+                 subst Tm (cong (_+ suc N) e)
+                   (Ub[ a ] (wk e₁ , suc x , ` 0F) p ⋯ weaken* ⦃ Kᵣ ⦄ ss)
+                 ≡ Ub[ a ] (wk e₁ , suc x , ` 0F) p ⋯ weaken* ⦃ Kᵣ ⦄ ss′
+        triCoh refl = refl
+... | inj₂ r =
+      chainLwk sl G G′ (inj₂ r) (inj₂ (dlwkq ([]) q b₁ B₂ r))
+        (rec r (λ r≡ → i≢ ( sym (Fin.join-splitAt a (sum (([]) ++ (q + suc b₁) ∷ B₂)) i)
+                          ■ cong (Fin.join a (sum (([]) ++ (q + suc b₁) ∷ B₂))) seq
+                          ■ cong (a ↑ʳ_) r≡
+                          ■ sym (pos-split-gen a ([]) (q + suc b₁) B₂ ((q ↑ʳ 0F) ↑ˡ sum B₂)) )))
+    ■ cong (subst Tm (+-suc sT′ N)) (sym (cong G′ (Fin.splitAt-↑ʳ a (sum (([]) ++ (q + suc (suc b₁)) ∷ B₂)) (dlwkq ([]) q b₁ B₂ r))))
+  where
+    sT  = syncs (([]) ++ (q + suc b₁) ∷ B₂)
+    sT′ = syncs (([]) ++ (q + suc (suc b₁)) ∷ B₂)
+    sl   = syncs-lwkq ([]) {q} {b₁} {B₂}
+    triL = Ub[ a ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sT
+    triR = Ub[ a ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sT′
+    cc-r = ((` 0F) , suc x , e₂ ⋯ weakenᵣ)
+    G  = [ triL , canonₛ {n = suc N} (([]) ++ (q + suc b₁) ∷ B₂) cc-r ]′
+    G′ = [ triR , canonₛ {n = suc N} (([]) ++ (q + suc (suc b₁)) ∷ B₂) cc-r ]′
+canonₛ-lwkq (a ∷ d ∷ B₁″) {N} (e₁ , x , e₂) q b₁ B₂ i i≢
+  with canonₛ-lwkq (d ∷ B₁″) (` 0F , suc x , wk e₂) q b₁ B₂
+... | rec with Fin.splitAt a i in seq
+... | inj₁ p =
+      chainLwk sl G G′ (inj₁ p) (inj₁ p) headCoh
+    ■ cong (subst Tm (+-suc sT′ N)) (sym (cong G′ (Fin.splitAt-↑ˡ a p (sum ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)))))
+  where
+    sT  = syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)
+    sT′ = syncs ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)
+    sl   = syncs-lwkq (d ∷ B₁″) {q} {b₁} {B₂}
+    triL = Ub[ a ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sT
+    triR = Ub[ a ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sT′
+    cc-r = ((` 0F) , suc x , e₂ ⋯ weakenᵣ)
+    G  = [ triL , canonₛ {n = suc N} ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂) cc-r ]′
+    G′ = [ triR , canonₛ {n = suc N} ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂) cc-r ]′
+    headCoh : subst Tm (cong (_+ suc N) sl) (G (inj₁ p)) ≡ G′ (inj₁ p)
+    headCoh = triCoh sl
+      where
+        triCoh : ∀ {ss ss′} (e : ss ≡ ss′) →
+                 subst Tm (cong (_+ suc N) e)
+                   (Ub[ a ] (wk e₁ , suc x , ` 0F) p ⋯ weaken* ⦃ Kᵣ ⦄ ss)
+                 ≡ Ub[ a ] (wk e₁ , suc x , ` 0F) p ⋯ weaken* ⦃ Kᵣ ⦄ ss′
+        triCoh refl = refl
+... | inj₂ r =
+      chainLwk sl G G′ (inj₂ r) (inj₂ (dlwkq (d ∷ B₁″) q b₁ B₂ r))
+        (rec r (λ r≡ → i≢ ( sym (Fin.join-splitAt a (sum ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) i)
+                          ■ cong (Fin.join a (sum ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂))) seq
+                          ■ cong (a ↑ʳ_) r≡
+                          ■ sym (pos-split-gen a (d ∷ B₁″) (q + suc b₁) B₂ ((q ↑ʳ 0F) ↑ˡ sum B₂)) )))
+    ■ cong (subst Tm (+-suc sT′ N)) (sym (cong G′ (Fin.splitAt-↑ʳ a (sum ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) (dlwkq (d ∷ B₁″) q b₁ B₂ r))))
+  where
+    sT  = syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)
+    sT′ = syncs ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)
+    sl   = syncs-lwkq (d ∷ B₁″) {q} {b₁} {B₂}
+    triL = Ub[ a ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sT
+    triR = Ub[ a ] (wk e₁ , suc x , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ sT′
+    cc-r = ((` 0F) , suc x , e₂ ⋯ weakenᵣ)
+    G  = [ triL , canonₛ {n = suc N} ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂) cc-r ]′
+    G′ = [ triR , canonₛ {n = suc N} ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂) cc-r ]′
