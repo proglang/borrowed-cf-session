@@ -37,6 +37,7 @@ open import BorrowedCF.Simulation.RevRSplit
   using (rsplit-go; rsplit-arg-chan)
 open import BorrowedCF.Simulation.RevCom using (com-go)
 open import BorrowedCF.Simulation.RevChoice using (choice-go)
+open import BorrowedCF.Simulation.RevClose using (close-go)
 open import BorrowedCF.Simulation.RevComConfine
   using (frames-𝕀; leftPat-¬before; leftPat-pullOut-∥-≼; before-com-binderᴸ; com-xS-min)
 open import BorrowedCF.Simulation.ReverseConfine using (count-handle-comᴸ)
@@ -619,69 +620,8 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
            (F₁ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) (sym Leq′)
   with F₀ᴿ , argᴿ , refl , FeqR , argeqR
        ← frameApp-reflect Γ′-S eR (inv-⟪⟫ ⊢PR) (νσ b₁ b₂ σ) (νσ-VSub b₁ b₂ σ Vσ) (`end ⁇)
-           (F₂ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) (sym Req′) =
-  {! RU-Close inj₁: structural inversion DONE (threads P₀ = ⟪F₀ᴸ[end‼·argᴸ]⟫ ∥
-     ⟪F₀ᴿ[end⁇·argᴿ]⟫ recovered, typed ⊢PL/⊢PR in binder-extended ChanCx Γ′-S;
-     FeqL : F₁⋯ᶠ*wk2 ≡ frame*-⋯ F₀ᴸ νσ Vνσ ; argeqL : 𝓒[e₁×0F×e₁′] ≡ argᴸ ⋯ νσ).
-
-     The REVERSE-CONFINE subsystem is now BUILT and verified hole-free in
-     BorrowedCF.Simulation.ReverseConfine (the mirror of the forward acq-confine
-     / HandleCount machinery):
-       • count-handle-closeᴸ / count-handle-closeᴿ — the HandleCount analogues for
-         the CLOSE binder ν (suc b₁ ∷ []) (suc b₂ ∷ []) (structBinder-singleton
-         geometry, NOT the SplitRenamings B₁++suc b₁∷B₂ shape): the L handle 0F
-         and the R handle at flat position sum (suc b₁ ∷ []) each count exactly 1.
-       • strengthen-frame* — MULTI-handle frame strengthening (the missing
-         primitive; factors a typed frame through a renaming missing a whole SET
-         H, via Inverter* / strengthen-Tm-gen*).
-       • close-app-nonUnr — the consumed close handle is non-Unr (end's domain
-         ⟨end p⟩, Unr⟨end p⟩ = Skips(end p) is uninhabited).
-       • H2 / inv-wk2 — the {0F,1F} handle-set and its weaken* 2 inverter.
-       • close-confine (b₁=b₂=1) — assembles the above: from the well-typed close
-         body ν [1] [1] (⟪F₀ᴸ[end‼·`0F]⟫ ∥ ⟪F₀ᴿ[end⁇·`1F]⟫) recovers E₁ E₂ : Frame* m
-         with F₀ᴸ ≡ E₁ ⋯ᶠ* weaken* 2 and F₀ᴿ ≡ E₂ ⋯ᶠ* weaken* 2.  The consumed
-         handle is confined by its own plug; the SIBLING's handle is linear in the
-         other thread (count 0 here) — the cross-thread linearity argument.
-
-     REMAINING to fire TR.R-Close and close this hole (the three pieces close-confine
-     PLUGS INTO):
-       (a) argL is a VARIABLE : DONE — `close-arg-var` (ReverseInv) proves that a
-           close argument typed at the session type ⟨ end p ⟩ whose νσ-image is a
-           pair must be a (channel) variable ` x (the pair alternative of head⊗ is
-           refuted by `pair-not-chan`, since a pair is typed at a ⊗-type and
-           ⟨ s ⟩ ≄ ⊗).  RESIDUAL of (a): identify x = 0F.  At GENERAL b₁ νσ maps
-           EVERY block-1 index to chanTriple(*,0F,*), so argᴸ ⋯ νσ ≡ 𝓒[e₁×0F×e₁′]
-           only forces x ∈ block-1, not x = 0F; x = 0F follows once b₁ is discarded
-           down to 1 (piece (b)).
-       (b) forcing b₁ = b₂ = 1 (⇒ x = 0F) is a GENUINE ROADBLOCK — the close
-           vacuity is INSUFFICIENT.  The ported vacuity (ReverseConfine.bc-len1 /
-           bc′-len1 / close-handle-end, from CloseVacuityProbe's residual-Skips
-           EndTip argument) proves ONLY: GIVEN the FIRST borrow (handle 0) is the
-           `end` tip, the block has no FURTHER borrow (residual is Skips ⇒ no second
-           cons).  It does NOT prove the consumed handle is the first borrow.
-           The reverse redex's consumed handle sits at a GENERIC block-1 index x:
-           νσ maps EVERY block-1 index to chanTriple(*,0F,*), so argᴸ ⋯ νσ ≡
-           𝓒[e₁×0F×e₁′] pins only x ∈ block-1, never x = 0F.  A well-typed close
-           with b₁ = 2 whose `end` borrow is the SECOND (x = 1F) and whose first
-           borrow is a non-`end` New piece (e.g. msg ‼ ⟨⊤⟩) held/used linearly by
-           the frame F₀ᴸ is REACHABLE — MACHINE-VERIFIED constructible:
-           `BindCtx′ (msg ‼ `⊤ ; end ⁇) 2 g2` typechecks (scratch BC2.agda, exit 0).
-           bc-len1 cannot refute it (nothing follows the `end` borrow), and
-           R-Discard cannot fire (the earlier handle is USED, count 1 — not Unr).
-           Such a redex has NO matching single TR.R-Close (R-Close closes a width-1
-           block at 0F, not an inner handle).  Closing inj₁ needs either a typed
-           rule that closes an inner block handle, or a frame/linearity proof that
-           no non-`end` borrow precedes the consumed one — a TYPING/CALCULUS-DESIGN
-           change absent from the codebase (same family as det-lemma-false /
-           simlsplit-lwk-id-false / BindCtx-degeneracy).  The b₁=b₂=1 path
-           (close-arg-var ⇒ argL=`0F ⇒ close-confine ⇒ R-Close ⇒ close-bridge) IS
-           sound, but b₁,b₂ cannot be case-split to 1 — the missing half of the
-           vacuity (no borrow BEFORE the consumed `end`) does not hold in general.
-       (c) the codomain ≋: mirror RU-Close inj₂'s close-bridge (ReverseInv) —
-           both threads close to a unit, push U[_] through E₁/E₂ via frame-plug*.
-     Codomain is multi-step (P TR─→ₚ* P′), so (R-Discard* ◅◅ R-Close ◅ ε) IS
-     expressible.  This SAME ReverseConfine pattern is the template for the other
-     reverse channel cases (Acq/Com/Choice/LSplit/RSplit). !}
+           (F₂ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) (sym Req′)
+  = close-go σ Vσ Γ-S b₁ b₂ ⊢P FeqL argeqL FeqR argeqR
 -- RU-Com.  Body ν(⟪..⟫ ∥ (⟪..⟫ ∥ P)) is ∥-headed, so the SAME structural
 --   inversion as RU-Close applies: inv-U-ν + inv-U-ν-∥-shape force B₁,B₂ to
 --   singletons (syncs 0), U-ν-singleton collapses the φ-telescope, giving body ≡
