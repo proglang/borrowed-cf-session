@@ -116,6 +116,15 @@
   }
 }
 
+% CT-Discard
+\DefRule {Discard} {} {
+  \HasCType\CDiscard{
+    \TArr{\MobMobile}{\DirUnord,\EffPure}
+      {\SSkip}
+      {\BUnit}
+  }
+}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % \DefRule {New} {} {

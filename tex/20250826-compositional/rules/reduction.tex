@@ -49,12 +49,16 @@
 }
 
 % R-Discard
-\DefRule {Discard} {
-  \EVar \not\in \Fv(\Proc)
-} {
-  \PNew {\BSeq{\EVar}{\BindGroup[1]}} {\BindGroup[2]} \Proc
+\DefRule {Discard} {} {
+  \PNew {\BSeq{\EVar}{\BindGroup[1]}} {\BindGroup[2]} {(
+    \PPar { \FCapp{\EApp\CDiscard\EVar} }
+          { \Proc }
+  )}
   \PReduce
-  \PNew {\BindGroup[1]} {\BindGroup[2]} \Proc
+  \PNew {\BindGroup[1]} {\BindGroup[2]} {(
+    \PPar { \FCapp{\CUnit} }
+          { \Proc }
+  )}
 }
 
 % R-Close

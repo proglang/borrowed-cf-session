@@ -65,6 +65,13 @@
   }
 }
 
+% R-Discard
+\DefRule {Discard} {} {
+  \FCapp{\EApp\CDiscard\V}
+  \TPReduce
+  \FCapp{\CUnit}
+}
+
 % RU-Cleanup
 \DefRule {Cleanup} {} {
   \TPSync \FlagAcquired \TProc

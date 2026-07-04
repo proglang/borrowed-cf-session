@@ -120,8 +120,8 @@ $\Ctx[1] \CtxSeq \Ctx[2]$ or $\Ctx[1] \CtxPar \Ctx[2]$.
     \RuleUUnit \and
     \RuleUArr \and
     \RuleUProd \and
-    \RuleUVariant \and
-    \RuleUSession \\
+    \RuleUVariant \\
+    %\RuleUSession \\
     \RuleUCtxEmpty \and
     \RuleUCtxVar \and
     \RuleUCtxSeq \and
@@ -236,7 +236,8 @@ $\Ctx[1] \CtxSeq \Ctx[2]$ or $\Ctx[1] \CtxPar \Ctx[2]$.
     \RuleCTSend \and
     \RuleCTRecv \and
     \RuleCTSelect \and
-    \RuleCTBranch
+    \RuleCTBranch \and
+    \RuleCTDiscard
   \end{mathpar}
   \caption{Constant Typing ($\HasCType\C\T$)}
   \label{fig:constant-typing}
