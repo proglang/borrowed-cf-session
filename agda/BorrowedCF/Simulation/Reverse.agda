@@ -38,6 +38,7 @@ open import BorrowedCF.Simulation.RevRSplit
 open import BorrowedCF.Simulation.RevCom using (com-go)
 open import BorrowedCF.Simulation.RevChoice using (choice-go)
 open import BorrowedCF.Simulation.RevClose using (close-go)
+open import BorrowedCF.Simulation.RevAcq using (acq-go)
 open import BorrowedCF.Simulation.RevComConfine
   using (frames-𝕀; leftPat-¬before; leftPat-pullOut-∥-≼; before-com-binderᴸ; com-xS-min)
 open import BorrowedCF.Simulation.ReverseConfine using (count-handle-comᴸ)
@@ -583,8 +584,7 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-RSplit {s = s} {e₁ = e₁} {e₂ 
 sim←ᵍ σ Vσ Γ-S {P = TP.⟪ e ⟫}     ⊢P () (UR.RU-Drop F)
 sim←ᵍ σ Vσ Γ-S {P = P TP.∥ Q}     ⊢P () (UR.RU-Drop F)
 sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Drop F)
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Acquire F) =
-  {! RU-Acquire → TR.R-Acq: φ acq→done. inv-U-ν + zero∷suc b₁ binder shape + done-flag handling (RU-Cleanup pairs with it). !}
+sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Acquire F) = acq-go σ Vσ Γ-S F ⊢P eq
 -- RU-Close.  PARTIAL — the structural inversion is PROVEN (ReverseInv:
 --   inv-U-ν reads P = ν B₁ B₂ P₀ off the ν head; the RU-Close LHS body is
 --   ∥-headed, so inv-U-ν-∥-shape forces syncs B₁ = syncs B₂ = 0, i.e. B₁ = b₁ ∷
