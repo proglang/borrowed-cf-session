@@ -351,7 +351,17 @@ canonₛ-rwk0q {N} cc zero    b₁ B₂ i i≢ =
   where
     sD = syncs (suc b₁ ∷ B₂)
     COD₀ = +-suc sD N ■ cong (_+ N) (cong suc (syncs-head-irrel (suc b₁) (suc b₁) B₂))
-canonₛ-rwk0q {N} cc (suc q) b₁ B₂ i i≢ = {!!}
+canonₛ-rwk0q {N} cc (suc q) b₁ B₂ i i≢ = mainEq ■ sym rhsConv
+  where
+    SDR = syncs ((suc q + suc b₁) ∷ B₂)
+    COD = +-suc SDR N ■ cong (_+ N) (cong suc (syncs-head-irrel (suc q + suc b₁) (suc b₁) B₂))
+    rhsConv : canonₛ ((suc q + suc b₁) ∷ B₂) cc i ⋯ sinsq [] (suc q) b₁ B₂ {N}
+              ≡ subst Tm COD (canonₛ ((suc q + suc b₁) ∷ B₂) (mapᶜ weakenᵣ cc) i)
+    rhsConv = subst-⋯-cod-local COD (canonₛ ((suc q + suc b₁) ∷ B₂) cc i) (weakenᵣ ↑* SDR)
+            ■ cong (subst Tm COD) (canonₛ-nat ((suc q + suc b₁) ∷ B₂) cc weakenᵣ i)
+    mainEq : canonₛ ((suc q + 1) ∷ suc b₁ ∷ B₂) cc (drwkq [] (suc q) b₁ B₂ i)
+             ≡ subst Tm COD (canonₛ ((suc q + suc b₁) ∷ B₂) (mapᶜ weakenᵣ cc) i)
+    mainEq = {!!}
 
 canonₛ-rwkq : ∀ (B₁ : BindGroup) {N} (cc : UChan N) (q b₁ : ℕ) (B₂ : BindGroup)
              (i : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂))) →
