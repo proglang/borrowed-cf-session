@@ -316,6 +316,19 @@ sins-wkq B₁ q b₁ B₂ {N} v = Fin.toℕ-injective
 --   the position-q handle, splitting block (q+suc b₁) → (q+1) ∷ suc b₁ inserts a
 --   fresh sync (sinsq) into the canonical substitution.  Mirrors canonₛ-rwk.
 -- ============================================================================
+-- Ub at a NON-last position ignores e₂ and the width: agrees across widths for
+-- equal-toℕ positions (both strictly before the last slot).
+Ub-before : ∀ (w1 w2 : ℕ) {N} (e₁ e₂ e₂' : Tm N) (c : 𝔽 N) (p : 𝔽 w1) (p' : 𝔽 w2) →
+            suc (Fin.toℕ p) Nat.< w1 → suc (Fin.toℕ p') Nat.< w2 → Fin.toℕ p ≡ Fin.toℕ p' →
+            Ub[ w1 ] (e₁ , c , e₂) p ≡ Ub[ w2 ] (e₁ , c , e₂') p'
+Ub-before (suc w1)       (suc zero)     e₁ e₂ e₂' c p       0F       lt1 (Nat.s≤s ()) eq
+Ub-before (suc zero)     (suc (suc w2)) e₁ e₂ e₂' c 0F      p'       (Nat.s≤s ()) lt2 eq
+Ub-before (suc (suc w1)) (suc (suc w2)) e₁ e₂ e₂' c zero    zero     lt1 lt2 eq = refl
+Ub-before (suc (suc w1)) (suc (suc w2)) e₁ e₂ e₂' c zero    (suc p') lt1 lt2 ()
+Ub-before (suc (suc w1)) (suc (suc w2)) e₁ e₂ e₂' c (suc p) zero     lt1 lt2 ()
+Ub-before (suc (suc w1)) (suc (suc w2)) e₁ e₂ e₂' c (suc p) (suc p') lt1 lt2 eq =
+  Ub-before (suc w1) (suc w2) * e₂ e₂' c p p' (Nat.s≤s⁻¹ lt1) (Nat.s≤s⁻¹ lt2) (Nat.suc-injective eq)
+
 canonₛ-rwk0q : ∀ {N} (cc : UChan N) (q b₁ : ℕ) (B₂ : BindGroup)
              (i : 𝔽 (sum ((q + suc b₁) ∷ B₂))) →
              i ≢ ((q ↑ʳ 0F) ↑ˡ sum B₂) →
