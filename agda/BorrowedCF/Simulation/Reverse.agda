@@ -61,6 +61,9 @@ open import BorrowedCF.Simulation.RevAdmin
          ≈-ν-cong; ≈-φ-cong; ≈-∥-congˡ; a-discard; a-sync; a-res; a-par; admin⇒red)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive
   using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
+open import Induction.WellFounded using (Acc; acc)
+open import Data.Nat.Induction using (<-wellFounded)
+open import BorrowedCF.Simulation.RevCongStrong using (sc)
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
 open import BorrowedCF.Context using (Ctx; Struct; biasedDir; _∶_≼_; join)
 open TP using (_;_⊢ₚ_; inv-⟪⟫; inv-∥; inv-ν; ⊢-≋; bindCtx⇒chanCtx; structBinder)
@@ -226,9 +229,10 @@ inv-U-ν (TP.ν B₁ B₂ P) σ refl = B₁ , B₂ , P , refl , refl
 -- so RU-Struct's structural-congruence premise `c₁ : R ≋ R′` is absorbable
 -- (recurse at R′ ≋ U[ P ] σ); the codomain is `P ─→ₚ* P′` so a skip-padded
 -- redex may R-Discard* its padding before firing the real step.
-sim← : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+sim←ᴬ : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
      → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
-     → {R Q : UP.Proc n} → R ≈ U[ P ] σ → R UR.─→ₚ Q
+     → {R Q : UP.Proc n} → R ≈ U[ P ] σ → (red : R UR.─→ₚ Q)
+     → Acc Nat._<_ (sc red)
      → Σ[ P′ ∈ TP.Proc m ] Σ[ Q′ ∈ UP.Proc n ]
          (P TR─→ₚ* P′ × Q ─→ᶜ? Q′ × Q′ ≈ U[ P′ ] σ)
 
@@ -239,9 +243,10 @@ sim← : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
 -- read P back off the equality with the inv-U-* lemmas.  This is the inversion
 -- ENGINE: it keeps the strict `≡` image on the input (the inv-U-* lemmas need
 -- propositional equality), and the codomain is the MULTI-STEP P ─→ₚ* P′.
-sim←ᵍ : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+sim←ᵍᴬ : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
       → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
-      → {R Q : UP.Proc n} → R ≡ U[ P ] σ → R UR.─→ₚ Q
+      → {R Q : UP.Proc n} → R ≡ U[ P ] σ → (red : R UR.─→ₚ Q)
+      → Acc Nat._<_ (sc red)
       → Σ[ P′ ∈ TP.Proc m ] Σ[ Q′ ∈ UP.Proc n ]
           (P TR─→ₚ* P′ × Q ─→ᶜ? Q′ × Q′ ≈ U[ P′ ] σ)
 
@@ -254,13 +259,14 @@ syncs-of (b ∷ c ∷ Bp) = Sum.inj₂ (b , c , Bp , refl)
 
 -- simRes : RU-Res reflection, factored out so it does NOT re-generalise the
 -- scope index (a where-local helper would break the sigma : m -> n alignment).
-simRes : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+simResᴬ : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
        → {g : Struct m}
        → (B₁ B₂ : TP.BindGroup) (P₀ : TP.Proc (sum B₁ + sum B₂ + m))
        → Γ ; g ⊢ₚ TP.ν B₁ B₂ P₀
-       → (X X′ : UP.Proc (2 + n)) → X UR.─→ₚ X′
+       → (X X′ : UP.Proc (2 + n)) → (sub : X UR.─→ₚ X′)
        → UP.ν X ≡ U[ TP.ν B₁ B₂ P₀ ] σ
        → (syncs B₁ ≡ 0) Sum.⊎ _ → (syncs B₂ ≡ 0) Sum.⊎ _
+       → Acc Nat._<_ (sc sub)
        → Σ[ P′ ∈ TP.Proc m ] Σ[ Q′ ∈ UP.Proc n ]
            (TP.ν B₁ B₂ P₀ TR─→ₚ* P′ × UP.ν X′ ─→ᶜ? Q′ × Q′ ≈ U[ P′ ] σ)
 
@@ -268,8 +274,8 @@ simRes : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
 -- (the ε / reflexive prefix) it is the engine at refl; a genuine ≋ prefix
 -- needs the reverse-U-≋ factorisation (the same blocker carried by the
 -- RU-Struct case) and is left a noted hole.
-sim← σ Vσ Γ-S ⊢P ε red = sim←ᵍ σ Vσ Γ-S ⊢P refl red
-sim← σ Vσ Γ-S ⊢P (c ◅ cs) red =
+sim←ᴬ σ Vσ Γ-S ⊢P ε red ac = sim←ᵍᴬ σ Vσ Γ-S ⊢P refl red ac
+sim←ᴬ σ Vσ Γ-S ⊢P (c ◅ cs) red ac =
   {! sim← non-ε (2026-07 STATE, post Com/Choice/Close/Acq/Discard closes).
      Input links are now ≋-chains OR a-discard admin steps (RevAdmin gained
      a-discard; ─→ᵃ is no longer uninhabited).  MACHINE-CONFIRMED (RevPhiNest
@@ -304,7 +310,7 @@ sim← σ Vσ Γ-S ⊢P (c ◅ cs) red =
 --   above as value-↛ / value-no-head / value-⋯⁻¹ (these ARE the pieces a typed
 --   reflection reuses); the typed reflection itself is the remaining work.
 ------------------------------------------------------------------------
-sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Exp {e₁ = e₁} {e₂ = e₂} step)
+sim←ᵍᴬ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Exp {e₁ = e₁} {e₂ = e₂} step) ac
   with e₀ , refl , refl ← inv-U-⟪⟫ P σ (sym eq)
   -- P = ⟪ e₀ ⟫, e₁ ≡ e₀ ⋯ σ, step : e₀ ⋯ σ ⋯→ e₂.  Reflect the substituted step
   -- back to a source step via the typed reflection (ReverseInv.⋯→-reflect): the
@@ -319,11 +325,11 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Exp {e₁ = e₁} {e₂ = e₂} ste
 --   TR.R-Par + UP.∥-cong.  STRUCTURAL — provable once inv-∥ (typing inversion)
 --   feeds the left sub-derivation.
 ------------------------------------------------------------------------
-sim←ᵍ σ Vσ Γ-S {P = TP.⟪ e ⟫}     ⊢P () (UR.RU-Par sub)
-sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Par sub)
-sim←ᵍ σ Vσ Γ-S {P = P₁ TP.∥ P₂}   ⊢P refl (UR.RU-Par sub)
+sim←ᵍᴬ σ Vσ Γ-S {P = TP.⟪ e ⟫}     ⊢P () (UR.RU-Par sub) ac
+sim←ᵍᴬ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Par sub) ac
+sim←ᵍᴬ σ Vσ Γ-S {P = P₁ TP.∥ P₂}   ⊢P refl (UR.RU-Par sub) ac
   with _ , _ , _ , ⊢P₁ , _ ← inv-∥ ⊢P
-  with P₁′ , Q₁′ , step₁ , cl₁ , c₁ ← sim←ᵍ σ Vσ Γ-S ⊢P₁ refl sub =
+  with P₁′ , Q₁′ , step₁ , cl₁ , c₁ ← sim←ᵍᴬ σ Vσ Γ-S ⊢P₁ refl sub ac =
   P₁′ TP.∥ P₂ , Q₁′ UP.∥ U[ P₂ ] σ , ⋆-gmap (TP._∥ P₂) TR.R-Par step₁ ,
   Sum.map (cong (λ z → z UP.∥ U[ P₂ ] σ)) UR.RU-Par cl₁ , ≈-∥-congˡ c₁
 
@@ -348,21 +354,21 @@ sim←ᵍ σ Vσ Γ-S {P = P₁ TP.∥ P₂}   ⊢P refl (UR.RU-Par sub)
 --   and needs the SAME codomain-≋ strengthening as RU-Struct (reduction-up-to-≋
 --   on both sides) — a sim← statement change owned upstream.
 ------------------------------------------------------------------------
-sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Res {P = X} {Q = X′} sub)
+sim←ᵍᴬ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Res {P = X} {Q = X′} sub) ac
   with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
   -- φ-free sub-case is dispatched (on the (<=singleton) shape of B₁,B₂) in
   -- simRes.  The φ-bearing case (some Bᵢ >= 2 ==> syncs >= 1) is the documented
   -- codomain-≋ blocker (admin φ moves leave the U[_] image), a noted hole in simRes.
-  = simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq (syncs-of B₁) (syncs-of B₂)
+  = simResᴬ σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq (syncs-of B₁) (syncs-of B₂) ac
 
 ------------------------------------------------------------------------
 -- RU-Sync : R = φ x P′.  But U[_] never heads with φ (clauses are ⟪⟫/∥/ν), so
 --   eq : φ x P′ ≡ U[ P ] σ is absurd by case on P.  VACUOUS at top level
 --   (only reachable under an inner RU-Res recursion, where the φ is real).
 ------------------------------------------------------------------------
-sim←ᵍ σ Vσ Γ-S {P = TP.⟪ e ⟫}    ⊢P () (UR.RU-Sync sub)
-sim←ᵍ σ Vσ Γ-S {P = P TP.∥ Q}    ⊢P () (UR.RU-Sync sub)
-sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Sync sub)
+sim←ᵍᴬ σ Vσ Γ-S {P = TP.⟪ e ⟫}    ⊢P () (UR.RU-Sync sub) ac
+sim←ᵍᴬ σ Vσ Γ-S {P = P TP.∥ Q}    ⊢P () (UR.RU-Sync sub) ac
+sim←ᵍᴬ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Sync sub) ac
 
 ------------------------------------------------------------------------
 -- Channel-op / state-transition redex inversions.  Each constrains R (= U[ P ]
@@ -380,7 +386,7 @@ sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Sync sub)
 --   uses the same frameApp-reflect (c = `new s) but is BLOCKED on the ⊗-swap (see
 --   its note).  frameApp-reflect ALSO supplies the redex-inversion half of every
 --   ν-headed channel-op redex (LSplit/RSplit/Close/Com/Choice).
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Fork F V)
+sim←ᵍᴬ σ Vσ Γ-S ⊢P eq (UR.RU-Fork F V) ac
   with e₀ , refl , feq ← inv-U-⟪⟫ _ σ (sym eq)
   with F₀ , arg₀ , refl , Feq , argeq
        ← frameApp-reflect Γ-S e₀ (inv-⟪⟫ ⊢P) σ Vσ `fork F (sym feq) =
@@ -406,7 +412,7 @@ sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Fork F V)
 --   redex.  The codomain ≋ is the (now reusable) rnew-bridge — the SAME bridge
 --   the forward R-New uses; the ⊗-swap is reconciled there (the U[ν…] leaf order
 --   `1F⊗`0F substitutes the two channel triples into the unswapped pair tL).
-sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-New {s = s} F)
+sim←ᵍᴬ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-New {s = s} F) ac
   with e₀ , refl , feq ← inv-U-⟪⟫ P σ (sym eq)
   with F₀ , arg₀ , refl , Feq , argeq
        ← frameApp-reflect Γ-S e₀ (inv-⟪⟫ ⊢P) σ Vσ (`new s) F (sym feq)
@@ -422,7 +428,7 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-New {s = s} F)
                   (z ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [ _ ]* ⟫))
                 UP.≋ _)
         (sym Feq) (rnew-bridge F₀ σ Vσ))
-sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-LSplit {s = s} {e₁ = e₁} {e₂ = e₂} {P = P₁} F)
+sim←ᵍᴬ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-LSplit {s = s} {e₁ = e₁} {e₂ = e₂} {P = P₁} F) ac
   with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
   with inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq
 ... | Sum.inj₂ (Sum.inj₁ refl)
@@ -445,7 +451,7 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-LSplit {s = s} {e₁ = e₁} {e₂ 
   with b₁' , b₁≡ ← fin-split b₁ z =
   lsplit-go σ Vσ (Fin.toℕ z) b₁' b₂ Γ-S b₁ b₁≡ z refl
     (argᴸ≡ ■ cong `_ xeq) ⊢P Feq argeq Resteq
-sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-RSplit {s = s} {e₁ = e₁} {e₂ = e₂} {P = P₁} F)
+sim←ᵍᴬ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-RSplit {s = s} {e₁ = e₁} {e₂ = e₂} {P = P₁} F) ac
   with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
   with inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq
 ... | Sum.inj₂ (Sum.inj₁ refl)
@@ -470,10 +476,10 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-RSplit {s = s} {e₁ = e₁} {e₂ 
     (argᴸ≡ ■ cong `_ xeq) ⊢P Feq argeq Resteq
 -- RU-Drop : R = φ drop (…).  φ-headed, so vacuous at top level (U[_] heads with
 -- ⟪⟫/∥/ν only); only reachable under an inner RU-Sync/RU-Res recursion.
-sim←ᵍ σ Vσ Γ-S {P = TP.⟪ e ⟫}     ⊢P () (UR.RU-Drop F)
-sim←ᵍ σ Vσ Γ-S {P = P TP.∥ Q}     ⊢P () (UR.RU-Drop F)
-sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Drop F)
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Acquire F) = acq-go σ Vσ Γ-S F ⊢P eq
+sim←ᵍᴬ σ Vσ Γ-S {P = TP.⟪ e ⟫}     ⊢P () (UR.RU-Drop F) ac
+sim←ᵍᴬ σ Vσ Γ-S {P = P TP.∥ Q}     ⊢P () (UR.RU-Drop F) ac
+sim←ᵍᴬ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Drop F) ac
+sim←ᵍᴬ σ Vσ Γ-S ⊢P eq (UR.RU-Acquire F) ac = acq-go σ Vσ Γ-S F ⊢P eq
 -- RU-Close.  PARTIAL — the structural inversion is PROVEN (ReverseInv:
 --   inv-U-ν reads P = ν B₁ B₂ P₀ off the ν head; the RU-Close LHS body is
 --   ∥-headed, so inv-U-ν-∥-shape forces syncs B₁ = syncs B₂ = 0, i.e. B₁ = b₁ ∷
@@ -488,7 +494,7 @@ sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Acquire F) = acq-go σ Vσ Γ-S F ⊢P eq
 --   Theorems.agda).  That per-thread typed reflection needs inv-ν → inv-∥ →
 --   inv-⟪⟫ to type eL/eR in the binder-extended ChanCx (bindCtx⇒chanCtx) plus the
 --   forward-mirror ≋ — the large remaining piece; B-shape + φ-collapse are DONE.
-sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
+sim←ᵍᴬ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂) ac
   with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
   with inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq
 ... | Sum.inj₂ (Sum.inj₁ refl)
@@ -520,7 +526,7 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Close F₁ F₂)
 --   geometry) is fixed only by the BindCtx chain — the same typing-driven index
 --   pin the forward U-com (Theorems/Com.agda, 962 ln) needs, mirrored.  Large but
 --   UNgated; structural shape/collapse PROVEN above (reuse for Close/Com/Choice).
-sim←ᵍ {m = m} σ Vσ Γ-S {g = g} {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
+sim←ᵍᴬ {m = m} σ Vσ Γ-S {g = g} {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V) ac
   with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
   with inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq
 ... | Sum.inj₂ (Sum.inj₁ refl)
@@ -550,7 +556,7 @@ sim←ᵍ {m = m} σ Vσ Γ-S {g = g} {P = P} ⊢P eq (UR.RU-Com F₁ F₂ V)
 -- RU-Choice.  Identical shape to RU-Com (ν, ∥-headed body): same inv-U-ν-∥-shape
 --   + U-ν-singleton collapse; RESIDUAL = frameApp-reflect the select/branch
 --   redexes + `inj wrapping on the codomain, mirroring forward U-choice.
-sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Choice F₁ F₂ k)
+sim←ᵍᴬ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Choice F₁ F₂ k) ac
   with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)
   with inv-U-ν-∥-shape B₁ B₂ P₀ σ bodyeq
 ... | Sum.inj₂ (Sum.inj₁ refl)
@@ -576,7 +582,7 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Choice F₁ F₂ k)
 -- RU-Discard : R = ⟪ F [ discard · e ]* ⟫ steps to ⟪ F [ * ]* ⟫ (silent term
 -- consuming a leading skip/discard).  ⟪⟫-headed, so mirrors RU-Fork/RU-Exp; the
 -- typed counterpart is TR.R-Discard.  Left a noted hole for the reverse.
-sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Discard F V) =
+sim←ᵍᴬ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Discard F V) ac =
   P , _ , ε , Sum.inj₁ refl ,
   subst (UP.⟪ F [ * ]* ⟫ ≈_) eq (≈-sym (─→ᵃ⇒≈ (a-discard F V)))
 
@@ -594,8 +600,8 @@ sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Discard F V) =
 --   in sim←'s non-ε branch (the c ◅ cs hole) — the single place where the φ-nest
 --   administrative moves that leave the U[_] image must be handled.
 ------------------------------------------------------------------------
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Struct c₁ inner c₂)
-  with sim← σ Vσ Γ-S ⊢P (≋⇒≈ (Eq*.symmetric _ c₁ ◅◅ ≡→≋ eq)) inner
+sim←ᵍᴬ σ Vσ Γ-S ⊢P eq (UR.RU-Struct c₁ inner c₂) (acc rs)
+  with sim←ᴬ σ Vσ Γ-S ⊢P (≋⇒≈ (Eq*.symmetric _ c₁ ◅◅ ≡→≋ eq)) inner (rs Nat.≤-refl)
 ... | P′ , Q″ , steps , Sum.inj₁ refl , Q″≋ =
   P′ , _ , steps , Sum.inj₁ refl , ≋⇒≈ (Eq*.symmetric _ c₂) ◅◅ Q″≋
 ... | P′ , Q″ , steps , Sum.inj₂ st , Q″≋ =
@@ -606,13 +612,13 @@ sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Struct c₁ inner c₂)
 -- simRes clauses.  phi-free (both syncs 0): recurse the IH at the phi-free
 -- leaf U[ P₀ ] σ′, re-wrap R-Bind, reconcile codomain via U-ν-phifree.
 -- phi-bearing (some syncs >= 1): documented codomain-≋ blocker.
-simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₁ s₁) (Sum.inj₁ s₂)
+simResᴬ σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₁ s₁) (Sum.inj₁ s₂) ac
   with _ , _ , Γ′-S , ⊢body ← inv-ν-chanCx Γ-S ⊢ₚP
-  with P₀′ , Q₀′ , steps , cl₀ , c ← sim←ᵍ (νσ-φfree B₁ B₂ σ s₁ s₂) (νσ-φfree-VSub B₁ B₂ σ Vσ s₁ s₂) Γ′-S ⊢body (ν-inj (bodyeq ■ U-ν-φfree-eq B₁ B₂ P₀ σ s₁ s₂)) sub =
+  with P₀′ , Q₀′ , steps , cl₀ , c ← sim←ᵍᴬ (νσ-φfree B₁ B₂ σ s₁ s₂) (νσ-φfree-VSub B₁ B₂ σ Vσ s₁ s₂) Γ′-S ⊢body (ν-inj (bodyeq ■ U-ν-φfree-eq B₁ B₂ P₀ σ s₁ s₂)) sub ac =
   TP.ν B₁ B₂ P₀′ , UP.ν Q₀′ , ⋆-gmap (TP.ν B₁ B₂) TR.R-Bind steps
   , Sum.map (cong UP.ν) UR.RU-Res cl₀
   , subst (UP.ν Q₀′ ≈_) (sym (U-ν-φfree-eq B₁ B₂ P₀′ σ s₁ s₂)) (≈-ν-cong c)
-simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₂ _) _ =
+simResᴬ σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₂ _) _ ac =
   {! RU-Res φ-bearing (syncs B₁ ≥ 1) — 2026-07 STATE.  A struct-free step on the
      pristine telescope φ f X₁ is (i) RU-Sync descent, bottoming at the leaf
      U[P₀] (leafσ σ B₁ B₂) (AcqH1.Uν-flat/Bφ), (ii) RU-Struct (needs the sc-measure
@@ -630,8 +636,19 @@ simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₂ _) _ =
      generalization the splits received (R-Drop at interior block position q) —
      a typing/calculus-design change.  Width-1 instances (b₁=0, flag drop→acq =
      RU-Drop's flip) are closable once (ii) is available. !}
-simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq _ (Sum.inj₂ _) =
+simResᴬ σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq _ (Sum.inj₂ _) ac =
   {! RU-Res φ-bearing (syncs B₂ ≥ 1): same finding as the syncs B₁ ≥ 1 clause —
      Sync-descent + Struct-bounce (sc-measure WF refactor) + innermost RU-Drop,
      whose interior-position instances need the R-Drop q-generalization
      (DropInteriorProbe.agda). !}
+
+------------------------------------------------------------------------
+-- Public entry: seed the well-founded recursion on the RU-Struct count.
+------------------------------------------------------------------------
+
+sim← : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+     → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
+     → {R Q : UP.Proc n} → R ≈ U[ P ] σ → (red : R UR.─→ₚ Q)
+     → Σ[ P′ ∈ TP.Proc m ] Σ[ Q′ ∈ UP.Proc n ]
+         (P TR─→ₚ* P′ × Q ─→ᶜ? Q′ × Q′ ≈ U[ P′ ] σ)
+sim← σ Vσ Γ-S ⊢P ch red = sim←ᴬ σ Vσ Γ-S ⊢P ch red (<-wellFounded (sc red))
