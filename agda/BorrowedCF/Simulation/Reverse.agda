@@ -220,107 +220,6 @@ inv-U-ν (TP.ν B₁ B₂ P) σ refl = B₁ , B₂ , P , refl , refl
 -- The reverse-simulation statement.
 ------------------------------------------------------------------------
 
-------------------------------------------------------------------------
--- Send-argument decomposition.  From a well-typed  K send ·¹ (e₁ ⊗ e₂)  the
--- channel component e₂ is typed at a session type ≃ ⟨ msg ‼ Tᵐ ⟩.  This is the
--- reverse-direction analogue of send-handle-≃msg that does NOT presuppose the
--- channel component is already a variable.
-------------------------------------------------------------------------
-pair-decomp : ∀ {N} {Γ : Ctx N} {β : Struct N} {e₁ e₂ : Tm N} {T ϵ}
-  → Γ ; β ⊢ (e₁ ⊗ e₂) ∶ T ∣ ϵ
-  → Σ[ Te ∈ 𝕋 ] Σ[ d ∈ Dir ] Σ[ Tx ∈ 𝕋 ] Σ[ α₂ ∈ Struct N ] Σ[ ϵ₂ ∈ Eff ]
-      (T ≃ (Te ⊗⟨ d ⟩ Tx)) × (Γ ; α₂ ⊢ e₂ ∶ Tx ∣ ϵ₂)
-pair-decomp (T-Pair p/s {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂) =
-  _ , biasedDir p/s , _ , γ₂ , _ , ≃-refl , ⊢e₂
-pair-decomp (T-Conv T≃ _ d) =
-  let Te , dd , Tx , α₂ , ϵ₂ , Teq , ⊢e₂ = pair-decomp d
-  in Te , dd , Tx , α₂ , ϵ₂ , ≃-trans (≃-sym T≃) Teq , ⊢e₂
-pair-decomp (T-Weaken _ d) = pair-decomp d
-
-sad-core : ∀ {N} {Γ : Ctx N} {α β : Struct N} {e₁ e₂ : Tm N} {Targ a Uu ϵ₁ ϵ₂}
-  → Γ ; α ⊢ K `send ∶ Targ ⟨ a ⟩→ Uu ∣ ϵ₁
-  → Γ ; β ⊢ (e₁ ⊗ e₂) ∶ Targ ∣ ϵ₂
-  → Σ[ Tᵐ ∈ 𝕋 ] Σ[ α₂ ∈ Struct N ] Σ[ Tx ∈ 𝕋 ] Σ[ ϵ₂′ ∈ Eff ]
-      (⟨ msg ‼ Tᵐ ⟩ ≃ Tx) × (Γ ; α₂ ⊢ e₂ ∶ Tx ∣ ϵ₂′)
-sad-core ⊢fn ⊢arg with fn-send-dom ⊢fn | pair-decomp ⊢arg
-... | Tᵐ , domeq | Te , d , Tx , α₂ , ϵ₂ , T≃ , ⊢e₂ with ≃-trans domeq T≃
-...   | (_ ⊗ eq) = Tᵐ , α₂ , Tx , ϵ₂ , eq , ⊢e₂
-
-send-arg-decomp : ∀ {N} {Γ : Ctx N} {β : Struct N} {e₁ e₂ : Tm N} {U ϵ}
-  → Γ ; β ⊢ K `send ·¹ (e₁ ⊗ e₂) ∶ U ∣ ϵ
-  → Σ[ Tᵐ ∈ 𝕋 ] Σ[ α₂ ∈ Struct N ] Σ[ Tx ∈ 𝕋 ] Σ[ ϵ₂′ ∈ Eff ]
-      (⟨ msg ‼ Tᵐ ⟩ ≃ Tx) × (Γ ; α₂ ⊢ e₂ ∶ Tx ∣ ϵ₂′)
-send-arg-decomp (T-AppUnr _ _ ⊢fn ⊢arg) = sad-core ⊢fn ⊢arg
-send-arg-decomp (T-AppLin _ _ ⊢fn ⊢arg) = sad-core ⊢fn ⊢arg
-send-arg-decomp (T-Conv _ _ d) = send-arg-decomp d
-send-arg-decomp (T-Weaken _ d) = send-arg-decomp d
-
--- The send argument is never a BARE channel variable: a channel type ⟨ s ⟩ can
--- never be ≃ the send domain Tᵐ ⊗¹ ⟨ msg ‼ Tᵐ ⟩ (a ⊗-type).
-sv-core : ∀ {N} {Γ : Ctx N} {α β : Struct N} {x : 𝔽 N} {Targ a Uu ϵ₁ ϵ₂} {s : 𝕊 0}
-  → Γ ; α ⊢ K `send ∶ Targ ⟨ a ⟩→ Uu ∣ ϵ₁
-  → Γ ; β ⊢ (` x) ∶ Targ ∣ ϵ₂ → Γ x ≡ ⟨ s ⟩ → ⊥
-sv-core ⊢fn ⊢arg eq with fn-send-dom ⊢fn
-... | Tᵐ , domeq =
-  ⟨⟩≄⊗ (≃-trans (subst (_≃ _) eq (arg-type ⊢arg)) (≃-sym domeq))
-
-send-var-⊥ : ∀ {N} {Γ : Ctx N} {β : Struct N} {x : 𝔽 N} {U ϵ} {s : 𝕊 0}
-  → Γ ; β ⊢ K `send ·¹ (` x) ∶ U ∣ ϵ → Γ x ≡ ⟨ s ⟩ → ⊥
-send-var-⊥ (T-AppUnr _ _ ⊢fn ⊢arg) eq = sv-core ⊢fn ⊢arg eq
-send-var-⊥ (T-AppLin _ _ ⊢fn ⊢arg) eq = sv-core ⊢fn ⊢arg eq
-send-var-⊥ (T-Conv _ _ d) eq = send-var-⊥ d eq
-send-var-⊥ (T-Weaken _ d) eq = send-var-⊥ d eq
-
--- A well-typed  K send  has an impure (𝕀) latent arrow; hence  K send ·¹ arg  is
--- impure, so the frame stack above it is LeftPat (frames-𝕀).
-𝕀≤⇒≡ : ∀ {ϵ} → 𝕀 ≤ϵ ϵ → ϵ ≡ 𝕀
-𝕀≤⇒≡ 𝕀≤𝕀 = refl
-
-send-fn-eff-𝕀 : ∀ {N} {Γ : Ctx N} {α : Struct N} {T U a ϵ}
-  → Γ ; α ⊢ K `send ∶ T ⟨ a ⟩→ U ∣ ϵ → Arr.eff a ≡ 𝕀
-send-fn-eff-𝕀 (T-Const (`send _)) = refl
-send-fn-eff-𝕀 (T-Conv (_ `→ _) _ d) = send-fn-eff-𝕀 d
-send-fn-eff-𝕀 (T-Weaken _ d) = send-fn-eff-𝕀 d
-
-send-app-𝕀 : ∀ {N} {Γ : Ctx N} {γ : Struct N} {arg : Tm N} {U ϵ}
-  → Γ ; γ ⊢ K `send ·¹ arg ∶ U ∣ ϵ → ϵ ≡ 𝕀
-send-app-𝕀 (T-AppUnr _ ≤ₐ ⊢fn _) = 𝕀≤⇒≡ (subst (_≤ϵ _) (send-fn-eff-𝕀 ⊢fn) ≤ₐ)
-send-app-𝕀 (T-AppLin _ ≤ₐ ⊢fn _) = 𝕀≤⇒≡ (subst (_≤ϵ _) (send-fn-eff-𝕀 ⊢fn) ≤ₐ)
-send-app-𝕀 (T-Conv _ ≤ d) = 𝕀≤⇒≡ (subst (_≤ϵ _) (send-app-𝕀 d) ≤)
-send-app-𝕀 (T-Weaken _ d) = send-app-𝕀 d
-
--- N1: the send channel argument (typed at a msg session type) is non-Unr.
-send-chan-nonUnr : ∀ {N} {Γ : Ctx N} {α : Struct N} {x : 𝔽 N} {Tx ϵ} {Tᵐ : 𝕋}
-  → Γ ; α ⊢ ` x ∶ Tx ∣ ϵ → ⟨ msg ‼ Tᵐ ⟩ ≃ Tx → ¬ Unr (Γ x)
-send-chan-nonUnr ⊢x msg≃ u with unr-≃ (≃-sym (≃-trans msg≃ (proj₁ (inv-` ⊢x)))) u
-... | ⟨ () ⟩
-
-invApp-arg : ∀ {N} {Γ : Ctx N} {α β : Struct N} {e₁ e₂ a T U ϵ}
-  → InvApp Γ α β e₁ e₂ a T U ϵ → ∃[ ϵ' ] Γ ; β ⊢ e₂ ∶ T ∣ ϵ'
-invApp-arg (T-AppUnr  _ _ y) = _ , y
-invApp-arg (T-AppLin  _ _ y) = _ , y
-invApp-arg (T-AppLeft _ _ y) = _ , y
-invApp-arg (T-AppRight _ _ y) = _ , y
-
-send-arg-count-chain : ∀ {N} {Γ : Ctx N} {γ : Struct N} {aS : Tm N} {x : 𝔽 N}
-  {a} {α β : Struct N} {T ϵ}
-  → ¬ Unr (Γ x) → Γ ∶ join (Arr.dir a) β α ≼ γ → Γ ; β ⊢ (aS ⊗ (` x)) ∶ T ∣ ϵ → 1 Nat.≤ count x γ
-send-arg-count-chain {γ = γ} {aS = aS} {x = x} {a = a} {α = α} {β = β} ¬u join≼ ⊢arg
-  with p/s , α' , β' , _ , _ , _ , _ , join≼' , _ , _ , _ , _ , ⊢x ← inv-⊗ ⊢arg =
-  let x≼β' = proj₂ (inv-` ⊢x)
-      1≤β' = subst (Nat._≤ count x β') (count-self x) (≼⇒count≤ ¬u x≼β')
-      β'≤joinβ = subst (count x β' Nat.≤_) (sym (count-join-PS p/s x α' β')) (Nat.m≤n+m (count x β') (count x α'))
-      β'≤β = Nat.≤-trans β'≤joinβ (≼⇒count≤ ¬u join≼')
-      β≤joinγ = subst (count x β Nat.≤_) (sym (count-join-Dir (Arr.dir a) x β α)) (Nat.m≤m+n (count x β) (count x α))
-      β≤γ = Nat.≤-trans β≤joinγ (≼⇒count≤ ¬u join≼)
-  in Nat.≤-trans 1≤β' (Nat.≤-trans β'≤β β≤γ)
-
-send-arg-count : ∀ {N} {Γ : Ctx N} {γ : Struct N} {aS : Tm N} {x : 𝔽 N} {U ϵ}
-  → ¬ Unr (Γ x) → Γ ; γ ⊢ K `send ·¹ (aS ⊗ (` x)) ∶ U ∣ ϵ → 1 Nat.≤ count x γ
-send-arg-count ¬u ⊢redex
-  with aa , _ , _ , _ , join≼ , _ , _ , invapp ← inv-· ⊢redex =
-  send-arg-count-chain {a = aa} ¬u join≼ (proj₂ (invApp-arg invapp))
-
 -- WEAK reverse simulation, UP TO ≋ on the input, MULTI-STEP on the typed side
 -- (the exact mirror of the forward sim→ ⊎ codomain in Theorems.agda).  The
 -- input is taken up to untyped ≋ — `R ≋ U[ P ] σ` instead of a bare image —
@@ -371,32 +270,22 @@ simRes : (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
 -- RU-Struct case) and is left a noted hole.
 sim← σ Vσ Γ-S ⊢P ε red = sim←ᵍ σ Vσ Γ-S ⊢P refl red
 sim← σ Vσ Γ-S ⊢P (c ◅ cs) red =
-  {! reverse-U-≋ / confluence.  MACHINE-CONFIRMED (2026-07) the reduction-transport
-     route is NON-TERMINATING, matching RevCongStrong.∥-red-inv.  Wiring
-       sim← (c ◅ cs) red = ⟨ transport red across c via RevPhiNest.≋*-sim,
-                             recurse sim← cs (transported red) ⟩
-     typechecks EXCEPT termination: Agda flags
-       sim←ᵍ σ Vσ Γ-S ⊢P refl (≋*-sim (sym c₁ ◅◅ ≡→≋ eq) inner .proj₂.proj₁)
-     i.e. sim←ᵍ's RU-Struct case bounces through sim←, re-entering sim←ᵍ with the
-     TRANSPORTED reduction, which is NOT structurally smaller than `inner`: the
-     ∥-comm fallback of ≋*-sim wraps a left-reduction in a fresh RU-Struct (─→ₚ has
-     no right-∥ rule → the generator cannot be genuinely replayed; ∥-red-inv), so
-     ∣transported∣ can EXCEED ∣inner∣.  No well-founded measure on reduction size
-     survives, and the chain length is not preserved across the bounce.  The
-     ≋-harmony engine (RevPhiNest.≋*-sim) is sound and hole-free, but wiring it here
-     provably loops.
-
-     A TERMINATING closure needs the φ-DECOMPOSITION (NOT reduction transport):
-     recognise every ≋-generator that maps images to images (∥-comm/assoc/unit,
-     ν-ext/swap/comm — via inv-U-∥/inv-U-ν + U[_]'s ∥/ν homomorphism, keeping R and
-     `red` FIXED, varying only the ≋-related SOURCE P′) so the ∥-comm loop never
-     arises; the ONLY image-escaping image-adjacent generator is νφ-comm (U-not-φ
-     rules out φ-comm/φ-ext as image-adjacent), handled by pushing φ inside ν with a
-     φ-head-count measure.  That νφ-comm sub-case needs `─→ₚ` renaming-stability
-     (red-⋯ₚ, absent from the codebase) to replay the inner reduction under the
-     assocSwapᵣ 1 2 of νφ-comm.  This is a research-scale ≋-confluence/normalisation
-     development, not a single-module fix; RevUCong already machine-proves the strict
-     form is FALSE. !}
+  {! sim← non-ε (2026-07 STATE, post Com/Choice/Close/Acq/Discard closes).
+     Input links are now ≋-chains OR a-discard admin steps (RevAdmin gained
+     a-discard; ─→ᵃ is no longer uninhabited).  MACHINE-CONFIRMED (RevPhiNest
+     header): the reduction-transport route (≋*-sim + recurse) is
+     non-terminating (∥-comm wraps grow the reduction; ∥-red-inv).  A
+     terminating closure = the φ-decomposition ENGINE: process the chain from
+     the image end; ∥-comm/assoc/unit invert STRICTLY onto a rearranged source
+     (inv-U-∥ + U[_]-homomorphism, chain shortens); ν-swap/ν-comm/ν-ext invert
+     strictly only on φ-FREE telescopes — with φs present the image escapes up
+     to φ-permutation (U-≋'s NuSwap-scale machinery gives the forward bridges),
+     and νφ-comm′ escapes outright (RevUCong.U-≋-escapes); the escape class is
+     closed under φ-comm/φ-ext/∥-embedding, so the engine needs a φ-scattered
+     image characterization (≋-normalization) with a φ-head-count measure, plus
+     red-⋯ₚ (RedRename, PROVEN) to replay under assocSwapᵣ, plus a-discard link
+     transport (discard-step confluence).  Research-scale; all leaf ingredients
+     exist, the normalization development does not. !}
 
 ------------------------------------------------------------------------
 -- RU-Exp : R = ⟪ e₁ ⟫ steps by an expression reduction e₁ ⋯→ e₂.
@@ -724,20 +613,25 @@ simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₁ s₁) (S
   , Sum.map (cong UP.ν) UR.RU-Res cl₀
   , subst (UP.ν Q₀′ ≈_) (sym (U-ν-φfree-eq B₁ B₂ P₀′ σ s₁ s₂)) (≈-ν-cong c)
 simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq (Sum.inj₂ _) _ =
-  {! RU-Res phi-bearing (syncs B₁ >= 1).  REVISED FINDING: the ≈ codomain (RevAdmin
-     ─→ᵃ / ─→ᵃ⇒≈) is in place, but the admin-ABSORPTION the change was meant to enable
-     has NOTHING to absorb here.  X ≡ (φ-telescope of the PRISTINE image
-     U[ν B₁ B₂ P₀]σ), whose sync-cell flags are ϕ[b] ∈ {acq(b=0), drop(b≥1)} — NEVER
-     `done`.  So on this X: RU-Cleanup is VACUOUS (needs a `done` cell); RU-Drop
-     consumes a REAL drop redex (⇒ a typed R-Drop, observable, not admin); RU-Sync
-     DESCENDS to a genuine channel/drop operation inside U[P₀].  I.e. `sub` is
-     OBSERVABLE (typed-corresponding), not administrative — there is no `X ─→ᵃ X′` to
-     feed ─→ᵃ⇒≈.  Closing this needs the REVERSE φ-nest reflection engine (peel each
-     φ, reflect the inner op via sim←ᵍ at the deeper leaf, re-wrap; it bottoms out at
-     the 8 deferred channel holes), NOT admin absorption.  Pure-admin ─→ᵃ moves
-     (RU-Cleanup on `done`, the acq→done half of R-Acq) arise only as intermediate
-     CODOMAIN states of a forward step, never as a sim← INPUT (pristine image). !}
+  {! RU-Res φ-bearing (syncs B₁ ≥ 1) — 2026-07 STATE.  A struct-free step on the
+     pristine telescope φ f X₁ is (i) RU-Sync descent, bottoming at the leaf
+     U[P₀] (leafσ σ B₁ B₂) (AcqH1.Uν-flat/Bφ), (ii) RU-Struct (needs the sc-measure
+     WF refactor of the sim←/sim←ᵍ/simRes mutual block: the commuted bounce
+     RU-Struct (ν-cong (φ-cong^k c₁)) (RU-Res (Sync^k inner)) rebuilds the
+     reduction, so plain structural descent fails), or (iii) RU-Drop at the
+     INNERMOST cell.  (iii) reflects to a typed drop of the ret marker = LAST
+     index of the block left of that cell; typed R-Drop fires only on handle 0F
+     (width-1 head block; ret-is-last forces width 1 for well-typed instances),
+     and `drop is PURE, so the impure front-forcing (com-xS-min) that closed
+     Close/Com/Choice is unavailable — a width-≥2 block with the ret at interior
+     position is BindCtx-constructible (machine: DropInteriorProbe.agda, mirror
+     of BC2Probe) and the earlier borrow can sit ;-before the active drop inside
+     an evaluated value.  Closing (iii) in general needs the SAME calculus
+     generalization the splits received (R-Drop at interior block position q) —
+     a typing/calculus-design change.  Width-1 instances (b₁=0, flag drop→acq =
+     RU-Drop's flip) are closable once (ii) is available. !}
 simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢ₚP X X′ sub bodyeq _ (Sum.inj₂ _) =
-  {! RU-Res phi-bearing (syncs B₂ >= 1): see syncs B₁ >= 1 case — same finding: a
-     pristine φ-telescope has no fireable pure-admin move, so `sub` is observable and
-     needs the reverse φ-nest reflection engine, not ─→ᵃ absorption. !}
+  {! RU-Res φ-bearing (syncs B₂ ≥ 1): same finding as the syncs B₁ ≥ 1 clause —
+     Sync-descent + Struct-bounce (sc-measure WF refactor) + innermost RU-Drop,
+     whose interior-position instances need the R-Drop q-generalization
+     (DropInteriorProbe.agda). !}
