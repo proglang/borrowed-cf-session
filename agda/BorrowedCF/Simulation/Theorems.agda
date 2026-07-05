@@ -17,7 +17,7 @@ open import BorrowedCF.Simulation.Base
 open import BorrowedCF.Simulation.Frames using (⋯→-⋯ₛ; frame-plug*; frame-plug₁; frame*-⋯; ++ₛ-VSub; weaken-VSub)
 open import BorrowedCF.Simulation.Congruence using (U-≋)
 open import BorrowedCF.Simulation.Theorems.Choice using (U-choice)
-open import BorrowedCF.Simulation.Theorems.Drop using (U-drop)
+open import BorrowedCF.Simulation.Theorems.DropQ using (U-dropQ)
 open import BorrowedCF.Simulation.Theorems.Com using (U-com)
 open import BorrowedCF.Simulation.Theorems.Acq using (U-acq)
 open import BorrowedCF.Simulation.Theorems.Splits using (U-lsplit; U-rsplit)
@@ -453,8 +453,8 @@ sim→ σ Vσ Γ-S ⊢P (TR.R-RSplit {E = E}) =
 -- cannot be imported.  BLOCKED: needs that subsystem PORTED to the new defs
 -- (out of this module's edit scope) — the typing-confinement (acq-confine /
 -- HandleCount) plus the leaf transpose.
-sim→ σ Vσ Γ-S ⊢P (TR.R-Drop {b₁} {B₁} {B₂} {P} {E}) =
-  U-drop σ Vσ Γ-S {E = E} ⊢P
+sim→ σ Vσ Γ-S ⊢P (TR.R-Drop {B₁ = B₁} {B₂ = B₂} {B = B} {b₁ = b₁} {P = P} {E = E}) =
+  U-dropQ σ Vσ Γ-S B₁ b₁ B₂ B {E = E} {P = P} ⊢P
 
 -- R-Acq.  Goal (?6):
 --   U[ ν (zero ∷ suc b₁ ∷ B₁) B₂ (⟪ E[ acq·(`0F) ] ⟫ ∥ P) ] σ

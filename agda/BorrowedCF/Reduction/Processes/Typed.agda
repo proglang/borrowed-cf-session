@@ -66,6 +66,15 @@ private
   reassoc-rwk₂ = solve 6 (λ s k b B C n →
     s :+ k :+ (con 1 :+ (con 1 :+ b :+ B :+ C :+ n)) := s :+ ((k :+ con 1) :+ (con 1 :+ b :+ B)) :+ C :+ n) refl
 
+  -- drop at interior block-list position |B₁|: one binder (the block-front
+  -- handle) is inserted at offset sum B₁.
+  reassoc-d₁ : ∀ s b B C n → s + (b + B) + C + n ≡ s + (b + B + C + n)
+  reassoc-d₁ = solve 5 (λ s b B C n →
+    s :+ (b :+ B) :+ C :+ n := s :+ (b :+ B :+ C :+ n)) refl
+  reassoc-d₂ : ∀ s b B C n → s + suc (b + B + C + n) ≡ s + (suc b + B) + C + n
+  reassoc-d₂ = solve 5 (λ s b B C n →
+    s :+ (con 1 :+ (b :+ B :+ C :+ n)) := s :+ ((con 1 :+ b) :+ B) :+ C :+ n) refl
+
 module SplitRenamings (B₁ B₂ B′ : BindGroup) where
   inj : 𝔽 (sum (B ++ B₂)) → 𝔽 (sum (B₁ ++ B ++ B₂) + sum B′ + n)
   inj {B} {n} z = Fin.cast (sym (sum-++ B₁ (B ++ B₂))) (sum B₁ ↑ʳ z) ↑ˡ sum B′ ↑ˡ n
@@ -89,6 +98,14 @@ module SplitRenamings (B₁ B₂ B′ : BindGroup) where
       eq₁ rewrite sum-++ B₁ ((q + suc b) ∷ B₂) = reassoc-rk₁ (sum B₁) q b (sum B₂) (sum B′) n
       eq₂ : sum B₁ + q + suc (suc b + sum B₂ + sum B′ + n) ≡ sum (B₁ ++ (q + 1) ∷ suc b ∷ B₂) + sum B′ + n
       eq₂ rewrite sum-++ B₁ ((q + 1) ∷ suc b ∷ B₂) = reassoc-rwk₂ (sum B₁) q b (sum B₂) (sum B′) n
+
+  dwk : sum (B₁ ++ b ∷ B₂) + sum B′ + n →ᵣ sum (B₁ ++ suc b ∷ B₂) + sum B′ + n
+  dwk {b} {n} = Fin.cast eq₂ ∘ ins (sum B₁) {b + sum B₂ + sum B′ + n} ∘ Fin.cast eq₁
+    where
+      eq₁ : sum (B₁ ++ b ∷ B₂) + sum B′ + n ≡ sum B₁ + (b + sum B₂ + sum B′ + n)
+      eq₁ rewrite sum-++ B₁ (b ∷ B₂) = reassoc-d₁ (sum B₁) b (sum B₂) (sum B′) n
+      eq₂ : sum B₁ + suc (b + sum B₂ + sum B′ + n) ≡ sum (B₁ ++ suc b ∷ B₂) + sum B′ + n
+      eq₂ rewrite sum-++ B₁ (suc b ∷ B₂) = reassoc-d₂ (sum B₁) b (sum B₂) (sum B′) n
 
 infix 4 _─→ₚ_
 
@@ -141,10 +158,11 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
     ν (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B (⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))) ⊗ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)) ]* ⟫ ∥ (P ⋯ₚ 𝐒.rwk))
 
   R-Drop : ∀ {E} →
-    ν (suc b₁ ∷ B₁) B₂
-      (⟪ E ⋯ᶠ* weakenᵣ [ K `drop ·¹ (` 0F) ]* ⟫ ∥ (P ⋯ₚ weakenᵣ))
+    let module 𝐒 = SplitRenamings B₁ B₂ B in
+    ν (B₁ ++ suc b₁ ∷ B₂) B
+      (⟪ E ⋯ᶠ* 𝐒.dwk [ K `drop ·¹ (` 𝐒.atk {w = suc b₁} 0F) ]* ⟫ ∥ (P ⋯ₚ 𝐒.dwk))
       ─→ₚ
-    ν (b₁ ∷ B₁) B₂
+    ν (B₁ ++ b₁ ∷ B₂) B
       (⟪ E [ * ]* ⟫ ∥ P)
 
   R-Acq : ∀ {E} →
