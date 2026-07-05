@@ -16,6 +16,7 @@ open import BorrowedCF.Simulation.Theorems.DropQH
 open import BorrowedCF.Simulation.RevAdmin using (_≈_; ≈-φ-cong)
 open import BorrowedCF.Simulation.RevCongStrong using (sc; ∣_∣)
 import Data.Sum as Sum
+open import Data.List.Properties using (length-++)
 
 ------------------------------------------------------------------------
 -- subst transports.
@@ -71,7 +72,9 @@ Pfx-snoc []      b {a} Y = refl
 Pfx-snoc (d ∷ D) b {a} Y =
   cong (U.φ ϕ[ d ])
     ( Pfx-snoc D b {suc a} (subst U.Proc (sym (+-suc (L.length (D ++ b ∷ [])) a)) Y)
-    ■ cong (Pfx D) (cong (U.φ ϕ[ b ]) bodyeq) )
+    ■ cong (Pfx D)
+        ( cong (U.φ ϕ[ b ]) bodyeq
+        ■ sym (subst-φ (sym (+-suc (L.length D) a)) (subst U.Proc (snoc-eq (d ∷ D) b a) Y)) ) )
   where
     bodyeq : subst U.Proc (snoc-eq D b (suc a))
                (subst U.Proc (sym (+-suc (L.length (D ++ b ∷ [])) a)) Y)
@@ -135,7 +138,7 @@ VSub-leafσP σ Vσ Bx Bg i with Fin.splitAt (sum Bx + sum Bg) i
 len-++A : ∀ (D D' : BindGroup) (a : ℕ) →
           L.length (D ++ D') + a ≡ L.length D' + (L.length D + a)
 len-++A D D' a =
-    cong (_+ a) (LP.length-++ D {D'})
+    cong (_+ a) (length-++ D {D'})
   ■ Nat.+-assoc (L.length D) (L.length D') a
   ■ comm3 (L.length D) (L.length D') a
 
@@ -188,9 +191,10 @@ reasm D₁ l₁ D₂ l₂ {a} Y = pf
           ( Bφ-peel D₂ l₂ [] {L.length D₁ + a}
               (subst U.Proc (cong (syncs (D₂ ++ l₂ ∷ []) +_) pe₁) Y)
           ■ cong (Pfx D₂)
-              ( ss-U (cong (syncs (D₂ ++ l₂ ∷ []) +_) pe₁) (peel-eq D₂ l₂ [] {L.length D₁ + a}) {t = Y}
-              ■ cong (λ e → subst U.Proc e Y) (uipℕ _ _) ) )
+              (ss-U (cong (syncs (D₂ ++ l₂ ∷ []) +_) pe₁) (peel-eq D₂ l₂ [] {L.length D₁ + a}) {t = Y}) )
       ■ sym ( Pfx-++ D₁ D₂ {a} (subst U.Proc (reasm-eq D₁ l₁ D₂ l₂ a) Y)
-            ■ cong (Pfx D₁ ∘ Pfx D₂)
+            ■ cong (λ z → Pfx D₁ (Pfx D₂ z))
                 ( ss-U (reasm-eq D₁ l₁ D₂ l₂ a) (len-++A D₁ D₂ a) {t = Y}
-                ■ cong (λ e → subst U.Proc e Y) (uipℕ _ _) ) )
+                ■ cong (λ e → subst U.Proc e Y)
+                    (uipℕ (reasm-eq D₁ l₁ D₂ l₂ a ■ len-++A D₁ D₂ a)
+                          (cong (syncs (D₂ ++ l₂ ∷ []) +_) pe₁ ■ peel-eq D₂ l₂ [] {L.length D₁ + a})) ) )
