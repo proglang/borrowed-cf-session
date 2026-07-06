@@ -1,10 +1,10 @@
 \section{Expressions and processes}
 \label{sec:expr-proc}
 
-Figures in this section: syntax of expressions (\cref{fig:syntax-expressions}),
-run-time syntax (\cref{fig:syntax-runtime}), reduction (expressions:
-\cref{fig:expression-reduction}, processes: \cref{fig:process-reduction}),
-process congruence (\cref{fig:configuration-congruence}).
+% Figures in this section: syntax of expressions (\cref{fig:syntax-expressions}),
+% run-time syntax (\cref{fig:syntax-runtime}), reduction (expressions:
+% \cref{fig:expression-reduction}, processes: \cref{fig:process-reduction}),
+% process congruence (\cref{fig:configuration-congruence}).
 
 \begin{figure}
   \begin{align*}
@@ -38,6 +38,11 @@ process congruence (\cref{fig:configuration-congruence}).
   \caption{Syntax of expressions}
   \label{fig:syntax-expressions}
 \end{figure}
+
+Figure \cref{fig:syntax-expressions} contains the syntax of constants and expressions. 
+Constants $\C$ include the unit value and functional constants for channel creation, thread spawning, close, wait, send, receive, local split, remote split, drop, acquire, selection, and branching. 
+
+Expressions $\E$ contain constants, variables, lambda abstraction and application, sequencing, pair introduction and pair elimination, sum injection and case analysis, and recursive terms. 
 
 \begin{figure}[t!]
   \begin{align*}
@@ -90,18 +95,15 @@ process congruence (\cref{fig:configuration-congruence}).
       \grmor \PNew \BindGroup\BindGroup \CC
       \tag{Process contexts}
   \end{align*}
-  The operators on binders and binder groups are
-  associative. Sequential composition $\BSeq{}{}$ comes with unit
-  $\BEmp$. Moreover, $\BSeq{}{}$ and $\BPar{}{}$
-  associate with one another as follows:
-  we define $\BSeq{\Bind}{(\BPar{\BindGroup}{\BindGroup'})}$ as
-  $\BPar{(\BSeq\Bind\BindGroup)}{\BindGroup'}$ inductively with base
-  case $\BSeq{\Bind}{(\BPar{\Bind'}{\BindGroup})} =
-  \BPar{(\BSeq\Bind\Bind')}{\BindGroup}$ with the same convention when
-  sequencing from the right side.
   \caption{Run-time syntax}
   \label{fig:syntax-runtime}
 \end{figure}
+
+Figure \cref{fig:syntax-runtime} contains the run time syntax that evaluates expressions inside processes. Values $\U,\V$ are a subset of expressions. They are the forms where expression reduction stops. Evaluation contexts $\EC$ define where expression reduction may take the next step. 
+
+To define processes, we first define channel binders $\Bind$. A binder is one channel name, the unit binder, or sequential binder composition. Binder groups $\BindGroup$ then combine binders in parallel and describe how channel names are grouped in a process configuration. Processes $\Proc$ inlcude a single expression, parallel composition of the former, and channel introduction with two binder groups. Finally, we can lift the evaluation contexts to processes by defining thread contexts $\FC$ and process contexts $\CC$. 
+
+The binary operators on binders and binder groups are associative. In addition $\BSeq{}{}$ and $\BPar{}{}$ associate with one another: $\BSeq{\Bind}{(\BPar{\BindGroup}{\BindGroup'})} = \BPar{(\BSeq\Bind\BindGroup)}{\BindGroup'}$, which can be defined inductively with the base case $\BSeq{\Bind}{(\BPar{\Bind'}{\BindGroup})} = \BPar{(\BSeq\Bind\Bind')}{\BindGroup}$. The same normalization strategy applies when sequencing from the right.
 
 % EXP EVALUATION
 
@@ -129,9 +131,11 @@ process congruence (\cref{fig:configuration-congruence}).
     \RuleProcCongResComm \and
     \RuleProcCongExtend
   \end{mathpar}
+  \mw{omittable: this is standard}
   \caption{Process congruence}
   \label{fig:configuration-congruence}
 \end{figure}
+
 
 \begin{figure}[t!]
   \begin{mathpar}
