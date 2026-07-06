@@ -57,7 +57,7 @@ type TreeChannel = oplus{
 send : forallalphasigma. alpha -> !alpha;sigma -> sigma
 recv : forallalphasigma. ?alpha;sigma -> alphaoxsigma
 select ellj : +{elli: Si} -> Sj
-branch : &{elli: Si} -> [elli: Si]
+branch : &{elli: Si} -> <elli: Si>
 \end{lstlisting}
     \caption{CFST API}\label{lst:cfst-api}
   \end{subfigure}
@@ -66,7 +66,7 @@ branch : &{elli: Si} -> [elli: Si]
 send : forallalpha. alpha -> !alpha -> Unit
 recv : forallalpha. ?alpha -> alpha
 select ellj : +{elli: Si} -> Sj
-branch : &{elli: Si} -> [elli: Si]
+branch : &{elli: Si} -> <elli: Si>
 \end{lstlisting}
     \caption{\thecalculus API}\label{lst:bcfst-api}
   \end{subfigure}

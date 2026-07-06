@@ -4,7 +4,7 @@
 \def\RuleCmdPrefix{RuleAlg}
 
 % A-Const
-\DefRule [(\not\exists k.~\C \in \{\CSplit,\CSSplit,\CSelect k,\CBranch\})] {Const} {
+\DefRule [(\forall k.~\C \notin \{\CSplit,\CSSplit,\CSelect k,\CBranch\})] {Const} {
   \CtxEmpty \SubCtx \Ctx \\
   \HasCType \C \T
 }{
@@ -63,9 +63,9 @@
 
 % A-Var
 \DefRule {Var} {
-  \CtxVar \EVar \Ctx(\EVar) \SubCtx \Ctx
+  \CtxVar \EVar \T \SubCtx \Ctx
 } {
-  \InferType \EVar {\Ctx(\EVar)} \EffPure [\CSEmpty]
+  \InferType \EVar {\T} \EffPure [\CSEmpty]
 }
 
 % A-App

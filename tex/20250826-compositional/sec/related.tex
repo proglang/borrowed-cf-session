@@ -5,12 +5,29 @@
 \subsection{Session Types}
 \label{sec:session-types}
 
-CFST \cite{DBLP:conf/icfp/ThiemannV16,DBLP:journals/iandc/AlmeidaMTV22}
+Context-free session types (CFSTs) have been introduced by
+\citet{DBLP:conf/icfp/ThiemannV16} and further developed by
+\citet{DBLP:journals/iandc/AlmeidaMTV22} and
+\citet{DBLP:journals/toplas/Padovani19}. CFSTs liberate traditional 
+session types from their tail-bias by replacing the prefix type
+operators for the session operations by symmetric composition. This
+move complicates the metatheory as the syntax of types is now
+quotiented over the monoid laws and distributivity of composition over
+choice. This complication makes type equivalence a difficult problem
+\cite{DBLP:conf/tacas/AlmeidaMV20} and subtyping undecidable
+\cite{DBLP:journals/toplas/Padovani19,DBLP:journals/tcs/SilvaMV26}.
 
-%% other notions like Pfenning's et al stuff?
+CFSTs are one starting point of our investigation. Symmetric
+composition makes them more amenable to splitting local borrows. Only
+remote borrows require extra synchronization machinery. Compared to
+the CFST work and the implemented system based on it
+\cite{almeida26:_frees_concur_progr_languag_with}, our calculus
+currently does not support polymorphism. We rely on the FreeST
+implementation as an external constraint solver for splitting
+constraints. 
 
 
-The most closely related work is by \citet{DBLP:journals/pacmpl/SaffrichS0V25}.
+The most closely related work is ``Borrowing from Session Types'' (BST) \cite{DBLP:journals/pacmpl/SaffrichS0V25}.
 They present a similar approach to borrowing, but for regular session types, rather than CFST.
 Our type system is heavily inspired from theirs, as it also relies on
 BI-contexts that enforce a run-time ordering on operations.
@@ -20,14 +37,46 @@ local and remote splits.
 However, our work differs in a number of significant aspects.
 We present a direct operational semantics for \thecalculus,
 whereas their system's semantics is defined by translation.
-We develope a new, efficient representation for borrows, which
+We develop a new, efficient representation for borrows, which
 distinguishes between local and remote borrows, whereas their
-borrows are all remote. Our translation from \thecalculus to a low
+borrows are all remote, i.e., synchronize always. Our translation from \thecalculus to a low
 level calculus serves as a blueprint for an implementation and we
 present a simulation result.
-All metatheoretical results are mechanized using the Agda proof assistant.
+All metatheoretical results are mechanized using the Agda proof
+assistant.
 
-Law and order \cite{DBLP:journals/pacmpl/Saffrich0024}
+Here are the novel aspects of \thecalculus in direct comparison to
+BST.
+\begin{itemize}
+\item Introduced binding groups to construct the direct semantic model.
+\item Introduced the concepts of mobility and boundedness
+  (\cref{fig:bounded-session-types}), which are key in identifying
+  remote borrows.
+\item Simplified the typing rules for let expressions and pair
+  eliminators: they draw their assumption only from a left context,
+  which simplifies the treatment of effects and the implementation; we
+  observed no impact on example programs.
+\item Developed algorithmic typing based on constraints: the BST work
+  provided a direct splitting algorithm for borrows based on
+  traditional, tail-recursive session types; we leave the development
+  of such a dedicated algorithm for future work.
+\item Our approach for constraint solving is new.
+\item Developed a new, low-level target calculus.
+\end{itemize}
+
+Law and order \cite{DBLP:journals/pacmpl/Saffrich0024} is a precursor
+of BST. It draws inspiration from work on
+non-commutative logic and ordered lambda calculus
+\cite{DBLP:conf/tlca/PolakowP99,DBLP:conf/popl/PetersenHCP03,DBLP:journals/entcs/PolakowP99,DBLP:conf/tldi/AhmedW03}
+and puts it to work in the context of typestate. 
+
+%% other notions like Pfenning's et al stuff?
+Manifest sharing \cite{DBLP:journals/pacmpl/BalzerP17},
+Manifest deadlock freedom \cite{DBLP:conf/esop/BalzerTP19},
+Nested session types \cite{DBLP:journals/toplas/DasDMP22}
+
+
+
 
 \subsection{Borrowing}
 \label{sec:borrowing}

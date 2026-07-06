@@ -3,25 +3,27 @@
 \subsection{Typing relation}
 
 For the algorithmic typing we consider an extended grammar of session types
-$\AS$ that includes unification variables $\TVar$. $\AT$ is the set of types
+$\AS$ that includes unification variables $\TVar$ drawn from
+$\TVAR$. We write $\AT$ for the set of types 
 $\T$ but referring to $\AS$ instead of $\S$.
 
-The algorithmic typing collects a set of constraints. Each constraint is an
-equality requirement between two types $\AT \CEq \ATU$. We use the metavariable
-$\CSet$ to denote a set of constraints.
+Algorithmic typing collects a set of equality constraints between
+types $\AT \CEq \ATU$. The metavariable 
+$\CSet$ denotes a set of constraints.
 
 \begin{definition}[Closing substitution]
-  In the context of a set of constraints $\CSet$ a substitution $\sigma$ that
-  replaces unification variables is a \emph{closing substitution} if every
-  unification variable in $\CSet$ is replaced by a concrete type such that all
+  A substitution $\sigma : \TVAR \to \AS$ is a \emph{closing
+    substitution} for  a set of constraints $\CSet$ if for every
+  unification variable $\TVar$ in $\CSet$, $\sigma (\TVar) \in \S$ and all
   constraints are respected.
 \end{definition}
 
-\Cref{fig:typing-algorithmic} presents the algorithmic typing relations. The
-synthesis relation $\InferType \E \AT \Eff$ takes as input the context $\Ctx$
+\Cref{fig:typing-algorithmic} presents the algorithmic typing
+judgments, which are based on bidirectional typing. The
+synthesis judgment $\InferType \E \AT \Eff$ takes as input the context $\Ctx$
 and expression $\E$. It computes the expression's type $\AT$, its effect
-$\Eff$, and a set of constraints $\CSet$. The checking relation $\CheckType \E
-\T \Eff$ takes as input the context $\Ctx$, expression $\E$, and type $\AT$. It
+$\Eff$, and a set of constraints $\CSet$. The checking judgment $\CheckType \E
+\AT \Eff$ takes as input the context $\Ctx$, expression $\E$, and type $\AT$. It
 outputs the expression's effect $\Eff$ as well as a set of constraints $\CSet$.
 
 \begin{definition}[Context join]
@@ -85,6 +87,8 @@ The operator $\cdot|_{\cdot}$ restricts a context to a set of variables.
   such that $\Fv(\AT) \subseteq \dom(\sigma)$ then $\HasType \Ctx \E {\AT{[\sigma]}}$.
 \end{lemma}
 
+\pt{what about the synthesis judgment?}
+
 \begin{lemma}[Completeness]
   If\/ $\HasType \Ctx \E \T$ then $\CheckType \E \AT \Eff$ for some type $\AT$, set of
   constraints $\CSet$, and closing substitution $\sigma$ such that $\T=\AT{[\sigma]}$.
@@ -95,7 +99,11 @@ The operator $\cdot|_{\cdot}$ restricts a context to a set of variables.
 
 Potential solutions can be checked by the equivalence algorithm for context
 free session types. However, the literature does not provide unification
-algorithms. Our approach is based on the fact that unification variables are
+algorithms. \pt{This must be made more precise! If I read the
+  wikipedia article correctly, then solutions can be enumerated by
+  one-sided paramodulation; so the problem should be semi-decidable,
+  at least.}
+Our approach is based on the fact that unification variables are
 only ever introduced for session types through split operations. Every session
 type---excluding $\SSkip$ and its compositions---must be used linearly. Thus,
 if a term with type $\TVar$ is not used the only viable solution for $\TVar$ is
@@ -177,4 +185,15 @@ If there are no solutions, the program is ill-typed.
   \label{fig:typing-normalisation}
 \end{figure}
 
-Type normalisation, denoted as $\NormaliseType {\T[in]} {\T[out]}$ in \Cref{fig:typing-normalisation}, is used in the elimination rules for algorithmic rules to expose the top-level type constructor \cite{DBLP:journals/iandc/AlmeidaMTV22}.
+Type normalisation, denoted as $\NormaliseType {\T[in]} {\T[out]}$ in
+\Cref{fig:typing-normalisation}, is used in the elimination rules for
+algorithmic rules to expose the top-level type constructor
+\cite{DBLP:journals/iandc/AlmeidaMTV22}.
+
+\pt{Where is $\TerminatedType {\T}$ defined? Why is normalization terminating?}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../popl2027.tex"
+%%% End:
