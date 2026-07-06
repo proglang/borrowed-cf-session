@@ -18,12 +18,12 @@ and the order in which those exchanges may occur.
 Session types
 \cite{DBLP:conf/concur/Honda93,HondaVK98,Gay_Vasconcelos_2025}
 address precisely this problem: they are a type discipline for
-structured bidirectional communication
+structured communication
 protocols. Their core features are typed, bidirectional message
 exchange and typed choices. They ensure protocol fidelity as well as type soundness,
-when embedded in concurrent lambda calculus. There is significant
-literature on session types, which is well appreciated in some recent 
-surveys and books
+when embedded in concurrent lambda calculus. There is a significant body of
+literature on session types, which is well appreciated in 
+survey articles and books
 \cite{DBLP:journals/csur/HuttelLVCCDMPRT16,
   gay17:_behav_types,
   DBLP:journals/ftpl/AnconaBB0CDGGGH16,
@@ -41,12 +41,12 @@ type. For example, here is the type
 of a server that receives a list of integers. The occurrence of
 the recursive \lstinline{alpha} is syntactically restricted to tail
 position because regular session types are built by composing prefixes
-as in \lstinline{?Int._}. Context-free session types
+using syntax constructors like \lstinline{?Int._}. Context-free session types
 \cite{DBLP:conf/icfp/ThiemannV16,DBLP:journals/iandc/AlmeidaMTV22} (CFSTs)
 have lifted this restriction by adopting a symmetric composition
 operator \lstinline{_;_} instead. This operator
 enables tree- and stack-shaped communication protocols, but it also
-makes type conversion non-trivial because continuations must be
+makes type conversion non-trivial because session types must be
 identified modulo the algebraic laws of sequential composition.
 
 Borrowing has received much attention recently due to its adoption in
@@ -60,7 +60,7 @@ typing discipline internalizing the linear update of the channel.
 Their calculus BGV is based on regular
 session types \cite{DBLP:conf/esop/LindleyM15} and its semantics is
 given by a translation to a calculus from the literature
-\cite{DBLP:journals/lmcs/KokkeD23}. The approach of the BGV paper has a number of
+\cite{DBLP:journals/lmcs/KokkeD23}. However, the approach of the BGV paper has a number of
 drawbacks. As the source calculus has no direct semantics, it is
 difficult to perform optimizations at the source level. Moreover, the
 translation is uniform in the sense that it does not distinguish
@@ -71,7 +71,8 @@ machinery needed for remote borrows.
 
 This work promotes the ideas of borrowing for regular session types
 \cite{DBLP:journals/pacmpl/SaffrichS0V25} to context-free session
-types with borrowing, a calculus we call \thecalculus. While CFSTs'
+types with borrowing, a calculus we call \thecalculus, both
+simplifying and improving on that work. While CFSTs'
 symmetric composition enables more expressive protocols, it does not
 liberate functional session type programming from resource-passing
 style. \Cref{sec:borr-from-cont} develops this point using tree
@@ -106,10 +107,9 @@ The core conceptual contributions of this paper are as follows.
   resource-passing and continuation-polymorphic programming style that
   plain CFSTs impose.
 \item We identify session-type splitting as the central operation
-  behind borrowing for CFSTs. Splitting must compute a borrowed prefix
-  and a residual suffix modulo the equational theory of CFSTs,
-  including sequential composition, choices, \lstinline{Skip}, and
-  recursive unfolding.
+  behind borrowing for CFSTs. Splitting must compute a residual suffix
+  from a session and a borrowed prefix type modulo the equational
+  theory of CFSTs.
 \item We distinguish local borrowing from remote borrowing. Local
   borrows remain in one process and can be ordered by evaluation and
   typing alone; remote borrows cross process boundaries and therefore
