@@ -8,7 +8,7 @@ system. In this section we first define an run-time calculus that
 is closer to an implementation of splitting and borrowing in a real-world
 porgramming language. On its own, the run-time calculus from this section
 provides fewer guarantees. We show that translating a well typed expression
-into the run-time calculus preserves any guarantees made by the
+into the run-time calculus preserves the guarantees made by the
 earlier type system for the source language.
 
 \begin{figure}
@@ -59,17 +59,18 @@ The syntax of constants, values, and expressions remains unchanged.
 $\TProc$. Besides the embedding of expressions and the parallel
 composition of processes,  $\TPNew[xy] \TProc$ introduces a channel
 with endpoints $x$ and $y$ scoped over $\TProc$
-and $\TPSync \Flag \TProc$ introduces a synchronization variable $z$
+and $\TPSync \Flag \TProc$ introduces an IVar $z$
 set to $\Flag$ scoped over $\TProc$. Channel introduction with dual
 binders is standard in session-type calculi
-\cite{gay.vasconcelos:session-types}; synchronization variables are
-new. We call channels introduced by the run-time calculus
-\emph{primitive channels} to distinguish them from translated source
+\cite{gay.vasconcelos:session-types}. IVars are a
+new component. They are asychronous write-once variables
+\cite{DBLP:journals/toplas/ArvindNP89}. We call channels introduced by
+the run-time calculus \emph{primitive channels} to distinguish them from translated source
 channels.
 
 Processes are subject to the usual congruence relation shown in
 \cref{fig:translated-congruence}. The additional congruences deal with
-flag introduction and they are analogous to the congruence rules for
+IVar introduction and they are analogous to the congruence rules for
 channels.
 
 % The type syntax does not differentiate between different kinds of function
@@ -85,19 +86,19 @@ channels.
 
 A translated expression/process represents a communication channel as
 a triple $\targettermcolor{c} = 
-\TEChan[\TEVar]\TEVary[\TEVarz]$ made up of an optional synchronization variable
-$\TEVar$, a primitive channel $\TEVary$ and a second optional synchronization
-variable $\TEVarz$. If $\TEVar$ is a synchronization, an $\EApp \CAcq c$ will have to
+\TEChan[\TEVar]\TEVary[\TEVarz]$ made up of an optional IVar
+$\TEVar$, a primitive channel $\TEVary$ and a second optional IVar
+$\TEVarz$. If $\TEVar$ is an IVar, an $\EApp \CAcq c$ will
+have to 
 be executed first before any communication can happen. Payloads are transferred
-via the data channel $\TEVary$. If $\TEVarz$ is an actual
-synchronization, then $\targettermcolor{c}$ will have to be dropped, not terminated.
+via the data channel $\TEVary$. If $\TEVarz$ is an IVar, then
+$\targettermcolor{c}$ will have to be dropped, not terminated. 
 
 The translation eliminates bind groups $\BindGroup$. The
-$\TBindNu$-binder follows the standard syntax more closely. 
-The new binder $\TBindSync$ binds asynchronous channels used to synchronize
-between two parts of a remote split. Synchronization must use asynchronous
-communication so that a $\CDrop$ does not block until the corresponding
-$\CAcq$.
+$\TBindNu$-binder follows the standard syntax. 
+The new binder $\TBindSync$ introduces a fresh IVar to synchronize
+between two parts of a remote split. IVars are asynchronous so that a
+$\CDrop$ does not block until the corresponding $\CAcq$.
 
 \begin{figure}
   \begin{mathpar}
@@ -122,8 +123,8 @@ $\CAcq$.
   \label{fig:unr-process-reduction}
 \end{figure}
 
-The reduction behaviour of translated expressions is the same as their
-untranslated counterpart (\cref{fig:expression-reduction}).
+The reduction behavior of translated expressions is the same as their
+source counterparts (\cref{fig:expression-reduction}).
 \Cref{fig:unr-process-reduction} defines the reduction relation for translated
 processes. It uses $\ChanPat\E$ as an abbreviation for channels
 $\TEChan [\E[1]] \E [\E[2]]$.
@@ -180,8 +181,8 @@ $\TEChan [\E[1]] \E [\E[2]]$.
   % \end{mathpar}
   \caption{Translation of
     processes ($\Proc \TransProc \TProc*$)
-    and bind groups ($\BindGroup \TransBind \TCC [\Sub]$) with $\BindFlag{}$
-    mapping bind groups $\BindGroup$ to synchronization flags $\Flag$.}
+    and bind groups ($\BindGroup \TransBind \TCC [\Sub]$). Function $\BindFlag{}$
+    maps bind groups $\BindGroup$ to synchronization flags $\Flag$.}
   \label{fig:translation}
 \end{figure}
 
