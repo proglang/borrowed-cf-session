@@ -2,13 +2,14 @@
 \section{Translation}
 \label{sec:translation}
 
-The previous sections defined a calculus based on a linear and ordered type
-system. In this section we first define an alternative calculus that closer to
-how splitting and borrowing of channels would be implemented in a real-world
-porgramming language. On its own, the target calculus from this section
+The calculus presented in \cref{sec:expr-proc,sec:types,sec:algorithmic-typing}
+is based on  a linear and ordered type
+system. In this section we first define an run-time calculus that
+is closer to an implementation of splitting and borrowing in a real-world
+porgramming language. On its own, the run-time calculus from this section
 provides fewer guarantees. We show that translating a well typed expression
-into the target calculus preserves any guarantees made by the much more
-expressive type system from before.
+into the run-time calculus preserves any guarantees made by the
+earlier type system for the source language.
 
 \begin{figure}
   \setlength{\abovedisplayskip}{0pt}%
@@ -54,7 +55,22 @@ expressive type system from before.
 \end{figure}
 
 The syntax of constants, values, and expressions remains unchanged.
-\Cref{fig:unr-syntax} gives a new definition of process configurations $\TProc$.
+\Cref{fig:unr-syntax} gives a new definition of process configurations
+$\TProc$. Besides the embedding of expressions and the parallel
+composition of processes,  $\TPNew[xy] \TProc$ introduces a channel
+with endpoints $x$ and $y$ scoped over $\TProc$
+and $\TPSync \Flag \TProc$ introduces a synchronization variable $z$
+set to $\Flag$ scoped over $\TProc$. Channel introduction with dual
+binders is standard in session-type calculi
+\cite{gay.vasconcelos:session-types}; synchronization variables are
+new. We call channels introduced by the run-time calculus
+\emph{primitive channels} to distinguish them from translated source
+channels.
+
+Processes are subject to the usual congruence relation shown in
+\cref{fig:translated-congruence}. The additional congruences deal with
+flag introduction and they are analogous to the congruence rules for
+channels.
 
 % The type syntax does not differentiate between different kinds of function
 % arrows. Product types are unordered. $\TBUnit$ and sum types are carried over
@@ -67,16 +83,17 @@ The syntax of constants, values, and expressions remains unchanged.
 %   \TBChan &= \TTProd{\TBChanF*}{\TTProd{\TBChanD}{\TBChanF*}}
 % \end{align*}
 
-A communication channel is a triple $\targettermcolor{c} =
-\TEChan[\TEVar]\TEVary[\TEVarz]$ made up of an optional synchronization channel
-$\TEVar$, a data channel $\TEVary$ and a second optional synchronization
-channel $\TEVarz$. If $\TEVar$ is a channel, an $\EApp \CAcq c$ will have to
+A translated expression/process represents a communication channel as
+a triple $\targettermcolor{c} = 
+\TEChan[\TEVar]\TEVary[\TEVarz]$ made up of an optional synchronization variable
+$\TEVar$, a primitive channel $\TEVary$ and a second optional synchronization
+variable $\TEVarz$. If $\TEVar$ is a synchronization, an $\EApp \CAcq c$ will have to
 be executed first before any communication can happen. Payloads are transferred
-via the data channel $\TEVary$. If $\TEVarz$ is an actual channel
-$\targettermcolor{c}$ will have to be dropped instead of terminated.
+via the data channel $\TEVary$. If $\TEVarz$ is an actual
+synchronization, then $\targettermcolor{c}$ will have to be dropped, not terminated.
 
-In the syntax of processes, bind groups $\BindGroup$ are eliminated by the
-translation. The $\TBindNu$-binder follows the standard syntax more closely.
+The translation eliminates bind groups $\BindGroup$. The
+$\TBindNu$-binder follows the standard syntax more closely. 
 The new binder $\TBindSync$ binds asynchronous channels used to synchronize
 between two parts of a remote split. Synchronization must use asynchronous
 communication so that a $\CDrop$ does not block until the corresponding
