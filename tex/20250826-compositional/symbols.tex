@@ -39,7 +39,7 @@
 \newcommand{\reqEff}[3]{\text{EffCompat} \, #1 \, #2 \, #3}
 
 % Grammars
-\newcommand{\grmeq}{\; \Coloneqq \;\;}
+\NewDocumentCommand\grmeq{s}{\; \Coloneqq \; \IfBooleanF{#1}{\;}}
 \newcommand{\grmor}{\;\mid\;}
 
 % Mobilities
