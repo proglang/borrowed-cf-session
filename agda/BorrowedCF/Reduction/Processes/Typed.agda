@@ -1,17 +1,17 @@
 module BorrowedCF.Reduction.Processes.Typed where
 
-open import Data.List.Relation.Unary.All using (All; []; _∷_)
+open import Data.List.Relation.Unary.All as All using (All; []; _∷_)
+import Data.List.Relation.Unary.All.Properties as All
+
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
-open import Data.Nat.Solver using (module +-*-Solver)
 open import Data.Vec.Functional as F using ()
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (_◅◅_) renaming (ε to refl)
 
-open +-*-Solver using (solve; _:=_; _:+_; con)
-
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms as Terms hiding (wk)
-open import BorrowedCF.Processes.Typed hiding (wkₚ)
+open import BorrowedCF.Processes.Typed
+open import BorrowedCF.Processes.Renamings
 open import BorrowedCF.Types
 open import BorrowedCF.Context as 𝐂
 open import BorrowedCF.Context.Pattern
@@ -26,74 +26,6 @@ open Fin.Patterns
 private variable
   b b₁ b₂ q : ℕ
 
-wkₚ : ∀ a c → a + c + n →ᵣ suc a + suc c + n
-wkₚ {n} a c =
-  Fin.cast (sym (+-assoc (suc a) (suc c) n))
-    ∘ (weakenᵣ ↑* suc a)
-    ∘ Fin.cast (cong suc (+-assoc a c n))
-    ∘ weakenᵣ
-
-ins : ∀ p {k} → p + k →ᵣ p + suc k
-ins p = weakenᵣ ↑* p
-
-private
-  reassoc-l₁ : ∀ s b B C n → s + (suc b + B) + C + n ≡ s + 1 + (b + B + C + n)
-  reassoc-l₁ = solve 5 (λ s b B C n →
-    s :+ (con 1 :+ b :+ B) :+ C :+ n := s :+ con 1 :+ (b :+ B :+ C :+ n)) refl
-  reassoc-l₂ : ∀ s b B C n → s + 1 + suc (b + B + C + n) ≡ s + (suc (suc b) + B) + C + n
-  reassoc-l₂ = solve 5 (λ s b B C n →
-    s :+ con 1 :+ (con 1 :+ (b :+ B :+ C :+ n)) := s :+ (con 1 :+ (con 1 :+ b) :+ B) :+ C :+ n) refl
-  reassoc-r₁ : ∀ s b B C n → s + (suc b + B) + C + n ≡ s + (suc b + B + C + n)
-  reassoc-r₁ = solve 5 (λ s b B C n →
-    s :+ (con 1 :+ b :+ B) :+ C :+ n := s :+ (con 1 :+ b :+ B :+ C :+ n)) refl
-  reassoc-r₂ : ∀ s b B C n → s + suc (suc b + B + C + n) ≡ s + (suc (suc b) + B) + C + n
-  reassoc-r₂ = solve 5 (λ s b B C n →
-    s :+ (con 1 :+ (con 1 :+ b :+ B :+ C :+ n)) := s :+ (con 1 :+ (con 1 :+ b) :+ B) :+ C :+ n) refl
-
-  -- k-generalized (interior split at block-position k): sum B₁ + k plays the
-  -- role of sum B₁ in the front-only versions above.
-  reassoc-lk₁ : ∀ s k b B C n → s + (k + suc b + B) + C + n ≡ s + k + 1 + (b + B + C + n)
-  reassoc-lk₁ = solve 6 (λ s k b B C n →
-    s :+ (k :+ (con 1 :+ b) :+ B) :+ C :+ n := s :+ k :+ con 1 :+ (b :+ B :+ C :+ n)) refl
-  reassoc-lk₂ : ∀ s k b B C n → s + k + 1 + suc (b + B + C + n) ≡ s + (k + suc (suc b) + B) + C + n
-  reassoc-lk₂ = solve 6 (λ s k b B C n →
-    s :+ k :+ con 1 :+ (con 1 :+ (b :+ B :+ C :+ n)) := s :+ (k :+ (con 1 :+ (con 1 :+ b)) :+ B) :+ C :+ n) refl
-  reassoc-rk₁ : ∀ s k b B C n → s + (k + suc b + B) + C + n ≡ s + k + (suc b + B + C + n)
-  reassoc-rk₁ = solve 6 (λ s k b B C n →
-    s :+ (k :+ (con 1 :+ b) :+ B) :+ C :+ n := s :+ k :+ (con 1 :+ b :+ B :+ C :+ n)) refl
-  reassoc-rk₂ : ∀ s k b B C n → s + k + suc (suc b + B + C + n) ≡ s + (k + suc (suc b) + B) + C + n
-  reassoc-rk₂ = solve 6 (λ s k b B C n →
-    s :+ k :+ (con 1 :+ (con 1 :+ b :+ B :+ C :+ n)) := s :+ (k :+ (con 1 :+ (con 1 :+ b)) :+ B) :+ C :+ n) refl
-  -- rsplit at interior position k: the input block k + suc b splits into the two
-  -- blocks (k + 1) ∷ suc b (a fresh sync boundary lands between them).
-  reassoc-rwk₂ : ∀ s k b B C n → s + k + suc (suc b + B + C + n) ≡ s + ((k + 1) + (suc b + B)) + C + n
-  reassoc-rwk₂ = solve 6 (λ s k b B C n →
-    s :+ k :+ (con 1 :+ (con 1 :+ b :+ B :+ C :+ n)) := s :+ ((k :+ con 1) :+ (con 1 :+ b :+ B)) :+ C :+ n) refl
-
-module SplitRenamings (B₁ B₂ B′ : BindGroup) where
-  inj : 𝔽 (sum (B ++ B₂)) → 𝔽 (sum (B₁ ++ B ++ B₂) + sum B′ + n)
-  inj {B} {n} z = Fin.cast (sym (sum-++ B₁ (B ++ B₂))) (sum B₁ ↑ʳ z) ↑ˡ sum B′ ↑ˡ n
-
-  -- position j of a single middle block of width w, as a full-scope variable.
-  atk : ∀ {w n} → 𝔽 w → 𝔽 (sum (B₁ ++ w ∷ B₂) + sum B′ + n)
-  atk {w} {n} j = inj {B = w ∷ []} {n} (j ↑ˡ sum B₂)
-
-  lwk : sum (B₁ ++ (q + suc b) ∷ B₂) + sum B′ + n →ᵣ sum (B₁ ++ (q + suc (suc b)) ∷ B₂) + sum B′ + n
-  lwk {q} {b} {n} = Fin.cast eq₂ ∘ ins (sum B₁ + q + 1) {b + sum B₂ + sum B′ + n} ∘ Fin.cast eq₁
-    where
-      eq₁ : sum (B₁ ++ (q + suc b) ∷ B₂) + sum B′ + n ≡ sum B₁ + q + 1 + (b + sum B₂ + sum B′ + n)
-      eq₁ rewrite sum-++ B₁ ((q + suc b) ∷ B₂) = reassoc-lk₁ (sum B₁) q b (sum B₂) (sum B′) n
-      eq₂ : sum B₁ + q + 1 + suc (b + sum B₂ + sum B′ + n) ≡ sum (B₁ ++ (q + suc (suc b)) ∷ B₂) + sum B′ + n
-      eq₂ rewrite sum-++ B₁ ((q + suc (suc b)) ∷ B₂) = reassoc-lk₂ (sum B₁) q b (sum B₂) (sum B′) n
-
-  rwk : sum (B₁ ++ (q + suc b) ∷ B₂) + sum B′ + n →ᵣ sum (B₁ ++ (q + 1) ∷ suc b ∷ B₂) + sum B′ + n
-  rwk {q} {b} {n} = Fin.cast eq₂ ∘ ins (sum B₁ + q) {suc b + sum B₂ + sum B′ + n} ∘ Fin.cast eq₁
-    where
-      eq₁ : sum (B₁ ++ (q + suc b) ∷ B₂) + sum B′ + n ≡ sum B₁ + q + (suc b + sum B₂ + sum B′ + n)
-      eq₁ rewrite sum-++ B₁ ((q + suc b) ∷ B₂) = reassoc-rk₁ (sum B₁) q b (sum B₂) (sum B′) n
-      eq₂ : sum B₁ + q + suc (suc b + sum B₂ + sum B′ + n) ≡ sum (B₁ ++ (q + 1) ∷ suc b ∷ B₂) + sum B′ + n
-      eq₂ rewrite sum-++ B₁ ((q + 1) ∷ suc b ∷ B₂) = reassoc-rwk₂ (sum B₁) q b (sum B₂) (sum B′) n
-
 infix 4 _─→ₚ_
 
 data _─→ₚ_ {n} : Proc n → Proc n → Set where
@@ -103,7 +35,7 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
     ⟪ E [ K (`new s) ·¹ * ]* ⟫
       ─→ₚ
     ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
-      ⟪ E ⋯ᶠ* weaken* _ [ (` 1F) ⊗ (` 0F) ]* ⟫
+      ⟪ E ⋯ᶠ* weaken* _ [ (` 0F) ⊗ (` 1F) ]* ⟫
 
   R-Fork : (E : Frame* n) (V : Value e) →
     ⟪ E [ K `fork ·¹ e ]* ⟫
@@ -119,7 +51,7 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
       ─→ₚ
     ν (b₁ ∷ B₁) (b₂ ∷ B₂) ((⟪ E₁ [ * ]* ⟫ ∥ ⟪ E₂ [ e ]* ⟫) ∥ P)
 
-  R-Choice : ∀ {E₁ E₂ i} →
+  R-Choice : ∀ E₁ E₂ i →
     let x = 0F in
     let y = wkʳ n (wkˡ (suc b₁ + sum B₁) 0F) in
     ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
@@ -133,13 +65,13 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
         ∥ P)
 
   R-LSplit : ∀ {E} →
-    let module 𝐒 = SplitRenamings B₁ B₂ B in
+    let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
     ν (B₁ ++ (q + suc b₁) ∷ B₂) B (⟪ E [ K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ ∥ P)
       ─→ₚ
     ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.atk (q ↑ʳ 0F)) ⊗ (` 𝐒.atk (q ↑ʳ 1F)) ]* ⟫ ∥ (P ⋯ₚ 𝐒.lwk))
 
   R-RSplit : ∀ {E} →
-    let module 𝐒 = SplitRenamings B₁ B₂ B in
+    let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
     ν (B₁ ++ (q + suc b₁) ∷ B₂) B (⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ ∥ P)
       ─→ₚ
     ν (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B (⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))) ⊗ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)) ]* ⟫ ∥ (P ⋯ₚ 𝐒.rwk))
@@ -199,8 +131,8 @@ preservationₚ {Γ = Γ} {γ} Γ-S p (R-New {s = s} E)
   = TP-Res N ⁇ (_ ∷ []) (_ ∷ [])
       {const ⟨ acq ; (s      ; end ⁇) ⟩}
       {const ⟨ acq ; (dual s ; end ‼) ⟩}
-      (cons-acq (last (cons (λ{ (() ; _) }) ≃-skipʳ (λ{ 0F → refl }) (nil {Γ = λ()} skip))))
-      (cons-acq (last (cons (λ{ (() ; _) }) ≃-skipʳ (λ{ 0F → refl }) (nil {Γ = λ()} skip))))
+      (cons-acq (last (cons _ _ (λ{ (() ; _) }) ≃-skipʳ (λ{ 0F → refl }) (nil {Γ = λ()} skip))))
+      (cons-acq (last (cons _ _ (λ{ (() ; _) }) ≃-skipʳ (λ{ 0F → refl }) (nil {Γ = λ()} skip))))
       (TP-Expr $ T-Conv eq ϵ≤ $ T-Weaken
         (begin  (𝒫 ⋯𝓅 𝐂.weaken* 2) [ (` 0F) ∥ (` 1F) ]𝓅
                   ≡⟨ {!!} ⟩ -- mediate between Kₛ (top) and Kᵣ (bottom)
@@ -243,9 +175,41 @@ preservationₚ {γ = γ} Γ-S p (R-Fork {e = e} E V)
       (TP-Par (TP-Expr (T-Conv eq ϵ≤ ⊢⟨ ⊢E [ T-Conv eq₂ ≤ₐ (T-Const `unit) ]*⟩))
               (TP-Expr (T-AppLin (refl , refl) 𝕀≤𝕀 (T-Conv (≃-sym eq₁) (𝕀-maximum _) ⊢e) (T-Conv `⊤ ℙ≤ϵ (T-Const `unit)))))
 preservationₚ Γ-S ⊢p (R-Com x) = {!!}
-preservationₚ Γ-S ⊢p R-Choice = {!!}
-preservationₚ Γ-S ⊢p R-LSplit = {!⊢p!}
-preservationₚ Γ-S ⊢p R-RSplit = {!!}
+preservationₚ Γ-S ⊢p (R-Choice E₁ E₂ i) = {!!}
+preservationₚ Γ-S ⊢p (R-LSplit {E = E}) = {!⊢p!}
+preservationₚ Γ-S p (R-RSplit {B₁ = B₁′}{B₂′}{B}{b₁ = b₁} {E = E})
+  with Γ₁ , Γ₂ , _ , pl , N , B₁ , B₂ , C₁ , C₂ , p′ ← inv-ν p
+  with α , β , ≤γ , ⟪Ersplit⟫ , q ← inv-∥ p′
+  with 𝒫 , γ′ , _ , _ , _ , _ , ≤γ′ , eq , ϵ≤ , ⊢E , ⊢rsplit·c ← ⊢[]*⁻¹ E _ (inv-⟪⟫ ⟪Ersplit⟫)
+  with inv-·-unr ⊢rsplit·c (λ x → constFnUnr′ (inv-K x .proj₂ .proj₁) (inv-K x .proj₂ .proj₂ .proj₂))
+... | a , γ-rsplit , γ-c , _ , ≤γ″ , ≤ₐ , refl , ⊢rsplit , ⊢c
+  with _ , eq₁ `→ eq₂ , []≤γ-rsplit , `rsplit {s₁} ¬S₁ s₂ ← inv-K ⊢rsplit
+  with eq-` , `c≤ ← inv-` ⊢c
+  = ?
+  {-
+  TP-Res N pl (⊢ᴮ-rsplit B₁′ B₁) B₂
+    (bindCtx-rsplit B₁′ B₂′
+      (λ y → Γ₁ (Fin.cast (sym (sum-++ B₁′ (suc b₁ ∷ B₂′))) (y ↑ˡ (suc b₁ + sum B₂′))))
+      s₁ s₂
+      (λ y → Γ₁ (Fin.cast (sym (sum-++ B₁′ (suc b₁ ∷ B₂′))) (sum B₁′ ↑ʳ (suc y ↑ˡ sum B₂′))))
+      (λ y → Γ₁ (Fin.cast (sym (sum-++ B₁′ (suc b₁ ∷ B₂′))) (sum B₁′ ↑ʳ suc b₁ ↑ʳ y)))
+      (≃-⟨⟩⁻¹ (≃-trans (≃-trans {!!} (≃-sym eq-`)) (≃-sym eq₁)))
+      {!!}
+      Γ₁≗
+      (λ y → {!!})
+      C₁)
+    C₂
+  $ TP-Par
+    (TP-Expr $ T-Conv eq {!!} $ T-Weaken {!!}
+      ⊢⟨ (⊢E ⊢⋯ᶠ* ⊢wkRSplit B₁′ B₂′ (sum B) {!Γ₁!} {!!} {!!} Γ₂ {!!} {!!} {!⊢fork·e!})
+         [ T-Conv eq₂ ℙ≤ϵ (T-Pair par par
+             (T-Var {!!} {!!})
+             (T-Var {!!} {!!})) ]*⟩)
+    (TP-Weaken {!!} (q ⊢⋯ₚ {!⊢wkRSplit B₁′ B₂′ _ !}))
+  where
+  Γ₁≗ : ∀ y → Γ₁ y ≡ _
+  Γ₁≗ y = ?
+  -}
 preservationₚ Γ-S p (R-Drop {E = E})
   with Γ₁ , Γ₂ , _ , pl , N , B₁ , B₂ , C₁ , C₂ , p′ ← inv-ν p
   with α , β , ≤γ , ⟪Edrop⟫ , q ← inv-∥ p′

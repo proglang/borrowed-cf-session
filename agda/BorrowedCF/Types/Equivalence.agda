@@ -30,6 +30,11 @@ data _≃𝕊_ {n} : Rel (𝕊 n) 0ℓ where
   ≃𝕊-assoc : (s₁ ; s₂) ; s₃ ≃𝕊 s₁ ; (s₂ ; s₃)
   ≃𝕊-distr : brn p s₁ s₂ ; s ≃𝕊 brn p (s₁ ; s) (s₂ ; s)
 
+infix 4 _⟨≃𝕊⟩_
+
+_⟨≃𝕊⟩_ : Rel (𝕊 n) _
+_⟨≃𝕊⟩_ = Sym.SymClosure _≃𝕊_
+
 data _≃𝕋_ : Rel 𝕋 0ℓ where
   `⊤ : `⊤ ≃𝕋 `⊤
   _⊗_ : T₁ ≃𝕋 T₂ → U₁ ≃𝕋 U₂ → T₁ ⊗⟨ d ⟩ U₁ ≃𝕋 T₂ ⊗⟨ d ⟩ U₂
@@ -93,6 +98,12 @@ module ≃-Reasoning {κ x} = SetoidReasoning (≃-setoid κ x)
 ≃-skipʳ : s ; skip ≃ s
 ≃-skipʳ = Eq*.return ≃𝕊-skipʳ
 
+≃-assoc-; : (s₁ ; s₂) ; s₃ ≃ s₁ ; (s₂ ; s₃)
+≃-assoc-; = Eq*.return ≃𝕊-assoc
+
+≃-⟨⟩⁻¹ : ⟨ s₁ ⟩ ≃ ⟨ s₂ ⟩ → s₁ ≃ s₂
+≃-⟨⟩⁻¹ ⟨ eq ⟩ = eq
+
 ≃-skips : Skips {n} Respects _≃_
 ≃-skips refl s = s
 ≃-skips (fwd x ◅ eq) s = ≃-skips eq (go x s) where
@@ -135,6 +146,12 @@ skips⇒skip≃ x = skips⇒skip≃′ x Nat.≤-refl
 skip≃⇒skips : skip ≃ s → Skips s
 skip≃⇒skips eq = ≃-skips eq skip
 
+≃-skipsˡ : Skips s → s ; s′ ≃ s′
+≃-skipsˡ x = ≃-trans (≃-; (≃-sym (skips⇒skip≃ x)) refl) ≃-skipˡ
+
+≃-skipsʳ : Skips s → s′ ; s ≃ s′
+≃-skipsʳ x = ≃-trans (≃-; refl (≃-sym (skips⇒skip≃ x))) ≃-skipʳ
+
 data Atom {n} : 𝕊 n → Set where
   `- : ∀ {x} → Atom (` x)
   end : Atom (end p)
@@ -143,7 +160,34 @@ data Atom {n} : 𝕊 n → Set where
   acq : Atom acq
   ``- : ∀ {α} → Atom (`` α)
 
+atom-≄′ˡ : ∀ {a} → Atom a → ¬ a ≃𝕊 s
+atom-≄′ˡ `-  ()
+atom-≄′ˡ end ()
+atom-≄′ˡ msg ()
+atom-≄′ˡ ret ()
+atom-≄′ˡ acq ()
+atom-≄′ˡ ``- ()
 
+atom-≃′-;ʳ-skips : {a₁ a₂ : 𝕊 n} → Atom a₁ → Atom a₂ → {s : 𝕊 n} → s ; a₁ ≃𝕊 a₂ → Skips s × a₁ ≡ a₂
+atom-≃′-;ʳ-skips A₁ A₂ ≃𝕊-skipˡ = skip , refl
+
+atom-;ʳ-⁻¹-′ : {a₁ a₂ : 𝕊 n} → Atom a₁ → Atom a₂ → {s s₁ s₂ : 𝕊 n} → s₁ ; a₁ ≃𝕊 s → s₂ ; a₂ ≃𝕊 s → s₁ ≃ s₂ × a₁ ≡ a₂
+atom-;ʳ-⁻¹-′ A₁ A₂ (≃𝕊-;₁ eq₁) (≃𝕊-;₁ eq₂) = ≃-trans (Eq*.return eq₁) (≃-sym (Eq*.return eq₂)) , refl
+atom-;ʳ-⁻¹-′ A₁ A₂ (≃𝕊-;₁ eq₁) (≃𝕊-;₂ eq₂) = contradiction eq₂ (atom-≄′ˡ A₂)
+atom-;ʳ-⁻¹-′ A₁ A₂ (≃𝕊-;₂ eq₁) (≃𝕊-;₁ eq₂) = contradiction eq₁ (atom-≄′ˡ A₁)
+atom-;ʳ-⁻¹-′ A₁ A₂ (≃𝕊-;₂ eq₁) (≃𝕊-;₂ eq₂) = contradiction eq₁ (atom-≄′ˡ A₁)
+atom-;ʳ-⁻¹-′ A₁ A₂ (≃𝕊-;₂ eq₁) ≃𝕊-assoc = contradiction eq₁ (atom-≄′ˡ A₁)
+atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-skipˡ ≃𝕊-skipˡ = refl , refl
+atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-assoc (≃𝕊-;₂ eq₂) = contradiction eq₂ (atom-≄′ˡ A₂)
+atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-assoc ≃𝕊-assoc = refl , refl
+atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-distr ≃𝕊-distr = refl , refl
+
+postulate
+  atom-≃⁻¹ : ∀ {a₁ a₂ : 𝕊 n} → Atom a₁ → Atom a₂ → a₁ ≃ a₂ → a₁ ≡ a₂
+
+  atom-;ʳ-⁻¹ : {a₁ a₂ : 𝕊 n} → Atom a₁ → Atom a₂ → {s s₁ s₂ : 𝕊 n} → s₁ ; a₁ ≃ s → s₂ ; a₂ ≃ s → s₁ ≃ s₂ × a₁ ≡ a₂
+
+  atom-;-unsnoc : {a x y z : 𝕊 n} → Atom a → x ; y ≃ z ; a → Skips y ⊎ ∃[ y′ ] x ; y′ ≃ z × y′ ; a ≃ y
 
 -- atom-refl-;-skips⁻¹ : Atom s → (s′ : 𝕊 n) → s ≃ s ; s′ → Skips s′
 -- atom-refl-;-skips⁻¹ a (` x) eq = {!!}

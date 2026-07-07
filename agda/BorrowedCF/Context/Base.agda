@@ -34,6 +34,12 @@ variable
 ⸴-cong eq eqs zero = eq
 ⸴-cong eq eqs (suc x) = eqs x
 
+{-
+⸴*-sum++-split : (xs ys : List ℕ) (Γ : Ctx (sum (xs ++ ys))) →
+  Σ[ Γ₁ ∈ Ctx (sum xs) ] Σ[ Γ₂ ∈ Ctx (sum ys) ] (Γ₁ ⸴* Γ₂) ≗ ?
+⸴*-sum++-split = ?
+-}
+
 data ParSeq : Set where
   par seq : ParSeq
 
