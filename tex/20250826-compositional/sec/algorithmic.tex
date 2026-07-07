@@ -1,4 +1,4 @@
-\section{Algorithmic typing}
+\section{Algorithmic Typing}
 \label{sec:algorithmic-typing}
 
 This section develops an algorithmic version of the type system in
@@ -7,19 +7,21 @@ construct a type checking algorithm.
 
 
 
-\subsection{Typing relation}
+\subsection{Algorithmic Judgments}
+\label{sec:typing-relation}
 
 Algorithmic typing requires an extended grammar of session types
 $\AS$ that includes unification variables $\TVar$ drawn from
 $\TVAR$. We write $\AT$ for types that refer to $\AS$ instead of $\S$.
 
-Algorithmic typing collects a set of constraints $\CSet$. Constraints
-come in three forms: 
-\begin{itemize}
-  \item equality constraints between two types $\AT \CEq \ATU$;
-  \item mobility constraints $\CMobile \AT$;
-  \item boundedness constraints $\CBounded \AS$.
-\end{itemize}
+Algorithmic typing collects a set of constraints $\CSet$. Constraints $C$
+come in three forms:
+\begin{align*}
+  C & \grmeq \AT \CEq \ATU && \text{equality constraint between two
+                             types} \\
+    &\grmor \CMobile \AT && \text{mobility constraint} \\
+    &\grmor \CBounded \AS && \text{boundedness constraint.}
+\end{align*}
 
 \begin{definition}[Closing substitution]
   A substitution $\sigma : \TVAR \to \AS$ is a \emph{closing
@@ -172,7 +174,14 @@ output types to be equal.
 \end{lemma}
 
 
-\subsection{Constraint solving}
+\subsection{Constraint Solving}
+\label{sec:constraint-solving}
+
+
+Solving a set of constraints between types with variables boils down
+to a unification problem over CFSTs. Unfortunately, there is no
+unification algorithm readily available for this theory, which
+involves associativity, neutral elements, and distributivity
 
 Potential solutions can be checked by the equivalence algorithm for context
 free session types. However, the literature does not provide unification
