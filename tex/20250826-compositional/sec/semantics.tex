@@ -1,7 +1,12 @@
 \section{Dynamics}
 \label{sec:semantics}
 
-% EVAL CONTEXTS
+The dynamics is a small-step semantics for the core language of
+\cref{fig:syntax}.  Expressions reduce inside the evaluation contexts shown
+below; processes reduce by lifting expression steps to threads and by
+synchronizing the communication and borrowing operations that act on binder
+groups.
+
 \begin{align*}
   \U,\V \grmeq
     & \C
@@ -37,7 +42,19 @@
     \tag{Process contexts}
 \end{align*}
 
-\mw{expression semantics in appendix.}
+Values are the usual call-by-value normal forms: constants, variables,
+abstractions, injections of values, and pairs of values.  The expression
+contexts fix the deterministic order of evaluation, including the order chosen
+by a directed application.  A thread context embeds an expression context in a
+single running thread, whereas process contexts describe the positions closed
+under the process congruence and closure rules below.  The expression reduction
+relation, given in \cref{fig:expression-reduction}, contains the standard
+computational steps for beta-reduction, sequencing, pair and variant
+elimination, recursive unfolding, and closure under expression contexts.
+
+\Cref{fig:process-reduction} gives the process reduction relation.  Its rules
+fall into three groups: ordinary computation inside a thread, synchronization
+between the two sides of a restricted channel, and structural closure.
 
 \begin{figure}[t!]
   \begin{mathpar}
@@ -59,6 +76,43 @@
   \caption{Process reduction ($\Proc \PReduce \Proc$)}
   \label{fig:process-reduction}
 \end{figure}
+
+Rule \textsc{R-Exp} embeds an expression step in the selected thread context.
+Rule \textsc{R-New} allocates a fresh restricted channel and returns the two
+fresh endpoints as a pair.  Each endpoint is placed behind an initial separator
+in its binder group, matching the acquired session type assigned to channel
+creation in \cref{fig:process-typing}.  Rule \textsc{R-Fork} spawns the
+thunked process in parallel and returns unit to the forking thread.
+
+Communication rules operate on the heads of dual binder groups.  Rule
+\textsc{R-Com} synchronizes send and receive, transfers the transmitted value,
+and advances both groups.  Rule \textsc{R-Choice} similarly synchronizes
+selection and branching, returning the selected label as a variant.  Rule
+\textsc{R-Close} synchronizes close and wait at the end of a session, and rule
+\textsc{R-Discard} consumes an endpoint whose type permits it to be skipped.
+
+The split rules implement the local and remote structure described in
+\cref{sec:direct-semant-chann}.  Rule \textsc{R-LSplit} replaces one endpoint
+name by two ordered names in the same binder group and returns the ordered
+pair.  Because a binder group is a sequence, subsequent reductions must consume
+the left component before the right component.  Rule \textsc{R-RSplit} replaces
+one endpoint name by two names separated by a binder-group separator and
+returns them as an unordered pair.  The separator is the runtime marker for the
+remote handoff tracked statically by the $\SDrop$ and $\SAcq$ constructors in
+\cref{fig:process-typing}.
+
+Rules \textsc{R-Drop} and \textsc{R-Acquire} move across such a separator.
+Dropping removes the endpoint immediately to the left of the separator and
+exposes the separator at the front of the remaining group.  Acquiring can fire
+only once the separator is exposed; it removes the separator and returns the
+endpoint on the right.  Thus remote splitting transfers control from one
+thread to another only after the prefix of the original endpoint has been
+consumed.
+
+Finally, \textsc{R-Par} and \textsc{R-Bind} close reduction under parallel
+composition and restriction.  Rule \textsc{R-Struct} closes the relation under
+the process congruence of \cref{fig:configuration-congruence}, so reductions
+may use associativity, commutativity, and scope movement to expose a redex.
 
 
 %%% Local Variables:
