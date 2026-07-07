@@ -68,13 +68,13 @@
 
 % A-App
 \DefRule {App} {
-  \CtxAlgJoinCheck{\E[1]}{\E[2]} \\
-  \Dir = \DirLeft \implies \Eff[1] = \EffPure \\
-  \Dir = \DirRight \implies \Eff[2] = \EffPure \\\\
+  \reqDir \Dir \DirPrime \\
+  \reqEff\Dir{\Eff[1]}{\Eff[2]} \\
+  \CtxAlgJoinCheck{\E[1]}{\E[2]} \\\\
   \InferType [\CtxRestrict{\E[1]}] {\E[1]} {\TArr{\Mob}{\Dir,\Eff[3]} \T \TU} {\Eff[1]} [\CSet[1]] \\
   \CheckType [\CtxRestrict{\E[2]}] {\E[2]} {\T} {\Eff[2]} [\CSet[2]]
 }{
-  \InferType {\EAppD{\E[1]}{\E[2]}{\Dir}} {\TU} {\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]} [\CSet[1] \CSJoin \CSet[2]]
+  \InferType {\EAppD{\E[1]}{\E[2]}{\DirPrime}} {\TU} {\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]} [\CSet[1] \CSJoin \CSet[2]]
 }
 
 % A-Check
@@ -121,9 +121,8 @@
 
 % A-Pair
 \DefRule {Pair} {
-  \CtxAlgJoinCheck{\E[1]}{\E[2]} \\
-  \Dir = \DirLeft \implies \Eff[2] = \EffPure \\
-  \Dir = \DirRight \implies \Eff[1] = \EffPure \\\\
+  \reqEff \Dir {\Eff[2]} {\Eff[1]}\\
+  \CtxAlgJoinCheck{\E[1]}{\E[2]} \\\\
   \CheckType[\CtxRestrict{\E[1]}]
     {\E[1]}
     {\T}

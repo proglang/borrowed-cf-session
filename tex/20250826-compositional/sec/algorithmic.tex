@@ -91,6 +91,20 @@ $\CSet$. Judgments make use of the context operators defined in
   \caption{Algorithmic typing}
   \label{fig:typing-algorithmic}
 \end{figure}
+\mw{include: \[
+  \begin{array}{rcl@{\qquad}rcl}
+  \reqDir & \grmeq &
+  \{(\DirRight,\DirRight),
+    (\DirLeft,\DirLeft),
+    (\DirUnord,\DirLeft),
+    (\DirNone,\DirLeft)\}
+  &
+  \reqEff & \grmeq &
+  \{(\DirLeft,\_,\EffPure),
+    (\DirRight,\EffPure,\_)\}
+  \end{array}
+\]}
+
 
 \begin{lemma}[Soundness]
   If\/ $\CheckType \E \AT \Eff$ and there is a closing substitution $\sigma$

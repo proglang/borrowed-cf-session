@@ -8,6 +8,10 @@
 
 \begin{figure}
   \begin{align*}
+    \Dir \grmeq
+      & \DirLeft \grmor \DirRight
+        % \grmor \DirNone
+        \tag{Directions} \\
     \C \grmeq
       & \CUnit
         \grmor \CNew
@@ -46,6 +50,10 @@ and manipulating with existing channels. They are better explained together with
 Expressions $\E$ contain constants, variables, lambda abstraction and application, sequencing, 
 pair introduction and pair elimination, sum injection and case analysis, and recursive terms. 
 
+We distinguish between left ($\DirLeft$) and right ($\DirRight$) application. 
+The direction determines the order of evaluation: either the left or right term is evaluated first.
+Throughout this paper, an omitted direction annotation is understood to denote left-directed application.
+
 \begin{figure}[t!]
   \begin{align*}
     \U,\V \grmeq
@@ -59,14 +67,15 @@ pair introduction and pair elimination, sum injection and case analysis, and rec
     \\
     \EC \grmeq&
               \ECEmpty
-              \grmor \EAppD\EC\E\DirLeft
-              \grmor \EAppD\V\EC\DirLeft
+              \grmor \EAppD \EC\E\DirLeft
+              \grmor \EAppD \V\EC\DirLeft
+              \grmor \EAppD \E\EC\DirRight
+              \grmor \EAppD \EC\V\DirRight
               \grmor \ESeq \EC\E
               \grmor \EPair \EC\E
               \grmor \EPair \V\EC
-              \grmor \EInj{i}\EC
               \\ \grmor
-    & \ELet {\EPair \EVar\EVar}\EC\E
+    & \EInj{i}\EC \grmor \ELet {\EPair \EVar\EVar}\EC\E
               \grmor \ECase \EC {\ECaseBranch* i \EVar \E}
               \tag{Evaluation contexts}
     \\
