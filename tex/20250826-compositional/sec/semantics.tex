@@ -1,0 +1,67 @@
+\section{Dynamics}
+\label{sec:semantics}
+
+% EVAL CONTEXTS
+\begin{align*}
+  \U,\V \grmeq
+    & \C
+      \grmor \EVar
+      \grmor \EAbs \EVar\E
+      \grmor \EInj{i} \V
+      \grmor \EPair \U\V
+      % \grmor \CSend \V 
+              \tag{Values}
+  \\
+  \EC \grmeq&
+              \ECEmpty
+              \grmor \EAppD \EC\E\DirLeft
+              \grmor \EAppD \V\EC\DirLeft
+              \grmor \EAppD \E\EC\DirRight
+              \grmor \EAppD \EC\V\DirRight
+              \grmor \ESeq \EC\E
+              \grmor \EPair \EC\E
+              \grmor \EPair \V\EC
+              \\ \grmor
+    & \EInj{i}\EC \grmor \ELet {\EPair \EVar\EVar}\EC\E
+              \grmor \ECase \EC {\ECaseBranch* i \EVar \E}
+              \tag{Evaluation contexts}
+  \\
+  \FC \grmeq
+  & \PExp \EC
+    \tag{Thread evaluation contexts}
+  \\
+  \CC \grmeq
+  & \ECEmpty
+    \grmor \PPar{\CC}{\Proc}
+    \grmor \PNew \BindGroup\BindGroup \CC
+    \tag{Process contexts}
+\end{align*}
+
+\mw{expression semantics in appendix.}
+
+\begin{figure}[t!]
+  \begin{mathpar}
+    \RuleProcRedExp \and
+    \RuleProcRedNew \and
+    \RuleProcRedFork \and
+    \RuleProcRedCom \and
+    \RuleProcRedLSplit \and
+    \RuleProcRedRSplit \and
+    \RuleProcRedDiscard \and
+    \RuleProcRedDrop \and
+    \RuleProcRedAcquire \and
+    \RuleProcRedClose \and
+    \RuleProcRedChoice \and
+    \RuleProcRedPar \and
+    \RuleProcRedBind \and
+    \RuleProcRedStruct
+  \end{mathpar}
+  \caption{Process reduction ($\Proc \PReduce \Proc$)}
+  \label{fig:process-reduction}
+\end{figure}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../popl2027.tex"
+%%% End:

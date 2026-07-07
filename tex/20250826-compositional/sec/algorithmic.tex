@@ -139,14 +139,14 @@ determines which subterm can have effects as prescribed by $\reqEff
 (\Dir', \Eff[1], \Eff[2])$.
 \begin{align*}
   \reqDir & = 
-  \{(\DirRight,\DirRight),
-    (\DirLeft,\DirLeft),
-    (\DirUnord,\DirLeft),
-    (\DirNone,\DirLeft)\}
+  \{(\DirLeft,\DirLeft),
+    (\DirRight,\DirRight),
+    (\DirUnord,\DirRight),
+    (\DirNone,\DirRight)\}
   &
   \reqEff & =
-  \{(\DirLeft,\_,\EffPure),
-    (\DirRight,\EffPure,\_)\}
+  \{(\DirLeft,\EffPure,\_),
+    (\DirRight,\_,\EffPure)\}
 \end{align*}
 Apart from that, rule \RuleName{A-App} synthesizes the function type and
 check against the argument type, as standard. Sequential execution

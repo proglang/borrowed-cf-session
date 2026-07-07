@@ -186,12 +186,12 @@ wrapNE front s₀ (t ◅ ts) back = UR.RU-Struct front s₀ ε ◅ wrapNE ε t t
 ≋-wrap-⊎ front ε        back = inj₂ (front ◅◅ back)
 ≋-wrap-⊎ front (s ◅ ss) back = inj₁ (wrapNE front s ss back)
 
--- ν (φ acq (⟪ F[acq · 𝓒[`0F × 1F × e]] ⟫ ∥ Q)) fires RU-Acquire,
--- yielding ν ((⟪ F[𝓒[*×1F×e]] ⟫ ∥ Q) ⋯ₚ ⦅*⦆ₛ).
-leaf-fire : (F : Frame* (3 + n)) {e : Tm (3 + n)} (Q : U.Proc (3 + n)) →
-  U.ν (U.φ U.acq (U.⟪ F [ K `acq ·¹ (((` 0F) ⊗ (` 1F)) ⊗ e) ]* ⟫ U.∥ Q))
+-- ν (φ acq (⟪ (F⋯weakenᵣ)[acq · 𝓒[`0F × 1F × wk e]] ⟫ ∥ Q⋯weakenᵣ))
+-- fires RU-Acquire to ν (⟪ F[𝓒[*×0F×e]] ⟫ ∥ Q).
+leaf-fire : (F : Frame* (2 + n)) {e : Tm (2 + n)} (Q : U.Proc (2 + n)) →
+  U.ν (U.φ U.acq (U.⟪ (F ⋯ᶠ* weakenᵣ) [ K `acq ·¹ (((` 0F) ⊗ (` 1F)) ⊗ wk e) ]* ⟫ U.∥ (Q U.⋯ₚ weakenᵣ)))
     UR─→ₚ*
-  U.ν ((U.⟪ F [ (* ⊗ (` 1F)) ⊗ e ]* ⟫ U.∥ Q) U.⋯ₚ ⦅ * ⦆ₛ)
+  U.ν (U.⟪ F [ (* ⊗ (` 0F)) ⊗ e ]* ⟫ U.∥ Q)
 leaf-fire F {e} Q = UR.RU-Acquire F ◅ ε
 
 -- Star-congruences for the untyped reduction under φ binders and substs, to

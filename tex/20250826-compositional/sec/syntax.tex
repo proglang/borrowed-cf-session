@@ -1,0 +1,137 @@
+\section{Statics}
+\label{sec:expr-proc}
+
+% Figures in this section: syntax of expressions (\cref{fig:syntax-expressions}),
+% run-time syntax (\cref{fig:syntax-runtime}), reduction (expressions:
+% \cref{fig:expression-reduction}, processes: \cref{fig:process-reduction}),
+% process congruence (\cref{fig:configuration-congruence}).
+
+\begin{figure}
+  \begin{align*}
+    \shortintertext{\textbf{Types}}
+    \Mob \grmeq
+              & \MobStationary \grmor \MobMobile
+    \tag{Mobilities}                                                                           \\
+    \Dir \grmeq
+              & \DirLeft \grmor \DirRight \grmor \DirUnord \grmor \DirNone
+    % \grmor \DirNone
+    \tag{Directions}                                                                           \\
+    \Eff \grmeq
+              & \EffPure \grmor \EffImpure
+    \tag{Effects with $\EffPure < \EffImpure$}                                                 \\
+    \T \grmeq & \BUnit
+    \grmor \TArr{\Mob}{\Dir,\Eff}\T\T
+    \grmor \T \TPair \T
+    \grmor \TVariant{\ell : \T[\ell]}
+    \grmor \S
+    \tag{Types}                                                                                \\
+    \S \grmeq
+              & \SSkip \grmor \SSeq\S\S \grmor \STerm \grmor \SWait \grmor
+    \SSend\T \grmor \SRecv\T
+    \\
+              &
+    \grmor \SChoice{\ell:\S[\ell]}{\ell\in L}
+    \grmor \SBranch{\ell:\S[\ell]}{\ell\in L}
+    \\
+              &
+    \grmor \SRet \grmor \SAcq
+    \grmor
+    \SRec\SVar\S \grmor \SVar % no rec yet
+    \tag{Session types}
+    \\
+    \Ctx \grmeq
+              & \CtxEmpty \grmor \CtxVar \EVar\T \grmor \Ctx\CtxSeq\Ctx \grmor \Ctx\CtxPar\Ctx
+    \tag{Typing environments}                                                                  \\
+    \shortintertext{\textbf{Expressions}}
+    \C \grmeq
+              & \CUnit
+    \grmor \CNew
+    \grmor \CFork
+    \grmor \CTerm
+    \grmor \CWait
+    \grmor \CSend
+    \grmor \CRecv
+    \\\grmor &
+      \CSplit \grmor \CSSplit
+      \grmor \CDrop \grmor \CAcq
+      \grmor \CSelect k
+      \grmor \CBranch
+    \tag{Constants}                                                                            \\
+    \E \grmeq
+              & \C \grmor \EVar \grmor \EAbs\EVar\E \grmor \EAppD{\E}{\E}{\Dir}
+    \grmor \ESeq\E\E
+    \grmor \EPair\E\E
+    \grmor \ELetPair{\EVar}{\EVar}{\E}{\E}                                                     \\
+    \grmor    & \EInj i \E
+    %\grmor \ECase\E{\EVar}{\E}{\EVar}{\E}
+    \grmor \ECase \E {\ECaseBranch* i \EVar \E}
+    \grmor \EMu[\EVar] \E
+    % & \grmor \EMatch{\E}{\ell:\E_\ell}{\ell\in L}
+    % \grmor \EFork\E \grmor \ELet\EVar\E\E
+    \tag{Expressions}
+    \\
+    \shortintertext{\textbf{Processes}}
+    \BindGroup \grmeq
+              & (\EVar \grmor \BSep)^*
+    \tag{Binder groups}
+    \\
+    \Bind \grmeq
+              & \EVar^*
+    \tag{Variable sequences}
+    \\
+    \Proc \grmeq
+              & \PExp\E
+    \grmor \PPar\Proc\Proc
+    \grmor \PNew{\BindGroup}{\BindGroup}{\Proc}
+    \tag{Processes}
+  \end{align*}
+  \caption{Syntax of types, expressions, processes}
+  \label{fig:syntax}
+\end{figure}
+
+Figure \cref{fig:syntax} collects the source-language syntax used throughout
+this paper. The figure is organized into three groups: types, expressions, and
+processes.
+
+The type group introduces four orthogonal classifiers. Mobilities
+($\MobStationary$, $\MobMobile$) record whether values are stationary or 
+can be moved across process boundaries. Directions ($\DirLeft$,
+$\DirRight$, $\DirUnord$, $\DirNone$) govern evaluation order and context
+composition in function and pair constructs. An effect is either pure or impure
+and together they form a two-point lattice with $\EffPure < \EffImpure$. Types
+$\T$ combine ordinary functional forms (unit, arrows, pairs, variants) with
+session types $\S$. Session types use sequential composition as their central
+connective and include communication, branching/selection, and recursion.
+Typing environments $\Ctx$ combine variable bindings using ordered and
+unordered composition.
+
+The expression group separates constants $\C$ from compound expressions $\E$.
+Constants cover channel creation, process creation, communication primitives,
+split operations, and synchronization primitives. They are better understood
+together with their type in the next section.
+
+Expressions then add variables, abstraction and application, sequencing,
+products, sums, and recursive terms. Following our directional presentation,
+application carries an explicit direction annotation. We distinguish left
+($\DirLeft$) and right ($\DirRight$) application syntactically, but unlike
+previous work~\cite{saffrich2024lawordertypestateborrowing, DBLP:journals/pacmpl/SaffrichS0V25} we do not distinguish left and right abstraction. The
+direction determines both the evaluation order and context position in the body
+of the function. Throughout this paper, omitted parentheses and omitted
+direction annotations are understood as standard, right-directed
+CBV-application.
+
+Binder groups $\BindGroup$ are flat lists of channel names $\EVar$ and
+separators $\BSep$. The metavariable $\Bind$ ranges over separator-free
+variable sequences. We write $\BEmp$ for the empty list and
+$\BWithSep{\Bind}{\BindGroup}$ for the concatenation of $\Bind$, $\BSep$, and
+$\BindGroup$. The paper only creates groups where two separators never occur
+side-by-side without an intervening channel name, but the syntax does not
+enforce this invariant. Processes $\Proc$ include a single expression, parallel
+composition of processes, and channel introduction with two binder groups.
+
+Binder sequence concatenation is written by juxtaposition with unit $\BEmp$.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../popl2027.tex"
+%%% End:
