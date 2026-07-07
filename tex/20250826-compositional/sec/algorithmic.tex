@@ -23,8 +23,8 @@ come in three forms:
 
 \begin{definition}[Closing substitution]
   A substitution $\sigma : \TVAR \to \AS$ is a \emph{closing
-    substitution} for  a set of constraints $\CSet$ if for every
-  unification variable $\TVar$ in $\CSet$, $\sigma (\TVar) \in \S$ and all
+    substitution} for  a set of constraints $\CSet$, written $\sigma
+  \models \CSet$, if for every variable $\TVar$ in $\CSet$, $\sigma (\TVar) \in \S$ and all
   constraints are respected.
 \end{definition}
 \begin{figure}[tp]
@@ -159,7 +159,8 @@ output types to be equal.
 
 
 \begin{lemma}[Soundness]
-  If\/ $\CheckType \E \AT \Eff$ and there is a closing substitution $\sigma$
+  If\/ $\CheckType \E \AT \Eff$ and $\sigma \models \CSet$ is a
+  closing substitution
   such that $\Fv(\AT) \subseteq \dom(\sigma)$ then $\HasType \Ctx \E {\AT{[\sigma]}}$.
 \end{lemma}
 
