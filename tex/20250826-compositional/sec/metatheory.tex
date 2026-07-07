@@ -1,4 +1,34 @@
 \section{Metatheory}
+\label{sec:metatheory}
+
+\subsection{Structural Properties}
+
+\begin{lemma}[Unrestricted decomposition]
+  Every context $\Ctx$ can be separated into contexts $\Ctx[1], \Ctx[2]$ with
+  $\Ctx = \Ctx[1] \CtxPar \Ctx[2]$ such that $\Unr\Ctx[1]$ and $\Unr\T$ is
+  not derivable for any $\CtxVar\EVar\T \in \Ctx[2]$.
+\end{lemma}
+\begin{proof}
+  \texttt{unjoinUnr}
+\end{proof}
+
+\begin{lemma}[Monoidal properties of contexts]
+  The context constructors satisfy the following properties with respect to
+  context equality.
+  \begin{itemize}
+    \item Sequential composition \textup{($\Ctx[1] \CtxSeq \Ctx[2]$)} forms a
+      monoid with identity $\CtxEmpty$.
+    \item Parallel composition \textup{($\Ctx[1] \CtxPar \Ctx[2]$)} forms a
+      commutative monoid with identity $\CtxEmpty$.
+  \end{itemize}
+\end{lemma}
+
+\begin{lemma}[Unrestricted contexts are mobile]
+  $\Unr\Ctx \implies \Mobile\Ctx$.
+\end{lemma}
+\begin{proof}
+  By induction over $\Ctx$ and the types of bound variables therein.
+\end{proof}
 
 \subsection{Declarative Typing}
 

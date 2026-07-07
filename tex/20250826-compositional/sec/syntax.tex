@@ -1,4 +1,4 @@
-\section{Statics}
+\section{Syntax}
 \label{sec:expr-proc}
 
 % Figures in this section: syntax of expressions (\cref{fig:syntax-expressions}),
@@ -26,14 +26,13 @@
     \grmor \S
     \tag{Types}                                                                                \\
     \S \grmeq
-              & \SSkip \grmor \SSeq\S\S \grmor \STerm \grmor \SWait \grmor
-    \SSend\T \grmor \SRecv\T
+              & \SSkip \grmor \SSeq\S\S
+                 \grmor \SSend\T \grmor \SRecv\T
+                \grmor \SChoice{\ell:\S[\ell]}{\ell\in L}
+                \grmor \SBranch{\ell:\S[\ell]}{\ell\in L}
     \\
               &
-    \grmor \SChoice{\ell:\S[\ell]}{\ell\in L}
-    \grmor \SBranch{\ell:\S[\ell]}{\ell\in L}
-    \\
-              &
+                \grmor \STerm \grmor \SWait
     \grmor \SRet \grmor \SAcq
     \grmor
     \SRec\SVar\S \grmor \SVar % no rec yet
@@ -58,7 +57,7 @@
       \grmor \CBranch
     \tag{Constants}                                                                            \\
     \E \grmeq
-              & \C \grmor \EVar \grmor \EAbs\EVar\E \grmor \EAppD{\E}{\E}{\Dir}
+              & \C \grmor \EVar \grmor \EAbs\EVar\E \grmor \EAppD[\Dir]{\E}{\E}
     \grmor \ESeq\E\E
     \grmor \EPair\E\E
     \grmor \ELetPair{\EVar}{\EVar}{\E}{\E}                                                     \\
@@ -89,47 +88,51 @@
   \label{fig:syntax}
 \end{figure}
 
-Figure \cref{fig:syntax} collects the source-language syntax used throughout
+\Cref{fig:syntax} collects the source-language syntax used throughout
 this paper. The figure is organized into three groups: types, expressions, and
 processes.
 
-The type group introduces four orthogonal classifiers. Mobilities
-($\MobStationary$, $\MobMobile$) record whether values are stationary or 
+The types group introduces three orthogonal classifiers. Mobilities
+($\MobStationary$, $\MobMobile$) indicate if values are stationary or 
 can be moved across process boundaries. Directions ($\DirLeft$,
 $\DirRight$, $\DirUnord$, $\DirNone$) govern evaluation order and context
-composition in function and pair constructs. An effect is either pure or impure
-and together they form a two-point lattice with $\EffPure < \EffImpure$. Types
-$\T$ combine ordinary functional forms (unit, arrows, pairs, variants) with
-session types $\S$. Session types use sequential composition as their central
-connective and include communication, branching/selection, and recursion.
-Typing environments $\Ctx$ combine variable bindings using ordered and
-unordered composition.
+composition in function and pair constructs. An effect is either pure
+$\EffPure$ or impure $\EffImpure$; effects are lattice-ordered by
+$\EffPure < \EffImpure$. Types 
+$\T$ combine ordinary functional forms (unit, arrow, pair, variant) with
+session types $\S$. Session types are either $\SSkip$ or use
+sequential composition $\SSeq\S\S$ as their central
+connective. They include communication, branching/selection,
+closing/waiting, return/acquire (new to this work), and recursion.
+Typing environments $\Ctx$ combine variable bindings using ordered ($\Ctx\CtxSeq\Ctx$) and
+unordered ($\Ctx\CtxPar\Ctx$) composition in the style of BI-contexts
+\cite{DBLP:journals/bsl/OHearnP99}, but with different semantics.
 
 The expression group separates constants $\C$ from compound expressions $\E$.
 Constants cover channel creation, process creation, communication primitives,
 split operations, and synchronization primitives. They are better understood
 together with their type in the next section.
 
-Expressions then add variables, abstraction and application, sequencing,
-products, sums, and recursive terms. Following our directional presentation,
+Expressions add variables, abstraction and application, sequencing,
+products, sums, and recursion. Following our directional presentation,
 application carries an explicit direction annotation. We distinguish left
-($\DirLeft$) and right ($\DirRight$) application syntactically, but unlike
-previous work~\cite{saffrich2024lawordertypestateborrowing, DBLP:journals/pacmpl/SaffrichS0V25} we do not distinguish left and right abstraction. The
+($\DirLeft$) and right ($\DirRight$) application syntactically. The
 direction determines both the evaluation order and context position in the body
-of the function. Throughout this paper, omitted parentheses and omitted
-direction annotations are understood as standard, right-directed
+of the function. Throughout this paper, omitted
+direction annotations or plain iuxtaposition are understood as standard, left-to-right
 CBV-application.
 
-Binder groups $\BindGroup$ are flat lists of channel names $\EVar$ and
-separators $\BSep$. The metavariable $\Bind$ ranges over separator-free
+A binder group $\BindGroup$ is a flat list of channel names $\EVar$ and
+separators $\BSep$.The metavariable $\Bind$ ranges over separator-free
 variable sequences. We write $\BEmp$ for the empty list and
 $\BWithSep{\Bind}{\BindGroup}$ for the concatenation of $\Bind$, $\BSep$, and
-$\BindGroup$. The paper only creates groups where two separators never occur
-side-by-side without an intervening channel name, but the syntax does not
-enforce this invariant. Processes $\Proc$ include a single expression, parallel
-composition of processes, and channel introduction with two binder groups.
+$\BindGroup$. Concatenation of $\BindGroup$s und $\Bind$s is written
+by juxtaposition with unit $\BEmp$. We only use groups where each separator is followed by
+at least one variable, but the syntax does not
+enforce this invariant. Processes $\Proc$ only arise at run time. They
+include a single expression, parallel composition of processes, and
+channel introduction with two binder groups that scope over the body.
 
-Binder sequence concatenation is written by juxtaposition with unit $\BEmp$.
 
 %%% Local Variables:
 %%% mode: latex
