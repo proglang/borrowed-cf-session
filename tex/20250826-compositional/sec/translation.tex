@@ -139,13 +139,13 @@ $\TEChan [\E[1]] \E [\E[2]]$.
     \RuleTransBindVar   \and
     \RuleTransBindNil
   \end{mathpar}
-  \begin{align*}
-    \BindFlag{\BWithSep{\Bind[1]}{\BindGroup[2]}} &= \BindFlag{\BindGroup[2]} &
+  \smallskip
+  \[
     \BindFlag{\Bind} &= \begin{cases}
-      \FlagDropped & \text{if $\Fv(\Bind) = \emptyset$} \\
+      \FlagDropped & \text{if $\Bind = \BEmp$} \\
       \FlagInit & \text{otherwise}
     \end{cases}
-  \end{align*}
+  \]
   \caption{Translation of
     processes ($\Proc \TransProc \TProc*$)
     and binder groups ($\BindGroup \TransBind \TCC [\Sub]$). Function $\BindFlag{}$

@@ -70,16 +70,24 @@
 
 % R-RSplit
 \DefRule {RSplit} {} {
-  \PNew {\BSeq{\Bind[1]}{\BSeq{\EVar} {\BindGroup[2]}}}{\BindGroup[3]}{ (\PPar{\FCapp{\EApp \CSSplit {x}}}\Proc)}
+  \PNew {\BindGroup[1]\EVar\BindGroup[2]}{\BindGroup[3]} {
+    (\PPar{\FCapp{\EApp \CSSplit {x}}}\Proc)
+  }
   \PReduce
-  \PNew {\BWithSep{\BSeq{\Bind[1]}{\EVar[1]}}{\BSeq{\EVar[2]}{\BindGroup[2]}}}{\BindGroup[3]} { ({ \PPar{\FCapp{\EPair{\EVar[1]}{\EVar[2]}}}\Proc})}
+  \PNew {\BindGroup[1]\EVar[1]\BSep\EVar[2]\BindGroup[2]}{\BindGroup[3]} {
+    ({ \PPar{\FCapp{\EPair{\EVar[1]}{\EVar[2]}}}\Proc})
+  }
 }
 
 % R-LSplit
 \DefRule {LSplit} {} {
-  \PNew {\BSeq{\Bind[1]}{\BSeq{\EVar} {\BindGroup[2]}}}{\BindGroup[3]}{ (\PPar{\FCapp{\EApp \CSplit {x}}}\Proc)}
+  \PNew {\BindGroup[1]\EVar\BindGroup[2]}{\BindGroup[3]} {
+    (\PPar{\FCapp{\EApp \CSplit {x}}}\Proc)
+  }
   \PReduce
-  \PNew {\BSeq{\Bind[1]}{\BSeq{\BSeq{\EVar[1]}{\EVar[2]}} {\BindGroup[2]}}}{\BindGroup[3]} { ({ \PPar{\FCapp{\EPairOrd{\EVar[1]}{\EVar[2]}}}\Proc})}
+  \PNew {\BindGroup[1]\EVar[1]\EVar[2]\BindGroup[2]}{\BindGroup[3]} {
+    (\PPar{\FCapp{\EPairOrd{\EVar[1]}{\EVar[2]}}}\Proc)
+  }
 }
 
 % R-Drop

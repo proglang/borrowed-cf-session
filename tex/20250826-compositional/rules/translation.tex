@@ -53,6 +53,7 @@
 \DefRule {Seq} {
   \EVary \TransBind[\TEChan[\E[1]]{\TEVar}] \TCCEmpty [\Sub[1]] \\
   \Bind \TransBind[\TEChan{\TEVar}[\E[2]]] \TCCEmpty [\Sub[2]] \\
+  \Bind \ne \BEmp
 }{
   \BSeq{\EVary}{\Bind} \TransBind[\TEChan[\E[1]]{\TEVar}[\E[2]]]
     \TCCEmpty
