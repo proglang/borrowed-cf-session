@@ -46,13 +46,13 @@
 
 \newcommand*\RuleBindSeq{
   \inferrule[B-Seq]{
-    \BindGivesCtx {\S[1]} \EVar {\Ctx[1]} \\
+    \neg \Skips{(\SSeq{\S[1]}{\S[2]})} \\
     \BindGivesCtx {\S[2]} \Bind {\Ctx[2]}
   }{
     \BindGivesCtx
       {\SSeq{\S[1]}{\S[2]}}
       {\BSeq{\EVar}{\Bind}}
-      {\Ctx[1] \CtxSeq \Ctx[2]}
+      {\CtxVar\EVar{\S[1]} \CtxSeq \Ctx[2]}
   }
 }
 
@@ -65,12 +65,6 @@
       {\SSeq{\S[1]}{\S[2]}}
       {\BWithSep{\Bind[1]}{\BindGroup[2]}}
       {\Ctx[1] \CtxPar \Ctx[2]}
-  }
-}
-
-\newcommand*\RuleBindVar{
-  \inferrule[B-Var]{}{
-    \BindGivesCtx \S \EVar {\CtxVar\EVar\S}
   }
 }
 
