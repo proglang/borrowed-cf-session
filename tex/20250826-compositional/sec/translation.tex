@@ -3,13 +3,14 @@
 \label{sec:translation}
 
 The calculus presented in \cref{sec:expr-proc,sec:types,sec:algorithmic-typing}
-is based on  a linear and ordered type
-system. In this section we first define an run-time calculus that
-is closer to an implementation of splitting and borrowing in a real-world
-porgramming language. On its own, the run-time calculus from this section
-provides fewer guarantees. We show that translating a well typed expression
-into the run-time calculus preserves the guarantees made by the
-earlier type system for the source language.
+records ownership and ordering in a linear type system and, dynamically, in
+binder groups.  This section defines an untyped run-time calculus that is
+closer to an implementation of splitting and borrowing in a real-world
+programming language.  The run-time calculus does not enforce the source
+discipline by itself.  Instead, the translation inserts ordinary channel names
+and synchronization cells so that translated well-typed source processes
+preserve the ordering guarantees established by the type system and the direct
+semantics of \cref{sec:semantics}.
 
 \begin{figure}
   \setlength{\abovedisplayskip}{0pt}%
@@ -18,15 +19,15 @@ earlier type system for the source language.
     \TProc \grmeq
         & \TPExp\E
           \grmor \TPPar\TProc\TProc
-          \grmor \TPNew[xx] \TProc
-          \grmor \TPSync \Flag \TProc
+          \grmor \TPNew[xy] \TProc
+          \grmor \TPSync[\TEVarz]\Flag\TProc
       \tag{Configurations}
     \\
     \TCC
       \grmeq& \TCCEmpty
       \grmor \TPPar \TCC \TProc
-      \grmor \TPNew[xx] \TCC
-      \grmor \TPSync \Flag \TCC
+      \grmor \TPNew[xy] \TCC
+      \grmor \TPSync[\TEVarz]\Flag\TCC
       \tag{Configuration contexts}
     \\
     \Flag \grmeq & \FlagInit \grmor \FlagDropped %\grmor \FlagAcquired
@@ -55,50 +56,36 @@ earlier type system for the source language.
 \end{figure}
 
 The syntax of constants, values, and expressions remains unchanged.
-\Cref{fig:unr-syntax} gives a new definition of process configurations
-$\TProc$. Besides the embedding of expressions and the parallel
-composition of processes,  $\TPNew[xy] \TProc$ introduces a channel
-with endpoints $x$ and $y$ scoped over $\TProc$
-and $\TPSync \Flag \TProc$ introduces an IVar $z$
-set to $\Flag$ scoped over $\TProc$. Channel introduction with dual
-binders is standard in session-type calculi
-\cite{gay.vasconcelos:session-types}. IVars are a
-new component. They are asychronous write-once variables
-\cite{DBLP:journals/toplas/ArvindNP89}. We call channels introduced by
-the run-time calculus \emph{primitive channels} to distinguish them from translated source
-channels.
+\Cref{fig:unr-syntax} replaces source configurations by target
+configurations $\TProc$.  The form $\TPNew[xy]\TProc$ introduces a
+primitive channel with endpoints $x$ and $y$ scoped over $\TProc$; this is the
+standard restriction construct of session calculi
+\cite{gay.vasconcelos:session-types}.  The form
+$\TPSync[\TEVarz]\Flag\TProc$ introduces a synchronization cell $z$ with state
+$\Flag$ scoped over $\TProc$.  These cells are asynchronous write-once
+variables \cite{DBLP:journals/toplas/ArvindNP89}.  A cell in state
+$\FlagInit$ records that the corresponding drop has not yet happened; a cell
+in state $\FlagDropped$ records that the drop has happened and an acquire may
+proceed.
 
-Processes are subject to the usual congruence relation shown in
-\cref{fig:translated-congruence}. The additional congruences deal with
-IVar introduction and they are analogous to the congruence rules for
-channels.
+The channels of the target calculus are \emph{primitive channels}.  A
+translated source channel is represented by a value
+$\targettermcolor{c}=\TEChan[\E[1]]\TEVary[\E[2]]$, a triple consisting of an
+optional pre-synchronization cell $\E[1]$, a primitive data channel
+$\TEVary$, and an optional post-synchronization cell $\E[2]$.  The default
+optional component is $\CUnit$.  A nontrivial pre-cell is consumed by
+$\CAcq$ before the endpoint is used.  A nontrivial post-cell is signaled by
+$\CDrop$ when ownership of the endpoint prefix is released.  Communication,
+choice, and close operate on the primitive data channel; the extra cells encode
+the ordering constraints that source binder groups enforce directly.
 
-% The type syntax does not differentiate between different kinds of function
-% arrows. Product types are unordered. $\TBUnit$ and sum types are carried over
-% unmodified. Channels are untyped and there are now two kinds: data channels
-% $\TBChanD$ and synchronization channels $\TBChanF$. Communication channels
-% $\TBChan$ are defined using type abbreviations:
-% %
-% \begin{align*}
-%   \TBChanF* &= \TTSum\TBChanF\TBUnit\\
-%   \TBChan &= \TTProd{\TBChanF*}{\TTProd{\TBChanD}{\TBChanF*}}
-% \end{align*}
-
-A translated expression/process represents a communication channel as
-a triple $\targettermcolor{c} = 
-\TEChan[\TEVar]\TEVary[\TEVarz]$ made up of an optional IVar
-$\TEVar$, a primitive channel $\TEVary$ and a second optional IVar
-$\TEVarz$. If $\TEVar$ is an IVar, an $\EApp \CAcq c$ will
-have to 
-be executed first before any communication can happen. Payloads are transferred
-via the data channel $\TEVary$. If $\TEVarz$ is an IVar, then
-$\targettermcolor{c}$ will have to be dropped, not terminated. 
-
-The translation eliminates binder groups $\BindGroup$. The
-$\TBindNu$-binder follows the standard syntax. 
-The new binder $\TBindSync$ introduces a fresh IVar to synchronize
-between two parts of a remote split. IVars are asynchronous so that a
-$\CDrop$ does not block until the corresponding $\CAcq$.
+Target processes are quotiented by the congruence of
+\cref{fig:translated-congruence}.  The parallel and restriction laws are the
+usual ones.  The additional laws commute independent synchronization binders
+with each other and with channel binders, and extend synchronization scope
+across parallel composition when the cell is fresh for the other component.
+These laws let the reduction rules expose the primitive channel or
+synchronization cell needed by a redex.
 
 \begin{figure}
   \begin{mathpar}
@@ -123,11 +110,26 @@ $\CDrop$ does not block until the corresponding $\CAcq$.
   \label{fig:unr-process-reduction}
 \end{figure}
 
-The reduction behavior of translated expressions is the same as their
-source counterparts (\cref{fig:expression-reduction}).
-\Cref{fig:unr-process-reduction} defines the reduction relation for translated
-processes. It uses $\ChanPat\E$ as an abbreviation for channels
-$\TEChan [\V[1]] \E [\V[2]]$.
+The reduction behavior of translated expressions is the same as in the source
+calculus (\cref{fig:expression-reduction}).  \Cref{fig:unr-process-reduction}
+defines the target process reduction relation and uses $\ChanPat\E$ as an
+abbreviation for triples $\TEChan[\V[1]]\E[\V[2]]$.
+
+The target rules mirror the source process rules of
+\cref{fig:process-reduction}, but make synchronization explicit.  Rule
+\textsc{RU-New} allocates one primitive channel and two already-dropped
+synchronization cells, corresponding to the leading acquire markers created by
+source channel creation.  Rule \textsc{RU-LSplit} performs a local split by
+sharing the same primitive data channel between the two returned triples and
+distributing the existing pre- and post-cells.  Rule \textsc{RU-RSplit}
+allocates a fresh synchronization cell: the left result receives it as a
+post-cell, and the right result receives it as a pre-cell.  Consequently
+\textsc{RU-Drop} can signal the cell without blocking, while
+\textsc{RU-Acquire} can proceed only after the signal is present.  The
+communication, choice, and close rules synchronize on the primitive channel
+component.  The remaining rules close reduction under parallel composition,
+channel restriction, synchronization-cell restriction, and structural
+congruence.
 
 \begin{figure}
   \begin{mathpar}
@@ -149,31 +151,40 @@ $\TEChan [\V[1]] \E [\V[2]]$.
   \caption{Translation of
     processes ($\Proc \TransProc \TProc*$)
     and binder groups ($\BindGroup \TransBind \TCC [\Sub]$). Function $\BindFlag{}$
-    maps the final separator-delimited segment of a binder group to a
-    synchronization flag $\Flag$.}
+    maps the segment immediately to the left of a separator to the initial
+    state of its synchronization flag $\Flag$.}
   \label{fig:translation}
 \end{figure}
 
-\begin{lemma}[Bisimulation]
-  \label{lemma:translation-bisimulation}
-%
-  For any context $\Ctx$, process $\Proc$\!, and substitution $\Sub$ if\/
-    $\ProcHasType \Ctx \Proc$
-  and
-    $\Proc \TransProc \TProc*$\!,
-  then for all
-    $\ProcQ$
-  where
-    $\ProcQ \TransProc \TProcQ*$,
-  it holds
-    $\Proc \PReduce \ProcQ$
-  iff
-    $\TProc* \TPReduce \TProcQ*$.
+\Cref{fig:translation} defines the translation relation.  It is parameterized
+by a substitution $\Sub$ that maps source endpoint variables to translated
+channel triples.  Rule \textsc{Tr-Exp} embeds a source thread after applying
+this accumulated substitution to its expression.  Parallel composition is
+homomorphic.  A source restriction is translated by translating each binder
+group against one endpoint of a fresh primitive channel, collecting the
+substitutions produced by those binder groups, translating the body under the
+extended substitution, and wrapping the resulting process in the
+synchronization contexts produced by the binder-group translations.
 
-  {\upshape \js{$\Sub$ needs to be restricted: should only substitute channel
-  variables with values. Do we need to impose requirements on the inserted
-  values?}}
-\end{lemma}
+The binder-group translation is the bridge between the direct semantics and
+the target implementation.  Translating a variable records that the variable
+denotes the current channel triple.  Translating a sequential group splits the
+current triple locally: the first endpoint keeps the pre-cell, and the
+remaining group keeps the post-cell.  Translating across a separator allocates
+a synchronization cell.  The segment to the left receives the cell as a
+post-cell, and the segment to the right receives it as a pre-cell.  The helper
+$\BindFlag{\Bind}$ initializes the cell to $\FlagDropped$ when there is no
+left segment, because no drop is pending; otherwise it initializes the cell to
+$\FlagInit$.
+
+The simulation result for this translation is stated in
+\cref{sec:metatheory}.  Its side condition $\mathsf{VSub}(\Sub)$ restricts the
+substitution to target channel values, and $\mathsf{ChanCx}(\Ctx)$ restricts
+the source context to channel resources.  Under these hypotheses, every source
+reduction of a well-typed process is matched by target reduction up to
+structural congruence and administrative steps, and every target reduction
+reachable from a translation reflects a source reduction up to the same
+administrative behavior.
 
 %%% Local Variables:
 %%% mode: latex
