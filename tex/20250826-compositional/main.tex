@@ -261,12 +261,12 @@ process reduction preserves typing.
   y {\SSeq{\SAcq}{\Dual~\S}}$ so that $\Ctx** =
   \Ctx[1] \CtxPar \Ctx[2]$.
   \\
-  Clearly, $\S \vdash {\BPar{\BEmp}{x}} \leadsto \Ctx[1]$ and
-  $\Dual~\S \vdash {\BPar{\BEmp}{y}} \leadsto \Ctx[2]$ hold.
+  Clearly, $\S \vdash {\BLeadSep{x}} \leadsto \Ctx[1]$ and
+  $\Dual~\S \vdash {\BLeadSep{y}} \leadsto \Ctx[2]$ hold.
   \\
   Conclude with rule \TirName{TP-Res} and obtain
   $\ProcHasType {\Ctx}
-  {\PNew {\BPar{\BEmp}{x}}{\BPar{\BEmp}{y}}{\FCapp{\EPair xy}}}$.
+  {\PNew {\BLeadSep{x}}{\BLeadSep{y}}{\FCapp{\EPair xy}}}$.
 
   
 

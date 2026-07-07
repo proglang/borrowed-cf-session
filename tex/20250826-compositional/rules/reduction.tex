@@ -70,28 +70,36 @@
 
 % R-RSplit
 \DefRule {RSplit} {} {
-  \PNew {\BSeq{\BindGroup[1]}{\BSeq{\EVar} {\BindGroup[2]}}}{\BindGroup[3]}{ (\PPar{\FCapp{\EApp \CSSplit {x}}}\Proc)}
+  \PNew {\BindGroup[1]\EVar\BindGroup[2]}{\BindGroup[3]} {
+    (\PPar{\FCapp{\EApp \CSSplit {x}}}\Proc)
+  }
   \PReduce
-  \PNew {\BPar{\BSeq{\BindGroup[1]}{\EVar[1]}}{\BSeq{\EVar[2]}{\BindGroup[2]}}}{\BindGroup[3]} { ({ \PPar{\FCapp{\EPair{\EVar[1]}{\EVar[2]}}}\Proc})}
+  \PNew {\BindGroup[1]\EVar[1]\BSep\EVar[2]\BindGroup[2]}{\BindGroup[3]} {
+    ({ \PPar{\FCapp{\EPair{\EVar[1]}{\EVar[2]}}}\Proc})
+  }
 }
 
 % R-LSplit
 \DefRule {LSplit} {} {
-  \PNew {\BSeq{\BindGroup[1]}{\BSeq{\EVar} {\BindGroup[2]}}}{\BindGroup[3]}{ (\PPar{\FCapp{\EApp \CSplit {x}}}\Proc)}
+  \PNew {\BindGroup[1]\EVar\BindGroup[2]}{\BindGroup[3]} {
+    (\PPar{\FCapp{\EApp \CSplit {x}}}\Proc)
+  }
   \PReduce
-  \PNew {\BSeq{\BindGroup[1]}{\BSeq{\BSeq{\EVar[1]}{\EVar[2]}} {\BindGroup[2]}}}{\BindGroup[3]} { ({ \PPar{\FCapp{\EPairOrd{\EVar[1]}{\EVar[2]}}}\Proc})}
+  \PNew {\BindGroup[1]\EVar[1]\EVar[2]\BindGroup[2]}{\BindGroup[3]} {
+    (\PPar{\FCapp{\EPairOrd{\EVar[1]}{\EVar[2]}}}\Proc)
+  }
 }
 
 % R-Drop
 \DefRule {Drop} {} {
-  \PNew {\BSeq{\EVar}{\BindGroup[1]}}{\BindGroup[2]}{ (\PPar{\FCapp{\EApp \CDrop {\EVar}}}\Proc)}
+  \PNew {\BWithSep{\EVar}{\BindGroup[1]}}{\BindGroup[2]}{ (\PPar{\FCapp{\EApp \CDrop {\EVar}}}\Proc)}
   \PReduce
-  \PNew {\BindGroup[1]}{\BindGroup[2]} { ({ \PPar{\FCapp{\CUnit}}\Proc})}
+  \PNew {\BLeadSep{\BindGroup[1]}}{\BindGroup[2]} { ({ \PPar{\FCapp{\CUnit}}\Proc})}
 }
 
 % R-Acquire
 \DefRule {Acquire} {} {
-  \PNew {\BPar{\BEmp}{\BSeq{\EVar}{\BindGroup[1]}}}{\BindGroup[2]}{ (\PPar{\FCapp{\EApp \CAcq{\EVar}}}\Proc)}
+  \PNew {\BLeadSep{\BSeq{\EVar}{\BindGroup[1]}}}{\BindGroup[2]}{ (\PPar{\FCapp{\EApp \CAcq{\EVar}}}\Proc)}
   \PReduce
   \PNew {\BSeq{\EVar}{\BindGroup[1]}}{\BindGroup[2]} { ({ \PPar{\FCapp{\EVar}}\Proc})}
 }
@@ -128,7 +136,7 @@
 \DefRule {New} {} {
   { {\FCapp{\EApp \CNew \CUnit}}}
   \PReduce
-  \PNew {\BPar{\BEmp}{x}}{\BPar{\BEmp}{y}} { {\FCapp{\EPair xy}}}
+  \PNew {\BLeadSep{x}}{\BLeadSep{y}} { {\FCapp{\EPair xy}}}
 }
 
 % R-Fork

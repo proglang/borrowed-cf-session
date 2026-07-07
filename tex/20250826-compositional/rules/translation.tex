@@ -33,44 +33,39 @@
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Translation of bind groups
+% Translation of binder groups
 
 \def\RuleCmdPrefix{RuleTransBind}
 \def\RuleNamePrefix{Tr-Bind}
 
-% Tr-BindPar
-\DefRule {Par} {
-  \BindGroup[1] \TransBind[{\TEChan[\E[1]] \TEVar [\TEVarz]}] {\TCC[1]} [\Sub[1]] \\
-  \BindGroup[2] \TransBind[{\TEChan[\TEVarz] \TEVar [\E[1]]}] {\TCC[2]} [\Sub[2]] \\
-  \BindFlag{\BindGroup[1]} = \Flag
+% Tr-BindSep
+\DefRule {Sep} {
+  \Bind[1] \TransBind[{\TEChan[\E[1]] \TEVar [\TEVarz]}] \TCCEmpty [\Sub[1]] \\
+  \BindGroup[2] \TransBind[{\TEChan[\TEVarz] \TEVar [\E[2]]}] {\TCC[2]} [\Sub[2]] \\
+  \BindFlag{\Bind[1]} = \Flag
 }{
-  \BPar {\BindGroup[1]} {\BindGroup[2]} \TransBind[{\TEChan[\E[1]] \TEVar [\E[2]]}]
-    {\TPSync \Flag \targetproccolor{(\TCC[1][\TCC[2]])}}
+  \BWithSep{\Bind[1]}{\BindGroup[2]} \TransBind[{\TEChan[\E[1]] \TEVar [\E[2]]}]
+    {\TPSync \Flag \TCC[2]}
     [\Sub[1] \cup \Sub[2]]
-}
-
-% Tr-BindChannels
-\DefRule {Channels} {
-  \Bind \Downarrow \Bind* \\
-  \Bind* \TransBind \Sub
-}{
-  \Bind \TransBind \TCCEmpty [\Sub]
 }
 
 % Tr-BindSeq
 \DefRule {Seq} {
-  \Bind[1] \TransBind[\TEChan[\E[1]]{\TEVar}] {\Sub[1]} \\
-  \Bind[2] \TransBind[\TEChan{\TEVar}[\E[2]]] {\Sub[2]} \\
+  \EVary \TransBind[\TEChan[\E[1]]{\TEVar}] \TCCEmpty [\Sub[1]] \\
+  \Bind \TransBind[\TEChan{\TEVar}[\E[2]]] \TCCEmpty [\Sub[2]] \\
+  \Bind \ne \BEmp
 }{
-  \BSeq{\Bind[1]}{\Bind[2]} \TransBind[\TEChan[\E[1]]{\TEVar}[\E[2]]] {\Sub[1] \cup \Sub[2]}
+  \BSeq{\EVary}{\Bind} \TransBind[\TEChan[\E[1]]{\TEVar}[\E[2]]]
+    \TCCEmpty
+    [\Sub[1] \cup \Sub[2]]
 }
 
 % Tr-BindVar
 \DefRule {Var} {} {
-  \EVar \TransBind \{ \EVar\mapsto\E \}
+  \EVar \TransBind \TCCEmpty [\{ \EVar\mapsto\E \}]
 }
 
 % Tr-BindNil
 \DefRule {Nil} {} {
-  \BEmp \TransBind \emptyset
+  \BEmp \TransBind \TCCEmpty [\emptyset]
 }

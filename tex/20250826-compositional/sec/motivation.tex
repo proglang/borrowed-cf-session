@@ -302,8 +302,8 @@ from session calculi \cite{Gay_Vasconcelos_2025}. It introduces a
 communication channel with endpoint names \lstinline{c} and 
 \lstinline{d}. We generalize channel abstraction so that each
 compartment \lstinline{[c]} and \lstinline{[d]} contains a
-\emph{binding group}, which binds one or more names. Its working is
-best illustrated with the example trace.
+\emph{binder group}: a flat list of channel names and separator markers.
+Its working is best illustrated with the example trace.
 
 To keep the trace short (\cref{fig:local-split-trace}), the
 reduction starts at the local suffix in \lstinline{renderRest}.
@@ -357,10 +357,9 @@ computation on the other endpoint.}
 \end{figure}
 The split on \lstinline{c2} following the \lstinline{select} \emph{replaces} the
 binder for \lstinline{c2} with two fresh channel names \lstinline{c3}
-and \lstinline{c4}. That is, both binding compartments of the
-\lstinline{nu} contain a \emph{list-like structure} of binders for
-channel names and all operations
-work on these channel names from left to right. To ensure the correct
+and \lstinline{c4}. That is, both compartments of the \lstinline{nu}
+contain a flat list of channel names, and all operations work on these
+channel names from left to right. To ensure the correct
 sequencing, the semantics does not allow any action on \lstinline{c4} before
 \lstinline{c3} has been consumed. This restriction is supported by
 typing: the \lstinline{lsplit} operation returns an \emph{ordered
@@ -432,14 +431,14 @@ forked process running \lstinline{renderProfile} until its final
     nu[c2][...]
     renderRest msgs c2
 \end{lstlisting}
-In summary, the \lstinline{rsplit} inserts a new binding group \lstinline{[c1|c2]}
-demarcated by ``\lstinline{|}'' to indicate a remote split. The
+In summary, the \lstinline{rsplit} replaces one channel name by
+\lstinline{[c1|c2]}, where ``\lstinline{|}'' marks a remote split. The
 \lstinline{drop} is only enabled 
-if its argument is the last name in a group directly before a
-``\lstinline{|}''. The \lstinline{acquire} is only
-enabled if the preceding binding group has been processed as in
-\lstinline{[|c2]}. Executing the \lstinline{acquire} in the last step removes the
-exhausted binding group and yields \lstinline{[c2]}.
+if its argument is the last name directly before a ``\lstinline{|}''.
+The \lstinline{acquire} is only enabled if the preceding list segment has
+been processed as in \lstinline{[|c2]}. Executing the \lstinline{acquire}
+in the last step removes the exhausted segment and separator, yielding
+\lstinline{[c2]}.
 
 \subsection{Implementing Local and Remote Borrowing}
 \label{sec:impl-local-remote}

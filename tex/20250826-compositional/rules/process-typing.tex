@@ -46,24 +46,24 @@
 
 \newcommand*\RuleBindSeq{
   \inferrule[B-Seq]{
-    \BindGivesCtx {\S[1]} {\BindGroup[1]} {\Ctx[1]} \\
-    \BindGivesCtx {\S[2]} {\BindGroup[2]} {\Ctx[2]}
+    \BindGivesCtx {\S[1]} \EVar {\Ctx[1]} \\
+    \BindGivesCtx {\S[2]} \Bind {\Ctx[2]}
   }{
     \BindGivesCtx
       {\SSeq{\S[1]}{\S[2]}}
-      {\BSeq{\BindGroup[1]}{\BindGroup[2]}}
+      {\BSeq{\EVar}{\Bind}}
       {\Ctx[1] \CtxSeq \Ctx[2]}
   }
 }
 
-\newcommand*\RuleBindPar{
-  \inferrule[B-Par]{
-    \BindGivesCtx {\SSeq{\S[1]}{\SRet}} {\BindGroup[1]} {\Ctx[1]} \\
+\newcommand*\RuleBindSep{
+  \inferrule[B-Sep]{
+    \BindGivesCtx {\SSeq{\S[1]}{\SRet}} {\Bind[1]} {\Ctx[1]} \\
     \BindGivesCtx {\SSeq{\SAcq}{\S[2]}} {\BindGroup[2]} {\Ctx[2]}
   }{
     \BindGivesCtx
       {\SSeq{\S[1]}{\S[2]}}
-      {\BPar{\BindGroup[1]}{\BindGroup[2]}}
+      {\BWithSep{\Bind[1]}{\BindGroup[2]}}
       {\Ctx[1] \CtxPar \Ctx[2]}
   }
 }

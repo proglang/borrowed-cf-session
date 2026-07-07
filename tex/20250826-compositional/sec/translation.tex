@@ -94,7 +94,7 @@ be executed first before any communication can happen. Payloads are transferred
 via the data channel $\TEVary$. If $\TEVarz$ is an IVar, then
 $\targettermcolor{c}$ will have to be dropped, not terminated. 
 
-The translation eliminates bind groups $\BindGroup$. The
+The translation eliminates binder groups $\BindGroup$. The
 $\TBindNu$-binder follows the standard syntax. 
 The new binder $\TBindSync$ introduces a fresh IVar to synchronize
 between two parts of a remote split. IVars are asynchronous so that a
@@ -134,55 +134,23 @@ $\TEChan [\V[1]] \E [\V[2]]$.
     \RuleTransProcExp   \and
     \RuleTransProcPar   \and
     \RuleTransProcBind  \\
-    \RuleTransBindPar   \and
-    \RuleTransBindChannels \and
+    \RuleTransBindSep   \and
     \RuleTransBindSeq   \and
     \RuleTransBindVar   \and
     \RuleTransBindNil
   \end{mathpar}
-  \begin{align*}
-    \BindFlag{\BPar{\BindGroup[1]}{\BindGroup[2]}} &= \BindFlag{\BindGroup[2]} &
+  \smallskip
+  \[
     \BindFlag{\Bind} &= \begin{cases}
-      \FlagDropped & \text{if $\Fv(\Bind) = \emptyset$} \\
+      \FlagDropped & \text{if $\Bind = \BEmp$} \\
       \FlagInit & \text{otherwise}
     \end{cases}
-  \end{align*}
-  % \begin{mathpar}
-  %   \inferrule{}{
-  %     \Bind \BCat \BEmp = \Bind
-  %   }
-
-  %   \inferrule{
-  %     \Bind[2] \ne \BEmp
-  %   }{
-  %     \Bind[1] \BCat \Bind[2] = \BSeq{\Bind[1]}{\Bind[2]}
-  %   }
-
-  %   \inferrule{}{
-  %     \BEmp \BNorm \BEmp
-  %   }
-
-  %   \inferrule{}{
-  %     \EVar \BNorm \EVar
-  %   }
-
-  %   \inferrule{
-  %     \Bind[1] \BNorm \Bind*[1] \\
-  %     \Bind[2] \BNorm \Bind*[2]
-  %   }{
-  %     \BSeq{\Bind[1]}{\Bind[2]} \BNorm \Bind*
-  %   }
-
-  %   \inferrule{
-  %     \Bind \BNorm \Bind*
-  %   }{
-  %     \BSeq\EVar\Bind \BNorm \EVar \BCat \Bind*
-  %   }
-  % \end{mathpar}
+  \]
   \caption{Translation of
     processes ($\Proc \TransProc \TProc*$)
-    and bind groups ($\BindGroup \TransBind \TCC [\Sub]$). Function $\BindFlag{}$
-    maps bind groups $\BindGroup$ to synchronization flags $\Flag$.}
+    and binder groups ($\BindGroup \TransBind \TCC [\Sub]$). Function $\BindFlag{}$
+    maps the final separator-delimited segment of a binder group to a
+    synchronization flag $\Flag$.}
   \label{fig:translation}
 \end{figure}
 
