@@ -1,18 +1,24 @@
 \section{Algorithmic typing}
 \label{sec:algorithmic-typing}
+
+This section develops an algorithmic version of the type system in
+\cref{sec:types}. The algorithmic system is directly amenable to
+construct a type checking algorithm.
+
+
+
 \subsection{Typing relation}
 
-For the algorithmic typing we consider an extended grammar of session types
+Algorithmic typing requires an extended grammar of session types
 $\AS$ that includes unification variables $\TVar$ drawn from
-$\TVAR$. We write $\AT$ for the set of types 
-$\T$ but referring to $\AS$ instead of $\S$.
+$\TVAR$. We write $\AT$ for types that refer to $\AS$ instead of $\S$.
 
-The algorithmic typing collects a set of constraints, denoted by
-metavariables $\CSet$. Constraints come in three forms:
+Algorithmic typing collects a set of constraints $\CSet$. Constraints
+come in three forms: 
 \begin{itemize}
-  \item equality constraints between two types $\AT \CEq \ATU$
-  \item mobility constraints $\CMobile \AT$
-  \item boundedness constraints $\CBounded \AS$
+  \item equality constraints between two types $\AT \CEq \ATU$;
+  \item mobility constraints $\CMobile \AT$;
+  \item boundedness constraints $\CBounded \AS$.
 \end{itemize}
 
 \begin{definition}[Closing substitution]
@@ -23,15 +29,16 @@ metavariables $\CSet$. Constraints come in three forms:
 \end{definition}
 
 \Cref{fig:typing-algorithmic} presents the algorithmic typing
-judgments, which are based on bidirectional typing. The
+judgments, which are based on bidirectional typing~\cite{DBLP:journals/csur/DunfieldK21}. The
 synthesis judgment $\InferType \E \AT \Eff$ takes as input the context $\Ctx$
 and expression $\E$. It computes the expression's type $\AT$, its effect
 $\Eff$, and a set of constraints $\CSet$. The checking judgment $\CheckType \E
 \AT \Eff$ takes as input the context $\Ctx$, expression $\E$, and type $\AT$. It
-outputs the expression's effect $\Eff$ as well as a set of constraints $\CSet$.
+returns the expression's effect $\Eff$ as well as a set of constraints
+$\CSet$.
 
 \begin{definition}[Context join]
-  The operator $\cdot \CtxJoin \cdot$ joins two contexts according to the
+  The operator $\_ \CtxJoin \_$ joins two contexts according to the
   direction $\Dir$.
   %
   \[ \Ctx[1] \CtxJoin \Ctx[2] = \begin{cases}
@@ -44,14 +51,14 @@ outputs the expression's effect $\Eff$ as well as a set of constraints $\CSet$.
 \end{definition}
 
 \begin{definition}[Context restriction]
-The operator $\cdot|_{\cdot}$ restricts a context to a set of variables.
+The operator $\_|_{X}$ restricts a context to a set of variables $X$%.
 %
 \[
   \CtxRestrict*{X} = \begin{cases}
     \CtxRestrict*[1]{X} \CtxPar \CtxRestrict*[2]{X} & \text{if $\Ctx=\Ctx[1] \CtxPar \Ctx[2]$} \\
     \CtxRestrict*[1]{X} \CtxSeq \CtxRestrict*[2]{X} & \text{if $\Ctx=\Ctx[1] \CtxSeq \Ctx[2]$} \\
     \CtxVar \EVar \T & \text{if $\Ctx=\CtxVar \EVar T$ and $\EVar \in X$} \\
-    \CtxEmpty & \text{else}
+    \CtxEmpty & \text{otherwise}
   \end{cases}
 \]
 %
@@ -108,9 +115,8 @@ algorithms. \pt{This must be made more precise! If I read the
   one-sided paramodulation; so the problem should be semi-decidable,
   at least.}
 Our approach is based on the fact that unification variables are
-only ever introduced for session types through split operations. Every session
-type---excluding $\SSkip$ and its compositions---must be used linearly. Thus,
-if a term with type $\TVar$ is not used the only viable solution for $\TVar$ is
+only introduced through split operations. As every session
+type is linear, if a term with type $\TVar$ is not used the only viable solution for $\TVar$ is
 $\SSkip$. Otherwise, we can infer the concrete type for $\TVar$ the terms use.
 Multiple uses in different branches of the program must yield equivalent types.
 If there are no solutions, the program is ill-typed.

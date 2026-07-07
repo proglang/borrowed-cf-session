@@ -83,7 +83,7 @@
 \DefRule {Check} {
   \InferType \E {\TU} {\Eff} \\
 }{
-  \CheckType \E {\T} {\Eff} [\CSet \CSJoin \T \CEq \TU]
+  \CheckType \E {\T} {\Eff} [\CSet \CSJoin \{\T \CEq \TU\}]
 }
 
 % A-Abs
