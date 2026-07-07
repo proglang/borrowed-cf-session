@@ -25,15 +25,15 @@
 \def\RuleNamePrefix{TN-}
 \def\RuleCmdPrefix{TypeNormalisation}
 
-\DefRule {SemiTerminated} {
-    \TerminatedType {\T} \\
+\DefRule {SemiSkips} {
+    \Skips {\T} \\
     \NormaliseType {\TU} {\TU'}
 }{
     \NormaliseType {\SSeq \T \TU} {\TU'}
 }
 
-\DefRule {SemiNonTerminated} {
-    \NonTerminatedType {\T} \\
+\DefRule {Semi} {
+    \neg \Skips {\T} \\
     \NormaliseType {\T} {\T'}
 }{
     \NormaliseType {\SSeq {\T} \TU} {\ConcatType {\T'} {\TU}}
