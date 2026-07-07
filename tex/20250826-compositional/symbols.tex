@@ -181,7 +181,6 @@
 \newcommand*\CEq{\csetcolor{\simeq}}
 \newcommand*\CSub{\csetcolor{\lesssim}}
 \newcommand*\CMobile{\csetcolor{\Mobile}}
-\newcommand*\CBounded{\csetcolor{\Bounded}}
 
 \newcommand*\csred{\Longrightarrow}
 
@@ -485,6 +484,9 @@
 \newcommand*\TCA[1]{\metacolor{\llbracket #1\rrbracket_{\textsc c}}}
 %{\metacolor{\mathcal{T}_{\C} (#1)}}
 \newcommand*\TEA[1]{\metacolor{\llbracket #1 \rrbracket_{\textsc e}}}% {\metacolor{\mathcal{T}_{\E} (#1)}}
+
+% Translation of session types to FreeST types (Appendix).
+\newcommand*\tofreest[1]{\llbracket #1 \rrbracket}
 
 \newcommand*\Cell[2][{}]{\targettypecolor{\Keyword{Cell}^{\priocolor{#1}}} (#2)}
 

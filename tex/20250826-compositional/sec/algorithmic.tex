@@ -194,30 +194,15 @@ only introduced through split operations. As every session
 type is linear, if a term with type $\TVar$ is not used the only viable solution for $\TVar$ is
 $\SSkip$. Otherwise, we can infer the concrete type for $\TVar$ the terms use.
 Multiple uses in different branches of the program must yield equivalent types.
-If there are no solutions, the program is ill-typed.
+If there are no solutions, the program is ill-typed. After equivalence constraints are solved, the asssignments are used to check mobility constraints. If any of the mobility requirements is not satisfied, again the program is ill-typed.
 
 \begin{mathpar}
   \RuleCSPair \and
   \RuleCSSum \and
   \RuleCSUnit \and
   \RuleCSArrow \and
-  \RuleCSRet \and
-  \RuleCSClose \and
-  \RuleCSWait \and
-  \RuleCSSeqI \and
-  \RuleCSSeqII \and
-  \RuleCSMobileUnit \and
-  \RuleCSAcq \and
-  \RuleCSMobileArrow \and
-  \RuleCSMobilePair \and
-  \RuleCSMobileVariant \and
   \RuleCSContext
 \end{mathpar}
-
-$\Skips$ is decidable for unsolved session types because neither $\SSkip$ nor
-any session type $\S$ such that $\Skips\S$ are solutions for unification
-variables.
-
 
 \subsection{Type Normalisation}
 
@@ -234,9 +219,9 @@ variables.
 
   \hfill \fbox{$\NormaliseType {\T[in]} {\T[out]}$}
   \begin{mathpar}
-    \TypeNormalisationSemiTerminated
+    \TypeNormalisationSemiSkips
     
-    \TypeNormalisationSemiNonTerminated
+    \TypeNormalisationSemi
 
     \TypeNormalisationMu
 

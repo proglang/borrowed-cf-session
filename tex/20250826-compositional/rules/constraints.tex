@@ -37,50 +37,6 @@
   \}
 }
 
-\DefRule {Ret} {} {
-  \CBounded \SRet \csred \emptyset
-}
-
-\DefRule {Close} {} {
-  \CBounded \STerm \csred \emptyset
-}
-
-\DefRule {Wait} {} {
-  \CBounded \SWait \csred \emptyset
-}
-
-\DefRule {SeqI} {
-  \Skips \AS[2]
-}{
-  \CBounded\ (\SSeq{\AS[1]}{\AS[2]}) \csred \{ \CBounded \AS[1] \}
-}
-
-\DefRule {SeqII} {
-  \neg \Skips \AS[2]
-}{
-  \CBounded\ (\SSeq{\AS[1]}{\AS[2]}) \csred \{ \CBounded \AS[2] \}
-}
-
-\DefRule {MobileUnit} {} {
-  \CMobile \BUnit \csred \emptyset
-}
-
-\DefRule {Acq} {} {
-  \CMobile\ (\SSeq\SAcq\AS) \csred \{ \CBounded \AS \}
-}
-
-\DefRule {MobileArrow} {} {
-  \CMobile\ (\TArr{\MobMobile}{\Dir,\Eff}{\AT}{\ATU}) \csred \emptyset
-}
-
-\DefRule {MobilePair} {} {
-  \CMobile\ (\AT \TPair \ATU) \csred \{ \CMobile\AT, \CMobile\ATU \}
-}
-
-\DefRule {MobileVariant} {} {
-  \CMobile \TVariant{\ell:\AT[\ell]} \csred \{ \CMobile\AT[\ell] \mid \ell\in L \}
-}
-
 \DefRule {Context} {
   \AT \CEq \ATU \csred \CSet*
 }{
