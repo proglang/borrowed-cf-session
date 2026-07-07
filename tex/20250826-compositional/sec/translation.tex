@@ -140,9 +140,9 @@ $\TEChan [\E[1]] \E [\E[2]]$.
     \RuleTransBindNil
   \end{mathpar}
   \begin{align*}
-    \BindFlag{\BWithSep{\BindGroup[1]}{\BindGroup[2]}} &= \BindFlag{\BindGroup[2]} &
-    \BindFlag{\BindGroup} &= \begin{cases}
-      \FlagDropped & \text{if $\Fv(\BindGroup) = \emptyset$} \\
+    \BindFlag{\BWithSep{\Bind[1]}{\BindGroup[2]}} &= \BindFlag{\BindGroup[2]} &
+    \BindFlag{\Bind} &= \begin{cases}
+      \FlagDropped & \text{if $\Fv(\Bind) = \emptyset$} \\
       \FlagInit & \text{otherwise}
     \end{cases}
   \end{align*}

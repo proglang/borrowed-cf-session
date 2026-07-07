@@ -187,11 +187,12 @@
 
 % binders
 \NewMetaVar[\procbindcolor] \BindGroup B
-\newcommand*\BSeq[2]{\procbindcolor{#1; #2}}
+\NewMetaVar[\procbindcolor] \Bind      b
+\newcommand*\BSeq[2]{\procbindcolor{#1#2}}
 \newcommand*\BSep{\procbindcolor{\|}}
 \newcommand*\BWithSep[2]{\procbindcolor{#1\BSep#2}}
 \newcommand*\BLeadSep[1]{\procbindcolor{\BSep#1}}
-\newcommand*\BEmp{\procbindcolor{\cdot}}
+\newcommand*\BEmp{\procbindcolor{\varepsilon}}
 
 % Expressions
 \NewMetaVar[\termcolor] \E     e

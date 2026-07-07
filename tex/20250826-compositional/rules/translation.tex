@@ -40,22 +40,22 @@
 
 % Tr-BindSep
 \DefRule {Sep} {
-  \BindGroup[1] \TransBind[{\TEChan[\E[1]] \TEVar [\TEVarz]}] {\TCC[1]} [\Sub[1]] \\
+  \Bind[1] \TransBind[{\TEChan[\E[1]] \TEVar [\TEVarz]}] \TCCEmpty [\Sub[1]] \\
   \BindGroup[2] \TransBind[{\TEChan[\TEVarz] \TEVar [\E[2]]}] {\TCC[2]} [\Sub[2]] \\
-  \BindFlag{\BindGroup[1]} = \Flag
+  \BindFlag{\Bind[1]} = \Flag
 }{
-  \BWithSep{\BindGroup[1]}{\BindGroup[2]} \TransBind[{\TEChan[\E[1]] \TEVar [\E[2]]}]
-    {\TPSync \Flag \targetproccolor{(\TCC[1][\TCC[2]])}}
+  \BWithSep{\Bind[1]}{\BindGroup[2]} \TransBind[{\TEChan[\E[1]] \TEVar [\E[2]]}]
+    {\TPSync \Flag \TCC[2]}
     [\Sub[1] \cup \Sub[2]]
 }
 
 % Tr-BindSeq
 \DefRule {Seq} {
-  \BindGroup[1] \TransBind[\TEChan[\E[1]]{\TEVar}] {\TCC[1]} [\Sub[1]] \\
-  \BindGroup[2] \TransBind[\TEChan{\TEVar}[\E[2]]] {\TCC[2]} [\Sub[2]] \\
+  \EVary \TransBind[\TEChan[\E[1]]{\TEVar}] \TCCEmpty [\Sub[1]] \\
+  \Bind \TransBind[\TEChan{\TEVar}[\E[2]]] \TCCEmpty [\Sub[2]] \\
 }{
-  \BSeq{\BindGroup[1]}{\BindGroup[2]} \TransBind[\TEChan[\E[1]]{\TEVar}[\E[2]]]
-    {\targetproccolor{(\TCC[1][\TCC[2]])}}
+  \BSeq{\EVary}{\Bind} \TransBind[\TEChan[\E[1]]{\TEVar}[\E[2]]]
+    \TCCEmpty
     [\Sub[1] \cup \Sub[2]]
 }
 
