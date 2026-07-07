@@ -177,25 +177,7 @@ output types to be equal.
 \subsection{Constraint Solving}
 \label{sec:constraint-solving}
 
-
-Solving a set of constraints between types with variables boils down
-to a unification problem over CFSTs. Unfortunately, there is no
-unification algorithm readily available for this theory, which
-involves associativity, neutral elements, and distributivity
-
-Potential solutions can be checked by the equivalence algorithm for context
-free session types. However, the literature does not provide unification
-algorithms. \pt{This must be made more precise! If I read the
-  wikipedia article correctly, then solutions can be enumerated by
-  one-sided paramodulation; so the problem should be semi-decidable,
-  at least.}
-Our approach is based on the fact that unification variables are
-only introduced through split operations. As every session
-type is linear, if a term with type $\TVar$ is not used the only viable solution for $\TVar$ is
-$\SSkip$. Otherwise, we can infer the concrete type for $\TVar$ the terms use.
-Multiple uses in different branches of the program must yield equivalent types.
-If there are no solutions, the program is ill-typed. After equivalence constraints are solved, the asssignments are used to check mobility constraints. If any of the mobility requirements is not satisfied, again the program is ill-typed.
-
+\begin{figure}[tp]
 \begin{mathpar}
   \RuleCSPair \and
   \RuleCSSum \and
@@ -203,6 +185,27 @@ If there are no solutions, the program is ill-typed. After equivalence constrain
   \RuleCSArrow \and
   \RuleCSContext
 \end{mathpar}
+  \caption{Constraint simplification}
+  \label{fig:constraint-simplification}
+\end{figure}
+
+Solving a set of constraints between types with variables boils down
+to a unification problem over CFSTs. Unfortunately, there is no
+unification algorithm readily available for this theory, which
+involves associativity, neutral elements, and distributivity. For this
+reason, we approach constraint solving by constraint simplification
+(see \cref{fig:constraint-simplification})
+down to the point where all unification variables are eliminated.
+Then we pass the resulting (variable-free) type equations to FreeST,
+which implements a decision procedure for equivalence of CFSTs.
+
+Our approach is based on the fact that unification variables are
+only introduced through split operations. As every session
+type is linear, if a term with type $\TVar$ is not used the only viable solution for $\TVar$ is
+$\SSkip$. Otherwise, we can infer the concrete type for $\TVar$ the terms use.
+Multiple uses in different branches of the program must yield equivalent types.
+If there are no solutions, the program is ill-typed. After equivalence constraints are solved, the asssignments are used to check mobility constraints. If any of the mobility requirements is not satisfied, again the program is ill-typed.
+
 
 \subsection{Type Normalisation}
 
