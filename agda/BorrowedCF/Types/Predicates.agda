@@ -13,6 +13,9 @@ open Un hiding (U)
 open Bin using (_Respects_)
 open Nat.Variables
 
+EndsIn-` : 𝔽 n → 𝕊 n → Set
+EndsIn-` x = EndsIn one {` x} `-
+
 data Bounded {n} : 𝕊 n → Set where
   end  : Bounded (end p)
   ret  : Bounded ret
@@ -55,19 +58,6 @@ bounded-⋯ (-;₂ b) = -;₂ bounded-⋯ b
 bounded-⋯ (mu b) = mu (bounded-⋯ b)
 bounded-⋯ (brn b b₁) = brn (bounded-⋯ b) (bounded-⋯ b₁)
 
-data EndsIn (x : 𝔽 n) : 𝕊 n → Set where
-  `-   : EndsIn x (` x)
-  _;₁_ : EndsIn x s₁ → Skips s₂ → EndsIn x (s₁ ; s₂)
-  -;₂_ : EndsIn x s₂ → EndsIn x (s₁ ; s₂)
-  brn₁ : EndsIn x s₁ → EndsIn x (brn p s₁ s₂)
-  brn₂ : EndsIn x s₂ → EndsIn x (brn p s₁ s₂)
-  mu   : EndsIn (suc x) s → EndsIn x (mu s)
-
-skips⊥endsIn : ∀ {x} → Skips s → EndsIn x s → ⊥
-skips⊥endsIn (s ; s₁) (e ;₁ x) = skips⊥endsIn s e
-skips⊥endsIn (s ; s₁) (-;₂ e)  = skips⊥endsIn s₁ e
-skips⊥endsIn (mu s)   (mu e)   = skips⊥endsIn s e
-
 bounded-⋯ᵣ⁻¹ : {ϕ : m →ᵣ n} → Bounded (s ⋯ ϕ) → Bounded s
 bounded-⋯ᵣ⁻¹ {s = end p} end = end
 bounded-⋯ᵣ⁻¹ {s = brn p s₁ s₂} (brn B B₁) = brn (bounded-⋯ᵣ⁻¹ B) (bounded-⋯ᵣ⁻¹ B₁)
@@ -79,27 +69,27 @@ bounded-⋯ᵣ⁻¹ {s = ret} ret = ret
 bounded⋯⇒¬endsIn⊎bounded : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ {ϕ : m –[ K ]→ n} →
   Bounded (s ⋯ ϕ) →
   (∀ z → ¬ Skips (`/id (ϕ z))) →
-  ∀ {z} → EndsIn z s → Bounded (`/id (ϕ z))
-bounded⋯⇒¬endsIn⊎bounded B ∀¬S `- = B
+  ∀ {z} → EndsIn-` z s → Bounded (`/id (ϕ z))
+bounded⋯⇒¬endsIn⊎bounded B ∀¬S here = B
 bounded⋯⇒¬endsIn⊎bounded (B ;₁ x₁) ∀¬S (E ;₁ x) = bounded⋯⇒¬endsIn⊎bounded B ∀¬S E
 bounded⋯⇒¬endsIn⊎bounded (-;₂ B) ∀¬S (E ;₁ s) = ⊥-elim (skips⊥bounded (skips-⋯ s) B)
 bounded⋯⇒¬endsIn⊎bounded (B ;₁ s) ∀¬S (-;₂ E) = ⊥-elim (skips⊥endsIn (skips-⋯⁻¹ s ∀¬S) E)
 bounded⋯⇒¬endsIn⊎bounded (-;₂ B) ∀¬S (-;₂ E) = bounded⋯⇒¬endsIn⊎bounded B ∀¬S E
-bounded⋯⇒¬endsIn⊎bounded (brn B₁ B₂) ∀¬S (brn₁ E) = bounded⋯⇒¬endsIn⊎bounded B₁ ∀¬S E
-bounded⋯⇒¬endsIn⊎bounded (brn B₁ B₂) ∀¬S (brn₂ E) = bounded⋯⇒¬endsIn⊎bounded B₂ ∀¬S E
+bounded⋯⇒¬endsIn⊎bounded (brn B₁ B₂) ∀¬S (brn (inj₁ E)) = bounded⋯⇒¬endsIn⊎bounded B₁ ∀¬S E
+bounded⋯⇒¬endsIn⊎bounded (brn B₁ B₂) ∀¬S (brn (inj₂ E)) = bounded⋯⇒¬endsIn⊎bounded B₂ ∀¬S E
 bounded⋯⇒¬endsIn⊎bounded ⦃ K ⦄ (mu B) ∀¬S (mu E) =
   let IH = bounded⋯⇒¬endsIn⊎bounded B (λ{ zero → ¬skips-`/` K; (suc z) → ∀¬S z ∘ skips-⋯ᵣ⁻¹ ∘ subst Skips (sym (wk-`/id _)) }) E in
   bounded-⋯ᵣ⁻¹ (subst Bounded (sym (wk-`/id _)) IH)
 
 bounded-⋯⁻¹ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ {ϕ : m –[ K ]→ n} → Bounded (s ⋯ ϕ)
   → (∀ z → ¬ Skips (`/id (ϕ z)))
-  → (∀ z → EndsIn z s → Bounded s)
+  → (∀ z → EndsIn-` z s → Bounded s)
   → Bounded s
-bounded-⋯⁻¹ {s = ` x} B ∀¬S ∀¬E = ∀¬E x `-
+bounded-⋯⁻¹ {s = ` x} B ∀¬S ∀¬E = ∀¬E x here
 bounded-⋯⁻¹ {s = end p} B ∀¬S ∀¬E = end
 bounded-⋯⁻¹ {s = brn p s₁ s₂} (brn B₁ B₂) ∀¬S ∀¬E =
-  brn (bounded-⋯⁻¹ B₁ ∀¬S λ z → proj₁ ∘ bounded-brn⁻ ∘ ∀¬E z ∘ brn₁)
-      (bounded-⋯⁻¹ B₂ ∀¬S λ z → proj₂ ∘ bounded-brn⁻ ∘ ∀¬E z ∘ brn₂)
+  brn (bounded-⋯⁻¹ B₁ ∀¬S λ z → proj₁ ∘ bounded-brn⁻ ∘ ∀¬E z ∘ brn ∘′ inj₁)
+      (bounded-⋯⁻¹ B₂ ∀¬S λ z → proj₂ ∘ bounded-brn⁻ ∘ ∀¬E z ∘ brn ∘′ inj₂)
 bounded-⋯⁻¹ {s = mu s} ⦃ K ⦄ (mu B) ∀¬S ∀¬E =
   let ∀¬S′ = λ where zero    → ¬skips-`/` K
                      (suc z) → ∀¬S z ∘ skips-⋯ᵣ⁻¹ ∘ subst Skips (sym (wk-`/id _))
