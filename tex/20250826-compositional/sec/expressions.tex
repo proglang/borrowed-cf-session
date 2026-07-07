@@ -123,24 +123,6 @@ contexts $\FC$ and process contexts $\CC$.
 
 Binder sequence concatenation is written by juxtaposition with unit $\BEmp$.
 
-% EXP EVALUATION
-
-\begin{figure}[t!]
-  \begin{mathpar}
-    \RuleExpRedApp \and
-    \RuleExpRedSeq \and
-    \RuleExpRedPairElim \and
-    \RuleExpRedUnfold \and
-    \RuleExpRedVariantElim \and
-    \RuleExpRedCtx
-  \end{mathpar}
-  \caption{Expression reduction ($\E \EReduce \E$)}
-  \label{fig:expression-reduction}
-\end{figure}
-
-Processes $\Proc$ inlcude a single expression, parallel composition of the former, and channel introduction with two binder groups. 
-Finally, we can lift the evaluation contexts to processes by defining thread contexts $\FC$ and process contexts $\CC$. 
-
 \begin{figure}[t!]
   \begin{mathpar}
     \RuleProcRedExp \and
