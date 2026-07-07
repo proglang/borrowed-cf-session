@@ -31,3 +31,141 @@
   \caption{Expression reduction ($\E \EReduce \E$)}
   \label{fig:expression-reduction}
 \end{figure}
+
+\subsection{Constraint Checking with FreeST}
+
+In the implementation, we use FreeST (TODO: cite) version 5.0 to perform equivalence checking. To achieve this, we generate little FreeST programs that typechecks iff the equivalence constraints hold.
+
+For every equivalence constraint $\T[1] \CEq \T[2]$, we generate the following FreeST program:
+
+\begin{lstlisting}[numbers=left]
+type T1 : 1S
+type T1 = ...
+
+type T2 : 1S
+type T2 = ...
+
+test : T1 -> T2
+test x = x
+\end{lstlisting}
+
+FreeST 5.0 requires specifying kinds of type definitions. \lstinline|1S| means that the type is a session type. \lstinline|T1| and \lstinline|T2| are the translated types from the equivalence constraint. Because \lstinline|test| is the identity function, the only way it type checks is when \lstinline|T1| and \lstinline|T2| are equivalent types.
+
+The main parts of translation are:
+\begin{itemize}
+  \item Translating inline $\mu$ recursion to explicit recursion.
+  \item Translating mobility and direction annotation on function and pair types.
+\end{itemize}
+
+Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ recursion to explicit recursion, because FreeST 5.0 only supports explicit recursion. Whenever we see a $\mu$ binder, we generate a fresh name and associate it with the recursion unrolled and translation applied. Then instead of the type, we return the associated name. Therefore, the conversation function takes a session type $S$ and returns a Freest Type $F$ and potentially a list of explicit type definitions.
+
+\Cref{fig:freest-translation} defines the translation of session types to FreeST types. The translation $\tofreest{\S}$ yields a pair $[F, U]$ consisting of a FreeST type $F$ and a set $U$ of session type definitions.
+
+\begin{figure}[t!]
+  \begin{align*}
+    \tofreest{\TypeKeyword{Unit}}
+      & = [(), \emptyset] \\
+    \tofreest{\SSkip}
+      & = [\SSkip, []] \\
+    \tofreest{\STerm}
+      & = [\STerm, []] \\
+    \tofreest{\SWait}
+      & = [\SWait, []] \\
+    \tofreest{\TArr{\Mob}{\Dir, {\Eff}}{\T[1]}{\T[2]}}
+      & = (\tofreest{\T[1]} \to \tofreest{\T[2]}) \TPair \SBranch {\ell : \SSkip} {\ell \in \text{dir} \cup \text{mob} \cup \text{eff}} \quad \text{where} \\
+      & \text{dir} = \begin{cases}
+        \{ \text{left} \} & \text{if } \Dir = \DirLeft \\
+        \{ \text{right} \} & \text{if } \Dir = \DirRight \\
+        \{ \text{lin} \} & \text{if } \Dir = \DirUnord \\
+        \emptyset & \text{if } \Dir = \DirNone \\
+      \end{cases} \\
+      & \text{mob} = \begin{cases}
+        \{ \text{mobile} \} & \text{if } \Mob = \MobMobile \\
+        \{ \text{static} \} & \text{if } \Mob = \MobStationary \\
+      \end{cases} \\
+      & \text{eff} = \begin{cases}
+        \{ \text{impure} \} & \text{if } \Eff = \EffImpure \\
+        \{ \text{} \} & \text{if } \Eff = \EffImpure \\
+      \end{cases} \\
+    \tofreest{\SSend\T}
+      & = [\SSend{F}, U] \quad \text{where} \\
+      & \quad [F, U] = \tofreest{\T} \\
+    \tofreest{\SRecv\T}
+      & = [\SRecv{F}, U] \quad \text{where} \\
+      & \quad [F, U] = \tofreest{\T} \\
+    \tofreest{\S[1] ; \S[2]}
+      & = [F_1 ; F_2,\, U_1 \cup U_2] \quad \text{where} \\
+      & \quad [F_1, U_1] = \tofreest{\S[1]} \\
+      & \quad [F_2, U_2] = \tofreest{\S[2]} \\
+    \tofreest{\SChoice{\ell:\S[\ell]}{\ell\in L}}
+      & = [+\{\ell : \tofreest{F_\ell}\}_{\ell\in L},\, \bigcup_{\ell\in L} U_\ell] \quad \text{where} \\
+      & \quad [F_\ell, U_\ell] = \tofreest{\S[\ell]} \quad \text{for every } \ell \in L \\
+    \tofreest{\SBranch{\ell:\S[\ell]}{\ell\in L}}
+      & = [\&\{\ell : \tofreest{F_\ell}\}_{\ell\in L},\, \bigcup_{\ell\in L} U_\ell] \quad \text{where} \\
+      & \quad [F_\ell, U_\ell] = \tofreest{\S[\ell]} \quad \text{for every } \ell \in L \\
+    \tofreest{\SRet}
+      & = [\SSend{\TypeKeyword{Ret}},\, \emptyset] \\
+    \tofreest{\SAcq}
+      & = [\SRecv{\TypeKeyword{Ret}}, \emptyset] \\
+    \tofreest{\SRec\SVar\S}
+      & = [\SVar',\, U \cup \{\SVar' \mapsto U\}] \quad \text{where } \SVar' \text{ is fresh and} \\
+      & \quad [F, U] = \tofreest{\S\,[\SVar'/\SVar]} \\
+    \tofreest{\SVar}
+      & = [\SVar, \emptyset]
+  \end{align*}
+  \caption{Translation of session types to FreeST types.}
+  \label{fig:freest-translation}
+\end{figure}
+
+
+\subsubsection{Soundness and the Completeness of the translation}
+
+\begin{definition}[Equivalence relation for \thecalculus types]
+  The equivalence relation $\simeq$ on \thecalculus types is the least congruence closed under the equivalence rules from \cite{DBLP:conf/icfp/ThiemannV16} extended with rules in \Cref{fig:cfstb-equivalence}.
+\end{definition}
+
+\begin{figure}[t!]
+  \begin{mathpar}
+    \inferrule{
+      \T[1] \simeq \T*[1] \\
+      \T[2] \simeq \T*[2]
+    }{
+      \TArr{\Mob}{\Dir,\Eff}{\T[1]}{\T[2]}
+      \simeq
+      \TArr{\Mob}{\Dir,\Eff}{\T*[1]}{\T*[2]}
+    }
+    \and
+    \inferrule{
+      \T[1] \simeq \T*[1] \\
+      \T[2] \simeq \T*[2]
+    }{
+      \T[1] \TPair \T[2]
+      \simeq
+      \T*[1] \TPair \T*[2]
+    }
+    \and
+    \inferrule{
+      \T[1] \simeq \T*[1] \\
+      \T[2] \simeq \T*[2]
+    }{
+      \TSum{\T[1]}{\T[2]}
+      \simeq
+      \TSum{\T*[1]}{\T*[2]}
+    }
+  \end{mathpar}
+  \caption{Modified rules for $\simeq$}
+  \label{fig:cfstb-equivalence}
+\end{figure}
+
+\begin{definition}[Substituting definitions]
+  Let $F$ be a FreeST session type and $U$ be set of mapping from variables to FreeST session types such that $\text{freevars}(F) \subseteq \text{dom}(U)$. The subsitution of $U$ to $F$, denoted by $F[U]$. A well formed subsitution has no free variables.
+\end{definition}
+
+\begin{lemma}[Soundness of the translation]
+  If $\T[1] \simeq \T[2]$, then $F_1 [U_1] \simeq F_2 [U_2]$ where $(F_1, U_1) = \tofreest{\T[1]}$ and $(F_2, U_2) = \tofreest{\T[2]}$.
+\end{lemma}
+\begin{proof}
+  We sketch a proof. The soundness proof mainly requires two things: The translation of annotations in the arrow and product types preserves equivalence and the equivalence of the explicit recursion with the $\mu$ binder syntax. For the former we can perform induction on the equivalence of $\T[1] \simeq \T[2]$ and use equivalence and bisimulation lemmas from \cite{DBLP:conf/icfp/ThiemannV16} for regular type and session type cases, respectively. The pairs we introduce for annotations can be handled trivially by the type equivalence rules. Then to show explicit recursion conversion preserves equivalence, we can use the laws for $\mu$ types from \cite{DBLP:conf/icfp/ThiemannV16}.
+\end{proof}
+
+
