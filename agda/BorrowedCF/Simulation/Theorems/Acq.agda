@@ -352,15 +352,34 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
       ◅◅ Bφ-cong C (U.ν-cong (≡→≋ (Bφ-⋯ B₂
            (U.φ U.acq (subst U.Proc eqC LL U.⋯ₚ (assocSwapᵣ (syncs C) 1 ↑* syncs B₂) U.⋯ₚ assocSwapᵣ (syncs B₂) 1))
            (assocSwapᵣ (syncs C) 2))))
-      ◅◅ Bφ-cong C (ν-past-Bφ B₂
-           (U.φ U.acq (subst U.Proc eqC LL U.⋯ₚ (assocSwapᵣ (syncs C) 1 ↑* syncs B₂) U.⋯ₚ assocSwapᵣ (syncs B₂) 1)
-              U.⋯ₚ (assocSwapᵣ (syncs C) 2 ↑* syncs B₂)))
+       ◅◅ Bφ-cong C (ν-past-Bφ B₂
+            (U.φ U.acq (subst U.Proc eqC LL U.⋯ₚ (assocSwapᵣ (syncs C) 1 ↑* syncs B₂) U.⋯ₚ assocSwapᵣ (syncs B₂) 1)
+               U.⋯ₚ (assocSwapᵣ (syncs C) 2 ↑* syncs B₂)))
+    acq-out-eq :
+      U.ν ((U.⟪ Fout [ (* ⊗ (` 1F)) ⊗ eout ]* ⟫ U.∥ Qout) U.⋯ₚ ⦅ * ⦆ₛ)
+      ≡ U.ν ((U.⟪ Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]* ⟫ U.∥ Qout) U.⋯ₚ ⦅ * ⦆ₛ)
+    acq-out-eq = cong U.ν (cong₂ U._∥_ (cong U.⟪_⟫ thread-eq) refl)
+      where
+        V* : VSub ⦅ * ⦆ₛ
+        V* zero    = V-K
+        V* (suc _) = V-`
+        acq-term-eq : (( * ⊗ (` 1F)) ⊗ eout) ⋯ ⦅ * ⦆ₛ
+                    ≡ (((` 0F) ⊗ (` 1F)) ⊗ eout) ⋯ ⦅ * ⦆ₛ
+        acq-term-eq = refl
+        thread-eq : (Fout [ (* ⊗ (` 1F)) ⊗ eout ]*) ⋯ ⦅ * ⦆ₛ
+                  ≡ (Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]*) ⋯ ⦅ * ⦆ₛ
+        thread-eq =
+            frame-plug* Fout ⦅ * ⦆ₛ V*
+          ■ cong ((frame*-⋯ Fout ⦅ * ⦆ₛ V*) [_]*) acq-term-eq
+          ■ sym (frame-plug* Fout ⦅ * ⦆ₛ V*)
     fire : mid UR─→ₚ* fired
     fire = Bφ-fire C (Bφ-fire B₂
-             (subst (λ z → U.ν (U.φ U.acq z) UR─→ₚ*
-                       U.ν ((U.⟪ Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]* ⟫ U.∥ Qout) U.⋯ₚ ⦅ * ⦆ₛ))
-                    (sym redexL)
-                    (leaf-fire Fout {e = eout} Qout)))
+              (subst (λ z → U.ν (U.φ U.acq z) UR─→ₚ*
+                        U.ν ((U.⟪ Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]* ⟫ U.∥ Qout) U.⋯ₚ ⦅ * ⦆ₛ))
+                     (sym redexL)
+                     (subst (λ z → U.ν (U.φ U.acq (U.⟪ Fout [ K `acq ·¹ (((` 0F) ⊗ (` 1F)) ⊗ eout) ]* ⟫ U.∥ Qout)) UR─→ₚ* z)
+                       acq-out-eq
+                       (leaf-fire Fout {e = eout} Qout))))
     leaf′ : U.Proc (2 + (sB₂ + (sC + n)))
     leaf′ = (U.⟪ Fout [ ((` 0F) ⊗ (` 1F)) ⊗ eout ]* ⟫ U.∥ Qout) U.⋯ₚ ⦅ * ⦆ₛ
     -- acq-confine factors E and P so they avoid the consumed handle 0F.

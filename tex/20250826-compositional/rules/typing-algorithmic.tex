@@ -74,7 +74,7 @@
   \InferType [\CtxRestrict{\E[1]}] {\E[1]} {\TArr{\Mob}{\Dir,\Eff[3]} \T \TU} {\Eff[1]} [\CSet[1]] \\
   \CheckType [\CtxRestrict{\E[2]}] {\E[2]} {\T} {\Eff[2]} [\CSet[2]]
 }{
-  \InferType {\E[1]\E[2]} {\TU} {\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]} [\CSet[1] \CSJoin \CSet[2]]
+  \InferType {\EAppD{\E[1]}{\E[2]}{\Dir}} {\TU} {\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]} [\CSet[1] \CSJoin \CSet[2]]
 }
 
 % A-Check

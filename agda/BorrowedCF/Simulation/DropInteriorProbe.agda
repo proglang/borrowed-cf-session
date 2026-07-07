@@ -1,31 +1,23 @@
 module BorrowedCF.Simulation.DropInteriorProbe where
 
--- MACHINE EVIDENCE for the (historical) reverse RU-Drop blocker, kept as the
--- record of WHY the drop fix landed the way it did.
+-- MACHINE EVIDENCE for the reverse RU-Drop blocker (simRes φ-bearing holes).
 --
 -- A width-2 borrow block whose ret marker sits at INTERIOR position 1F is
--- BindCtx-constructible (bcd below; mirror of BC2Probe's close variant).  The
--- reverse RU-Drop reflects to a typed drop of exactly this ret marker, while
--- typed R-Drop fires only on a block-front handle — the two coincide only at
--- width 1.  With `drop PURE (∣ ℙ) the width-2 drop-ACTIVE state was well-typed
--- reachable (a sibling borrow ;-before the drop can hide in an evaluated
--- value), and no untyped-side fix exists: RU-Com must leave the surviving ret
--- triple byte-identical while the block shrinks 2→1, so ANY shrink-stable
--- translation makes width-1 and width-2-last ret triples indistinguishable —
--- a local RU-Drop discriminator is impossible.
+-- BindCtx-constructible (mirror of BC2Probe's close variant).  The reverse
+-- RU-Drop reflects to a typed drop of exactly this ret marker, but typed
+-- R-Drop fires only on the block-FRONT handle 0F of a width-1 head block —
+-- and, unlike close/com/choice (impure, front-forced via the com-xS-min
+-- squeeze on LeftPat frame stacks), `drop is PURE (∣ ℙ), so the impurity
+-- front-forcing is unavailable: the earlier msg borrow may legitimately be
+-- held inside an already-evaluated value (e.g. a pair) ;-before the active
+-- drop redex.  Closing the reverse RU-Drop therefore needs the SAME calculus
+-- generalization the splits received (R-Drop at interior block position q),
+-- or a new typed rule — a typing/calculus design change.
 --
--- RESOLUTION (this commit):
---  (1) `drop is now IMPURE (∣ 𝕀, Terms.agda): the LeftPat/frames-𝕀 squeeze
---      (RevComConfine) applies, so an ACTIVE drop admits no live borrow
---      ;-before it — the width-2 drop-active state is no longer typeable.
---      The BindCtx bcd below still exists (BindCtx is effect-blind); only the
---      active-redex configuration died.
---  (2) typed R-Drop is q-GENERALIZED to interior block-list position ∣B₁∣
---      (Reduction/Processes/Typed.agda, SplitRenamings.dwk) — the calculus
---      generalization this probe asked for; forward case: Theorems/DropQ.agda
---      (vacuity via dropVac-last/mid, firing via Bw-slide + leaf-dwk).
--- The reverse-direction width pin (width-2 refutation from the squeeze) lives
--- with the reverse drop case.
+-- (Compare: pieces after a ret marker force the residual ≃ skip, so the ret
+-- is always the LAST borrow of its block; typed R-Drop's handle 0F therefore
+-- only ever types at width 1.  The reverse handle is pinned by the image
+-- geometry to the LAST index — the two only coincide at width 1.)
 
 open import Data.Vec.Functional as F using ()
 open import BorrowedCF.Prelude

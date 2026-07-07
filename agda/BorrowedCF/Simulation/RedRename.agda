@@ -115,30 +115,44 @@ red-⋯ₚ ρ (RU-LSplit {s = s} {e₁ = e₁} {e₂ = e₂} {P = P} F) =
     (cong (λ z → ν (⟪ z ⟫ ∥ (P ⋯ₚ ρ ↑* 2)))
           (sym (fp* F (ρ ↑* 2) {t = 𝓒[ e₁ × 0F × * ] ⊗ 𝓒[ * × 0F × e₂ ]})))
     (RU-LSplit (F ⋯ᶠ* ρ ↑* 2))
-red-⋯ₚ ρ (RU-Drop {e = e} {P = P} F {x = x}) =
+red-⋯ₚ ρ (RU-Drop {P = P} F {x = x}) =
   subst₂ _─→ₚ_
     (cong (λ z → φ drop (⟪ z ⟫ ∥ (P ⋯ₚ ρ ↑)))
-          (sym (fp* F (ρ ↑) {t = K `drop ·¹ 𝓒[ e × suc x × ` 0F ]})))
+          (sym (fp* F (ρ ↑) {t = K `drop ·¹ 𝓒[ * × suc x × ` 0F ]})))
     (cong (λ z → φ acq (⟪ z ⟫ ∥ (P ⋯ₚ ρ ↑)))
           (sym (fp* F (ρ ↑) {t = *})))
     (RU-Drop (F ⋯ᶠ* ρ ↑) {x = ρ x})
 red-⋯ₚ ρ (RU-Acquire {e = e} {P = P} F) =
   subst₂ _─→ₚ_
-    (cong (λ z → ν (φ acq (⟪ z ⟫ ∥ (P ⋯ₚ ρ ↑* 2 ↑))))
-          (sym (fp* F (ρ ↑* 2 ↑) {t = K `acq ·¹ 𝓒[ ` 0F × 1F × e ]})))
     (cong ν
-       (cong (_⋯ₚ ⦅ * ⦆ₛ)
-          (cong (λ z → ⟪ z ⟫ ∥ (P ⋯ₚ ρ ↑* 2 ↑))
-                (sym (fp* F (ρ ↑* 2 ↑) {t = 𝓒[ ` 0F × 1F × e ]})))
-        ■ acqEq))
-    (RU-Acquire (F ⋯ᶠ* ρ ↑* 2 ↑))
+      (cong (φ acq)
+        (cong₂ _∥_
+          (cong ⟪_⟫
+            ( fp* (F ⋯ᶠ* weakenᵣ) (ρ ↑* 2 ↑) {t = K `acq ·¹ 𝓒[ ` 0F × 1F × wk e ]}
+            ■ cong₂ _[_]* Feq Ceq ))
+          Peq)))
+    (cong (λ z → ν (⟪ z ⟫ ∥ (P ⋯ₚ ρ ↑* 2)))
+          (fp* F (ρ ↑* 2) {t = 𝓒[ * × 0F × e ]}))
+    (RU-Acquire (F ⋯ᶠ* ρ ↑* 2))
   where
-    Body : Proc (3 + _)
-    Body = ⟪ F [ 𝓒[ ` 0F × 1F × e ] ]* ⟫ ∥ P
-    acqEq : (Body ⋯ₚ ρ ↑* 2 ↑) ⋯ₚ ⦅ * ⦆ₛ ≡ (Body ⋯ₚ ⦅ * ⦆ₛ) ⋯ₚ ρ ↑* 2
-    acqEq = fusionₚ Body (ρ ↑* 2 ↑) ⦅ * ⦆ₛ
-          ■ ⋯ₚ-cong Body (sym ∘ dist-↑-⦅⦆ * (ρ ↑* 2))
-          ■ sym (fusionₚ Body ⦅ * ⦆ₛ (ρ ↑* 2))
+    Feq : (F ⋯ᶠ* weakenᵣ) ⋯ᶠ* (ρ ↑* 2 ↑) ≡ (F ⋯ᶠ* ρ ↑* 2) ⋯ᶠ* weakenᵣ
+    Feq = ⋯ᶠ*-fuse F weakenᵣ (ρ ↑* 2 ↑)
+        ■ ⋯ᶠ*-cong F (λ x → sym (↑-wk (ρ ↑* 2) x))
+        ■ sym (⋯ᶠ*-fuse F (ρ ↑* 2) weakenᵣ)
+
+    Ceq : (K `acq ·¹ 𝓒[ ` 0F × 1F × wk e ]) ⋯ (ρ ↑* 2 ↑)
+        ≡ K `acq ·¹ 𝓒[ ` 0F × 1F × wk (e ⋯ ρ ↑* 2) ]
+    Ceq = cong (K `acq ·¹_) (cong (λ a → 𝓒[ ` 0F × 1F × a ]) wkEq)
+      where
+        wkEq : wk e ⋯ (ρ ↑* 2 ↑) ≡ wk (e ⋯ ρ ↑* 2)
+        wkEq = fusion e weakenᵣ (ρ ↑* 2 ↑)
+             ■ ⋯-cong e (λ x → sym (↑-wk (ρ ↑* 2) x))
+             ■ sym (fusion e (ρ ↑* 2) weakenᵣ)
+
+    Peq : (P ⋯ₚ weakenᵣ) ⋯ₚ (ρ ↑* 2 ↑) ≡ (P ⋯ₚ ρ ↑* 2) ⋯ₚ weakenᵣ
+    Peq = fusionₚ P weakenᵣ (ρ ↑* 2 ↑)
+        ■ ⋯ₚ-cong P (↑-wk (ρ ↑* 2))
+        ■ sym (fusionₚ P (ρ ↑* 2) weakenᵣ)
 red-⋯ₚ ρ (RU-Com {e = e} {P = P} F₁ F₂ V {e₁ = e₁} {e₁′ = e₁′} {e₂ = e₂} {e₂′ = e₂′}) =
   subst₂ _─→ₚ_
     (cong₂ (λ z w → ν (⟪ z ⟫ ∥ (⟪ w ⟫ ∥ (P ⋯ₚ ρ ↑* 2))))

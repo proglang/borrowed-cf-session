@@ -4,7 +4,9 @@
 \def\RuleNamePrefix{E-}
 
 % E-App
-\DefRule {App} {} {
+\DefRule {App} {
+  \Dir \in \{\Dirleft, \DirRight\}
+} {
   \EApp{(\EAbs \EVar\E)}\V \EReduce \Subs \E\V\EVar
 }
 

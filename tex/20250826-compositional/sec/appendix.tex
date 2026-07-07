@@ -1,0 +1,33 @@
+\clearpage
+\appendix
+\section{Additional Rules}
+\label{sec:appendix}
+
+\begin{figure}[tp]
+  \begin{mathpar}
+    % \RuleProcCongRefl \and
+    % \RuleProcCongTrans \and
+    \RuleProcCongParComm \and
+    \RuleProcCongParAssoc \and
+    \RuleProcCongParUnit \and
+    \RuleProcCongResSwap \and
+    \RuleProcCongResComm \and
+    \RuleProcCongExtend
+  \end{mathpar}
+  \caption{Process congruence}
+  \label{fig:configuration-congruence}
+\end{figure}
+
+
+\begin{figure}[t!]
+  \begin{mathpar}
+    \RuleExpRedApp \and
+    \RuleExpRedSeq \and
+    \RuleExpRedPairElim \and
+    \RuleExpRedUnfold \and
+    \RuleExpRedVariantElim \and
+    \RuleExpRedCtx
+  \end{mathpar}
+  \caption{Expression reduction ($\E \EReduce \E$)}
+  \label{fig:expression-reduction}
+\end{figure}

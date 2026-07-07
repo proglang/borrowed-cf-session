@@ -524,12 +524,12 @@ Bφ-red {n} (b ∷ B@(_ ∷ _)) r =
   ⋆-gmap (U.φ ϕ[ b ]) UR.RU-Sync
     (Bφ-red B (─→ₚ*-subst (sym (+-suc (syncs B) n)) r))
 
--- φ drop (⟪ F[drop · 𝓒[e × suc x × `0F]] ⟫ ∥ Q) fires RU-Drop to φ acq (⟪ F[*] ⟫ ∥ Q).
-leaf-fire-drop : (F : Frame* (1 + n)) {e : Tm (1 + n)} {x : 𝔽 n} (Q : U.Proc (1 + n)) →
-  U.φ U.drop (U.⟪ F [ K `drop ·¹ (((e ⊗ (` (Fin.suc x))) ⊗ (` 0F))) ]* ⟫ U.∥ Q)
+-- φ drop (⟪ F[drop · 𝓒[* × suc x × `0F]] ⟫ ∥ Q) fires RU-Drop to φ acq (⟪ F[*] ⟫ ∥ Q).
+leaf-fire-drop : (F : Frame* (1 + n)) {x : 𝔽 n} (Q : U.Proc (1 + n)) →
+  U.φ U.drop (U.⟪ F [ K `drop ·¹ (((* ⊗ (` (Fin.suc x))) ⊗ (` 0F))) ]* ⟫ U.∥ Q)
     UR─→ₚ*
   U.φ U.acq (U.⟪ F [ K `unit ]* ⟫ U.∥ Q)
-leaf-fire-drop F {e} {x} Q = UR.RU-Drop F ◅ ε
+leaf-fire-drop F {x} Q = UR.RU-Drop F ◅ ε
 
 -- canonₛ on a triple of values is a value-substitution (copied from Splits).
 VSub-canonₛ : ∀ (B : BindGroup) {N} (cc : UChan N) → VChan cc → VSub (canonₛ B cc)
@@ -898,7 +898,7 @@ U-drop {m} {n} σ Vσ Γ-S {b₁ = zero} {B₁ = C@(cHd ∷ cTl)} {B₂ = B₂} 
       (Bφ-red C (Bφ-red B₂
         (subst (λ z → U.φ U.drop z UR─→ₚ* U.φ U.acq (U.⟪ Eᶠ [ K `unit ]* ⟫ U.∥ Qᶠ))
           (sym (LL₂-split ■ cong (U._∥ Qᶠ) (cong U.⟪_⟫ (proj₂ (proj₂ (proj₂ redShape))))))
-          (leaf-fire-drop Eᶠ {proj₁ (proj₂ redShape)} {proj₁ (proj₂ (proj₂ redShape))} Qᶠ))))
+          (leaf-fire-drop Eᶠ {proj₁ (proj₂ (proj₂ redShape))} Qᶠ))))
     Yleaf : U.Proc (sB₂ + (suc sC + (2 + n)))
     Yleaf = U[ QR ] (leafσ σ (zero ∷ C) B₂)
     aR : Tm (sB₂ + (suc sC + (2 + n)))

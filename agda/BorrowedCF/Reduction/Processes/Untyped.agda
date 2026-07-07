@@ -49,19 +49,19 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
     ))
 
   RU-Drop : (F : Frame* (1 + n)) {x : 𝔽 n} →
-    φ drop (⟪ F [ K `drop ·¹ 𝓒[ e × suc x × ` 0F ] ]* ⟫ ∥ P)
+    φ drop (⟪ F [ K `drop ·¹ 𝓒[ * × suc x × ` 0F ] ]* ⟫ ∥ P)
       ─→ₚ
     φ acq (⟪ F [ * ]* ⟫ ∥ P)
 
   RU-Discard : (F : Frame* n) (V : Value e) →
     ⟪ F [ K `discard ·¹ e ]* ⟫ ─→ₚ ⟪ F [ * ]* ⟫
 
-  RU-Acquire : (F : Frame* (3 + n)) →
+  RU-Acquire : (F : Frame* (2 + n)) →
     ν (φ acq (
-      ⟪ F [ K `acq ·¹ 𝓒[ ` 0F × 1F × e ] ]* ⟫ ∥ P
+      ⟪ (F ⋯ᶠ* weakenᵣ) [ K `acq ·¹ 𝓒[ ` 0F × 1F × wk e ] ]* ⟫ ∥ (P ⋯ₚ weakenᵣ)
     ))
       ─→ₚ
-    ν ((⟪ F [ 𝓒[ ` 0F × 1F × e ] ]* ⟫ ∥ P) ⋯ₚ ⦅ * ⦆ₛ)
+    ν (⟪ F [ 𝓒[ * × 0F × e ] ]* ⟫ ∥ P)
 
   RU-Close : ∀ (F₁ F₂ : Frame* n) {e₁ e₁′ e₂ e₂′} →
     ν ( ⟪ (F₁ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ‼) ·¹ 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫

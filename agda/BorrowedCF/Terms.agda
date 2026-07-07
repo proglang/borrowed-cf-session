@@ -159,7 +159,7 @@ data ⊢_∶_ : Const → 𝕋 → Set where
   `rsplit : ¬ Skips s → (s′ : 𝕊 0) →
     ⊢ `rsplit s ∶ ⟨ s ; s′ ⟩ →*M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; s′ ⟩ ∣ ℙ
 
-  `drop : ⊢ `drop ∶ ⟨ ret ⟩     →*M `⊤    ∣ 𝕀
+  `drop : ⊢ `drop ∶ ⟨ ret ⟩     →*M `⊤    ∣ ℙ
   `acq  : ⊢ `acq  ∶ ⟨ acq ; s ⟩ →*M ⟨ s ⟩ ∣ ℙ
 
   `send : Mobile T → ⊢ `send ∶ T ⊗¹ ⟨ msg ‼ T ⟩ →*M `⊤ ∣ 𝕀

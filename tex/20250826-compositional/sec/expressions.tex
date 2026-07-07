@@ -23,7 +23,7 @@
         \grmor \CBranch
         \tag{Constants} \\
     \E \grmeq
-      & \C \grmor \EVar \grmor \EAbs\EVar\E \grmor \EApp\E\E 
+      & \C \grmor \EVar \grmor \EAbs\EVar\E \grmor \EAppD{\E}{\E}{\Dir} 
         \grmor \ESeq\E\E
         \grmor \EPair\E\E
         \grmor \ELetPair{\EVar}{\EVar}{\E}{\E} \\
@@ -40,9 +40,11 @@
 \end{figure}
 
 Figure \cref{fig:syntax-expressions} contains the syntax of constants and expressions. 
-Constants $\C$ include the unit value and functional constants for channel creation, thread spawning, close, wait, send, receive, local split, remote split, drop, acquire, selection, and branching. 
+Constants $\C$ include the unit value and functional constants for channel creation, thread spawning, 
+and manipulating with existing channels. They are better explained together with their type later.  
 
-Expressions $\E$ contain constants, variables, lambda abstraction and application, sequencing, pair introduction and pair elimination, sum injection and case analysis, and recursive terms. 
+Expressions $\E$ contain constants, variables, lambda abstraction and application, sequencing, 
+pair introduction and pair elimination, sum injection and case analysis, and recursive terms. 
 
 \begin{figure}[t!]
   \begin{align*}
@@ -96,7 +98,8 @@ Expressions $\E$ contain constants, variables, lambda abstraction and applicatio
   \label{fig:syntax-runtime}
 \end{figure}
 
-Figure \cref{fig:syntax-runtime} contains the run time syntax that evaluates expressions inside processes. Values $\U,\V$ are a subset of expressions. They are the forms where expression reduction stops. Evaluation contexts $\EC$ define where expression reduction may take the next step. 
+Figure \cref{fig:syntax-runtime} contains the run time syntax that evaluates expressions inside processes. 
+The values $\U,\V$ constitute a subset of expressions that are irreducible. Evaluation contexts $\EC$ define where expression reduction may take the next step. 
 
 Binder groups $\BindGroup$ are flat lists of channel names $\EVar$ and
 separators $\BSep$. The metavariable $\Bind$ ranges over separator-free
@@ -142,6 +145,8 @@ Binder sequence concatenation is written by juxtaposition with unit $\BEmp$.
   \label{fig:configuration-congruence}
 \end{figure}
 
+Processes $\Proc$ inlcude a single expression, parallel composition of the former, and channel introduction with two binder groups. 
+Finally, we can lift the evaluation contexts to processes by defining thread contexts $\FC$ and process contexts $\CC$. 
 
 \begin{figure}[t!]
   \begin{mathpar}
