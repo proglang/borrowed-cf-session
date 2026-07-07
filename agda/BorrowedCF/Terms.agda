@@ -154,9 +154,9 @@ data ⊢_∶_ : Const → 𝕋 → Set where
 
   `new  : New s → ⊢ `new s ∶ `⊤ →*M ⟨ acq ; (s ; end ⁇) ⟩ ⊗¹ ⟨ acq ; (dual s ; end ‼) ⟩ ∣ ℙ
 
-  `lsplit : ¬ Skips s → (s′ : 𝕊 0) →
+  `lsplit : (s s′ : 𝕊 0) →
     ⊢ `lsplit s ∶ ⟨ s ; s′ ⟩ →*M ⟨ s ⟩       ⊗ᴸ ⟨ s′ ⟩       ∣ ℙ
-  `rsplit : ¬ Skips s → (s′ : 𝕊 0) →
+  `rsplit : (s s′ : 𝕊 0) →
     ⊢ `rsplit s ∶ ⟨ s ; s′ ⟩ →*M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; s′ ⟩ ∣ ℙ
 
   `drop : ⊢ `drop ∶ ⟨ ret ⟩     →*M `⊤    ∣ ℙ

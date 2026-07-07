@@ -183,7 +183,7 @@ preservationₚ Γ-S p (R-RSplit {B₁ = B₁′}{B₂′}{B}{b₁ = b₁} {E = 
   with 𝒫 , γ′ , _ , _ , _ , _ , ≤γ′ , eq , ϵ≤ , ⊢E , ⊢rsplit·c ← ⊢[]*⁻¹ E _ (inv-⟪⟫ ⟪Ersplit⟫)
   with inv-·-unr ⊢rsplit·c (λ x → constFnUnr′ (inv-K x .proj₂ .proj₁) (inv-K x .proj₂ .proj₂ .proj₂))
 ... | a , γ-rsplit , γ-c , _ , ≤γ″ , ≤ₐ , refl , ⊢rsplit , ⊢c
-  with _ , eq₁ `→ eq₂ , []≤γ-rsplit , `rsplit {s₁} ¬S₁ s₂ ← inv-K ⊢rsplit
+  with _ , eq₁ `→ eq₂ , []≤γ-rsplit , `rsplit s₁ s₂ ← inv-K ⊢rsplit
   with eq-` , `c≤ ← inv-` ⊢c
   = {!!}
   {-

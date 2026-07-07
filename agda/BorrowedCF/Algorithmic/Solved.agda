@@ -214,6 +214,7 @@ subConst (`lsplit s) σ = `lsplit (subTy s σ)
 subConst (`rsplit s) σ = `rsplit (subTy s σ)
 subConst (`select k) σ = `select k
 subConst `branch σ = `branch
+subConst `discard σ = `discard
 
 subConst-solved : {c : Const} → SolvedC c → SolvedC (subConst c σ)
 subConst-solved `unit = `unit
@@ -245,8 +246,10 @@ subConst-⊢ `fork = `fork
 subConst-⊢ {σ = σ} (`new {s = s} N)
   rewrite sym (subTy-dual {σ = σ} s)
   = `new (subTy-new N)
-subConst-⊢ (`lsplit ¬skipₛ s′) = `lsplit (¬skipₛ ∘ subTy-skips⁻¹) (subTy s′ _)
-subConst-⊢ (`rsplit ¬skipₛ s′) = `rsplit (¬skipₛ ∘ subTy-skips⁻¹) (subTy s′ _)
+subConst-⊢ (`lsplit s s′) = `lsplit (subTy s _) (subTy s′ _)
+subConst-⊢ (`rsplit s s′) = `rsplit (subTy s _) (subTy s′ _)
+-- subConst-⊢ (`lsplit ¬skipₛ s′) = `lsplit (¬skipₛ ∘ subTy-skips⁻¹) (subTy s′ _)
+-- subConst-⊢ (`rsplit ¬skipₛ s′) = `rsplit (¬skipₛ ∘ subTy-skips⁻¹) (subTy s′ _)
 subConst-⊢ `drop = `drop
 subConst-⊢ `acq = `acq
 subConst-⊢ (`send m) = `send (subTy-mobile m)
@@ -256,13 +259,14 @@ subConst-⊢ {σ = σ} (`select {s₁} {s₂} {k})
   = `select
 subConst-⊢ `branch = `branch
 subConst-⊢ `end = `end
+subConst-⊢ `discard = `discard
 
 subTm : Tm n → UV.Sub → Tm n
 subTm (` x) σ = ` x
 subTm (K c) σ = K (subConst c σ)
 subTm (ƛ e) σ = ƛ (subTm e σ)
 subTm (μ e) σ = μ (subTm e σ)
-subTm (e · e₁) σ = subTm e σ · subTm e₁ σ
+subTm (e ·⟨ d ⟩ e₁) σ = subTm e σ ·⟨ d ⟩ subTm e₁ σ
 subTm (e ; e₁) σ = subTm e σ ; subTm e₁ σ
 subTm (e ⊗ e₁) σ = subTm e σ ⊗ subTm e₁ σ
 subTm (`let e `in e₁) σ = `let subTm e σ `in subTm e₁ σ
@@ -287,7 +291,7 @@ subTm-id (` x) = refl
 subTm-id (K c) = cong K (subConst-id c)
 subTm-id (ƛ e) = cong ƛ (subTm-id e)
 subTm-id (μ e) = cong μ (subTm-id e)
-subTm-id (e · e₁) = cong₂ _·_ (subTm-id e) (subTm-id e₁)
+subTm-id (e · e₁) = cong₂ _·⟨ _ ⟩_ (subTm-id e) (subTm-id e₁)
 subTm-id (e ; e₁) = cong₂ _;_ (subTm-id e) (subTm-id e₁)
 subTm-id (e ⊗ e₁) = cong₂ _⊗_ (subTm-id e) (subTm-id e₁)
 subTm-id (`let⊗ e `in e₁) = cong₂ `let⊗_`in_ (subTm-id e) (subTm-id e₁)
