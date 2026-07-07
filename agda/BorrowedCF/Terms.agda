@@ -664,26 +664,3 @@ inv-`case (T-Weaken γ≤ x) =
   let p/s , _ , _ , _ , _ , ≤γ , x′ = inv-`case x in
   p/s , _ , _ , _ , _ , ≼-trans ≤γ γ≤ , x′
 
-postulate
-  ⊢-det : Γ ; γ ⊢ e ∶ T ∣ ϵ → Γ ; γ ⊢ e ∶ U ∣ ϵ → T ≃ U
-
-postulate
-  _⊢⋯⁻¹_ : {ϕ : m →ᵣ n} {σ : _} → Γ₂ ; γ ⊢ e ⋯ ϕ ∶ T ∣ ϵ → ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ →
-    ∃[ γ′ ] Γ₂ ∶ γ′ 𝐂.⋯ σ ≼ γ × Γ₁ ; γ′ ⊢ e ∶ T ∣ ϵ
-
--- _⊢⋯⁻¹_ {e = ` _} x ⊢ϕ =
---   let T≃ , ≼γ = inv-` x in
---   _ , ≼-respˡ-≈ (≈-reflexive (sym (proj₁ (⊢ϕ & _)))) ≼γ
---     , T-Conv (≃-trans (≃-reflexive (sym (proj₂ (⊢ϕ & _)))) (≃-sym T≃)) ℙ≤ϵ (T-Var _ refl)
--- _⊢⋯⁻¹_ {e = K c} x ⊢ϕ =
---   let _ , T≃ , ≼γ , ⊢c = inv-K x in
---   _ , ≼γ , T-Conv T≃ ℙ≤ϵ (T-Const ⊢c)
--- _⊢⋯⁻¹_ {e = ƛ d e} x ⊢ϕ = {!!}
--- _⊢⋯⁻¹_ {e = μ e} x ⊢ϕ = {!!}
--- _⊢⋯⁻¹_ {e = e · e₁} x ⊢ϕ = {!!}
--- _⊢⋯⁻¹_ {e = e ; e₁} x ⊢ϕ = {!!}
--- _⊢⋯⁻¹_ {e = e ⊗ e₁} x ⊢ϕ = {!!}
--- _⊢⋯⁻¹_ {e = `let e `in e₁} x ⊢ϕ = {!!}
--- _⊢⋯⁻¹_ {e = `let⊗ e `in e₁} x ⊢ϕ = {!!}
--- _⊢⋯⁻¹_ {e = `inj i e} x ⊢ϕ = {!!}
--- _⊢⋯⁻¹_ {e = `case e `of⟨ e₁ ; e₂ ⟩} x ⊢ϕ = {!!}
