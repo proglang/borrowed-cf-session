@@ -26,8 +26,8 @@
     {\TArr{\MobMobile}{\DirUnord,\EffPure}
       {\BUnit}
       {\TPairUnord
-        {(\SSeq{\SAcq}{\SSeq\S\SWait})}
-        {(\SSeq{\SAcq}{\SSeq{\Dual~\S}{\STerm}})}
+        {(\SSeq{\SAcq}{\SSeq\S\STerm})}
+        {(\SSeq{\SAcq}{\SSeq{\Dual~\S}{\SWait}})}
       }
     }
 }
@@ -45,9 +45,7 @@
 }
 
 % CT-LSplit
-\DefRule {LSplit} {
-  \neg \Skips {\S[1]}
-} {
+\DefRule {LSplit} {} {
   \HasCType
     {\CSplit_{\S[1],\S[2]}}
     {\TArr{\MobMobile}{\DirUnord,\EffPure}{\SSeq {\S[1]}{\S[2]}}{\TPairOrd{\S[1]}{\S[2]}}}

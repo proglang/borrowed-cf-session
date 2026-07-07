@@ -37,12 +37,12 @@
 % RU-LSplit
 \DefRule {LSplit} {} {
     \TPNew {(
-      \TPPar {\TFCapp{\EApp \CSplit {(\TEChan[\E[1]]{\TEVar}[\E[2]])}}} \TProc
+      \TPPar {\TFCapp{\EApp \CSplit {(\TEChan[\V[1]]{\TEVar}[\V[2]])}}} \TProc
     )}
     \TPReduce
     \TPNew {(
       \TPPar
-        {\TFCapp{\EPair{(\TEChan[\E[1]]{\TEVar})}{(\TEChan{\TEVar}[\E[2]])}}}
+        {\TFCapp{\EPair{(\TEChan[\V[1]]{\TEVar})}{(\TEChan{\TEVar}[\V[2]])}}}
         \TProc
     )}
 }
@@ -50,15 +50,15 @@
 % RU-RSplit
 \DefRule {RSplit} {} {
   \TPNew {(
-    \TPPar {\TFCapp{\EApp \CSSplit {(\TEChan [e_1] \TEVar [e_2])}}} \TProc
+    \TPPar {\TFCapp{\EApp \CSSplit {(\TEChan [\V[1]] \TEVar [\V[2]])}}} \TProc
   )}
   \TPReduce
   \TPNew {
     \TPSync \FlagInit (
       \TPPar {
         \TFCapp{\EPair
-          {(\TEChan [e_1]     \TEVar [\TEVarz])}
-          {(\TEChan [\TEVarz] \TEVar [e_2])}
+          {(\TEChan [\V[1]]   \TEVar [\TEVarz])}
+          {(\TEChan [\TEVarz] \TEVar [\V[2]])}
         }
       } \TProc
     )
@@ -82,8 +82,8 @@
 % RU-Drop
 \DefRule {Drop} {} {
     \TPNew {\TPSync \FlagInit (
-      \TPPar {\TFCapp{\EApp \CDrop {(\TEChan [\E] \TEVar [\TEVarz])}}} \TProc
-    )}
+      \TPPar {\TFCapp{\EApp \CDrop {(\TEChan \TEVar [\TEVarz])}}} \TProc
+    )}\\\\
     \TPReduce
     \TPNew {\TPSync \FlagDropped (
       \TPPar {\TFCapp{\CUnit}} \TProc
@@ -94,12 +94,13 @@
 \DefRule {Acquire} {} {
     \TPNew {
       \TPSync \FlagDropped 
-        (\TPPar {\TFCapp{\EApp \CAcq {(\TEChan [\TEVarz] \TEVar [e])}}} \TProc)
-    }
+        (\TPPar {\TFCapp{\EApp \CAcq {(\TEChan [\TEVarz] \TEVar [\V])}}} \TProc)
+    }\\\\
     \TPReduce
     \TPNew {
-      \TPSync \FlagAcquired 
-        (\TPPar {\TFCapp{\TEChan [\TEVarz] \TEVar[e]}} \TProc)
+      %\TPSync \FlagAcquired 
+      % (\TPPar {\TFCapp{\TEChan [\TEVarz] \TEVar[\V]}} \TProc)
+        (\TPPar {\TFCapp{\TEChan \TEVar[\V]}} \TProc)
     }
 }
 
@@ -118,7 +119,7 @@
   \TPNew {(
     \TPPar {\TFCapp[1]{\EApp {\CSend} {(\EPair \TV {\ChanPat[1]\TEVar})}}} {
     \TPPar {\TFCapp[2]{\EApp {\CRecv} {\ChanPat[2]\TEVary}}} {\TProc}}
-  )}
+  )}\\\\
   \TPReduce
   \TPNew {(
     \TPPar {\TFCapp[1]{\CUnit}} {
@@ -131,8 +132,8 @@
   \TPNew {(
     \TPPar {\TFCapp[1]{\EApp {\CSelect k} {\ChanPat[1] \TEVar}}} {
     \TPPar {\TFCapp[2]{\EApp {\CBranch}   {\ChanPat[2] \TEVary}}} {\TProc}}
-  )}
-  \TPReduce\\\\
+  )}\\\\
+  \TPReduce
   \TPNew {(
     \TPPar {\TFCapp[1]{\ChanPat[1] \TEVar}} {
     \TPPar {\TFCapp[2]{\EInj k {\ChanPat[2] \TEVary}}} {\TProc}}

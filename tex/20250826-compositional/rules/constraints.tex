@@ -1,0 +1,90 @@
+\def\RuleNamePrefix{CS-}
+\def\RuleCmdPrefix{RuleCS}
+
+% CS-Pair
+\DefRule {Pair} {} {
+  \AT \TPair \ATU \CEq \AT* \TPair \ATU*
+  \csred
+  \left\{
+    \AT \CEq \AT*\!,
+    \ATU \CEq \ATU*
+  \right\}
+}
+
+\DefRule {Sum} {} {
+  \TSum {\AT} {\ATU} \CEq \TSum {\AT*} {\ATU*}
+  \csred
+  \left\{
+    \AT \CEq \AT*\!,
+    \ATU \CEq \ATU*
+  \right\}
+}
+
+\DefRule {Unit} {} {
+  \BUnit \CEq \BUnit
+  \csred
+  \emptyset
+}
+
+\DefRule {Arrow} {} {
+  \TArr{\Mob}{\Dir,\Eff}{\AT}{\ATU}
+  \CEq
+  \TArr{\Mob}{\Dir,\Eff}{\AT*}{\ATU*}
+  \csred
+  \{
+    \AT* \CEq \AT\!,
+    \ATU \CEq \ATU*
+  \}
+}
+
+\DefRule {Ret} {} {
+  \CBounded \SRet \csred \emptyset
+}
+
+\DefRule {Close} {} {
+  \CBounded \STerm \csred \emptyset
+}
+
+\DefRule {Wait} {} {
+  \CBounded \SWait \csred \emptyset
+}
+
+\DefRule {SeqI} {
+  \Skips \AS[2]
+}{
+  \CBounded\ (\SSeq{\AS[1]}{\AS[2]}) \csred \{ \CBounded \AS[1] \}
+}
+
+\DefRule {SeqII} {
+  \neg \Skips \AS[2]
+}{
+  \CBounded\ (\SSeq{\AS[1]}{\AS[2]}) \csred \{ \CBounded \AS[2] \}
+}
+
+\DefRule {MobileUnit} {} {
+  \CMobile \BUnit \csred \emptyset
+}
+
+\DefRule {Acq} {} {
+  \CMobile\ (\SSeq\SAcq\AS) \csred \{ \CBounded \AS \}
+}
+
+\DefRule {MobileArrow} {} {
+  \CMobile\ (\TArr{\MobMobile}{\Dir,\Eff}{\AT}{\ATU}) \csred \emptyset
+}
+
+\DefRule {MobilePair} {} {
+  \CMobile\ (\AT \TPair \ATU) \csred \{ \CMobile\AT, \CMobile\ATU \}
+}
+
+\DefRule {MobileVariant} {} {
+  \CMobile \TVariant{\ell:\AT[\ell]} \csred \{ \CMobile\AT[\ell] \mid \ell\in L \}
+}
+
+\DefRule {Context} {
+  \AT \CEq \ATU \csred \CSet*
+}{
+  \CSet \cup \{ \AT\CEq\ATU \}
+  \csred
+  \CSet \cup \CSet*
+}

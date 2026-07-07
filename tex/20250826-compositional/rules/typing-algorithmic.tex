@@ -14,8 +14,7 @@
 % A-LSplit
 \DefRule {LSplit} {
   \CtxEmpty \SubCtx \Ctx \\
-  \TVar\ \text{fresh} \\
-  \neg \Skips \S
+  \TVar\ \text{fresh}
 }{
   \InferType {\CSplit_{\S}}
   {\TArr{\MobMobile}{\DirUnord,\EffPure} {\SSeq\S\TVar} {\TPairOrd{\S}{\TVar}}}
@@ -26,8 +25,7 @@
 % A-RSplit
 \DefRule {RSplit} {
   \CtxEmpty \SubCtx \Ctx \\
-  \TVar\ \text{fresh} \\
-  \neg \Skips \S
+  \TVar\ \text{fresh}
 }{
   \InferType {\CSSplit_{\S}}
   {\TArr{\MobMobile}{\DirUnord,\EffPure} {\SSeq\S\TVar} {\TPairUnord{\SSeq{\S}{\SRet}}{\SSeq\SAcq\TVar}}}
@@ -93,8 +91,7 @@
     \TU
     {\Eff*} \\
   \Eff* \le \Eff \\
-  \Dir = \DirNone \implies \Unr \Ctx \wedge \Mob = \MobMobile \\
-  \Mob (\Ctx)
+  \Dir = \DirNone \implies \Unr \Ctx \wedge \Mob = \MobMobile
 }{
   \CheckType
     {\EAbs\EVar\E}

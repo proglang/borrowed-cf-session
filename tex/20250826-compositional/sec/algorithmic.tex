@@ -85,8 +85,8 @@ The operator $\_|_{X}$ restricts a context to a set of variables $X$%.
   \begin{mathpar}
     \RuleAlgAbs \and
     \RuleAlgAbsRec \and
-    \RuleAlgPair \and
     \RuleAlgInj \and
+    \RuleAlgPair \and
     \RuleAlgCheck
   \end{mathpar}
   \caption{Algorithmic typing}
@@ -122,84 +122,21 @@ Multiple uses in different branches of the program must yield equivalent types.
 If there are no solutions, the program is ill-typed.
 
 \begin{mathpar}
-  \inferrule[CS-Pair]{}{
-    \AT \TPair \ATU \CEq \AT* \TPair \ATU*
-    \csred
-    \left\{
-      \AT \CEq \AT*\!,
-      \ATU \CEq \ATU*
-    \right\}
-  }
-
-  \inferrule[CS-Sum]{}{
-    \TSum {\AT} {\ATU} \CEq \TSum {\AT*} {\ATU*}
-    \csred
-    \left\{
-      \AT \CEq \AT*\!,
-      \ATU \CEq \ATU*
-    \right\}
-  }
-
-  \inferrule[CS-Unit]{}{
-    \BUnit \CEq \BUnit
-    \csred
-    \emptyset
-  }
-
-  \inferrule[CS-Arrow]{}{
-    \TArr{\Mob}{\Dir,\Eff}{\AT}{\ATU}
-    \CEq
-    \TArr{\Mob}{\Dir,\Eff}{\AT*}{\ATU*}
-    \csred
-    \left\{
-      \AT* \CEq \AT\!,
-      \ATU \CEq \ATU*
-    \right\}
-  }
-
-  \inferrule[CS-Ret]{}{
-    \CBounded \SRet \csred \emptyset
-  }
-
-  \inferrule[CS-Close]{}{
-    \CBounded \STerm \csred \emptyset
-  }
-
-  \inferrule[CS-Wait]{}{
-    \CBounded \SWait \csred \emptyset
-  }
-
-  \inferrule[CS-Seq1]{
-    \Skips \AS[2]
-  }{
-    \CBounded\ (\SSeq{\AS[1]}{\AS[2]}) \csred \left\{ \CBounded \AS[1] \right\}
-  }
-
-  \inferrule[CS-Seq2]{
-    \neg \Skips \AS[2]
-  }{
-    \CBounded\ (\SSeq{\AS[1]}{\AS[2]}) \csred \left\{ \CBounded \AS[2] \right\}
-  }
-
-  \inferrule[CS-Acq]{}{
-    \CMobile\ (\SSeq\SAcq\AS) \csred \left\{ \CBounded \AS \right\}
-  }
-
-  \inferrule[CS-MobileArrow]{}{
-    \CMobile\ (\TArr{\MobMobile}{\Dir,\Eff}{\AT}{\ATU}) \csred \emptyset
-  }
-
-  \inferrule[CS-MobilePair]{}{
-    \CMobile\ (\AT \TPair \ATU) \csred \left\{ \CMobile\AT, \CMobile\ATU \right\}
-  }
-
-  \inferrule[CS-Context]{
-    \AT \CEq \ATU \csred \CSet*
-  }{
-    \CSet \cup \{ \AT\CEq\ATU \}
-    \csred
-    \CSet \cup \CSet*
-  }
+  \RuleCSPair \and
+  \RuleCSSum \and
+  \RuleCSUnit \and
+  \RuleCSArrow \and
+  \RuleCSRet \and
+  \RuleCSClose \and
+  \RuleCSWait \and
+  \RuleCSSeqI \and
+  \RuleCSSeqII \and
+  \RuleCSMobileUnit \and
+  \RuleCSAcq \and
+  \RuleCSMobileArrow \and
+  \RuleCSMobilePair \and
+  \RuleCSMobileVariant \and
+  \RuleCSContext
 \end{mathpar}
 
 $\Skips$ is decidable for unsolved session types because neither $\SSkip$ nor

@@ -29,7 +29,7 @@ earlier type system for the source language.
       \grmor \TPSync \Flag \TCC
       \tag{Configuration contexts}
     \\
-    \Flag \grmeq & \FlagInit \grmor \FlagDropped \grmor \FlagAcquired
+    \Flag \grmeq & \FlagInit \grmor \FlagDropped %\grmor \FlagAcquired
       \tag{Synchronization flags}
   \end{align*}
   \caption{Untyped run-time syntax}
@@ -110,10 +110,10 @@ $\CDrop$ does not block until the corresponding $\CAcq$.
     \RuleUProcRedRSplit   \and
     \RuleUProcRedDrop     \and
     \RuleUProcRedAcquire  \and
-    \RuleUProcRedCleanup  \and
+    %\RuleUProcRedCleanup  \and
+    {\RuleUProcRedCom   \quad %\and
+    \RuleUProcRedChoice}   \\
     \RuleUProcRedClose    \and
-    \RuleUProcRedCom      \and
-    \RuleUProcRedChoice   \and
     \RuleUProcRedStruct   \and
     \RuleUProcRedPar      \and
     \RuleUProcRedBind     \and
@@ -127,7 +127,7 @@ The reduction behavior of translated expressions is the same as their
 source counterparts (\cref{fig:expression-reduction}).
 \Cref{fig:unr-process-reduction} defines the reduction relation for translated
 processes. It uses $\ChanPat\E$ as an abbreviation for channels
-$\TEChan [\E[1]] \E [\E[2]]$.
+$\TEChan [\V[1]] \E [\V[2]]$.
 
 \begin{figure}
   \begin{mathpar}
