@@ -1,27 +1,32 @@
 \section{Algorithmic Typing}
 \label{sec:algorithmic-typing}
 
-This section develops an algorithmic version of the type system in
-\cref{sec:types}. The algorithmic system is directly amenable to
-construct a type checking algorithm.
+\js{Is it ``type variable'' or ``unification variable'' or do we use both
+interchangeably?}
 
+This section develops an algorithmic version of the type system in
+\cref{sec:types}. The algorithmic system is directly amenable to construct a
+type checking algorithm. It employs a sound heuristic for inferring the
+remainder session types of split operations. First, a set of constraints is
+collected involving fresh type variables. In a second step, the type variables
+are solved and validated in respect to the constraints. The constraint
+generation is part of the algorithmic typing judgements
+(\cref{sec:alg-typing-relation}). How constraint set are solved is discussed in
+\cref{sec:constraint-solving}.
 
 
 \subsection{Algorithmic Judgments}
-\label{sec:typing-relation}
+\label{sec:alg-typing-relation}
 
 Algorithmic typing requires an extended grammar of session types
 $\AS$ that includes unification variables $\TVar$ drawn from
 $\TVAR$. We write $\AT$ for types that refer to $\AS$ instead of $\S$.
 
 Algorithmic typing collects a set of constraints $\CSet$. Constraints $C$
-come in three forms:
-\begin{align*}
-  C & \grmeq \AT \CEq \ATU && \text{equality constraint between two
-                             types} \\
-    &\grmor \CMobile \AT && \text{mobility constraint} \\
-    &\grmor \CBounded \AS && \text{boundedness constraint.}
-\end{align*}
+come as either equality constraints between two types, or mobility constraints:
+\[
+  C \grmeq \AT \CEq \ATU \grmor\CMobile \AT
+\]
 
 \begin{definition}[Closing substitution]
   A substitution $\sigma : \TVAR \to \AS$ is a \emph{closing
@@ -177,34 +182,63 @@ output types to be equal.
 \subsection{Constraint Solving}
 \label{sec:constraint-solving}
 
+An algorithmic typing for an expression $\E$ yields a set of constraints
+$\CSet$. In inference mode, the returned type $\AT$ may refer to unsolved type
+variables. Solving $\CSet$ and determining valid instantiations for all type
+variables boils down to a unification problem. Unfortunately, there is no
+unification algorithm readily available for the theory of context-free session
+types, which involves associativity, neutral elements, and distributivity. For
+this reason, we approach constraint solving by constraint simplification.
+
+The equivalence constraints in $\CSet$ are broken down according to the
+simplification rules given in \cref{fig:constraint-simplification} until no
+more rules apply. Constraints of the form $\TVar\CEq\AT$ provide a potential
+solution for type variable $\TVar$. If there are type variables occurring in
+$\CSet$ or $\AT$ for which no solution candidate can be discovered in this way
+the heuristic will fail and $\E$ is considered ill-typed.
+
 \begin{figure}[tp]
-\begin{mathpar}
-  \RuleCSPair \and
-  \RuleCSSum \and
-  \RuleCSUnit \and
-  \RuleCSArrow \and
-  \RuleCSContext
-\end{mathpar}
+  \begin{mathpar}
+    \RuleCSPair \and
+    \RuleCSSum \and
+    \RuleCSUnit \and
+    \RuleCSArrow \and
+    \RuleCSContext
+  \end{mathpar}
   \caption{Constraint simplification}
   \label{fig:constraint-simplification}
 \end{figure}
 
-Solving a set of constraints between types with variables boils down
-to a unification problem over CFSTs. Unfortunately, there is no
-unification algorithm readily available for this theory, which
-involves associativity, neutral elements, and distributivity. For this
-reason, we approach constraint solving by constraint simplification
-(see \cref{fig:constraint-simplification})
-down to the point where all unification variables are eliminated.
-Then we pass the resulting (variable-free) type equations to FreeST,
-which implements a decision procedure for equivalence of CFSTs.
+The potential solutions have to be validated in respect to the whole set of
+constraints $\CSet$. One candidate is picked per variable and substituted
+giving a variable-free $\CSet*$\!. The mobility constraints are easily
+validated since for any type $\T$ it is decidable if $\Mobile\T$. The
+equalities are passed to FreeST which implements a decision procedure for
+equivalence of CFSTs. Since the type language of this paper contains constructs
+not part of FreeST (e.\,g. the distinction between left and right-ordered
+function types) an encoding from our types to FreeST is necessary.
+\js{reference to the encoding} If there are constraints that are not satisfied
+at this point the program is considered ill-typed. \js{refering some $\E$ above
+and ``program'' here, need to fix this}
 
-Our approach is based on the fact that unification variables are
-only introduced through split operations. As every session
-type is linear, if a term with type $\TVar$ is not used the only viable solution for $\TVar$ is
-$\SSkip$. Otherwise, we can infer the concrete type for $\TVar$ the terms use.
-Multiple uses in different branches of the program must yield equivalent types.
-If there are no solutions, the program is ill-typed. After equivalence constraints are solved, the asssignments are used to check mobility constraints. If any of the mobility requirements is not satisfied, again the program is ill-typed.
+If there are multiple candidates for a type variable the type to be substituted
+into $\CSet$ can be picked non-deterministically. Consider the case where after
+simplification there two constraints $\TVar \CEq \T$ and $\TVar \CEq \TU$. If
+$\T$ is not a valid solution for $\TVar$, then $\TU$ will not be one either.
+The equality $\T \simeq \TU$ must hold whichever type is picked. Since mobility
+respects type-equivalence it is not possible to construct mobility constraints
+that are satisfied by one but not the other candidate.
+
+In the following we sketch why our heuristic is able to infer useful
+information. Fresh type variables are only introduced through
+\RuleName{A-LSplit} and \RuleName{A-RSplit}. In the case for $\CSplit$ the
+fresh variable $\TVar$ occurs nested in the function result type not composed
+with other session types. The function itself is linear, guaranteeing that a
+value of the result type will be lying around. \js{continue here}
+
+$\SSkip$ as well as any other skipping session type \js{do we use this
+terminology?} are never valid solutions for unification variables as this would
+be equivalent to splitting a session type from itself.
 
 
 \subsection{Type Normalisation}
