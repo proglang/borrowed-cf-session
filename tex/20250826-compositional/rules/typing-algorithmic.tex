@@ -77,6 +77,15 @@
   \InferType {\EAppD{\E[1]}{\E[2]}{\DirPrime}} {\TU} {\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]} [\CSet[1] \CSJoin \CSet[2]]
 }
 
+
+% A-Annot
+\DefRule {Annot} {
+  \CheckType \E {\T} {\Eff} [\CSet]
+} {
+  \InferType {\E : \T} {\T} \Eff [\CSet]
+}
+
+
 % A-Check
 \DefRule {Check} {
   \InferType \E {\TU} {\Eff} \\

@@ -36,7 +36,24 @@ $\Eff$, and a set of constraints $\CSet$. The checking judgment $\CheckType \E
 \AT \Eff$ takes as input the context $\Ctx$, expression $\E$, and type $\AT$. It
 returns the expression's effect $\Eff$ as well as a set of constraints
 $\CSet$. Judgments make use of the context operators defined in
-\cref{fig:context-operators}. 
+\cref{fig:context-operators}.
+
+We have checking rules for function definitions, pairs, sum
+injections, and checking against a synthesized type. For lambdas,
+\RuleName{A-Abs} enforces the supplied function type, which specifies
+the mobility $\Mob$, the direction $\Dir$, and the effect $\Eff$. If
+$\Mob = \MobMobile$, then all free variables in the lambda's body must
+be mobile. The direction enforces the way the new binding is connected
+to the context. The effect puts an upper bound on the effect of the
+body. \RuleName{A-AbsRec} is similar, but specialized to a recursive
+function, which is unrestricted and hence mobile.
+For pairs, \RuleName{A-Pair} enforces the ordering of the pair; for
+injections, \RuleName{A-Inj} specifies the types of the remaining
+summands. The \RuleName{A-Check} switches between checking and
+synthesis as usual.
+
+In the variable rule \RuleName{A-Var}, the context must subsume to a
+single variable binding. 
 
 \begin{figure}[tp]
   \begin{minipage}{0.49\linewidth}
@@ -69,6 +86,7 @@ $\CSet$. Judgments make use of the context operators defined in
   \begin{mathpar}
     \RuleAlgVar \and
     \RuleAlgConst \and
+    \RuleAlgAnnot \and
     \RuleAlgLSplit \and
     \RuleAlgRSplit \and
     \RuleAlgSelect \and
