@@ -68,16 +68,12 @@ Expressions $\E$ contain constants, variables, lambda abstraction and applicatio
               \grmor \ECase \EC {\ECaseBranch* i \EVar \E}
               \tag{Evaluation contexts}
     \\
-    \Bind \grmeq&
-                  \EVar
-                  \grmor \BEmp
-                  \grmor \BSeq\Bind\Bind
-                  \tag{Channel binders}
-    \\
     \BindGroup \grmeq
-    & \Bind
-      \grmor \BPar\BindGroup\BindGroup
-      \tag{Binder group}
+    & \BEmp
+      \grmor \EVar
+      \grmor \BSep
+      \grmor \BSeq{\BindGroup}{\BindGroup}
+      \tag{Binder groups}
     \\
     \Proc \grmeq
     & \PExp\E
@@ -101,9 +97,18 @@ Expressions $\E$ contain constants, variables, lambda abstraction and applicatio
 
 Figure \cref{fig:syntax-runtime} contains the run time syntax that evaluates expressions inside processes. Values $\U,\V$ are a subset of expressions. They are the forms where expression reduction stops. Evaluation contexts $\EC$ define where expression reduction may take the next step. 
 
-To define processes, we first define channel binders $\Bind$. A binder is one channel name, the unit binder, or sequential binder composition. Binder groups $\BindGroup$ then combine binders in parallel and describe how channel names are grouped in a process configuration. Processes $\Proc$ inlcude a single expression, parallel composition of the former, and channel introduction with two binder groups. Finally, we can lift the evaluation contexts to processes by defining thread contexts $\FC$ and process contexts $\CC$. 
+Binder groups $\BindGroup$ are flat lists. Their entries are channel names
+$\EVar$ or separators $\BSep$, with $\BEmp$ as the empty list. We write
+$\BWithSep{\BindGroup[1]}{\BindGroup[2]}$ as an abbreviation for the list
+$\BSeq{\BindGroup[1]}{\BSeq{\BSep}{\BindGroup[2]}}$. The paper only creates
+groups where two separators never occur side-by-side without an intervening
+channel name, but the syntax does not enforce this invariant. Processes
+$\Proc$ include a single expression, parallel composition of processes, and
+channel introduction with two binder groups. Finally, we lift the evaluation
+contexts to processes by defining thread contexts $\FC$ and process contexts
+$\CC$.
 
-The binary operators on binders and binder groups are associative. In addition $\BSeq{}{}$ and $\BPar{}{}$ associate with one another: $\BSeq{\Bind}{(\BPar{\BindGroup}{\BindGroup'})} = \BPar{(\BSeq\Bind\BindGroup)}{\BindGroup'}$, which can be defined inductively with the base case $\BSeq{\Bind}{(\BPar{\Bind'}{\BindGroup})} = \BPar{(\BSeq\Bind\Bind')}{\BindGroup}$. The same normalization strategy applies when sequencing from the right.
+The list constructor $\BSeq{}{}$ is associative with unit $\BEmp$.
 
 % EXP EVALUATION
 

@@ -187,13 +187,11 @@
 
 % binders
 \NewMetaVar[\procbindcolor] \BindGroup B
-\NewMetaVar[\procbindcolor] \Bind      b
 \newcommand*\BSeq[2]{\procbindcolor{#1; #2}}
-\newcommand*\BPar[2]{\procbindcolor{#1\|#2}}
+\newcommand*\BSep{\procbindcolor{\|}}
+\newcommand*\BWithSep[2]{\procbindcolor{#1\BSep#2}}
+\newcommand*\BLeadSep[1]{\procbindcolor{\BSep#1}}
 \newcommand*\BEmp{\procbindcolor{\cdot}}
-\DeclareMathOperator\BindHead{head}
-\newcommand*\BNorm{\Downarrow}
-\newcommand*\BCat{\mathop{++}}
 
 % Expressions
 \NewMetaVar[\termcolor] \E     e
