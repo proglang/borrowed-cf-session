@@ -152,7 +152,6 @@ subTy-unr (U ⊕ U₁) = subTy-unr U ⊕ subTy-unr U₁
 subTy-unr (arr x) = arr x
 
 subTy-bounded : Bounded s → Bounded (subTy s σ)
-subTy-bounded (` x) = ` x
 subTy-bounded end = end
 subTy-bounded ret = ret
 subTy-bounded (b ;₁ sk) = subTy-bounded b ;₁ subTy-skips sk
