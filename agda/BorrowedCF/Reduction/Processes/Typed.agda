@@ -185,7 +185,7 @@ preservationₚ Γ-S p (R-RSplit {B₁ = B₁′}{B₂′}{B}{b₁ = b₁} {E = 
 ... | a , γ-rsplit , γ-c , _ , ≤γ″ , ≤ₐ , refl , ⊢rsplit , ⊢c
   with _ , eq₁ `→ eq₂ , []≤γ-rsplit , `rsplit {s₁} ¬S₁ s₂ ← inv-K ⊢rsplit
   with eq-` , `c≤ ← inv-` ⊢c
-  = ?
+  = {!!}
   {-
   TP-Res N pl (⊢ᴮ-rsplit B₁′ B₁) B₂
     (bindCtx-rsplit B₁′ B₂′

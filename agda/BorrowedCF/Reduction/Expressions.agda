@@ -13,7 +13,7 @@ import BorrowedCF.Context.Substitution as 𝐂
 infix 4 _─→_ _⋯→_
 
 data _─→_ {n} : Tm n → Tm n → Set where
-  E-App : (V : Value e₂) → (ƛ d e₁) ·⟨ d ⟩ e₂ ─→ e₁ ⋯ ⦅ e₂ ⦆
+  E-App : (V : Value e₂) → (ƛ e₁) ·⟨ d ⟩ e₂ ─→ e₁ ⋯ ⦅ e₂ ⦆
   E-Seq : (V : Value e₁) → e₁ ; e₂ ─→ e₂
   E-Let : Value e₁ → `let e₁ `in e₂ ─→ e₂ ⋯ ⦅ e₁ ⦆
   E-PairElim : (V₁ : Value e₁) (V₂ : Value e₂) → `let⊗ (e₁ ⊗ e₂) `in e ─→ e ⋯ ⦅ wk e₁ ⦆ ⋯ ⦅ e₂ ⦆
@@ -70,7 +70,7 @@ module _ (Γ-S : ChanCx Γ) where
   inv-arr : Value e → Γ ; γ ⊢ e ∶ T ⟨ a ⟩→ U ∣ ϵ →
     ∃[ T′ ] ∃[ U′ ] ∃[ ϵ ] T ≃ T′ × U ≃ U′ × ϵ ≤ϵ Arr.eff a ×
       ((∃[ c ] e ≡ K c × ⊢ c ∶ T′ ⟨ record a { eff = ϵ } ⟩→ U′)
-        ⊎ (∃[ e′ ] e ≡ ƛ (Arr.dir a) e′ × T′ ⸴ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) ⊢ e′ ∶ U′ ∣ ϵ))
+        ⊎ (∃[ e′ ] e ≡ ƛ e′ × T′ ⸴ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) ⊢ e′ ∶ U′ ∣ ϵ))
   inv-arr V (T-Const c) = _ , _ , _ , ≃-refl , ≃-refl , ≤ϵ-refl , inj₁ (_ , refl , c)
   inv-arr V (T-Var x T-eq) = case sym T-eq ■ Γ-S x .proj₂ of λ()
   inv-arr V (T-Abs Γ-unr Γ-mob e) = _ , _ , _ , ≃-refl , ≃-refl , ≤ϵ-refl , inj₂ (_ , refl , e)
@@ -217,8 +217,7 @@ module _ (Γ-S : ChanCx Γ) where
            join 𝟙 (` 0F) (𝐂.wk γ)                             ≡⟨ cong (λ d → join d _ _) (Arr.ω⇒𝟙 a a-unr) ⟨
            join (Arr.dir a) (` 0F) (𝐂.wk γ) ∎
     in
-    subst (λ d → Γ ; γ ⊢ ƛ d _ ∶ T ⟨ a ⟩→ U ∣ ℙ) (a .Arr.ω⇒𝟙 a-unr)
-      $ T-Abs {a = a} (const Γ-unr) (const (UnrCx⇒MobCx Γ-unr))
+    T-Abs {a = a} (const Γ-unr) (const (UnrCx⇒MobCx Γ-unr))
       $ T-Weaken γ≤
       $ e ⊢⋯ₛ ⊢↑ (⊢subₛ (T-AbsRec Γ-unr a-unr e) (const Γ-unr) (const (UnrCx⇒MobCx Γ-unr)))
   preservation′ (T-Case p/s {γ₁} {γ₂} e e₁ e₂) (E-SumElim {i = i} V)

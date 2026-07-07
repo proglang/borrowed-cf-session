@@ -37,7 +37,7 @@ isSplit? (`rsplit x) = yes (x , inj₂ refl)
 data Tm (n : ℕ) : Set where
   `_ : 𝔽 n → Tm n
   K : (c : Const) → Tm n
-  ƛ : (d : Dir) (e : Tm (1 + n)) → Tm n
+  ƛ : (e : Tm (1 + n)) → Tm n
   μ : (e : Tm (1 + n)) → Tm n
   _·⟨_⟩_ : (e₁ : Tm n) (d : Dir) (e₂ : Tm n) → Tm n
   _;_ : (e₁ e₂ : Tm n) → Tm n
@@ -69,7 +69,7 @@ infixl 5 _⋯_
 _⋯_ : ⦃ K : Kit 𝓕 ⦄ → Tm m → m –[ K ]→ n → Tm n
 (` x) ⋯ ϕ = `/id (ϕ x)
 K c ⋯ ϕ = K c
-ƛ d e ⋯ ϕ = ƛ d (e ⋯ ϕ ↑)
+ƛ e ⋯ ϕ = ƛ (e ⋯ ϕ ↑)
 μ e ⋯ ϕ = μ (e ⋯ ϕ ↑)
 (e ·⟨ d ⟩ e₁) ⋯ ϕ = (e ⋯ ϕ) ·⟨ d ⟩ (e₁ ⋯ ϕ)
 (e ; e₁) ⋯ ϕ =  (e ⋯ ϕ) ; (e₁ ⋯ ϕ)
@@ -82,7 +82,7 @@ K c ⋯ ϕ = K c
 ⋯-id : ⦃ K : Kit 𝓕 ⦄ (e : Tm n) {ϕ : n –[ K ]→ n} → ϕ ≗ idₖ → e ⋯ ϕ ≡ e
 ⋯-id (` x) eq = cong `/id (eq x) ■ `/`-is-` x
 ⋯-id (K c) eq = refl
-⋯-id (ƛ d e) eq = cong (ƛ d) (⋯-id e (id↑ eq))
+⋯-id (ƛ e) eq = cong ƛ (⋯-id e (id↑ eq))
 ⋯-id (μ e) eq = cong μ (⋯-id e (id↑ eq))
 ⋯-id (e ·⟨ d ⟩ e₁) eq = cong₂ _·⟨ d ⟩_ (⋯-id e eq) (⋯-id e₁ eq)
 ⋯-id (e ; e₁) eq = cong₂ _;_ (⋯-id e eq) (⋯-id e₁ eq)
@@ -97,7 +97,7 @@ K c ⋯ ϕ = K c
 ⋯-cong : ⦃ K : Kit 𝓕 ⦄ (e : Tm m) {ϕ₁ ϕ₂ : m –[ K ]→ n} → ϕ₁ ≗ ϕ₂ → e ⋯ ϕ₁ ≡ e ⋯ ϕ₂
 ⋯-cong (` x) eq = cong `/id (eq x)
 ⋯-cong (K c) eq = refl
-⋯-cong (ƛ d e) eq = cong (ƛ d) (⋯-cong e (eq ~↑))
+⋯-cong (ƛ e) eq = cong ƛ (⋯-cong e (eq ~↑))
 ⋯-cong (μ e) eq = cong μ (⋯-cong e (eq ~↑))
 ⋯-cong (e ·⟨ d ⟩ e₁) eq = cong₂ _·⟨ d ⟩_ (⋯-cong e eq) (⋯-cong e₁ eq)
 ⋯-cong (e ; e₁) eq = cong₂ _;_ (⋯-cong e eq) (⋯-cong e₁ eq)
@@ -124,7 +124,7 @@ fusion :
 fusion (` x) ϕ₁ ϕ₂ = sym (&/⋯-⋯ (ϕ₁ x) ϕ₂)
 fusion (x₁ ; x₂) ϕ₁ ϕ₂ = cong₂ _;_ (fusion x₁ ϕ₁ ϕ₂) (fusion x₂ ϕ₁ ϕ₂)
 fusion (K c) ϕ₁ ϕ₂ = refl
-fusion (ƛ d e) ϕ₁ ϕ₂ = cong (ƛ d) $
+fusion (ƛ e) ϕ₁ ϕ₂ = cong ƛ $
   fusion e (ϕ₁ ↑) (ϕ₂ ↑) ■ ⋯-cong e (sym ∘ dist-↑-· ϕ₁ ϕ₂)
 fusion (μ e) ϕ₁ ϕ₂ = cong μ $
   fusion e (ϕ₁ ↑) (ϕ₂ ↑) ■ ⋯-cong e (sym ∘ dist-↑-· ϕ₁ ϕ₂)
@@ -207,7 +207,7 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
     (Γ-mob : Arr.Mobile a → MobCx Γ γ) →
     T ⸴ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) ⊢ e ∶ U ∣ Arr.eff a →
     ----------------------------------------------------------------
-    Γ ; γ ⊢ ƛ (Arr.dir a) e ∶ T ⟨ a ⟩→ U ∣ ℙ
+    Γ ; γ ⊢ ƛ e ∶ T ⟨ a ⟩→ U ∣ ℙ
 
   T-AbsRec :
     let open Fin.Patterns in
@@ -215,7 +215,7 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
     (a-unr : Arr.Unr a) →
     T ⸴ T ⟨ a ⟩→ U ⸴ Γ ; (` 0F) ∥ (` 1F) ∥ 𝐂.wk (𝐂.wk γ) ⊢ e ∶ U ∣ Arr.eff a →
     --------------------------------------------------------------------------
-    Γ ; γ ⊢ μ (ƛ 𝟙 e) ∶ T ⟨ a ⟩→ U ∣ ℙ
+    Γ ; γ ⊢ μ (ƛ e) ∶ T ⟨ a ⟩→ U ∣ ℙ
 
   T-AppUnr :
     (a-unr : Arr.Unr a) →

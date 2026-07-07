@@ -150,7 +150,6 @@ subTy-unr `⊤ = `⊤
 subTy-unr (U ⊗ U₁) = subTy-unr U ⊗ subTy-unr U₁
 subTy-unr (U ⊕ U₁) = subTy-unr U ⊕ subTy-unr U₁
 subTy-unr (arr x) = arr x
-subTy-unr ⟨ x ⟩ = ⟨ subTy-skips x ⟩
 
 subTy-bounded : Bounded s → Bounded (subTy s σ)
 subTy-bounded (` x) = ` x
@@ -166,8 +165,7 @@ subTy-mobile `⊤ = `⊤
 subTy-mobile (arr x) = arr x
 subTy-mobile (m₁ ⊗ m₂) = subTy-mobile m₁ ⊗ subTy-mobile m₂
 subTy-mobile (m₁ ⊕ m₂) = subTy-mobile m₁ ⊕ subTy-mobile m₂
-subTy-mobile ⟨ inj₁ skips ⟩ = ⟨ inj₁ (subTy-skips skips) ⟩
-subTy-mobile ⟨ inj₂ (s , Bs , eq) ⟩ = ⟨ inj₂ (_ , subTy-bounded Bs , subTy-≃ eq) ⟩
+subTy-mobile ⟨ (s , Bs , eq) ⟩ = ⟨ (_ , subTy-bounded Bs , subTy-≃ eq) ⟩
 
 subTy-new : New s → New (subTy s σ)
 subTy-new `- = `-
@@ -196,7 +194,7 @@ data SolvedTm {n} : Tm n → Set where
   K : ∀ {c} → SolvedC c → SolvedTm (K {n} c)
   ƛ : {e : Tm (1 + n)} → SolvedTm e → SolvedTm (ƛ e)
   μ : {e : Tm (1 + n)} → SolvedTm e → SolvedTm (μ e)
-  _·_ : {e₁ e₂ : Tm n} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (e₁ · e₂)
+  _·_ : {e₁ e₂ : Tm n} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (e₁ ·⟨ d ⟩ e₂)
   _;_ : {e₁ e₂ : Tm n} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (e₁ ; e₂)
   _⊗_ : {e₁ e₂ : Tm n} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (e₁ ⊗ e₂)
   `let⊗_`in_ : {e₁ : Tm n} {e₂ : Tm (2 + n)} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (`let⊗ e₁ `in e₂)

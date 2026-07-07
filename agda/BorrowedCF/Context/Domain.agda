@@ -235,27 +235,27 @@ preimage (α ; β) f =
 ⋯≡seq⁻¹ (α ∥ β)      ()
 
 private
-  symstep-⋯⁻¹ : {ϕ : m →ᵣ n} → Inj ϕ → ϕ Preserves[ Unr ] Γ₁ ⇐ Γ₂ →
+  symstep-⋯⁻¹ : {ϕ : m →ᵣ n} → Inj ϕ → ϕ Preserves[ Unr ] Γ₁ ⇐ Γ₂ → ϕ Preserves[ Mobile ] Γ₁ ⇐ Γ₂ →
     SymClosure (Γ₂ ∶_≈′_) (α ⋯ ϕ) (β ⋯ ϕ) → Γ₁ ∶ α ≈ β
-  symstep-⋯⁻¹ inj pu (fwd r) = fwd (≈′-⋯⁻¹ inj pu r) ◅ ε
-  symstep-⋯⁻¹ inj pu (bwd r) = bwd (≈′-⋯⁻¹ inj pu r) ◅ ε
+  symstep-⋯⁻¹ inj pu pm (fwd r) = fwd (≈′-⋯⁻¹ inj pu pm r) ◅ ε
+  symstep-⋯⁻¹ inj pu pm (bwd r) = bwd (≈′-⋯⁻¹ inj pu pm r) ◅ ε
 
-  ≈-⋯⁻¹-gen : {ϕ : m →ᵣ n} → Inj ϕ → ϕ Preserves[ Unr ] Γ₁ ⇐ Γ₂ →
+  ≈-⋯⁻¹-gen : {ϕ : m →ᵣ n} → Inj ϕ → ϕ Preserves[ Unr ] Γ₁ ⇐ Γ₂ → ϕ Preserves[ Mobile ] Γ₁ ⇐ Γ₂ →
     ∀ {α : Struct m} {B} → Γ₂ ∶ α ⋯ ϕ ≈ B → ∀ {β} → B ≡ β ⋯ ϕ → Γ₁ ∶ α ≈ β
-  ≈-⋯⁻¹-gen inj pu ε eqb = ≈-reflexive (⋯-injective inj eqb)
-  ≈-⋯⁻¹-gen {ϕ = ϕ} inj pu {α = α} (_◅_ {j = Y} s rest) eqb
+  ≈-⋯⁻¹-gen inj pu pm ε eqb = ≈-reflexive (⋯-injective inj eqb)
+  ≈-⋯⁻¹-gen {ϕ = ϕ} inj pu pm {α = α} (_◅_ {j = Y} s rest) eqb
     with preimage Y (λ {z} z∈ → dom-⋯-InImage α (subst (z ∈_) (sym (≈⇒dom≡ (s ◅ ε))) z∈))
   ... | pre , eqm rewrite sym eqm =
-        ≈-trans (symstep-⋯⁻¹ {α = α} {β = pre} inj pu s) (≈-⋯⁻¹-gen inj pu {α = pre} rest eqb)
+        ≈-trans (symstep-⋯⁻¹ {α = α} {β = pre} inj pu pm s) (≈-⋯⁻¹-gen inj pu pm {α = pre} rest eqb)
 
-≈-⋯⁻¹ : {ϕ : m →ᵣ n} → Inj ϕ → ϕ Preserves[ Unr ] Γ₁ ⇐ Γ₂ → Γ₂ ∶ α ⋯ ϕ ≈ β ⋯ ϕ → Γ₁ ∶ α ≈ β
-≈-⋯⁻¹ inj pu H = ≈-⋯⁻¹-gen inj pu H refl
+≈-⋯⁻¹ : {ϕ : m →ᵣ n} → Inj ϕ → ϕ Preserves[ Unr ] Γ₁ ⇐ Γ₂ → ϕ Preserves[ Mobile ] Γ₁ ⇐ Γ₂ → Γ₂ ∶ α ⋯ ϕ ≈ β ⋯ ϕ → Γ₁ ∶ α ≈ β
+≈-⋯⁻¹ inj pu pm H = ≈-⋯⁻¹-gen inj pu pm H refl
 
-≼-⋯⁻¹ : {ϕ : m →ᵣ n} → Inj ϕ → ϕ Preserves[ Unr ] Γ₁ ⇐ Γ₂ → Γ₂ ∶ α ⋯ ϕ ≼ β ⋯ ϕ → Γ₁ ∶ α ≼ β
-≼-⋯⁻¹ {Γ₁ = Γ₁} {Γ₂ = Γ₂} {ϕ = ϕ} inj pu H = go H refl refl
+≼-⋯⁻¹ : {ϕ : m →ᵣ n} → Inj ϕ → ϕ Preserves[ Unr ] Γ₁ ⇐ Γ₂ → ϕ Preserves[ Mobile ] Γ₁ ⇐ Γ₂ → Γ₂ ∶ α ⋯ ϕ ≼ β ⋯ ϕ → Γ₁ ∶ α ≼ β
+≼-⋯⁻¹ {Γ₁ = Γ₁} {Γ₂ = Γ₂} {ϕ = ϕ} inj pu pm H = go H refl refl
   where
   go : ∀ {A B} → Γ₂ ∶ A ≼ B → ∀ {α β} → A ≡ α ⋯ ϕ → B ≡ β ⋯ ϕ → Γ₁ ∶ α ≼ β
-  go (≼-refl x) eqa eqb = ≼-refl (≈-⋯⁻¹ inj pu (subst₂ (_ ∶_≈_) eqa eqb x))
+  go (≼-refl x) eqa eqb = ≼-refl (≈-⋯⁻¹ inj pu pm (subst₂ (_ ∶_≈_) eqa eqb x))
   go (≼-∅ U) {α} eqa eqb rewrite ⋯≡[]⁻¹ α (sym eqa) = ≼-∅ (allCx-⋯⁻¹ pu (subst (UnrCx _) eqb U))
   go (≼-trans {β = Mid} x y) {α} {β} eqa eqb
     with preimage Mid (λ {z} z∈ → dom-⋯-InImage β (subst (z ∈_) (cong dom eqb) (≼⇒dom⊆ y z∈)))

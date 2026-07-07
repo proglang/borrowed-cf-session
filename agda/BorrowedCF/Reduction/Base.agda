@@ -34,7 +34,7 @@ chanCx-⸴* {m} Γ₁-S Γ₂-S i with splitAt m i
 data Value {n} : Tm n → Set where
   V-` : ∀ {x} → Value (` x)
   V-K : ∀ {c} → Value (K c)
-  V-λ : Value (ƛ d e)
+  V-λ : Value (ƛ e)
   V-⊗ : Value e₁ → Value e₂ → Value (e₁ ⊗ e₂)
   V-⊕ : ∀ {i} → Value e → Value (`inj i e)
 
