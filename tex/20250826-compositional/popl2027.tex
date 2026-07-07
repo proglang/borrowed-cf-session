@@ -1,27 +1,21 @@
-\PassOptionsToPackage{dvipsnames}{xcolor}
-\documentclass[acmsmall,screen,review,anonymous,nonacm]{acmart}
-\citestyle{acmauthoryear}
-\bibliographystyle{ACM-Reference-Format}
+\input{popl2027-preamble}
 
-% Each paper should have no more than 25 pages of text, excluding bibliography
-
-\usepackage{mathpartir}
-\usepackage{stmaryrd}
-\usepackage{placeins}
-\usepackage{mathtools}
-\usepackage{subcaption}
-\usepackage{cleveref}
-\usepackage{listings}
-\usepackage{tikz}
-\usepackage{xspace}
-\usetikzlibrary{arrows.meta,calc,fit,positioning,shapes.multipart}
-
-\crefname{lstlisting}{listing}{listings}
-\Crefname{lstlisting}{Listing}{Listings}
-
-\input{lstconfig}
-\input{symbols}
-\input{rules}
+% Build popl2027-supplement.tex first so main-text references to appendix
+% labels are read from popl2027-supplement.aux. The aux file also contains
+% package-generated labels, so clear those before the main aux file is read.
+\externaldocument[][nocite]{popl2027-supplement}
+\makeatletter
+\newcommand*\IgnoreExternalLabel[1]{%
+  \global\expandafter\let\csname r@#1\endcsname\@undefined}
+\IgnoreExternalLabel{tocindent-1}
+\IgnoreExternalLabel{tocindent0}
+\IgnoreExternalLabel{tocindent1}
+\IgnoreExternalLabel{tocindent2}
+\IgnoreExternalLabel{tocindent3}
+\IgnoreExternalLabel{tocindent4}
+\IgnoreExternalLabel{tocindent5}
+\IgnoreExternalLabel{TotPages}
+\makeatother
 
 \title{Context-Free Session Types with Borrowing}
 \author{Janek Spaderna}
@@ -73,9 +67,6 @@
 \input{sec/conclusion}
 
 \bibliography{popl2027}
-
-\clearpage
-\input{sec/appendix}
 
 \end{document}
 
