@@ -7,9 +7,13 @@ $\AS$ that includes unification variables $\TVar$ drawn from
 $\TVAR$. We write $\AT$ for the set of types 
 $\T$ but referring to $\AS$ instead of $\S$.
 
-Algorithmic typing collects a set of equality constraints between
-types $\AT \CEq \ATU$. The metavariable 
-$\CSet$ denotes a set of constraints.
+The algorithmic typing collects a set of constraints, denoted by
+metavariables $\CSet$. Constraints come in three forms:
+\begin{itemize}
+  \item equality constraints between two types $\AT \CEq \ATU$
+  \item mobility constraints $\CMobile \AT$
+  \item boundedness constraints $\CBounded \AS$
+\end{itemize}
 
 \begin{definition}[Closing substitution]
   A substitution $\sigma : \TVAR \to \AS$ is a \emph{closing
@@ -147,6 +151,42 @@ If there are no solutions, the program is ill-typed.
     \right\}
   }
 
+  \inferrule[CS-Ret]{}{
+    \CBounded \SRet \csred \emptyset
+  }
+
+  \inferrule[CS-Close]{}{
+    \CBounded \STerm \csred \emptyset
+  }
+
+  \inferrule[CS-Wait]{}{
+    \CBounded \SWait \csred \emptyset
+  }
+
+  \inferrule[CS-Seq1]{
+    \Skips \AS[2]
+  }{
+    \CBounded\ (\SSeq{\AS[1]}{\AS[2]}) \csred \left\{ \CBounded \AS[1] \right\}
+  }
+
+  \inferrule[CS-Seq2]{
+    \neg \Skips \AS[2]
+  }{
+    \CBounded\ (\SSeq{\AS[1]}{\AS[2]}) \csred \left\{ \CBounded \AS[2] \right\}
+  }
+
+  \inferrule[CS-Acq]{}{
+    \CMobile\ (\SSeq\SAcq\AS) \csred \left\{ \CBounded \AS \right\}
+  }
+
+  \inferrule[CS-MobileArrow]{}{
+    \CMobile\ (\TArr{\MobMobile}{\Dir,\Eff}{\AT}{\ATU}) \csred \emptyset
+  }
+
+  \inferrule[CS-MobilePair]{}{
+    \CMobile\ (\AT \TPair \ATU) \csred \left\{ \CMobile\AT, \CMobile\ATU \right\}
+  }
+
   \inferrule[CS-Context]{
     \AT \CEq \ATU \csred \CSet*
   }{
@@ -155,6 +195,11 @@ If there are no solutions, the program is ill-typed.
     \CSet \cup \CSet*
   }
 \end{mathpar}
+
+$\Skips$ is decidable for unsolved session types because neither $\SSkip$ nor
+any session type $\S$ such that $\Skips\S$ are solutions for unification
+variables.
+
 
 \subsection{Type Normalisation}
 
