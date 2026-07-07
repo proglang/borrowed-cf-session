@@ -22,44 +22,44 @@ $\Ctx[1] \CtxSeq \Ctx[2]$ or $\Ctx[1] \CtxPar \Ctx[2]$.
 
 
 \begin{figure}
-  \begin{align*}
-    \Mob \grmeq
-      & \MobMobile \grmor \MobStationary
-        \tag{Mobilities} \\
-    \Dir \grmeq
-      & \DirLeft \grmor \DirRight \grmor \DirUnord \grmor \DirNone
-        % \grmor \DirNone
-        \tag{Directions} \\
-    \Eff \grmeq
-      & \EffPure \grmor \EffImpure
-        \tag{Effects with $\EffPure < \EffImpure$} \\
-    \T \grmeq & \BUnit
-      \grmor \TArr{\Mob}{\Dir,\Eff}\T\T
-      \grmor \T \TPair \T
-      \grmor \TVariant{\ell : \T[\ell]}
-      \grmor \S
-      \tag{Types} \\
-    \S \grmeq
-      & \SSkip \grmor \SSeq\S\S \grmor \STerm \grmor \SWait \grmor
-        \SSend\T \grmor \SRecv\T
-        \\
-      &
-        \grmor \SChoice{\ell:\S[\ell]}{\ell\in L}
-        \grmor \SBranch{\ell:\S[\ell]}{\ell\in L}
-    \\
-    &
-        \grmor \SRet \grmor \SAcq
-      \grmor
-      \SRec\SVar\S \grmor \SVar % no rec yet
-        \tag{Session types}
-    \\
-    \Ctx \grmeq
-      & \CtxEmpty \grmor \CtxVar \EVar\T \grmor \Ctx\CtxSeq\Ctx \grmor \Ctx\CtxPar\Ctx
-        \tag{Typing environments}
-  \end{align*}
+  % \begin{align*}
+  %   \Mob \grmeq
+  %     & \MobMobile \grmor \MobStationary
+  %       \tag{Mobilities} \\
+  %   \Dir \grmeq
+  %     & \DirLeft \grmor \DirRight \grmor \DirUnord \grmor \DirNone
+  %       % \grmor \DirNone
+  %       \tag{Directions} \\
+  %   \Eff \grmeq
+  %     & \EffPure \grmor \EffImpure
+  %       \tag{Effects with $\EffPure < \EffImpure$} \\
+  %   \T \grmeq & \BUnit
+  %     \grmor \TArr{\Mob}{\Dir,\Eff}\T\T
+  %     \grmor \T \TPair \T
+  %     \grmor \TVariant{\ell : \T[\ell]}
+  %     \grmor \S
+  %     \tag{Types} \\
+  %   \S \grmeq
+  %     & \SSkip \grmor \SSeq\S\S \grmor \STerm \grmor \SWait \grmor
+  %       \SSend\T \grmor \SRecv\T
+  %       \\
+  %     &
+  %       \grmor \SChoice{\ell:\S[\ell]}{\ell\in L}
+  %       \grmor \SBranch{\ell:\S[\ell]}{\ell\in L}
+  %   \\
+  %   &
+  %       \grmor \SRet \grmor \SAcq
+  %     \grmor
+  %     \SRec\SVar\S \grmor \SVar % no rec yet
+  %       \tag{Session types}
+  %   \\
+  %   \Ctx \grmeq
+  %     & \CtxEmpty \grmor \CtxVar \EVar\T \grmor \Ctx\CtxSeq\Ctx \grmor \Ctx\CtxPar\Ctx
+  %       \tag{Typing environments}
+  % \end{align*}
   % TODO: perhaps diff syntax for effects (not to be confounded with the
   % lin direction)
-  \mw{We extend directions here to include parallel and unrestricted}
+  % \mw{We extend directions here to include parallel and unrestricted}
 
   \medskip
   Equality of typing contexts is the equivalence closure of the following
