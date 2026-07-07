@@ -33,7 +33,7 @@
     \\
               &
                 \grmor \STerm \grmor \SWait
-    \grmor \SRet \grmor \SAcq
+    \grmor \SDrop \grmor \SAcq
     \grmor
     \SRec\SVar\S \grmor \SVar % no rec yet
     \tag{Session types}
@@ -103,7 +103,7 @@ $\T$ combine ordinary functional forms (unit, arrow, pair, variant) with
 session types $\S$. Session types are either $\SSkip$ or use
 sequential composition $\SSeq\S\S$ as their central
 connective. They include communication, branching/selection,
-closing/waiting, return/acquire (new to this work), and recursion.
+closing/waiting, drop/acquire (new to this work), and recursion.
 Typing environments $\Ctx$ combine variable bindings using ordered ($\Ctx\CtxSeq\Ctx$) and
 unordered ($\Ctx\CtxPar\Ctx$) composition in the style of BI-contexts
 \cite{DBLP:journals/bsl/OHearnP99}, but with different semantics.

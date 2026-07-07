@@ -109,10 +109,10 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
     \tofreest{\SBranch{\ell:\S[\ell]}{\ell\in L}}
       & = [\&\{\ell : \tofreest{F_\ell}\}_{\ell\in L},\, \bigcup_{\ell\in L} U_\ell] \quad \text{where} \\
       & \quad [F_\ell, U_\ell] = \tofreest{\S[\ell]} \quad \text{for every } \ell \in L \\
-    \tofreest{\SRet}
-      & = [\SSend{\TypeKeyword{Ret}},\, \emptyset] \\
+    \tofreest{\SDrop}
+      & = [\SSend{\TypeKeyword{Drop}},\, \emptyset] \\
     \tofreest{\SAcq}
-      & = [\SRecv{\TypeKeyword{Ret}}, \emptyset] \\
+      & = [\SRecv{\TypeKeyword{Drop}}, \emptyset] \\
     \tofreest{\SRec\SVar\S}
       & = [\SVar',\, U \cup \{\SVar' \mapsto U\}] \quad \text{where } \SVar' \text{ is fresh and} \\
       & \quad [F, U] = \tofreest{\S\,[\SVar'/\SVar]} \\

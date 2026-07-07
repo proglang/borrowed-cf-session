@@ -63,7 +63,7 @@ for either $\Ctx[1]\CtxSeq\Ctx[2]$ or $\Ctx[1]\CtxPar\Ctx[2]$.
   \end{mathpar}
 
   \medskip
-  Laws for duality $\SDual\S$ (there is no dual for $\SRet$ and $\SAcq$)
+  Laws for duality $\SDual\S$ (there is no dual for $\SDrop$ and $\SAcq$)
   \begin{mathpar}
     \SDual\SSkip = \SSkip \and
     \SDual{(\SSeq{\S[1]}{\S[2]})} = \SSeq{\SDual{\S[1]}}{\SDual{\S[2]}}
@@ -99,11 +99,22 @@ The second subcontext rule admits unused unrestricted assumptions. By
 \RuleName{T-Weaken}, a derivation obtained in a smaller context can be used in
 any larger context related by $\SubCtx$.
 
-The session-type equations are the standard CFST equations used by type
-conversion. Sequential composition has $\SSkip$ as unit and is associative.
-Recursive types unfold equi-recursively. Continuations distribute through
-internal and external choice, so a suffix can be exposed branchwise before
-splitting or comparison.
+The session-type laws in \cref{fig:syntax-types} specify the equational theory
+used by type conversion. Sequential composition has $\SSkip$ as unit and is
+associative. Recursive types unfold equi-recursively. Continuations distribute
+through internal and external choice, so a suffix can be exposed branchwise
+before splitting or comparison. These laws are specification, not an
+algorithm. In particular, the recursion law is the correct equi-recursive
+specification, but it is not necessarily an executable definition of
+conversion.
+
+The duality laws specify the protocol offered by the opposite endpoint of a
+fresh channel. Duality preserves $\SSkip$ and sequential composition, swaps
+send with receive, swaps internal with external choice pointwise, and swaps
+close with wait. For recursion, duality is specified by first unfolding the
+recursive type and then dualizing the unfolded
+body. \citet{DBLP:journals/corr/abs-2004-01322} discuss
+implementations.
 
 \begin{figure}
   \begin{mathpar}
@@ -133,7 +144,7 @@ contraction, weakening, and recursive function introduction.
     \RuleTeSkipMu \\
     \RuleTeTerm \and
     \RuleTeWait \and
-    \RuleTeRet \and
+    \RuleTeDrop \and
     \RuleTeSeqOne \\
     \RuleTeRec \and
     \RuleTeBranch \and
@@ -158,7 +169,7 @@ contraction, weakening, and recursive function introduction.
 cross-process movement. A skipping session is equivalent to $\SSkip$ and
 therefore carries no communication obligation. A bounded session is a finite
 obligation: non-recursive bounded sessions terminate in $\STerm$, $\SWait$, or
-$\SRet$, while recursive bounded sessions require all finite unfoldings to
+$\SDrop$, while recursive bounded sessions require all finite unfoldings to
 reach such a boundary consistently. A mobile session has the form
 $\SSeq\SAcq\S$ with $\Bounded\S$; the leading acquire marks a remotely
 borrowed endpoint, and boundedness ensures that the borrowed prefix can be
@@ -190,7 +201,7 @@ The predicate $\SNew\S$ in \cref{fig:new-session-types} restricts the session
 types that may be supplied to channel creation. Fresh channels are created for
 ordinary communication protocols built from $\SSkip$, sends, receives,
 choices, branches, sequencing, and recursion. The synchronization markers
-$\SAcq$ and $\SRet$ are not source protocols for $\CNew$; they are introduced
+$\SAcq$ and $\SDrop$ are not source protocols for $\CNew$; they are introduced
 by remote splitting.
 
 \begin{figure}
@@ -226,7 +237,7 @@ The split constants are pure. Local splitting, $\CSplit$, decomposes
 $\SSeq{\S[1]}{\S[2]}$ into an ordered pair containing the borrowed prefix and
 the residual suffix. The ordering enforces that the prefix must be
 consumed before starting with the suffix. Remote splitting, $\CSSplit$, produces an unordered pair
-in which the prefix ends in $\SRet$ and the residual begins with $\SAcq$; the
+in which the prefix ends in $\SDrop$ and the residual begins with $\SAcq$; the
 operational semantics uses these markers to synchronize drop and acquire
 across processes. The constants $\CDrop$ and $\CAcq$ eliminate the
 corresponding markers. Forking expects a mobile impure computation from unit to
@@ -313,7 +324,7 @@ the assumptions generated for those binders in parallel to the subprocess.
 The auxiliary judgment $\BindGivesCtx\S\BindGroup\Ctx$ relates binder
 groups to contexts. A plain sequence of variables follows the sequential
 structure of the session type. A separator splits a session
-$\SSeq{\S[1]}{\S[2]}$ into a prefix ending in $\SRet$ and a suffix guarded by
+$\SSeq{\S[1]}{\S[2]}$ into a prefix ending in $\SDrop$ and a suffix guarded by
 $\SAcq$, and places the resulting contexts in parallel. Thus binder groups are
 the static representation of the synchronization boundary introduced by
 remote borrowing. This judgment is nondeterministic as session types

@@ -211,8 +211,8 @@ Now consider a renderer (\Cref{lst:rendering-example}) that emits a user panel w
 computed by another process while the main thread obtains user
 messages, say, from a database. We assume that
 \lstinline{renderProfile} and \lstinline{renderMsgArea} render
-one HTML node on a channel of type \lstinline{HtmlChannel; Ret} and
-\lstinline{HtmlChannel}, respectively. The type \lstinline{Ret}
+one HTML node on a channel of type \lstinline{HtmlChannel; Drop} and
+\lstinline{HtmlChannel}, respectively. The type \lstinline{Drop}
 is a new session type that comes with a companion type
 \lstinline{Acq}. They indicate the placement of synchronization
 operations that ensure correct handover of ownership from the borrowed session
@@ -234,7 +234,7 @@ renderRest msgs c =
   renderMsgArea msgs &c;
   close (select Done c)
 
-renderProfile : User -> HtmlChannel;Ret -> Unit
+renderProfile : User -> HtmlChannel;Drop -> Unit
 renderProfile user c = ... drop c
 \end{lstlisting}
 The function \lstinline{renderUser} starts an HTML element and then
@@ -252,7 +252,7 @@ expressed with the \lstinline{acquire} operation, which works on a
 channel of type \lstinline{Acq; ...}. It blocks the
 continuation until the borrowed prefix has been completed by the
 forked process. Conversely, the forked process calls \lstinline{drop}
-on a channel of type \lstinline{Ret} when it has finished working on
+on a channel of type \lstinline{Drop} when it has finished working on
 the prefix. Thus \lstinline{drop} and
 \lstinline{acquire} form the synchronization point between the two
 processes; the run-time mechanism that implements this point is
@@ -261,11 +261,11 @@ described in~\cref{sec:impl-local-remote}.
 This setup is also reflected in the types that result from a remote
 borrow. Line~7 shows the type of \lstinline{c}'s suffix, which starts
 with an \lstinline{Acq}, and line~16 shows the type of the borrow,
-which ends with \lstinline{Ret}. The types \lstinline{Acq} and
-\lstinline{Ret} only arise from a remote split operation. The
+which ends with \lstinline{Drop}. The types \lstinline{Acq} and
+\lstinline{Drop} only arise from a remote split operation. The
 \emph{only} operation on a channel of type
 \lstinline{Acq; ...} is \lstinline{acquire} and similarly,
-\lstinline{drop} only applies to a channel of type \lstinline{Ret}. 
+\lstinline{drop} only applies to a channel of type \lstinline{Drop}.
 
 Next, we discuss a direct operational semantics of local and remote borrowing
 before we move on to a low level implementation of the two concepts in
@@ -390,7 +390,7 @@ lines 5--7:
 It translates to the following \thecalculus code.
 \begin{lstlisting}
 (* initially                  c : HtmlChannel; ChildrenChannel; Close *)
-let c1, c2 = rsplit c in   (* c1 : HtmlChannel; Ret *)
+let c1, c2 = rsplit c in   (* c1 : HtmlChannel; Drop *)
                            (* c2 : Acq; ChildrenChannel; Close *)
 fork (lambda() -> renderProfile user c1);
 let msgs = getMessages user in
@@ -400,7 +400,7 @@ The translation inserts an \lstinline{rsplit} because \lstinline{c1}
 and \lstinline{c2} are used in different processes. The
 \lstinline{rsplit} returns an ordinary (linear) pair of channels
 because synchronization is made explicit using the \lstinline{Acq} and
-\lstinline{Ret} types.
+\lstinline{Drop} types.
 Executing this code takes the following steps (ignoring the activity
 at the other end of the channel). The bracketed step abbreviates the
 forked process running \lstinline{renderProfile} until its final
@@ -551,7 +551,7 @@ and remote borrowing in the implementation.
   \draw[msg] (0.08,-5.15) -- node[lab, above] {\texttt{acquire} $c_2$}
     (4.72,-5.15);
   \node[state, text width=2.2cm] at (10.85,-5.15)
-    {$c_1:S_1;\texttt{Ret}$};
+    {$c_1:S_1;\texttt{Drop}$};
   \draw[msg] (9.23,-6.45) -- (10.05,-6.45) --
     node[lab, right] {} (10.05,-6.85) --
     node[lab, above, yshift=1ex] {use $c_1$}
@@ -661,7 +661,7 @@ the residual channel depends on this run-time choice.
 
 % The downside is that some uses of \lstinline{select} force us to use
 % the \lstinline{drop} primitive, which discharges an exhausted channel
-% borrow of type \lstinline{Ret}. The discharge is part of the
+% borrow of type \lstinline{Drop}. The discharge is part of the
 % \lstinline{send} and \lstinline{recv} operations, so it is rarely
 % needed in practice. Alternatively, the type checker could insert
 % \lstinline{drop} automatically.

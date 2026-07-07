@@ -35,7 +35,7 @@
 % CT-Drop
 \DefRule {Drop} {} {
   \HasCType
-  {\CDrop}{\TArr{\MobMobile}{\DirUnord,\EffPure}{\SRet}{\BUnit}}
+  {\CDrop}{\TArr{\MobMobile}{\DirUnord,\EffPure}{\SDrop}{\BUnit}}
 }
 
 % CT-Acquire
@@ -58,7 +58,7 @@
   {\TArr{\MobMobile}{\DirUnord,
     \EffPure}
     {\SSeq {\S[1]}{\S[2]}}
-    {\TPairUnord{(\SSeq{\S[1]}{\SRet})}{(\SSeq{\SAcq}{\S[2]})}}}
+    {\TPairUnord{(\SSeq{\S[1]}{\SDrop})}{(\SSeq{\SAcq}{\S[2]})}}}
 }
 
 % CT-Wait
