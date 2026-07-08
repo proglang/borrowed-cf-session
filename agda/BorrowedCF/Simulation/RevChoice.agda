@@ -21,12 +21,14 @@ open import BorrowedCF.Simulation.RevGrindA
   using (chanCx-¬Unr; choice-¬before; barevar-arg-count;
          select-arg-decomp; select-app-𝕀; branch-arg-decomp; branch-app-𝕀)
 open import BorrowedCF.Simulation.RevComConfine
-  using (frames-𝕀; com-xS-min; before-com-binderᴸ)
+  using (frames-𝕀; com-xS-min; before-com-binderᴸ; ¬mobile-block-at)
+open import BorrowedCF.Types using (new-dual; unr⇒mobile)
+open import Data.Sum using ([_,_]′)
 open import BorrowedCF.Simulation.RevComImage
   using (com-image-block1; recv-image-block2; pos⇒suc)
 open import BorrowedCF.Simulation.ReverseConfine using (count-handle-comᴸ)
 open import BorrowedCF.Simulation.BeforeOrder using (before)
-open import BorrowedCF.Context using (Ctx; Struct; _∶_≼_)
+open import BorrowedCF.Context using (Ctx; Struct; _∶_≼_; _⸴*_)
 import BorrowedCF.Context as 𝐂
 import BorrowedCF.Context.Substitution as 𝐂S
 open import BorrowedCF.Reduction.Base using (ChanCx)
@@ -90,10 +92,13 @@ choice-go {m} {n} σ Vσ {Γ} Γ-S {g} b₁ b₂ k {F₀ˢ} {F₀ᴿ} {argˢ} {a
          Struct.∥ (T.structBinder (suc b₂' ∷ []) 𝐂S.⋯ᵣ 𝐂S.wkˡ (sum (suc b₁' ∷ [])) 𝐂S.⋯ᵣ 𝐂S.wkʳ m)
          Struct.∥ (g 𝐂S.⋯ 𝐂S.weaken* ⦃ 𝐂S.Kᵣ ⦄ (sum (suc b₁' ∷ []) + sum (suc b₂' ∷ [])))
 
-    ¬u0 = chanCx-¬Unr Γ′-S 0F
+    lookupL-z : ((Γ₁ ⸴* Γ₂) ⸴* Γ) ((z ↑ˡ (suc b₂' + 0)) ↑ˡ m) ≡ Γ₁ z
+    lookupL-z = cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (suc b₁' + 0 + (suc b₂' + 0)) (z ↑ˡ (suc b₂' + 0)) m)
+              ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (suc b₁' + 0) z (suc b₂' + 0))
+    ¬u0 = ¬mobile-block-at Nnew C 0F refl
 
-    ¬uxS = chanCx-¬Unr Γ′-S ((z ↑ˡ (suc b₂' + 0)) ↑ˡ m)
-    1≤c  = barevar-arg-count ¬uxS ⊢redexˢ
+    ¬uxS = ¬mobile-block-at Nnew C z lookupL-z
+    1≤c  = barevar-arg-count (¬uxS ∘ unr⇒mobile) ⊢redexˢ
     cnt1 = count-handle-comᴸ (suc b₁') (suc b₂') g z
     z₀   = Fin.cast (+-identityʳ (suc b₁')) z
     z₀↑0≡z : z₀ ↑ˡ 0 ≡ z
@@ -110,9 +115,15 @@ choice-go {m} {n} σ Vσ {Γ} Γ-S {g} b₁ b₂ k {F₀ˢ} {F₀ᴿ} {argˢ} {a
 
     posR : 𝔽 (sum (suc b₁' ∷ []) + sum (suc b₂' ∷ []) + m)
     posR = ((suc b₁' + 0) ↑ʳ (Fin.zero {b₂' + 0})) ↑ˡ m
-    ¬uxR = chanCx-¬Unr Γ′-S (((suc b₁' + 0) ↑ʳ w) ↑ˡ m)
-    ¬uyR = chanCx-¬Unr Γ′-S posR
-    1≤cᴿ = barevar-arg-count ¬uxR ⊢redexᴿ
+    lookupR : ((Γ₁ ⸴* Γ₂) ⸴* Γ) posR ≡ Γ₂ 0F
+    lookupR = cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (suc b₁' + 0 + (suc b₂' + 0)) ((suc b₁' + 0) ↑ʳ (Fin.zero {b₂' + 0})) m)
+            ■ cong [ _ , _ ]′ (Fin.splitAt-↑ʳ (suc b₁' + 0) (suc b₂' + 0) (Fin.zero {b₂' + 0}))
+    lookupL-w : ((Γ₁ ⸴* Γ₂) ⸴* Γ) (((suc b₁' + 0) ↑ʳ w) ↑ˡ m) ≡ Γ₂ w
+    lookupL-w = cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (suc b₁' + 0 + (suc b₂' + 0)) ((suc b₁' + 0) ↑ʳ w) m)
+              ■ cong [ _ , _ ]′ (Fin.splitAt-↑ʳ (suc b₁' + 0) (suc b₂' + 0) w)
+    ¬uxR = ¬mobile-block-at (new-dual Nnew) C′ w lookupL-w
+    ¬uyR = ¬mobile-block-at (new-dual Nnew) C′ 0F lookupR
+    1≤cᴿ = barevar-arg-count (¬uxR ∘ unr⇒mobile) ⊢redexᴿ
     cnt1ᴿ = count-handle-comᴿ (suc b₁') (suc b₂') g w
     w₀   = Fin.cast (+-identityʳ (suc b₂')) w
     w₀↑0≡w : w₀ ↑ˡ 0 ≡ w
@@ -147,7 +158,7 @@ choice-go {m} {n} σ Vσ {Γ} Γ-S {g} b₁ b₂ k {F₀ˢ} {F₀ᴿ} {argˢ} {a
                (T.⟪ F₀ˢ [ ` 0F ]* ⟫
                 T.∥ (T.⟪ F₀ᴿ [ `inj k (` (Fin.suc ((b₁' + 0 ↑ʳ 0F) ↑ˡ m))) ]* ⟫ T.∥ Pr))
         step0 = TR.R-Struct (T.ν-cong T.∥-assoc)
-                  (TR.R-Choice {b₁ = b₁'} {B₁ = []} {b₂ = b₂'} {B₂ = []} {P = Pr} {E₁ = F₀ˢ} {E₂ = F₀ᴿ} {i = k})
+                  (TR.R-Choice {b₁ = b₁'} {B₁ = []} {b₂ = b₂'} {B₂ = []} {P = Pr} F₀ˢ F₀ᴿ k)
                   (T.ν-cong (Eq*.symmetric T._≋′_ T.∥-assoc)) ◅ ε
         thread₁ = cong U.⟪_⟫
           ( cong₂ _[_]* FeqS argeqS

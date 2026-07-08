@@ -168,11 +168,12 @@ block-NoAcq : ∀ {s p b} {Γ : Ctx (sum (suc b ∷ []))} → New s
 block-NoAcq N (last b′) x = bindCtx′-NoAcq (new-end⇒noAcq N) b′ (fromInj₁ (λ()) (splitAt _ x))
 block-NoAcq N (cons-ret/acq _ _ _ _ tail) x = ⊥-elim (bindCtx-B≢[] tail)
 
--- ¬ Mobile for a block channel, given its Γ-lookup equality.
-¬mobile-block : ∀ {s p b} {Γ : Ctx (sum (suc b ∷ []))} → New s
-              → (C : BindCtx (s ; end p) (suc b ∷ []) Γ) (x : 𝔽 (sum (suc b ∷ [])))
-              → ¬ Mobile (Γ x)
-¬mobile-block N C x = ¬mobile-of (proj₂ (bindCtx⇒chanCtx C x)) (block-NoAcq N C x)
+-- ¬ Mobile for a block channel at position i, given a reconciliation T ≡ Γ i
+-- of the full-context lookup with the block-local one.
+¬mobile-block-at : ∀ {s p b} {Γ : Ctx (sum (suc b ∷ []))} {T : 𝕋} → New s
+                 → (C : BindCtx (s ; end p) (suc b ∷ []) Γ) (i : 𝔽 (sum (suc b ∷ [])))
+                 → T ≡ Γ i → ¬ Mobile T
+¬mobile-block-at N C i eq = ¬mobile-of (eq ■ proj₂ (bindCtx⇒chanCtx C i)) (block-NoAcq N C i)
 
 -- ── step 4(b): the ASSEMBLED ;-minimality contradiction.  Given the send handle
 --    xS is a live borrow that (i) is confined to the redex (LeftPat frame stack +
