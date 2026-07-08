@@ -112,7 +112,109 @@ noEnd-≃ (x ◅ xs) = noEnd-≃ xs ∘ go x where
   go (bwd ≃𝕊-assoc) (x ; (y ; z)) = (x ; y) ; z
   go (bwd ≃𝕊-distr) (brn (x₁ ; y) (x₂ ; _)) = brn x₁ x₂ ; y
 
+---------------------------------------------------------------------------------------------------------------
+-- NoAcq : a session with no acq leaf.  Mirror of NoEnd (forbidden leaf =
+-- acq).  A channel whose session is a factor of a New-derived  s ; end  is
+-- NoAcq, hence NOT Mobile (Mobile needs  s = acq ; bounded).
 ------------------------------------------------------------------------
+
+data NoAcq {n} : 𝕊 n → Set where
+  `-   : ∀ {x} → NoAcq (` x)
+  end  : NoAcq (end {n} p)
+  ret  : NoAcq (ret {n})
+  skip : NoAcq (skip {n})
+  msg  : NoAcq (msg {n} p T)
+  brn  : NoAcq s₁ → NoAcq s₂ → NoAcq (brn p s₁ s₂)
+  mu   : NoAcq s → NoAcq (mu s)
+  _;_  : NoAcq s₁ → NoAcq s₂ → NoAcq (s₁ ; s₂)
+
+¬noAcq-acq : ¬ NoAcq (acq {n})
+¬noAcq-acq ()
+
+noAcq-;-fst : NoAcq (s₁ ; s₂) → NoAcq s₁
+noAcq-;-fst (x ; _) = x
+
+noAcq-;-snd : NoAcq (s₁ ; s₂) → NoAcq s₂
+noAcq-;-snd (_ ; y) = y
+
+new⇒noAcq : New s → NoAcq s
+new⇒noAcq New.`-        = `-
+new⇒noAcq New.msg       = msg
+new⇒noAcq (New.brn x y) = brn (new⇒noAcq x) (new⇒noAcq y)
+new⇒noAcq (New.mu x)    = mu (new⇒noAcq x)
+new⇒noAcq (x New.; y)   = new⇒noAcq x ; new⇒noAcq y
+new⇒noAcq New.skip      = skip
+
+new-end⇒noAcq : New s → NoAcq (s ; end p)
+new-end⇒noAcq N = new⇒noAcq N ; end
+
+noAcq-⋯ᵣ : NoAcq s → {ρ : m →ᵣ n} → NoAcq (s ⋯ ρ)
+noAcq-⋯ᵣ `-          = `-
+noAcq-⋯ᵣ end         = end
+noAcq-⋯ᵣ ret         = ret
+noAcq-⋯ᵣ skip        = skip
+noAcq-⋯ᵣ msg         = msg
+noAcq-⋯ᵣ (brn x y)   = brn (noAcq-⋯ᵣ x) (noAcq-⋯ᵣ y)
+noAcq-⋯ᵣ (mu x)      = mu (noAcq-⋯ᵣ x)
+noAcq-⋯ᵣ (x ; y)     = noAcq-⋯ᵣ x ; noAcq-⋯ᵣ y
+
+noAcq-⋯ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ → NoAcq s → {ϕ : m –[ K ]→ n} →
+          (∀ x → NoAcq (`/id (ϕ x))) → NoAcq (s ⋯ ϕ)
+noAcq-⋯ `- ∀ϕ = ∀ϕ _
+noAcq-⋯ end ∀ϕ = end
+noAcq-⋯ ret ∀ϕ = ret
+noAcq-⋯ skip ∀ϕ = skip
+noAcq-⋯ msg ∀ϕ = msg
+noAcq-⋯ (brn x y) ∀ϕ = brn (noAcq-⋯ x ∀ϕ) (noAcq-⋯ y ∀ϕ)
+noAcq-⋯ ⦃ K ⦄ (mu x) ∀ϕ = mu $ noAcq-⋯ x λ where
+  zero    → subst NoAcq (sym (`/`-is-` ⦃ K ⦄ _)) `-
+  (suc z) → subst NoAcq (wk-`/id _) (noAcq-⋯ᵣ (∀ϕ z))
+noAcq-⋯ (x ; y) ∀ϕ = noAcq-⋯ x ∀ϕ ; noAcq-⋯ y ∀ϕ
+
+noAcq-⋯⁻¹ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ {ϕ : m –[ K ]→ n} → NoAcq (s ⋯ ϕ) → NoAcq s
+noAcq-⋯⁻¹ {s = ` _} x = `-
+noAcq-⋯⁻¹ {s = acq} x = ⊥-elim (¬noAcq-acq x)
+noAcq-⋯⁻¹ {s = end p} x = end
+noAcq-⋯⁻¹ {s = ret} x = ret
+noAcq-⋯⁻¹ {s = skip} x = skip
+noAcq-⋯⁻¹ {s = msg p t} x = msg
+noAcq-⋯⁻¹ {s = brn p _ _} (brn x y) = brn (noAcq-⋯⁻¹ x) (noAcq-⋯⁻¹ y)
+noAcq-⋯⁻¹ {s = mu s} (mu x) = mu (noAcq-⋯⁻¹ x)
+noAcq-⋯⁻¹ {s = _ ; _} (x ; y) = noAcq-⋯⁻¹ x ; noAcq-⋯⁻¹ y
+
+noAcq-≃ : NoAcq {n} Respects _≃_
+noAcq-≃ refl na = na
+noAcq-≃ (x ◅ xs) na = noAcq-≃ xs (go x na)
+  where
+  go : NoAcq {n} Respects SymClosure _≃𝕊_
+  go (fwd (≃𝕊-;₁ eq)) (x ; y) = go (fwd eq) x ; y
+  go (fwd (≃𝕊-;₂ eq)) (x ; y) = x ; go (fwd eq) y
+  go (fwd ≃𝕊-skipˡ) (x ; y) = y
+  go (fwd ≃𝕊-skipʳ) (x ; y) = x
+  go (fwd ≃𝕊-μ) (mu x) = noAcq-⋯ x λ{ zero → mu x; (suc z) → `- }
+  go (fwd ≃𝕊-assoc) ((x ; y) ; z) = x ; (y ; z)
+  go (fwd ≃𝕊-distr) (brn x₁ x₂ ; y) = brn (x₁ ; y) (x₂ ; y)
+  go (fwd (≃𝕊-msg eq))  msg       = msg
+  go (fwd (≃𝕊-brn₁ eq)) (brn x y) = brn (go (fwd eq) x) y
+  go (fwd (≃𝕊-brn₂ eq)) (brn x y) = brn x (go (fwd eq) y)
+  go (bwd (≃𝕊-;₁ eq)) (x ; y) = go (bwd eq) x ; y
+  go (bwd (≃𝕊-;₂ eq)) (x ; y) = x ; go (bwd eq) y
+  go (bwd ≃𝕊-skipˡ) x = skip ; x
+  go (bwd ≃𝕊-skipʳ) x = x ; skip
+  go (bwd ≃𝕊-μ) x = mu (noAcq-⋯⁻¹ x)
+  go (bwd ≃𝕊-assoc) (x ; (y ; z)) = (x ; y) ; z
+  go (bwd ≃𝕊-distr) (brn (x₁ ; y) (x₂ ; _)) = brn x₁ x₂ ; y
+  go (bwd (≃𝕊-msg eq))  msg       = msg
+  go (bwd (≃𝕊-brn₁ eq)) (brn x y) = brn (go (bwd eq) x) y
+  go (bwd (≃𝕊-brn₂ eq)) (brn x y) = brn x (go (bwd eq) y)
+
+¬mobile-noAcq : NoAcq s → ¬ Mobile ⟨ s ⟩
+¬mobile-noAcq NAs ⟨ _ , _ , s≃ ⟩ = ¬noAcq-acq (noAcq-;-fst (noAcq-≃ s≃ NAs))
+
+¬mobile-of : ∀ {T : 𝕋} {s} → T ≡ ⟨ s ⟩ → NoAcq s → ¬ Mobile T
+¬mobile-of eq NAs = subst (λ T → ¬ Mobile T) (sym eq) (¬mobile-noAcq NAs)
+
+---------------------------------
 -- EndTip : a spine whose unique bounded tip is `end p`, with only Skips
 -- to its right.  Mirror of V.RetTip with `end` in place of `ret`.
 ------------------------------------------------------------------------

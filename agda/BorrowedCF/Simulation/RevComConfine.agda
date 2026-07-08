@@ -31,6 +31,10 @@ open import BorrowedCF.Simulation.BeforeOrder
 open import BorrowedCF.Simulation.Confine using (≼⇒count≤)
 open import Data.Sum using ([_,_]′)
 open import BorrowedCF.Processes.Typed using (structBinder; structNSeq; BindGroup)
+open import BorrowedCF.Processes.Typed using (BindCtx; BindCtx′; last; cons; cons-ret/acq; bindCtx-B≢[]; bindCtx⇒chanCtx; bindCtx′⇒chanCtx)
+open import BorrowedCF.Simulation.CloseVacuityProbe using (NoAcq; new⇒noAcq; new-end⇒noAcq; noAcq-≃; noAcq-;-fst; noAcq-;-snd; ¬mobile-of)
+open import Data.Sum using (fromInj₁)
+open import Data.Fin using (splitAt)
 import BorrowedCF.Context.Substitution as 𝐂S
 open import Data.Nat.ListAction using (sum)
 open import Data.Fin.Base using (_↑ˡ_)
@@ -45,6 +49,7 @@ open Nat using (+-assoc; _≤_; ≤-trans; m≤m+n; m≤n+m; +-monoˡ-≤; +-mon
 --    ν (b₁ ∷ []) (b₂ ∷ []) _ places 0F ;-before every LATER block-1 leaf
 --    (structNSeq is a ;-chain), lifted through the two right-weakenings.  This is
 --    the ONE `before` fact the LeftPat/¬before squeeze contradicts to force z₀ ≡ 0F. ──
+
 inj-wkʳ : ∀ {n} k → 𝐂S.Inj (𝐂S.wkʳ {n = n} k)
 inj-wkʳ k {x} {y} eq = ↑ˡ-injective k x y eq
 
@@ -147,6 +152,28 @@ leftPat-¬before {𝒫 = (R , γ) ∷ 𝒫′} {δ} {z} {xS} (inj₂ refl ∷ lp
 leftPat-¬before {𝒫 = (R , γ) ∷ 𝒫′} {δ} {z} {xS} (inj₂ refl ∷ lp) c0 ¬bδ (inj₂ (inj₂ bγ)) =
   proj₂ (before⇒mem γ bγ) (proj₂ (+≡0 {count xS (𝒫′ [ [] ]𝓅)} c0))
 
+-- ── block channels are acq-free: their session is a ≃-factor of the New-derived
+--    `s ; end`, hence NoAcq, hence NOT Mobile.  Proven alongside bindCtx⇒chanCtx so
+--    the extracted session is definitionally the same. ──
+bindCtx′-NoAcq : ∀ {w} {Γ : Ctx w} {s : 𝕊 0} → NoAcq s → (bc : BindCtx′ s w Γ) (i : 𝔽 w)
+               → NoAcq (proj₁ (bindCtx′⇒chanCtx bc i))
+bindCtx′-NoAcq NAs (cons s₁ s₂ ¬sk s≃ Γ≗ b) 0F =
+  noAcq-;-fst (noAcq-≃ (≃-sym s≃) NAs)
+bindCtx′-NoAcq NAs (cons s₁ s₂ ¬sk s≃ Γ≗ b) (suc i) =
+  bindCtx′-NoAcq (noAcq-;-snd (noAcq-≃ (≃-sym s≃) NAs)) b i
+
+block-NoAcq : ∀ {s p b} {Γ : Ctx (sum (suc b ∷ []))} → New s
+            → (C : BindCtx (s ; end p) (suc b ∷ []) Γ) (x : 𝔽 (sum (suc b ∷ [])))
+            → NoAcq (proj₁ (bindCtx⇒chanCtx C x))
+block-NoAcq N (last b′) x = bindCtx′-NoAcq (new-end⇒noAcq N) b′ (fromInj₁ (λ()) (splitAt _ x))
+block-NoAcq N (cons-ret/acq _ _ _ _ tail) x = ⊥-elim (bindCtx-B≢[] tail)
+
+-- ¬ Mobile for a block channel, given its Γ-lookup equality.
+¬mobile-block : ∀ {s p b} {Γ : Ctx (sum (suc b ∷ []))} → New s
+              → (C : BindCtx (s ; end p) (suc b ∷ []) Γ) (x : 𝔽 (sum (suc b ∷ [])))
+              → ¬ Mobile (Γ x)
+¬mobile-block N C x = ¬mobile-of (proj₂ (bindCtx⇒chanCtx C x)) (block-NoAcq N C x)
+
 -- ── step 4(b): the ASSEMBLED ;-minimality contradiction.  Given the send handle
 --    xS is a live borrow that (i) is confined to the redex (LeftPat frame stack +
 --    count xS γrˢ ≥ 1 + the cross-thread linearity count xS γinner ≡ 1) and (ii)
@@ -154,7 +181,7 @@ leftPat-¬before {𝒫 = (R , γ) ∷ 𝒫′} {δ} {z} {xS} (inj₂ refl ∷ lp
 --    a contradiction.  Contrapositive: a well-typed com send handle is ;-minimal.
 --    Combine with before-com-binderᴸ to force z₀ ≡ 0F. ──
 com-xS-min : ∀ {n} {Γ : Ctx n} {𝒫ˢ : CxPat n} {γrˢ α β γinner : Struct n} {xS y : 𝔽 n}
-  → ¬ Unr (Γ xS) → ¬ Unr (Γ y)
+  → ¬ Mobile (Γ xS) → ¬ Mobile (Γ y)
   → LeftPat 𝒫ˢ
   → Γ ∶ 𝒫ˢ [ γrˢ ]𝓅 ≼ α
   → Γ ∶ α ∥ β ≼ γinner
@@ -169,11 +196,11 @@ com-xS-min {Γ = Γ} {𝒫ˢ} {γrˢ} {α} {β} {γinner} {xS} {y} ¬uxS ¬uy lp
   ]′ (before-mono-≼ ¬uy ¬uxS αβ≼ bγ)
   where
     cαβ≤1 : count xS α + count xS β ≤ 1
-    cαβ≤1 = subst (count xS α + count xS β ≤_) cγ1 (≼⇒count≤ {x = xS} ¬uxS αβ≼)
+    cαβ≤1 = subst (count xS α + count xS β ≤_) cγ1 (≼⇒count≤ {x = xS} (¬uxS ∘ unr⇒mobile) αβ≼)
     cα≤1 : count xS α ≤ 1
     cα≤1 = ≤-trans (m≤m+n (count xS α) (count xS β)) cαβ≤1
     cα≡ : count xS α ≡ count xS (𝒫ˢ [ [] ]𝓅) + count xS γrˢ
-    cα≡ = sym (count-≼-eq ¬uxS ≼ˢ) ■ count-plug-add 𝒫ˢ γrˢ xS
+    cα≡ = sym (count-≼-eq (¬uxS ∘ unr⇒mobile) ≼ˢ) ■ count-plug-add 𝒫ˢ γrˢ xS
     c𝒫0 : count xS (𝒫ˢ [ [] ]𝓅) ≡ 0
     c𝒫0 = n≤0⇒n≡0 (s≤s⁻¹
             (subst (_≤ 1) (+-comm (count xS (𝒫ˢ [ [] ]𝓅)) 1)

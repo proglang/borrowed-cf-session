@@ -80,7 +80,7 @@ invApp-arg (T-AppRight _ _ y) = _ , y
 com-¬before :
   ∀ {N} {Γ : Ctx N} {γrˢ αcom βcom γinner : Struct N} {𝒫ˢ : CxPat N}
     {aS : Tm N} {xS y : 𝔽 N} {U ϵ}
-  → ¬ Unr (Γ xS) → ¬ Unr (Γ y)
+  → ¬ Mobile (Γ xS) → ¬ Mobile (Γ y)
   → Γ ; γrˢ ⊢ K `send ·¹ (aS ⊗ (` xS)) ∶ U ∣ ϵ
   → Γ ∶ 𝒫ˢ [ γrˢ ]𝓅 ≼ αcom
   → Γ ∶ αcom ∥ βcom ≼ γinner
@@ -112,18 +112,18 @@ com-¬before {Γ = Γ} {γrˢ} {αcom} {βcom} {γinner} {𝒫ˢ} {aS} {xS} {y}
       -- msg side: xS occurs both in msg (bα') and chan (` xS) → count ≥ 2 > 1.
       let xS∈α'  = proj₂ (before⇒mem α' bα')
           1≤α'   = 1≤ne xS∈α'
-          1≤β'   = subst (_≤ count xS β') (count-self xS) (≼⇒count≤ ¬uxS (proj₂ (inv-` ⊢xS)))
+          1≤β'   = subst (_≤ count xS β') (count-self xS) (≼⇒count≤ (¬uxS ∘ unr⇒mobile) (proj₂ (inv-` ⊢xS)))
           2≤pair = subst (2 ≤_) (sym (count-join-PS par xS α' β')) (+-mono-≤ 1≤α' 1≤β')
-          pair≤β = ≼⇒count≤ ¬uxS ≤β
+          pair≤β = ≼⇒count≤ (¬uxS ∘ unr⇒mobile) ≤β
           β≤ba   = m≤m+n (count xS β) (count xS α)
-          ba≤γrˢ = ≼⇒count≤ ¬uxS (subst (λ d → Γ ∶ join d β α ≼ γrˢ) dir≡ ≤γ)
+          ba≤γrˢ = ≼⇒count≤ (¬uxS ∘ unr⇒mobile) (subst (λ d → Γ ∶ join d β α ≼ γrˢ) dir≡ ≤γ)
           γrˢ≤plug = subst (count xS γrˢ ≤_) (sym (count-plug-add 𝒫ˢ γrˢ xS))
                        (m≤n+m (count xS γrˢ) (count xS (𝒫ˢ [ [] ]𝓅)))
           γrˢ≤1  = subst (count xS γrˢ ≤_) cnt1
                      (≤-trans γrˢ≤plug
-                       (≤-trans (≼⇒count≤ ¬uxS ≼ˢ)
+                       (≤-trans (≼⇒count≤ (¬uxS ∘ unr⇒mobile) ≼ˢ)
                          (≤-trans (m≤m+n (count xS αcom) (count xS βcom))
-                                  (≼⇒count≤ ¬uxS αβ≼))))
+                                  (≼⇒count≤ (¬uxS ∘ unr⇒mobile) αβ≼))))
       in ⊥-elim (2≰1 (≤-trans 2≤pair
                        (≤-trans pair≤β
                          (≤-trans β≤ba (≤-trans ba≤γrˢ γrˢ≤1)))))
@@ -227,7 +227,7 @@ barevar-arg-count {x = x} ¬u ⊢redex
   in ≤-trans 1≤β β≤γ
 
 choice-¬before : ∀ {N} {Γ : Ctx N} {γrˢ : Struct N} {x y : 𝔽 N} {c U ϵ}
-  → ¬ Unr (Γ x) → ¬ Unr (Γ y)
+  → ¬ Mobile (Γ x) → ¬ Mobile (Γ y)
   → Γ ; γrˢ ⊢ K c ·¹ (` x) ∶ U ∣ ϵ
   → ¬ before y x γrˢ
 choice-¬before {x = x} {y = y} ¬ux ¬uy ⊢redex bfr
