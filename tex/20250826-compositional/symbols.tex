@@ -505,13 +505,22 @@
 % Rules
 \newcommand*\RuleName[1]{\textsc{#1}}
 
+% Proof artifact references
+\newcommand*\AgdaBird{%
+  \raisebox{-0.28ex}{\includegraphics[height=1.6ex]{assets/agda-bird.png}}%
+}
+\newcommand*\AgdaProofIcon{\ensuremath{\blacktriangleright}}
+\newcommand*\AgdaProofRef[2]{%
+  \hfill{\footnotesize\textcolor{gray}{\texttt{#1}:\texttt{#2}}}%
+}
+
 % Notes
 \newcommand{\note}[2]{{\color{red}[#1:} #2{\color{red}]}}
 \renewcommand{\vv}[1]{\note{vv}{#1}} % clashes with \vv from newtxmath, loaded automatically by acmart
 \newcommand{\pt}[1]{\note{pt}{#1}}
 \newcommand{\js}[1]{\note{js}{#1}}
 \newcommand{\mw}[1]{\note{mw}{#1}}
-%%% Local Variables:
+%%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "popl2027"
 %%% End:
