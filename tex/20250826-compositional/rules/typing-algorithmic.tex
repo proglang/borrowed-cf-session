@@ -37,8 +37,9 @@
 \DefRule {Select} {
   \InferType
     \E
-    {\SChoice{\ell:\S[\ell]}{\ell\in L}}
-    \Eff
+    {\T}
+    \Eff \\
+  \NormaliseType \T {\SChoice{\ell:\S[\ell]}{\ell\in L}}
 }{
   \InferType
     {\EApp{\CSelect k}{\E}}
@@ -50,8 +51,9 @@
 \DefRule {Branch} {
   \InferType
     \E
-    {\SBranch{\ell:\S[\ell]}{\ell\in L}}
-    \Eff
+    {\T}
+    \Eff \\
+  \NormaliseType \T {\SBranch{\ell:\S[\ell]}{\ell\in L}}
 }{
   \InferType
     {\EApp{\CBranch}{\E}}
