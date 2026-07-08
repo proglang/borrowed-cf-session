@@ -37,6 +37,7 @@ open import BorrowedCF.Simulation.BlockPerm
         ; toℕ-weaken*ᵣ; weaken*ᵣ~↑ʳ; toℕ-swapᵣ-mid; toℕ-reduce≥; toℕ-assoc-mid; toℕ-assoc-ge; toℕ-assoc-lt; toℕ-↑
         ; toℕ-↑*-ge; toℕ-↑*-lt; commuteS; wkSwap-cancel; assocSwap-invol; R2' )
 open import BorrowedCF.Simulation.Frames using (frame-plug*; frame*-⋯; frame-plug₁; ++ₛ-VSub)
+open import BorrowedCF.Simulation.FrameRename using (F-σ⋯)
 open import BorrowedCF.Simulation.TranslationProperties using (VChan; chanTriple-V; Value-subst)
 open import BorrowedCF.Simulation.SplitConfine using (acq-confine)
 open import BorrowedCF.Simulation.AcqSubstNat
@@ -120,6 +121,54 @@ canonₛ-e1-irrel {N} (b ∷ B@(_ ∷ _)) e1 e1' x e2 j j≢0
   where
     jh≢0 : Fin.toℕ jh ≢ 0
     jh≢0 eqjh0 = j≢0 (sym (splitAt-inj₁-toℕ j jh eq) ■ eqjh0)
+
+-- A lifted renaming never lands on 0F when its argument isn't 0F.
+↑≢0 : ∀ {N M} (ρ : N →ᵣ M) (y : 𝔽 (suc N)) → y ≢ 0F → (ρ ↑) y ≢ 0F
+↑≢0 ρ 0F      y≢0 = ⊥-elim (y≢0 refl)
+↑≢0 ρ (suc k) _   = λ ()
+
+subst-K′ : ∀ {a b} (eq : a ≡ b) → subst Tm eq (K `unit) ≡ K `unit
+subst-K′ refl = refl
+
+subst-var′ : ∀ {a b} (eq : a ≡ b) (v : 𝔽 a) → subst Tm eq (` v) ≡ ` (subst 𝔽 eq v)
+subst-var′ refl v = refl
+
+-- The acquired-channel continuation (third slot of canonₛ-acq-head's head triple)
+-- avoids the handle position sC = syncs(suc b ∷ B): it is K `unit in three cases
+-- and a var at position sB < sC in the fourth, so it factors through weakenᵣ ↑* sC.
+tc-factors-gen : ∀ {N} (b : ℕ) (B : BindGroup) →
+  Σ[ tc′ ∈ Tm (syncs (suc b ∷ B) + suc N) ]
+    (proj₁ (proj₂ (proj₂ (canonₛ-acq-head b B (K `unit))))
+       ≡ tc′ ⋯ (weakenᵣ ↑* syncs (suc b ∷ B)))
+tc-factors-gen zero    []        = K `unit , refl
+tc-factors-gen (suc b) []        = K `unit , refl
+tc-factors-gen {N} (suc b) (c′ ∷ B) = K `unit , subst-K′ (+-suc (syncs (c′ ∷ B)) (2 + N))
+tc-factors-gen {N} zero (c′ ∷ B) = (` v′) , pfac
+  where
+    sB : ℕ
+    sB = syncs (c′ ∷ B)
+    v′ : 𝔽 (syncs (suc zero ∷ c′ ∷ B) + suc N)
+    v′ = subst 𝔽 (+-suc sB (1 + N)) (weaken* ⦃ Kᵣ ⦄ sB (Fin.zero {n = 1 + N}))
+    pfac : proj₁ (proj₂ (proj₂ (canonₛ-acq-head zero (c′ ∷ B) (K `unit))))
+            ≡ (` v′) ⋯ (weakenᵣ ↑* syncs (suc zero ∷ c′ ∷ B))
+    pfac = cong (subst Tm (+-suc sB (2 + N))) (⋯-var (Fin.zero {n = 2 + N}) (weaken* ⦃ Kᵣ ⦄ sB))
+         ■ subst-var′ (+-suc sB (2 + N)) (weaken* ⦃ Kᵣ ⦄ sB (Fin.zero {n = 2 + N}))
+         ■ cong `_ vv′eq
+         ■ sym (⋯-var v′ (weakenᵣ ↑* syncs (suc zero ∷ c′ ∷ B)))
+      where
+        v : 𝔽 (syncs (suc zero ∷ c′ ∷ B) + (2 + N))
+        v = subst 𝔽 (+-suc sB (2 + N)) (weaken* ⦃ Kᵣ ⦄ sB (Fin.zero {n = 2 + N}))
+        toℕv : Fin.toℕ v ≡ sB
+        toℕv = toℕ-subst𝔽 (+-suc sB (2 + N)) (weaken* ⦃ Kᵣ ⦄ sB (Fin.zero {n = 2 + N}))
+             ■ toℕ-weaken*ᵣ sB (Fin.zero {n = 2 + N}) ■ Nat.+-identityʳ sB
+        toℕv′ : Fin.toℕ v′ ≡ sB
+        toℕv′ = toℕ-subst𝔽 (+-suc sB (1 + N)) (weaken* ⦃ Kᵣ ⦄ sB (Fin.zero {n = 1 + N}))
+              ■ toℕ-weaken*ᵣ sB (Fin.zero {n = 1 + N}) ■ Nat.+-identityʳ sB
+        v′<sC : Fin.toℕ v′ Nat.< syncs (suc zero ∷ c′ ∷ B)
+        v′<sC = subst (Nat._< syncs (suc zero ∷ c′ ∷ B)) (sym toℕv′) Nat.≤-refl
+        vv′eq : v ≡ (weakenᵣ ↑* syncs (suc zero ∷ c′ ∷ B)) v′
+        vv′eq = Fin.toℕ-injective
+                  (toℕv ■ sym (toℕ-↑*-lt weakenᵣ (syncs (suc zero ∷ c′ ∷ B)) v′ v′<sC ■ toℕv′))
 
 
 open T using (_;_⊢ₚ_)
@@ -1121,9 +1170,154 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
     Qbase : U.Proc (2 + (sB₂ + (sC + n)))
     Qbase = Qout U.⋯ₚ ⦅ * ⦆ₛ
     Fout≡ : Fout ≡ Fbase ⋯ᶠ* weakenᵣ
-    Fout≡ = {!!}
+    Fout≡ = sym
+      ( F-σ⋯ Fout V⦅*⦆ weakenᵣ Vη
+      ■ cong (λ F → frame*-⋯ F η Vη) FoutE
+      ■ F*-fuse-local E Vsp Vη Vsη
+      ■ cong (λ EE → frame*-⋯ EE (sPre ·ₖ η) Vsη) E≡
+      ■ F-⋯f*-fuse E₀ Vsη (·ₖ-VSubᵣ ρ⁻ Vsη)
+      ■ frame*-cong E₀ (·ₖ-VSubᵣ ρ⁻ Vsη) (·ₖ-VSubᵣ ρ⁻ Vsp) avoidcong
+      ■ sym (F-⋯f*-fuse E₀ Vsp (·ₖ-VSubᵣ ρ⁻ Vsp))
+      ■ cong (λ EE → frame*-⋯ EE sPre Vsp) (sym E≡)
+      ■ sym FoutE )
+      where
+        dom : ℕ
+        dom = sum (zero ∷ C) + sum B₂ + m
+        η : (3 + (sB₂ + (sC + n))) →ₛ (3 + (sB₂ + (sC + n)))
+        η = ⦅ * ⦆ₛ ·ₖ weakenᵣ
+        ·ₖ-VSubₛ : ∀ {a b c} {σ : a →ₛ b} → VSub σ → (ρ : b →ᵣ c) → VSub (σ ·ₖ ρ)
+        ·ₖ-VSubₛ Vσ ρ i = value-⋯ (Vσ i) ρ (λ _ → V-`)
+        F*-fuse-local : ∀ {a b c} (E' : Frame* a) {ϕ : a →ₛ b} (Vϕ : VSub ϕ)
+                        {ξ : b →ₛ c} (Vξ : VSub ξ) (Vϕξ : VSub (ϕ ·ₖ ξ)) →
+                        frame*-⋯ (frame*-⋯ E' ϕ Vϕ) ξ Vξ ≡ frame*-⋯ E' (ϕ ·ₖ ξ) Vϕξ
+        F*-fuse-local []        Vϕ Vξ Vϕξ = refl
+        F*-fuse-local (Fr ∷ E') Vϕ Vξ Vϕξ =
+          cong₂ _∷_ (frame-fusion-gen Fr Vϕ Vξ Vϕξ) (F*-fuse-local E' Vϕ Vξ Vϕξ)
+        subst-frame*-⋯ : ∀ {a c} (eq : a ≡ c) (E' : Frame* dom) {σ : dom →ₛ a}
+                         (Vσ : VSub σ) (Vσ' : VSub (subst (λ z → dom →ₛ z) eq σ)) →
+                         subst (λ z → Frame* z) eq (frame*-⋯ E' σ Vσ)
+                         ≡ frame*-⋯ E' (subst (λ z → dom →ₛ z) eq σ) Vσ'
+        subst-frame*-⋯ refl E' Vσ Vσ' = frame*-cong E' Vσ Vσ' (λ _ → refl)
+        Vsp : VSub sPre
+        Vsp i = subst Value (sym (sPre-pt i))
+          (value-⋯ (value-⋯ (value-⋯ (value-⋯ (Value-subst eqC (Vτ i))
+            ρa (λ _ → V-`)) ρb (λ _ → V-`)) ρc (λ _ → V-`)) ρd (λ _ → V-`))
+        Vη : VSub η
+        Vη i = value-⋯ (V⦅*⦆ i) weakenᵣ (λ _ → V-`)
+        Vsη : VSub (sPre ·ₖ η)
+        Vsη i = value-⋯ (Vsp i) η Vη
+        Vτ̂ : VSub (subst (λ z → dom →ₛ z) eqC τ)
+        Vτ̂ i = subst Value (sym (subst-cod-ptR eqC τ i)) (Value-subst eqC (Vτ i))
+        Va : VSub ((subst (λ z → dom →ₛ z) eqC τ) ·ₖ ρa)
+        Va = ·ₖ-VSubₛ Vτ̂ ρa
+        Vab : VSub (((subst (λ z → dom →ₛ z) eqC τ) ·ₖ ρa) ·ₖ ρb)
+        Vab = ·ₖ-VSubₛ Va ρb
+        Vabc : VSub ((((subst (λ z → dom →ₛ z) eqC τ) ·ₖ ρa) ·ₖ ρb) ·ₖ ρc)
+        Vabc = ·ₖ-VSubₛ Vab ρc
+        FoutE : Fout ≡ frame*-⋯ E sPre Vsp
+        FoutE =
+            cong (λ F → F ⋯ᶠ* ρa ⋯ᶠ* ρb ⋯ᶠ* ρc ⋯ᶠ* ρd) (subst-frame*-⋯ eqC E Vτ Vτ̂)
+          ■ cong (λ F → F ⋯ᶠ* ρb ⋯ᶠ* ρc ⋯ᶠ* ρd) (F-σ⋯ E Vτ̂ ρa Va)
+          ■ cong (λ F → F ⋯ᶠ* ρc ⋯ᶠ* ρd) (F-σ⋯ E Va ρb Vab)
+          ■ cong (λ F → F ⋯ᶠ* ρd) (F-σ⋯ E Vab ρc Vabc)
+          ■ F-σ⋯ E Vabc ρd Vsp
+        avoidcong : (ρ⁻ ·ₖ (sPre ·ₖ η)) ≗ (ρ⁻ ·ₖ sPre)
+        avoidcong y = sym (fusion (sPre (ρ⁻ y)) ⦅ * ⦆ₛ weakenᵣ) ■ avoid (ρ⁻ y) (ρ⁻≢0 y)
     eout≡ : eout ≡ wk ebase
-    eout≡ = {!!}
+    eout≡ = sym ( cong (λ z → z ⋯ ⦅ * ⦆ₛ ⋯ weakenᵣ) eout-eq
+                ■ avoid-ren tcc′ ρeout ρeout≢0
+                ■ sym eout-eq )
+      where
+        ρ0 : (sC + (2 + n)) →ᵣ suc (sC + (2 + n))
+        ρ0 = castᵣ (+-suc sC (2 + n)) (weakenᵣ ↑* sC)
+        ρ1 : (sC + (2 + n)) →ᵣ (sB₂ + (sC + (3 + n)))
+        ρ1 = castᵣ eqC (ρ0 ·ₖ weaken* ⦃ Kᵣ ⦄ sB₂)
+        ρ1a : (sC + (2 + n)) →ᵣ _
+        ρ1a = ρ1 ·ₖ ρa
+        ρW : (sC + (2 + n)) →ᵣ _
+        ρW = ρ1a ·ₖ ρb
+        ρW≢0 : ∀ x → ρW x ≢ 0F
+        ρW≢0 x eq0 = abs (subst (1 Nat.≤_) (cong Fin.toℕ eq0) posℕ)
+          where
+            abs : 1 Nat.≤ 0 → ⊥
+            abs ()
+            pv1 : ℕ
+            pv1 = Fin.toℕ ((weakenᵣ ↑* sC) x)
+            tρ1 : Fin.toℕ (ρ1 x) ≡ sB₂ + pv1
+            tρ1 = toℕ-castᵣ eqC (ρ0 ·ₖ weaken* ⦃ Kᵣ ⦄ sB₂) x
+                ■ toℕ-weaken*ᵣ sB₂ (ρ0 x)
+                ■ cong (sB₂ +_) (toℕ-castᵣ (+-suc sC (2 + n)) (weakenᵣ ↑* sC) x)
+            geB : sB₂ Nat.≤ Fin.toℕ (ρ1 x)
+            geB = subst (sB₂ Nat.≤_) (sym tρ1) (Nat.m≤m+n sB₂ pv1)
+            redB : Fin.toℕ (Fin.reduce≥ (ρ1 x) geB) ≡ pv1
+            redB = toℕ-reduce≥ (ρ1 x) geB ■ cong (Nat._∸ sB₂) tρ1 ■ Nat.m+n∸m≡n sB₂ pv1
+            tρa : Fin.toℕ (ρa (ρ1 x)) ≡ sB₂ + Fin.toℕ (assocSwapᵣ sC 1 (Fin.reduce≥ (ρ1 x) geB))
+            tρa = toℕ-↑*-ge (assocSwapᵣ sC 1) sB₂ (ρ1 x) geB
+            1≤sB₂+1+ : ∀ k → 1 Nat.≤ sB₂ + (1 + k)
+            1≤sB₂+1+ k = Nat.≤-trans (Nat.m≤n+m 1 sB₂) (Nat.+-monoʳ-≤ sB₂ (Nat.m≤m+n 1 k))
+            geCase : sC Nat.≤ Fin.toℕ x → 1 Nat.≤ Fin.toℕ (ρW x)
+            geCase gex = subst (1 Nat.≤_) (sym tρW)
+                           (Nat.≤-trans (Nat.≤-trans (Nat.m≤n+m 1 sC) sC+1≤pv1) (Nat.m≤n+m pv1 sB₂))
+              where
+                pv1eq : pv1 ≡ sC + (1 + Fin.toℕ (Fin.reduce≥ x gex))
+                pv1eq = toℕ-↑*-ge weakenᵣ sC x gex
+                      ■ cong (sC +_) (toℕ-weaken*ᵣ 1 (Fin.reduce≥ x gex))
+                sC+1≤pv1 : sC + 1 Nat.≤ pv1
+                sC+1≤pv1 = subst (sC + 1 Nat.≤_) (sym pv1eq) (Nat.+-monoʳ-≤ sC (Nat.m≤m+n 1 _))
+                tassoc : Fin.toℕ (assocSwapᵣ sC 1 (Fin.reduce≥ (ρ1 x) geB)) ≡ pv1
+                tassoc = toℕ-assoc-ge sC 1 (Fin.reduce≥ (ρ1 x) geB)
+                           (subst (sC + 1 Nat.≤_) (sym redB) sC+1≤pv1)
+                       ■ redB
+                tρaC : Fin.toℕ (ρa (ρ1 x)) ≡ sB₂ + pv1
+                tρaC = tρa ■ cong (sB₂ +_) tassoc
+                geAB : sB₂ + 1 Nat.≤ Fin.toℕ (ρa (ρ1 x))
+                geAB = subst (sB₂ + 1 Nat.≤_) (sym tρaC)
+                         (Nat.+-monoʳ-≤ sB₂ (Nat.≤-trans (Nat.m≤n+m 1 sC) sC+1≤pv1))
+                tρW : Fin.toℕ (ρW x) ≡ sB₂ + pv1
+                tρW = toℕ-assoc-ge sB₂ 1 (ρa (ρ1 x)) geAB ■ tρaC
+            posℕ : 1 Nat.≤ Fin.toℕ (ρW x)
+            posℕ with Nat.<-cmp (Fin.toℕ x) sC
+            ... | tri< ltx _ _ = subst (1 Nat.≤_) (sym tρW) (1≤sB₂+1+ pv1)
+              where
+                pv1lt : pv1 Nat.< sC
+                pv1lt = subst (Nat._< sC) (sym (toℕ-↑*-lt weakenᵣ sC x ltx)) ltx
+                tassoc : Fin.toℕ (assocSwapᵣ sC 1 (Fin.reduce≥ (ρ1 x) geB)) ≡ 1 + pv1
+                tassoc = toℕ-assoc-lt sC 1 (Fin.reduce≥ (ρ1 x) geB)
+                           (subst (Nat._< sC) (sym redB) pv1lt)
+                       ■ cong (1 +_) redB
+                tρaC : Fin.toℕ (ρa (ρ1 x)) ≡ sB₂ + (1 + pv1)
+                tρaC = tρa ■ cong (sB₂ +_) tassoc
+                geAB : sB₂ + 1 Nat.≤ Fin.toℕ (ρa (ρ1 x))
+                geAB = subst (sB₂ + 1 Nat.≤_) (sym tρaC) (Nat.+-monoʳ-≤ sB₂ (Nat.m≤m+n 1 pv1))
+                tρW : Fin.toℕ (ρW x) ≡ sB₂ + (1 + pv1)
+                tρW = toℕ-assoc-ge sB₂ 1 (ρa (ρ1 x)) geAB ■ tρaC
+            ... | tri≈ _ eqx _ = geCase (Nat.≤-reflexive (sym eqx))
+            ... | tri> _ _ gtx = geCase (Nat.<⇒≤ gtx)
+        tcc′ : Tm (sC + (2 + n))
+        tcc′ = proj₁ (tc-factors-gen {suc n} b₁ B₁)
+        tc-eq : tcc ≡ tcc′ ⋯ (weakenᵣ ↑* sC)
+        tc-eq = proj₂ (tc-factors-gen {suc n} b₁ B₁)
+        ρWc : (sC + (2 + n)) →ᵣ _
+        ρWc = ρW ·ₖ ρc
+        ρeout : (sC + (2 + n)) →ᵣ _
+        ρeout = ρWc ·ₖ ρd
+        ρeout≢0 : ∀ x → ρeout x ≢ 0F
+        ρeout≢0 x = ↑≢0 (assocSwapᵣ sB₂ 2) (ρWc x)
+                      (↑≢0 (assocSwapᵣ sC 2 ↑* sB₂) (ρW x) (ρW≢0 x))
+        Weq-analog : subst Tm eqC (subst Tm e₀ tcc ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ⋯ ρa ⋯ ρb ≡ tcc′ ⋯ ρW
+        Weq-analog =
+            cong (λ z → subst Tm eqC (subst Tm e₀ z ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ⋯ ρa ⋯ ρb) tc-eq
+          ■ cong (λ z → subst Tm eqC (z ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ⋯ ρa ⋯ ρb)
+              (sym (subst-⋯-cod-local e₀ tcc′ (weakenᵣ ↑* sC)))
+          ■ cong (λ z → subst Tm eqC z ⋯ ρa ⋯ ρb) (fusion tcc′ ρ0 (weaken* ⦃ Kᵣ ⦄ sB₂))
+          ■ cong (λ z → z ⋯ ρa ⋯ ρb) (sym (subst-⋯-cod-local eqC tcc′ (ρ0 ·ₖ weaken* ⦃ Kᵣ ⦄ sB₂)))
+          ■ cong (_⋯ ρb) (fusion tcc′ ρ1 ρa)
+          ■ fusion tcc′ ρ1a ρb
+        eout-eq : eout ≡ tcc′ ⋯ ρeout
+        eout-eq =
+            cong (λ z → z ⋯ ρc ⋯ ρd) Weq-analog
+          ■ cong (_⋯ ρd) (fusion tcc′ ρW ρc)
+          ■ fusion tcc′ ρWc ρd
     avoid⁻ : ((sPre⁻ ·ₖ ⦅ * ⦆ₛ) ·ₖ weakenᵣ) ≗ sPre⁻
     avoid⁻ y = avoid (ρ⁻ y) (ρ⁻≢0 y)
     Qout≡w : Qout ≡ Qbase U.⋯ₚ weakenᵣ
