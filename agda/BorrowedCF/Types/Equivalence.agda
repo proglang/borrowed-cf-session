@@ -16,37 +16,42 @@ open Bin
 open Nat using (_≤_; s≤s; s≤s⁻¹; ≤-trans)
 open Nat.Variables
 
-infix 4 _≃𝕊_ _≃𝕋_
+mutual
+  infix 4 _≃𝕊_ _≃𝕋_
 
-data _≃𝕊_ {n} : Rel (𝕊 n) 0ℓ where
-  ≃𝕊-;₁ : s₁ ≃𝕊 s₂ → s₁ ; s ≃𝕊 s₂ ; s
-  ≃𝕊-;₂ : s₁ ≃𝕊 s₂ → s ; s₁ ≃𝕊 s ; s₂
+  data _≃𝕊_ {n} : Rel (𝕊 n) 0ℓ where
+    ≃𝕊-;₁ : s₁ ≃𝕊 s₂ → s₁ ; s ≃𝕊 s₂ ; s
+    ≃𝕊-;₂ : s₁ ≃𝕊 s₂ → s ; s₁ ≃𝕊 s ; s₂
 
-  ≃𝕊-skipˡ : skip ; s ≃𝕊 s
-  ≃𝕊-skipʳ : s ; skip ≃𝕊 s
+    ≃𝕊-skipˡ : skip ; s ≃𝕊 s
+    ≃𝕊-skipʳ : s ; skip ≃𝕊 s
 
-  ≃𝕊-μ : mu s ≃𝕊 unfold s
+    ≃𝕊-μ : mu s ≃𝕊 unfold s
 
-  ≃𝕊-assoc : (s₁ ; s₂) ; s₃ ≃𝕊 s₁ ; (s₂ ; s₃)
-  ≃𝕊-distr : brn p s₁ s₂ ; s ≃𝕊 brn p (s₁ ; s) (s₂ ; s)
+    ≃𝕊-assoc : (s₁ ; s₂) ; s₃ ≃𝕊 s₁ ; (s₂ ; s₃)
+    ≃𝕊-distr : brn p s₁ s₂ ; s ≃𝕊 brn p (s₁ ; s) (s₂ ; s)
 
-infix 4 _⟨≃𝕊⟩_
+    ≃𝕊-msg : T₁ ≃ T₂ → msg p T₁ ≃𝕊 msg p T₂
+    ≃𝕊-brn₁ : s₁ ≃𝕊 s₂ → brn p s₁ s ≃𝕊 brn p s₂ s
+    ≃𝕊-brn₂ : s₁ ≃𝕊 s₂ → brn p s s₁ ≃𝕊 brn p s s₂
 
-_⟨≃𝕊⟩_ : Rel (𝕊 n) _
-_⟨≃𝕊⟩_ = Sym.SymClosure _≃𝕊_
+  infix 4 _⟨≃𝕊⟩_
 
-data _≃𝕋_ : Rel 𝕋 0ℓ where
-  `⊤ : `⊤ ≃𝕋 `⊤
-  _⊗_ : T₁ ≃𝕋 T₂ → U₁ ≃𝕋 U₂ → T₁ ⊗⟨ d ⟩ U₁ ≃𝕋 T₂ ⊗⟨ d ⟩ U₂
-  _⊕_ : T₁ ≃𝕋 T₂ → U₁ ≃𝕋 U₂ → T₁ ⊕ U₁ ≃𝕋 T₂ ⊕ U₂
-  _`→_ : T₁ ≃𝕋 T₂ → U₁ ≃𝕋 U₂ → T₁ ⟨ a ⟩→ U₁ ≃𝕋 T₂ ⟨ a ⟩→ U₂
-  ⟨_⟩ : EqClosure _≃𝕊_ s₁ s₂ → ⟨ s₁ ⟩ ≃𝕋 ⟨ s₂ ⟩
+  _⟨≃𝕊⟩_ : Rel (𝕊 n) _
+  _⟨≃𝕊⟩_ = Sym.SymClosure _≃𝕊_
 
-infix 4 _≃_ _≄_
+  data _≃𝕋_ : Rel 𝕋 0ℓ where
+    `⊤ : `⊤ ≃𝕋 `⊤
+    _⊗_ : T₁ ≃𝕋 T₂ → U₁ ≃𝕋 U₂ → T₁ ⊗⟨ d ⟩ U₁ ≃𝕋 T₂ ⊗⟨ d ⟩ U₂
+    _⊕_ : T₁ ≃𝕋 T₂ → U₁ ≃𝕋 U₂ → T₁ ⊕ U₁ ≃𝕋 T₂ ⊕ U₂
+    _`→_ : T₁ ≃𝕋 T₂ → U₁ ≃𝕋 U₂ → T₁ ⟨ a ⟩→ U₁ ≃𝕋 T₂ ⟨ a ⟩→ U₂
+    ⟨_⟩ : EqClosure _≃𝕊_ s₁ s₂ → ⟨ s₁ ⟩ ≃𝕋 ⟨ s₂ ⟩
 
-_≃_ : ∀ {κ x} → Rel (Ty κ x) 0ℓ
-_≃_ {𝕤} = EqClosure _≃𝕊_
-_≃_ {𝕥} = _≃𝕋_
+  infix 4 _≃_ _≄_
+
+  _≃_ : ∀ {κ x} → Rel (Ty κ x) 0ℓ
+  _≃_ {𝕤} = EqClosure _≃𝕊_
+  _≃_ {𝕥} = _≃𝕋_
 
 _≄_ : ∀ {κ x} → Rel (Ty κ x) 0ℓ
 t ≄ u = ¬ t ≃ u
@@ -104,6 +109,11 @@ module ≃-Reasoning {κ x} = SetoidReasoning (≃-setoid κ x)
 ≃-⟨⟩⁻¹ : ⟨ s₁ ⟩ ≃ ⟨ s₂ ⟩ → s₁ ≃ s₂
 ≃-⟨⟩⁻¹ ⟨ eq ⟩ = eq
 
+≃-⊗⁻¹ : T₁ ⊗⟨ d₁ ⟩ U₁ ≃ T₂ ⊗⟨ d₂ ⟩ U₂ → T₁ ≃ T₂ × d₁ ≡ d₂ × U₁ ≃ U₂
+≃-⊗⁻¹ (eq₁ ⊗ eq₂) = eq₁ , refl , eq₂
+
+-- ≃-msg⁻¹ : msg p₁ T₁ ≃ msg p₂ T₂ →
+
 ≃-skips : Skips {n} Respects _≃_
 ≃-skips refl s = s
 ≃-skips (fwd x ◅ eq) s = ≃-skips eq (go x s) where
@@ -160,6 +170,7 @@ data Atom {n} : 𝕊 n → Set where
   acq : Atom acq
   ``- : ∀ {α} → Atom (`` α)
 
+{-
 atom-≄′ˡ : ∀ {a} → Atom a → ¬ a ≃𝕊 s
 atom-≄′ˡ `-  ()
 atom-≄′ˡ end ()
@@ -167,6 +178,7 @@ atom-≄′ˡ msg ()
 atom-≄′ˡ ret ()
 atom-≄′ˡ acq ()
 atom-≄′ˡ ``- ()
+-}
 
 atom-⋯ᵣ : Atom s → {ϕ : m →ᵣ n} → Atom (s ⋯ ϕ)
 atom-⋯ᵣ `- = `-
@@ -259,6 +271,7 @@ endsIn-≃ (x ◅ xs) = endsIn-≃ xs ∘ go x
 atom-≃′-;ʳ-skips : {a₁ a₂ : 𝕊 n} → Atom a₁ → Atom a₂ → {s : 𝕊 n} → s ; a₁ ≃𝕊 a₂ → Skips s × a₁ ≡ a₂
 atom-≃′-;ʳ-skips A₁ A₂ ≃𝕊-skipˡ = skip , refl
 
+{-
 atom-;ʳ-⁻¹-′ : {a₁ a₂ : 𝕊 n} → Atom a₁ → Atom a₂ → {s s₁ s₂ : 𝕊 n} → s₁ ; a₁ ≃𝕊 s → s₂ ; a₂ ≃𝕊 s → s₁ ≃ s₂ × a₁ ≡ a₂
 atom-;ʳ-⁻¹-′ A₁ A₂ (≃𝕊-;₁ eq₁) (≃𝕊-;₁ eq₂) = ≃-trans (Eq*.return eq₁) (≃-sym (Eq*.return eq₂)) , refl
 atom-;ʳ-⁻¹-′ A₁ A₂ (≃𝕊-;₁ eq₁) (≃𝕊-;₂ eq₂) = contradiction eq₂ (atom-≄′ˡ A₂)
@@ -269,6 +282,7 @@ atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-skipˡ ≃𝕊-skipˡ = refl , refl
 atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-assoc (≃𝕊-;₂ eq₂) = contradiction eq₂ (atom-≄′ˡ A₂)
 atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-assoc ≃𝕊-assoc = refl , refl
 atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-distr ≃𝕊-distr = refl , refl
+-}
 
 postulate
   atom-≃⁻¹ : ∀ {a₁ a₂ : 𝕊 n} → Atom a₁ → Atom a₂ → a₁ ≃ a₂ → a₁ ≡ a₂

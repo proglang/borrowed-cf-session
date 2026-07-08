@@ -1,3 +1,5 @@
+{-# OPTIONS --allow-unsolved-metas #-}
+
 module BorrowedCF.Types.Predicates where
 
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (SymClosure; fwd; bwd)
@@ -122,6 +124,8 @@ bounded-unfold⁻¹ {s = s} B with skips? s
   go (fwd (≃𝕊-;₁ x)) (-;₂ b) = -;₂ b
   go (fwd (≃𝕊-;₂ x)) (b ;₁ x₁) = b ;₁ ≃-skips (Eq*.return x) x₁
   go (fwd (≃𝕊-;₂ x)) (-;₂ b) = -;₂ go (fwd x) b
+  go (fwd (≃𝕊-brn₁ x)) (brn b b₁) = brn (go (fwd x) b) b₁
+  go (fwd (≃𝕊-brn₂ x)) (brn b b₁) = brn b (go (fwd x) b₁)
   go (fwd ≃𝕊-skipˡ) (-;₂ b) = b
   go (fwd ≃𝕊-skipʳ) (b ;₁ x) = b
   go (fwd ≃𝕊-skipˡ) (() ;₁ _)
@@ -135,6 +139,8 @@ bounded-unfold⁻¹ {s = s} B with skips? s
   go (bwd (≃𝕊-;₁ x)) (-;₂ b) = -;₂ b
   go (bwd (≃𝕊-;₂ x)) (b ;₁ x₁) = b ;₁ ≃-skips (Star.return (bwd x)) x₁
   go (bwd (≃𝕊-;₂ x)) (-;₂ b) = -;₂ go (bwd x) b
+  go (bwd (≃𝕊-brn₁ x)) (brn b b₁) = brn (go (bwd x) b) b₁
+  go (bwd (≃𝕊-brn₂ x)) (brn b b₁) = brn b (go (bwd x) b₁)
   go (bwd ≃𝕊-μ) b = mu (bounded-unfold⁻¹ b)
   go (bwd ≃𝕊-skipˡ) b = -;₂ b
   go (bwd ≃𝕊-skipʳ) b = b ;₁ skip
@@ -257,12 +263,38 @@ solved-dual skip = skip
 solved-dual acq = acq
 solved-dual ret = ret
 
+eqSize  : ∀ {κ x} {a b : Ty κ x} → a ≃ b → ℕ
+eqSize′ : s₁ ≃𝕊 s₂ → ℕ
+
+eqSize {𝕤} refl = 0
+eqSize {𝕤} (fwd x ◅ xs) = suc (eqSize′ x + eqSize xs)
+eqSize {𝕤} (bwd x ◅ xs) = suc (eqSize′ x + eqSize xs)
+eqSize {𝕥} `⊤ = 0
+eqSize {𝕥} (x ⊗ y) = suc (eqSize x + eqSize y)
+eqSize {𝕥} (x ⊕ y) = suc (eqSize x + eqSize y)
+eqSize {𝕥} (x `→ y) = suc (eqSize x + eqSize y)
+eqSize {𝕥} ⟨ x ⟩ = suc (eqSize x)
+
+eqSize′ (≃𝕊-;₁ x) = suc (eqSize′ x)
+eqSize′ (≃𝕊-;₂ x) = suc (eqSize′ x)
+eqSize′ ≃𝕊-skipˡ = 0
+eqSize′ ≃𝕊-skipʳ = 0
+eqSize′ ≃𝕊-μ = 0
+eqSize′ ≃𝕊-assoc = 0
+eqSize′ ≃𝕊-distr = 0
+eqSize′ (≃𝕊-msg x) = suc (eqSize x)
+eqSize′ (≃𝕊-brn₁ x) = suc (eqSize′ x)
+eqSize′ (≃𝕊-brn₂ x) = suc (eqSize′ x)
+
 ≃-solved : ∀ {κ x} → Solved {κ} {x} Respects _≃_
 ≃-solved {𝕤} refl x = x
 ≃-solved {𝕤} {n} (x ◅ xs) = ≃-solved xs ∘ go x where
   go : Solved {𝕤} {n} Respects SymClosure _≃𝕊_
   go (fwd (≃𝕊-;₁ eq)) (x₁ ; x₂) = go (fwd eq) x₁ ; x₂
   go (fwd (≃𝕊-;₂ eq)) (x₁ ; x₂) = x₁ ; go (fwd eq) x₂
+  go (fwd (≃𝕊-msg x)) (msg T) = msg (≃-solved x T)
+  go (fwd (≃𝕊-brn₁ x)) (brn b b₁) = brn (go (fwd x) b) b₁
+  go (fwd (≃𝕊-brn₂ x)) (brn b b₁) = brn b (go (fwd x) b₁)
   go (fwd ≃𝕊-skipˡ) (x₁ ; x₂) = x₂
   go (fwd ≃𝕊-skipʳ) (x₁ ; x₂) = x₁
   go (fwd ≃𝕊-μ) (mu x) = solved-⋯ x λ where
@@ -272,6 +304,9 @@ solved-dual ret = ret
   go (fwd ≃𝕊-distr) (brn x₁ x₂ ; y) = brn (x₁ ; y) (x₂ ; y)
   go (bwd (≃𝕊-;₁ eq)) (x₁ ; x₂) = go (bwd eq) x₁ ; x₂
   go (bwd (≃𝕊-;₂ eq)) (x₁ ; x₂) = x₁ ; go (bwd eq) x₂
+  go (bwd (≃𝕊-msg x)) (msg T) = {!msg (≃-solved (≃-sym x) T)!}  -- breaks the termination check, maybe use eqSize as an induction measure
+  go (bwd (≃𝕊-brn₁ x)) (brn b b₁) = brn (go (bwd x) b) b₁
+  go (bwd (≃𝕊-brn₂ x)) (brn b b₁) = brn b (go (bwd x) b₁)
   go (bwd ≃𝕊-skipˡ) x = skip ; x
   go (bwd ≃𝕊-skipʳ) x = x ; skip
   go (bwd ≃𝕊-μ) x = mu (solved-⋯⁻¹ x)
@@ -325,11 +360,17 @@ new-≃ (x ◅ xs) = new-≃ xs ∘ go x where
   go (fwd (≃𝕊-;₂ eq)) (x ; y) = x ; go (fwd eq) y
   go (fwd ≃𝕊-skipˡ) (x ; y) = y
   go (fwd ≃𝕊-skipʳ) (x ; y) = x
+  go (fwd (≃𝕊-msg x)) msg = msg
+  go (fwd (≃𝕊-brn₁ x)) (brn b b₁) = brn (go (fwd x) b) b₁
+  go (fwd (≃𝕊-brn₂ x)) (brn b b₁) = brn b (go (fwd x) b₁)
   go (fwd ≃𝕊-μ) (mu x) = new-⋯ x λ{ zero → mu x; (suc z) → `- }
   go (fwd ≃𝕊-assoc) ((x ; y) ; z) = x ; (y ; z)
   go (fwd ≃𝕊-distr) (brn x₁ x₂ ; y) = brn (x₁ ; y) (x₂ ; y)
   go (bwd (≃𝕊-;₁ eq)) (x ; y) = go (bwd eq) x ; y
   go (bwd (≃𝕊-;₂ eq)) (x ; y) = x ; go (bwd eq) y
+  go (bwd (≃𝕊-msg x)) msg = msg
+  go (bwd (≃𝕊-brn₁ x)) (brn b b₁) = brn (go (bwd x) b) b₁
+  go (bwd (≃𝕊-brn₂ x)) (brn b b₁) = brn b (go (bwd x) b₁)
   go (bwd ≃𝕊-skipˡ) x = skip ; x
   go (bwd ≃𝕊-skipʳ) x = x ; skip
   go (bwd ≃𝕊-μ) x = mu (new-⋯⁻¹ x)
