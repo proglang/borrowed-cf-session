@@ -36,8 +36,8 @@ rsplit-arg-chan : ∀ {N} {Γ : Ctx N} {α : Struct N} {s : 𝕊 0} {arg : Tm N}
   → Γ ; α ⊢ K (`rsplit s) ·¹ arg ∶ T ∣ ϵ
   → Σ[ s′ ∈ 𝕊 0 ] Σ[ β ∈ Struct N ] Σ[ R ∈ 𝕋 ] Σ[ ϵ₂ ∈ Eff ]
       (Γ ; β ⊢ arg ∶ R ∣ ϵ₂) × (⟨ s ; s′ ⟩ ≃ R)
-rsplit-arg-chan (T-AppUnr _ _ ⊢fn ⊢arg) = let _ , s′ , eq = fn-rsplit-dom ⊢fn in s′ , _ , _ , _ , ⊢arg , eq
-rsplit-arg-chan (T-AppLin _ _ ⊢fn ⊢arg) = let _ , s′ , eq = fn-rsplit-dom ⊢fn in s′ , _ , _ , _ , ⊢arg , eq
+rsplit-arg-chan (T-AppUnr _ _ ⊢fn ⊢arg) = let s′ , eq = fn-rsplit-dom ⊢fn in s′ , _ , _ , _ , ⊢arg , eq
+rsplit-arg-chan (T-AppLin _ _ ⊢fn ⊢arg) = let s′ , eq = fn-rsplit-dom ⊢fn in s′ , _ , _ , _ , ⊢arg , eq
 rsplit-arg-chan (T-Conv _ _ d) = rsplit-arg-chan d
 rsplit-arg-chan (T-Weaken _ d) = rsplit-arg-chan d
 

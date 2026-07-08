@@ -10,3 +10,7 @@ open import BorrowedCF.Types
 -- Unr ⟨ s ; s′ ⟩ = Skips (s ; s′), which forces Skips s — contradicting ¬ Skips s.
 ¬Skips⇒¬Unr-seq : ¬ Skips s → ¬ (Unr ⟨ s ; s′ ⟩)
 ¬Skips⇒¬Unr-seq _ ⟨ () ⟩
+
+-- Same fact without the (now-removed) ¬ Skips premise: no ⟨ s ⟩ is Unr.
+¬Unr-seq : ¬ (Unr ⟨ s ⟩)
+¬Unr-seq ⟨ () ⟩

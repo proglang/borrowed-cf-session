@@ -111,10 +111,10 @@ strengthen-Tm-gen (T-Var x′ _) ρ h inv h∉ =
   in ` y₀ , cong `_ (sym yeq)
 strengthen-Tm-gen {γ = γ} (T-Abs {a = a} _ _ ⊢e) ρ h inv h∉ =
   let e₀ , eq = strengthen-Tm-gen ⊢e (ρ ↑) (suc h) (inv↑ inv) (∉-abs-ctx-Dir (Arr.dir a) γ h∉)
-  in ƛ (Arr.dir a) e₀ , cong (ƛ (Arr.dir a)) eq
+  in ƛ e₀ , cong ƛ eq
 strengthen-Tm-gen {γ = γ} (T-AbsRec _ _ ⊢e) ρ h inv h∉ =
   let e₀ , eq = strengthen-Tm-gen ⊢e (ρ ↑ ↑) (suc (suc h)) (inv↑ (inv↑ inv)) (∉-absrec-ctx γ h∉)
-  in μ (ƛ 𝟙 e₀) , cong μ (cong (ƛ 𝟙) eq)
+  in μ (ƛ e₀) , cong μ (cong ƛ eq)
 strengthen-Tm-gen (T-AppUnr _ _ ⊢e₁ ⊢e₂) ρ h inv h∉ =
   let e₁₀ , eq₁ = strengthen-Tm-gen ⊢e₁ ρ h inv (λ x∈ → h∉ (x∈p∪q⁺ (inj₁ x∈)))
       e₂₀ , eq₂ = strengthen-Tm-gen ⊢e₂ ρ h inv (λ x∈ → h∉ (x∈p∪q⁺ (inj₂ x∈)))
@@ -173,10 +173,10 @@ strengthen-Tm (T-Var x′ _) x x∉ = ` punchOut x≢x′ , cong `_ (sym (punchI
         x≢x′ x≡ = x∉ (subst (λ z → x ∈ ⁅ z ⁆) x≡ (x∈⁅x⁆ x))
 strengthen-Tm {γ = γ} (T-Abs {a = a} _ _ ⊢e) x x∉ =
   let e₀ , eq = strengthen-Tm ⊢e (suc x) (∉-abs-ctx-Dir (Arr.dir a) γ x∉)
-  in ƛ (Arr.dir a) e₀ , cong (ƛ (Arr.dir a)) (eq ■ ⋯-cong e₀ (pin x))
+  in ƛ e₀ , cong ƛ (eq ■ ⋯-cong e₀ (pin x))
 strengthen-Tm {γ = γ} (T-AbsRec _ _ ⊢e) x x∉ =
   let e₀ , eq = strengthen-Tm ⊢e (suc (suc x)) (∉-absrec-ctx γ x∉)
-  in μ (ƛ 𝟙 e₀) , cong μ (cong (ƛ 𝟙) (eq ■ ⋯-cong e₀ (pin² x)))
+  in μ (ƛ e₀) , cong μ (cong ƛ (eq ■ ⋯-cong e₀ (pin² x)))
 strengthen-Tm (T-AppUnr _ _ ⊢e₁ ⊢e₂) x x∉ =
   let e₁₀ , eq₁ = strengthen-Tm ⊢e₁ x (λ x∈ → x∉ (x∈p∪q⁺ (inj₁ x∈)))
       e₂₀ , eq₂ = strengthen-Tm ⊢e₂ x (λ x∈ → x∉ (x∈p∪q⁺ (inj₂ x∈)))
@@ -307,11 +307,11 @@ strengthen-Tm-gen* (T-Var x′ _) ρ H inv H∉ =
 strengthen-Tm-gen* {γ = γ} (T-Abs {a = a} _ _ ⊢e) ρ H inv H∉ =
   let e₀ , eq = strengthen-Tm-gen* ⊢e (ρ ↑) (H↑ H) (invH↑ inv)
                   (λ { (suc z) hz → ∉-abs-ctx-Dir (Arr.dir a) γ (H∉ z hz) })
-  in ƛ (Arr.dir a) e₀ , cong (ƛ (Arr.dir a)) eq
+  in ƛ e₀ , cong ƛ eq
 strengthen-Tm-gen* {γ = γ} (T-AbsRec _ _ ⊢e) ρ H inv H∉ =
   let e₀ , eq = strengthen-Tm-gen* ⊢e (ρ ↑ ↑) (H↑ (H↑ H)) (invH↑ (invH↑ inv))
                   (λ { (suc (suc z)) hz → ∉-absrec-ctx γ (H∉ z hz) })
-  in μ (ƛ 𝟙 e₀) , cong μ (cong (ƛ 𝟙) eq)
+  in μ (ƛ e₀) , cong μ (cong ƛ eq)
 strengthen-Tm-gen* (T-AppUnr _ _ ⊢e₁ ⊢e₂) ρ H inv H∉ =
   let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₁ x∈)))
       e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz x∈ → H∉ z hz (x∈p∪q⁺ (inj₂ x∈)))

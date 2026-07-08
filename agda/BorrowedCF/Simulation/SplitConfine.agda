@@ -39,7 +39,7 @@ lsplit-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
         × Σ (𝐓.Proc k) λ P₀ → P ≡ P₀ 𝐓.⋯ₚ ρ⁻
 lsplit-confine {m = m} Γ-S {γ = γ} {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P =
   let
-    handle = SplitRenamings.atk B₁ B₂ B {q + suc b₁} {m} (q ↑ʳ 0F)
+    handle = SplitRenamings.atk B₁ B₂ (sum B) {q + suc b₁} {m} (q ↑ʳ 0F)
     Γ₁ , Γ₂ , s' , _p , _N , _⊢B₁ , _⊢B₂ , C , C' , ⊢body = inv-ν ⊢P
     α , β , αβ≼ , ⊢thread , ⊢Ppar = inv-∥ ⊢body
     ⊢term = inv-⟪⟫ ⊢thread
@@ -73,7 +73,7 @@ rsplit-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
         × Σ (𝐓.Proc k) λ P₀ → P ≡ P₀ 𝐓.⋯ₚ ρ⁻
 rsplit-confine {m = m} Γ-S {γ = γ} {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P =
   let
-    handle = SplitRenamings.atk B₁ B₂ B {q + suc b₁} {m} (q ↑ʳ 0F)
+    handle = SplitRenamings.atk B₁ B₂ (sum B) {q + suc b₁} {m} (q ↑ʳ 0F)
     Γ₁ , Γ₂ , s' , _p , _N , _⊢B₁ , _⊢B₂ , C , C' , ⊢body = inv-ν ⊢P
     α , β , αβ≼ , ⊢thread , ⊢Ppar = inv-∥ ⊢body
     ⊢term = inv-⟪⟫ ⊢thread
