@@ -183,7 +183,7 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
 \end{figure}
 
 \begin{definition}[Substituting definitions]
-  Let $F$ be a FreeST session type and $U$ be set of mapping from variables to FreeST session types such that $\text{freevars}(F) \subseteq \text{dom}(U)$. The subsitution of $U$ to $F$, denoted by $F[U]$. A well formed subsitution has no free variables.
+  Let $F$ be a FreeST session type and $U$ be set of mapping from variables to FreeST session types such that $\text{freevars}(F) \subseteq \text{dom}(U)$. The subsitution of $U$ to $F$, denoted by $F[U]$, is the type where every variable in $U$ that has a definition in $F$ is substituted. A well formed subsitution has no free variables.
 \end{definition}
 
 \begin{lemma}[Soundness of the translation]
