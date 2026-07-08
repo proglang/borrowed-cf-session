@@ -1,11 +1,9 @@
 \FloatBarrier
 \appendix
-\section{Additional Rules}
-\label{sec:appendix}
 
 \FloatBarrier
 
-\subsection{Dynamics: Omitted Congruence and Reduction Rules}
+\section{Dynamics: Omitted Congruence and Reduction Rules}
 \begin{figure}[htbp]
   \begin{mathpar}
     % \RuleProcCongRefl \and
@@ -37,7 +35,7 @@
 
 \FloatBarrier
 
-\subsection{Translation: Congruence of Translated Processes}
+\section{Translation: Congruence of Translated Processes}
 
 \begin{figure}[htbp]
   \begin{mathpar}
@@ -59,7 +57,7 @@
 
 \FloatBarrier
 
-\subsection{Algorithmic Typing: Constraint Checking with FreeST}
+\section{Algorithmic Typing: Constraint Checking with FreeST}
 
 In the implementation, we use FreeST \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22, almeida26:_frees_concur_progr_languag_with} version 5.0 to perform equivalence checking. To achieve this, we generate little FreeST programs that typechecks iff the equivalence constraints hold.
 
@@ -145,7 +143,7 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
 \end{figure}
 
 
-\subsubsection{Soundness and the Completeness of the translation}
+\subsection{Soundness and the Completeness of the translation}
 
 \begin{definition}[Equivalence relation for \thecalculus types]
   The equivalence relation $\simeq$ on \thecalculus types is the least congruence closed under the equivalence rules from \cite{DBLP:conf/icfp/ThiemannV16} extended with rules in \Cref{fig:cfstb-equivalence}.
@@ -197,7 +195,7 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
 
 \FloatBarrier
 
-\subsection{Metatheory: Blocked Expressions and Processes}
+\section{Metatheory: Blocked Expressions and Processes}
 
 \begin{figure}[htbp]
   \begin{mathpar}
