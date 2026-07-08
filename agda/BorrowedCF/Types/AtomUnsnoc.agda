@@ -14,13 +14,21 @@
 --   snoc-unfold⁻¹ᴬ : μ-unfold un-substitution for EVERY atom (incl. `` ` v``).
 --                    Verified hole/postulate-free.
 --
--- Still open to close `atom-;-unsnoc` outright (NOT the variable wall):
---   * exact prefix tracking through the transport, i.e. `snoc-⋯-sum`/`snoc-⋯⁻¹`
---     must also return `z ≡ z′ ⋯ ϕ` so the μ-step preserves the prefix up to ≃;
---     otherwise the μ-step only yields `z ; a ≃ z′ ; a`, leaving a residual
---     right-cancellation `p ; a ≃ q ; a → p ≃ q` (a separate confluence lemma).
---   * `msg p T` ending: a ≃𝕊-msg step in one `brn` branch desyncs the two
---     branch payloads, so `Snoc` must be relaxed to ≃-branches (cf. `≃-msg⁻¹`).
+-- CLOSED (`unsnoc-nonmsg`): `atom-;-unsnoc` for the 5 NON-msg atoms, incl. bare
+-- variables.  `snoc-prefix-unique` shows the Snoc prefix is ≃-determined by
+-- (a, w), so `≃-snoc` transports `Snoc a (z;a)(z;skip)` backward along
+-- `x;y ≃ z;a` PRESERVING the prefix up to ≃ (bwd-μ round-trips through
+-- `snoc-unfold` + `snoc-prefix-unique`).  Hence NO right-cancellation is needed
+-- — the earlier "cancellation at the μ-step" obstacle is dissolved.
+--
+-- OPEN (the last 1/6): `msg p T` ending.  A ≃𝕊-msg step in one `brn` branch
+-- desyncs the branch payloads, so exact `Snoc` breaks.  Two mapped routes, each
+-- ~150–190 lines: (a) `SnocA` (ending atom ≃ a, per branch; scaffolded here as
+-- `SnocA`/`snocA-prefix-unique`/`≃-var-rigid`) needs `snocA-⋯ᵣ⁻¹` reflecting the
+-- leaf atom ≃-proofs (`≃-atom-⋯ᵣ⁻¹`, using `≃-msg⁻¹`); (b) kind-indexed `SnocK`
+-- (transport is CLEAN — ≃𝕊-msg keeps kind `msg p`, no desync — and the
+-- un-substitution reflects only kind ≡ via `atomKind-wk`), recovering the payload
+-- T ≃ T″ at the end via the `MsgEnds` machinery.  Route (b) is the cleaner one.
 module BorrowedCF.Types.AtomUnsnoc where
 
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (SymClosure; fwd; bwd)
