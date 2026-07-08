@@ -28,7 +28,9 @@ Forward-Sim =
 -- Done leaf cases (re-exported; wired the moment the module lands):
 open import BorrowedCF.Simulation2.Forward.Fork  using (U-fork)  public
 open import BorrowedCF.Simulation2.Forward.New   using (U-new)   public
-open import BorrowedCF.Simulation2.Forward.Close using (U-close) public
+open import BorrowedCF.Simulation2.Forward.Close  using (U-close)  public
+open import BorrowedCF.Simulation2.Forward.Com    using (U-com)    public
+open import BorrowedCF.Simulation2.Forward.Choice using (U-choice) public
 
 -- ── sim→ WIRING MAP (every typed constructor MUST be dispatched here; Agda's
 --    coverage checker enforces completeness when sim→ is assembled) ──
@@ -39,8 +41,8 @@ open import BorrowedCF.Simulation2.Forward.Close using (U-close) public
 --   R-Par     → RU-Par (sim→ …)               inline (recursive)
 --   R-Bind    → RU-Res (UB-cong-─→ … sim→)    inline (recursive)
 --   R-Struct  → RU-Struct (U-≋ …) (sim→ …)    inline (recursive)
---   R-Com     → U-com     [agent B]           PENDING
---   R-Choice  → U-choice  [agent B]           PENDING
+--   R-Com     → U-com                         DONE
+--   R-Choice  → U-choice                      DONE
 --   R-LSplit  → U-lsplit  [agent A]           PENDING
 --   R-RSplit  → U-rsplit  [agent A]           PENDING
 --   R-Drop    → U-drop    [agent C]           PENDING

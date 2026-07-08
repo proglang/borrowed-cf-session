@@ -50,41 +50,33 @@ open import BorrowedCF.Simulation.Theorems.ComHelpers2 public
 -- The exported forward-simulation case R-Com.
 ------------------------------------------------------------------------
 
-U-com : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+U-com-step : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
   → {γ : Struct m} {b₁ b₂ : ℕ} {B₁ B₂ : BindGroup}
   → {E₁ E₂ : Frame* (sum (b₁ ∷ B₁) + sum (b₂ ∷ B₂) + m)}
   → {P : T.Proc (sum (b₁ ∷ B₁) + sum (b₂ ∷ B₂) + m)}
   → {e : Tm (sum (b₁ ∷ B₁) + sum (b₂ ∷ B₂) + m)}
   → (V : Value e)
-  → (let wkρ = TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂) in
+  → (let wkρ = wkₚ (b₁ + sum B₁) (b₂ + sum B₂) in
      Γ ; γ ⊢ₚ T.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
        ((T.⟪ E₁ ⋯ᶠ* wkρ [ K `send ·¹ ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
          T.∥ T.⟪ E₂ ⋯ᶠ* wkρ [ K `recv ·¹ (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
          T.∥ (P T.⋯ₚ wkρ)))
-  → (let wkρ = TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂) in
-     (U[ T.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
+  → (let wkρ = wkₚ (b₁ + sum B₁) (b₂ + sum B₂) in
+     U[ T.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
               ((T.⟪ E₁ ⋯ᶠ* wkρ [ K `send ·¹ ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
                 T.∥ T.⟪ E₂ ⋯ᶠ* wkρ [ K `recv ·¹ (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
                 T.∥ (P T.⋯ₚ wkρ)) ] σ
-       UR─→ₚ*
+       UR.─→ₚ
       U[ T.ν (b₁ ∷ B₁) (b₂ ∷ B₂)
               ((T.⟪ E₁ [ K `unit ]* ⟫ T.∥ T.⟪ E₂ [ e ]* ⟫) T.∥ P) ] σ)
-     ⊎
-     (U[ T.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
-              ((T.⟪ E₁ ⋯ᶠ* wkρ [ K `send ·¹ ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
-                T.∥ T.⟪ E₂ ⋯ᶠ* wkρ [ K `recv ·¹ (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
-                T.∥ (P T.⋯ₚ wkρ)) ] σ
-       U.≋
-      U[ T.ν (b₁ ∷ B₁) (b₂ ∷ B₂)
-              ((T.⟪ E₁ [ K `unit ]* ⟫ T.∥ T.⟪ E₂ [ e ]* ⟫) T.∥ P) ] σ))
-U-com {m} {n} σ Vσ Γ-S {b₁ = b₁} {b₂ = b₂} {B₁ = B₁} {B₂ = B₂} {E₁ = E₁} {E₂ = E₂} {P = P} {e = e} V ⊢P
+U-com-step {m} {n} σ Vσ Γ-S {b₁ = b₁} {b₂ = b₂} {B₁ = B₁} {B₂ = B₂} {E₁ = E₁} {E₂ = E₂} {P = P} {e = e} V ⊢P
   with com-head≥1 {b₁ = b₁} {b₂ = b₂} {B₁ = B₁} {B₂ = B₂} {e = e} {E₁ = E₁} {E₂ = E₂} {P = P} V ⊢P
      | com-head≥2 {b₁ = b₁} {b₂ = b₂} {B₁ = B₁} {B₂ = B₂} {e = e} {E₁ = E₁} {E₂ = E₂} {P = P} V ⊢P
 ... | b₁' , refl | b₂' , refl =
-  ≋-wrap-⊎ front fire back
+  UR.RU-Struct front (Bφ-lift-step B₁′ (Bφ-lift-step B₂′ leaf-fire)) back
   where
     wkρ : (b₁ + sum B₁) + (b₂ + sum B₂) + m →ᵣ sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + m
-    wkρ = TR.wkₚ (b₁ + sum B₁) (b₂ + sum B₂)
+    wkρ = wkₚ (b₁ + sum B₁) (b₂ + sum B₂)
     B₁′ B₂′ : BindGroup
     B₁′ = suc b₁ ∷ B₁
     B₂′ = suc b₂ ∷ B₂
@@ -508,3 +500,33 @@ U-com {m} {n} σ Vσ Γ-S {b₁ = b₁} {b₂ = b₂} {B₁ = B₁} {B₂ = B₂
          Bφ-cong B₁′ (Bφ-cong B₂′ (U.ν-cong (≡→≋ leafEq)))
       ◅◅ Eq*.symmetric _ (ν↓R XR)
       ◅◅ ≡→≋ (sym flatR≡)
+
+U-com : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+  → {γ : Struct m} {b₁ b₂ : ℕ} {B₁ B₂ : BindGroup}
+  → {E₁ E₂ : Frame* (sum (b₁ ∷ B₁) + sum (b₂ ∷ B₂) + m)}
+  → {P : T.Proc (sum (b₁ ∷ B₁) + sum (b₂ ∷ B₂) + m)}
+  → {e : Tm (sum (b₁ ∷ B₁) + sum (b₂ ∷ B₂) + m)}
+  → (V : Value e)
+  → (let wkρ = wkₚ (b₁ + sum B₁) (b₂ + sum B₂) in
+     Γ ; γ ⊢ₚ T.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
+       ((T.⟪ E₁ ⋯ᶠ* wkρ [ K `send ·¹ ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
+         T.∥ T.⟪ E₂ ⋯ᶠ* wkρ [ K `recv ·¹ (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
+         T.∥ (P T.⋯ₚ wkρ)))
+  → (let wkρ = wkₚ (b₁ + sum B₁) (b₂ + sum B₂) in
+     (U[ T.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
+              ((T.⟪ E₁ ⋯ᶠ* wkρ [ K `send ·¹ ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
+                T.∥ T.⟪ E₂ ⋯ᶠ* wkρ [ K `recv ·¹ (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
+                T.∥ (P T.⋯ₚ wkρ)) ] σ
+       UR─→ₚ*
+      U[ T.ν (b₁ ∷ B₁) (b₂ ∷ B₂)
+              ((T.⟪ E₁ [ K `unit ]* ⟫ T.∥ T.⟪ E₂ [ e ]* ⟫) T.∥ P) ] σ)
+     ⊎
+     (U[ T.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
+              ((T.⟪ E₁ ⋯ᶠ* wkρ [ K `send ·¹ ((e ⋯ wkρ) ⊗ (` 0F)) ]* ⟫
+                T.∥ T.⟪ E₂ ⋯ᶠ* wkρ [ K `recv ·¹ (` wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ]* ⟫)
+                T.∥ (P T.⋯ₚ wkρ)) ] σ
+       U.≋
+      U[ T.ν (b₁ ∷ B₁) (b₂ ∷ B₂)
+              ((T.⟪ E₁ [ K `unit ]* ⟫ T.∥ T.⟪ E₂ [ e ]* ⟫) T.∥ P) ] σ))
+U-com {m} {n} σ Vσ {Γ} Γ-S {γ} {b₁} {b₂} {B₁} {B₂} {E₁} {E₂} {P} {e} V ⊢P =
+  inj₁ (U-com-step {m} {n} σ Vσ {Γ} Γ-S {γ} {b₁} {b₂} {B₁} {B₂} {E₁} {E₂} {P} {e} V ⊢P ◅ ε)
