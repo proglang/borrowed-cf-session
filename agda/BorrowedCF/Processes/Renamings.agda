@@ -127,3 +127,41 @@ wkRSplit-preserves P B₁ B₂ m Γ₁ Γ₂ Γb Γₘ Γₙ Γ-eq Γ′-eq px =
   ; &-unr = wkRSplit-preserves Unr B₁ B₂ m Γ₁ Γ₂ Γb Γₘ Γₙ Γ-eq Γ′-eq
   ; &-mob = wkRSplit-preserves Mobile B₁ B₂ m Γ₁ Γ₂ Γb Γₘ Γₙ Γ-eq Γ′-eq
   }
+
+wkₚ-lookup : ∀ {m₁ m₂ n} (Γ₁ : Ctx m₁) (Γ₂ : Ctx m₂) (Γ : Ctx n) →
+   (Γ₁ ⸴* Γ₂) ⸴* Γ ≗ ((T₁ ⸴ Γ₁ ⸴* T₂ ⸴ Γ₂) ⸴* Γ) ∘ wkₚ m₁ m₂
+wkₚ-lookup {T₁ = T₁}{T₂} {m₁ = zero}{m₂} Γ₁ Γ₂ Γ x
+  rewrite Fin.cast-is-id refl x | Fin.cast-is-id refl x =
+  (Γ₂ ⸴* Γ) x ≡⟨ [,]-map (splitAt m₂ x) ⟨
+  [ T₂ ⸴ Γ₂ , Γ ] (Sum.map₁ suc (splitAt m₂ x)) ≡⟨ [,]-map (Sum.map₁ suc (splitAt m₂ x)) ⟨
+  [ T₁ ⸴ T₂ ⸴ Γ₂ , Γ ] (Sum.map₁ suc (Sum.map₁ suc (splitAt m₂ x))) ∎
+wkₚ-lookup {m₁ = suc m₁} Γ₁ Γ₂ Γ zero = refl
+wkₚ-lookup {T₁ = T₁}{T₂} {m₁ = suc m₁}{m₂} Γ₁ Γ₂ Γ (suc x) =
+  let IH = wkₚ-lookup {T₁ = T₁}{T₂} (Γ₁ ∘ suc) Γ₂ Γ x in
+  let arg = splitAt (m₁ + suc m₂) (Fin.cast _ ((suc ↑* m₁) (Fin.cast _ x))) in
+  ((Γ₁ ⸴* Γ₂) ⸴* Γ) (suc x) ≡⟨ [,]-map (splitAt (m₁ + m₂) x)  ⟩
+  ((Γ₁ ⸴* Γ₂) ∘ suc ⸴* Γ) x ≡⟨ [-,]-cong ([,]-map ∘ splitAt m₁) (splitAt (m₁ + m₂) x) ⟩
+  ((Γ₁ ∘ suc ⸴* Γ₂) ⸴* Γ) x ≡⟨ IH ⟩
+  ((T₁ ⸴ Γ₁ ∘ suc ⸴* T₂ ⸴ Γ₂) ⸴* Γ) (wkₚ m₁ m₂ x) ≡⟨ [,]-map arg ⟩
+  [ Γ₁ ∘ suc ⸴* T₂ ⸴ Γ₂ , Γ ] arg ≡⟨ [-,]-cong ([,]-map ∘ splitAt m₁) arg ⟨
+  [ (Γ₁ ⸴* T₂ ⸴ Γ₂) ∘ suc , Γ ] arg ≡⟨ [,]-map arg ⟨
+  [ Γ₁ ⸴* T₂ ⸴ Γ₂ , Γ ] (Sum.map₁ suc arg) ≡⟨ [,]-map (Sum.map₁ suc arg) ⟨
+  [ T₁ ⸴ Γ₁ ⸴* T₂ ⸴ Γ₂ , Γ ] (Sum.map₁ suc (Sum.map₁ suc arg)) ≡⟨⟩
+  ((T₁ ⸴ Γ₁ ⸴* T₂ ⸴ Γ₂) ⸴* Γ) (wkₚ (suc m₁) m₂ (suc x)) ∎
+
+⊢wkₚ : ∀ {m₁ m₂ n} (Γ₁ : Ctx m₁) (Γ₂ : Ctx m₂) (Γ : Ctx n) {T₁ T₂ : 𝕋} →
+  wkₚ {n} m₁ m₂ ∶ `_ ∘′ wkₚ {n} m₁ m₂ ⊢[ TKᵣ ] (Γ₁ ⸴* Γ₂) ⸴* Γ ⇒ (T₁ ⸴ Γ₁ ⸴* T₂ ⸴ Γ₂) ⸴* Γ
+⊢wkₚ Γ₁ Γ₂ Γ = record
+  { _&_   = λ x → refl , sym (wkₚ-lookup Γ₁ Γ₂ Γ x)
+  ; &-unr = λ px → ` subst Unr (wkₚ-lookup Γ₁ Γ₂ Γ _) px
+  ; &-mob = λ px → ` subst Mobile (wkₚ-lookup Γ₁ Γ₂ Γ _) px
+  }
+
+𝔽-cast-injective : ∀ {m n} {x y : 𝔽 m} → .(eq : m ≡ n) → Fin.cast eq x ≡ Fin.cast eq y → x ≡ y
+𝔽-cast-injective {suc m} {suc n} {zero} {zero} eq eq′ = refl
+𝔽-cast-injective {suc m} {suc n} {suc x} {suc y} eq eq′ = cong suc (𝔽-cast-injective (suc⁻¹ eq) (Fin.suc-injective eq′))
+
+wkₚ-inj : ∀ m₁ m₂ n → 𝐂.Inj (wkₚ {n} m₁ m₂)
+wkₚ-inj zero m₂ n = 𝔽-cast-injective refl ∘ 𝔽-cast-injective refl ∘ Fin.suc-injective ∘ Fin.suc-injective
+wkₚ-inj (suc m₁) m₂ n {zero} {zero} eq = refl
+wkₚ-inj (suc m₁) m₂ n {suc x} {suc y} eq = cong suc (wkₚ-inj m₁ m₂ n (Fin.suc-injective eq))

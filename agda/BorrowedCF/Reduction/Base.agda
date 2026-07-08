@@ -188,6 +188,8 @@ data _;_⊢_∶_∣_⟶_∣_ (Γ : Ctx n) : CxPat n → Frame n → 𝕋 → Ef
 ⊢⟨ TF-`inj□ i [ e ]⟩ = T-Inj e
 ⊢⟨ TF-`case□ p/s x₁ x₂ [ e ]⟩ = T-Weaken (≼-refl (≈-sym (join-flip (biasedDir p/s)))) $ T-Case p/s e x₁ x₂
 
+infixl 5 _⊢⋯ᶠ_
+
 _⊢⋯ᶠ_ : {E : Frame m} {P : CxPat m} → Γ₁ ; P ⊢ E ∶ T ∣ ϵ ⟶ U ∣ ϵ′ → ∀ {ϕ : m →ᵣ n} {σ} → ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ →
   Γ₂ ; P ⋯𝓅 σ ⊢ E ⋯ᶠ ϕ ∶ T ∣ ϵ ⟶ U ∣ ϵ′
 TF-app₁ ≤ₐ appPar appLeft appRight x ⊢⋯ᶠ ⊢ϕ = TF-app₁ ≤ₐ appPar appLeft appRight (x ⊢⋯ ⊢ϕ)
@@ -252,23 +254,6 @@ FullBlocked {n} e = ∀ E (e′ : Tm n) → e ≡ E [ e′ ] → Blocked e′
 
 Value⊥Blocked : Value {n} Un.⊥ Blocked
 Value⊥Blocked (() , _ , _ , _ , _ , refl)
-
-{-
-unique-frame : (E E′ : Frame n) → ¬ Value e → ¬ Value e′ → E [ e ] ≡ E′ [ e′ ] → E ≡ E′ × e ≡ e′
-unique-frame (□· e₂) (□· e₃) ¬V ¬V′ refl = refl , refl
-unique-frame (□· e₂) (V₁ ·□) ¬V ¬V′ refl = ⊥-elim (¬V V₁)
-unique-frame (V₁ ·□) (□· e₂) ¬V ¬V′ refl = ⊥-elim (¬V′ V₁)
-unique-frame (V₁ ·□) (V₂ ·□) ¬V ¬V′ refl = cong _·□ Value-irr , refl
-unique-frame (□⊗ e₂) (□⊗ e₃) ¬V ¬V′ refl = refl , refl
-unique-frame (□⊗ e₂) (V₁ ⊗□) ¬V ¬V′ refl = ⊥-elim (¬V V₁)
-unique-frame (V₁ ⊗□) (□⊗ e₂) ¬V ¬V′ refl = ⊥-elim (¬V′ V₁)
-unique-frame (V₁ ⊗□) (V₂ ⊗□) ¬V ¬V′ refl = cong _⊗□ Value-irr , refl
-unique-frame (□; e₂) (□; e₃) ¬V ¬V′ refl = refl , refl
-unique-frame (`let-`in e′) (`let-`in e′₁) ¬V ¬V′ refl = refl , refl
-unique-frame (`let⊗-`in e′) (`let⊗-`in e′₁) ¬V ¬V′ refl = refl , refl
-unique-frame (`inj□ i) (`inj□ i) ¬V ¬V′ refl = refl , refl
-unique-frame `case□`of⟨ _ ; _ ⟩ `case□`of⟨ _ ; _ ⟩ _ _ refl = refl , refl
--}
 
 ⊢[]⁻¹ : (E : Frame n) (e : Tm n) → Γ ; γ ⊢ E [ e ] ∶ T ∣ ϵ → ∃[ P ] ∃[ γ′ ] ∃[ T′ ] ∃[ U ] ∃[ ϵₚ ] ∃[ ϵₑ ]
   Γ ∶ P [ γ′ ]𝓅 ≼ γ × T′ ≃ T × ϵₚ ≤ϵ ϵ × Γ ; P ⊢ E ∶ U ∣ ϵₑ ⟶ T′ ∣ ϵₚ × Γ ; γ′ ⊢ e ∶ U ∣ ϵₑ
@@ -367,3 +352,26 @@ unique-frame `case□`of⟨ _ ; _ ⟩ `case□`of⟨ _ ; _ ⟩ _ _ refl = refl
   = _ , _ , _ , _ , _ , _
       , subst (Γ ∶_≼ γ) (sym ([-]𝓅-dist-++ 𝒫₁ 𝒫₂ γ′)) (≼-trans ([-]𝓅-≼ 𝒫₁ ≤γ₂) ≤γ₁)
       , T-eq₁ , ϵ≤₁ , ⊢E ∷⟨ T-eq₂ , ϵ≤₂ ⟩ ⊢E* , ⊢e
+
+infixl 5 _⊢≗ᶠ_ _⊢≗ᶠ*_ _⊢⋯ᶠ⁻¹_ _⊢⋯ᶠ*⁻¹_
+
+postulate
+  _⊢≗ᶠ_ : {𝒫 : CxPat m} {E : Frame m} →
+    Γ₁ ; 𝒫 ⊢ E ∶ T ∣ ϵ ⟶ U ∣ ϵ′ →
+    Γ₁ ≗ Γ₂ →
+    Γ₂ ; 𝒫 ⊢ E ∶ T ∣ ϵ ⟶ U ∣ ϵ′
+
+  _⊢≗ᶠ*_ : {𝒫 : CxPat m} {E : Frame* m} →
+    Γ₁ ; 𝒫 ⊢* E ∶ T ∣ ϵ ⟶ U ∣ ϵ′ →
+    Γ₁ ≗ Γ₂ →
+    Γ₂ ; 𝒫 ⊢* E ∶ T ∣ ϵ ⟶ U ∣ ϵ′
+
+  _⊢⋯ᶠ⁻¹_ : {E : Frame m} {𝒫 : CxPat n} {ϕ : m →ᵣ n} {σ : _} →
+    Γ₂ ; 𝒫 ⊢ E ⋯ᶠ ϕ ∶ T ∣ ϵ ⟶ U ∣ ϵ′ →
+    ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ →
+    ∃[ 𝒫′ ] ⊤ × Γ₁ ; 𝒫′ ⊢ E ∶ T ∣ ϵ ⟶ U ∣ ϵ′
+
+  _⊢⋯ᶠ*⁻¹_ : {E : Frame* m} {𝒫 : CxPat n} {ϕ : m →ᵣ n} {σ : _} →
+    Γ₂ ; 𝒫 ⊢* E ⋯ᶠ* ϕ ∶ T ∣ ϵ ⟶ U ∣ ϵ′ →
+    ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ →
+    ∃[ 𝒫′ ] ⊤ × Γ₁ ; 𝒫′ ⊢* E ∶ T ∣ ϵ ⟶ U ∣ ϵ′
