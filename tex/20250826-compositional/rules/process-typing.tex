@@ -29,8 +29,10 @@
     \ProcHasType
       {\Ctx \CtxPar \Ctx[1] \CtxPar \Ctx[2]}
       \Proc  \\
-    \BindGivesCtx \S {\BindGroup[1]} {\Ctx[1]} \\
-    \BindGivesCtx {\SDual\S} {\BindGroup[2]} {\Ctx[2]}
+    \SNew \S \\
+    \S* \in \{\STerm,\SWait\} \\\\
+    \BindGivesCtx {\SSeq\S{\S*}} {\BindGroup[1]} {\Ctx[1]} \\
+    \BindGivesCtx {\SDual{(\SSeq\S{\S*})}} {\BindGroup[2]} {\Ctx[2]}
   }{
     \ProcHasType
     {\Ctx}
