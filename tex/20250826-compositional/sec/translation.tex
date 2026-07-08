@@ -5,10 +5,9 @@
 The calculus presented in \cref{sec:expr-proc,sec:types,sec:algorithmic-typing}
 records ownership and ordering in a linear type system and, dynamically, in
 binder groups.  This section defines an untyped run-time calculus that is
-closer to an implementation of splitting and borrowing in a real-world
-programming language.  The run-time calculus does not enforce the source
-discipline by itself.  Instead, the translation inserts ordinary channel names
-and synchronization cells so that translated well-typed source processes
+closer to an actual implementation of splitting and borrowing.  The
+run-time calculus provides the tools, ordinary channels
+and synchronization cells, so that translated well-typed source processes
 preserve the ordering guarantees established by the type system and the direct
 semantics of \cref{sec:semantics}.
 
@@ -58,14 +57,15 @@ semantics of \cref{sec:semantics}.
 The syntax of constants, values, and expressions remains unchanged.
 \Cref{fig:unr-syntax} replaces source configurations by target
 configurations $\TProc$.  The form $\TPNew[xy]\TProc$ introduces a
-primitive channel with endpoints $x$ and $y$ scoped over $\TProc$; this is the
+primitive channel with endpoints $\TEVar$ and $\TEVary$ scoped over $\TProc$; this is the
 standard restriction construct of session calculi
 \cite{gay.vasconcelos:session-types}.  The form
-$\TPSync[\TEVarz]\Flag\TProc$ introduces a synchronization cell $z$ with state
-$\Flag$ scoped over $\TProc$.  These cells are asynchronous write-once
-variables \cite{DBLP:journals/toplas/ArvindNP89}.  A cell in state
-$\FlagInit$ records that the corresponding drop has not yet happened; a cell
-in state $\FlagDropped$ records that the drop has happened and an acquire may
+$\TPSync[\TEVarz]\Flag\TProc$ introduces a synchronization cell $\TEVarz$ with state
+$\Flag$ scoped over $\TProc$.  These cells are asynchronous
+variables, similar to IVars and MVars
+\cite{DBLP:journals/toplas/ArvindNP89,DBLP:conf/popl/JonesGF96}.  A
+cell in state $\FlagInit$ records that the corresponding $\CDrop$ has not yet happened; a cell
+in state $\FlagDropped$ records that the $\CDrop$ has happened and an $\CAcq$ may
 proceed.
 
 The channels of the target calculus are \emph{primitive channels}.  A
@@ -77,7 +77,8 @@ optional component is $\CUnit$.  A nontrivial pre-cell is consumed by
 $\CAcq$ before the endpoint is used.  A nontrivial post-cell is signaled by
 $\CDrop$ when ownership of the endpoint prefix is released.  Communication,
 choice, and close operate on the primitive data channel; the extra cells encode
-the ordering constraints that source binder groups enforce directly.
+the ordering constraints on remote borrows that source binder groups
+enforce directly. Local borrows do not use this machinery.
 
 Target processes are quotiented by the congruence of
 \cref{fig:translated-congruence}.  The parallel and restriction laws are the
@@ -113,7 +114,8 @@ synchronization cell needed by a redex.
 The reduction behavior of translated expressions is the same as in the source
 calculus (\cref{fig:expression-reduction}).  \Cref{fig:unr-process-reduction}
 defines the target process reduction relation and uses $\ChanPat\E$ as an
-abbreviation for triples $\TEChan[\V[1]]\E[\V[2]]$.
+abbreviation for triples $\TEChan[\U]\E[\V]$ when $\U$ and
+$\V$ do not matter.
 
 The target rules mirror the source process rules of
 \cref{fig:process-reduction}, but make synchronization explicit.  Rule
@@ -122,8 +124,8 @@ synchronization cells, corresponding to the leading acquire markers created by
 source channel creation.  Rule \textsc{RU-LSplit} performs a local split by
 sharing the same primitive data channel between the two returned triples and
 distributing the existing pre- and post-cells.  Rule \textsc{RU-RSplit}
-allocates a fresh synchronization cell: the left result receives it as a
-post-cell, and the right result receives it as a pre-cell.  Consequently
+allocates a fresh synchronization cell: the left channel receives it as a
+post-cell, and the right channel receives it as a pre-cell.  Consequently
 \textsc{RU-Drop} can signal the cell without blocking, while
 \textsc{RU-Acquire} can proceed only after the signal is present.  The
 communication, choice, and close rules synchronize on the primitive channel
