@@ -145,7 +145,7 @@ continuation type. Instead, the channel argument \lstinline{c} starts
 out at type \lstinline{TreeChannel} without specifying a
 continuation. The return type is \lstinline{Skip}, which indicates an inactive
 channel. Values of type \lstinline{Skip} are
-unrestricted and can be discarded.
+unrestricted and can be discarded \os{$\SSkip$ is not unrestricted anymore}.
 Second, there is no explicit resource
 passing, except for \lstinline{select}. Each use of the borrow notation
 \lstinline{&c} implicitly splits off a prefix of the session type
