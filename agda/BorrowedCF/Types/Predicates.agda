@@ -286,7 +286,9 @@ eqSize′ (≃𝕊-msg x) = suc (eqSize x)
 eqSize′ (≃𝕊-brn₁ x) = suc (eqSize′ x)
 eqSize′ (≃𝕊-brn₂ x) = suc (eqSize′ x)
 
-≃-solved : ∀ {κ x} → Solved {κ} {x} Respects _≃_
+≃-solved   : ∀ {κ x} → Solved {κ} {x} Respects _≃_
+≃-solved⁻¹ : ∀ {κ x} {a b : Ty κ x} → a ≃ b → Solved b → Solved a
+
 ≃-solved {𝕤} refl x = x
 ≃-solved {𝕤} {n} (x ◅ xs) = ≃-solved xs ∘ go x where
   go : Solved {𝕤} {n} Respects SymClosure _≃𝕊_
@@ -304,7 +306,7 @@ eqSize′ (≃𝕊-brn₂ x) = suc (eqSize′ x)
   go (fwd ≃𝕊-distr) (brn x₁ x₂ ; y) = brn (x₁ ; y) (x₂ ; y)
   go (bwd (≃𝕊-;₁ eq)) (x₁ ; x₂) = go (bwd eq) x₁ ; x₂
   go (bwd (≃𝕊-;₂ eq)) (x₁ ; x₂) = x₁ ; go (bwd eq) x₂
-  go (bwd (≃𝕊-msg x)) (msg T) = {!msg (≃-solved (≃-sym x) T)!}  -- breaks the termination check, maybe use eqSize as an induction measure
+  go (bwd (≃𝕊-msg x)) (msg T) = msg (≃-solved⁻¹ x T)
   go (bwd (≃𝕊-brn₁ x)) (brn b b₁) = brn (go (bwd x) b) b₁
   go (bwd (≃𝕊-brn₂ x)) (brn b b₁) = brn b (go (bwd x) b₁)
   go (bwd ≃𝕊-skipˡ) x = skip ; x
@@ -317,6 +319,36 @@ eqSize′ (≃𝕊-brn₂ x) = suc (eqSize′ x)
 ≃-solved {𝕥} (eq ⊕ eq₁) (x ⊕ x₁) = ≃-solved eq x ⊕ ≃-solved eq₁ x₁
 ≃-solved {𝕥} (eq `→ eq₁) (x ⟨ a ⟩→ x₁) = ≃-solved eq x ⟨ a ⟩→ ≃-solved eq₁ x₁
 ≃-solved {𝕥} ⟨ eq ⟩ ⟨ x ⟩ = ⟨ ≃-solved eq x ⟩
+≃-solved⁻¹ {𝕤} refl x = x
+≃-solved⁻¹ {𝕤} {n} (s ◅ ss) x = go⁻ s (≃-solved⁻¹ ss x) where
+  go⁻ : ∀ {s₁ s₂ : 𝕊 n} → SymClosure _≃𝕊_ s₁ s₂ → Solved s₂ → Solved s₁
+  go⁻ (fwd (≃𝕊-;₁ eq)) (x₁ ; x₂) = go⁻ (fwd eq) x₁ ; x₂
+  go⁻ (fwd (≃𝕊-;₂ eq)) (x₁ ; x₂) = x₁ ; go⁻ (fwd eq) x₂
+  go⁻ (fwd (≃𝕊-msg x)) (msg T) = msg (≃-solved⁻¹ x T)
+  go⁻ (fwd (≃𝕊-brn₁ x)) (brn b b₁) = brn (go⁻ (fwd x) b) b₁
+  go⁻ (fwd (≃𝕊-brn₂ x)) (brn b b₁) = brn b (go⁻ (fwd x) b₁)
+  go⁻ (fwd ≃𝕊-skipˡ) x = skip ; x
+  go⁻ (fwd ≃𝕊-skipʳ) x = x ; skip
+  go⁻ (fwd ≃𝕊-μ) x = mu (solved-⋯⁻¹ x)
+  go⁻ (fwd ≃𝕊-assoc) (x ; (y ; z)) = (x ; y) ; z
+  go⁻ (fwd ≃𝕊-distr) (brn (x₁ ; y) (x₂ ; _)) = brn x₁ x₂ ; y
+  go⁻ (bwd (≃𝕊-;₁ eq)) (x₁ ; x₂) = go⁻ (bwd eq) x₁ ; x₂
+  go⁻ (bwd (≃𝕊-;₂ eq)) (x₁ ; x₂) = x₁ ; go⁻ (bwd eq) x₂
+  go⁻ (bwd (≃𝕊-msg x)) (msg T) = msg (≃-solved x T)
+  go⁻ (bwd (≃𝕊-brn₁ x)) (brn b b₁) = brn (go⁻ (bwd x) b) b₁
+  go⁻ (bwd (≃𝕊-brn₂ x)) (brn b b₁) = brn b (go⁻ (bwd x) b₁)
+  go⁻ (bwd ≃𝕊-skipˡ) (x₁ ; x₂) = x₂
+  go⁻ (bwd ≃𝕊-skipʳ) (x₁ ; x₂) = x₁
+  go⁻ (bwd ≃𝕊-μ) (mu x) = solved-⋯ x λ where
+    zero → mu x
+    (suc y) → ` y
+  go⁻ (bwd ≃𝕊-assoc) ((x ; y) ; z) = x ; (y ; z)
+  go⁻ (bwd ≃𝕊-distr) (brn x₁ x₂ ; y) = brn (x₁ ; y) (x₂ ; y)
+≃-solved⁻¹ {𝕥} `⊤ x = x
+≃-solved⁻¹ {𝕥} (eq ⊗ eq₁) (x ⊗⟨ d ⟩ x₁) = ≃-solved⁻¹ eq x ⊗⟨ d ⟩ ≃-solved⁻¹ eq₁ x₁
+≃-solved⁻¹ {𝕥} (eq ⊕ eq₁) (x ⊕ x₁) = ≃-solved⁻¹ eq x ⊕ ≃-solved⁻¹ eq₁ x₁
+≃-solved⁻¹ {𝕥} (eq `→ eq₁) (x ⟨ a ⟩→ x₁) = ≃-solved⁻¹ eq x ⟨ a ⟩→ ≃-solved⁻¹ eq₁ x₁
+≃-solved⁻¹ {𝕥} ⟨ eq ⟩ ⟨ x ⟩ = ⟨ ≃-solved⁻¹ eq x ⟩
 
 data New {n} : 𝕊 n → Set where
   `-  : ∀ {x} → New (` x)

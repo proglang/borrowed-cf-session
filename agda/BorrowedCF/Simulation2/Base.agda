@@ -23,10 +23,10 @@ open import BorrowedCF.Context using (Ctx; Struct) public
 open import BorrowedCF.Processes.Bisim public
 
 -- Source (typed) and target (untyped) process calculi + reductions.
-import BorrowedCF.Processes.Typed             as TP public
-import BorrowedCF.Processes.Untyped           as UP public
-import BorrowedCF.Reduction.Processes.Typed   as TR public
-import BorrowedCF.Reduction.Processes.Untyped as UR public
+import BorrowedCF.Processes.Typed             as TP
+import BorrowedCF.Processes.Untyped           as UP
+import BorrowedCF.Reduction.Processes.Typed   as TR
+import BorrowedCF.Reduction.Processes.Untyped as UR 
 
 open Nat.Variables public
 open Fin.Patterns public

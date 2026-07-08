@@ -11,8 +11,12 @@ import BorrowedCF.Processes.Untyped           as UP
 import BorrowedCF.Reduction.Processes.Typed   as TR
 import BorrowedCF.Reduction.Processes.Untyped as UR
 open import BorrowedCF.Simulation2.Backward.Inversions using (inv-U-⟪⟫)
-open import BorrowedCF.Simulation.ReverseInv using (⋯→-reflect; frameApp-reflect; value-⋯⁻¹)
+open import BorrowedCF.Simulation.ReverseInv
+  using (⋯→-reflect; frameApp-reflect; value-⋯⁻¹; headK; new-arg-notVar)
+open import BorrowedCF.Simulation.InvFrame using (strengthen-frame)
 open import BorrowedCF.Simulation.Frames using (frame-plug*; frame*-⋯)
+open import BorrowedCF.Simulation2.Forward.New using (rnew-bridge; tL)
+open import Data.Empty using (⊥-elim)
 open import BorrowedCF.Simulation.TranslationProperties using (≡→≋)
 open import BorrowedCF.Simulation.RevAdmin using (_≈_; ≈-refl; ≋⇒≈)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_)
@@ -48,3 +52,34 @@ bwd-fork σ Vσ Γ-S {P = P} ⊢P {F} {e} V eq
   , ≋⇒≈ (≡→≋ (cong₂ UP._∥_
       (cong UP.⟪_⟫ (cong (_[ K `unit ]*) Feq ■ sym (frame-plug* F₀ σ Vσ)))
       (cong (λ z → UP.⟪ z ·¹ K `unit ⟫) argeq)))
+
+
+-- RU-New : reflect a translated `new` redex.  frameApp-reflect recovers the
+-- source frame F₀ + argument; headK/new-arg-notVar force the arg to K `unit (a
+-- unit-typed source var is ruled out by ChanCx), i.e. an R-New redex.  The
+-- codomain ≋ is the post-swap rnew-bridge (the two channel triples substitute
+-- into the unswapped leaf tL; typed body `0F⊗`1F, matching the swapped RU-New).
+bwd-new : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+        → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
+        → {s : 𝕊 0} {F : Frame* n}
+        → U[ P ] σ ≡ UP.⟪ F [ K (`new s) ·¹ * ]* ⟫
+        → Σ[ P′ ∈ TP.Proc m ]
+            (Star TR._─→ₚ_ P P′ ×
+             UP.ν (UP.φ UP.acq (UP.φ UP.acq UP.⟪
+                (F ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [ tL ]* ⟫))
+               ≈ U[ P′ ] σ)
+bwd-new σ Vσ Γ-S {P = P} ⊢P {s = s} {F = F} eq
+  with e₀ , refl , feq ← inv-U-⟪⟫ P σ eq
+  with F₀ , arg₀ , refl , Feq , argeq
+       ← frameApp-reflect Γ-S e₀ (inv-⟪⟫ ⊢P) σ Vσ (`new s) F (sym feq)
+  with headK σ arg₀ (sym argeq)
+... | inj₁ (x , refl)
+      with _ , (_ , _ , ⊢redex) , _ , _ ← strengthen-frame F₀ (inv-⟪⟫ ⊢P)
+      = ⊥-elim (new-arg-notVar Γ-S ⊢redex)
+... | inj₂ refl =
+  TP.ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
+    TP.⟪ (F₀ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 0F) ⊗ (` 1F) ]* ⟫ ,
+  TR.R-New F₀ ◅ ε ,
+  ≋⇒≈ (subst (λ z → UP.ν (UP.φ UP.acq (UP.φ UP.acq UP.⟪
+                  (z ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [ tL ]* ⟫)) UP.≋ _)
+        (sym Feq) (rnew-bridge F₀ σ Vσ))

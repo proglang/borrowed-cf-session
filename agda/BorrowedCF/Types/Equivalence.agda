@@ -284,11 +284,8 @@ atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-assoc ≃𝕊-assoc = refl , refl
 atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-distr ≃𝕊-distr = refl , refl
 -}
 
+
 postulate
-  atom-≃⁻¹ : ∀ {a₁ a₂ : 𝕊 n} → Atom a₁ → Atom a₂ → a₁ ≃ a₂ → a₁ ≡ a₂
-
-  atom-;ʳ-⁻¹ : {a₁ a₂ : 𝕊 n} → Atom a₁ → Atom a₂ → {s s₁ s₂ : 𝕊 n} → s₁ ; a₁ ≃ s → s₂ ; a₂ ≃ s → s₁ ≃ s₂ × a₁ ≡ a₂
-
   atom-;-unsnoc : {a x y z : 𝕊 n} → Atom a → x ; y ≃ z ; a → Skips y ⊎ ∃[ y′ ] x ; y′ ≃ z × y′ ; a ≃ y
 
 -- atom-refl-;-skips⁻¹ : Atom s → (s′ : 𝕊 n) → s ≃ s ; s′ → Skips s′
