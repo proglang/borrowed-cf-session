@@ -11,6 +11,7 @@ import BorrowedCF.Processes.Typed             as T
 import BorrowedCF.Processes.Untyped           as U
 import BorrowedCF.Reduction.Processes.Typed   as TR
 import BorrowedCF.Reduction.Processes.Untyped as UR
+open import BorrowedCF.Terms using (module SplitRenamings)
 open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
@@ -401,16 +402,16 @@ handle-R-rwkq (a ∷ d ∷ B₁″) {N} e₁ x e₂ q b₁ B₂ =
 -- ============================================================================
 leafσ-rwk-idq : ∀ {m n} (σ : m →ₛ n) (B₁ B₂ B : BindGroup) (q b₁ : ℕ)
                (i : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) →
-               i ≢ TR.SplitRenamings.atk B₁ B₂ B {q + suc b₁} {m} (q ↑ʳ 0F) →
+               i ≢ SplitRenamings.atk B₁ B₂ (sum B) {q + suc b₁} {m} (q ↑ʳ 0F) →
                leafσ σ (B₁ ++ (q + suc b₁) ∷ B₂) B i ⋯ (sinsq B₁ q b₁ B₂ {2 + n} ↑* syncs B)
-               ≡ leafσ σ (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B (TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m} i)
+               ≡ leafσ σ (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B (SplitRenamings.rwk B₁ B₂ (sum B) {q} {b₁} {m} i)
 leafσ-rwk-idq {m} {n} σ B₁ B₂ B q b₁ i i≢
   with Fin.splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) i in seqo
 ... | inj₂ u
   rewrite leafσ-tail {n = n} σ (B₁ ++ (q + suc b₁) ∷ B₂) B i u seqo
-        | leafσ-tail {n = n} σ (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B (TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m} i) u
+        | leafσ-tail {n = n} σ (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B (SplitRenamings.rwk B₁ B₂ (sum B) {q} {b₁} {m} i) u
             (cong (Fin.splitAt (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) + sum B))
-               (cong (TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo) ■ P3rq B₁ B₂ B {q} {b₁} {m} u)
+               (cong (SplitRenamings.rwk B₁ B₂ (sum B) {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo) ■ P3rq B₁ B₂ B {q} {b₁} {m} u)
             ■ Fin.splitAt-↑ʳ (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) + sum B) m u) =
       sym (⋯-↑*-wk (σ u ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (B₁ ++ (q + suc b₁) ∷ B₂))) (sinsq B₁ q b₁ B₂ {2 + n}) (syncs B))
     ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)) tCore
@@ -422,16 +423,16 @@ leafσ-rwk-idq {m} {n} σ B₁ B₂ B q b₁ i i≢
 ... | inj₁ db with Fin.splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) db in seqi
 ...   | inj₂ w
   rewrite leafσ-B₁ σ (B₁ ++ (q + suc b₁) ∷ B₂) B i db w seqo seqi
-        | leafσ-B₁ σ (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B (TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m} i) (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) ↑ʳ w) w
-            (cong (Fin.splitAt (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) + sum B)) (cong (TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B)) seqi)) ■ P2rq B₁ B₂ B {q} {b₁} {m} w)
+        | leafσ-B₁ σ (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B (SplitRenamings.rwk B₁ B₂ (sum B) {q} {b₁} {m} i) (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) ↑ʳ w) w
+            (cong (Fin.splitAt (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) + sum B)) (cong (SplitRenamings.rwk B₁ B₂ (sum B) {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B)) seqi)) ■ P2rq B₁ B₂ B {q} {b₁} {m} w)
              ■ Fin.splitAt-↑ˡ (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) + sum B) (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) ↑ʳ w) m)
             (Fin.splitAt-↑ʳ (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂)) (sum B) w) =
       canonₛ-nat B (K `unit , weaken* ⦃ Kᵣ ⦄ (syncs (B₁ ++ (q + suc b₁) ∷ B₂)) 1F , K `unit) (sinsq B₁ q b₁ B₂ {2 + n}) w
     ■ cong (λ z → canonₛ B (K `unit , z , K `unit) w) (sins-wkq B₁ q b₁ B₂ {2 + n} 1F)
 ...   | inj₁ d
   rewrite leafσ-A₁ σ (B₁ ++ (q + suc b₁) ∷ B₂) B i db d seqo seqi
-        | leafσ-A₁ σ (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B (TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m} i) (drwkq B₁ q b₁ B₂ d ↑ˡ sum B) (drwkq B₁ q b₁ B₂ d)
-            (cong (Fin.splitAt (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) + sum B)) (cong (TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B)) seqi)) ■ P1rq B₁ B₂ B {q} {b₁} {m} d)
+        | leafσ-A₁ σ (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B (SplitRenamings.rwk B₁ B₂ (sum B) {q} {b₁} {m} i) (drwkq B₁ q b₁ B₂ d ↑ˡ sum B) (drwkq B₁ q b₁ B₂ d)
+            (cong (Fin.splitAt (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) + sum B)) (cong (SplitRenamings.rwk B₁ B₂ (sum B) {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B)) seqi)) ■ P1rq B₁ B₂ B {q} {b₁} {m} d)
              ■ Fin.splitAt-↑ˡ (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) + sum B) (drwkq B₁ q b₁ B₂ d ↑ˡ sum B) m)
             (Fin.splitAt-↑ˡ (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂)) (drwkq B₁ q b₁ B₂ d) (sum B)) =
       sym (⋯-↑*-wk (canonₛ (B₁ ++ (q + suc b₁) ∷ B₂) (K `unit , 0F , K `unit) d) (sinsq B₁ q b₁ B₂ {2 + n}) (syncs B))

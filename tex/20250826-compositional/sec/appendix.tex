@@ -3,7 +3,83 @@
 
 \FloatBarrier
 
-\section{Dynamics: Omitted Congruence and Reduction Rules}
+\section{Types: Session-Type Laws and Omitted Predicates}
+
+\begin{figure}[htbp]
+  \begin{mathpar}
+    \RuleUUnit \and
+    \RuleUArr \and
+    \RuleUProd \and
+    \RuleUVariant \\
+    \RuleUCtxEmpty \and
+    \RuleUCtxVar \and
+    \RuleUCtxSeq \and
+    \RuleUCtxPar \\
+    \RuleSNewSkip \and
+    \RuleSNewSend \and
+    \RuleSNewRecv \and
+    \RuleSNewVar \\
+    \RuleSNewSeq \and
+    \RuleSNewBranch \and
+    \RuleSNewChoice \and
+    \RuleSNewRec
+  \end{mathpar}
+  \caption{Unrestricted types and contexts ($\Unr\T$, $\Unr\Ctx$); session
+    types valid for $\CNew$ ($\SNew\S$)}
+  \label{fig:omitted-predicates}
+\end{figure}
+
+\begin{figure}[htbp]
+  \medskip
+  Laws for context-free session types.
+  \begin{mathpar}
+    \SSeq\SSkip\S = \S \and
+    \SSeq \S\SSkip = \S \and
+    \SSeq{\S[1]}{(\SSeq{\S[2]}{\S[3]})} =
+    \SSeq{(\SSeq{\S[1]}{\S[2]})}{{\S[3]}} \and
+    \SRec\SVar\S = \S{[\SRec\SVar\S/\SVar]} \and
+    \SSeq{(\SChoice{\ell:\S[\ell]}{\ell\in L})}\S =
+    \SChoice{\ell:\SSeq{\S[\ell]}\S}{\ell\in L} \and
+    \SSeq{(\SBranch{\ell:\S[\ell]}{\ell\in L})}\S = \SBranch{\ell:\SSeq{\S[\ell]}\S}{\ell\in L}
+  \end{mathpar}
+
+  \medskip
+  Laws for duality $\SDual\S$ (there is no dual for $\SDrop$ and $\SAcq$).
+  \begin{mathpar}
+    \SDual\SSkip = \SSkip \and
+    \SDual{(\SSeq{\S[1]}{\S[2]})} = \SSeq{\SDual{\S[1]}}{\SDual{\S[2]}}
+    \and
+    \SDual{\SSend\T} = \SRecv\T \and
+    \SDual{\SRecv\T} = \SSend\T \and
+    \SDual{(\SChoice{\ell:\S[\ell]}{\ell\in L})} =
+    \SBranch{\ell:\SDual{\S[\ell]}}{\ell\in L} \and
+    \SDual{(\SBranch{\ell:\S[\ell]}{\ell\in L})} =
+    \SChoice{\ell:\SDual{\S[\ell]}}{\ell\in L} \and
+    \SDual\STerm = \SWait \and
+    \SDual\SWait = \STerm \and
+    \SDual{(\SRec\SVar\S)} = \SDual{\S{[\SRec\SVar\S/\SVar]}}
+  \end{mathpar}
+  \caption{Session-type equality and duality}
+  \label{fig:session-laws}
+\end{figure}
+
+\FloatBarrier
+
+\section{Dynamics: Congruence and Reduction Rules}
+
+\begin{figure}[htbp]
+  \begin{mathpar}
+    \RuleExpRedApp \and
+    \RuleExpRedSeq \and
+    \RuleExpRedPairElim \and
+    \RuleExpRedUnfold \and
+    \RuleExpRedVariantElim \and
+    \RuleExpRedCtx
+  \end{mathpar}
+  \caption{Expression reduction ($\E \EReduce \E$)}
+  \label{fig:expression-reduction}
+\end{figure}
+
 \begin{figure}[htbp]
   \begin{mathpar}
     % \RuleProcCongRefl \and
@@ -17,20 +93,6 @@
   \end{mathpar}
   \caption{Process congruence}
   \label{fig:configuration-congruence}
-\end{figure}
-
-
-\begin{figure}[htbp]
-  \begin{mathpar}
-    \RuleExpRedApp \and
-    \RuleExpRedSeq \and
-    \RuleExpRedPairElim \and
-    \RuleExpRedUnfold \and
-    \RuleExpRedVariantElim \and
-    \RuleExpRedCtx
-  \end{mathpar}
-  \caption{Expression reduction ($\E \EReduce \E$)}
-  \label{fig:expression-reduction}
 \end{figure}
 
 \FloatBarrier
@@ -183,7 +245,7 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
 \end{figure}
 
 \begin{definition}[Substituting definitions]
-  Let $F$ be a FreeST session type and $U$ be set of mapping from variables to FreeST session types such that $\text{freevars}(F) \subseteq \text{dom}(U)$. The subsitution of $U$ to $F$, denoted by $F[U]$. A well formed subsitution has no free variables.
+  Let $F$ be a FreeST session type and $U$ be set of mapping from variables to FreeST session types such that $\text{freevars}(F) \subseteq \text{dom}(U)$. The subsitution of $U$ to $F$, denoted by $F[U]$, is the type where every variable in $U$ that has a definition in $F$ is substituted. A well formed subsitution has no free variables.
 \end{definition}
 
 \begin{lemma}[Soundness of the translation]
@@ -192,6 +254,47 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
 \begin{proof}
   We sketch a proof. The soundness proof mainly requires two things: The translation of annotations in the arrow and product types preserves equivalence and the equivalence of the explicit recursion with the $\mu$ binder syntax. For the former we can perform induction on the equivalence of $\T[1] \simeq \T[2]$ and use equivalence and bisimulation lemmas from \cite{DBLP:conf/icfp/ThiemannV16} for regular type and session type cases, respectively. The pairs we introduce for annotations can be handled trivially by the type equivalence rules. Then to show explicit recursion conversion preserves equivalence, we can use the laws for $\mu$ types from \cite{DBLP:conf/icfp/ThiemannV16}.
 \end{proof}
+
+\FloatBarrier
+
+\section{Type Normalisation}
+
+\begin{figure}
+  \small
+  \hfill \fbox{$\ConcatType {\T[in]} {\T[in]} = \T[out]$}
+  \begin{mathpar}
+    \TypeConcatenationSkip
+
+    \TypeConcatenationSemiDist
+
+    \TypeConcatenationNonSemi
+  \end{mathpar}
+
+  \hfill \fbox{$\NormaliseType {\T[in]} {\T[out]}$}
+  \begin{mathpar}
+    \TypeNormalisationSemiSkips
+    
+    \TypeNormalisationSemi
+
+    \TypeNormalisationMu
+
+    \TypeNormalisationChoiceSemi
+
+    \TypeNormalisationBranchSemi
+
+    \TypeNormalisationIdentity
+  \end{mathpar}
+  \caption{Type Normalisation}
+  \label{fig:typing-normalisation}
+\end{figure}
+
+Type normalisation, denoted as $\NormaliseType {\T[in]} {\T[out]}$ in
+\Cref{fig:typing-normalisation}, is used in the elimination rules for
+algorithmic rules to expose the top-level type constructor
+\cite{DBLP:journals/iandc/AlmeidaMTV22}.
+
+\pt{Where is $\TerminatedType {\T}$ defined? Why is normalization terminating?}
+\mw{if this is known work, skip this figure and refer to \cite{DBLP:journals/iandc/AlmeidaMTV22}}
 
 \FloatBarrier
 

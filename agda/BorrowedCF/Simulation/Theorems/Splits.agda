@@ -1,4 +1,5 @@
 module BorrowedCF.Simulation.Theorems.Splits where
+open import BorrowedCF.Terms using (module SplitRenamings)
 
 -- | Forward-simulation cases R-LSplit and R-RSplit for the reworked
 --   paper-matching process definitions.  Exports U-lsplit and U-rsplit.
@@ -47,31 +48,25 @@ open import BorrowedCF.Simulation.FrameRename
 open T using (_;_⊢ₚ_)
 open import BorrowedCF.Simulation.Theorems.SplitsRQ2 public
 
-U-rsplit : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+U-rsplit-step : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
   → {γ : Struct m} {B₁ B₂ B : BindGroup} {q b₁ : ℕ} {s : 𝕊 0}
   → {E : Frame* (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
   → {P : T.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
-  → (let module 𝐒 = TR.SplitRenamings B₁ B₂ B in
+  → (let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
      Γ ; γ ⊢ₚ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
                  (T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P))
-  → (let module 𝐒 = TR.SplitRenamings B₁ B₂ B in
-     (U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+  → (let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
+     U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
               (T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P) ] σ
-       UR─→ₚ*
+       UR.─→ₚ
       U[ T.ν (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B
               (T.⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))) ⊗ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.rwk)) ] σ)
-     ⊎
-     (U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
-              (T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P) ] σ
-       U.≋
-      U[ T.ν (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B
-              (T.⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))) ⊗ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.rwk)) ] σ))
-U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
+U-rsplit-step {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
   with rsplit-confine Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
 ... | k , ρ⁻ , ρ⁻-skip , E₀ , Eeq , P₀ , Peq =
-      inj₁ (wrapNE front (Bφ-lift-step C₁ (Bφ-lift-step B leaf-fire)) ε back)
+      UR.RU-Struct front (Bφ-lift-step C₁ (Bφ-lift-step B leaf-fire)) back
   where
-    module 𝐒 = TR.SplitRenamings B₁ B₂ B
+    module 𝐒 = SplitRenamings B₁ B₂ (sum B)
     C₁ C₁ᴿ : BindGroup
     C₁  = B₁ ++ (q + suc b₁) ∷ B₂
     C₁ᴿ = B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂
@@ -870,3 +865,25 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ =
     middleReconcile = Bφ-cong C₁ innerReconcile ◅◅ Eq*.symmetric _ slid
     back : Bφ C₁ (Bφ B (U.ν (U.φ U.drop contractumR))) U.≋ U[ T.ν C₁ᴿ B QR ] σ
     back = middleReconcile ◅◅ Eq*.symmetric _ rhs
+
+U-rsplit : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+  → {γ : Struct m} {B₁ B₂ B : BindGroup} {q b₁ : ℕ} {s : 𝕊 0}
+  → {E : Frame* (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
+  → {P : T.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
+  → (let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
+     Γ ; γ ⊢ₚ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+                 (T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P))
+  → (let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
+     (U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+              (T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P) ] σ
+       UR─→ₚ*
+      U[ T.ν (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B
+              (T.⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))) ⊗ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.rwk)) ] σ)
+     ⊎
+     (U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+              (T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P) ] σ
+       U.≋
+      U[ T.ν (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B
+              (T.⟪ E ⋯ᶠ* 𝐒.rwk [ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))) ⊗ (` 𝐒.inj {B = (q + 1) ∷ suc b₁ ∷ []} ((q + 1) ↑ʳ 0F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.rwk)) ] σ))
+U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P =
+  inj₁ (U-rsplit-step {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P ◅ ε)

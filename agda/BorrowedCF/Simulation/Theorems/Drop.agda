@@ -619,7 +619,7 @@ bodyΓ-0F A Bᶜ Cᶜ = refl
 head-noRet-last : ∀ {sF b}{Γ : Ctx (sum (suc b ∷ []))} →
   NoRet sF → BindCtx sF (suc b ∷ []) Γ →
   ∃[ s'' ] (Γ 0F ≡ ⟨ s'' ⟩) × NoRet s''
-head-noRet-last ns (last (cons {s₁ = s1} ¬sk s≃ Γ≗ _)) =
+head-noRet-last ns (last (cons s1 _ ¬sk s≃ Γ≗ _)) =
   s1 , sym (Γ≗ 0F) , VP.noRet-;-fst (noRet-≃ (EqC.symmetric _≃𝕊_ s≃) ns)
 
 noRet⇒≄ret : ∀ {s'' : 𝕊 0} → NoRet s'' → s'' ≃ ret → ⊥
@@ -650,7 +650,7 @@ U-drop σ Vσ Γ-S {b₁ = b₁} {B₁ = []} {B₂ = B₂} {E = E} {P = P} ⊢P
 U-drop {m} {n} σ Vσ Γ-S {b₁ = suc b₁} {B₁ = C@(_ ∷ _)} {B₂ = B₂} {E = E} {P = P} ⊢P
   with inv-ν ⊢P
 ... | _ , _ , sN , _ , N , _ , _
-    , cons-ret/acq {s₁ = sh} scra Γ≗ (cons {s₁ = s1ʰ} {s₂ = s2ʰ} ¬sk1 s≃1 Γ≗1 (cons ¬Ss s≃2 _ _)) _ , _ , ⊢body
+    , cons-ret/acq sh scra Γ≗ (cons s1ʰ s2ʰ ¬sk1 s≃1 Γ≗1 (cons _ _ ¬Ss s≃2 _ _)) _ , _ , ⊢body
   with inv-∥ ⊢body
 ... | _ , _ , _ , ⊢dropT , _
   with strengthen-frame (E ⋯ᶠ* weakenᵣ) (inv-⟪⟫ ⊢dropT)

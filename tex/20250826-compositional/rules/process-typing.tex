@@ -46,7 +46,7 @@
 
 \newcommand*\RuleBindSeq{
   \inferrule[B-Seq]{
-    \neg \Skips{(\SSeq{\S[1]}{\S[2]})} \\
+    \lnot (\SSeq{\S[1]}{\S[2]} \CEq \SSkip) \\
     \BindGivesCtx {\S[2]} \Bind {\Ctx[2]}
   }{
     \BindGivesCtx

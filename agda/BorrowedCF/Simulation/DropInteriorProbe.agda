@@ -34,5 +34,5 @@ gd = ⟨ msg ‼ `⊤ ⟩ F.∷ (⟨ ret ⟩ F.∷ (λ ()))
 
 -- the ret marker at interior position 1F, behind a live msg borrow.
 bcd : BindCtx′ (msg ‼ `⊤ ; ret) 2 gd
-bcd = cons (λ { (() ; _) }) ≃-refl (λ _ → refl)
-        (cons (λ ()) ≃-skipʳ (λ _ → refl) (nil skip))
+bcd = cons (msg ‼ `⊤) ret (λ { (() ; _) }) ≃-refl (λ _ → refl)
+        (cons ret skip (λ ()) ≃-skipʳ (λ _ → refl) (nil skip))

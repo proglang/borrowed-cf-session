@@ -15,6 +15,7 @@ import BorrowedCF.Context.Substitution as 𝐂S
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
 open import BorrowedCF.Processes.Typed using (BindGroup; structBinder)
+open import BorrowedCF.Terms using (module SplitRenamings)
 import BorrowedCF.Reduction.Processes.Typed as 𝐓R
 open import BorrowedCF.Simulation.Confine using (count)
 open import BorrowedCF.Simulation.StructDom
@@ -31,7 +32,7 @@ open Nat using (_<_; _≤_; +-assoc; +-identityʳ; +-suc; m≤m+n; <-≤-trans; 
 
 -- The lsplit/rsplit handle 𝐒.inj 0F sits at flat position sum B₁.
 toℕ-handle : ∀ (B₁ B₂ B : BindGroup) (b₁ : ℕ) {m} →
-  let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ B in
+  let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
   Fin.toℕ (𝐒.inj {suc b₁ ∷ []} {m} 0F) ≡ sum B₁
 toℕ-handle B₁ B₂ B b₁ {m} =
   toℕ-↑ˡ _ m
@@ -62,7 +63,7 @@ private
 -- handle exactly once.  The context is the TP-Res shape with outer binder
 -- B₁ := C₁ = B₁ ++ suc b₁ ∷ B₂ and outer binder B₂ := B.
 count-handle-γinner : ∀ (B₁ B₂ B : BindGroup) (b₁ : ℕ) {m} (γ : Struct m) →
-  let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ B
+  let module 𝐒 = SplitRenamings B₁ B₂ (sum B)
       C₁ = B₁ ++ suc b₁ ∷ B₂ in
   count (𝐒.inj {suc b₁ ∷ []} {m} 0F)
     ( (structBinder C₁ 𝐂S.⋯ᵣ 𝐂S.wkʳ (sum B) 𝐂S.⋯ᵣ 𝐂S.wkʳ m)
@@ -70,7 +71,7 @@ count-handle-γinner : ∀ (B₁ B₂ B : BindGroup) (b₁ : ℕ) {m} (γ : Stru
     ∥ (γ 𝐂S.⋯ 𝐂S.weaken* ⦃ 𝐂S.Kᵣ ⦄ (sum C₁ + sum B)) ) ≡ 1
 count-handle-γinner B₁ B₂ B b₁ {m} γ = cong₂ _+_ (cong₂ _+_ partA partB) partC
   where
-    module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ B
+    module 𝐒 = SplitRenamings B₁ B₂ (sum B)
     C₁ : BindGroup
     C₁ = B₁ ++ suc b₁ ∷ B₂
     zz : 𝔽 (sum C₁)
@@ -109,7 +110,7 @@ splitN-eq B₁ B₂ B b₁ {m} rewrite sum-++ B₁ (suc b₁ ∷ B₂) =
 
 -- The thinning's missing point (cast of sum B₁ ↑ʳ zero) is the handle.
 mp≡handle : ∀ (B₁ B₂ B : BindGroup) (b₁ : ℕ) {m} →
-  let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ B in
+  let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
   Fin.cast (splitN-eq B₁ B₂ B b₁ {m}) (sum B₁ ↑ʳ 0F) ≡ 𝐒.inj {suc b₁ ∷ []} {m} 0F
 mp≡handle B₁ B₂ B b₁ {m} = Fin.toℕ-injective
   ( toℕ-cast (splitN-eq B₁ B₂ B b₁) (sum B₁ ↑ʳ 0F)
@@ -126,7 +127,7 @@ mp≡handle B₁ B₂ B b₁ {m} = Fin.toℕ-injective
 
 -- The interior handle 𝐒.atk (q ↑ʳ 0F) sits at flat position sum B₁ + q.
 toℕ-handleq : ∀ (B₁ B₂ B : BindGroup) (q b₁ : ℕ) {m} →
-  let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ B in
+  let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
   Fin.toℕ (𝐒.atk {q + suc b₁} {m} (q ↑ʳ 0F)) ≡ sum B₁ + q
 toℕ-handleq B₁ B₂ B q b₁ {m} =
   toℕ-↑ˡ _ m
@@ -153,7 +154,7 @@ private
 
 -- The bind-context produced by inv-ν counts the interior handle exactly once.
 count-handle-γinnerq : ∀ (B₁ B₂ B : BindGroup) (q b₁ : ℕ) {m} (γ : Struct m) →
-  let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ B
+  let module 𝐒 = SplitRenamings B₁ B₂ (sum B)
       C₁ = B₁ ++ (q + suc b₁) ∷ B₂ in
   count (𝐒.atk {q + suc b₁} {m} (q ↑ʳ 0F))
     ( (structBinder C₁ 𝐂S.⋯ᵣ 𝐂S.wkʳ (sum B) 𝐂S.⋯ᵣ 𝐂S.wkʳ m)
@@ -161,7 +162,7 @@ count-handle-γinnerq : ∀ (B₁ B₂ B : BindGroup) (q b₁ : ℕ) {m} (γ : S
     ∥ (γ 𝐂S.⋯ 𝐂S.weaken* ⦃ 𝐂S.Kᵣ ⦄ (sum C₁ + sum B)) ) ≡ 1
 count-handle-γinnerq B₁ B₂ B q b₁ {m} γ = cong₂ _+_ (cong₂ _+_ partA partB) partC
   where
-    module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ B
+    module 𝐒 = SplitRenamings B₁ B₂ (sum B)
     C₁ : BindGroup
     C₁ = B₁ ++ (q + suc b₁) ∷ B₂
     zz : 𝔽 (sum C₁)
@@ -200,7 +201,7 @@ splitN-eqq B₁ B₂ B q b₁ {m} rewrite sum-++ B₁ ((q + suc b₁) ∷ B₂) 
 
 -- The thinning's missing point is the interior handle.
 mp≡handleq : ∀ (B₁ B₂ B : BindGroup) (q b₁ : ℕ) {m} →
-  let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ B in
+  let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
   Fin.cast (splitN-eqq B₁ B₂ B q b₁ {m}) ((sum B₁ + q) ↑ʳ 0F) ≡ 𝐒.atk {q + suc b₁} {m} (q ↑ʳ 0F)
 mp≡handleq B₁ B₂ B q b₁ {m} = Fin.toℕ-injective
   ( toℕ-cast (splitN-eqq B₁ B₂ B q b₁) ((sum B₁ + q) ↑ʳ 0F)

@@ -18,7 +18,7 @@
 }
 
 \newcommand*\RuleTeSkips{
-  \inferrule[Te-Skips]{\Skips\S}{\Mobile\S}
+  \inferrule[Te-Skips]{\S \CEq \SSkip}{\Mobile\S}
 }
 
 \newcommand*\RuleTeTerm{
@@ -42,7 +42,7 @@
 \newcommand*\RuleTeSeqOne{
   \inferrule[Te-Seq1]{
     \Bounded{\S[1]} \\
-    \Skips{\S[2]}
+    \S[2] \CEq \SSkip
   } {
     \Bounded{(\SSeq{\S[1]}{\S[2]})}
   }

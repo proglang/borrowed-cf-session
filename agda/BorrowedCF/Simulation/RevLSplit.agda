@@ -30,8 +30,8 @@ lsplit-arg-chan : ∀ {N} {Γ : Ctx N} {α : Struct N} {s : 𝕊 0} {arg : Tm N}
   → Γ ; α ⊢ K (`lsplit s) ·¹ arg ∶ T ∣ ϵ
   → Σ[ s′ ∈ 𝕊 0 ] Σ[ β ∈ Struct N ] Σ[ R ∈ 𝕋 ] Σ[ ϵ₂ ∈ Eff ]
       (Γ ; β ⊢ arg ∶ R ∣ ϵ₂) × (⟨ s ; s′ ⟩ ≃ R)
-lsplit-arg-chan (T-AppUnr _ _ ⊢fn ⊢arg) = let _ , s′ , eq = fn-lsplit-dom ⊢fn in s′ , _ , _ , _ , ⊢arg , eq
-lsplit-arg-chan (T-AppLin _ _ ⊢fn ⊢arg) = let _ , s′ , eq = fn-lsplit-dom ⊢fn in s′ , _ , _ , _ , ⊢arg , eq
+lsplit-arg-chan (T-AppUnr _ _ ⊢fn ⊢arg) = let s′ , eq = fn-lsplit-dom ⊢fn in s′ , _ , _ , _ , ⊢arg , eq
+lsplit-arg-chan (T-AppLin _ _ ⊢fn ⊢arg) = let s′ , eq = fn-lsplit-dom ⊢fn in s′ , _ , _ , _ , ⊢arg , eq
 lsplit-arg-chan (T-Conv _ _ d) = lsplit-arg-chan d
 lsplit-arg-chan (T-Weaken _ d) = lsplit-arg-chan d
 

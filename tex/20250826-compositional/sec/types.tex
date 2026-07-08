@@ -2,13 +2,15 @@
 \label{sec:types}
 
 The source syntax of types is given in \cref{fig:syntax}. This section assigns static
-meaning to that syntax. The type system has three layers. First, contexts and
-session types are quotiented by the equations in \cref{fig:syntax-types}, and
-weakening is controlled by a subcontext preorder. Second, the predicates
-$\Unr$, $\Mobile$, $\Bounded$, $\Skips$, and $\SNew$ classify values, contexts,
-and sessions that may be duplicated, transported, split, or freshly created.
-Third, the typing judgments for constants, expressions, and processes use
-these classifications to enforce protocol fidelity and ownership transfer.
+meaning to that syntax. The type system has three layers. First, the predicates
+$\Unr$, $\Mobile$, and $\Bounded$ classify the values, contexts, and sessions
+that may be duplicated, transported across processes, or split; an auxiliary
+predicate $\SNew$ restricts the sessions that may be created fresh. Second,
+contexts are quotiented by equations that respect this classification, session
+types are quotiented by a standard equational theory, and weakening is
+controlled by a subcontext preorder. Third, the typing judgments for constants,
+expressions, and processes use these classifications to enforce protocol
+fidelity and ownership transfer.
 
 Typing contexts combine assumptions with two constructors. The ordered product
 $\Ctx[1]\CtxSeq\Ctx[2]$ records that the resources in $\Ctx[1]$ must be used
@@ -16,6 +18,59 @@ before the resources in $\Ctx[2]$. The unordered product
 $\Ctx[1]\CtxPar\Ctx[2]$ records independent resources. When a rule is
 parametric in either constructor, we write $\ctxcolor{\Ctx[1]\CtxPatOp\Ctx[2]}$
 for either $\Ctx[1]\CtxSeq\Ctx[2]$ or $\Ctx[1]\CtxPar\Ctx[2]$.
+
+\begin{figure}
+  \begin{mathpar}
+    \RuleTeTerm \and
+    \RuleTeWait \and
+    \RuleTeDrop \and
+    \RuleTeSeqOne \\
+    \RuleTeRec \and
+    \RuleTeBranch \and
+    \RuleTeChoice \and
+    \RuleTeSeqTwo \\
+    \RuleTeBase \and
+    \RuleTeArr \and
+    \RuleTeAcq \and
+    \RuleTeProd \and
+    \RuleTeVariant \\
+    \RuleTeCtxEmpty \and
+    \RuleTeCtxVar \and
+    \RuleTeCtxSeq \and
+    \RuleTeCtxPar
+  \end{mathpar}
+  \caption{Mobile types and contexts ($\Mobile\T$, $\Mobile\Ctx$);
+    bounded session types ($\Bounded\S$)}
+  \label{fig:bounded-session-types}
+\end{figure}
+
+\Cref{fig:bounded-session-types} defines the predicates that classify sessions
+and values for cross-process movement, together with the boundedness predicate
+they rely on. A bounded session $\Bounded\S$ is a finite communication
+obligation: a non-recursive bounded session terminates in $\STerm$, $\SWait$,
+or $\SDrop$, while a recursive bounded session requires all finite unfoldings to
+reach such a boundary consistently. A trailing session that is equivalent to
+$\SSkip$ carries no communication obligation and is discharged when checking
+boundedness (rule \RuleName{Te-Seq1}).
+
+A mobile session has the form $\SSeq\SAcq\S$ with $\Bounded\S$. The leading
+acquire marks a remotely borrowed endpoint, and boundedness ensures that the
+borrowed prefix can be completed without consuming an unbounded residual owned
+elsewhere. This is the essential case: a borrowed endpoint may move across
+processes exactly because its remaining protocol is a finite, bounded
+obligation. Mobility extends from sessions to ordinary values: Unit is mobile;
+products and variants are mobile pointwise; a function value is mobile exactly
+when its arrow carries the mobile annotation, which in turn means the function
+closes over mobile values only. Context mobility is pointwise, so a process may
+fork or send only closures whose captured assumptions satisfy the same
+discipline.
+
+A companion predicate $\Unr\T$ (and $\Unr\Ctx$ on contexts) identifies the
+duplicable fragment: unit, componentwise-unrestricted products and variants,
+and functions of direction $\DirNone$, lifted pointwise to contexts. It governs
+contraction, weakening, and recursive-function introduction, and every
+unrestricted context is also mobile. The full story is deferred to
+\cref{fig:omitted-predicates} in the supplement.
 
 \begin{figure}
   \medskip
@@ -48,37 +103,7 @@ for either $\Ctx[1]\CtxSeq\Ctx[2]$ or $\Ctx[1]\CtxPar\Ctx[2]$.
       \Ctx
     }
   \end{mathpar}
-
-  \medskip
-  Laws for context-free session types.
-  \begin{mathpar}
-    \SSeq\SSkip\S = \S \and
-    \SSeq \S\SSkip = \S \and
-    \SSeq{\S[1]}{(\SSeq{\S[2]}{\S[3]})} =
-    \SSeq{(\SSeq{\S[1]}{\S[2]})}{{\S[3]}} \and
-    \SRec\SVar\S = \S{[\SRec\SVar\S/\SVar]} \and
-    \SSeq{(\SChoice{\ell:\S[\ell]}{\ell\in L})}\S =
-    \SChoice{\ell:\SSeq{\S[\ell]}\S}{\ell\in L} \and
-    \SSeq{(\SBranch{\ell:\S[\ell]}{\ell\in L})}\S = \SBranch{\ell:\SSeq{\S[\ell]}\S}{\ell\in L}
-  \end{mathpar}
-
-  \medskip
-  Laws for duality $\SDual\S$ (there is no dual for $\SDrop$ and $\SAcq$)
-  \begin{mathpar}
-    \SDual\SSkip = \SSkip \and
-    \SDual{(\SSeq{\S[1]}{\S[2]})} = \SSeq{\SDual{\S[1]}}{\SDual{\S[2]}}
-    \and
-    \SDual{\SSend\T} = \SRecv\T \and
-    \SDual{\SRecv\T} = \SSend\T \and
-    \SDual{(\SChoice{\ell:\S[\ell]}{\ell\in L})} =
-    \SBranch{\ell:\SDual{\S[\ell]}}{\ell\in L} \and
-    \SDual{(\SBranch{\ell:\S[\ell]}{\ell\in L})} =
-    \SChoice{\ell:\SDual{\S[\ell]}}{\ell\in L} \and
-    \SDual\STerm = \SWait \and
-    \SDual\SWait = \STerm \and
-    \SDual{(\SRec\SVar\S)} = \SDual{\S{[\SRec\SVar\S/\SVar]}}
-  \end{mathpar}
-  \caption{Context and session-type structure}
+  \caption{Context structure}
   \label{fig:syntax-types}
 \end{figure}
 
@@ -99,110 +124,18 @@ The second subcontext rule admits unused unrestricted assumptions. By
 \RuleName{T-Weaken}, a derivation obtained in a smaller context can be used in
 any larger context related by $\SubCtx$.
 
-The session-type laws in \cref{fig:syntax-types} specify the equational theory
-used by type conversion. Sequential composition has $\SSkip$ as unit and is
-associative. Recursive types unfold equi-recursively. Continuations distribute
-through internal and external choice, so a suffix can be exposed branchwise
-before splitting or comparison. These laws are specification, not an
-algorithm. In particular, the recursion law is the correct equi-recursive
-specification, but it is not necessarily an executable definition of
-conversion.
+Session types themselves are quotiented by a standard equational theory used by
+type conversion: sequential composition is associative with $\SSkip$ as neutral
+element, recursion unfolds equi-recursively, and a continuation distributes
+homomorphically through internal and external choice. The induced congruence is
+the equivalence $\CEq$ that appears throughout the type system---in particular
+whenever we require a session to be equivalent to $\SSkip$. 
 
-The duality laws specify the protocol offered by the opposite endpoint of a
-fresh channel. Duality preserves $\SSkip$ and sequential composition, swaps
-send with receive, swaps internal with external choice pointwise, and swaps
-close with wait. For recursion, duality is specified by first unfolding the
-recursive type and then dualizing the unfolded
-body. \citet{DBLP:journals/corr/abs-2004-01322} discuss
-implementations.
-
-\begin{figure}
-  \begin{mathpar}
-    \RuleUUnit \and
-    \RuleUArr \and
-    \RuleUProd \and
-    \RuleUVariant \\
-    \RuleUCtxEmpty \and
-    \RuleUCtxVar \and
-    \RuleUCtxSeq \and
-    \RuleUCtxPar
-  \end{mathpar}
-  \caption{Unrestricted types ($\Unr\T$) and contexts ($\Unr\Ctx$)}
-  \label{fig:unrestricted-types}
-\end{figure}
-
-\Cref{fig:unrestricted-types} identifies the duplicable fragment. Unit is
-unrestricted, products and variants are unrestricted componentwise, and
-unrestricted functions have direction $\DirNone$. A context is unrestricted
-when all assumptions in it are unrestricted. This predicate is used by
-contraction, weakening, and recursive function introduction.
-
-\begin{figure}
-  \begin{mathpar}
-    \RuleTeSkip \and
-    \RuleTeSkipSeq \and
-    \RuleTeSkipMu \\
-    \RuleTeTerm \and
-    \RuleTeWait \and
-    \RuleTeDrop \and
-    \RuleTeSeqOne \\
-    \RuleTeRec \and
-    \RuleTeBranch \and
-    \RuleTeChoice \and
-    \RuleTeSeqTwo \\
-    \RuleTeBase \and
-    \RuleTeArr \and
-    \RuleTeAcq \and
-    \RuleTeProd \and
-    \RuleTeVariant \\
-    \RuleTeCtxEmpty \and
-    \RuleTeCtxVar \and
-    \RuleTeCtxSeq \and
-    \RuleTeCtxPar
-  \end{mathpar}
-  \caption{Mobile types and contexts ($\Mobile\T$, $\Mobile\Ctx$);
-    bounded session types ($\Bounded\S$); skipping session types ($\Skips\S$)}
-  \label{fig:bounded-session-types}
-\end{figure}
-
-\Cref{fig:bounded-session-types} defines the predicates that control
-cross-process movement. A skipping session is equivalent to $\SSkip$ and
-therefore carries no communication obligation. A bounded session is a finite
-obligation: non-recursive bounded sessions terminate in $\STerm$, $\SWait$, or
-$\SDrop$, while recursive bounded sessions require all finite unfoldings to
-reach such a boundary consistently. A mobile session has the form
-$\SSeq\SAcq\S$ with $\Bounded\S$; the leading acquire marks a remotely
-borrowed endpoint, and boundedness ensures that the borrowed prefix can be
-completed without consuming an unbounded residual owned elsewhere.
-
-Mobility extends from sessions to ordinary values. Unit is mobile. Products
-and variants are mobile pointwise. Function values are mobile exactly when
-their arrow carries the mobile annotation, which in turn means that
-the function closes over mobile values. Context mobility is pointwise, so a
-process may fork or send only closures whose captured assumptions satisfy the
-same discipline.
-
-\begin{figure}
-  \begin{mathpar}
-    \RuleSNewSkip \and
-    \RuleSNewSend \and
-    \RuleSNewRecv \and
-    \RuleSNewVar \\
-    \RuleSNewSeq \and
-    \RuleSNewBranch \and
-    \RuleSNewChoice \and
-    \RuleSNewRec
-  \end{mathpar}
-  \caption{Session types that are valid for $\CNew$}
-  \label{fig:new-session-types}
-\end{figure}
-
-The predicate $\SNew\S$ in \cref{fig:new-session-types} restricts the session
-types that may be supplied to channel creation. Fresh channels are created for
-ordinary communication protocols built from $\SSkip$, sends, receives,
-choices, branches, sequencing, and recursion. The synchronization markers
-$\SAcq$ and $\SDrop$ are not source protocols for $\CNew$; they are introduced
-by remote splitting.
+A fresh
+channel offers dual protocols to its two endpoints. Duality, denoted $\SDual\T$, is the standard
+involution that swaps send with receive and internal with external choice, and. We leave duality undefined on the synchronization markers $\SDrop$ and $\SAcq$, which never
+occur on a fresh channel. Both the equational laws and the duality laws are
+collected in \cref{fig:session-laws} in the supplement.
 
 \begin{figure}
   \begin{mathpar}
@@ -227,7 +160,12 @@ by remote splitting.
 
 \Cref{fig:constant-typing} assign closed types to constants. Channel
 creation produces a pair of dual endpoints, each protected by an initial
-$\SAcq$ marker and closed respectively by $\STerm$ and $\SWait$. Communication
+$\SAcq$ marker and closed respectively by $\STerm$ and $\SWait$. The session
+supplied to $\CNew$ must be a source protocol: the side condition $\SNew\S$
+restricts it to $\SSkip$, sends, receives, choices, branches, sequencing, and
+recursion, excluding the synchronization-like markers $\SAcq$, $\SDrop$,
+$\STerm$, and $\SWait$, which are introduced only by remote splitting and
+closing (\cref{fig:omitted-predicates}). Communication
 constants consume exactly the session prefix they implement: send and receive
 advance through $\SSend\T$ and $\SRecv\T$, selection advances an internal
 choice, and branching returns a variant over external branches. These
@@ -237,11 +175,12 @@ The split constants are pure. Local splitting, $\CSplit$, decomposes
 $\SSeq{\S[1]}{\S[2]}$ into an ordered pair containing the borrowed prefix and
 the residual suffix. The ordering enforces that the prefix must be
 consumed before starting with the suffix. Remote splitting, $\CSSplit$, produces an unordered pair
-in which the prefix ends in $\SDrop$ and the residual begins with $\SAcq$; the
+in which the prefix ends in $\SDrop$ and the residual begins with $\SAcq$. The
 operational semantics uses these markers to synchronize drop and acquire
 across processes. The constants $\CDrop$ and $\CAcq$ eliminate the
 corresponding markers. Forking expects a mobile impure computation from unit to
-unit, and $\CDiscard$ consumes a skipping endpoint.
+unit, and $\CDiscard$ consumes an endpoint whose session is equivalent to
+$\SSkip$.
 
 \begin{figure}
   \begin{mathpar}
@@ -279,8 +218,8 @@ expressions are expected, but not conversely.
 Constants and variables are pure and use exactly the resources shown in their
 types. Function introduction records how the argument is positioned relative
 to the captured context. An unordered function places the argument in parallel
-with the captured context; left- and right-ordered functions place it before or
-after the captured context; unrestricted recursive functions use direction
+with the captured context, left- and right-ordered functions place it before or
+after the captured context respectively and unrestricted recursive functions use direction
 $\DirNone$ and may only capture an unrestricted context. Application composes
 the contexts of the function and argument according to the arrow direction.
 The ordered application rules also enforce the expected purity side condition:

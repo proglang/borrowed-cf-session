@@ -1,4 +1,5 @@
 module BorrowedCF.Simulation.Theorems.SplitsH2 where
+open import BorrowedCF.Terms using (module SplitRenamings)
 
 open import BorrowedCF.Simulation.Base
 import BorrowedCF.Processes.Typed             as T
@@ -116,17 +117,17 @@ subst-cong+ refl t = refl
 -- from the consumed handle atk (q ↑ʳ 0F) (lwk just inserts the new data slot).
 leafσ-lwk-id : ∀ {m n} (σ : m →ₛ n) (B₁ B₂ B : BindGroup) (q b₁ : ℕ)
                (i : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) →
-               i ≢ TR.SplitRenamings.atk B₁ B₂ B {q + suc b₁} {m} (q ↑ʳ 0F) →
+               i ≢ SplitRenamings.atk B₁ B₂ (sum B) {q + suc b₁} {m} (q ↑ʳ 0F) →
                subst (λ j → Tm (syncs B + (j + (2 + n)))) (syncs-lwkq B₁)
                  (leafσ σ (B₁ ++ (q + suc b₁) ∷ B₂) B i)
-               ≡ leafσ σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m} i)
+               ≡ leafσ σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} i)
 leafσ-lwk-id {m} {n} σ B₁ B₂ B q b₁ i i≢
   with Fin.splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) i in seqo
 ... | inj₂ u
   rewrite leafσ-tail {n = n} σ (B₁ ++ (q + suc b₁) ∷ B₂) B i u seqo
-        | leafσ-tail {n = n} σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m} i) u
+        | leafσ-tail {n = n} σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} i) u
             (cong (Fin.splitAt (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B))
-               (cong (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo) ■ P3q B₁ B₂ B {q} {b₁} {m} u)
+               (cong (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo) ■ P3q B₁ B₂ B {q} {b₁} {m} u)
             ■ Fin.splitAt-↑ʳ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B) m u) = σ-coh
   where
     sA  = syncs (B₁ ++ (q + suc b₁) ∷ B₂)
@@ -144,8 +145,8 @@ leafσ-lwk-id {m} {n} σ B₁ B₂ B q b₁ i i≢
 ... | inj₁ db with Fin.splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) db in seqi
 ...   | inj₂ w
   rewrite leafσ-B₁ σ (B₁ ++ (q + suc b₁) ∷ B₂) B i db w seqo seqi
-        | leafσ-B₁ σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m} i) (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) ↑ʳ w) w
-            (cong (Fin.splitAt (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B)) (cong (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B)) seqi)) ■ P2q B₁ B₂ B {q} {b₁} {m} w)
+        | leafσ-B₁ σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} i) (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) ↑ʳ w) w
+            (cong (Fin.splitAt (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B)) (cong (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B)) seqi)) ■ P2q B₁ B₂ B {q} {b₁} {m} w)
              ■ Fin.splitAt-↑ˡ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B) (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) ↑ʳ w) m)
             (Fin.splitAt-↑ʳ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂)) (sum B) w) = canonB-coh
   where
@@ -160,8 +161,8 @@ leafσ-lwk-id {m} {n} σ B₁ B₂ B q b₁ i i≢
             cohh refl = refl
 ...   | inj₁ d
   rewrite leafσ-A₁ σ (B₁ ++ (q + suc b₁) ∷ B₂) B i db d seqo seqi
-        | leafσ-A₁ σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m} i) (dlwkq B₁ q b₁ B₂ d ↑ˡ sum B) (dlwkq B₁ q b₁ B₂ d)
-            (cong (Fin.splitAt (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B)) (cong (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B)) seqi)) ■ P1q B₁ B₂ B {q} {b₁} {m} d)
+        | leafσ-A₁ σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} i) (dlwkq B₁ q b₁ B₂ d ↑ˡ sum B) (dlwkq B₁ q b₁ B₂ d)
+            (cong (Fin.splitAt (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B)) (cong (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B)) seqi)) ■ P1q B₁ B₂ B {q} {b₁} {m} d)
              ■ Fin.splitAt-↑ˡ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B) (dlwkq B₁ q b₁ B₂ d ↑ˡ sum B) m)
             (Fin.splitAt-↑ˡ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂)) (dlwkq B₁ q b₁ B₂ d) (sum B)) =
       subst-wkB (syncs B) (syncs-lwkq B₁) (canonₛ (B₁ ++ (q + suc b₁) ∷ B₂) (K `unit , 0F , K `unit) d)
@@ -559,30 +560,24 @@ transport-⋯f* : {kk kk′ : ℕ} (fg gg : ℕ → ℕ) (ρ : ∀ j → fg j �
 transport-⋯f* fg gg ρ refl E = refl
 
 
-U-lsplit : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+U-lsplit-step : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
   → {γ : Struct m} {B₁ B₂ B : BindGroup} {q b₁ : ℕ} {s : 𝕊 0}
   → {E : Frame* (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
   → {P : T.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
-  → (let module 𝐒 = TR.SplitRenamings B₁ B₂ B in
+  → (let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
      Γ ; γ ⊢ₚ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
                  (T.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P))
-  → (let module 𝐒 = TR.SplitRenamings B₁ B₂ B in
-     (U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+  → (let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
+     U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
               (T.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P) ] σ
-       UR─→ₚ*
+       UR.─→ₚ
       U[ T.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
               (T.⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.atk (q ↑ʳ 0F)) ⊗ (` 𝐒.atk (q ↑ʳ 1F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.lwk)) ] σ)
-     ⊎
-     (U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
-              (T.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P) ] σ
-       U.≋
-      U[ T.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
-              (T.⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.atk (q ↑ʳ 0F)) ⊗ (` 𝐒.atk (q ↑ʳ 1F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.lwk)) ] σ))
-U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
+U-lsplit-step {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
   with lsplit-confine Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
-... | k , ρ⁻ , ρ⁻-skip , E₀ , Eeq , P₀ , Peq = ≋-wrap-⊎ front fire back
+... | k , ρ⁻ , ρ⁻-skip , E₀ , Eeq , P₀ , Peq = UR.RU-Struct front (Bφ-lift-step C₁ (Bφ-lift-step B leaf-fire)) back
   where
-    module 𝐒 = TR.SplitRenamings B₁ B₂ B
+    module 𝐒 = SplitRenamings B₁ B₂ (sum B)
     C₁ C₁′ : BindGroup
     C₁  = B₁ ++ (q + suc b₁) ∷ B₂
     C₁′ = B₁ ++ (q + suc (suc b₁)) ∷ B₂
@@ -941,3 +936,25 @@ drwk []        b₁ B₂ i = weakenᵣ i
 drwk (a ∷ B₁') b₁ B₂ i =
   [ (λ p → p ↑ˡ sum (B₁' ++ 1 ∷ suc b₁ ∷ B₂)) , (λ r → a ↑ʳ drwk B₁' b₁ B₂ r) ]′ (splitAt a i)
 
+
+U-lsplit : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+  → {γ : Struct m} {B₁ B₂ B : BindGroup} {q b₁ : ℕ} {s : 𝕊 0}
+  → {E : Frame* (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
+  → {P : T.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
+  → (let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
+     Γ ; γ ⊢ₚ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+                 (T.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P))
+  → (let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
+     (U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+              (T.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P) ] σ
+       UR─→ₚ*
+      U[ T.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
+              (T.⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.atk (q ↑ʳ 0F)) ⊗ (` 𝐒.atk (q ↑ʳ 1F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.lwk)) ] σ)
+     ⊎
+     (U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+              (T.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P) ] σ
+       U.≋
+      U[ T.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
+              (T.⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.atk (q ↑ʳ 0F)) ⊗ (` 𝐒.atk (q ↑ʳ 1F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.lwk)) ] σ))
+U-lsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P =
+  inj₁ (U-lsplit-step {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P ◅ ε)

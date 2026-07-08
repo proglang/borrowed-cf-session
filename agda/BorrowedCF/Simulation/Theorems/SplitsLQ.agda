@@ -12,6 +12,7 @@ import BorrowedCF.Processes.Typed             as T
 import BorrowedCF.Processes.Untyped           as U
 import BorrowedCF.Reduction.Processes.Typed   as TR
 import BorrowedCF.Reduction.Processes.Untyped as UR
+open import BorrowedCF.Terms using (module SplitRenamings)
 open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
@@ -119,7 +120,7 @@ sB₁q+1≤sumC₁q B₁ {q} {b₁} {B₂} =
 𝐒lwkq-lo : ∀ (B₁ B₂ B : BindGroup) {q b₁ m : ℕ}
              (x : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) →
              Fin.toℕ x Nat.< sum B₁ + q + 1 →
-             Fin.toℕ (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m} x) ≡ Fin.toℕ x
+             Fin.toℕ (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} x) ≡ Fin.toℕ x
 𝐒lwkq-lo B₁ B₂ B {q} {b₁} {m} x lt =
     Fin.toℕ-cast _ _
   ■ toℕ-↑*-lt weakenᵣ (sum B₁ + q + 1) (Fin.cast _ x) lt′
@@ -131,7 +132,7 @@ sB₁q+1≤sumC₁q B₁ {q} {b₁} {B₂} =
 𝐒lwkq-hi : ∀ (B₁ B₂ B : BindGroup) {q b₁ m : ℕ}
              (x : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) →
              sum B₁ + q + 1 Nat.≤ Fin.toℕ x →
-             Fin.toℕ (TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m} x) ≡ suc (Fin.toℕ x)
+             Fin.toℕ (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} x) ≡ suc (Fin.toℕ x)
 𝐒lwkq-hi B₁ B₂ B {q} {b₁} {m} x h =
     Fin.toℕ-cast _ _
   ■ toℕ-↑*-ge weakenᵣ (sum B₁ + q + 1) (Fin.cast _ x) h′
@@ -143,7 +144,7 @@ sB₁q+1≤sumC₁q B₁ {q} {b₁} {B₂} =
 
 -- lwk on a C₁-embedded data position equals the dlwkq-shifted embedding.
 P1q : ∀ (B₁ B₂ B : BindGroup) {q b₁ m : ℕ} (d : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂))) →
-      TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m} ((d ↑ˡ sum B) ↑ˡ m)
+      SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} ((d ↑ˡ sum B) ↑ˡ m)
       ≡ (dlwkq B₁ q b₁ B₂ d ↑ˡ sum B) ↑ˡ m
 P1q B₁ B₂ B {q} {b₁} {m} d with Fin.toℕ d Nat.<? sum B₁ + q + 1
 ... | yes lt = Fin.toℕ-injective
@@ -165,7 +166,7 @@ P1q B₁ B₂ B {q} {b₁} {m} d with Fin.toℕ d Nat.<? sum B₁ + q + 1
 
 -- lwk on a B-region position shifts the embedding scope by one.
 P2q : ∀ (B₁ B₂ B : BindGroup) {q b₁ m : ℕ} (w : 𝔽 (sum B)) →
-      TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m} ((sum (B₁ ++ (q + suc b₁) ∷ B₂) ↑ʳ w) ↑ˡ m)
+      SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} ((sum (B₁ ++ (q + suc b₁) ∷ B₂) ↑ʳ w) ↑ˡ m)
       ≡ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) ↑ʳ w) ↑ˡ m
 P2q B₁ B₂ B {q} {b₁} {m} w = Fin.toℕ-injective
       ( 𝐒lwkq-hi B₁ B₂ B _ (subst (sum B₁ + q + 1 Nat.≤_) (sym posℕ)
@@ -180,7 +181,7 @@ P2q B₁ B₂ B {q} {b₁} {m} w = Fin.toℕ-injective
 
 -- lwk on a tail (outer) position shifts the embedding scope by one.
 P3q : ∀ (B₁ B₂ B : BindGroup) {q b₁ m : ℕ} (u : 𝔽 m) →
-      TR.SplitRenamings.lwk B₁ B₂ B {q} {b₁} {m} ((sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) ↑ʳ u)
+      SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} ((sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) ↑ʳ u)
       ≡ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B) ↑ʳ u
 P3q B₁ B₂ B {q} {b₁} {m} u = Fin.toℕ-injective
       ( 𝐒lwkq-hi B₁ B₂ B _ (subst (sum B₁ + q + 1 Nat.≤_) (sym posℕ)

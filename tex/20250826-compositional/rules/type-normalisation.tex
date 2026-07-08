@@ -26,14 +26,14 @@
 \def\RuleCmdPrefix{TypeNormalisation}
 
 \DefRule {SemiSkips} {
-    \Skips {\T} \\
+    {\T} \CEq \SSkip \\
     \NormaliseType {\TU} {\TU'}
 }{
     \NormaliseType {\SSeq \T \TU} {\TU'}
 }
 
 \DefRule {Semi} {
-    \neg \Skips {\T} \\
+    {\T} \CNEq \SSkip \\
     \NormaliseType {\T} {\T'}
 }{
     \NormaliseType {\SSeq {\T} \TU} {\ConcatType {\T'} {\TU}}
@@ -45,8 +45,12 @@
     \NormaliseType {\SRec \SVar \S} {{\S'} [{\SRec \SVar {\S'}} / \SVar]}
 }
 
-\DefRule {ChoiceSemiDist} { }{
+\DefRule {ChoiceSemi} { }{
     \NormaliseType  {\SSeq {\SChoice {\ell:\S[\ell]} {\ell\in L}} {\T}} {\SChoice {\ell: \SSeq {\S[\ell]} {\T}} {\ell\in L}}
+}
+
+\DefRule {BranchSemi} { }{
+    \NormaliseType  {\SSeq {\SBranch {\ell:\S[\ell]} {\ell\in L}} {\T}} {\SBranch {\ell: \SSeq {\S[\ell]} {\T}} {\ell\in L}}
 }
 
 \DefRule {Identity} {

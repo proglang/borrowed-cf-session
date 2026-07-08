@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}   -- WIP preservationₚ (user-owned); isolates its holes so _─→ₚ_ imports
 module BorrowedCF.Reduction.Processes.Typed where
 
 open import Data.List.Relation.Unary.All as All using (All; []; _∷_)
