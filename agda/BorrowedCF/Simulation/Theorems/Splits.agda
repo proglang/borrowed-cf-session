@@ -51,10 +51,10 @@ U-rsplit : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx �
   → {γ : Struct m} {B₁ B₂ B : BindGroup} {q b₁ : ℕ} {s : 𝕊 0}
   → {E : Frame* (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
   → {P : T.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
-  → (let module 𝐒 = TR.SplitRenamings B₁ B₂ B in
+  → (let module 𝐒 = TR.SplitRenamings B₁ B₂ (sum B) in
      Γ ; γ ⊢ₚ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
                  (T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P))
-  → (let module 𝐒 = TR.SplitRenamings B₁ B₂ B in
+  → (let module 𝐒 = TR.SplitRenamings B₁ B₂ (sum B) in
      (U[ T.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
               (T.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]* ⟫ T.∥ P) ] σ
        UR─→ₚ*
@@ -71,7 +71,7 @@ U-rsplit {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ =
 ... | k , ρ⁻ , ρ⁻-skip , E₀ , Eeq , P₀ , Peq =
       inj₁ (wrapNE front (Bφ-lift-step C₁ (Bφ-lift-step B leaf-fire)) ε back)
   where
-    module 𝐒 = TR.SplitRenamings B₁ B₂ B
+    module 𝐒 = TR.SplitRenamings B₁ B₂ (sum B)
     C₁ C₁ᴿ : BindGroup
     C₁  = B₁ ++ (q + suc b₁) ∷ B₂
     C₁ᴿ = B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂

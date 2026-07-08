@@ -29,7 +29,7 @@ lsplit-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
   {B₁ B₂ B : 𝐓.BindGroup} {q b₁ : ℕ} {s : 𝕊 0}
   {E : Frame* (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
   {P : 𝐓.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)} →
-  let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ B in
+  let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ (sum B) in
   Γ ; γ ⊢ₚ 𝐓.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
             (𝐓.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.atk {q + suc b₁} {m} (q ↑ʳ 0F)) ]* ⟫ 𝐓.∥ P) →
   Σ ℕ λ k → Σ (k →ᵣ (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) λ ρ⁻ →
@@ -63,7 +63,7 @@ rsplit-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
   {B₁ B₂ B : 𝐓.BindGroup} {q b₁ : ℕ} {s : 𝕊 0}
   {E : Frame* (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
   {P : 𝐓.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)} →
-  let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ B in
+  let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ (sum B) in
   Γ ; γ ⊢ₚ 𝐓.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
             (𝐓.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk {q + suc b₁} {m} (q ↑ʳ 0F)) ]* ⟫ 𝐓.∥ P) →
   Σ ℕ λ k → Σ (k →ᵣ (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) λ ρ⁻ →
