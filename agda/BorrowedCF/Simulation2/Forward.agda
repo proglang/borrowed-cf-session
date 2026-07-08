@@ -30,7 +30,10 @@ open import BorrowedCF.Simulation2.Forward.Fork  using (U-fork)  public
 open import BorrowedCF.Simulation2.Forward.New   using (U-new)   public
 open import BorrowedCF.Simulation2.Forward.Close  using (U-close)  public
 open import BorrowedCF.Simulation2.Forward.Com    using (U-com)    public
-open import BorrowedCF.Simulation2.Forward.Choice using (U-choice) public
+open import BorrowedCF.Simulation2.Forward.Choice  using (U-choice)  public
+open import BorrowedCF.Simulation2.Forward.LSplit  using (U-lsplit→)  public
+open import BorrowedCF.Simulation2.Forward.RSplit  using (U-rsplit→)  public
+open import BorrowedCF.Simulation2.Forward.Discard using (U-discard)  public
 
 -- ── sim→ WIRING MAP (every typed constructor MUST be dispatched here; Agda's
 --    coverage checker enforces completeness when sim→ is assembled) ──
@@ -43,8 +46,8 @@ open import BorrowedCF.Simulation2.Forward.Choice using (U-choice) public
 --   R-Struct  → RU-Struct (U-≋ …) (sim→ …)    inline (recursive)
 --   R-Com     → U-com                         DONE
 --   R-Choice  → U-choice                      DONE
---   R-LSplit  → U-lsplit  [agent A]           PENDING
---   R-RSplit  → U-rsplit  [agent A]           PENDING
+--   R-LSplit  → U-lsplit→                     DONE
+--   R-RSplit  → U-rsplit→                     DONE
 --   R-Drop    → U-drop    [agent C]           PENDING
 --   R-Acq     → U-acq     [agent C]           PENDING
---   R-Discard → U-discard [agent D]           PENDING
+--   R-Discard → U-discard                     DONE

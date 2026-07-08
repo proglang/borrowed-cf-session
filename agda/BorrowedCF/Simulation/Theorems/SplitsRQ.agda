@@ -17,6 +17,7 @@ import BorrowedCF.Processes.Typed             as T
 import BorrowedCF.Processes.Untyped           as U
 import BorrowedCF.Reduction.Processes.Typed   as TR
 import BorrowedCF.Reduction.Processes.Untyped as UR
+open import BorrowedCF.Terms using (module SplitRenamings)
 open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
@@ -147,7 +148,7 @@ drwkq-hi (a ∷ B₁') q b₁ B₂ j h with drwkq-hi B₁' q b₁ B₂
 𝐒rwkq-lo : ∀ (B₁ B₂ B : T.BindGroup) {q b₁ m : ℕ}
             (x : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) →
             Fin.toℕ x Nat.< sum B₁ + q →
-            Fin.toℕ (TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m} x) ≡ Fin.toℕ x
+            Fin.toℕ (SplitRenamings.rwk B₁ B₂ (sum B) {q} {b₁} {m} x) ≡ Fin.toℕ x
 𝐒rwkq-lo B₁ B₂ B {q} {b₁} {m} x lt =
     Fin.toℕ-cast _ _
   ■ toℕ-↑*-lt weakenᵣ (sum B₁ + q) (Fin.cast _ x) lt′
@@ -158,7 +159,7 @@ drwkq-hi (a ∷ B₁') q b₁ B₂ j h with drwkq-hi B₁' q b₁ B₂
 𝐒rwkq-hi : ∀ (B₁ B₂ B : T.BindGroup) {q b₁ m : ℕ}
             (x : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) →
             sum B₁ + q Nat.≤ Fin.toℕ x →
-            Fin.toℕ (TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m} x) ≡ suc (Fin.toℕ x)
+            Fin.toℕ (SplitRenamings.rwk B₁ B₂ (sum B) {q} {b₁} {m} x) ≡ suc (Fin.toℕ x)
 𝐒rwkq-hi B₁ B₂ B {q} {b₁} {m} x h =
     Fin.toℕ-cast _ _
   ■ toℕ-↑*-ge weakenᵣ (sum B₁ + q) (Fin.cast _ x) h′
@@ -169,7 +170,7 @@ drwkq-hi (a ∷ B₁') q b₁ B₂ j h with drwkq-hi B₁' q b₁ B₂
         h′ = subst (sum B₁ + q Nat.≤_) (sym (Fin.toℕ-cast _ x)) h
 
 P1rq : ∀ (B₁ B₂ B : T.BindGroup) {q b₁ m : ℕ} (d : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂))) →
-     TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m} ((d ↑ˡ sum B) ↑ˡ m)
+     SplitRenamings.rwk B₁ B₂ (sum B) {q} {b₁} {m} ((d ↑ˡ sum B) ↑ˡ m)
      ≡ (drwkq B₁ q b₁ B₂ d ↑ˡ sum B) ↑ˡ m
 P1rq B₁ B₂ B {q} {b₁} {m} d with Fin.toℕ d Nat.<? sum B₁ + q
 ... | yes lt = Fin.toℕ-injective
@@ -190,7 +191,7 @@ P1rq B₁ B₂ B {q} {b₁} {m} d with Fin.toℕ d Nat.<? sum B₁ + q
         rhsℕ = Fin.toℕ-↑ˡ (drwkq B₁ q b₁ B₂ d ↑ˡ sum B) m ■ Fin.toℕ-↑ˡ (drwkq B₁ q b₁ B₂ d) (sum B)
 
 P2rq : ∀ (B₁ B₂ B : T.BindGroup) {q b₁ m : ℕ} (w : 𝔽 (sum B)) →
-     TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m} ((sum (B₁ ++ (q + suc b₁) ∷ B₂) ↑ʳ w) ↑ˡ m)
+     SplitRenamings.rwk B₁ B₂ (sum B) {q} {b₁} {m} ((sum (B₁ ++ (q + suc b₁) ∷ B₂) ↑ʳ w) ↑ˡ m)
      ≡ (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) ↑ʳ w) ↑ˡ m
 P2rq B₁ B₂ B {q} {b₁} {m} w = Fin.toℕ-injective
       ( 𝐒rwkq-hi B₁ B₂ B _ (subst (sum B₁ + q Nat.≤_) (sym posℕ)
@@ -207,7 +208,7 @@ P2rq B₁ B₂ B {q} {b₁} {m} w = Fin.toℕ-injective
                       (Nat.+-monoʳ-≤ (sum B₁) (Nat.≤-trans (Nat.m≤m+n q (suc b₁)) (Nat.m≤m+n (q + suc b₁) (sum B₂))))
 
 P3rq : ∀ (B₁ B₂ B : T.BindGroup) {q b₁ m : ℕ} (u : 𝔽 m) →
-     TR.SplitRenamings.rwk B₁ B₂ B {q} {b₁} {m} ((sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) ↑ʳ u)
+     SplitRenamings.rwk B₁ B₂ (sum B) {q} {b₁} {m} ((sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) ↑ʳ u)
      ≡ (sum (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) + sum B) ↑ʳ u
 P3rq B₁ B₂ B {q} {b₁} {m} u = Fin.toℕ-injective
       ( 𝐒rwkq-hi B₁ B₂ B _ (subst (sum B₁ + q Nat.≤_) (sym posℕ)
