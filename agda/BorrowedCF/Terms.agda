@@ -663,4 +663,3 @@ inv-`case (T-Conv T≃ ϵ≤ x) =
 inv-`case (T-Weaken γ≤ x) =
   let p/s , _ , _ , _ , _ , ≤γ , x′ = inv-`case x in
   p/s , _ , _ , _ , _ , ≼-trans ≤γ γ≤ , x′
-

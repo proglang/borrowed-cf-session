@@ -39,8 +39,8 @@ wk↓' γ (b ∷ Z) = ↓-dist-wk γ
 tail-∪-⁅0⁆ : (Z : Subset (suc n)) → Vec.tail (Z ∪ ⁅ fzero ⁆) ≡ Vec.tail Z
 tail-∪-⁅0⁆ (b ∷ Z) = ∪-identityʳ Z
 
-↑ᵣ-preserves-⇐ : {ρ : m →ᵣ n} {Γ₁ : Ctx m} {Γ₂ : Ctx n} {T₀ : 𝕋} →
-  ρ 𝐂.Preserves[ Unr ] Γ₁ ⇐ Γ₂ → (ρ ↑) 𝐂.Preserves[ Unr ] (T₀ ⸴ Γ₁) ⇐ (T₀ ⸴ Γ₂)
+↑ᵣ-preserves-⇐ : ∀ {ℓ} {P : Pred 𝕋 ℓ} {ρ : m →ᵣ n} {Γ₁ : Ctx m} {Γ₂ : Ctx n} {T₀ : 𝕋} →
+  ρ 𝐂.Preserves[ P ] Γ₁ ⇐ Γ₂ → (ρ ↑) 𝐂.Preserves[ P ] (T₀ ⸴ Γ₁) ⇐ (T₀ ⸴ Γ₂)
 ↑ᵣ-preserves-⇐ pre {fzero}  (` u) = u
 ↑ᵣ-preserves-⇐ pre {fsuc y} (` u) = pre (` u)
 
@@ -69,13 +69,13 @@ tail⊆ {A = a ∷ A} {b ∷ B} A⊆B {y} y∈ with A⊆B (Vec.there y∈)
 ∪⊆ˡ A⊆B z∈ = x∈p∪q⁺ (Sum.map A⊆B (λ w → w) (x∈p∪q⁻ _ _ z∈))
 
 descend-absX : ∀ {m n} {AD} ⦃ _ : Join AD ⦄ {Γ₁ : Ctx m} {Γ₂ : Ctx n} {T₀ : 𝕋} {ρ : m →ᵣ n} →
-  𝐂.Inj ρ → ρ 𝐂.Preserves[ Unr ] Γ₁ ⇐ Γ₂ →
+  𝐂.Inj ρ → ρ 𝐂.Preserves[ Unr ] Γ₁ ⇐ Γ₂ → ρ 𝐂.Preserves[ Mobile ] Γ₁ ⇐ Γ₂ →
   (dd : AD) (A : Struct (suc m)) (γa : Struct n) (X : Subset (suc n)) →
   (∀ {sy} → sy ∈ X → InImage (ρ ↑) sy) →
   dom (A 𝐂.⋯ (ρ ↑)) ⊆ X →
   (T₀ ⸴ Γ₂) ∶ (A 𝐂.⋯ (ρ ↑)) ≼ join dd (CB.`_ fzero) (𝐂.wk γa) →
   ∃[ γr ] ((T₀ ⸴ Γ₁) ∶ A ≼ join dd (CB.`_ fzero) (𝐂.wk γr)) × (Γ₂ ∶ (γr 𝐂.⋯ ρ) ≼ γa)
-descend-absX {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} {ρ = ρ} inj-ρ pre dd A γa X Ximg A⊆X ≼b = γr , part1 , part2
+descend-absX {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} {ρ = ρ} inj-ρ pre preM dd A γa X Ximg A⊆X ≼b = γr , part1 , part2
   where
   Xtrue : Subset (suc n)
   Xtrue = dom (A 𝐂.⋯ (ρ ↑))
@@ -101,7 +101,9 @@ descend-absX {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} {ρ = ρ} inj
   lhs-eq = ↓-identity-⊆ (A 𝐂.⋯ (ρ ↑)) (⊆-trans A⊆X (p⊆p∪q ⁅ fzero ⁆))
   part1 : (T₀ ⸴ Γ₁) ∶ A ≼ join dd (CB.`_ fzero) (𝐂.wk γr)
   part1 = ≼-⋯⁻¹ {α = A} {β = join dd (CB.`_ fzero) (𝐂.wk γr)} {ϕ = ρ ↑}
-            (Inj-↑ {ϕ = ρ} inj-ρ) (λ {x} → ↑ᵣ-preserves-⇐ {ρ = ρ} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} pre {x})
+            (Inj-↑ {ϕ = ρ} inj-ρ)
+            (λ {x} → ↑ᵣ-preserves-⇐ {ρ = ρ} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} pre {x})
+            (λ {x} → ↑ᵣ-preserves-⇐ {ρ = ρ} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} preM {x})
             (subst₂ ((T₀ ⸴ Γ₂) ∶_≼_) lhs-eq rhs-eq (↓-mono-≼ {X = Xd0} ≼b))
   wk-eq : (𝐂.wk γa) ↓ ∁ Xtrue ≡ 𝐂.wk (γa ↓ ∁ (Vec.tail (Xtrue ∪ ⁅ fzero ⁆)))
   wk-eq = wk↓' γa (∁ Xtrue)
@@ -115,12 +117,12 @@ descend-absX {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} {ρ = ρ} inj
   part2 = subst (Γ₂ ∶_≼ γa) (sym eqr) (↓-strip≼ γa unr-part)
 
 descend-abs : ∀ {m n} {AD} ⦃ _ : Join AD ⦄ {Γ₁ : Ctx m} {Γ₂ : Ctx n} {T₀ : 𝕋} {ρ : m →ᵣ n} →
-  𝐂.Inj ρ → ρ 𝐂.Preserves[ Unr ] Γ₁ ⇐ Γ₂ →
+  𝐂.Inj ρ → ρ 𝐂.Preserves[ Unr ] Γ₁ ⇐ Γ₂ → ρ 𝐂.Preserves[ Mobile ] Γ₁ ⇐ Γ₂ →
   (dd : AD) (A : Struct (suc m)) (γa : Struct n) →
   (T₀ ⸴ Γ₂) ∶ (A 𝐂.⋯ (ρ ↑)) ≼ join dd (CB.`_ fzero) (𝐂.wk γa) →
   ∃[ γr ] ((T₀ ⸴ Γ₁) ∶ A ≼ join dd (CB.`_ fzero) (𝐂.wk γr)) × (Γ₂ ∶ (γr 𝐂.⋯ ρ) ≼ γa)
-descend-abs {ρ = ρ} inj-ρ pre dd A γa ≼b =
-  descend-absX inj-ρ pre dd A γa (dom (A 𝐂.⋯ (ρ ↑))) (dom-⋯-InImage A) ⊆-refl ≼b
+descend-abs {ρ = ρ} inj-ρ pre preM dd A γa ≼b =
+  descend-absX inj-ρ pre preM dd A γa (dom (A 𝐂.⋯ (ρ ↑))) (dom-⋯-InImage A) ⊆-refl ≼b
 
 Inj-↑↑ : {ϕ : m →ᵣ n} → 𝐂.Inj ϕ → 𝐂.Inj (ϕ ↑ ↑)
 Inj-↑↑ inj = Inj-↑ (Inj-↑ inj)
@@ -144,14 +146,14 @@ tail²-∁ : (Z : Subset (suc (suc n))) →
 tail²-∁ Z = cong Vec.tail (tail-∁ Z) ■ tail-∁ (Vec.tail Z)
 
 descend-abs2 : ∀ {m n} {AD} ⦃ _ : Join AD ⦄ {Γ₁ : Ctx m} {Γ₂ : Ctx n} {T₀ T₁ : 𝕋} {ρ : m →ᵣ n} →
-  𝐂.Inj ρ → ρ 𝐂.Preserves[ Unr ] Γ₁ ⇐ Γ₂ →
+  𝐂.Inj ρ → ρ 𝐂.Preserves[ Unr ] Γ₁ ⇐ Γ₂ → ρ 𝐂.Preserves[ Mobile ] Γ₁ ⇐ Γ₂ →
   (dd : AD) (Fr : Struct (suc (suc m))) (Fr′ : Struct (suc (suc n)))
   (A : Struct (suc (suc m))) (γa : Struct n) →
   Fr 𝐂.⋯ (ρ ↑ ↑) ≡ Fr′ →
   dom Fr′ ⊆ (⁅ fzero ⁆ ∪ ⁅ fsuc fzero ⁆) →
   (T₁ ⸴ T₀ ⸴ Γ₂) ∶ (A 𝐂.⋯ (ρ ↑ ↑)) ≼ join dd Fr′ (𝐂.wk (𝐂.wk γa)) →
   ∃[ γr ] ((T₁ ⸴ T₀ ⸴ Γ₁) ∶ A ≼ join dd Fr (𝐂.wk (𝐂.wk γr))) × (Γ₂ ∶ (γr 𝐂.⋯ ρ) ≼ γa)
-descend-abs2 {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} {T₁ = T₁} {ρ = ρ} inj-ρ pre dd Fr Fr′ A γa Frinv Frdom ≼b
+descend-abs2 {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} {T₁ = T₁} {ρ = ρ} inj-ρ pre preM dd Fr Fr′ A γa Frinv Frdom ≼b
   = γr , part1 , part2
   where
   Xtrue : Subset (suc (suc n))
@@ -185,6 +187,8 @@ descend-abs2 {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} {T₁ = T₁}
             (Inj-↑↑ inj-ρ)
             (λ {x} → ↑ᵣ-preserves-⇐ {ρ = ρ ↑} {Γ₁ = T₀ ⸴ Γ₁} {Γ₂ = T₀ ⸴ Γ₂} {T₀ = T₁}
                        (λ {x'} → ↑ᵣ-preserves-⇐ {ρ = ρ} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} pre {x'}) {x})
+            (λ {x} → ↑ᵣ-preserves-⇐ {ρ = ρ ↑} {Γ₁ = T₀ ⸴ Γ₁} {Γ₂ = T₀ ⸴ Γ₂} {T₀ = T₁}
+                       (λ {x'} → ↑ᵣ-preserves-⇐ {ρ = ρ} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {T₀ = T₀} preM {x'}) {x})
             (subst₂ ((T₁ ⸴ T₀ ⸴ Γ₂) ∶_≼_) lhs-eq rhs-eq (↓-mono-≼ {X = Xd0} ≼b))
   wk²-eq : (𝐂.wk (𝐂.wk γa)) ↓ ∁ Xtrue ≡ 𝐂.wk (𝐂.wk (γa ↓ ∁ (Vec.tail (Vec.tail Xtrue))))
   wk²-eq = wk²↓ γa (∁ Xtrue) ■ cong (λ z → 𝐂.wk (𝐂.wk (γa ↓ z))) (tail²-∁ Xtrue)
