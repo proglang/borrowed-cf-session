@@ -162,6 +162,12 @@ skip≃⇒skips eq = ≃-skips eq skip
 ≃-skipsʳ : Skips s → s′ ; s ≃ s′
 ≃-skipsʳ x = ≃-trans (≃-; refl (≃-sym (skips⇒skip≃ x))) ≃-skipʳ
 
+data AtomKind n : Set where
+  `_ : 𝔽 n → AtomKind n
+  end msg : Pol → AtomKind n
+  ret acq : AtomKind n
+  ``_ : UVar → AtomKind n
+
 data Atom {n} : 𝕊 n → Set where
   `- : ∀ {x} → Atom (` x)
   end : Atom (end p)
@@ -170,15 +176,13 @@ data Atom {n} : 𝕊 n → Set where
   acq : Atom acq
   ``- : ∀ {α} → Atom (`` α)
 
-{-
-atom-≄′ˡ : ∀ {a} → Atom a → ¬ a ≃𝕊 s
-atom-≄′ˡ `-  ()
-atom-≄′ˡ end ()
-atom-≄′ˡ msg ()
-atom-≄′ˡ ret ()
-atom-≄′ˡ acq ()
-atom-≄′ˡ ``- ()
--}
+atomKind : {a : 𝕊 n} → Atom a → AtomKind n
+atomKind {a = ` x} `- = ` x
+atomKind {a = end p} end = end p
+atomKind {a = msg p t} msg = msg p
+atomKind {a = ret} ret = ret
+atomKind {a = acq} acq = acq
+atomKind {a = `` α} ``- = `` α
 
 atom-⋯ᵣ : Atom s → {ϕ : m →ᵣ n} → Atom (s ⋯ ϕ)
 atom-⋯ᵣ `- = `-
@@ -284,9 +288,15 @@ atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-assoc ≃𝕊-assoc = refl , refl
 atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-distr ≃𝕊-distr = refl , refl
 -}
 
-
 postulate
+  -- Potentially use a construct similar to `EndsIn` to keep track that the atom is always at the end,
+  -- potentially with additional skips after it.
+  atomKind≢⇒≄-;ʳ : ∀ {a₁ a₂ : 𝕊 n} (A₁ : Atom a₁) (A₂ : Atom a₂) → atomKind A₁ ≢ atomKind A₂ → s₁ ; a₁ ≄ s₂ ; a₂
+
   atom-;-unsnoc : {a x y z : 𝕊 n} → Atom a → x ; y ≃ z ; a → Skips y ⊎ ∃[ y′ ] x ; y′ ≃ z × y′ ; a ≃ y
+
+atomKind≢⇒≄ : ∀ {a₁ a₂ : 𝕊 n} (A₁ : Atom a₁) (A₂ : Atom a₂) → atomKind A₁ ≢ atomKind A₂ → a₁ ≄ a₂
+atomKind≢⇒≄ A₁ A₂ k≢ eq = atomKind≢⇒≄-;ʳ A₁ A₂ k≢ (≃-trans ≃-skipˡ (≃-trans eq (≃-sym ≃-skipˡ)))
 
 -- atom-refl-;-skips⁻¹ : Atom s → (s′ : 𝕊 n) → s ≃ s ; s′ → Skips s′
 -- atom-refl-;-skips⁻¹ a (` x) eq = {!!}
