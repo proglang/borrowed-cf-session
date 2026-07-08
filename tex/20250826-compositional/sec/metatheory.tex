@@ -3,122 +3,101 @@
 
 \subsection{Structural Properties}
 
-\begin{lemma}[Unrestricted decomposition]
-  Every context $\Ctx$ can be separated into contexts $\Ctx[1], \Ctx[2]$ with
-  $\Ctx = \Ctx[1] \CtxPar \Ctx[2]$ such that $\Unr\Ctx[1]$ and $\Unr\T$ is
-  not derivable for any $\CtxVar\EVar\T \in \Ctx[2]$.
-\end{lemma}
-\begin{proof}
-  \texttt{unjoinUnr}
-\end{proof}
+% \begin{lemma}[Unrestricted decomposition]
+%   Every context $\Ctx$ can be separated into contexts $\Ctx[1], \Ctx[2]$ with
+%   $\Ctx = \Ctx[1] \CtxPar \Ctx[2]$ such that $\Unr\Ctx[1]$ and $\Unr\T$ is
+%   not derivable for any $\CtxVar\EVar\T \in \Ctx[2]$.
+% \end{lemma}
+% \begin{proof}
+%   \texttt{unjoinUnr}
+% \end{proof}
+% 
+% \begin{lemma}[Monoidal properties of contexts]
+%   The context constructors satisfy the following properties with respect to
+%   context equality.
+%   \begin{itemize}
+%     \item Sequential composition \textup{($\Ctx[1] \CtxSeq \Ctx[2]$)} forms a
+%       monoid with identity $\CtxEmpty$.
+%     \item Parallel composition \textup{($\Ctx[1] \CtxPar \Ctx[2]$)} forms a
+%       commutative monoid with identity $\CtxEmpty$.
+%   \end{itemize}
+% \end{lemma}
+% 
+% \begin{lemma}[Unrestricted contexts are mobile]
+%   $\Unr\Ctx \implies \Mobile\Ctx$.
+% \end{lemma}
+% \begin{proof}
+%   By induction over $\Ctx$ and the types of bound variables therein.
+% \end{proof}
 
-\begin{lemma}[Monoidal properties of contexts]
-  The context constructors satisfy the following properties with respect to
-  context equality.
-  \begin{itemize}
-    \item Sequential composition \textup{($\Ctx[1] \CtxSeq \Ctx[2]$)} forms a
-      monoid with identity $\CtxEmpty$.
-    \item Parallel composition \textup{($\Ctx[1] \CtxPar \Ctx[2]$)} forms a
-      commutative monoid with identity $\CtxEmpty$.
-  \end{itemize}
-\end{lemma}
-
-\begin{lemma}[Unrestricted contexts are mobile]
-  $\Unr\Ctx \implies \Mobile\Ctx$.
-\end{lemma}
-\begin{proof}
-  By induction over $\Ctx$ and the types of bound variables therein.
-\end{proof}
-
-\subsection{Declarative Typing}
-
-\mw{TODO: all not correct yet}
+\subsection{Type Safety for Declarative Typing}
 
 \begin{theorem}[Expression progress]
-  If $\HasType \Ctx \E \T$, then
-  \[
-    \mathsf{Value}(\E)
-    \;\lor\;
-    \bigl(\nexists \E'\, .\, \E \EReduce \E'\bigr)
-    \;\lor\;
-    \bigl(\exists \E'\, .\, \E \EReduce \E'\bigr).
-  \]
+  Let $\Ctx$ only contain session types.
+  If $\HasType \Ctx \E \T$, then either $\E$ is a value or $\E$ is blocked on concurrent actions (\mw{ref appendix}) or there exists an $\E*$ such that $\E \EReduce \E*$.
 \end{theorem}
+\mw{deadlocks are possible.}
 
 \begin{theorem}[Expression preservation]
-  If $\HasType \Ctx \E \T$ and $\E \EReduce \E'$, then
-  $\HasType \Ctx {\E'} \T$.
+  Let $\Ctx$ only contain session types.
+  If $\HasType \Ctx \E \T$ and $\E \EReduce \E*$, then
+  $\HasType \Ctx {\E*} \T$.
 \end{theorem}
 
 \begin{theorem}[Process progress]
-  If $\ProcHasType \Ctx \Proc$, then
-  \[
-    \bigl(\Proc \Congruent \PExp{\CUnit}\bigr)
-    \;\lor\;
-    \bigl(\nexists \ProcQ\, .\, \Proc \PReduce \ProcQ\bigr)
-    \;\lor\;
-    \bigl(\exists \ProcQ\, .\, \Proc \PReduce \ProcQ\bigr).
-  \]
+  Let $\Ctx$ only contain session types.
+  If $\ProcHasType \Ctx \Proc$, then either $\Proc \Congruent \PExp{\CUnit}$ or an expression in $\Proc$ is blocked on concurrent actions (\mw{ref appendix}) or
+    there exists an $\Proc*$ such that $\Proc \PReduce \Proc*$.
 \end{theorem}
 
 \begin{theorem}[Process preservation]
-  If $\ProcHasType \Ctx \Proc$ and $\Proc \PReduce \ProcQ$, then
-  $\ProcHasType \Ctx \ProcQ$.
+  Let $\Ctx$ only contain session types.
+  If $\ProcHasType \Ctx \Proc$ and $\Proc \PReduce \Proc*$, then
+  $\ProcHasType \Ctx {\Proc*}$.
 \end{theorem}
 
-\subsection{Translation}
+\subsection{Weak Operational Correspondence for Translation}
 
 \begin{theorem}[Forward simulation]
-  Assume $\mathsf{VSub}(\Sub)$ and $\mathsf{ChanCx}(\Ctx)$.
-  If $\ProcHasType \Ctx \Proc$, $\Proc \TransProc[\Sub] \TProc*$,
-  $\ProcQ \TransProc[\Sub] \TProcQ*$, and $\Proc \PReduce \ProcQ$, then
-  \[
-    \bigl(\TProc* \TPReduce^{*} \TProcQ*\bigr)
-    \;\lor\;
-    \bigl(\TProc* \Congruent \TProcQ*\bigr).
-  \]
+  Let $\Ctx$ only contain session types and $\Sub$ be a value substitution.
+  Additionally, let $\Proc \TransProc[\Sub] \TProc*$ and $\ProcQ \TransProc[\Sub] \TProcQ*$.
+  If $\ProcHasType \Ctx \Proc$ and $\Proc \PReduce \ProcQ$, then 
+  either $\TProc* \TPReduce^{*} \TProcQ*$ or $\TProc* \Congruent \TProcQ*$.
 \end{theorem}
 
 \begin{theorem}[Backward simulation]
-  Assume $\mathsf{VSub}(\Sub)$ and $\mathsf{ChanCx}(\Ctx)$.
-  If $\ProcHasType \Ctx \Proc$, $\Proc \TransProc[\Sub] \TProc*$,
-  $\TProc[1] \approx \TProc*$, and $\TProc[1] \TPReduce \TProc[2]$, then there
-  exist $\ProcQ$ and $\TProc[3]$ such that
-  \[
-    \Proc \PReduce^{*} \ProcQ
-    \;\land\;
-    \TProc[2] \TPReduce^{?} \TProc[3]
-    \;\land\;
-    \TProc[3] \approx \TProcQ*.
-  \]
-  where $\ProcQ \TransProc[\Sub] \TProcQ*$.
+  Let $\Ctx$ only contain session types and $\Sub$ be a value substitution.
+  Additionally, let $\Proc \TransProc[\Sub] \TProc*$.
+  If $\ProcHasType \Ctx \Proc$ and $\TProc* \TPReduce \TProcR*$, then there
+  exist $\ProcQ$ and $\TProcQ*$ such that $\Proc \PReduce^{*} \ProcQ$ and
+  $\TProcR* \TPReduce^{*} \TProcQ*$ where $\ProcQ \TransProc[\Sub] \TProcQ*$.
 \end{theorem}
 
 \subsection{Algorithmic Typing}
 
-\begin{lemma}[Soundness (checking)]
+\begin{theorem}[Soundness (checking)]
   If $\CheckType \E \AT \Eff$ and $\sigma \models \CSet$ is a closing
   substitution such that $\Fv(\AT) \subseteq \dom(\sigma)$, then
   $\HasType \Ctx \E {\AT{[\sigma]}}$.
-\end{lemma}
+\end{theorem}
 
-\begin{lemma}[Soundness (inference)]
+\begin{theorem}[Soundness (inference)]
   If $\InferType \E \AT \Eff$ and $\sigma \models \CSet$ is a closing
   substitution such that $\Fv(\AT) \subseteq \dom(\sigma)$, then
   $\HasType \Ctx \E {\AT{[\sigma]}}$.
-\end{lemma}
+\end{theorem}
 
-\begin{lemma}[Completeness (checking)]
+\begin{theorem}[Completeness (checking)]
   If $\HasType \Ctx \E \T$, then
   $\CheckType \E \AT \Eff$ for some type $\AT$, set of constraints $\CSet$,
   and closing substitution $\sigma$ such that $\T = \AT{[\sigma]}$.
-\end{lemma}
+\end{theorem}
 
-\begin{lemma}[Completeness (inference)]
+\begin{theorem}[Completeness (inference)]
   If $\HasType \Ctx \E \T$ and $\E$ is in synthesis form, then
   $\InferType \E \AT \Eff$ for some type $\AT$, set of constraints $\CSet$,
   and closing substitution $\sigma$ such that $\T = \AT{[\sigma]}$.
-\end{lemma}
+\end{theorem}
 
 %%% Local Variables:
 %%% mode: latex
