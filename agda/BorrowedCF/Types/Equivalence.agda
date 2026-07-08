@@ -112,7 +112,7 @@ module ≃-Reasoning {κ x} = SetoidReasoning (≃-setoid κ x)
 ≃-⊗⁻¹ : T₁ ⊗⟨ d₁ ⟩ U₁ ≃ T₂ ⊗⟨ d₂ ⟩ U₂ → T₁ ≃ T₂ × d₁ ≡ d₂ × U₁ ≃ U₂
 ≃-⊗⁻¹ (eq₁ ⊗ eq₂) = eq₁ , refl , eq₂
 
--- ≃-msg⁻¹ : msg p₁ T₁ ≃ msg p₂ T₂ →
+postulate ≃-msg⁻¹ : msg {n} p₁ T₁ ≃ msg p₂ T₂ → p₁ ≡ p₂ → T₁ ≃ T₂
 
 ≃-skips : Skips {n} Respects _≃_
 ≃-skips refl s = s
