@@ -35,6 +35,7 @@ open import BorrowedCF.Simulation2.Forward.LSplit  using (U-lsplit→)  public
 open import BorrowedCF.Simulation2.Forward.RSplit  using (U-rsplit→)  public
 open import BorrowedCF.Simulation2.Forward.Discard using (U-discard)  public
 open import BorrowedCF.Simulation2.Forward.Drop    using (U-drop→)   public
+open import BorrowedCF.Simulation2.Forward.Acq     using (U-acq→)    public
 open import BorrowedCF.Simulation.Frames using (⋯→-⋯ₛ; ++ₛ-VSub; weaken-VSub)
 open import BorrowedCF.Simulation.Congruence using (U-≋)
 open import BorrowedCF.Simulation.TranslationProperties using (UB-cong-─→)
@@ -54,7 +55,7 @@ open TP using (⊢-≋)
 --   R-LSplit  → U-lsplit→                     DONE
 --   R-RSplit  → U-rsplit→                     DONE
 --   R-Drop    → U-drop→                       DONE
---   R-Acq     → {!!}                          HOLE (Acq agent in flight)
+--   R-Acq     → U-acq→                        DONE (atomic single-step)
 --   R-Discard → U-discard                     DONE
 
 -- sim→ : the assembled dispatcher — TOTAL coverage (all 14 typed constructors).
@@ -68,7 +69,7 @@ sim→ σ Vσ Γ-S ⊢P (TR.R-Choice E₁ E₂ i) = U-choice σ Vσ Γ-S {i = i}
 sim→ σ Vσ Γ-S ⊢P (TR.R-LSplit {E = E}) = U-lsplit→ σ Vσ Γ-S {E = E} ⊢P
 sim→ σ Vσ Γ-S ⊢P (TR.R-RSplit {E = E}) = U-rsplit→ σ Vσ Γ-S {E = E} ⊢P
 sim→ σ Vσ Γ-S ⊢P (TR.R-Drop {E = E})   = U-drop→ σ Vσ Γ-S {E = E} ⊢P
-sim→ σ Vσ Γ-S ⊢P (TR.R-Acq {E = E})    = {! U-acq (Acq agent in flight) !}
+sim→ σ Vσ Γ-S ⊢P (TR.R-Acq {E = E})    = U-acq→ σ Vσ Γ-S {E = E} ⊢P
 sim→ σ Vσ Γ-S ⊢P (TR.R-Close {E₁ = E₁} {E₂ = E₂}) = U-close σ Vσ {E₁ = E₁} {E₂ = E₂}
 sim→ σ Vσ Γ-S ⊢P (TR.R-Discard {E = E}) = U-discard σ Vσ Γ-S {E = E} ⊢P
 sim→ σ Vσ Γ-S ⊢P (TR.R-Par red) with inv-∥ ⊢P
