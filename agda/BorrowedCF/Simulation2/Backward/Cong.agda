@@ -147,3 +147,43 @@ reverse-U-◈ : ∀ {m n} {σ : m →ₛ n} {P : TP.Proc m} {R : UP.Proc n}
             → R ◈ U[ P ] σ
             → Σ[ P† ∈ TP.Proc m ] (P TP.≋ P† × R ≡ U[ P† ] σ)
 reverse-U-◈ {P = P} chain = reflectStar P chain refl
+
+-- ── Why the "equivariance / outer-renaming" route does NOT close the φ-links ──
+--
+--   The equivariance idea is: a φ/ν-permutation link R ≋′ U[ P ] σ is an OUTER
+--   renaming  R ≡ U[ P ] σ ⋯ₚ π,  so one transports the reduction with red-⋯ₚ
+--   instead of inverting R.  That premise is FALSE for exactly the escaping
+--   links, because `_⋯ₚ_` preserves the head constructor AND the φ-flag
+--   (Untyped: ⟪e⟫⋯ϕ=⟪…⟫, (P∥Q)⋯ϕ=…∥…, ν P⋯ϕ=ν…, φ x P⋯ϕ=φ x …), while every
+--   translation image U[ P ] σ is head ⟪⟫ / ∥ / ν and NEVER φ (Bisim; the
+--   φ-telescope sits strictly inside the ν).  Hence U[ P ] σ ⋯ₚ π is likewise
+--   never φ-headed:
+
+U-⋯ₚ-not-φ : ∀ {m n} {x : UP.Flag} {Y : UP.Proc (1 + n)}
+             (P : TP.Proc m) (σ : m →ₛ n) (π : n →ᵣ n)
+           → UP.φ x Y ≢ UP._⋯ₚ_ (U[ P ] σ) π
+U-⋯ₚ-not-φ (TP.⟪ e ⟫)     σ π ()
+U-⋯ₚ-not-φ (P TP.∥ Q)     σ π ()
+U-⋯ₚ-not-φ (TP.ν B₁ B₂ P) σ π ()
+
+--   The links `νφ-comm′` (ν(φ x P) ≋′ φ x (ν …)) and `φ-ext′` (P ∥ φ x Q ≋′
+--   φ x …) take an image to a φ-HEADED process R.  For those, U-⋯ₚ-not-φ shows
+--   R ≢ U[ P ] σ ⋯ₚ π for ANY π, so step 1 of the route ("exhibit π with
+--   R = U[ P ] σ ⋯ₚ π") has no witness — the route cannot fire on precisely the
+--   links it was meant to close.  (These are the same escapes machine-refuted
+--   for strict inversion in Simulation.RevUCong; U[P]σ⋯ₚπ is again an image up
+--   to α, so it does not evade U-not-φ either.)
+--
+--   `φ-comm′` (φ x(φ y P) ≋′ φ y(φ x …)) needs BOTH sides φ-headed, so it can
+--   never appear as a top-level link against a (non-φ) image, and `reflectStar`
+--   maintains "image side is always a genuine image", so a φ-headed R can never
+--   become the image side of the next link — the fold simply stops there.
+--
+--   `ν-swap′` / `ν-comm′` stay ν-headed (image-shaped), so they are consumed by
+--   inv-U-ν → simRes descent, not by this route; even for them the OUTER form
+--   fails, because ⋯ₚ π lifts π OVER the two/four bound indices (ν P ⋯ₚ π =
+--   ν (P ⋯ₚ π ↑* 2)) whereas the link permutes those bound indices themselves
+--   (swapᵣ / assocSwapᵣ), so π ↑* k ≢ swapᵣ/assocSwap and no outer π reproduces
+--   the link.  The genuine transport there is UNDER the binder (RU-Res descent
+--   + red-⋯ₚ on the body), which bottoms out in `simRes` — the separately
+--   tracked φ-bearing RU-Res hole, not something this module closes.
