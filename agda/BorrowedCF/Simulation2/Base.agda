@@ -13,7 +13,7 @@ open import BorrowedCF.Reduction.Expressions public
 
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive
   using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap) public
-import Relation.Binary.Construct.Closure.Equivalence as Eq* public
+import Relation.Binary.Construct.Closure.Equivalence as Eq*
 open import Data.Sum using (_⊎_; inj₁; inj₂) public
 
 open import Data.Nat.ListAction using (sum) public

@@ -213,3 +213,164 @@ closedatom-⋯ᵣ⁻¹ {s = `` α} ``- = ``-
 ¬snoc-wk-zero {α = ret} ()
 ¬snoc-wk-zero {α = acq} ()
 ¬snoc-wk-zero {α = `` β} ()
+
+------------------------------------------------------------------------
+-- EndsKind: "w ends in an atom of kind k" (prefix-free; kind is ≃-invariant)
+------------------------------------------------------------------------
+
+kindWk : AtomKind n → AtomKind (suc n)
+kindWk (` x) = ` weakenᵣ x
+kindWk (end p) = end p
+kindWk (msg p) = msg p
+kindWk ret = ret
+kindWk acq = acq
+kindWk (`` α) = `` α
+
+atomKind-wk : (A : Atom s) → atomKind (atom-⋯ᵣ A {weakenᵣ}) ≡ kindWk (atomKind A)
+atomKind-wk `- = refl
+atomKind-wk end = refl
+atomKind-wk msg = refl
+atomKind-wk ret = refl
+atomKind-wk acq = refl
+atomKind-wk ``- = refl
+
+data EndsKind {n} (k : AtomKind n) : 𝕊 n → Set where
+  here : {a : 𝕊 n} (A : Atom a) → atomKind A ≡ k → EndsKind k a
+  _;₁_ : EndsKind k s₁ → Skips s₂ → EndsKind k (s₁ ; s₂)
+  -;₂_ : EndsKind k s₂ → EndsKind k (s₁ ; s₂)
+  brn  : EndsKind k s₁ → EndsKind k s₂ → EndsKind k (brn p s₁ s₂)
+  mu   : EndsKind (kindWk k) s → EndsKind k (mu s)
+
+¬skips-atom′ : {a : 𝕊 n} → Atom a → ¬ Skips a
+¬skips-atom′ = ¬skips-atom
+
+skips⊥endskind : {k : AtomKind n} → Skips s → EndsKind k s → ⊥
+skips⊥endskind Sk (here A _) = ¬skips-atom A Sk
+skips⊥endskind (Sk₁ ; Sk₂) (e ;₁ _) = skips⊥endskind Sk₁ e
+skips⊥endskind (Sk₁ ; Sk₂) (-;₂ e) = skips⊥endskind Sk₂ e
+skips⊥endskind (mu Sk) (mu e) = skips⊥endskind Sk e
+
+¬endskind-skip : {k : AtomKind n} → ¬ EndsKind k skip
+¬endskind-skip = skips⊥endskind skip
+
+AKvar-inj : {x y : 𝔽 n} → AtomKind.`_ x ≡ ` y → x ≡ y
+AKvar-inj refl = refl
+AK-end-inj : {p q : Pol} → AtomKind.end {n} p ≡ end q → p ≡ q
+AK-end-inj refl = refl
+AK-msg-inj : {p q : Pol} → AtomKind.msg {n} p ≡ msg q → p ≡ q
+AK-msg-inj refl = refl
+AK-uvar-inj : {γ δ : UVar} → AtomKind.``_ {n} γ ≡ `` δ → γ ≡ δ
+AK-uvar-inj refl = refl
+
+kindWk-inj : {k₁ k₂ : AtomKind n} → kindWk k₁ ≡ kindWk k₂ → k₁ ≡ k₂
+kindWk-inj {k₁ = ` x} {k₂ = ` y} eq = cong `_ (weaken-inj (AKvar-inj eq))
+kindWk-inj {k₁ = ` x} {k₂ = end p′} eq = case eq of λ ()
+kindWk-inj {k₁ = ` x} {k₂ = msg q′} eq = case eq of λ ()
+kindWk-inj {k₁ = ` x} {k₂ = ret} eq = case eq of λ ()
+kindWk-inj {k₁ = ` x} {k₂ = acq} eq = case eq of λ ()
+kindWk-inj {k₁ = ` x} {k₂ = `` δ} eq = case eq of λ ()
+kindWk-inj {k₁ = end p} {k₂ = ` y} eq = case eq of λ ()
+kindWk-inj {k₁ = end p} {k₂ = end p′} eq = cong end (AK-end-inj eq)
+kindWk-inj {k₁ = end p} {k₂ = msg q′} eq = case eq of λ ()
+kindWk-inj {k₁ = end p} {k₂ = ret} eq = case eq of λ ()
+kindWk-inj {k₁ = end p} {k₂ = acq} eq = case eq of λ ()
+kindWk-inj {k₁ = end p} {k₂ = `` δ} eq = case eq of λ ()
+kindWk-inj {k₁ = msg q} {k₂ = ` y} eq = case eq of λ ()
+kindWk-inj {k₁ = msg q} {k₂ = end p′} eq = case eq of λ ()
+kindWk-inj {k₁ = msg q} {k₂ = msg q′} eq = cong msg (AK-msg-inj eq)
+kindWk-inj {k₁ = msg q} {k₂ = ret} eq = case eq of λ ()
+kindWk-inj {k₁ = msg q} {k₂ = acq} eq = case eq of λ ()
+kindWk-inj {k₁ = msg q} {k₂ = `` δ} eq = case eq of λ ()
+kindWk-inj {k₁ = ret} {k₂ = ` y} eq = case eq of λ ()
+kindWk-inj {k₁ = ret} {k₂ = end p′} eq = case eq of λ ()
+kindWk-inj {k₁ = ret} {k₂ = msg q′} eq = case eq of λ ()
+kindWk-inj {k₁ = ret} {k₂ = ret} eq = refl
+kindWk-inj {k₁ = ret} {k₂ = acq} eq = case eq of λ ()
+kindWk-inj {k₁ = ret} {k₂ = `` δ} eq = case eq of λ ()
+kindWk-inj {k₁ = acq} {k₂ = ` y} eq = case eq of λ ()
+kindWk-inj {k₁ = acq} {k₂ = end p′} eq = case eq of λ ()
+kindWk-inj {k₁ = acq} {k₂ = msg q′} eq = case eq of λ ()
+kindWk-inj {k₁ = acq} {k₂ = ret} eq = case eq of λ ()
+kindWk-inj {k₁ = acq} {k₂ = acq} eq = refl
+kindWk-inj {k₁ = acq} {k₂ = `` δ} eq = case eq of λ ()
+kindWk-inj {k₁ = `` γ} {k₂ = ` y} eq = case eq of λ ()
+kindWk-inj {k₁ = `` γ} {k₂ = end p′} eq = case eq of λ ()
+kindWk-inj {k₁ = `` γ} {k₂ = msg q′} eq = case eq of λ ()
+kindWk-inj {k₁ = `` γ} {k₂ = ret} eq = case eq of λ ()
+kindWk-inj {k₁ = `` γ} {k₂ = acq} eq = case eq of λ ()
+kindWk-inj {k₁ = `` γ} {k₂ = `` δ} eq = cong ``_ (AK-uvar-inj eq)
+
+BaseH : {m n : ℕ} (ϕ : m →ₛ n) (k : AtomKind m) (k′ : AtomKind n) → Set
+BaseH ϕ k k′ = ∀ {a} (A : Atom a) → atomKind A ≡ k → Σ[ A′ ∈ Atom (a ⋯ ϕ) ] atomKind A′ ≡ k′
+
+liftBaseH : {ϕ : m →ₛ n} {k : AtomKind m} {k′ : AtomKind n} → BaseH ϕ k k′ → BaseH (ϕ ↑) (kindWk k) (kindWk k′)
+liftBaseH bH (`- {x = x}) p = ?
+liftBaseH bH end p = ?
+liftBaseH bH msg p = ?
+liftBaseH bH ret p = ?
+liftBaseH bH acq p = ?
+liftBaseH bH ``- p = ?
+
+endskind-⋯ : {ϕ : m →ₛ n} {k : AtomKind m} {k′ : AtomKind n} → BaseH ϕ k k′ → EndsKind k s → EndsKind k′ (s ⋯ ϕ)
+endskind-⋯ bH (here A p) = let A′ , p′ = bH A p in here A′ p′
+endskind-⋯ bH (e ;₁ Sk) = endskind-⋯ bH e ;₁ skips-⋯ Sk
+endskind-⋯ bH (-;₂ e) = -;₂ endskind-⋯ bH e
+endskind-⋯ bH (brn e₁ e₂) = brn (endskind-⋯ bH e₁) (endskind-⋯ bH e₂)
+endskind-⋯ bH (mu e) = mu (endskind-⋯ (liftBaseH bH) e)
+
+baseUnfold : {k : AtomKind n} → BaseH ⦅ mu s ⦆ₛ (kindWk k) k
+baseUnfold {k = ` y} (`- {x = x}) p = ?
+baseUnfold {k = end q} (`- {x = x}) ()
+baseUnfold {k = msg q} (`- {x = x}) ()
+baseUnfold {k = ret} (`- {x = x}) ()
+baseUnfold {k = acq} (`- {x = x}) ()
+baseUnfold {k = `` γ} (`- {x = x}) ()
+baseUnfold end p = end , kindWk-inj p
+baseUnfold msg p = msg , kindWk-inj p
+baseUnfold ret p = ret , kindWk-inj p
+baseUnfold acq p = acq , kindWk-inj p
+baseUnfold ``- p = ``- , kindWk-inj p
+
+endskind-unfold : {k : AtomKind n} → EndsKind (kindWk k) s → EndsKind k (unfold s)
+endskind-unfold e = endskind-⋯ baseUnfold e
+
+endskind-unfold⁻¹ : {k : AtomKind n} → EndsKind k (unfold s) → EndsKind (kindWk k) s
+endskind-unfold⁻¹ = ?
+
+≃-endskind : {k : AtomKind n} → EndsKind k Respects _≃_
+≃-endskind refl = id
+≃-endskind (x ◅ xs) = ≃-endskind xs ∘ go x where
+  go : {k : AtomKind n} → SymClosure _≃𝕊_ s₁ s₂ → EndsKind k s₁ → EndsKind k s₂
+  go (fwd ≃𝕊-μ) (mu e) = endskind-unfold e
+  go (fwd (≃𝕊-msg x)) (here msg p) = here msg p
+  go (bwd (≃𝕊-msg x)) (here msg p) = here msg p
+  go (fwd (≃𝕊-;₁ x)) (e ;₁ x₁) = go (fwd x) e ;₁ x₁
+  go (fwd (≃𝕊-;₁ x)) (-;₂ e) = -;₂ e
+  go (fwd (≃𝕊-;₂ x)) (e ;₁ x₁) = e ;₁ ≃-skips (Eq*.return x) x₁
+  go (fwd (≃𝕊-;₂ x)) (-;₂ e) = -;₂ go (fwd x) e
+  go (fwd (≃𝕊-brn₁ x)) (brn e e₁) = brn (go (fwd x) e) e₁
+  go (fwd (≃𝕊-brn₂ x)) (brn e e₁) = brn e (go (fwd x) e₁)
+  go (fwd ≃𝕊-skipˡ) (-;₂ e) = e
+  go (fwd ≃𝕊-skipʳ) (e ;₁ x) = e
+  go (fwd ≃𝕊-skipˡ) (e ;₁ _) = ⊥-elim (¬endskind-skip e)
+  go (fwd ≃𝕊-skipʳ) (-;₂ e) = ⊥-elim (¬endskind-skip e)
+  go (fwd ≃𝕊-assoc) ((e ;₁ x₁) ;₁ x) = e ;₁ (x₁ ; x)
+  go (fwd ≃𝕊-assoc) ((-;₂ e) ;₁ x) = -;₂ (e ;₁ x)
+  go (fwd ≃𝕊-assoc) (-;₂ e) = -;₂ (-;₂ e)
+  go (fwd ≃𝕊-distr) (brn e e₁ ;₁ x) = brn (e ;₁ x) (e₁ ;₁ x)
+  go (fwd ≃𝕊-distr) (-;₂ e) = brn (-;₂ e) (-;₂ e)
+  go (bwd (≃𝕊-;₁ x)) (e ;₁ x₁) = go (bwd x) e ;₁ x₁
+  go (bwd (≃𝕊-;₁ x)) (-;₂ e) = -;₂ e
+  go (bwd (≃𝕊-;₂ x)) (e ;₁ x₁) = e ;₁ ≃-skips (Star.return (bwd x)) x₁
+  go (bwd (≃𝕊-;₂ x)) (-;₂ e) = -;₂ go (bwd x) e
+  go (bwd (≃𝕊-brn₁ x)) (brn e e₁) = brn (go (bwd x) e) e₁
+  go (bwd (≃𝕊-brn₂ x)) (brn e e₁) = brn e (go (bwd x) e₁)
+  go (bwd ≃𝕊-μ) e = mu (endskind-unfold⁻¹ e)
+  go (bwd ≃𝕊-skipˡ) e = -;₂ e
+  go (bwd ≃𝕊-skipʳ) e = e ;₁ skip
+  go (bwd ≃𝕊-assoc) (e ;₁ (x ; x₁)) = (e ;₁ x) ;₁ x₁
+  go (bwd ≃𝕊-assoc) (-;₂ (e ;₁ x)) = (-;₂ e) ;₁ x
+  go (bwd ≃𝕊-assoc) (-;₂ (-;₂ e)) = -;₂ e
+  go (bwd ≃𝕊-distr) (brn (e ;₁ x) (e₁ ;₁ x₁)) = brn e e₁ ;₁ x₁
+  go (bwd ≃𝕊-distr) (brn (e ;₁ x) (-;₂ e₁)) = -;₂ e₁
+  go (bwd ≃𝕊-distr) (brn (-;₂ e) e₁) = -;₂ e

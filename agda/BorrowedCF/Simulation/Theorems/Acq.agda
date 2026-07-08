@@ -78,6 +78,17 @@ avoid-ren {N} {mm} u ρ ρ≢0 =
          ■ sym (fusion (` (ρ x)) ⦅ * ⦆ₛ weakenᵣ)
          ■ ηfix (ρ x) (ρ≢0 x)
 
+-- weakenᵣ commutes past a lifted renaming.
+wk-↑ : ∀ {a b} (t : Tm a) (ρ : a →ᵣ b) → (t ⋯ weakenᵣ) ⋯ (ρ ↑) ≡ (t ⋯ ρ) ⋯ weakenᵣ
+wk-↑ t ρ = sym (⋯-↑-wk t ρ)
+
+-- codomain-cast of a renaming.
+castᵣ : ∀ {a c d} → c ≡ d → (a →ᵣ c) → (a →ᵣ d)
+castᵣ {a} p θ = subst (λ z → a →ᵣ z) p θ
+
+toℕ-castᵣ : ∀ {a c d} (p : c ≡ d) (θ : a →ᵣ c) (x : 𝔽 a) → Fin.toℕ (castᵣ p θ x) ≡ Fin.toℕ (θ x)
+toℕ-castᵣ refl θ x = refl
+
 -- canonₛ's head endpoint slot is irrelevant away from the head index j = 0F.
 Ub-e1-irrel : ∀ {N} (b : ℕ) (e1 e1' : Tm N) (x : 𝔽 N) (e2 : Tm N) (j : 𝔽 b) → Fin.toℕ j ≢ 0 →
   Ub[ b ] (e1 , x , e2) j ≡ Ub[ b ] (e1' , x , e2) j
@@ -749,7 +760,116 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
               ■ cong (λ z → subst Tm eqC z ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd) τC )
           ■ coreCmain
         cWk : sPre w ≡ tC ⋯ weakenᵣ
-        cWk = {!!}
+        cWk =
+            sPre-pt w
+          ■ cong (λ z → subst Tm eqC z ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd) τC
+          ■ cong (λ z → subst Tm eqC (z ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd)
+              (canonₛ-zero-head (K `unit) (K `unit) 0F j)
+          ■ Wρcρd
+          where
+            cc0 : UChan (2 + n)
+            cc0 = (K `unit , 0F , K `unit)
+            cc1 : UChan (3 + n)
+            cc1 = (` 0F , 1F , K `unit)
+            u : Tm (sC + (2 + n))
+            u = canonₛ C cc0 j
+            M0 : Tm (sB₂ + (sC + (3 + n)))
+            M0 = subst Tm eqC (subst Tm (+-suc sC (2 + n)) (canonₛ C cc1 j) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+            jℕ≢0 : Fin.toℕ j ≢ 0
+            jℕ≢0 eqj0 = w≢0 (Fin.toℕ-injective
+                          (sym (splitAt-inj₁-toℕ z j eqz ■ splitAt-inj₁-toℕ w z eqw) ■ eqj0))
+            cc-relate : canonₛ C cc1 j ≡ u ⋯ (weakenᵣ ↑* sC)
+            cc-relate = canonₛ-e1-irrel C (` 0F) (K `unit) 1F (K `unit) j jℕ≢0
+                      ■ sym (canonₛ-nat C cc0 weakenᵣ j)
+            ρ0 : (sC + (2 + n)) →ᵣ suc (sC + (2 + n))
+            ρ0 = castᵣ (+-suc sC (2 + n)) (weakenᵣ ↑* sC)
+            ρ1 : (sC + (2 + n)) →ᵣ (sB₂ + (sC + (3 + n)))
+            ρ1 = castᵣ eqC (ρ0 ·ₖ weaken* ⦃ Kᵣ ⦄ sB₂)
+            ρ1a : (sC + (2 + n)) →ᵣ _
+            ρ1a = ρ1 ·ₖ ρa
+            ρW : (sC + (2 + n)) →ᵣ _
+            ρW = ρ1a ·ₖ ρb
+            Weq : M0 ⋯ ρa ⋯ ρb ≡ u ⋯ ρW
+            Weq =
+                cong (λ z → subst Tm eqC (subst Tm (+-suc sC (2 + n)) z ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ⋯ ρa ⋯ ρb) cc-relate
+              ■ cong (λ z → subst Tm eqC (z ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) ⋯ ρa ⋯ ρb)
+                  (sym (subst-⋯-cod-local (+-suc sC (2 + n)) u (weakenᵣ ↑* sC)))
+              ■ cong (λ z → subst Tm eqC z ⋯ ρa ⋯ ρb) (fusion u ρ0 (weaken* ⦃ Kᵣ ⦄ sB₂))
+              ■ cong (λ z → z ⋯ ρa ⋯ ρb) (sym (subst-⋯-cod-local eqC u (ρ0 ·ₖ weaken* ⦃ Kᵣ ⦄ sB₂)))
+              ■ cong (_⋯ ρb) (fusion u ρ1 ρa)
+              ■ fusion u ρ1a ρb
+            -- ρW never lands on 0F: it factors through weakenᵣ ↑* sC, which skips
+            -- position sC; the two assocSwaps then keep the result ≥ 1.
+            ρW≢0 : ∀ x → ρW x ≢ 0F
+            ρW≢0 x eq0 = abs (subst (1 Nat.≤_) (cong Fin.toℕ eq0) posℕ)
+              where
+                abs : 1 Nat.≤ 0 → ⊥
+                abs ()
+                pv1 : ℕ
+                pv1 = Fin.toℕ ((weakenᵣ ↑* sC) x)
+                tρ1 : Fin.toℕ (ρ1 x) ≡ sB₂ + pv1
+                tρ1 = toℕ-castᵣ eqC (ρ0 ·ₖ weaken* ⦃ Kᵣ ⦄ sB₂) x
+                    ■ toℕ-weaken*ᵣ sB₂ (ρ0 x)
+                    ■ cong (sB₂ +_) (toℕ-castᵣ (+-suc sC (2 + n)) (weakenᵣ ↑* sC) x)
+                geB : sB₂ Nat.≤ Fin.toℕ (ρ1 x)
+                geB = subst (sB₂ Nat.≤_) (sym tρ1) (Nat.m≤m+n sB₂ pv1)
+                redB : Fin.toℕ (Fin.reduce≥ (ρ1 x) geB) ≡ pv1
+                redB = toℕ-reduce≥ (ρ1 x) geB ■ cong (Nat._∸ sB₂) tρ1 ■ Nat.m+n∸m≡n sB₂ pv1
+                -- toℕ (ρa (ρ1 x)) after the sC↔1 swap above sB₂.
+                tρa : Fin.toℕ (ρa (ρ1 x)) ≡ sB₂ + Fin.toℕ (assocSwapᵣ sC 1 (Fin.reduce≥ (ρ1 x) geB))
+                tρa = toℕ-↑*-ge (assocSwapᵣ sC 1) sB₂ (ρ1 x) geB
+                1≤sB₂+1+ : ∀ k → 1 Nat.≤ sB₂ + (1 + k)
+                1≤sB₂+1+ k = Nat.≤-trans (Nat.m≤n+m 1 sB₂) (Nat.+-monoʳ-≤ sB₂ (Nat.m≤m+n 1 k))
+                -- toℕ x ≥ sC : weakenᵣ↑*sC lands above sC, so the sC↔1 swap fixes it.
+                geCase : sC Nat.≤ Fin.toℕ x → 1 Nat.≤ Fin.toℕ (ρW x)
+                geCase gex = subst (1 Nat.≤_) (sym tρW)
+                               (Nat.≤-trans (Nat.≤-trans (Nat.m≤n+m 1 sC) sC+1≤pv1) (Nat.m≤n+m pv1 sB₂))
+                  where
+                    pv1eq : pv1 ≡ sC + (1 + Fin.toℕ (Fin.reduce≥ x gex))
+                    pv1eq = toℕ-↑*-ge weakenᵣ sC x gex
+                          ■ cong (sC +_) (toℕ-weaken*ᵣ 1 (Fin.reduce≥ x gex))
+                    sC+1≤pv1 : sC + 1 Nat.≤ pv1
+                    sC+1≤pv1 = subst (sC + 1 Nat.≤_) (sym pv1eq) (Nat.+-monoʳ-≤ sC (Nat.m≤m+n 1 _))
+                    tassoc : Fin.toℕ (assocSwapᵣ sC 1 (Fin.reduce≥ (ρ1 x) geB)) ≡ pv1
+                    tassoc = toℕ-assoc-ge sC 1 (Fin.reduce≥ (ρ1 x) geB)
+                               (subst (sC + 1 Nat.≤_) (sym redB) sC+1≤pv1)
+                           ■ redB
+                    tρaC : Fin.toℕ (ρa (ρ1 x)) ≡ sB₂ + pv1
+                    tρaC = tρa ■ cong (sB₂ +_) tassoc
+                    geAB : sB₂ + 1 Nat.≤ Fin.toℕ (ρa (ρ1 x))
+                    geAB = subst (sB₂ + 1 Nat.≤_) (sym tρaC)
+                             (Nat.+-monoʳ-≤ sB₂ (Nat.≤-trans (Nat.m≤n+m 1 sC) sC+1≤pv1))
+                    tρW : Fin.toℕ (ρW x) ≡ sB₂ + pv1
+                    tρW = toℕ-assoc-ge sB₂ 1 (ρa (ρ1 x)) geAB ■ tρaC
+                posℕ : 1 Nat.≤ Fin.toℕ (ρW x)
+                posℕ with Nat.<-cmp (Fin.toℕ x) sC
+                ... | tri< ltx _ _ = subst (1 Nat.≤_) (sym tρW) (1≤sB₂+1+ pv1)
+                  where
+                    pv1lt : pv1 Nat.< sC
+                    pv1lt = subst (Nat._< sC) (sym (toℕ-↑*-lt weakenᵣ sC x ltx)) ltx
+                    tassoc : Fin.toℕ (assocSwapᵣ sC 1 (Fin.reduce≥ (ρ1 x) geB)) ≡ 1 + pv1
+                    tassoc = toℕ-assoc-lt sC 1 (Fin.reduce≥ (ρ1 x) geB)
+                               (subst (Nat._< sC) (sym redB) pv1lt)
+                           ■ cong (1 +_) redB
+                    tρaC : Fin.toℕ (ρa (ρ1 x)) ≡ sB₂ + (1 + pv1)
+                    tρaC = tρa ■ cong (sB₂ +_) tassoc
+                    geAB : sB₂ + 1 Nat.≤ Fin.toℕ (ρa (ρ1 x))
+                    geAB = subst (sB₂ + 1 Nat.≤_) (sym tρaC) (Nat.+-monoʳ-≤ sB₂ (Nat.m≤m+n 1 pv1))
+                    tρW : Fin.toℕ (ρW x) ≡ sB₂ + (1 + pv1)
+                    tρW = toℕ-assoc-ge sB₂ 1 (ρa (ρ1 x)) geAB ■ tρaC
+                ... | tri≈ _ eqx _ = geCase (Nat.≤-reflexive (sym eqx))
+                ... | tri> _ _ gtx = geCase (Nat.<⇒≤ gtx)
+            W-avoid : (M0 ⋯ ρa ⋯ ρb) ⋯ ⦅ * ⦆ₛ ⋯ weakenᵣ ≡ M0 ⋯ ρa ⋯ ρb
+            W-avoid = cong (λ z → z ⋯ ⦅ * ⦆ₛ ⋯ weakenᵣ) Weq
+                    ■ avoid-ren u ρW ρW≢0
+                    ■ sym Weq
+            core-wk : M0 ⋯ ρa ⋯ ρb ≡ Lc ⋯ weakenᵣ
+            core-wk = sym W-avoid ■ cong (_⋯ weakenᵣ) (core-gen C sB₂ 0F j)
+            Wρcρd : M0 ⋯ ρa ⋯ ρb ⋯ ρc ⋯ ρd ≡ tC ⋯ weakenᵣ
+            Wρcρd =
+                cong (λ z → z ⋯ ρc ⋯ ρd) core-wk
+              ■ cong (_⋯ ρd) (wk-↑ Lc (assocSwapᵣ sC 2 ↑* sB₂))
+              ■ wk-↑ (Lc ⋯ (assocSwapᵣ sC 2 ↑* sB₂)) (assocSwapᵣ sB₂ 2)
         tCA : tC ⋯ A₂ ≡ Lc ⋯ (assocSwapᵣ sC 2 ↑* sB₂)
         tCA =
             fusion (Lc ⋯ (assocSwapᵣ sC 2 ↑* sB₂)) (assocSwapᵣ sB₂ 2) A₂
