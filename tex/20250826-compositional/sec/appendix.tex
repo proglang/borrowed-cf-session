@@ -6,7 +6,7 @@
 
 \FloatBarrier
 
-\subsection{Omitted Congruence and Reduction Rules}
+\subsection{Dynamics: Omitted Congruence and Reduction Rules}
 
 
 \begin{figure}[htbp]
@@ -38,33 +38,31 @@
   \label{fig:expression-reduction}
 \end{figure}
 
-\subsection{Blocked Expressions and Processes}
+\FloatBarrier
+
+\subsection{Translation: Congruence of Translated Processes}
+
 \begin{figure}[htbp]
   \begin{mathpar}
-    % E[ c v ]
-    % ---------
-    % Blocked e 
-    % \RuleExpBlocked (put in rules/blocked) \and
-    % Blocked P 
-    % Blocked Q
-    % ---------
-    % Blocked P || Q
-    % \RuleParBlocked (put in rules/blocked)\and 
-    % BC(P) 
-    % -----------------------------
-    % Blocked nu [x B1][y B2] P
-    % \RuleNuBlocked (put in rules/blocked) \and
+    %\RuleTransCongRefl \and
+    \RuleTransCongParComm \and
+    \RuleTransCongParAssoc \and
+    \RuleTransCongParUnit \and
+    \RuleTransCongResSwap \and
+    \RuleTransCongResComm \and
+    \RuleTransCongFlagComm \and
+    \RuleTransCongResFlagComm \and
+    \RuleTransCongResExtend \and
+    \RuleTransCongFlagExtend
+    %\RuleTransCongTrans
   \end{mathpar}
-  where 
-    % BC() 
-    % 
-  \caption{Blocked Expressions (Blocked $\E$) and Blocked Processes (Blocked $\P$)}
-  \label{fig:blocked-expr-proc}
+  \caption{Congruence rules of translated processes}
+  \label{fig:translated-congruence}
 \end{figure}
 
+\FloatBarrier
 
-
-\subsection{Constraint Checking with FreeST}
+\subsection{Algorithmic Typing: Constraint Checking with FreeST}
 
 In the implementation, we use FreeST \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22, almeida26:_frees_concur_progr_languag_with} version 5.0 to perform equivalence checking. To achieve this, we generate little FreeST programs that typechecks iff the equivalence constraints hold.
 
@@ -200,4 +198,30 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
   We sketch a proof. The soundness proof mainly requires two things: The translation of annotations in the arrow and product types preserves equivalence and the equivalence of the explicit recursion with the $\mu$ binder syntax. For the former we can perform induction on the equivalence of $\T[1] \simeq \T[2]$ and use equivalence and bisimulation lemmas from \cite{DBLP:conf/icfp/ThiemannV16} for regular type and session type cases, respectively. The pairs we introduce for annotations can be handled trivially by the type equivalence rules. Then to show explicit recursion conversion preserves equivalence, we can use the laws for $\mu$ types from \cite{DBLP:conf/icfp/ThiemannV16}.
 \end{proof}
 
+\FloatBarrier
+
+\subsection{Metatheory: Blocked Expressions and Processes}
+
+\begin{figure}[htbp]
+  \begin{mathpar}
+    % E[ c v ]
+    % ---------
+    % Blocked e 
+    % \RuleExpBlocked (put in rules/blocked) \and
+    % Blocked P 
+    % Blocked Q
+    % ---------
+    % Blocked P || Q
+    % \RuleParBlocked (put in rules/blocked)\and 
+    % BC(P) 
+    % -----------------------------
+    % Blocked nu [x B1][y B2] P
+    % \RuleNuBlocked (put in rules/blocked) \and
+  \end{mathpar}
+  where 
+    % BC() 
+    % 
+  \caption{Blocked Expressions (Blocked $\E$) and Blocked Processes (Blocked $\P$)}
+  \label{fig:blocked-expr-proc}
+\end{figure}
 
