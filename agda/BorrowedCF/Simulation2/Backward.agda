@@ -48,6 +48,8 @@ Backward-Sim =
 
 
 open import BorrowedCF.Simulation2.Backward.Leaf using (bwd-exp; bwd-fork; bwd-new)
+open import BorrowedCF.Simulation2.Backward.LSplit using (lsplit-reflect)
+open import BorrowedCF.Simulation2.Backward.RSplit using (rsplit-reflect)
 open import BorrowedCF.Simulation2.Backward.Inversions using (inv-U-⟪⟫; inv-U-∥; inv-U-ν)
 open import BorrowedCF.Simulation.ReverseInv
   using (inv-ν-chanCx; νσ-φfree; νσ-φfree-VSub; U-ν-φfree-eq; ν-inj)
@@ -115,8 +117,8 @@ sim←ᵍ σ Vσ Γ-S {P = TP.⟪ e ⟫}     ⊢P () (UR.RU-Drop F)
 sim←ᵍ σ Vσ Γ-S {P = P TP.∥ Q}     ⊢P () (UR.RU-Drop F)
 sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Drop F)
 -- Channel-op reflections — ported into Backward.<Op>; holes until they land.
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-LSplit F)     = {! lsplit-go (Backward.LSplit) !}
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-RSplit F)     = {! rsplit-go (Backward.RSplit) !}
+sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-LSplit F)     = lsplit-reflect σ Vσ Γ-S ⊢P {F = F} (sym eq)
+sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-RSplit F)     = rsplit-reflect σ Vσ Γ-S ⊢P {F = F} (sym eq)
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Acquire F)    = {! acq-go (Backward.Acq) !}
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Close F₁ F₂)  = {! close-go (Backward.Close) !}
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Com F₁ F₂ V)  = {! com-go (Backward.Com) !}
