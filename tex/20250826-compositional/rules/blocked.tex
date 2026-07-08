@@ -21,7 +21,7 @@
 
 % B-NuBlocked
 \DefRule {NuBlocked} {
-  \neg (\EVar \in \BC(\Proc) \land \EVary \in \BC(\Proc))
+  \EVar \notin \BC(\Proc) \lor \EVary \notin \BC(\Proc)
 }{
   \Blocked{\PNew{\BSeq{\EVar}{\BindGroup[1]}}{\BSeq{\EVary}{\BindGroup[2]}}{\Proc}}
 }
@@ -71,7 +71,7 @@
 }
 
 \newcommand*\BlockedChannelsNew{
-  \BC(\FCapp{\EApp\CNew\CUnit}) = \emptyset
+  \BC(\FCapp{\EApp\CNew\E}) = \emptyset
 }
 
 \newcommand*\BlockedChannelsDiscard{
