@@ -379,8 +379,8 @@ inv-wk2 (suc (suc y')) ¬H = y' , sym (wk2-image y')
 -- BindCtx′ tail must be `nil`.  Hence the block width is exactly suc 0.
 bc′-len1 : ∀ {p q} {s : 𝕊 0} {b} {Γ : Ctx (suc b)} {s₀} →
   New s → BindCtx′ (TS._;_ s (end p)) (suc b) Γ → Γ 0F ≡ ⟨ s₀ ⟩ → s₀ ≃ end q → b ≡ 0
-bc′-len1 N (cons ¬sk s≃ Γ≗ (nil _)) Γ0 s₀≃ = refl
-bc′-len1 {s₀ = s₀} N (cons {s₁ = sa} {s₂ = sb} ¬sk s≃ Γ≗ (cons ¬sk2 s≃2 Γ≗2 tl)) Γ0 s₀≃ =
+bc′-len1 N (cons _ _ ¬sk s≃ Γ≗ (nil _)) Γ0 s₀≃ = refl
+bc′-len1 {s₀ = s₀} N (cons sa sb ¬sk s≃ Γ≗ (cons _ _ ¬sk2 s≃2 Γ≗2 tl)) Γ0 s₀≃ =
   ⊥-elim (¬sk2 (close-residual-skips N s≃ (≃-trans sa≃s₀ s₀≃)))
   where
     ⟨⟩-inj : ⟨ sa ⟩ ≡ ⟨ s₀ ⟩ → sa ≡ s₀

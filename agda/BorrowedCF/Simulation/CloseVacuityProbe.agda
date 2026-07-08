@@ -91,6 +91,12 @@ noEnd-≃ : NoEnd {n} Respects _≃_
 noEnd-≃ refl = id
 noEnd-≃ (x ◅ xs) = noEnd-≃ xs ∘ go x where
   go : NoEnd {n} Respects SymClosure _≃𝕊_
+  go (fwd (≃𝕊-msg eq))  msg       = msg
+  go (fwd (≃𝕊-brn₁ eq)) (brn x y) = brn (go (fwd eq) x) y
+  go (fwd (≃𝕊-brn₂ eq)) (brn x y) = brn x (go (fwd eq) y)
+  go (bwd (≃𝕊-msg eq))  msg       = msg
+  go (bwd (≃𝕊-brn₁ eq)) (brn x y) = brn (go (bwd eq) x) y
+  go (bwd (≃𝕊-brn₂ eq)) (brn x y) = brn x (go (bwd eq) y)
   go (fwd (≃𝕊-;₁ eq)) (x ; y) = go (fwd eq) x ; y
   go (fwd (≃𝕊-;₂ eq)) (x ; y) = x ; go (fwd eq) y
   go (fwd ≃𝕊-skipˡ) (x ; y) = y
@@ -284,6 +290,12 @@ endTip-≃ : EndTip {0} Respects _≃_
 endTip-≃ refl       rt = rt
 endTip-≃ (x ◅ xs)   rt = endTip-≃ xs (go x rt) where
   go : EndTip {0} Respects SymClosure _≃𝕊_
+  go (fwd (≃𝕊-msg eq))  ()
+  go (fwd (≃𝕊-brn₁ eq)) (brn r1 r2) = brn (go (fwd eq) r1) r2
+  go (fwd (≃𝕊-brn₂ eq)) (brn r1 r2) = brn r1 (go (fwd eq) r2)
+  go (bwd (≃𝕊-msg eq))  ()
+  go (bwd (≃𝕊-brn₁ eq)) (brn r1 r2) = brn (go (bwd eq) r1) r2
+  go (bwd (≃𝕊-brn₂ eq)) (brn r1 r2) = brn r1 (go (bwd eq) r2)
   go (fwd (≃𝕊-;₁ eq)) (r tL sk)  = go (fwd eq) r tL sk
   go (fwd (≃𝕊-;₁ eq)) (nr tR rt) = noEnd-≃ (fwd eq ◅ refl) nr tR rt
   go (fwd (≃𝕊-;₂ eq)) (r tL sk)  = r tL (≃-skips (fwd eq ◅ refl) sk)
@@ -328,7 +340,7 @@ b≡0 : ∀ {s : 𝕊 0} {n Γ p′} → New s →
       (∀ {a r Γ′} → a ; r ≃ s ; end {0} ‼ → a ≃ end {0} p′ →
          BindCtx′ r n Γ′ → n ≡ 0)
 b≡0 N bc s≃ ha (nil _) = refl
-b≡0 N bc s≃ ha (cons ¬skips s≃′ Γ≗′ bc′) =
+b≡0 N bc s≃ ha (cons _ _ ¬skips s≃′ Γ≗′ bc′) =
   ⊥-elim (¬skips (close-residual-skips N s≃ ha))
 
 ------------------------------------------------------------------------
@@ -341,7 +353,7 @@ g1 : Ctx 1
 g1 = ⟨ end ‼ ⟩ F.∷ (λ ())
 
 bc1 : BindCtx′ (skip ; end ‼) 1 g1
-bc1 = cons (λ { (_ ; ()) }) (≃-trans ≃-skipʳ (≃-sym ≃-skipˡ)) (λ _ → refl) (nil skip)
+bc1 = cons (end ‼) skip (λ { (_ ; ()) }) (≃-trans ≃-skipʳ (≃-sym ≃-skipˡ)) (λ _ → refl) (nil skip)
 
 -- And the verdict applied to it: forced to length 0 (b = 0).
 bc1-b≡0 : 1 ≡ suc 0   -- length is suc 0, the "n" component is 0
