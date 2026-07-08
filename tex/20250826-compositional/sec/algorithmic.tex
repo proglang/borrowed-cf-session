@@ -263,6 +263,11 @@ algorithmic rules to expose the top-level type constructor
 \pt{Where is $\TerminatedType {\T}$ defined? Why is normalization terminating?}
 \mw{if this is known work, skip this figure and refer to \cite{DBLP:journals/iandc/AlmeidaMTV22}}
 
+\subsection{Implementation}
+
+We implemented a type checker for \thecalculus in Rust, via extending the implementation from \cite{saffrich25:_artif_borrow_from_session_types}. The implementation supports all the features from the paper, except that $\CSend$ and $\CRecv$ require type annotations on the sent/received value. This is because when a channel's type is a unification variable, the return type of $\CRecv$ can't be inferred, so the user must annotate the channel's type. \os{Is it too much detail?} 
+
+We use FreeST \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22, almeida26:_frees_concur_progr_languag_with} 5.0 to perform equivalence checking in the implementation. \os{We already mention that we use FreeST in Equivalence checking section. Do we need to mention it here again?}
 
 %%% Local Variables:
 %%% mode: latex
