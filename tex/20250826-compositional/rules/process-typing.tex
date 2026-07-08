@@ -56,15 +56,24 @@
   }
 }
 
-\newcommand*\RuleBindSep{
-  \inferrule[B-Sep]{
+\newcommand*\RuleBindDrop{
+  \inferrule[B-Drop]{
     \BindGivesCtx {\SSeq{\S[1]}{\SDrop}} {\Bind[1]} {\Ctx[1]} \\
-    \BindGivesCtx {\SSeq{\SAcq}{\S[2]}} {\BindGroup[2]} {\Ctx[2]}
+    \BindGivesCtx {\SSeq{\SAcq}{\S[2]}} {\BindGroup[2]} {\Ctx[2]} \\
+    \Bind[1] \ne \BEmp
   }{
     \BindGivesCtx
       {\SSeq{\S[1]}{\S[2]}}
       {\BWithSep{\Bind[1]}{\BindGroup[2]}}
       {\Ctx[1] \CtxPar \Ctx[2]}
+  }
+}
+
+\newcommand*\RuleBindAcq{
+  \inferrule[B-Acq]{
+    \BindGivesCtx {\SSeq{\SAcq}{\S}} {\BindGroup} {\Ctx}
+  }{
+    \BindGivesCtx \S {\BSep\BindGroup} \Ctx
   }
 }
 
