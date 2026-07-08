@@ -164,21 +164,6 @@ Elimination of a sum type using \RuleName{A-Case} works similarly, but
 in addition we have to add equations to $\CSet$ that force all branch
 output types to be equal.
 
-
-\begin{lemma}[Soundness]
-  If\/ $\CheckType \E \AT \Eff$ and $\sigma \models \CSet$ is a
-  closing substitution
-  such that $\Fv(\AT) \subseteq \dom(\sigma)$ then $\HasType \Ctx \E {\AT{[\sigma]}}$.
-\end{lemma}
-
-\pt{what about the synthesis judgment?}
-
-\begin{lemma}[Completeness]
-  If\/ $\HasType \Ctx \E \T$ then $\CheckType \E \AT \Eff$ for some type $\AT$, set of
-  constraints $\CSet$, and closing substitution $\sigma$ such that $\T=\AT{[\sigma]}$.
-\end{lemma}
-
-
 \subsection{Constraint Solving}
 \label{sec:constraint-solving}
 

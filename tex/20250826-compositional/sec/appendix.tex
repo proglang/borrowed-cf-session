@@ -7,8 +7,6 @@
 \FloatBarrier
 
 \subsection{Dynamics: Omitted Congruence and Reduction Rules}
-
-
 \begin{figure}[htbp]
   \begin{mathpar}
     % \RuleProcCongRefl \and
@@ -56,8 +54,25 @@
     \RuleTransCongFlagExtend
     %\RuleTransCongTrans
   \end{mathpar}
+<<<<<<< Updated upstream
   \caption{Congruence rules of translated processes}
   \label{fig:translated-congruence}
+=======
+  where
+  \[
+    \begin{array}{ll}
+      \BlockedChannelsSend & \BlockedChannelsRecv \\
+      \BlockedChannelsSelect & \BlockedChannelsBranch \\
+      \BlockedChannelsTerm & \BlockedChannelsWait \\
+      \BlockedChannelsAcquire & \BlockedChannelsDrop \\
+      \BlockedChannelsLSplit & \BlockedChannelsRSplit \\
+      \BlockedChannelsFork & \BlockedChannelsNew \\
+      \multicolumn{2}{l}{\BlockedChannelsDiscard}
+    \end{array}
+  \]
+  \caption{Blocked Expressions (Blocked $\E$) and Blocked Processes (Blocked $\Proc$)}
+  \label{fig:blocked-expr-proc}
+>>>>>>> Stashed changes
 \end{figure}
 
 \FloatBarrier
@@ -197,6 +212,7 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
 \begin{proof}
   We sketch a proof. The soundness proof mainly requires two things: The translation of annotations in the arrow and product types preserves equivalence and the equivalence of the explicit recursion with the $\mu$ binder syntax. For the former we can perform induction on the equivalence of $\T[1] \simeq \T[2]$ and use equivalence and bisimulation lemmas from \cite{DBLP:conf/icfp/ThiemannV16} for regular type and session type cases, respectively. The pairs we introduce for annotations can be handled trivially by the type equivalence rules. Then to show explicit recursion conversion preserves equivalence, we can use the laws for $\mu$ types from \cite{DBLP:conf/icfp/ThiemannV16}.
 \end{proof}
+<<<<<<< Updated upstream
 
 \FloatBarrier
 
@@ -204,24 +220,21 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
 
 \begin{figure}[htbp]
   \begin{mathpar}
-    % E[ c v ]
-    % ---------
-    % Blocked e 
-    % \RuleExpBlocked (put in rules/blocked) \and
-    % Blocked P 
-    % Blocked Q
-    % ---------
-    % Blocked P || Q
-    % \RuleParBlocked (put in rules/blocked)\and 
-    % BC(P) 
-    % -----------------------------
-    % Blocked nu [x B1][y B2] P
-    % \RuleNuBlocked (put in rules/blocked) \and
+    \RuleExpBlocked \and
+    \RuleParBlocked \and
+    \RuleNuBlocked
   \end{mathpar}
-  where 
-    % BC() 
-    % 
+  where
+  \[
+    \begin{array}{ll}
+      \BlockedChannelsSend & \BlockedChannelsRecv \\
+      \BlockedChannelsSelect & \BlockedChannelsBranch \\
+      \BlockedChannelsLSplit & \BlockedChannelsRSplit \\
+      \BlockedChannelsFork
+    \end{array}
+  \]
   \caption{Blocked Expressions (Blocked $\E$) and Blocked Processes (Blocked $\P$)}
   \label{fig:blocked-expr-proc}
 \end{figure}
-
+=======
+>>>>>>> Stashed changes
