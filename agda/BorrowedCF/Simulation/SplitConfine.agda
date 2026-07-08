@@ -1,4 +1,5 @@
 module BorrowedCF.Simulation.SplitConfine where
+open import BorrowedCF.Terms using (module SplitRenamings)
 
 -- | The three CONFINEMENT lemmas for the channel-op simulation cases
 --   (R-LSplit / R-RSplit / R-Com / R-Acq) and R-Drop.  Each extracts a
@@ -29,7 +30,7 @@ lsplit-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
   {B₁ B₂ B : 𝐓.BindGroup} {q b₁ : ℕ} {s : 𝕊 0}
   {E : Frame* (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
   {P : 𝐓.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)} →
-  let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ (sum B) in
+  let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
   Γ ; γ ⊢ₚ 𝐓.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
             (𝐓.⟪ E [ K (`lsplit s) ·¹ (` 𝐒.atk {q + suc b₁} {m} (q ↑ʳ 0F)) ]* ⟫ 𝐓.∥ P) →
   Σ ℕ λ k → Σ (k →ᵣ (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) λ ρ⁻ →
@@ -38,7 +39,7 @@ lsplit-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
         × Σ (𝐓.Proc k) λ P₀ → P ≡ P₀ 𝐓.⋯ₚ ρ⁻
 lsplit-confine {m = m} Γ-S {γ = γ} {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P =
   let
-    handle = 𝐓R.SplitRenamings.atk B₁ B₂ B {q + suc b₁} {m} (q ↑ʳ 0F)
+    handle = SplitRenamings.atk B₁ B₂ B {q + suc b₁} {m} (q ↑ʳ 0F)
     Γ₁ , Γ₂ , s' , _p , _N , _⊢B₁ , _⊢B₂ , C , C' , ⊢body = inv-ν ⊢P
     α , β , αβ≼ , ⊢thread , ⊢Ppar = inv-∥ ⊢body
     ⊢term = inv-⟪⟫ ⊢thread
@@ -63,7 +64,7 @@ rsplit-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
   {B₁ B₂ B : 𝐓.BindGroup} {q b₁ : ℕ} {s : 𝕊 0}
   {E : Frame* (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)}
   {P : 𝐓.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)} →
-  let module 𝐒 = 𝐓R.SplitRenamings B₁ B₂ (sum B) in
+  let module 𝐒 = SplitRenamings B₁ B₂ (sum B) in
   Γ ; γ ⊢ₚ 𝐓.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
             (𝐓.⟪ E [ K (`rsplit s) ·¹ (` 𝐒.atk {q + suc b₁} {m} (q ↑ʳ 0F)) ]* ⟫ 𝐓.∥ P) →
   Σ ℕ λ k → Σ (k →ᵣ (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) λ ρ⁻ →
@@ -72,7 +73,7 @@ rsplit-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
         × Σ (𝐓.Proc k) λ P₀ → P ≡ P₀ 𝐓.⋯ₚ ρ⁻
 rsplit-confine {m = m} Γ-S {γ = γ} {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P =
   let
-    handle = 𝐓R.SplitRenamings.atk B₁ B₂ B {q + suc b₁} {m} (q ↑ʳ 0F)
+    handle = SplitRenamings.atk B₁ B₂ B {q + suc b₁} {m} (q ↑ʳ 0F)
     Γ₁ , Γ₂ , s' , _p , _N , _⊢B₁ , _⊢B₂ , C , C' , ⊢body = inv-ν ⊢P
     α , β , αβ≼ , ⊢thread , ⊢Ppar = inv-∥ ⊢body
     ⊢term = inv-⟪⟫ ⊢thread
