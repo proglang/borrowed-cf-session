@@ -50,6 +50,7 @@ Backward-Sim =
 open import BorrowedCF.Simulation2.Backward.Leaf using (bwd-exp; bwd-fork; bwd-new)
 open import BorrowedCF.Simulation2.Backward.LSplit using (lsplit-reflect)
 open import BorrowedCF.Simulation2.Backward.RSplit using (rsplit-reflect)
+open import BorrowedCF.Simulation2.Backward.Choice using (choice-reflect)
 open import BorrowedCF.Simulation2.Backward.Inversions using (inv-U-⟪⟫; inv-U-∥; inv-U-ν)
 open import BorrowedCF.Simulation.ReverseInv
   using (inv-ν-chanCx; νσ-φfree; νσ-φfree-VSub; U-ν-φfree-eq; ν-inj)
@@ -122,7 +123,7 @@ sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-RSplit F)     = rsplit-reflect σ Vσ Γ-S 
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Acquire F)    = {! acq-go (Backward.Acq) !}
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Close F₁ F₂)  = {! close-go (Backward.Close) !}
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Com F₁ F₂ V)  = {! com-go (Backward.Com) !}
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Choice F₁ F₂ k) = {! choice-go (Backward.Choice) !}
+sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Choice F₁ F₂ k) = choice-reflect σ Vσ Γ-S ⊢P {k = k} {F₁ = F₁} {F₂ = F₂} (sym eq)
 -- RU-Struct : ≈-absorb both congruence links, recurse through sim←.
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Struct c₁ inner c₂)
   with P′ , steps , Q″≈ ← sim← σ Vσ Γ-S ⊢P (≋⇒≈ (Eq*.symmetric _ c₁ ◅◅ ≡→≋ eq)) inner =
