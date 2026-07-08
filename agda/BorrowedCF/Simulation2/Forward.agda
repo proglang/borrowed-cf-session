@@ -24,3 +24,25 @@ Forward-Sim =
   → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
   → {P′ : TP.Proc m} → P TR.─→ₚ P′
   → U[ P ] σ UR.─→ₚ U[ P′ ] σ
+
+-- Done leaf cases (re-exported; wired the moment the module lands):
+open import BorrowedCF.Simulation2.Forward.Fork  using (U-fork)  public
+open import BorrowedCF.Simulation2.Forward.New   using (U-new)   public
+open import BorrowedCF.Simulation2.Forward.Close using (U-close) public
+
+-- ── sim→ WIRING MAP (every typed constructor MUST be dispatched here; Agda's
+--    coverage checker enforces completeness when sim→ is assembled) ──
+--   R-Exp     → RU-Exp (⋯→-⋯ₛ)              inline
+--   R-Fork    → U-fork                        DONE
+--   R-New     → U-new                         DONE
+--   R-Close   → U-close                       DONE
+--   R-Par     → RU-Par (sim→ …)               inline (recursive)
+--   R-Bind    → RU-Res (UB-cong-─→ … sim→)    inline (recursive)
+--   R-Struct  → RU-Struct (U-≋ …) (sim→ …)    inline (recursive)
+--   R-Com     → U-com     [agent B]           PENDING
+--   R-Choice  → U-choice  [agent B]           PENDING
+--   R-LSplit  → U-lsplit  [agent A]           PENDING
+--   R-RSplit  → U-rsplit  [agent A]           PENDING
+--   R-Drop    → U-drop    [agent C]           PENDING
+--   R-Acq     → U-acq     [agent C]           PENDING
+--   R-Discard → U-discard [agent D]           PENDING
