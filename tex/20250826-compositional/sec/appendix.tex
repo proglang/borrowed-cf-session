@@ -38,6 +38,32 @@
   \label{fig:expression-reduction}
 \end{figure}
 
+\subsection{Blocked Expressions and Processes}
+\begin{figure}[htbp]
+  \begin{mathpar}
+    % E[ c v ]
+    % ---------
+    % Blocked e 
+    % \RuleExpBlocked (put in rules/blocked) \and
+    % Blocked P 
+    % Blocked Q
+    % ---------
+    % Blocked P || Q
+    % \RuleParBlocked (put in rules/blocked)\and 
+    % BC(P) 
+    % -----------------------------
+    % Blocked nu [x B1][y B2] P
+    % \RuleNuBlocked (put in rules/blocked) \and
+  \end{mathpar}
+  where 
+    % BC() 
+    % 
+  \caption{Blocked Expressions (Blocked $\E$) and Blocked Processes (Blocked $\P$)}
+  \label{fig:blocked-expr-proc}
+\end{figure}
+
+
+
 \subsection{Constraint Checking with FreeST}
 
 In the implementation, we use FreeST \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22, almeida26:_frees_concur_progr_languag_with} version 5.0 to perform equivalence checking. To achieve this, we generate little FreeST programs that typechecks iff the equivalence constraints hold.
