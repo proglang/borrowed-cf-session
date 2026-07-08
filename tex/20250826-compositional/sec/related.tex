@@ -7,20 +7,21 @@
 
 Context-free session types (CFSTs) have been introduced by
 \citet{DBLP:conf/icfp/ThiemannV16} and further developed by
-\citet{DBLP:journals/iandc/AlmeidaMTV22} and
-\citet{DBLP:journals/toplas/Padovani19}. CFSTs liberate traditional 
+\citet{DBLP:journals/toplas/Padovani19} and
+\citet{DBLP:journals/iandc/AlmeidaMTV22}. CFSTs liberate traditional 
 session types from their tail-bias by replacing the prefix type
 operators for the session operations by symmetric composition. This
 move complicates the metatheory as the syntax of types is now
 quotiented over the monoid laws and distributivity of composition over
-choice. This complication makes type equivalence a difficult problem
-\cite{DBLP:conf/tacas/AlmeidaMV20} and subtyping undecidable
+choice. This complication makes type equivalence a decidable, but
+difficult problem \cite{DBLP:conf/tacas/AlmeidaMV20} and subtyping an
+undecidable problem
 \cite{DBLP:journals/toplas/Padovani19,DBLP:journals/tcs/SilvaMV26}.
 
 CFSTs are one starting point of our investigation. Symmetric
-composition makes them more amenable to splitting local borrows. Only
+composition makes them well-suited to splitting local borrows. Only
 remote borrows require extra synchronization machinery. Compared to
-the CFST work and the implemented system based on it
+the CFST work and the implemented system FreeST based on it
 \cite{almeida26:_frees_concur_progr_languag_with}, our calculus
 currently does not support polymorphism. We rely on the FreeST
 implementation as an external constraint solver for splitting
@@ -42,41 +43,67 @@ distinguishes between local and remote borrows, whereas their
 borrows are all remote, i.e., synchronize always. Our translation from \thecalculus to a low
 level calculus serves as a blueprint for an implementation and we
 present a simulation result.
-All metatheoretical results are mechanized using the Agda proof
-assistant.
+Metatheoretical results are mechanized using the Agda proof
+assistant~\cite{Agda}.
 
 Here are the novel aspects of \thecalculus in direct comparison to
 BST.
 \begin{itemize}
 \item Introduced binder groups to construct the direct semantic model.
 \item Introduced the concepts of mobility and boundedness
-  (\cref{fig:bounded-session-types}), which are key in identifying
-  remote borrows.
+  (\cref{fig:bounded-session-types}), which are key in enabling
+  efficient local borrows.
 \item Simplified the typing rules for let expressions and pair
-  eliminators: they draw their assumption only from a left context,
+  eliminators: in \thecalculus, they draw their assumption only from a left context,
   which simplifies the treatment of effects and the implementation; we
   observed no impact on example programs.
 \item Developed algorithmic typing based on constraints: the BST work
   provided a direct splitting algorithm for borrows based on
   traditional, tail-recursive session types; we leave the development
   of such a dedicated algorithm for future work.
-\item Our approach for constraint solving is new.
-\item Developed a new, low-level target calculus.
+\item Our approach to constraint solving is new.
+\item Developed a new, low-level target calculus along with a
+  translation into it.
 \end{itemize}
+
+
+%% other notions like Pfenning's et al stuff?
+Manifest sharing \cite{DBLP:journals/pacmpl/BalzerP17} and
+manifest deadlock freedom \cite{DBLP:conf/esop/BalzerTP19} (an
+extension of the former work) is concerned with session types, which
+make part of a protocol sharable. 
+
+
+
+%% Nested session types \cite{DBLP:journals/toplas/DasDMP22}
+
+\subsection{Ordered Types}
+\label{sec:ordered-types}
 
 Law and order \cite{DBLP:journals/pacmpl/Saffrich0024} is a precursor
 of BST. It draws inspiration from work on
 non-commutative logic and ordered lambda calculus
-\cite{DBLP:conf/tlca/PolakowP99,DBLP:conf/popl/PetersenHCP03,DBLP:journals/entcs/PolakowP99,DBLP:conf/tldi/AhmedW03}
-and puts it to work in the context of typestate. 
+\cite{DBLP:conf/tlca/PolakowP99,
+  DBLP:journals/entcs/PolakowP99}
+and puts it to work in the context of typestate. It targets sequential
+programming, so it is not concerned with synchronization issues, at all.
 
-%% other notions like Pfenning's et al stuff?
-Manifest sharing \cite{DBLP:journals/pacmpl/BalzerP17},
-Manifest deadlock freedom \cite{DBLP:conf/esop/BalzerTP19},
-Nested session types \cite{DBLP:journals/toplas/DasDMP22}
+Other work on ordered types and lambda calculi is concerned with
+memory management and memory layout
+\cite{DBLP:conf/popl/PetersenHCP03} or stack allocation
+\cite{DBLP:conf/tldi/AhmedW03}. Like Law and order, BST, and the
+present work, these earlier works deviate quickly from the pure,
+proof-theoretic form of ordered lambda calculus \cite{DBLP:conf/tlca/PolakowP99,
+  DBLP:journals/entcs/PolakowP99}. Each develops a calculus that picks
+up ideas, but puts significant domain-specific elements on top, to the
+extent that even basic elimination principles
+change. \citet{DBLP:conf/tldi/AhmedW03} share with our work the use of
+BI-contexts to distinguish ordered and unordered binding groups.
 
-
-
+\citet{DBLP:journals/pacmpl/CutlerWNHGSP24} present an application of
+ordered types to typing a calculus for streaming data. This system is
+very close to the original theory of ordered types, but it is
+restricted to first-order functions.
 
 \subsection{Borrowing}
 \label{sec:borrowing}
