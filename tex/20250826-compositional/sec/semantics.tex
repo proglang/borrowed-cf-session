@@ -52,12 +52,18 @@ contexts are standard except for the $\DirRight$ application where the
 argument evaluates before the function.  A thread context embeds an evaluation context in a
 single running thread and process contexts close under parallel
 composition and channel introduction.  The expression reduction
-relation, given in \cref{fig:expression-reduction}, contains the standard
+relation $\E[1]\EReduce\E[2]$, given in \cref{fig:expression-reduction}, contains the standard
 computational steps for beta-reduction, sequencing, pair and variant
 elimination, recursive unfolding, and closure under expression contexts.
 
-\Cref{fig:process-reduction} gives the process reduction relation.
-There are three groups: ordinary computation inside a thread, synchronization
+Process congruence $\Proc\Congruent\ProcQ$ is the standard structural congruence on
+configurations: parallel composition is associative and commutative with unit
+$\PExp{\CUnit}$, independent channel introductions commute, and introductions may
+move across parallel composition when their endpoints are fresh.  Its rules in \cref{fig:configuration-congruence} are used only to rearrange a
+configuration so that a redex is exposed.
+
+\Cref{fig:process-reduction} gives the process reduction relation $\Proc\PReduce\ProcQ$.
+There are three groups of rules: ordinary computation inside a thread, synchronization
 between the two endpoints of a channel, and structural closure.
 
 \begin{figure}[t!]
@@ -81,31 +87,31 @@ between the two endpoints of a channel, and structural closure.
   \label{fig:process-reduction}
 \end{figure}
 
-Rule \textsc{R-Exp} embeds an expression step in the selected thread context.
-Rule \textsc{R-New} allocates a fresh channel and returns the two
+Rule \RuleName{R-Exp} embeds an expression step in the selected thread context.
+Rule \RuleName{R-New} allocates a fresh channel and returns the two
 endpoints as a pair.  Each endpoint is placed behind an initial separator
 in its binder group, matching the acquiring session type assigned to channel
-creation in \cref{fig:process-typing}.  Rule \textsc{R-Fork} spawns the
+creation in \cref{fig:process-typing}.  Rule \RuleName{R-Fork} spawns the
 thunked process in parallel and returns unit to the forking thread.
 
 Communication rules operate on the heads of dual binder groups.  Rule
-\textsc{R-Com} synchronizes send and receive, transfers the transmitted value,
-and advances both groups.  Rule \textsc{R-Choice} similarly synchronizes
+\RuleName{R-Com} synchronizes send and receive, transfers the transmitted value,
+and advances both groups.  Rule \RuleName{R-Choice} similarly synchronizes
 selection and branching, returning the selected continuation as a variant.  Rule
-\textsc{R-Close} synchronizes close and wait at the end of a session, and rule
-\textsc{R-Discard} consumes an endpoint whose type permits it to be skipped.
+\RuleName{R-Close} synchronizes close and wait at the end of a session, and rule
+\RuleName{R-Discard} consumes an endpoint whose type permits it to be skipped.
 
 The split rules implement the local and remote structure described in
-\cref{sec:direct-semant-chann}.  Rule \textsc{R-LSplit} replaces one endpoint
+\cref{sec:direct-semant-chann}.  Rule \RuleName{R-LSplit} replaces one endpoint
 name by two names in the same binder group and returns the ordered
 pair.  Because a binder group is a sequence, subsequent reductions must consume
-the left component before the right component.  Rule \textsc{R-RSplit} replaces
+the left component before the right component.  Rule \RuleName{R-RSplit} replaces
 one endpoint name by two names separated by a binder-group separator and
 returns them as an unordered pair.  The separator is the runtime marker for the
 remote handoff tracked statically by the $\SDrop$ and $\SAcq$ constructors in
 \cref{fig:process-typing}.
 
-Rules \textsc{R-Drop} and \textsc{R-Acquire} move across such a separator.
+Rules \RuleName{R-Drop} and \RuleName{R-Acquire} move across such a separator.
 Dropping removes the endpoint immediately to the left of the separator and
 exposes the separator at the front of the remaining group.  Acquiring can fire
 only once the separator is exposed; it removes the separator and returns the
@@ -113,8 +119,8 @@ endpoint on the right.  Thus remote splitting transfers control from one
 thread to another only after the prefix of the original endpoint has been
 consumed.
 
-Finally, \textsc{R-Par} and \textsc{R-Bind} close reduction under parallel
-composition and restriction.  Rule \textsc{R-Struct} closes the relation under
+Finally, \RuleName{R-Par} and \RuleName{R-Bind} close reduction under parallel
+composition and restriction.  Rule \RuleName{R-Struct} closes the relation under
 the process congruence of \cref{fig:configuration-congruence}, so reductions
 may use associativity, commutativity, and scope movement to expose a redex.
 
