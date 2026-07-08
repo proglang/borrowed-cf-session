@@ -117,7 +117,7 @@ noRet-;-snd (_ ; y) = y
 
 first-borrow-noRet : ∀ {b Γ} → NoRet s → BindCtx′ s (suc b) Γ →
                      ∃[ s₁ ] ∃[ s₂ ] (s₁ ; s₂ ≃ s) × NoRet s₁
-first-borrow-noRet ns (cons _ s≃ _ _) = _ , _ , s≃ , noRet-;-fst (noRet-≃ (Eq*.symmetric _≃𝕊_ s≃) ns)
+first-borrow-noRet ns (cons _ _ _ s≃ _ _) = _ , _ , s≃ , noRet-;-fst (noRet-≃ (Eq*.symmetric _≃𝕊_ s≃) ns)
 
 
 ------------------------------------------------------------------------
