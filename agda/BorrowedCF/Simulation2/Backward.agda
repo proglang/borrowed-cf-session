@@ -47,7 +47,7 @@ Backward-Sim =
 --   RU-Struct   → non-ε ≈-chain engine             inline                       [HARD ×1]
 
 
-open import BorrowedCF.Simulation2.Backward.Leaf using (bwd-exp; bwd-fork)
+open import BorrowedCF.Simulation2.Backward.Leaf using (bwd-exp; bwd-fork; bwd-new)
 open import BorrowedCF.Simulation2.Backward.Inversions using (inv-U-⟪⟫; inv-U-∥; inv-U-ν)
 open import BorrowedCF.Simulation.ReverseInv
   using (inv-ν-chanCx; νσ-φfree; νσ-φfree-VSub; U-ν-φfree-eq; ν-inj)
@@ -91,8 +91,7 @@ sim← σ Vσ Γ-S ⊢P (c ◅ cs) red =
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Exp step) = bwd-exp  σ Vσ Γ-S ⊢P (sym eq) step
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Fork F V) = bwd-fork σ Vσ Γ-S ⊢P {F = F} V (sym eq)
 -- RU-New : post-swap bridge reconcile pending — HOLE.
-sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-New F) =
-  {! bwd-new : rnew-bridge is pre-swap (`1F⊗`0F); reconcile to post-swap `0F⊗`1F. !}
+sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-New {s = s} F) = bwd-new σ Vσ Γ-S ⊢P {s = s} {F = F} (sym eq)
 -- RU-Discard : silent GC absorbed by a-discard.
 sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Discard F V) =
   P , ε , subst (UP.⟪ F [ * ]* ⟫ ≈_) eq (≈-sym (─→ᵃ⇒≈ (a-discard F V)))
