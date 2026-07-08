@@ -16,14 +16,14 @@ open import BorrowedCF.Simulation.TranslationProperties using (≡→≋; Ub-V)
 
 private
   tL : ∀ {n} → Tm (4 + n)
-  tL = (((` 0F) ⊗ (` 3F)) ⊗ *) ⊗ (((` 1F) ⊗ (` 2F)) ⊗ *)
+  tL = (((` 1F) ⊗ (` 2F)) ⊗ *) ⊗ (((` 0F) ⊗ (` 3F)) ⊗ *)
 
   rnew-bridge : ∀ {m n} (E : Frame* m) (σ : m →ₛ n) (Vσ : VSub σ) →
     UP.ν (UP.φ UP.acq (UP.φ UP.acq UP.⟪
           (frame*-⋯ E σ Vσ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [ tL ]* ⟫))
       UP.≋
     U[ TP.ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
-          TP.⟪ (E ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 1F) ⊗ (` 0F) ]* ⟫ ] σ
+          TP.⟪ (E ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 0F) ⊗ (` 1F) ]* ⟫ ] σ
   rnew-bridge {m} {n} E σ Vσ =
     ≡→≋ (cong UP.ν (cong (UP.φ UP.acq) (cong (UP.φ UP.acq) (cong UP.⟪_⟫ bodyEq))))
     where
@@ -56,7 +56,7 @@ private
       frameEqA []        = refl
       frameEqA (F ∷ E*) = cong₂ _∷_ (perF F) (frameEqA E*)
       bodyEq : (frame*-⋯ E σ Vσ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [ tL ]*
-               ≡ ((E ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 1F) ⊗ (` 0F) ]*) ⋯ σ′
+               ≡ ((E ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 0F) ⊗ (` 1F) ]*) ⋯ σ′
       bodyEq = cong (_[ tL ]*) (sym (frameEqA E))
              ■ sym (frame-plug* (E ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) σ′ Vσ′)
 
@@ -64,7 +64,7 @@ U-new : ∀ {m n} (σ : m →ₛ n) → VSub σ → {s : _} {E : Frame* m}
       → U[ TP.⟪ E [ K (`new s) ·¹ * ]* ⟫ ] σ
           UR.─→ₚ
         U[ TP.ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
-              TP.⟪ (E ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 1F) ⊗ (` 0F) ]* ⟫ ] σ
+              TP.⟪ (E ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ (` 0F) ⊗ (` 1F) ]* ⟫ ] σ
 U-new σ Vσ {s} {E} =
   UR.RU-Struct
     (≡→≋ (cong UP.⟪_⟫ (frame-plug* E σ Vσ)))

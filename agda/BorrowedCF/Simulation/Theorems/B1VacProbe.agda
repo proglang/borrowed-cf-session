@@ -98,6 +98,12 @@ noRet-≃ (x ◅ xs) = noRet-≃ xs ∘ go x where
   go (bwd ≃𝕊-μ) x = mu (noRet-⋯⁻¹ x)
   go (bwd ≃𝕊-assoc) (x ; (y ; z)) = (x ; y) ; z
   go (bwd ≃𝕊-distr) (brn (x₁ ; y) (x₂ ; _)) = brn x₁ x₂ ; y
+  go (fwd (≃𝕊-msg eq))  msg       = msg
+  go (fwd (≃𝕊-brn₁ eq)) (brn x y) = brn (go (fwd eq) x) y
+  go (fwd (≃𝕊-brn₂ eq)) (brn x y) = brn x (go (fwd eq) y)
+  go (bwd (≃𝕊-msg eq))  msg       = msg
+  go (bwd (≃𝕊-brn₁ eq)) (brn x y) = brn (go (bwd eq) x) y
+  go (bwd (≃𝕊-brn₂ eq)) (brn x y) = brn x (go (bwd eq) y)
 
 ------------------------------------------------------------------------
 -- The decisive obstruction:  a New-derived front session s ; end ⁇ is
@@ -550,3 +556,9 @@ retTip-≃ (x ◅ xs)   rt = retTip-≃ xs (go x rt) where
   go (bwd ≃𝕊-distr)   (brn (n1 tR r1) (n2 tR r2))   = (brn n1 n2) tR r1
   go (bwd ≃𝕊-distr)   (brn (r1 tL sk1) (n2 tR r2))  = ⊥-elim (retTip⊥skips r2 sk1)
   go (bwd ≃𝕊-distr)   (brn (n1 tR r1) (r2 tL sk2))  = ⊥-elim (retTip⊥skips r1 sk2)
+  go (fwd (≃𝕊-msg eq))  ()
+  go (fwd (≃𝕊-brn₁ eq)) (brn r1 r2) = brn (go (fwd eq) r1) r2
+  go (fwd (≃𝕊-brn₂ eq)) (brn r1 r2) = brn r1 (go (fwd eq) r2)
+  go (bwd (≃𝕊-msg eq))  ()
+  go (bwd (≃𝕊-brn₁ eq)) (brn r1 r2) = brn (go (bwd eq) r1) r2
+  go (bwd (≃𝕊-brn₂ eq)) (brn r1 r2) = brn r1 (go (bwd eq) r2)
