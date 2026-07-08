@@ -143,7 +143,7 @@ pair-not-chan ⊢p ch with pair-ty ⊢p
 value-⋯⁻¹ : (σ : m →ₛ n) → VSub σ → (e₀ : Tm m) → Value (e₀ ⋯ σ) → Value e₀
 value-⋯⁻¹ σ Vσ (` x)               V = V-`
 value-⋯⁻¹ σ Vσ (K c)               V = V-K
-value-⋯⁻¹ σ Vσ (ƛ d e)             V = V-λ
+value-⋯⁻¹ σ Vσ (ƛ e)               V = V-λ
 value-⋯⁻¹ σ Vσ (e₁ ⊗ e₂) (V-⊗ V₁ V₂) =
   V-⊗ (value-⋯⁻¹ σ Vσ e₁ V₁) (value-⋯⁻¹ σ Vσ e₂ V₂)
 value-⋯⁻¹ σ Vσ (`inj i e)  (V-⊕ V)    = V-⊕ (value-⋯⁻¹ σ Vσ e V)
@@ -191,13 +191,13 @@ value-step V (E-Ctx `case□`of⟨ _ ; _ ⟩ red) with V
 ------------------------------------------------------------------------
 
 ⋯→-app : {e₁ e₂ e′ : Tm n} {d : Dir} → (e₁ ·⟨ d ⟩ e₂) ⋯→ e′ →
-     (Σ[ b ∈ Tm (suc n) ] (e₁ ≡ ƛ d b) × Value e₂ × (e′ ≡ b ⋯ ⦅ e₂ ⦆))
+     (Σ[ b ∈ Tm (suc n) ] (e₁ ≡ ƛ b) × Value e₂ × (e′ ≡ b ⋯ ⦅ e₂ ⦆))
    ⊎ (Σ[ e₁′ ∈ Tm n ] (e₁ ⋯→ e₁′) × (e′ ≡ e₁′ ·⟨ d ⟩ e₂) × (d ≡ L → Value e₂))
    ⊎ ((d ≡ 𝟙 Sum.⊎ d ≡ R → Value e₁) × Σ[ e₂′ ∈ Tm n ] (e₂ ⋯→ e₂′) × (e′ ≡ e₁ ·⟨ d ⟩ e₂′))
 ⋯→-app {e₁ = e₁} {e₂ = e₂} {e′ = e′} {d = d} step = go _ step refl
   where
     go : (t : Tm _) → t ⋯→ e′ → t ≡ e₁ ·⟨ d ⟩ e₂ →
-         (Σ[ b ∈ Tm (suc _) ] (e₁ ≡ ƛ d b) × Value e₂ × (e′ ≡ b ⋯ ⦅ e₂ ⦆))
+         (Σ[ b ∈ Tm (suc _) ] (e₁ ≡ ƛ b) × Value e₂ × (e′ ≡ b ⋯ ⦅ e₂ ⦆))
        ⊎ (Σ[ e₁′ ∈ Tm _ ] (e₁ ⋯→ e₁′) × (e′ ≡ e₁′ ·⟨ d ⟩ e₂) × (d ≡ L → Value e₂))
        ⊎ ((d ≡ 𝟙 Sum.⊎ d ≡ R → Value e₁) × Σ[ e₂′ ∈ Tm _ ] (e₂ ⋯→ e₂′) × (e′ ≡ e₁ ·⟨ d ⟩ e₂′))
     go _ (E-□ (E-App V)) refl = inj₁ (_ , refl , V , refl)
@@ -349,10 +349,10 @@ value-step V (E-Ctx `case□`of⟨ _ ; _ ⟩ red) with V
 -- variable (σ may map it to a λ) or literally a λ.  (Likewise ⊗ / inj.)  Used
 -- to dispatch the head-redex branch of ⋯→-reflect: the variable alternative is
 -- refuted by the source typing (chanvar-not* / var-app-absurd).
-headλ : (σ : m →ₛ n) → (e₁ : Tm m) {d : Dir} {b : Tm (suc n)} → (e₁ ⋯ σ) ≡ ƛ d b
-  → (Σ[ x ∈ 𝔽 m ] e₁ ≡ ` x) ⊎ (Σ[ b₀ ∈ Tm (suc m) ] e₁ ≡ ƛ d b₀)
+headλ : (σ : m →ₛ n) → (e₁ : Tm m) {b : Tm (suc n)} → (e₁ ⋯ σ) ≡ ƛ b
+  → (Σ[ x ∈ 𝔽 m ] e₁ ≡ ` x) ⊎ (Σ[ b₀ ∈ Tm (suc m) ] e₁ ≡ ƛ b₀)
 headλ σ (` x)       eq   = inj₁ (x , refl)
-headλ σ (ƛ d e)     refl = inj₂ (e , refl)
+headλ σ (ƛ e)       refl = inj₂ (e , refl)
 
 head⊗ : (σ : m →ₛ n) → (e₁ : Tm m) {a b : Tm n} → (e₁ ⋯ σ) ≡ a ⊗ b
   → (Σ[ x ∈ 𝔽 m ] e₁ ≡ ` x) ⊎ (Σ[ a₀ ∈ Tm m ] Σ[ b₀ ∈ Tm m ] e₁ ≡ a₀ ⊗ b₀)
@@ -428,7 +428,7 @@ headCase σ (` x)                     eq = inj₁ (x , refl)
 headCase σ (`case s₀ `of⟨ c₁ ; c₂ ⟩) refl = inj₂ (s₀ , c₁ , c₂ , refl , refl , refl , refl)
 
 -- Injectivity of term constructors (for matching head equalities).
-ƛ-inj : {d : Dir} {b₁ b₂ : Tm (suc n)} → (ƛ d b₁) ≡ (ƛ d b₂) → b₁ ≡ b₂
+ƛ-inj : {b₁ b₂ : Tm (suc n)} → (ƛ b₁) ≡ (ƛ b₂) → b₁ ≡ b₂
 ƛ-inj refl = refl
 
 ⊗-inj : {a₁ a₂ b₁ b₂ : Tm n} → (a₁ ⊗ b₁) ≡ (a₂ ⊗ b₂) → (a₁ ≡ a₂) × (b₁ ≡ b₂)
@@ -457,7 +457,7 @@ case-eq false e₁ e₂ v σ = sym (dist-↑-⦅⦆-⋯ e₂ v σ)
   → Σ[ e₀′ ∈ Tm m ] (e₀ ⋯→ e₀′) × (e₂ ≡ e₀′ ⋯ σ)
 ⋯→-reflect Γ-S (` x)   ⊢e σ Vσ step = ⊥-elim (value-step (Vσ x) step)
 ⋯→-reflect Γ-S (K c)   ⊢e σ Vσ step = ⊥-elim (value-step V-K step)
-⋯→-reflect Γ-S (ƛ d e) ⊢e σ Vσ step = ⊥-elim (value-step V-λ step)
+⋯→-reflect Γ-S (ƛ e) ⊢e σ Vσ step = ⊥-elim (value-step V-λ step)
 ⋯→-reflect Γ-S (μ e)   ⊢e σ Vσ step =
   e ⋯ ⦅ μ e ⦆ , E-□ E-Unfold , (⋯→-mu step ■ sym (dist-↑-⦅⦆-⋯ e (μ e) σ))
 ⋯→-reflect Γ-S (e₁ ⊗ e₂) ⊢e σ Vσ step
