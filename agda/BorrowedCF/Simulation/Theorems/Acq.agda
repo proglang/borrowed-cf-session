@@ -214,17 +214,40 @@ U-σ⋯ₛ {n = n} {n′ = n′} (T.ν B₁ B₂ P) {σ} {τ} =
       ■ cong (λ z → z ⋯ weaken* ⦃ Kᵣ ⦄ sB₁ ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
           (sym (⋯-↑*-wk (σ i) τ 2))
 
-U-acq : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+-- A single untyped step lifts through a Bφ prefix (φ-nest) via RU-Sync.
+Bφ-lift-step : (B : BindGroup) {n : ℕ} {P Q : U.Proc (syncs B + n)} →
+               P UR.─→ₚ Q → Bφ {n} B P UR.─→ₚ Bφ B Q
+Bφ-lift-step []              r = r
+Bφ-lift-step (b ∷ [])        r = r
+Bφ-lift-step (b ∷ B@(_ ∷ _)) {n} r =
+  UR.RU-Sync (Bφ-lift-step B (subst-→ₚ (sym (+-suc (syncs B) n)) r))
+  where
+    subst-→ₚ : ∀ {a c} (eq : a ≡ c) {P Q : U.Proc a} → P UR.─→ₚ Q →
+               subst U.Proc eq P UR.─→ₚ subst U.Proc eq Q
+    subst-→ₚ refl r = r
+
+-- The single atomic RU-Acquire firing at the leaf (single-step variant of
+-- leaf-fire, whose body is `UR.RU-Acquire F ◅ ε`).
+leaf-fire-step : ∀ {n} (F : Frame* (2 + n)) {e : Tm (2 + n)} (Q : U.Proc (2 + n)) →
+  U.ν (U.φ U.acq (U.⟪ (F ⋯ᶠ* weakenᵣ) [ K `acq ·¹ (((` 0F) ⊗ (` 1F)) ⊗ wk e) ]* ⟫ U.∥ (Q U.⋯ₚ weakenᵣ)))
+    UR.─→ₚ
+  U.ν (U.⟪ F [ (* ⊗ (` 0F)) ⊗ e ]* ⟫ U.∥ Q)
+leaf-fire-step F {e} Q = UR.RU-Acquire F
+
+-- Single-step variant of U-acq: the atomic RU-Acquire fires exactly once
+-- (the width-0 first block always emits a `φ acq` cell, ϕ[0] = acq, so no
+-- `≋`-only branch occurs).  Reuses U-acq's entire where-block; only the fire
+-- packaging changes (RU-Struct front fire-step back, not ≋-wrap-⊎ front fire back).
+U-acq-step : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
       → {g : Struct m} {b₁ : ℕ} {B₁ B₂ : BindGroup}
         {E : Frame* (sum (zero ∷ suc b₁ ∷ B₁) + sum B₂ + m)}
         {P : T.Proc (sum (zero ∷ suc b₁ ∷ B₁) + sum B₂ + m)}
       → Γ ; g ⊢ₚ T.ν (zero ∷ suc b₁ ∷ B₁) B₂ (T.⟪ E [ K `acq ·¹ (` 0F) ]* ⟫ T.∥ P)
-      → (U[ T.ν (zero ∷ suc b₁ ∷ B₁) B₂ (T.⟪ E [ K `acq ·¹ (` 0F) ]* ⟫ T.∥ P) ] σ
-           UR─→ₚ* U[ T.ν (suc b₁ ∷ B₁) B₂ (T.⟪ E [ ` zero ]* ⟫ T.∥ P) ] σ)
-        ⊎ (U[ T.ν (zero ∷ suc b₁ ∷ B₁) B₂ (T.⟪ E [ K `acq ·¹ (` 0F) ]* ⟫ T.∥ P) ] σ
-           U.≋ U[ T.ν (suc b₁ ∷ B₁) B₂ (T.⟪ E [ ` zero ]* ⟫ T.∥ P) ] σ)
-U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P} ⊢P =
-  ≋-wrap-⊎ front fire back
+      → U[ T.ν (zero ∷ suc b₁ ∷ B₁) B₂ (T.⟪ E [ K `acq ·¹ (` 0F) ]* ⟫ T.∥ P) ] σ
+           UR.─→ₚ
+        U[ T.ν (suc b₁ ∷ B₁) B₂ (T.⟪ E [ ` zero ]* ⟫ T.∥ P) ] σ
+U-acq-step {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P} ⊢P =
+  UR.RU-Struct front fire-step back
   where
     C : BindGroup
     C = suc b₁ ∷ B₁
@@ -1340,6 +1363,10 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
     leaf-part = subst₂ _UR─→ₚ*_ in-eq out-eq (leaf-fire Fbase {ebase} Qbase)
     fire : mid UR─→ₚ* fired
     fire = Bφ-fire C (Bφ-fire B₂ leaf-part)
+    leaf-part-step : U.ν (U.φ U.acq LL₃) UR.─→ₚ U.ν leaf′
+    leaf-part-step = subst₂ UR._─→ₚ_ in-eq out-eq (leaf-fire-step Fbase {ebase} Qbase)
+    fire-step : mid UR.─→ₚ fired
+    fire-step = Bφ-lift-step C (Bφ-lift-step B₂ leaf-part-step)
     back : fired U.≋ U[ T.ν C B₂ QR ] σ
     back =
          Bφ-cong C (Bφ-past-ν B₂ leaf′)
@@ -1347,3 +1374,15 @@ U-acq {m} {n} σ Vσ Γ-S {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P =
       ◅◅ U.ν-cong (Bφ-cong C (≡→≋ (Bφ-⋯ B₂ (leaf′ U.⋯ₚ assocSwapᵣ 2 sB₂) (assocSwapᵣ 2 sC))))
       ◅◅ U.ν-cong (Bφ-cong C (Bφ-cong B₂ (≡→≋ leafReconcile)))
       ◅◅ ≡→≋ (sym (Uν-flat σ C B₂ QR))
+
+U-acq : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+      → {g : Struct m} {b₁ : ℕ} {B₁ B₂ : BindGroup}
+        {E : Frame* (sum (zero ∷ suc b₁ ∷ B₁) + sum B₂ + m)}
+        {P : T.Proc (sum (zero ∷ suc b₁ ∷ B₁) + sum B₂ + m)}
+      → Γ ; g ⊢ₚ T.ν (zero ∷ suc b₁ ∷ B₁) B₂ (T.⟪ E [ K `acq ·¹ (` 0F) ]* ⟫ T.∥ P)
+      → (U[ T.ν (zero ∷ suc b₁ ∷ B₁) B₂ (T.⟪ E [ K `acq ·¹ (` 0F) ]* ⟫ T.∥ P) ] σ
+           UR─→ₚ* U[ T.ν (suc b₁ ∷ B₁) B₂ (T.⟪ E [ ` zero ]* ⟫ T.∥ P) ] σ)
+        ⊎ (U[ T.ν (zero ∷ suc b₁ ∷ B₁) B₂ (T.⟪ E [ K `acq ·¹ (` 0F) ]* ⟫ T.∥ P) ] σ
+           U.≋ U[ T.ν (suc b₁ ∷ B₁) B₂ (T.⟪ E [ ` zero ]* ⟫ T.∥ P) ] σ)
+U-acq {m} {n} σ Vσ Γ-S {g = g} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P} ⊢P =
+  inj₁ (U-acq-step {m} {n} σ Vσ Γ-S {g = g} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P} ⊢P ◅ ε)
