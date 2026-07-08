@@ -19,7 +19,7 @@ open import BorrowedCF.Simulation.RevAdmin using (_≈_; ≋⇒≈)
 open import BorrowedCF.Simulation.TranslationProperties using (≡→≋; U-cong; Ub-V)
 open import BorrowedCF.Simulation.Frames using (frame-plug*; frame*-⋯)
 open import BorrowedCF.Simulation.Theorems.SplitsH2 using (frame*-cong)
-open import BorrowedCF.Simulation.Theorems.Acq using (U-σ⋯ₛ; frame-fusion-gen)
+open import BorrowedCF.Simulation.Theorems.Acq using (U-σ⋯ₛ; frame-fusion-gen; F-⋯f*-fuse; ·ₖ-VSubᵣ)
 open import BorrowedCF.Context using (Ctx; Struct)
 open import BorrowedCF.Reduction.Base using (ChanCx)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_)
@@ -411,3 +411,81 @@ acq-go :
 acq-go σ Vσ Γ-S {P = P} F ⊢P eq
   with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ eq
   = acq-goB B₁ B₂ σ Vσ Γ-S P₀ F ⊢P bodyeq
+
+------------------------------------------------------------------------
+-- weakenᵣ / ⦅ * ⦆ₛ cancellation (terms, procs, frames) for the atomic bridge.
+------------------------------------------------------------------------
+
+private
+  wk⦅*⦆ᵉ : ∀ {k} (t : Tm k) → (t ⋯ weakenᵣ) ⋯ ⦅ * ⦆ₛ ≡ t
+  wk⦅*⦆ᵉ t = fusion t weakenᵣ ⦅ * ⦆ₛ ■ ⋯-id t (λ _ → refl)
+
+  ⋯ₚ-idₛ : ∀ {k} (P : U.Proc k) {σ : k →ₛ k} → σ ≗ idₖ → P U.⋯ₚ σ ≡ P
+  ⋯ₚ-idₛ U.⟪ e ⟫   eq = cong U.⟪_⟫ (⋯-id e eq)
+  ⋯ₚ-idₛ (P U.∥ Q) eq = cong₂ U._∥_ (⋯ₚ-idₛ P eq) (⋯ₚ-idₛ Q eq)
+  ⋯ₚ-idₛ (U.ν P)   eq = cong U.ν (⋯ₚ-idₛ P (id↑* 2 eq))
+  ⋯ₚ-idₛ (U.φ x P) eq = cong (U.φ x) (⋯ₚ-idₛ P (id↑ eq))
+
+  wk⦅*⦆ᵖ : ∀ {k} (P : U.Proc k) → (P U.⋯ₚ weakenᵣ) U.⋯ₚ ⦅ * ⦆ₛ ≡ P
+  wk⦅*⦆ᵖ P = U.fusionₚ P weakenᵣ ⦅ * ⦆ₛ ■ ⋯ₚ-idₛ P (λ _ → refl)
+
+  app₁-eq : ∀ {k} {a b : Tm k} (d : Dir) (eq : a ≡ b)
+            (Va : d ≡ L → Value a) (Vb : d ≡ L → Value b) → app₁ a d Va ≡ app₁ b d Vb
+  app₁-eq d refl Va Vb = cong (app₁ _ d) (funext (λ _ → Value-irr))
+
+  app₂-eq : ∀ {k} {a b : Tm k} (d : Dir) (eq : a ≡ b)
+            (Va : d ≡ 𝟙 ⊎ d ≡ R → Value a) (Vb : d ≡ 𝟙 ⊎ d ≡ R → Value b) → app₂ a d Va ≡ app₂ b d Vb
+  app₂-eq d refl Va Vb = cong (app₂ _ d) (funext (λ _ → Value-irr))
+
+  ⊗□-eq : ∀ {k} {a b : Tm k} (eq : a ≡ b) (Va : Value a) (Vb : Value b) → (Va ⊗□) ≡ (Vb ⊗□)
+  ⊗□-eq refl Va Vb = cong _⊗□ Value-irr
+
+  frame-⋯-idₛ : ∀ {k} (E : Frame k) {σ : k →ₛ k} (Vσ : VSub σ) → σ ≗ idₖ → frame-⋯ E σ Vσ ≡ E
+  frame-⋯-idₛ (app₁ e d V?) Vσ eq = app₁-eq d (⋯-id e eq) _ V?
+  frame-⋯-idₛ (app₂ e d V?) Vσ eq = app₂-eq d (⋯-id e eq) _ V?
+  frame-⋯-idₛ (□⊗ e₂) Vσ eq = cong □⊗_ (⋯-id e₂ eq)
+  frame-⋯-idₛ (V₁ ⊗□) Vσ eq = ⊗□-eq (⋯-id _ eq) _ V₁
+  frame-⋯-idₛ (□; e₂) Vσ eq = cong □;_ (⋯-id e₂ eq)
+  frame-⋯-idₛ (`let-`in e′) Vσ eq = cong `let-`in_ (⋯-id e′ (id↑ eq))
+  frame-⋯-idₛ (`let⊗-`in e′) Vσ eq = cong `let⊗-`in_ (⋯-id e′ (id↑ (id↑ eq)))
+  frame-⋯-idₛ (`inj□ i) Vσ eq = refl
+  frame-⋯-idₛ (`case□`of⟨ e₁ ; e₂ ⟩) Vσ eq =
+    cong₂ `case□`of⟨_;_⟩ (⋯-id e₁ (id↑ eq)) (⋯-id e₂ (id↑ eq))
+
+  frame*-⋯-idₛ : ∀ {k} (F : Frame* k) {σ : k →ₛ k} (Vσ : VSub σ) → σ ≗ idₖ → frame*-⋯ F σ Vσ ≡ F
+  frame*-⋯-idₛ []       Vσ eq = refl
+  frame*-⋯-idₛ (Fr ∷ F) Vσ eq = cong₂ _∷_ (frame-⋯-idₛ Fr Vσ eq) (frame*-⋯-idₛ F Vσ eq)
+
+  wk⦅*⦆ᶠ : ∀ {k} (F : Frame* k) → frame*-⋯ (F ⋯ᶠ* weakenᵣ) ⦅ * ⦆ₛ V⦅*⦆ ≡ F
+  wk⦅*⦆ᶠ F = F-⋯f*-fuse F V⦅*⦆ (·ₖ-VSubᵣ weakenᵣ V⦅*⦆)
+           ■ frame*-⋯-idₛ F (·ₖ-VSubᵣ weakenᵣ V⦅*⦆) (λ _ → refl)
+
+------------------------------------------------------------------------
+-- acq-reflect : the leaf-style atomic RU-Acquire reflection.  Interface
+-- mirrors Backward.Close.close-reflect: the untyped redex is presented as
+-- U[ P ] σ ≡ (RU-Acquire LHS); the result is (RU-Acquire RHS) ≈ U[ P′ ] σ.
+------------------------------------------------------------------------
+
+acq-reflect : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+            → {g : Struct m} {P : T.Proc m} → Γ ; g ⊢ₚ P
+            → {e : Tm (2 + n)} {P₁ : U.Proc (2 + n)} {F : Frame* (2 + n)}
+            → U[ P ] σ ≡ U.ν (U.φ U.acq
+                (U.⟪ (F ⋯ᶠ* weakenᵣ) [ K `acq ·¹ (((` 0F) ⊗ (` 1F)) ⊗ wk e) ]* ⟫
+                 U.∥ (P₁ U.⋯ₚ weakenᵣ)))
+            → Σ[ P′ ∈ T.Proc m ]
+                (Star TR._─→ₚ_ P P′
+                 × U.ν (U.⟪ F [ ((* ⊗ (` 0F)) ⊗ e) ]* ⟫ U.∥ P₁) ≈ U[ P′ ] σ)
+acq-reflect σ Vσ Γ-S {P = P} ⊢P {e = e} {P₁ = P₁} {F = F} eq
+  with P′ , step , c ← acq-go σ Vσ Γ-S {P = P} (F ⋯ᶠ* weakenᵣ)
+                         {e' = wk e} {P₁ = P₁ U.⋯ₚ weakenᵣ} ⊢P (sym eq)
+  = P′ , step , subst (_≈ U[ P′ ] σ) bridge c
+  where
+    threadBridge : ((F ⋯ᶠ* weakenᵣ) [ ((` 0F) ⊗ (` 1F)) ⊗ wk e ]*) ⋯ ⦅ * ⦆ₛ
+                 ≡ F [ ((* ⊗ (` 0F)) ⊗ e) ]*
+    threadBridge =
+        frame-plug* (F ⋯ᶠ* weakenᵣ) ⦅ * ⦆ₛ V⦅*⦆
+      ■ cong₂ _[_]* (wk⦅*⦆ᶠ F) (cong (λ z → ((* ⊗ (` 0F)) ⊗ z)) (wk⦅*⦆ᵉ e))
+    bridge : U.ν ((U.⟪ (F ⋯ᶠ* weakenᵣ) [ ((` 0F) ⊗ (` 1F)) ⊗ wk e ]* ⟫
+                   U.∥ (P₁ U.⋯ₚ weakenᵣ)) U.⋯ₚ ⦅ * ⦆ₛ)
+           ≡ U.ν (U.⟪ F [ ((* ⊗ (` 0F)) ⊗ e) ]* ⟫ U.∥ P₁)
+    bridge = cong U.ν (cong₂ U._∥_ (cong U.⟪_⟫ threadBridge) (wk⦅*⦆ᵖ P₁))
