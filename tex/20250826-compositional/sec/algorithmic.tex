@@ -223,6 +223,9 @@ $\SSkip$ as well as any other skipping session type \js{do we use this
 terminology?} are never valid solutions for unification variables as this would
 be equivalent to splitting a session type from itself.
 
+One instance where the heuristic falls short is when the second component of a
+$\CSSplit$-result is split further with a prefix of more than just $\SAcq$.
+
 \subsection{Implementation}
 
 We supplement our theoretical work on the bidirectional type checking algorithm from this section with an implementation written in Rust. 

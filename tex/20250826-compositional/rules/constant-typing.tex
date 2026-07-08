@@ -11,7 +11,7 @@
 % CT-Fork
 \DefRule {Fork} {} {
   \HasCType\CFork{
-    \TArr{\MobMobile}{\DirUnord,\EffPure}{
+    \TArr{\MobMobile}{\DirNone,\EffPure}{
       (\TArr{\MobMobile}{\DirUnord,\EffImpure}\BUnit\BUnit)
     }{\BUnit}
   }
@@ -23,7 +23,7 @@
 } {
   \HasCType
     {\CNew_{\S}}
-    {\TArr{\MobMobile}{\DirUnord,\EffPure}
+    {\TArr{\MobMobile}{\DirNone,\EffPure}
       {\BUnit}
       {\TPairUnord
         {(\SSeq{\SAcq}{\SSeq\S\STerm})}
@@ -35,13 +35,13 @@
 % CT-Drop
 \DefRule {Drop} {} {
   \HasCType
-  {\CDrop}{\TArr{\MobMobile}{\DirUnord,\EffPure}{\SDrop}{\BUnit}}
+  {\CDrop}{\TArr{\MobMobile}{\DirNone,\EffImpure}{\SDrop}{\BUnit}}
 }
 
 % CT-Acquire
 \DefRule {Acquire} {} {
   \HasCType
-  {\CAcq}{\TArr{\MobMobile}{\DirUnord,\EffPure}{\SSeq\SAcq\S}{\S}}
+  {\CAcq}{\TArr{\MobMobile}{\DirNone,\EffPure}{\SSeq\SAcq\S}{\S}}
 }
 
 % CT-LSplit
@@ -63,12 +63,12 @@
 
 % CT-Wait
 \DefRule {Wait} {} {
-  \HasCType\CWait{\TArr{\MobMobile}{\DirUnord,\EffImpure}{\SWait}\BUnit}
+  \HasCType\CWait{\TArr{\MobMobile}{\DirNone,\EffImpure}{\SWait}\BUnit}
 }
 
 % CT-Term
 \DefRule {Term} {}{
-  \HasCType\CTerm{\TArr{\MobMobile}{\DirUnord,\EffImpure}{\STerm}\BUnit}
+  \HasCType\CTerm{\TArr{\MobMobile}{\DirNone,\EffImpure}{\STerm}\BUnit}
 }
 
 % CT-Send
@@ -77,7 +77,7 @@
 }{
   \HasCType
     {\CSend_{\T}}
-    {\TArr{\MobMobile}{\DirUnord,\EffImpure}{\TPairUnord{\T}{\SSend\T}}\BUnit}
+    {\TArr{\MobMobile}{\DirNone,\EffImpure}{\TPairUnord{\T}{\SSend\T}}\BUnit}
 }
 
 % CT-Recv
@@ -86,7 +86,7 @@
 }{
   \HasCType
     {\CRecv_{\T}}
-    {\TArr{\MobMobile}{\DirUnord,\EffImpure}{\SRecv\T}\T}
+    {\TArr{\MobMobile}{\DirNone,\EffImpure}{\SRecv\T}\T}
 }
 
 % CT-Select
@@ -94,7 +94,7 @@
   k \in L
 } {
   \HasCType{\CSelect{k}}{
-    \TArr{\MobMobile}{\DirUnord,\EffImpure}
+    \TArr{\MobMobile}{\DirNone,\EffImpure}
       {\SChoice{\ell:\S[\ell]}{\ell\in L}}
       {\S[k]}
   }
@@ -107,7 +107,7 @@
 % CT-Branch
 \DefRule {Branch} {} {
   \HasCType\CBranch{
-    \TArr{\MobMobile}{\DirUnord,\EffImpure}
+    \TArr{\MobMobile}{\DirNone,\EffImpure}
       {\SBranch{\ell:\S[\ell]}{\ell\in L}}
       {\TVariant{\ell:\S[\ell]}}
       %{\Sigma_k \S[k]}
@@ -117,7 +117,7 @@
 % CT-Discard
 \DefRule {Discard} {} {
   \HasCType\CDiscard{
-    \TArr{\MobMobile}{\DirUnord,\EffPure}
+    \TArr{\MobMobile}{\DirNone,\EffPure}
       {\SSkip}
       {\BUnit}
   }
