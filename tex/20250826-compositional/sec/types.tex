@@ -165,7 +165,7 @@ supplied to $\CNew$ must be a source protocol: the side condition $\SNew\S$
 restricts it to $\SSkip$, sends, receives, choices, branches, sequencing, and
 recursion, excluding the synchronization-like markers $\SAcq$, $\SDrop$,
 $\STerm$, and $\SWait$, which are introduced only by remote splitting and
-closing (\cref{fig:omitted-predicates}). Communication
+closing. Communication
 constants consume exactly the session prefix they implement: send and receive
 advance through $\SSend\T$ and $\SRecv\T$, selection advances an internal
 choice, and branching returns a variant over external branches. These
