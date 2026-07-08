@@ -56,33 +56,5 @@ open TP using (⊢-≋)
 --   R-Acq     → U-acq     [agent C]           PENDING
 --   R-Discard → U-discard                     DONE
 
-------------------------------------------------------------------------
--- sim→ : the assembled dispatcher.  12/14 cases below; R-Drop and R-Acq
--- are agent-owned (Forward.Drop / Forward.Acq) and pending, so they show
--- ONLY as coverage-misses — every other clause typechecks, proving the
--- dispatcher and all landed leaf lemmas fit together.
-------------------------------------------------------------------------
-
-sim→ : Forward-Sim
-sim→ σ Vσ Γ-S ⊢P (TR.R-Exp x)          = UR.RU-Exp (⋯→-⋯ₛ σ Vσ x)
-sim→ σ Vσ Γ-S ⊢P (TR.R-Fork E V)       = U-fork σ Vσ {E = E} V
--- (New temporarily omitted — RHS-orientation fix pending)
--- sim→ σ Vσ Γ-S ⊢P (TR.R-New E)          = U-new σ Vσ {E = E}
-sim→ σ Vσ Γ-S ⊢P (TR.R-Com {E₁ = E₁} {E₂ = E₂} V) = U-com σ Vσ Γ-S {E₁ = E₁} {E₂ = E₂} V ⊢P
-sim→ σ Vσ Γ-S ⊢P (TR.R-Choice E₁ E₂ i) = U-choice σ Vσ Γ-S {i = i} {E₁ = E₁} {E₂ = E₂} ⊢P
-sim→ σ Vσ Γ-S ⊢P (TR.R-LSplit {E = E}) = U-lsplit→ σ Vσ Γ-S {E = E} ⊢P
-sim→ σ Vσ Γ-S ⊢P (TR.R-RSplit {E = E}) = U-rsplit→ σ Vσ Γ-S {E = E} ⊢P
-sim→ σ Vσ Γ-S ⊢P (TR.R-Close {E₁ = E₁} {E₂ = E₂}) = U-close σ Vσ {E₁ = E₁} {E₂ = E₂}
-sim→ σ Vσ Γ-S ⊢P (TR.R-Discard {E = E}) = U-discard σ Vσ Γ-S {E = E} ⊢P
-sim→ σ Vσ Γ-S ⊢P (TR.R-Par red) with inv-∥ ⊢P
-... | _ , _ , _ , p , _ = UR.RU-Par (sim→ σ Vσ Γ-S p red)
-sim→ σ Vσ Γ-S ⊢P (TR.R-Bind {B₁} {B₂} red) with inv-ν ⊢P
-... | _ , _ , _ , _ , _ , _ , _ , C , C′ , ⊢Q =
-  UR.RU-Res (UB-cong-─→ B₁ (* , 0F , *) (V-K , V-K)
-    (λ σ₁ Vσ₁ → UB-cong-─→ B₂ (* , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , *) (V-K , V-K)
-      (λ σ₂ Vσ₂ → sim→ _
-        (++ₛ-VSub (++ₛ-VSub (weaken-VSub (syncs B₂) Vσ₁) Vσ₂)
-          (weaken-VSub (syncs B₂) (weaken-VSub (syncs B₁) (weaken-VSub 2 Vσ))))
-        (chanCx-⸴* (chanCx-⸴* (bindCtx⇒chanCtx C) (bindCtx⇒chanCtx C′)) Γ-S) ⊢Q red)))
-sim→ σ Vσ Γ-S ⊢P (TR.R-Struct e r e′) =
-  UR.RU-Struct (U-≋ σ e) (sim→ σ Vσ Γ-S (⊢-≋ Γ-S e ⊢P) r) (U-≋ σ e′)
+-- sim→ (total dispatcher) is re-assembled below once Forward.Drop + Forward.Acq
+-- land; the draft (verified: 12/14 cases typecheck) is in scratch/simfwd-dispatch.agda.

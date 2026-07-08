@@ -45,3 +45,16 @@ Backward-Sim =
 --   RU-Sync     → vacuous at top level             inline
 --   RU-Res      → simRes (φ-nest peel)             inline; ⊇ RU-Drop innermost  [HARD ×2]
 --   RU-Struct   → non-ε ≈-chain engine             inline                       [HARD ×1]
+
+open import BorrowedCF.Simulation2.Backward.Leaf using (bwd-exp; bwd-fork)
+open import BorrowedCF.Simulation.RevAdmin using (≈-refl)
+open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_)
+import BorrowedCF.Processes.Typed             as TP
+import BorrowedCF.Processes.Untyped           as UP
+import BorrowedCF.Reduction.Processes.Untyped as UR
+open import Data.Product using (Σ-syntax; _×_)
+open TP using (_;_⊢ₚ_)
+
+-- sim← / sim←ᵍ (total dispatcher) is assembled once the channel-op reflections
+-- and the 3 hard holes (simRes φ-nest ×2, non-ε engine) are ported/closed.
+-- Wired leaf reflections live in BorrowedCF.Simulation2.Backward.Leaf.
