@@ -340,3 +340,150 @@ snoc-unfold⁻¹ᴬ {s = s}{a = a} A sn with skips? s
 ...   | inj₁ (_ , l) = _ , mu l
 ...   | inj₂ (zero , _ , (z′ , snr) , _) = z′ , snr
 ...   | inj₂ (suc w , _ , _ , nv) = ⊥-elim (nv w refl)
+
+------------------------------------------------------------------------
+-- SnocA: Snoc whose ending atom is only required ≃ a (per-branch).
+-- Handles msg-payload rewrites (no brn desync); prefix uniqueness kills
+-- the residual right-cancellation at the μ-step.
+------------------------------------------------------------------------
+
+data SnocA {n} (a : 𝕊 n) : 𝕊 n → 𝕊 n → Set where
+  here : {a″ : 𝕊 n} → Atom a″ → a″ ≃ a → SnocA a a″ skip
+  _;₁_ : SnocA a s₁ z → Skips s₂ → SnocA a (s₁ ; s₂) z
+  -;₂_ : SnocA a s₂ z → SnocA a (s₁ ; s₂) (s₁ ; z)
+  brn  : SnocA a s₁ z₁ → SnocA a s₂ z₂ → SnocA a (brn p s₁ s₂) (brn p z₁ z₂)
+  mu   : SnocA (a ⋯ weakenᵣ) s z → SnocA a (mu s) (z ⋯ ⦅ mu s ⦆ₛ)
+
+snocA-sound : {a : 𝕊 n} → SnocA a w z → w ≃ z ; a
+snocA-sound (here A e) = ≃-trans e (≃-sym ≃-skipˡ)
+snocA-sound (sn ;₁ Sk) = ≃-trans (≃-skipsʳ Sk) (snocA-sound sn)
+snocA-sound (-;₂ sn) = ≃-trans (≃-; ≃-refl (snocA-sound sn)) (≃-sym ≃-assoc-;)
+snocA-sound (brn sn₁ sn₂) = ≃-trans (≃-brn (snocA-sound sn₁) (snocA-sound sn₂)) (≃-sym ≃-distr)
+snocA-sound {a = a} (mu {s = s} {z = z} sn) =
+  ≃-trans (≃-μ) (≃-trans (≃-⋯ {ϕ = ⦅ mu s ⦆ₛ} (snocA-sound sn))
+    (≃-; ≃-refl (≃-reflexive (wk-cancels-⦅⦆-⋯ a (mu s)))))
+
+skipsA⊥snocA : {a : 𝕊 n} → Skips w → SnocA a w z → ⊥
+skipsA⊥snocA Sk (here A e) = ¬skips-atom A Sk
+skipsA⊥snocA (Sk₁ ; Sk₂) (sn ;₁ _) = skipsA⊥snocA Sk₁ sn
+skipsA⊥snocA (Sk₁ ; Sk₂) (-;₂ sn) = skipsA⊥snocA Sk₂ sn
+skipsA⊥snocA (mu Sk) (mu sn) = skipsA⊥snocA Sk sn
+
+snocA-mu⁻ : {a : 𝕊 n} → SnocA a (mu s) z → ∃[ z′ ] SnocA (a ⋯ weakenᵣ) s z′
+snocA-mu⁻ (mu sn) = _ , sn
+snocA-mu⁻ (here A e) = case A of λ ()
+
+snocA-;⁻ : {a : 𝕊 n} → SnocA a (s₁ ; s₂) z →
+  (∃[ z′ ] SnocA a s₁ z′ × Skips s₂) ⊎ (∃[ z′ ] SnocA a s₂ z′)
+snocA-;⁻ (sn ;₁ Sk) = inj₁ (_ , sn , Sk)
+snocA-;⁻ (-;₂ sn) = inj₂ (_ , sn)
+snocA-;⁻ (here A e) = case A of λ ()
+
+snocA-brn⁻ : {a : 𝕊 n} → SnocA a (brn p s₁ s₂) z → (∃[ z₁ ] SnocA a s₁ z₁) × (∃[ z₂ ] SnocA a s₂ z₂)
+snocA-brn⁻ (brn sn₁ sn₂) = (_ , sn₁) , (_ , sn₂)
+snocA-brn⁻ (here A e) = case A of λ ()
+
+snocA-prefix-unique : {a : 𝕊 n} → SnocA a w z₁ → SnocA a w z₂ → z₁ ≃ z₂
+snocA-prefix-unique (here A₁ e₁) (here A₂ e₂) = ≃-refl
+snocA-prefix-unique (here A₁ e₁) (sn₂ ;₁ Sk) = case A₁ of λ ()
+snocA-prefix-unique (here A₁ e₁) (-;₂ sn₂) = case A₁ of λ ()
+snocA-prefix-unique (here A₁ e₁) (brn sn₂ sn₃) = case A₁ of λ ()
+snocA-prefix-unique (here A₁ e₁) (mu sn₂) = case A₁ of λ ()
+snocA-prefix-unique (sn₁ ;₁ Sk) (here A₂ e₂) = case A₂ of λ ()
+snocA-prefix-unique (-;₂ sn₁) (here A₂ e₂) = case A₂ of λ ()
+snocA-prefix-unique (brn sn₁ sn₃) (here A₂ e₂) = case A₂ of λ ()
+snocA-prefix-unique (mu sn₁) (here A₂ e₂) = case A₂ of λ ()
+snocA-prefix-unique (sn₁ ;₁ Sk₁) (sn₂ ;₁ Sk₂) = snocA-prefix-unique sn₁ sn₂
+snocA-prefix-unique (sn₁ ;₁ Sk₁) (-;₂ sn₂) = ⊥-elim (skipsA⊥snocA Sk₁ sn₂)
+snocA-prefix-unique (-;₂ sn₁) (sn₂ ;₁ Sk₂) = ⊥-elim (skipsA⊥snocA Sk₂ sn₁)
+snocA-prefix-unique (-;₂ sn₁) (-;₂ sn₂) = ≃-; ≃-refl (snocA-prefix-unique sn₁ sn₂)
+snocA-prefix-unique (brn sn₁ sn₂) (brn sn₃ sn₄) = ≃-brn (snocA-prefix-unique sn₁ sn₃) (snocA-prefix-unique sn₂ sn₄)
+snocA-prefix-unique (mu {s = s} sn₁) (mu sn₂) = ≃-⋯ {ϕ = ⦅ mu s ⦆ₛ} (snocA-prefix-unique sn₁ sn₂)
+
+------------------------------------------------------------------------
+-- Prefix uniqueness (exact Snoc) — makes bwd-μ preserve the prefix.
+------------------------------------------------------------------------
+
+snoc-prefix-unique : {a : 𝕊 n} → Atom a → Snoc a w z₁ → Snoc a w z₂ → z₁ ≃ z₂
+snoc-prefix-unique A here here = ≃-refl
+snoc-prefix-unique A here (sn₂ ;₁ Sk) = case A of λ ()
+snoc-prefix-unique A here (-;₂ sn₂) = case A of λ ()
+snoc-prefix-unique A (sn₁ ;₁ Sk) here = case A of λ ()
+snoc-prefix-unique A (-;₂ sn₁) here = case A of λ ()
+snoc-prefix-unique A (sn₁ ;₁ Sk₁) (sn₂ ;₁ Sk₂) = snoc-prefix-unique A sn₁ sn₂
+snoc-prefix-unique A (sn₁ ;₁ Sk₁) (-;₂ sn₂) = ⊥-elim (skips⊥snoc A Sk₁ sn₂)
+snoc-prefix-unique A (-;₂ sn₁) (sn₂ ;₁ Sk₂) = ⊥-elim (skips⊥snoc A Sk₂ sn₁)
+snoc-prefix-unique A (-;₂ sn₁) (-;₂ sn₂) = ≃-; ≃-refl (snoc-prefix-unique A sn₁ sn₂)
+snoc-prefix-unique A (brn sn₁ sn₂) (brn sn₃ sn₄) = ≃-brn (snoc-prefix-unique A sn₁ sn₃) (snoc-prefix-unique A sn₂ sn₄)
+snoc-prefix-unique {a = a} A (mu {s = s} sn₁) (mu sn₂) = ≃-⋯ {ϕ = ⦅ mu s ⦆ₛ} (snoc-prefix-unique (atom-⋯ᵣ A) sn₁ sn₂)
+
+------------------------------------------------------------------------
+-- ≃ transports Snoc, prefix preserved up to ≃ (fixed non-msg atom)
+------------------------------------------------------------------------
+
+SnocR : {n : ℕ} → 𝕊 n → 𝕊 n → 𝕊 n → Set
+SnocR {n} a w₂ z = ∃[ z₂ ] Snoc a w₂ z₂ × z ≃ z₂
+
+≃-snoc : {a : 𝕊 n} → Atom a → (∀ {p T} → a ≢ msg p T) → {w₁ w₂ : 𝕊 n} → w₁ ≃ w₂ → Snoc a w₁ z → SnocR a w₂ z
+≃-snoc A nm refl sn = _ , sn , ≃-refl
+≃-snoc {a = a} A nm (x ◅ xs) sn =
+  let z₂ , sn₂ , e = go x sn ; z₃ , sn₃ , e′ = ≃-snoc A nm xs sn₂ in z₃ , sn₃ , ≃-trans e e′
+  where
+  go : {w₁ w₂ : 𝕊 _} → SymClosure _≃𝕊_ w₁ w₂ → Snoc a w₁ z → SnocR a w₂ z
+  go (fwd (≃𝕊-msg x)) here = ⊥-elim (nm refl)
+  go (bwd (≃𝕊-msg x)) here = ⊥-elim (nm refl)
+  go (fwd ≃𝕊-μ) sn = _ , snoc-unfold A sn , ≃-refl
+  go (bwd ≃𝕊-μ) sn = let z₂ , sn₂ = snoc-unfold⁻¹ᴬ A sn in z₂ , sn₂ , snoc-prefix-unique A sn (snoc-unfold A sn₂)
+  go (fwd (≃𝕊-;₁ x)) (sn₁ ;₁ Sk) = let z₂ , sn₂ , e = go (fwd x) sn₁ in z₂ , sn₂ ;₁ Sk , e
+  go (fwd (≃𝕊-;₁ x)) (-;₂ sn) = _ , -;₂ sn , ≃-; (Eq*.return x) ≃-refl
+  go (bwd (≃𝕊-;₁ x)) (sn₁ ;₁ Sk) = let z₂ , sn₂ , e = go (bwd x) sn₁ in z₂ , sn₂ ;₁ Sk , e
+  go (bwd (≃𝕊-;₁ x)) (-;₂ sn) = _ , -;₂ sn , ≃-; (≃-sym (Eq*.return x)) ≃-refl
+  go (fwd (≃𝕊-;₂ x)) (sn₁ ;₁ Sk) = _ , sn₁ ;₁ ≃-skips (Eq*.return x) Sk , ≃-refl
+  go (fwd (≃𝕊-;₂ x)) (-;₂ sn) = let z₂ , sn₂ , e = go (fwd x) sn in _ , -;₂ sn₂ , ≃-; ≃-refl e
+  go (bwd (≃𝕊-;₂ x)) (sn₁ ;₁ Sk) = _ , sn₁ ;₁ ≃-skips (≃-sym (Eq*.return x)) Sk , ≃-refl
+  go (bwd (≃𝕊-;₂ x)) (-;₂ sn) = let z₂ , sn₂ , e = go (bwd x) sn in _ , -;₂ sn₂ , ≃-; ≃-refl e
+  go (fwd ≃𝕊-skipˡ) (sn₁ ;₁ Sk) = ⊥-elim (skips⊥snoc A skip sn₁)
+  go (fwd ≃𝕊-skipˡ) (-;₂ sn) = _ , sn , ≃-skipˡ
+  go (bwd ≃𝕊-skipˡ) sn = _ , -;₂ sn , ≃-sym ≃-skipˡ
+  go (fwd ≃𝕊-skipʳ) (sn₁ ;₁ Sk) = _ , sn₁ , ≃-refl
+  go (fwd ≃𝕊-skipʳ) (-;₂ sn) = ⊥-elim (skips⊥snoc A skip sn)
+  go (bwd ≃𝕊-skipʳ) sn = _ , sn ;₁ skip , ≃-refl
+  go (fwd ≃𝕊-assoc) ((sn₁ ;₁ Sk₂) ;₁ Sk₃) = _ , sn₁ ;₁ (Sk₂ ; Sk₃) , ≃-refl
+  go (fwd ≃𝕊-assoc) ((-;₂ sn₂) ;₁ Sk₃) = _ , -;₂ (sn₂ ;₁ Sk₃) , ≃-refl
+  go (fwd ≃𝕊-assoc) (-;₂ sn₃) = _ , -;₂ (-;₂ sn₃) , ≃-assoc-;
+  go (bwd ≃𝕊-assoc) (sn₁ ;₁ (Sk₂ ; Sk₃)) = _ , (sn₁ ;₁ Sk₂) ;₁ Sk₃ , ≃-refl
+  go (bwd ≃𝕊-assoc) (-;₂ (sn₂ ;₁ Sk₃)) = _ , (-;₂ sn₂) ;₁ Sk₃ , ≃-refl
+  go (bwd ≃𝕊-assoc) (-;₂ (-;₂ sn₃)) = _ , -;₂ sn₃ , ≃-sym ≃-assoc-;
+  go (fwd ≃𝕊-distr) (brn sn₁ sn₂ ;₁ Sk) = _ , brn (sn₁ ;₁ Sk) (sn₂ ;₁ Sk) , ≃-refl
+  go (fwd ≃𝕊-distr) (-;₂ sn) = _ , brn (-;₂ sn) (-;₂ sn) , ≃-distr
+  go (bwd ≃𝕊-distr) (brn (sn₁ ;₁ Sk₁) (sn₂ ;₁ Sk₂)) = _ , brn sn₁ sn₂ ;₁ Sk₂ , ≃-refl
+  go (bwd ≃𝕊-distr) (brn (sn₁ ;₁ Sk₁) (-;₂ sn₂)) = ⊥-elim (skips⊥snoc A Sk₁ sn₂)
+  go (bwd ≃𝕊-distr) (brn (-;₂ sn₁) (sn₂ ;₁ Sk₂)) = ⊥-elim (skips⊥snoc A Sk₂ sn₁)
+  go (bwd ≃𝕊-distr) (brn (-;₂ sn₁) (-;₂ sn₂)) = _ , -;₂ sn₁ , ≃-trans (≃-brn ≃-refl (≃-; ≃-refl (snoc-prefix-unique A sn₂ sn₁))) (≃-sym ≃-distr)
+  go (fwd (≃𝕊-brn₁ x)) (brn sn₁ sn₂) = let z₂ , sn₁′ , e = go (fwd x) sn₁ in _ , brn sn₁′ sn₂ , ≃-brn₁ e
+  go (fwd (≃𝕊-brn₂ x)) (brn sn₁ sn₂) = let z₂ , sn₂′ , e = go (fwd x) sn₂ in _ , brn sn₁ sn₂′ , ≃-brn₂ e
+  go (bwd (≃𝕊-brn₁ x)) (brn sn₁ sn₂) = let z₂ , sn₁′ , e = go (bwd x) sn₁ in _ , brn sn₁′ sn₂ , ≃-brn₁ e
+  go (bwd (≃𝕊-brn₂ x)) (brn sn₁ sn₂) = let z₂ , sn₂′ , e = go (bwd x) sn₂ in _ , brn sn₁ sn₂′ , ≃-brn₂ e
+
+unsnoc-nonmsg : {a : 𝕊 n} → Atom a → (∀ {p T} → a ≢ msg p T) →
+  {x y z : 𝕊 n} → x ; y ≃ z ; a → Skips y ⊎ ∃[ y′ ] x ; y′ ≃ z × y′ ; a ≃ y
+unsnoc-nonmsg {a = a} A nm {x}{y}{z} eq
+  with z₂ , sn , zsk≃z₂ ← ≃-snoc A nm (≃-sym eq) (-;₂ here)
+  with sn
+... | here = case A of λ ()
+... | (_ ;₁ Sky) = inj₁ Sky
+... | (-;₂ sn-y) = inj₂ (_ , ≃-trans (≃-sym zsk≃z₂) ≃-skipʳ , ≃-sym (snoc-sound sn-y))
+
+------------------------------------------------------------------------
+-- msg case: SnocA transport (ending atom ≃ a, per branch)
+------------------------------------------------------------------------
+
+≃-var-rigid : {w : 𝔽 n}{α : 𝕊 n} → Atom α → ` w ≃ α → α ≡ ` w
+≃-var-rigid {w = w} (`- {x = x}) e with w Fin.≟ x
+... | yes refl = refl
+... | no w≢x = ⊥-elim (atomKind≢⇒≄ `- `- (λ keq → w≢x (AKvar-inj keq)) e)
+≃-var-rigid end e = ⊥-elim (atomKind≢⇒≄ `- end (λ ()) e)
+≃-var-rigid msg e = ⊥-elim (atomKind≢⇒≄ `- msg (λ ()) e)
+≃-var-rigid ret e = ⊥-elim (atomKind≢⇒≄ `- ret (λ ()) e)
+≃-var-rigid acq e = ⊥-elim (atomKind≢⇒≄ `- acq (λ ()) e)
+≃-var-rigid ``- e = ⊥-elim (atomKind≢⇒≄ `- ``- (λ ()) e)
