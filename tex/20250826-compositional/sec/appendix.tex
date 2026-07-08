@@ -7,8 +7,6 @@
 \FloatBarrier
 
 \subsection{Dynamics: Omitted Congruence and Reduction Rules}
-
-
 \begin{figure}[htbp]
   \begin{mathpar}
     % \RuleProcCongRefl \and
@@ -204,24 +202,19 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
 
 \begin{figure}[htbp]
   \begin{mathpar}
-    % E[ c v ]
-    % ---------
-    % Blocked e 
-    % \RuleExpBlocked (put in rules/blocked) \and
-    % Blocked P 
-    % Blocked Q
-    % ---------
-    % Blocked P || Q
-    % \RuleParBlocked (put in rules/blocked)\and 
-    % BC(P) 
-    % -----------------------------
-    % Blocked nu [x B1][y B2] P
-    % \RuleNuBlocked (put in rules/blocked) \and
+    \RuleExpBlocked \and
+    \RuleParBlocked \and
+    \RuleNuBlocked
   \end{mathpar}
-  where 
-    % BC() 
-    % 
+  where
+  \[
+    \begin{array}{ll}
+      \BlockedChannelsSend & \BlockedChannelsRecv \\
+      \BlockedChannelsSelect & \BlockedChannelsBranch \\
+      \BlockedChannelsLSplit & \BlockedChannelsRSplit \\
+      \BlockedChannelsFork
+    \end{array}
+  \]
   \caption{Blocked Expressions (Blocked $\E$) and Blocked Processes (Blocked $\P$)}
   \label{fig:blocked-expr-proc}
 \end{figure}
-
