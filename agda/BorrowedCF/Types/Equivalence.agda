@@ -112,7 +112,6 @@ module ≃-Reasoning {κ x} = SetoidReasoning (≃-setoid κ x)
 ≃-⊗⁻¹ : T₁ ⊗⟨ d₁ ⟩ U₁ ≃ T₂ ⊗⟨ d₂ ⟩ U₂ → T₁ ≃ T₂ × d₁ ≡ d₂ × U₁ ≃ U₂
 ≃-⊗⁻¹ (eq₁ ⊗ eq₂) = eq₁ , refl , eq₂
 
-postulate ≃-msg⁻¹ : msg {n} p₁ T₁ ≃ msg p₂ T₂ → p₁ ≡ p₂ → T₁ ≃ T₂
 
 ≃-skips : Skips {n} Respects _≃_
 ≃-skips refl s = s
@@ -272,6 +271,146 @@ endsIn-≃ (x ◅ xs) = endsIn-≃ xs ∘ go x
   go {c = one} (bwd ≃𝕊-distr) (brn (inj₂ (-;₂ y))) = -;₂ y
 -}
 
+private
+  endsVar : 𝔽 n → 𝕊 n → Set
+  endsVar x = EndsIn one {` x} `-
+
+  data MsgEnds (p : Pol) (T : 𝕋) {n} : 𝕊 n → Set where
+    here : T ≃ T′ → MsgEnds p T (msg p T′)
+    _;₁_ : MsgEnds p T s₁ → Skips s₂ → MsgEnds p T (s₁ ; s₂)
+    -;₂_ : MsgEnds p T s₂ → MsgEnds p T (s₁ ; s₂)
+    mu   : MsgEnds p T s → MsgEnds p T (mu s)
+    brn  : MsgEnds p T s₁ → MsgEnds p T s₂ → MsgEnds p T (brn p′ s₁ s₂)
+
+  ¬msgends-` : {x : 𝔽 n} → ¬ MsgEnds p T (` x)
+  ¬msgends-` ()
+
+  msgends-mu⁻ : MsgEnds p T (mu s) → MsgEnds p T s
+  msgends-mu⁻ (mu Me) = Me
+
+  msgends-brn⁻ : MsgEnds p T (brn p′ s₁ s₂) → MsgEnds p T s₁ × MsgEnds p T s₂
+  msgends-brn⁻ (brn Me₁ Me₂) = Me₁ , Me₂
+
+  msgends-;⁻ : MsgEnds p T (s₁ ; s₂) → MsgEnds p T s₁ × Skips s₂ ⊎ MsgEnds p T s₂
+  msgends-;⁻ (Me₁ ;₁ s₂) = inj₁ (Me₁ , s₂)
+  msgends-;⁻ (-;₂ Me₂)   = inj₂ Me₂
+
+  skips⊥msgends : Skips s → MsgEnds p T s → ⊥
+  skips⊥msgends (s₁ ; s₂) (Me ;₁ x) = skips⊥msgends s₁ Me
+  skips⊥msgends (s₁ ; s₂) (-;₂ Me) = skips⊥msgends s₂ Me
+  skips⊥msgends (mu s) (mu Me) = skips⊥msgends s Me
+
+  msgends-⋯ᵣ : {ρ : m →ᵣ n} → MsgEnds p T s → MsgEnds p T (s ⋯ ρ)
+  msgends-⋯ᵣ (here eq) = here eq
+  msgends-⋯ᵣ (Me ;₁ x) = msgends-⋯ᵣ Me ;₁ skips-⋯ x
+  msgends-⋯ᵣ (-;₂ Me) = -;₂ msgends-⋯ᵣ Me
+  msgends-⋯ᵣ (mu Me) = mu (msgends-⋯ᵣ Me)
+  msgends-⋯ᵣ (brn Me Me₁) = brn (msgends-⋯ᵣ Me) (msgends-⋯ᵣ Me₁)
+
+  msgends-⋯ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ {ϕ : m –[ K ]→ n} → MsgEnds p T s → MsgEnds p T (s ⋯ ϕ)
+  msgends-⋯ (here eq) = here eq
+  msgends-⋯ (Me ;₁ x) = msgends-⋯ Me ;₁ skips-⋯ x
+  msgends-⋯ (-;₂ Me) = -;₂ msgends-⋯ Me
+  msgends-⋯ (mu Me) = mu (msgends-⋯ Me)
+  msgends-⋯ (brn Me Me₁) = brn (msgends-⋯ Me) (msgends-⋯ Me₁)
+
+  msgends-⋯ᵣ⁻¹ : {ϕ : m →ᵣ n} → MsgEnds p T (s ⋯ ϕ) → MsgEnds p T s
+  msgends-⋯ᵣ⁻¹ {s = msg p₃ t} (here eq) = here eq
+  msgends-⋯ᵣ⁻¹ {s = brn p₃ s₁ s₂} (brn Me Me₁) = brn (msgends-⋯ᵣ⁻¹ Me) (msgends-⋯ᵣ⁻¹ Me₁)
+  msgends-⋯ᵣ⁻¹ {s = mu s} (mu Me) = mu (msgends-⋯ᵣ⁻¹ Me)
+  msgends-⋯ᵣ⁻¹ {s = s₁ ; s₂} (Me ;₁ x) = msgends-⋯ᵣ⁻¹ Me ;₁ skips-⋯ᵣ⁻¹ x
+  msgends-⋯ᵣ⁻¹ {s = s₁ ; s₂} (-;₂ Me) = -;₂ msgends-⋯ᵣ⁻¹ Me
+
+  msgends⋯⇒ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ {ϕ : m –[ K ]→ n} →
+    MsgEnds p T (s ⋯ ϕ) →
+    (∀ z → ¬ Skips (`/id (ϕ z))) →
+    ∀ {z} → endsVar z s → MsgEnds p T (`/id (ϕ z))
+  msgends⋯⇒ Me ∀¬S here = Me
+  msgends⋯⇒ (Me ;₁ x₁) ∀¬S (E ;₁ x) = msgends⋯⇒ Me ∀¬S E
+  msgends⋯⇒ (-;₂ Me) ∀¬S (E ;₁ s) = ⊥-elim (skips⊥msgends (skips-⋯ s) Me)
+  msgends⋯⇒ (Me ;₁ s) ∀¬S (-;₂ E) = ⊥-elim (skips⊥endsIn (skips-⋯⁻¹ s ∀¬S) E)
+  msgends⋯⇒ (-;₂ Me) ∀¬S (-;₂ E) = msgends⋯⇒ Me ∀¬S E
+  msgends⋯⇒ (brn Me₁ Me₂) ∀¬S (brn (inj₁ E)) = msgends⋯⇒ Me₁ ∀¬S E
+  msgends⋯⇒ (brn Me₁ Me₂) ∀¬S (brn (inj₂ E)) = msgends⋯⇒ Me₂ ∀¬S E
+  msgends⋯⇒ ⦃ K ⦄ (mu Me) ∀¬S (mu E) =
+    let IH = msgends⋯⇒ Me (λ{ zero → ¬skips-`/` K; (suc z) → ∀¬S z ∘ skips-⋯ᵣ⁻¹ ∘ subst Skips (sym (wk-`/id _)) }) E in
+    msgends-⋯ᵣ⁻¹ (subst (MsgEnds _ _) (sym (wk-`/id _)) IH)
+
+  msgends-⋯⁻¹ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ {ϕ : m –[ K ]→ n} → MsgEnds p T (s ⋯ ϕ)
+    → (∀ z → ¬ Skips (`/id (ϕ z)))
+    → (∀ z → endsVar z s → MsgEnds p T s)
+    → MsgEnds p T s
+  msgends-⋯⁻¹ {s = ` x} Me ∀¬S ∀¬E = ∀¬E x here
+  msgends-⋯⁻¹ {s = msg p₃ t} (here eq) ∀¬S ∀¬E = here eq
+  msgends-⋯⁻¹ {s = brn p₃ s₁ s₂} (brn Me₁ Me₂) ∀¬S ∀¬E =
+    brn (msgends-⋯⁻¹ Me₁ ∀¬S λ z → proj₁ ∘ msgends-brn⁻ ∘ ∀¬E z ∘ brn ∘′ inj₁)
+        (msgends-⋯⁻¹ Me₂ ∀¬S λ z → proj₂ ∘ msgends-brn⁻ ∘ ∀¬E z ∘ brn ∘′ inj₂)
+  msgends-⋯⁻¹ {s = mu s} ⦃ K ⦄ (mu Me) ∀¬S ∀¬E =
+    let ∀¬S′ = λ where zero    → ¬skips-`/` K
+                       (suc z) → ∀¬S z ∘ skips-⋯ᵣ⁻¹ ∘ subst Skips (sym (wk-`/id _))
+    in
+    mu (msgends-⋯⁻¹ Me ∀¬S′ λ where
+      zero    → ⊥-elim ∘ ¬msgends-` ∘ subst (MsgEnds _ _) (`/`-is-` ⦃ K ⦄ _) ∘ msgends⋯⇒ Me ∀¬S′
+      (suc z) → msgends-mu⁻ ∘ ∀¬E z ∘ mu)
+  msgends-⋯⁻¹ {s = s₁ ; s₂} (Me ;₁ s) ∀¬S ∀¬E =
+    let s′ = skips-⋯⁻¹ s ∀¬S in
+    msgends-⋯⁻¹ Me ∀¬S (λ z E → proj₁ $ Sum.fromInj₁ (⊥-elim ∘ skips⊥msgends s′) $ msgends-;⁻ $ ∀¬E z (E ;₁ s′)) ;₁ s′
+  msgends-⋯⁻¹ {s = s₁ ; s₂} (-;₂ Me) ∀¬S ∀¬E = -;₂ msgends-⋯⁻¹ Me ∀¬S λ z →
+    Sum.fromInj₂ (⊥-elim ∘ flip skips⊥msgends Me ∘ skips-⋯ ∘ proj₂) ∘ msgends-;⁻ ∘ ∀¬E z ∘ -;₂_
+
+  msgends-unfold⁻¹ : MsgEnds p T (unfold s) → MsgEnds p T s
+  msgends-unfold⁻¹ {s = s} Me with skips? s
+  ... | yes Ss = ⊥-elim (skips⊥msgends (skips-⋯ Ss) Me)
+  ... | no ¬Ss =
+    let ¬skips-unfold = λ{ zero (mu Ss) → ¬Ss Ss } in
+    msgends-⋯⁻¹ Me ¬skips-unfold λ where
+      zero    E → msgends-mu⁻ $ msgends⋯⇒ Me ¬skips-unfold E
+      (suc x) E → ⊥-elim $ ¬msgends-` $ msgends⋯⇒ Me ¬skips-unfold E
+
+  ≃-msgends : ∀ {n p T} {s₁ s₂ : 𝕊 n} → s₁ ≃ s₂ → MsgEnds p T s₁ → MsgEnds p T s₂
+  ≃-msgends refl me = me
+  ≃-msgends {n = n} {p} {T} (x ◅ xs) me = ≃-msgends xs (go x me) where
+    go : ∀ {s₁ s₂ : 𝕊 n} → SymClosure _≃𝕊_ s₁ s₂ → MsgEnds p T s₁ → MsgEnds p T s₂
+    go (fwd (≃𝕊-msg x)) (here eq) = here (≃-trans eq x)
+    go (fwd ≃𝕊-μ) (mu Me) = msgends-⋯ Me
+    go (fwd (≃𝕊-;₁ x)) (Me ;₁ x₁) = go (fwd x) Me ;₁ x₁
+    go (fwd (≃𝕊-;₁ x)) (-;₂ Me) = -;₂ Me
+    go (fwd (≃𝕊-;₂ x)) (Me ;₁ x₁) = Me ;₁ ≃-skips (Eq*.return x) x₁
+    go (fwd (≃𝕊-;₂ x)) (-;₂ Me) = -;₂ go (fwd x) Me
+    go (fwd (≃𝕊-brn₁ x)) (brn Me Me₁) = brn (go (fwd x) Me) Me₁
+    go (fwd (≃𝕊-brn₂ x)) (brn Me Me₁) = brn Me (go (fwd x) Me₁)
+    go (fwd ≃𝕊-skipˡ) (-;₂ Me) = Me
+    go (fwd ≃𝕊-skipʳ) (Me ;₁ x) = Me
+    go (fwd ≃𝕊-skipˡ) (() ;₁ _)
+    go (fwd ≃𝕊-skipʳ) (-;₂ ())
+    go (fwd ≃𝕊-assoc) ((Me ;₁ x₁) ;₁ x) = Me ;₁ (x₁ ; x)
+    go (fwd ≃𝕊-assoc) ((-;₂ Me) ;₁ x) = -;₂ (Me ;₁ x)
+    go (fwd ≃𝕊-assoc) (-;₂ Me) = -;₂ (-;₂ Me)
+    go (fwd ≃𝕊-distr) (brn Me Me₁ ;₁ x) = brn (Me ;₁ x) (Me₁ ;₁ x)
+    go (fwd ≃𝕊-distr) (-;₂ Me) = brn (-;₂ Me) (-;₂ Me)
+    go (bwd (≃𝕊-msg x)) (here eq) = here (≃-trans eq (≃-sym x))
+    go (bwd (≃𝕊-;₁ x)) (Me ;₁ x₁) = go (bwd x) Me ;₁ x₁
+    go (bwd (≃𝕊-;₁ x)) (-;₂ Me) = -;₂ Me
+    go (bwd (≃𝕊-;₂ x)) (Me ;₁ x₁) = Me ;₁ ≃-skips (Star.return (bwd x)) x₁
+    go (bwd (≃𝕊-;₂ x)) (-;₂ Me) = -;₂ go (bwd x) Me
+    go (bwd (≃𝕊-brn₁ x)) (brn Me Me₁) = brn (go (bwd x) Me) Me₁
+    go (bwd (≃𝕊-brn₂ x)) (brn Me Me₁) = brn Me (go (bwd x) Me₁)
+    go (bwd ≃𝕊-μ) Me = mu (msgends-unfold⁻¹ Me)
+    go (bwd ≃𝕊-skipˡ) Me = -;₂ Me
+    go (bwd ≃𝕊-skipʳ) Me = Me ;₁ skip
+    go (bwd ≃𝕊-assoc) (Me ;₁ (x ; x₁)) = (Me ;₁ x) ;₁ x₁
+    go (bwd ≃𝕊-assoc) (-;₂ (Me ;₁ x)) = (-;₂ Me) ;₁ x
+    go (bwd ≃𝕊-assoc) (-;₂ (-;₂ Me)) = -;₂ Me
+    go (bwd ≃𝕊-distr) (brn (Me ;₁ x) (Me₁ ;₁ x₁)) = brn Me Me₁ ;₁ x₁
+    go (bwd ≃𝕊-distr) (brn (Me ;₁ x) (-;₂ Me₁)) = -;₂ Me₁
+    go (bwd ≃𝕊-distr) (brn (-;₂ Me) Me₁) = -;₂ Me
+
+  msgends-inv : ∀ {n p T T₂} → MsgEnds p T (msg {n} p T₂) → T ≃ T₂
+  msgends-inv (here eq) = eq
+
+≃-msg⁻¹ : msg {n} p₁ T₁ ≃ msg p₂ T₂ → p₁ ≡ p₂ → T₁ ≃ T₂
+≃-msg⁻¹ eq refl = msgends-inv (≃-msgends eq (here ≃-refl))
+
 atom-≃′-;ʳ-skips : {a₁ a₂ : 𝕊 n} → Atom a₁ → Atom a₂ → {s : 𝕊 n} → s ; a₁ ≃𝕊 a₂ → Skips s × a₁ ≡ a₂
 atom-≃′-;ʳ-skips A₁ A₂ ≃𝕊-skipˡ = skip , refl
 
@@ -289,14 +428,9 @@ atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-distr ≃𝕊-distr = refl , refl
 -}
 
 postulate
-  -- Potentially use a construct similar to `EndsIn` to keep track that the atom is always at the end,
-  -- potentially with additional skips after it.
-  atomKind≢⇒≄-;ʳ : ∀ {a₁ a₂ : 𝕊 n} (A₁ : Atom a₁) (A₂ : Atom a₂) → atomKind A₁ ≢ atomKind A₂ → s₁ ; a₁ ≄ s₂ ; a₂
 
   atom-;-unsnoc : {a x y z : 𝕊 n} → Atom a → x ; y ≃ z ; a → Skips y ⊎ ∃[ y′ ] x ; y′ ≃ z × y′ ; a ≃ y
 
-atomKind≢⇒≄ : ∀ {a₁ a₂ : 𝕊 n} (A₁ : Atom a₁) (A₂ : Atom a₂) → atomKind A₁ ≢ atomKind A₂ → a₁ ≄ a₂
-atomKind≢⇒≄ A₁ A₂ k≢ eq = atomKind≢⇒≄-;ʳ A₁ A₂ k≢ (≃-trans ≃-skipˡ (≃-trans eq (≃-sym ≃-skipˡ)))
 
 -- atom-refl-;-skips⁻¹ : Atom s → (s′ : 𝕊 n) → s ≃ s ; s′ → Skips s′
 -- atom-refl-;-skips⁻¹ a (` x) eq = {!!}
@@ -323,3 +457,4 @@ atomKind≢⇒≄ A₁ A₂ k≢ eq = atomKind≢⇒≄-;ʳ A₁ A₂ k≢ (≃
 -- -- atom-refl-;-skips⁻¹ ret (bwd x ◅ eq) = {!!}
 -- -- atom-refl-;-skips⁻¹ acq (bwd x ◅ eq) = {!!}
 -- -- atom-refl-;-skips⁻¹ ``- (bwd x ◅ eq) = {!!}
+
