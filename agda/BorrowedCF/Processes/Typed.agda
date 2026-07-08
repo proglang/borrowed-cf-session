@@ -12,6 +12,7 @@ open import Relation.Binary.Construct.Closure.Symmetric as Sym using (SymClosure
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Types
+open import BorrowedCF.Types.AtomSnoc using (atomKind≢⇒≄-;ʳ)
 
 open import BorrowedCF.Reduction.Base
 open import BorrowedCF.Reduction.Expressions using (inv-`⊤)
