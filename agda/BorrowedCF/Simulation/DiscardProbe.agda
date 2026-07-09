@@ -38,7 +38,7 @@ Vσ₁ x = V-K
 -- the configuration is well-typed …
 ⊢P₁ : Γ₁ ; (Struct.[] Struct.∥ Struct.` 0F) ⊢ₚ P₁
 ⊢P₁ = T.TP-Expr
-  (T-AppUnr refl ℙ≤ϵ
+  (T-AppUnr refl 𝕀≤𝕀
     (T-Conv ≃-refl ℙ≤ϵ (T-Const `discard))
     (T-Conv ≃-refl ℙ≤ϵ (T-Var 0F refl)))
 
