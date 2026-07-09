@@ -131,7 +131,7 @@ parameters in the actual code to simplify type checking.
   \\
   \FC \grmeq
   & \PExp \EC
-    \tag{Thread evaluation contexts}
+    \tag{Process evaluation contexts}
   \\
   \CC \grmeq
   & \ECEmpty
@@ -452,15 +452,15 @@ Thus the translation function $\tofreest{\S}$ (\Cref{fig:freest-translation} ) t
 
 \providecommand{\proofcase}[1]{\smallskip\noindent\textit{Case}~#1\quad}
 
-\begin{lemma}[Thread progress]
-  \label{lem:thread-progress}
+\begin{lemma}[Process progress]
+  \label{lem:process-progress}
   If $\HasType[\EffImpure]\SessCtx\E\BUnit$, then $\E$ is a value, or
   $\E \EReduce \E*$ for some $\E*$, or $\E$ is blocked. If $\E$ is a value, then
   $\E = \CUnit$.
 \end{lemma}
 \begin{proof}
   The trichotomy is expression progress; a stuck redex $\ECapp{\EApp\C\V}$ is a
-  blocked thread. A value of type $\BUnit$ in a session context is $\CUnit$ by
+  blocked process. A value of type $\BUnit$ in a session context is $\CUnit$ by
   canonical forms.
 \end{proof}
 
@@ -474,7 +474,7 @@ Thus the translation function $\tofreest{\S}$ (\Cref{fig:freest-translation} ) t
   follows from the induction hypothesis.
 
   \proofcase{\textsc{TP-Expr}, $\Proc = \PExp\E$, $\HasType[\EffImpure]\SessCtx\E\BUnit$.}
-  By \cref{lem:thread-progress}:
+  By \cref{lem:process-progress}:
   \begin{itemize}
     \item $\E$ a value: $\E = \CUnit$ and $\Proc = \PExp\CUnit$.
     \item $\E \EReduce \E*$: $\Proc \PReduce \PExp{\E*}$ by \textsc{R-Exp}.
@@ -511,8 +511,8 @@ Thus the translation function $\tofreest{\S}$ (\Cref{fig:freest-translation} ) t
     \item $\ProcQ \Congruent \PExp\CUnit$: excluded. The endpoints of
       $\BindGroup[1],\BindGroup[2]$ carry linear session types $\SSeq\S\STerm$,
       $\SDual{(\SSeq\S\SWait)}$, and $\BindGivesCtx{}{}{}$ requires each to be
-      consumed by a thread, so a body $\Congruent \PExp\CUnit$ is untypable.
-    \item $\ProcQ$ blocked. By the definition of $\Blocked{}$, every thread of
+      consumed by a process, so a body $\Congruent \PExp\CUnit$ is untypable.
+    \item $\ProcQ$ blocked. By the definition of $\Blocked{}$, every process of
       $\ProcQ$ is blocked and every restriction inside $\ProcQ$ is blocked; the
       inner restrictions are closed by the induction hypothesis, so only the
       channel bound \emph{here} remains. This restriction binds one channel with
@@ -522,13 +522,13 @@ Thus the translation function $\tofreest{\S}$ (\Cref{fig:freest-translation} ) t
       \textsc{R-LSplit} and \textsc{R-RSplit} act on such a fragment in place,
       wherever it sits in its group.) Exactly one of the following holds.
       \begin{enumerate}
-        \item A thread is blocked on a fragment of $\BindGroup[1]$ or
+        \item A process is blocked on a fragment of $\BindGroup[1]$ or
           $\BindGroup[2]$ with $\CSplit$ or $\CSSplit$, or on $\EVar$ or $\EVary$
           with $\CDrop$ or $\CDiscard$, or on $\EVar$ or $\EVary$ with $\CAcq$
           while the marker $\BLeadSep{}$ is present. The matching rule
           \textsc{R-LSplit}, \textsc{R-RSplit}, \textsc{R-Drop},
           \textsc{R-Discard}, resp.\ \textsc{R-Acquire} fires and $\Proc$ reduces.
-        \item Case (1) does not apply, and two distinct threads are blocked at
+        \item Case (1) does not apply, and two distinct processes are blocked at
           communicating actions on the two ends of the bound channel: one on
           $\EVar$ and one on $\EVary$. Since $\EVar$ and $\EVary$ are the two ends
           of a single channel their session types are dual, so 
@@ -537,7 +537,7 @@ Thus the translation function $\tofreest{\S}$ (\Cref{fig:freest-translation} ) t
           \textsc{R-Com}, \textsc{R-Choice}, resp.\ \textsc{R-Close}.
         \item Neither (1) nor (2) applies. Then at least one of $\EVar,\EVary$ is
           not blocked at a communicating action, i.e.\ $\EVar \notin \BC(\ProcQ)$
-          or $\EVary \notin \BC(\ProcQ)$: the endpoint holds no thread ready to
+          or $\EVary \notin \BC(\ProcQ)$: the endpoint holds no process ready to
           communicate on it, so no synchronization with the other end is
           possible. This is the premise of \textsc{B-NuBlocked}, which, with
           $\Blocked\ProcQ$, gives $\Blocked\Proc$.
