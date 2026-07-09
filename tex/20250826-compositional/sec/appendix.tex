@@ -3,6 +3,41 @@
 
 \FloatBarrier
 
+\section{Motivation}
+
+\subsection{Remarks}
+\label{sec:remarks}
+
+The reader may ask why \lstinline{select} still adheres to
+resource-passing style. The answer is simplicity of our system. While it
+is possible to define \lstinline{select} with a borrowing-based
+interface, supporting it requires subtyping of session types. While
+subtyping is fine in theory, it turns out that it is undecidable for
+CFST~\cite{DBLP:journals/toplas/Padovani19}. Hence, it cannot be the
+basis for a complete type checker.
+
+For borrowing from regular session
+types~\cite{DBLP:journals/pacmpl/SaffrichS0V25}, a borrowing-style
+\lstinline{select} operation is possible because subtyping for regular
+session types is decidable.
+
+A borrowing-style \lstinline{branch} operator (external choice) cannot be supported in \thecalculus.
+This operator selects between different continuations at run time and
+the residual channel depends on this run-time choice.
+
+% The downside is that some uses of \lstinline{select} force us to use
+% the \lstinline{drop} primitive, which discharges an exhausted channel
+% borrow of type \lstinline{Drop}. The discharge is part of the
+% \lstinline{send} and \lstinline{recv} operations, so it is rarely
+% needed in practice. Alternatively, the type checker could insert
+% \lstinline{drop} automatically.
+
+All \thecalculus examples are available as part of our supplement. Compared to the
+presentation in the main text, the split operators carry type
+parameters in the actual code to simplify type checking.
+
+\FloatBarrier
+
 \section{Types: Session-Type Laws and Well Formedness Predicates}
 \label{sec:appendix-types}
 
@@ -412,4 +447,3 @@ Thus the translation function $\tofreest{\S}$ (\Cref{fig:freest-translation} ) t
 
 \subsection{Soundness and Completeness for Algorithmic Typing}
 \label{sec:appendix-metatheory-sc}
-

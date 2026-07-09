@@ -29,6 +29,10 @@ continuation type. Linearity is what makes the session type track the
 state of the protocol, but it also forces programs to thread channels
 explicitly from one operation to the next.
 
+Additional remarks on design choices in this example, including why
+some operations remain in resource-passing style, are given in the
+supplement in \cref{sec:remarks}.
+
 \subsection{Borrowing from Context-Free Session Types}
 \label{sec:borr-from-cont}
 
@@ -41,8 +45,7 @@ primitive values.
 %   passed, but no pointers.}
 Consider an example from \citet{DBLP:conf/icfp/ThiemannV16} for serializing binary trees of type \lstinline{Tree}.
 \begin{lstlisting}
-type Tree = Leaf
-          | Node int Tree Tree
+type Tree = Leaf | Node int Tree Tree
 \end{lstlisting}
 Here is the corresponding session type \lstinline{TreeChan}:
 \begin{lstlisting}
@@ -201,7 +204,7 @@ the rest of the child stream.
 Now consider a renderer (\Cref{lst:rendering-example}) that emits a user panel whose first child is
 computed by another process while the main thread obtains user
 messages, say, from a database. We assume that
-\lstinline{renderProfile} and \lstinline{renderMsgArea} render
+\lstinline{renderProf} and \lstinline{renderMsgArea} render
 one HTML node on a channel of type \lstinline{HtmlChan; Drop} and
 \lstinline{HtmlChan}, respectively. The type \lstinline{Drop}
 is a new session type that comes with a companion type
@@ -214,7 +217,7 @@ renderUser user c =
   let c = select Elem c in
   send "div" &c;
   let c = select Child c in
-  fork (lambda() -> renderProfile user &c);
+  fork (lambda() -> renderProf user &c);
   (* c : Acq; ChildChan; Close *)
   let msgs = getMessages user in
   renderRest msgs (acquire c)
@@ -225,8 +228,8 @@ renderRest msgs c =
   renderMsgArea msgs &c;
   close (select Done c)
 
-renderProfile : User -> HtmlChan;Drop -> Unit
-renderProfile user c = ... drop c
+renderProf : User -> HtmlChan;Drop -> Unit
+renderProf user c = ... drop c
 \end{lstlisting}
 The function \lstinline{renderUser} starts an HTML element and then
 opens the child stream. It passes a borrow of the
@@ -374,7 +377,7 @@ For remote borrowing, we incorporate the
 symbol ``\lstinline{|}'' in the compartment. As an example, we consider the translation of
 lines 5--7:
 \begin{lstlisting}
-  fork (lambda() -> renderProfile user &c);
+  fork (lambda() -> renderProf user &c);
   let msgs = getMessages user in
   renderRest msgs (acquire c)
 \end{lstlisting}
@@ -383,7 +386,7 @@ It translates to the following \thecalculus code.
 (* initially                  c : HtmlChan; ChildChan; Close *)
 let c1, c2 = rsplit c in   (* c1 : HtmlChan; Drop *)
                            (* c2 : Acq; ChildChan; Close *)
-fork (lambda() -> renderProfile user c1);
+fork (lambda() -> renderProf user c1);
 let msgs = getMessages user in
 renderRest msgs (acquire c2)
 \end{lstlisting}
@@ -394,25 +397,17 @@ because synchronization is made explicit using the \lstinline{Acq} and
 \lstinline{Drop} types.
 Executing this code takes the following steps (ignoring the activity
 at the other end of the channel). The bracketed step abbreviates the
-forked process running \lstinline{renderProfile} until its final
+forked process running \lstinline{renderProf} until its final
 \lstinline{drop c1}.
-%     nu[c][...]
-%     let c = select Child c in
-%     let c1, c2 = rsplit c in
-%     fork (lambda() -> renderProfile user c1);
-%     let msgs = ... in
-%     renderRest msgs (acquire c2)
-% ~>
-
 \begin{lstlisting}
     nu[c][...]
     let c1, c2 = rsplit c in
-    fork (lambda() -> renderProfile user c1);
+    fork (lambda() -> renderProf user c1);
     let msgs = ... in
     renderRest msgs (acquire c2)
 ~>
     nu[c1|c2][...]
-    fork (lambda() -> renderProfile user c1);
+    fork (lambda() -> renderProf user c1);
     let msgs = ... in
     renderRest msgs (acquire c2)
 ~>*  [ drop c1 ]
@@ -467,8 +462,6 @@ and remote borrowing in the implementation.
   msg/.style={->},
   lab/.style={font=\scriptsize}
 ]
-  \draw[black!70] (-1.0,0.55) rectangle (3.0,-8.4);
-
   \node[head] (lp) at (0,-0.65) {$P$};
   \draw[lifeline] (lp.south) -- (0,-8.15);
   \draw[activation] (-0.07,-1.15) rectangle (0.07,-8.0);
@@ -489,6 +482,8 @@ and remote borrowing in the implementation.
     node[lab, right] {} (0.9,-7.85) --
     node[lab, above, yshift=1ex] {use $c_2$}
     (0.07,-7.85);
+  \node[draw=black!70, fit={(-1.0,-8.15) (3.0,-8.15) (lp)},
+    inner xsep=0pt, inner ysep=0.2ex] {};
 \end{tikzpicture}
 \caption{Local borrow}
 \label{fig:borrow-lifecycle-msc-local}
@@ -517,8 +512,6 @@ and remote borrowing in the implementation.
   return/.style={->, dashed},
   lab/.style={font=\scriptsize}
 ]
-  \draw[black!70] (-1.0,0.55) rectangle (12.55,-11.55);
-
   \node[head] (rp) at (0,-0.65) {$P$};
   \draw[lifeline] (rp.south) -- (0,-11.2);
   \draw[activation] (-0.08,-1.15) rectangle (0.08,-5.15);
@@ -558,6 +551,8 @@ and remote borrowing in the implementation.
     node[lab, right] {} (0.9,-10.65) --
     node[lab, above, yshift=1ex] {use $c_2$}
     (0.08,-10.65);
+  \node[draw=black!70, fit={(-1.0,-11.2) (12.55,-11.2) (rp)},
+    inner xsep=0pt, inner ysep=0.2ex] {};
 \end{tikzpicture}
 \caption{Remote borrow}
 \label{fig:borrow-lifecycle-msc-remote}
@@ -629,39 +624,6 @@ flag altogether. Thus a remote split pays for exactly the
 synchronization needed to coordinate the two processes operating on
 the channel, whereas a local
 split pays nothing beyond sharing the channel representation.
-
-\subsection{Remarks}
-\label{sec:remarks}
-
-The reader may ask why \lstinline{select} still adheres to
-resource-passing style. The answer is simplicity of our system. While it
-is possible to define \lstinline{select} with a borrowing-based
-interface, supporting it requires subtyping of session types. While
-subtyping is fine in theory, it turns out that it is undecidable for
-CFST~\cite{DBLP:journals/toplas/Padovani19}. Hence, it cannot be the
-basis for a complete type checker.
-
-For borrowing from regular session
-types~\cite{DBLP:journals/pacmpl/SaffrichS0V25}, a borrowing-style 
-\lstinline{select} operation is possible because subtyping for regular
-session types is decidable.
-
-A borrowing-style \lstinline{branch} operator (external choice) cannot be supported in \thecalculus.
-This operator selects between different continuations at run time and
-the residual channel depends on this run-time choice.
-
-% The downside is that some uses of \lstinline{select} force us to use
-% the \lstinline{drop} primitive, which discharges an exhausted channel
-% borrow of type \lstinline{Drop}. The discharge is part of the
-% \lstinline{send} and \lstinline{recv} operations, so it is rarely
-% needed in practice. Alternatively, the type checker could insert
-% \lstinline{drop} automatically.
-
-
-All \thecalculus examples are available as part of our supplement. Compared to the
-presentation in this section, the split operators carry type
-parameters in the actual code to simplify type checking.
-
 
 %%% Local Variables:
 %%% mode: latex
