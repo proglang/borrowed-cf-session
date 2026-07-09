@@ -159,13 +159,10 @@ $\BindFlag{\Bind}$ initializes the cell to $\FlagDropped$ when there is no
 left segment, because no drop is pending; otherwise it initializes the cell to
 $\FlagInit$.
 
-\mw{TODO: update this}
 The simulation result for this translation is stated in
-\cref{sec:metatheory}.  Its side condition $\mathsf{VSub}(\Sub)$ restricts the
-substitution to target channel values, and $\mathsf{ChanCx}(\Ctx)$ restricts
-the source context to channel resources. 
-
-Under these hypotheses, every source
+\cref{sec:metatheory}. 
+\mw{TODO: update this}
+Every source
 reduction of a well-typed process is matched by target reduction up to
 structural congruence and administrative steps, and every target reduction
 reachable from a translation reflects a source reduction up to the same

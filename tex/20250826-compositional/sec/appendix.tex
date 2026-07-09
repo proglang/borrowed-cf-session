@@ -452,53 +452,19 @@ Thus the translation function $\tofreest{\S}$ (\Cref{fig:freest-translation} ) t
 
 \providecommand{\proofcase}[1]{\smallskip\noindent\textit{Case}~#1\quad}
 
-$\SessCtx$ ranges over contexts all of whose entries are session types; every
-variable of $\SessCtx$ is a channel endpoint.
-
-\begin{definition}[Poised thread]
-  \label{def:poised}
-  A thread $\PExp\E$ is \emph{poised} when $\E = \ECapp{\EApp\C\V}$ for a constant
-  $\C$ and value $\V$, equivalently when $\Blocked\E$. It is \emph{poised on}
-  $\EVar$ when the channel operand of $\C$ is the variable $\EVar$.
-\end{definition}
-
-Classify the constants by their value of $\BC$ (\cref{fig:blocked-expr-proc}):
-\begin{itemize}
-  \item spawning $\CNew,\CFork$, with $\BC = \emptyset$, reducing by \textsc{R-New}, resp.\ \textsc{R-Fork};
-  \item communicating $\CSend,\CRecv,\CSelect{},\CBranch,\CTerm,\CWait$, with $\BC = \{\EVar\}$, reducing against the dual endpoint by \textsc{R-Com}, \textsc{R-Choice}, resp.\ \textsc{R-Close};
-  \item asynchronous $\CDrop,\CDiscard,\CSplit,\CSSplit$, with $\BC = \emptyset$, reducing by \textsc{R-Drop}, \textsc{R-Discard}, \textsc{R-LSplit}, resp.\ \textsc{R-RSplit} once the operand is bound;
-  \item $\CAcq$, with $\BC = \{\EVar\}$, reducing by \textsc{R-Acquire} iff the operand carries the marker $\BLeadSep{}$.
-\end{itemize}
-
 \begin{lemma}[Thread progress]
   \label{lem:thread-progress}
   If $\HasType[\EffImpure]\SessCtx\E\BUnit$, then $\E$ is a value, or
-  $\E \EReduce \E*$ for some $\E*$, or $\E$ is poised. If $\E$ is a value, then
+  $\E \EReduce \E*$ for some $\E*$, or $\E$ is blocked. If $\E$ is a value, then
   $\E = \CUnit$.
 \end{lemma}
 \begin{proof}
   The trichotomy is expression progress; a stuck redex $\ECapp{\EApp\C\V}$ is a
-  poised thread. A value of type $\BUnit$ in a session context is $\CUnit$ by
+  blocked thread. A value of type $\BUnit$ in a session context is $\CUnit$ by
   canonical forms.
 \end{proof}
 
-\begin{lemma}[Synchronization]
-  \label{lem:sync}
-  Let $\PNew{\BSeq\EVar{\BindGroup[1]}}{\BSeq\EVary{\BindGroup[2]}}\Proc$ bind
-  $\EVar : \SSeq\S{\S*}$ and $\EVary : \SDual{(\SSeq\S{\S*})}$. If one thread of
-  $\Proc$ is poised on $\EVar$ with a communicating constant and another is
-  poised on $\EVary$, then the two constants form one of $(\CSend,\CRecv)$,
-  $(\CSelect{k},\CBranch)$, $(\CTerm,\CWait)$, and the restriction reduces by
-  \textsc{R-Com}, \textsc{R-Choice}, resp.\ \textsc{R-Close}.
-\end{lemma}
-\begin{proof}
-  Constant typing forces the operand session type of each poised redex to be the
-  head of its endpoint. By duality (\cref{fig:session-laws}) the two heads are
-  dual, so the constants match one synchronization rule whose left-hand side is
-  the given pair.
-\end{proof}
-
-\begin{theorem}[Process progress]
+\begin{theorem}[Process progress, restated]
   \label{thm:process-progress-app}
   If $\ProcHasType\SessCtx\Proc$, then $\Proc \Congruent \PExp\CUnit$, or
   $\Blocked\Proc$, or $\Proc \PReduce \Proc*$ for some $\Proc*$.
@@ -512,7 +478,7 @@ Classify the constants by their value of $\BC$ (\cref{fig:blocked-expr-proc}):
   \begin{itemize}
     \item $\E$ a value: $\E = \CUnit$ and $\Proc = \PExp\CUnit$.
     \item $\E \EReduce \E*$: $\Proc \PReduce \PExp{\E*}$ by \textsc{R-Exp}.
-    \item $\E = \ECapp{\EApp\C\V}$ poised: if $\C \in \{\CNew,\CFork\}$ then
+    \item $\E = \ECapp{\EApp\C\V}$ blocked: if $\C \in \{\CNew,\CFork\}$ then
       $\Proc$ reduces by \textsc{R-New}, resp.\ \textsc{R-Fork}. Otherwise $\C$
       acts on a channel $\EVar \in \SessCtx$, which no restriction binds, so no
       channel rule applies and $\Blocked\Proc$ by \textsc{B-ExpBlocked}.
@@ -546,8 +512,8 @@ Classify the constants by their value of $\BC$ (\cref{fig:blocked-expr-proc}):
       $\BindGroup[1],\BindGroup[2]$ carry linear session types $\SSeq\S\STerm$,
       $\SDual{(\SSeq\S\SWait)}$, and $\BindGivesCtx{}{}{}$ requires each to be
       consumed by a thread, so a body $\Congruent \PExp\CUnit$ is untypable.
-    \item $\ProcQ$ blocked. By the definition of $\Blocked{-}$, every thread of
-      $\ProcQ$ is poised and every restriction inside $\ProcQ$ is blocked; the
+    \item $\ProcQ$ blocked. By the definition of $\Blocked{}$, every thread of
+      $\ProcQ$ is blocked and every restriction inside $\ProcQ$ is blocked; the
       inner restrictions are closed by the induction hypothesis, so only the
       channel bound \emph{here} remains. This restriction binds one channel with
       two dual endpoints: $\EVar$, the head of $\BindGroup[1]$, governed by $\S$,
@@ -556,21 +522,21 @@ Classify the constants by their value of $\BC$ (\cref{fig:blocked-expr-proc}):
       \textsc{R-LSplit} and \textsc{R-RSplit} act on such a fragment in place,
       wherever it sits in its group.) Exactly one of the following holds.
       \begin{enumerate}
-        \item A thread is poised on a fragment of $\BindGroup[1]$ or
+        \item A thread is blocked on a fragment of $\BindGroup[1]$ or
           $\BindGroup[2]$ with $\CSplit$ or $\CSSplit$, or on $\EVar$ or $\EVary$
           with $\CDrop$ or $\CDiscard$, or on $\EVar$ or $\EVary$ with $\CAcq$
           while the marker $\BLeadSep{}$ is present. The matching rule
           \textsc{R-LSplit}, \textsc{R-RSplit}, \textsc{R-Drop},
           \textsc{R-Discard}, resp.\ \textsc{R-Acquire} fires and $\Proc$ reduces.
-        \item Case (1) does not apply, and two distinct threads are poised at
+        \item Case (1) does not apply, and two distinct threads are blocked at
           communicating actions on the two ends of the bound channel: one on
           $\EVar$ and one on $\EVary$. Since $\EVar$ and $\EVary$ are the two ends
-          of a single channel their session types are dual, so by \cref{lem:sync}
+          of a single channel their session types are dual, so 
           the two actions form a matched pair, one of $(\CSend,\CRecv)$,
           $(\CSelect{k},\CBranch)$, $(\CTerm,\CWait)$, and $\Proc$ reduces by
           \textsc{R-Com}, \textsc{R-Choice}, resp.\ \textsc{R-Close}.
         \item Neither (1) nor (2) applies. Then at least one of $\EVar,\EVary$ is
-          not poised at a communicating action, i.e.\ $\EVar \notin \BC(\ProcQ)$
+          not blocked at a communicating action, i.e.\ $\EVar \notin \BC(\ProcQ)$
           or $\EVary \notin \BC(\ProcQ)$: the endpoint holds no thread ready to
           communicate on it, so no synchronization with the other end is
           possible. This is the premise of \textsc{B-NuBlocked}, which, with

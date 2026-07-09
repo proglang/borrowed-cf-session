@@ -38,33 +38,8 @@ algorithmic typing.
 
 \subsection{Type Safety for Declarative Typing}
 
-For expressions, progress includes a concurrency-specific blocked case. Informally,
-an expression is blocked when evaluation reaches a communication primitive in an
-evaluation context that cannot proceed on its own because it requires a matching
-action from another thread. The formal blocked-expression predicate is given in
-the supplementary material in \cref{fig:blocked-expr-proc}. We write $\SessCtx$
-for a context $\Ctx$ that only contains session types.
-
-\begin{theorem}[Expression progress\;\AgdaBird]
-  \label{thm:expression-progress}
-  If $\HasType \SessCtx \E \T$, then either $\E$ is a value or $\E$ is blocked on concurrent actions or there exists an $\E*$ such that $\E \EReduce \E*$.
-\end{theorem}
-
-A process is concurrently blocked, if the active threads are blocked and no
-channel pair can synchronize. The formal blocked-process
-predicate also is given in the supplementary material in \cref{fig:blocked-expr-proc}.
-Process progress guarantees reduction only for non-terminal, non-blocked
-configurations. Thus, deadlocks remain possible.
-
-\begin{theorem}[Process progress\;\AgdaBird]
-  \label{thm:process-progress}
-  If $\ProcHasType \SessCtx \Proc$, then either $\Proc \Congruent \PExp{\CUnit}$ or an expression in $\Proc$ is blocked on concurrent actions or
-    there exists an $\Proc*$ such that $\Proc \PReduce \Proc*$.
-\end{theorem}
-The proof is deferred to \cref{sec:appendix-metatheory-ts}.
-
-Progress for expressions and processes is complemented by preservation,
-yielding the usual safety invariant across reduction steps.
+Preservation
+yields the usual safety invariant across reduction steps.
 
 \begin{theorem}[Expression preservation\;\AgdaBird]
   If $\HasType \SessCtx \E \T$ and $\E \EReduce \E*$, then
@@ -75,6 +50,31 @@ yielding the usual safety invariant across reduction steps.
   If $\ProcHasType \SessCtx \Proc$ and $\Proc \PReduce \Proc*$, then
   $\ProcHasType \SessCtx {\Proc*}$.
 \end{theorem}
+
+We complement preservation with progress.
+For expressions, progress includes a concurrency-specific blocked case. Informally,
+an expression is blocked when evaluation reaches a communication primitive in an
+evaluation context that cannot proceed on its own because it requires a matching
+action from another thread. The formal blocked-expression predicate is given in \cref{fig:blocked-expr-proc}. We write $\SessCtx$
+for a context $\Ctx$ that only contains session types.
+
+\begin{theorem}[Expression progress\;\AgdaBird]
+  \label{thm:expression-progress}
+  If $\HasType \SessCtx \E \T$, then either $\E$ is a value or $\E$ is blocked on concurrent actions or there exists an $\E*$ such that $\E \EReduce \E*$.
+\end{theorem}
+
+A process is concurrently blocked, if the active threads are blocked and no
+channel pair can synchronize. The formal blocked-process
+predicate is given in \cref{fig:blocked-expr-proc}.
+Process progress guarantees reduction only for non-blocked
+configurations. Thus, deadlocks remain possible.
+
+\begin{theorem}[Process progress\;\AgdaBird]
+  \label{thm:process-progress}
+  If $\ProcHasType \SessCtx \Proc$, then either $\Proc \Congruent \PExp{\CUnit}$ or an expression in $\Proc$ is blocked on concurrent actions or
+    there exists an $\Proc*$ such that $\Proc \PReduce \Proc*$.
+\end{theorem}
+The proof is deferred to \cref{sec:appendix-metatheory-ts}.
 
 \subsection{Weak Operational Correspondence for Translation}
 
