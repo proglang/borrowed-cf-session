@@ -425,6 +425,14 @@ postulate
            ∃[ σ ] Solving σ × SolvedΔ (Δ₁ ++ Δ₂) σ
 
 
+⸴Π : SolvedTy T → Un.Π[ SolvedTy ∘ Γ ] → Un.Π[ SolvedTy ∘ (T ⸴ Γ) ]
+⸴Π ST SΓ zero = ST
+⸴Π ST SΓ (suc x) = SΓ x
+
+postulate
+  mobΔ : ∀ {n} {Γ : Ctx n} {γ a σ} → (Arr.Mobile a → MobCx Γ γ) →
+         SolvedΔ (mobConstraints (Arr.mob a) Γ γ) σ
+
 complete :
   Un.Π[ SolvedTy ∘ Γ ] →
   SolvedTm e →
@@ -438,8 +446,12 @@ complete SΓ Se ST (T-Const {c = c} ⊢c) with algConst? c
 ... | inj₂ ¬Ac = {!¬Ac!}
 complete SΓ Se ST (T-Var x refl) =
   UV.someSub , _ , _ , _ , ≤ϵ-refl , someSub-solving , ≃-refl ∷ [] , A-Check (A-Var (≼-refl refl))
-complete SΓ Se ST (T-Abs Γ-unr Γ-mob x) = {!!}
-complete SΓ Se ST (T-AbsRec Γ-unr a-unr x) = {!!}
+complete SΓ (ƛ Se) (ST-T ⟨ a ⟩→ ST-U) (T-Abs Γ-unr Γ-mob d) =
+  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete (⸴Π ST-T SΓ) Se ST-U d in
+  σ , _ , _ , n , ≤ϵ-refl , Sσ , All.++⁺ (mobΔ {a = a} {σ = σ} Γ-mob) SΔ , A-Abs Γ-unr ϵ′≤ A refl
+complete SΓ (μ (ƛ Se)) (ST-T ⟨ a ⟩→ ST-U) (T-AbsRec Γ-unr a-unr d) =
+  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete (⸴Π ST-T (⸴Π (ST-T ⟨ a ⟩→ ST-U) SΓ)) Se ST-U d in
+  σ , Δ , _ , n , ≤ϵ-refl , Sσ , SΔ , A-AbsRec Γ-unr a-unr ϵ′≤ A
 complete SΓ Se ST (T-AppUnr a-unr ≤ₐ x y) = {!!}
 complete SΓ Se ST (T-AppLin a-par ≤ₐ x x₁) = {!!}
 complete SΓ Se ST (T-AppLeft aL ≤ₐ x x₁) = {!!}
