@@ -64,8 +64,8 @@ given by a translation to a calculus from the literature
 drawbacks. As the source calculus has no direct semantics, it is
 difficult to perform optimizations at the source level. Moreover, the
 translation is uniform in the sense that it does not distinguish
-between local borrows that remain in the same process and remote
-borrows that are passed to other processes. This uniformity leads to
+between local borrows that remain in the same thread and remote
+borrows that are passed to other threads. This uniformity leads to
 inefficiency because local borrows can elide the synchronization
 machinery needed for remote borrows. 
 
@@ -73,15 +73,15 @@ This work promotes the ideas of borrowing for regular session types
 \cite{DBLP:journals/pacmpl/SaffrichS0V25} to context-free session
 types with borrowing, a calculus we call \thecalculus, both
 simplifying and improving on that work. While CFSTs'
-symmetric composition enables more expressive protocols, it does not
+symmetric composition enables expressive protocols, it does not
 liberate functional session type programming from resource-passing
 style. \Cref{sec:borr-from-cont} develops this point using tree
-serialization as a running example: the plain CFST program still
+serialization as an example: the plain CFST program
 threads the channel explicitly and relies on polymorphic recursion,
 whereas the \thecalculus version uses local borrowing to consume one
 prefix of the channel after another. \Cref{sec:local-remote-borr} then
 uses a streaming HTML renderer to show why remote borrowing is
-different: once a borrow crosses a process boundary, evaluation order
+different: once a borrow crosses a thread boundary, evaluation order
 alone no longer sequences the borrowed prefix and the residual
 session, so synchronization is needed.
 
@@ -111,8 +111,8 @@ The core conceptual contributions of this paper are as follows.
   from a session and a borrowed prefix type modulo the equational
   theory of CFSTs.
 \item We distinguish local borrowing from remote borrowing. Local
-  borrows remain in one process and can be ordered by evaluation and
-  typing alone; remote borrows cross process boundaries and therefore
+  borrows remain in one thread and can be ordered by evaluation and
+  typing alone; remote borrows cross thread boundaries and therefore
   require explicit synchronization.
 \item We give \thecalculus a direct operational semantics. This
   semantics serves as an abstract specification of borrowing, rather
@@ -129,7 +129,7 @@ The remaining contributions are mainly technical.
   soundness and completeness statements for the algorithmic system.
 \item We define a lower-level run-time calculus with explicit channel
   representations and synchronization flags, and translate typed
-  \thecalculus processes to this calculus.
+  \thecalculus threads to this calculus.
 \item We state the metatheoretic obligations connecting the layers,
   including type soundness for the direct semantics and a bisimulation
   result for the translation.
@@ -138,10 +138,9 @@ The remaining contributions are mainly technical.
   \cite{almeida26:_frees_concur_progr_languag_with,DBLP:journals/corr/abs-1904-01284}.
 \end{itemize}
 
-The accompanying supplement contains omitted rules and auxiliary material;
+The supplement contains omitted rules and auxiliary material;
 cross-references into it are marked by an \textup{S-} prefix, such as
-\cref{fig:omitted-predicates} or \cref{sec:appendix-types}, and link to the
-corresponding location in the supplement.
+\cref{fig:omitted-predicates} or \cref{sec:appendix-types}.
 
 %%% Local Variables:
 %%% mode: latex
