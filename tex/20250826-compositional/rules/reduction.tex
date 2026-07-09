@@ -40,6 +40,7 @@
 
 \def\RuleCmdPrefix{RuleProcRed}
 \def\RuleNamePrefix{R-}
+\newcommand*\ProcRedTwoLine[2]{\vcenter{\hbox{$\displaystyle #1 \PReduce$}\hbox{$\displaystyle #2$}}}
 
 % R-Exp
 \DefRule {Exp} {
@@ -50,86 +51,105 @@
 
 % R-Discard
 \DefRule {Discard} {} {
-  \PNew {\BSeq{\EVar}{\BindGroup[1]}} {\BindGroup[2]} {(
-    \PPar { \FCapp{\EApp\CDiscard\EVar} }
-          { \Proc }
-  )}
-  \PReduce
-  \PNew {\BindGroup[1]} {\BindGroup[2]} {(
-    \PPar { \FCapp{\CUnit} }
-          { \Proc }
-  )}
+  \ProcRedTwoLine{
+    \PNew {\BSeq{\EVar}{\BindGroup[1]}} {\BindGroup[2]} {(
+      \PPar { \FCapp{\EApp\CDiscard\EVar} }
+            { \Proc }
+    )}
+  }{
+    \PNew {\BindGroup[1]} {\BindGroup[2]} {(
+      \PPar { \FCapp{\CUnit} }
+            { \Proc }
+    )}
+  }
 }
 
 % R-Close
 \DefRule {Close} {} {
-  \PNew xy {(\PPar { {\FCapp[1]{\EApp\CTerm x}}} { {\FCapp[2]{\EApp\CWait y}}})} 
-  \PReduce
-  \PPar { {\FCapp[1]{\CUnit}}} { {\FCapp[2]{\CUnit}}}
+  \ProcRedTwoLine{
+    \PNew xy {(\PPar { {\FCapp[1]{\EApp\CTerm x}}} { {\FCapp[2]{\EApp\CWait y}}})}
+  }{
+    \PPar { {\FCapp[1]{\CUnit}}} { {\FCapp[2]{\CUnit}}}
+  }
 }
 
 % R-RSplit
 \DefRule {RSplit} {} {
-  \PNew {\BindGroup[1]\EVar\BindGroup[2]}{\BindGroup[3]} {
-    (\PPar{\FCapp{\EApp \CSSplit {x}}}\Proc)
-  }
-  \PReduce
-  \PNew {\BindGroup[1]\EVar[1]\BSep\EVar[2]\BindGroup[2]}{\BindGroup[3]} {
-    ({ \PPar{\FCapp{\EPair{\EVar[1]}{\EVar[2]}}}\Proc})
+  \ProcRedTwoLine{
+    \PNew {\BindGroup[1]\EVar\BindGroup[2]}{\BindGroup[3]} {
+      (\PPar{\FCapp{\EApp \CSSplit {x}}}\Proc)
+    }
+  }{
+    \PNew {\BindGroup[1]\EVar[1]\BSep\EVar[2]\BindGroup[2]}{\BindGroup[3]} {
+      ({ \PPar{\FCapp{\EPair{\EVar[1]}{\EVar[2]}}}\Proc})
+    }
   }
 }
 
 % R-LSplit
 \DefRule {LSplit} {} {
-  \PNew {\BindGroup[1]\EVar\BindGroup[2]}{\BindGroup[3]} {
-    (\PPar{\FCapp{\EApp \CSplit {x}}}\Proc)
-  }
-  \PReduce
-  \PNew {\BindGroup[1]\EVar[1]\EVar[2]\BindGroup[2]}{\BindGroup[3]} {
-    (\PPar{\FCapp{\EPairOrd{\EVar[1]}{\EVar[2]}}}\Proc)
+  \ProcRedTwoLine{
+    \PNew {\BindGroup[1]\EVar\BindGroup[2]}{\BindGroup[3]} {
+      (\PPar{\FCapp{\EApp \CSplit {x}}}\Proc)
+    }
+  }{
+    \PNew {\BindGroup[1]\EVar[1]\EVar[2]\BindGroup[2]}{\BindGroup[3]} {
+      (\PPar{\FCapp{\EPairOrd{\EVar[1]}{\EVar[2]}}}\Proc)
+    }
   }
 }
 
 % R-Drop
 \DefRule {Drop} {} {
-  \PNew {\BWithSep{\EVar}{\BindGroup[1]}}{\BindGroup[2]}{ (\PPar{\FCapp{\EApp \CDrop {\EVar}}}\Proc)}
-  \PReduce
-  \PNew {\BLeadSep{\BindGroup[1]}}{\BindGroup[2]} { ({ \PPar{\FCapp{\CUnit}}\Proc})}
+  \ProcRedTwoLine{
+    \PNew {\BWithSep{\EVar}{\BindGroup[1]}}{\BindGroup[2]}{ (\PPar{\FCapp{\EApp \CDrop {\EVar}}}\Proc)}
+  }{
+    \PNew {\BLeadSep{\BindGroup[1]}}{\BindGroup[2]} { ({ \PPar{\FCapp{\CUnit}}\Proc})}
+  }
 }
 
 % R-Acquire
 \DefRule {Acquire} {} {
-  \PNew {\BLeadSep{\BSeq{\EVar}{\BindGroup[1]}}}{\BindGroup[2]}{ (\PPar{\FCapp{\EApp \CAcq{\EVar}}}\Proc)}
-  \PReduce
-  \PNew {\BSeq{\EVar}{\BindGroup[1]}}{\BindGroup[2]} { ({ \PPar{\FCapp{\EVar}}\Proc})}
+  \ProcRedTwoLine{
+    \PNew {\BLeadSep{\BSeq{\EVar}{\BindGroup[1]}}}{\BindGroup[2]}{ (\PPar{\FCapp{\EApp \CAcq{\EVar}}}\Proc)}
+  }{
+    \PNew {\BSeq{\EVar}{\BindGroup[1]}}{\BindGroup[2]} { ({ \PPar{\FCapp{\EVar}}\Proc})}
+  }
 }
 
 
 % R-Com
 \DefRule {Com} {} {
-  \PNew {\BSeq x{\BindGroup[1]}}{\BSeq y {\BindGroup[2]}}{
-    (\PPar{\PPar { {\FCapp[1]{\EApp \CSend {(\EPair\V x)}}}} {
-        {\FCapp[2]{\EApp\CRecv y}}}} \Proc)} 
-  \PReduce
-  \PNew {\BindGroup[1]}{\BindGroup[2]}
-  {(\PPar{\PPar{ {\FCapp[1]{\CUnit}}} { {\FCapp[2]{\V}}}} \Proc)}
+  \ProcRedTwoLine{
+    \PNew {\BSeq x{\BindGroup[1]}}{\BSeq y {\BindGroup[2]}}{
+      (\PPar
+        {\PPar { {\FCapp[1]{\EApp \CSend {(\EPair\V x)}}} }
+               { {\FCapp[2]{\EApp\CRecv y}}}}
+        {\Proc})}
+  }{
+    \PNew {\BindGroup[1]}{\BindGroup[2]} {(\PPar
+      {\PPar{ {\FCapp[1]{\CUnit}}} { {\FCapp[2]{\V}}}}
+      {\Proc})}
+  }
 }
 
 % R-Choice
 \DefRule {Choice} {} {
-  \PNew {\BSeq x{\BindGroup[1]}}{\BSeq y {\BindGroup[2]}} {(
-    \PPar {\FCapp[1]{\EApp{\CSelect{k}} x}} {
-      \PPar {\FCapp[2]{ \EApp\CBranch y }}
-        \Proc
-    }
-  )}
-  \PReduce
-  \PNew {\BSeq x{\BindGroup[1]}}{\BSeq y {\BindGroup[2]}} {(
-    \PPar {\FCapp[1]{x}} {
-      \PPar {\FCapp[2]{\EInj k y}}
-        \Proc
-    }
-  )}
+  \ProcRedTwoLine{
+    \PNew {\BSeq x{\BindGroup[1]}}{\BSeq y {\BindGroup[2]}} {(
+      \PPar {\FCapp[1]{\EApp{\CSelect{k}} x}} {
+        \PPar {\FCapp[2]{ \EApp\CBranch y }}
+          \Proc
+      }
+    )}
+  }{
+    \PNew {\BSeq x{\BindGroup[1]}}{\BSeq y {\BindGroup[2]}} {(
+      \PPar {\FCapp[1]{x}} {
+        \PPar {\FCapp[2]{\EInj k y}}
+          \Proc
+      }
+    )}
+  }
 }
 
 % R-New
