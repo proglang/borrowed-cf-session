@@ -121,15 +121,14 @@ congruence.
     \RuleTransProcBind  \\
     \RuleTransBindSep   \and
     \RuleTransBindSeq   \and
-    \RuleTransBindVar   \and
-    \RuleTransBindNil
+    \raisebox{1.4\baselineskip}{%
+      $\vcenter{\hbox{$\RuleTransBindVar$}\kern.8\baselineskip\hbox{$\RuleTransBindNil$}}$%
+    }
   \end{mathpar}
   \smallskip
   \[
-    \BindFlag{\Bind} = \begin{cases}
-      \FlagDropped & \text{if $\Bind = \BEmp$} \\
-      \FlagInit & \text{otherwise}
-    \end{cases}
+    \BindFlag{\Bind} = \FlagDropped \text{ if } \Bind = \BEmp;
+    \quad \BindFlag{\Bind} = \FlagInit \text{ otherwise.}
   \]
   \caption{Translation of
     processes ($\Proc \TransProc \TProc*$)

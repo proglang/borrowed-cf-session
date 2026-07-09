@@ -13,7 +13,7 @@
 
 % Tr-Par
 \DefRule {Par} {
-  \Proc[1] \TransProc \TProc*[1] \\
+  \Proc[1] \TransProc \TProc*[1] \\\\
   \Proc[2] \TransProc \TProc*[2]
 } {
   \PPar {\Proc[1]} {\Proc[2]}
@@ -24,8 +24,8 @@
 % Tr-Bind
 \DefRule {Bind} {
   \BindGroup[1] \TransBind[\TEChan \TEVar] {\TCC[1]}  [\Sub[1]] \\
-  \BindGroup[2] \TransBind[\TEChan \TEVary] {\TCC[2]} [\Sub[2]] \\
-  \Proc \TransProc[{\Sub \cup \Sub[1] \cup \Sub[2]}] \TProc* \\
+  \BindGroup[2] \TransBind[\TEChan \TEVary] {\TCC[2]} [\Sub[2]] \\\\
+  \Proc \TransProc[{\Sub \cup \Sub[1] \cup \Sub[2]}] \TProc*
 } {
   \PNew {\BindGroup[1]}{\BindGroup[2]} \Proc
   \TransProc
@@ -41,7 +41,7 @@
 % Tr-BindSep
 \DefRule {Sep} {
   \Bind[1] \TransBind[{\TEChan[\E[1]] \TEVar [\TEVarz]}] \TCCEmpty [\Sub[1]] \\
-  \BindGroup[2] \TransBind[{\TEChan[\TEVarz] \TEVar [\E[2]]}] {\TCC[2]} [\Sub[2]] \\
+  \BindGroup[2] \TransBind[{\TEChan[\TEVarz] \TEVar [\E[2]]}] {\TCC[2]} [\Sub[2]] \\\\
   \BindFlag{\Bind[1]} = \Flag
 }{
   \BWithSep{\Bind[1]}{\BindGroup[2]} \TransBind[{\TEChan[\E[1]] \TEVar [\E[2]]}]
@@ -51,8 +51,8 @@
 
 % Tr-BindSeq
 \DefRule {Seq} {
-  \EVary \TransBind[\TEChan[\E[1]]{\TEVar}] \TCCEmpty [\Sub[1]] \\
-  \Bind \TransBind[\TEChan{\TEVar}[\E[2]]] \TCCEmpty [\Sub[2]] \\
+  \EVary \TransBind[\TEChan[\E[1]]{\TEVar}] \TCCEmpty [\Sub[1]] \\\\
+  \Bind \TransBind[\TEChan{\TEVar}[\E[2]]] \TCCEmpty [\Sub[2]] \\\\
   \Bind \ne \BEmp
 }{
   \BSeq{\EVary}{\Bind} \TransBind[\TEChan[\E[1]]{\TEVar}[\E[2]]]
