@@ -58,6 +58,7 @@ open import BorrowedCF.Simulation2.Backward.Inversions using (inv-U-⟪⟫; inv-
 open import BorrowedCF.Simulation2.Backward.SimResPhi using (φ-trichotomy; mk-sync; mk-drop; mk-struct)
 open import BorrowedCF.Simulation2.Backward.DropReflectGo using (drop-goB)
 open import BorrowedCF.Simulation2.Backward.UpToPhiEngineWF using (eng)
+open import BorrowedCF.Simulation2.Backward.PhiTelescopeWF using (tel)
 open import BorrowedCF.Simulation.ReverseInv
   using (inv-ν-chanCx; νσ-φfree; νσ-φfree-VSub; U-ν-φfree-eq; ν-inj)
 open import BorrowedCF.Simulation.RevAdmin
@@ -96,8 +97,6 @@ sim←-base : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanC
           → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
           → {R Q : UP.Proc n} → R ≈ U[ P ] σ → R UR.─→ₚ Q
           → Σ[ P′ ∈ TP.Proc m ] (Star TR._─→ₚ_ P P′ × Q ≈ U[ P′ ] σ)
-sim←-base σ Vσ Γ-S ⊢P R≈ red =
-  {! Base : φ-telescope-aware reverse ≈-inversion — OPEN (needs calculus/statement design change). !}
 
 -- Mutual: sim← (≈-closed public entry), sim←ᵍ (≡-image inversion engine),
 -- simRes (RU-Res φ-nest peel, factored out to keep the σ : m →ₛ n scope index).
@@ -113,6 +112,22 @@ simRes : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ 
        → UP.ν X ≡ U[ TP.ν B₁ B₂ P₀ ] σ
        → (syncs B₁ ≡ 0) ⊎ _ → (syncs B₂ ≡ 0) ⊎ _
        → Σ[ P′ ∈ TP.Proc m ] (Star TR._─→ₚ_ (TP.ν B₁ B₂ P₀) P′ × UP.ν X′ ≈ U[ P′ ] σ)
+
+-- sim←-base : reflect a DIRECT step on a merely-≈-related image.  The intended
+-- discharge PhiChainBase.base-from-strict σ Vσ Γ-S ⊢P (sim←ᵍ σ Vσ Γ-S ⊢P) admin
+-- TYPECHECKS but does NOT terminate: it introduces a SEPARATE measure-free loop
+--   sim←ᵍ(RU-Struct) → sim← → eng → sim←-base → base-from-strict(≋-rewrap)
+--                    → sim←ᵍ(RU-Struct) → …
+-- because base-from-strict re-wraps `red` into a fresh RU-Struct (growing ∣red∣)
+-- while sim←ᵍ's RU-Struct case unwraps it back through sim←/eng — the ≈-chain is
+-- consumed then regenerated, so neither ∣red∣ nor the chain length descends.
+-- This is the νφ-comm φ-escape obstruction (≈-reflection cannot be reduced to
+-- ≡-reflection); it is ORTHOGONAL to the simRes φ-loop, which is now discharged
+-- by the WF-on-∣sub∣ engine `tel` (PhiTelescopeWF) — see the φ-bearing simRes
+-- cases below.  Kept as an isolated hole pending the reverse-inversion design
+-- change; wiring base-from-strict here re-introduces a TerminationIssue.
+sim←-base σ Vσ Γ-S ⊢P R≈ red =
+  {! Base : φ-telescope-aware reverse ≈-inversion — OPEN (needs calculus/statement design change). !}
 
 -- sim← : ε prefix = engine at refl; genuine ≈-chain = documented non-ε hole.
 sim← σ Vσ Γ-S ⊢P ε        red = sim←ᵍ σ Vσ Γ-S ⊢P refl red
@@ -177,9 +192,9 @@ simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq (inj₁ s₁) (inj₁ s
 simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq (inj₂ (b , c , Bp , refl)) sB₂
   with φ-trichotomy _ _ (subst (λ Z → Z UR.─→ₚ X′) (ν-injU bodyeq) sub)
 ... | inj₁ φs =
-  eng σ Vσ Γ-S ⊢P (sim←-base σ Vσ Γ-S ⊢P) (≋⇒≈ (≡→≋ bodyeq)) (UR.RU-Res sub)
+  tel σ Vσ Γ-S B₁ B₂ P₀ ⊢P X {! leaf !} sub
 ... | inj₂ (inj₂ φst) =
-  eng σ Vσ Γ-S ⊢P (sim←-base σ Vσ Γ-S ⊢P) (≋⇒≈ (≡→≋ bodyeq)) (UR.RU-Res sub)
+  tel σ Vσ Γ-S B₁ B₂ P₀ ⊢P X {! leaf !} sub
 ... | inj₂ (inj₁ (mk-drop F x P isdrop source target))
   with P′ , steps , codom ←
     drop-goB b c Bp B₂ σ Vσ Γ-S P₀ F ⊢P
@@ -187,4 +202,4 @@ simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq (inj₂ (b , c , Bp , r
              (ν-injU bodyeq ■ cong₂ UP.φ isdrop source) bodyeq) =
   P′ , steps , subst (λ Z → UP.ν Z ≈ U[ P′ ] σ) (sym target) codom
 simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq _ (inj₂ _) =
-  eng σ Vσ Γ-S ⊢P (sim←-base σ Vσ Γ-S ⊢P) (≋⇒≈ (≡→≋ bodyeq)) (UR.RU-Res sub)
+  tel σ Vσ Γ-S B₁ B₂ P₀ ⊢P X {! leaf !} sub
