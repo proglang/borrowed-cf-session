@@ -20,12 +20,22 @@ open import BorrowedCF.Simulation.Confine using (count)
 open import BorrowedCF.Simulation.StructDom
 open import BorrowedCF.Simulation.BeforeOrder using (before; before-⋯ᵣ-inj; before-structNSeq)
 open import BorrowedCF.Simulation.RevGrindC using (inj-wkʳ)
+open import BorrowedCF.Simulation.RevComConfine using (bindCtx′-NoAcq)
+open import BorrowedCF.Simulation.CloseVacuityProbe
+  using (NoAcq; noAcq-;-fst; noAcq-≃; new-end⇒noAcq)
+import BorrowedCF.Simulation.CloseVacuityProbe as CV
+open import BorrowedCF.Processes.Typed
+  using (BindCtx; BindCtx′; bindCtx′⇒chanCtx; cons-ret/acq)
+open import BorrowedCF.Types using (New; _≃_; ≃-sym; _;_; end; ret)
+open import BorrowedCF.Context using (Ctx)
 open import Data.Fin.Base using (_↑ˡ_)
 open import Data.Fin.Properties using (toℕ-↑ˡ)
 open import Data.Nat.Base using (_<_)
 open import Data.Nat.Properties using (m≤m+n; <-≤-trans)
 open import Data.Sum using (inj₁; inj₂)
+open import Data.Product using (proj₁; proj₂)
 open import Data.List using (_∷_; [])
+import BorrowedCF.Processes.Typed as TP
 
 open Fin.Patterns
 
@@ -87,3 +97,20 @@ before-drop-binderᴸ b₁ c b₂ {m} γ (suc z′) z₀≢ =
            (structBinder (suc b₁ ∷ c ∷ []))
            (inj₁ (before-⋯ᵣ-inj (𝐂S.wkʳ (c + 0)) (inj-wkʳ (c + 0)) (structNSeq (suc b₁))
                    (before-structNSeq b₁ z′))))))
+
+------------------------------------------------------------------------
+-- head-block-NoAcq : every channel of the HEAD block (a s₁ ; ret borrow of a
+-- 2-block bind group) is NoAcq, hence non-mobile.  s₁ is a prefix of the
+-- New-derived s ; end p, so NoAcq s₁ (noAcq-;-fst ∘ transport), and
+-- NoAcq (s₁ ; ret) = NoAcq s₁ ; ret.  drop-go reconciles the full-context
+-- lookup with this head-local one (as close-go does with lookupL).
+------------------------------------------------------------------------
+
+head-block-NoAcq : ∀ {s p s₁ s₂ b₁} {Γₕ : Ctx (suc b₁)} → New s
+  → s₁ ; s₂ ≃ (s ; end p)
+  → (headBC : BindCtx′ (s₁ ; ret) (suc b₁) Γₕ) (x₁ : 𝔽 (suc b₁))
+  → NoAcq (proj₁ (bindCtx′⇒chanCtx headBC x₁))
+head-block-NoAcq N s≃ headBC x₁ =
+  bindCtx′-NoAcq
+    (CV._;_ (noAcq-;-fst (noAcq-≃ (≃-sym s≃) (new-end⇒noAcq N))) CV.ret)
+    headBC x₁
