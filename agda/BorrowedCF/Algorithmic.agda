@@ -353,6 +353,41 @@ subAll-solving ¬Ss x (uvar ⁇ var) = solved-dual x
 someSub-solving : Solving UV.someSub
 someSub-solving = subAll-solving (λ ()) end
 
+------------------------------------------------------------------------
+-- Type (unification-variable) substitution preserves declarative typing.
+-- Instantiating with a Solving σ (e.g. someSub) makes every type in the
+-- derivation `subTy _ σ`, hence solved: this is the "any subterm can be
+-- typed with a solved type" fact needed by completeness.
+------------------------------------------------------------------------
+
+⊢-sub : (σ : UV.Sub) → Γ ; γ ⊢ e ∶ T ∣ ϵ → subCtx Γ σ ; γ ⊢ subTm e σ ∶ subTy T σ ∣ ϵ
+⊢-sub σ (T-Const ⊢c) = T-Const (subConst-⊢ ⊢c)
+⊢-sub σ (T-Var x refl) = T-Var x refl
+⊢-sub σ (T-Abs Γ-unr Γ-mob d) =
+  T-Abs (allCx-gmap subTy-unr ∘ Γ-unr) (allCx-gmap subTy-mobile ∘ Γ-mob)
+        (⊢-sub σ d ⊢≗ ⸴-dist (flip subTy σ))
+⊢-sub σ (T-AbsRec Γ-unr a-unr d) =
+  T-AbsRec (allCx-gmap subTy-unr Γ-unr) a-unr
+           (⊢-sub σ d ⊢≗ λ z → ⸴-dist (flip subTy σ) z ■ ⸴-cong refl (⸴-dist (flip subTy σ)) z)
+⊢-sub σ (T-AppUnr a-unr ≤ₐ d₁ d₂) = T-AppUnr a-unr ≤ₐ (⊢-sub σ d₁) (⊢-sub σ d₂)
+⊢-sub σ (T-AppLin a-par ≤ₐ d₁ d₂) = T-AppLin a-par ≤ₐ (⊢-sub σ d₁) (⊢-sub σ d₂)
+⊢-sub σ (T-AppLeft aL ≤ₐ d₁ d₂) = T-AppLeft aL ≤ₐ (⊢-sub σ d₁) (⊢-sub σ d₂)
+⊢-sub σ (T-AppRight aR ≤ₐ d₁ d₂) = T-AppRight aR ≤ₐ (⊢-sub σ d₁) (⊢-sub σ d₂)
+⊢-sub σ (T-Pair p/s seq⇒p d₁ d₂) = T-Pair p/s seq⇒p (⊢-sub σ d₁) (⊢-sub σ d₂)
+⊢-sub σ (T-Let p/s d₁ d₂) = T-Let p/s (⊢-sub σ d₁) (⊢-sub σ d₂ ⊢≗ ⸴-dist (flip subTy σ))
+⊢-sub σ (T-Seq unr-T d₁ d₂) = T-Seq (subTy-unr unr-T) (⊢-sub σ d₁) (⊢-sub σ d₂)
+⊢-sub σ (T-LetPair p/s d₁ d₂) =
+  T-LetPair p/s (⊢-sub σ d₁)
+            (⊢-sub σ d₂ ⊢≗ λ z → ⸴-dist (flip subTy σ) z ■ ⸴-cong refl (⸴-dist (flip subTy σ)) z)
+⊢-sub σ (T-Inj {i = i} d) =
+  T-Inj (subst (subCtx _ σ ; _ ⊢ subTm _ σ ∶_∣ _) (if-float (flip subTy σ) i) (⊢-sub σ d))
+⊢-sub σ (T-Case p/s d d₁ d₂) =
+  T-Case p/s (⊢-sub σ d)
+             (⊢-sub σ d₁ ⊢≗ ⸴-dist (flip subTy σ))
+             (⊢-sub σ d₂ ⊢≗ ⸴-dist (flip subTy σ))
+⊢-sub σ (T-Conv T≃ ϵ≤ d) = T-Conv (subTy-≃ T≃) ϵ≤ (⊢-sub σ d)
+⊢-sub σ (T-Weaken γ≤ d) = T-Weaken (≼-map⁺ subTy-unr subTy-mobile γ≤) (⊢-sub σ d)
+
 complete :
   Un.Π[ SolvedTy ∘ Γ ] →
   SolvedTm e →
