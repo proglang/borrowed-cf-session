@@ -13,6 +13,7 @@ open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Types
 open import BorrowedCF.Types.AtomSnoc using (atomKind≢⇒≄-;ʳ)
+open import BorrowedCF.Types.AtomUnsnoc using (atom-;-unsnoc)
 
 open import BorrowedCF.Reduction.Base
 open import BorrowedCF.Reduction.Expressions using (inv-`⊤)

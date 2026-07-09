@@ -1,34 +1,20 @@
--- Machinery toward `atom-;-unsnoc` (Types/Equivalence): backward-μ
--- un-substitution for `Snoc`, for ALL ending atoms — the variable case (the
--- documented non-closed-kind "all-paths-from-one-path" wall) is CRACKED here.
+-- Proof of `atom-;-unsnoc` (was a postulate in Types/Equivalence): from
+-- `x ; y ≃ z ; a` (a an atom) either `y` skips, or `y` factors as `y′ ; a`
+-- with `x ; y′ ≃ z`.  Proven for ALL atoms.
 --
---   snoc-⋯⁻¹       : callback-based un-substitution (closed ending atoms).
---   snoc-⋯-sum     : SUM-based un-substitution — recurses on the body `t` and
---                    the actual `Snoc` (NO ∀¬E callback), returning LEFT (Snoc
---                    of the pulled-back body) or RIGHT (ending via a compound
---                    ϕ-image). Because it holds both `brn` sub-`Snoc`s at once,
---                    it dissolves the one-branch limitation that blocked the
---                    variable case. `leafLR` matches the ϕ-image as an explicit
---                    argument (so the split is on a concrete bound var, not the
---                    opaque `/id(ϕ y)`); `⋯ᵣ-inj`/`wk-pb` lift the pullback.
---   snoc-unfold⁻¹ᴬ : μ-unfold un-substitution for EVERY atom (incl. `` ` v``).
---                    Verified hole/postulate-free.
---
--- CLOSED (`unsnoc-nonmsg`): `atom-;-unsnoc` for the 5 NON-msg atoms, incl. bare
--- variables.  `snoc-prefix-unique` shows the Snoc prefix is ≃-determined by
--- (a, w), so `≃-snoc` transports `Snoc a (z;a)(z;skip)` backward along
--- `x;y ≃ z;a` PRESERVING the prefix up to ≃ (bwd-μ round-trips through
--- `snoc-unfold` + `snoc-prefix-unique`).  Hence NO right-cancellation is needed
--- — the earlier "cancellation at the μ-step" obstacle is dissolved.
---
--- OPEN (the last 1/6): `msg p T` ending.  A ≃𝕊-msg step in one `brn` branch
--- desyncs the branch payloads, so exact `Snoc` breaks.  Two mapped routes, each
--- ~150–190 lines: (a) `SnocA` (ending atom ≃ a, per branch; scaffolded here as
--- `SnocA`/`snocA-prefix-unique`/`≃-var-rigid`) needs `snocA-⋯ᵣ⁻¹` reflecting the
--- leaf atom ≃-proofs (`≃-atom-⋯ᵣ⁻¹`, using `≃-msg⁻¹`); (b) kind-indexed `SnocK`
--- (transport is CLEAN — ≃𝕊-msg keeps kind `msg p`, no desync — and the
--- un-substitution reflects only kind ≡ via `atomKind-wk`), recovering the payload
--- T ≃ T″ at the end via the `MsgEnds` machinery.  Route (b) is the cleaner one.
+-- Method: `Snoc a w z` is a structural witness that `w ≃ z ; a`.  Its prefix
+-- `z` is ≃-determined by `(a, w)` (`snoc-prefix-unique`), so the ≃-transport
+-- `≃-snoc` carries `Snoc a (z;a)(z;skip)` backward along `x;y ≃ z;a` PRESERVING
+-- the prefix up to ≃ — the backward-μ case round-trips through `snoc-unfold`,
+-- so NO right-cancellation is needed.  The μ-unfold un-substitution
+-- `snoc-unfold⁻¹ᴬ` works for EVERY atom incl. bare variables (the sum-based
+-- `snoc-⋯-sum` recurses on the body and the actual Snoc, dissolving the
+-- one-branch `brn` limitation).  For a `msg p T` ending a ≃𝕊-msg step in one
+-- `brn` branch desyncs the payloads, so that case uses the payload-indexed
+-- `SnocM` (ending = `msg p _`, payload ≃ T): every leaf is a msg atom (no
+-- variable leaves), the index is scope-independent, and ≃𝕊-msg just updates the
+-- payload proof — the transport stays clean and the unsnoc recovers T via
+-- `snocM-sound`.
 module BorrowedCF.Types.AtomUnsnoc where
 
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (SymClosure; fwd; bwd)
@@ -495,3 +481,185 @@ unsnoc-nonmsg {a = a} A nm {x}{y}{z} eq
 ≃-var-rigid ret e = ⊥-elim (atomKind≢⇒≄ `- ret (λ ()) e)
 ≃-var-rigid acq e = ⊥-elim (atomKind≢⇒≄ `- acq (λ ()) e)
 ≃-var-rigid ``- e = ⊥-elim (atomKind≢⇒≄ `- ``- (λ ()) e)
+
+------------------------------------------------------------------------
+-- SnocM: msg-specialised Snoc (ending = msg p _, payload ≃ T).  Every leaf
+-- is a msg atom, so no variable leaves and the index is scope-independent
+-- (mu does not weaken it) — the whole SnocA stack collapses.
+------------------------------------------------------------------------
+
+data SnocM {n} (p : Pol) (T : 𝕋) : 𝕊 n → 𝕊 n → Set where
+  here : {U : 𝕋} → U ≃ T → SnocM p T (msg p U) skip
+  _;₁_ : SnocM p T s₁ z → Skips s₂ → SnocM p T (s₁ ; s₂) z
+  -;₂_ : SnocM p T s₂ z → SnocM p T (s₁ ; s₂) (s₁ ; z)
+  brn  : SnocM p T s₁ z₁ → SnocM p T s₂ z₂ → SnocM p T (brn p′ s₁ s₂) (brn p′ z₁ z₂)
+  mu   : SnocM p T s z → SnocM p T (mu s) (z ⋯ ⦅ mu s ⦆ₛ)
+
+snocM-sound : {p : Pol}{T : 𝕋} → SnocM p T w z → w ≃ z ; msg p T
+snocM-sound (here e) = ≃-trans (Eq*.return (≃𝕊-msg e)) (≃-sym ≃-skipˡ)
+snocM-sound (sn ;₁ Sk) = ≃-trans (≃-skipsʳ Sk) (snocM-sound sn)
+snocM-sound (-;₂ sn) = ≃-trans (≃-; ≃-refl (snocM-sound sn)) (≃-sym ≃-assoc-;)
+snocM-sound (brn sn₁ sn₂) = ≃-trans (≃-brn (snocM-sound sn₁) (snocM-sound sn₂)) (≃-sym ≃-distr)
+snocM-sound {p = p}{T = T} (mu {s = s} {z = z} sn) =
+  ≃-trans ≃-μ (≃-trans (≃-⋯ {ϕ = ⦅ mu s ⦆ₛ} (snocM-sound sn)) (≃-; ≃-refl ≃-refl))
+
+skipsM⊥snocM : {p : Pol}{T : 𝕋} → Skips w → SnocM p T w z → ⊥
+skipsM⊥snocM (Sk₁ ; Sk₂) (sn ;₁ _) = skipsM⊥snocM Sk₁ sn
+skipsM⊥snocM (Sk₁ ; Sk₂) (-;₂ sn) = skipsM⊥snocM Sk₂ sn
+skipsM⊥snocM (mu Sk) (mu sn) = skipsM⊥snocM Sk sn
+
+snocM-mu⁻ : {p : Pol}{T : 𝕋} → SnocM p T (mu s) z → ∃[ z′ ] SnocM p T s z′
+snocM-mu⁻ (mu sn) = _ , sn
+
+snocM-;⁻ : {p : Pol}{T : 𝕋} → SnocM p T (s₁ ; s₂) z →
+  (∃[ z′ ] SnocM p T s₁ z′ × Skips s₂) ⊎ (∃[ z′ ] SnocM p T s₂ z′)
+snocM-;⁻ (sn ;₁ Sk) = inj₁ (_ , sn , Sk)
+snocM-;⁻ (-;₂ sn) = inj₂ (_ , sn)
+
+snocM-prefix-unique : {p : Pol}{T : 𝕋} → SnocM p T w z₁ → SnocM p T w z₂ → z₁ ≃ z₂
+snocM-prefix-unique (here e₁) (here e₂) = ≃-refl
+snocM-prefix-unique (sn₁ ;₁ Sk₁) (sn₂ ;₁ Sk₂) = snocM-prefix-unique sn₁ sn₂
+snocM-prefix-unique (sn₁ ;₁ Sk₁) (-;₂ sn₂) = ⊥-elim (skipsM⊥snocM Sk₁ sn₂)
+snocM-prefix-unique (-;₂ sn₁) (sn₂ ;₁ Sk₂) = ⊥-elim (skipsM⊥snocM Sk₂ sn₁)
+snocM-prefix-unique (-;₂ sn₁) (-;₂ sn₂) = ≃-; ≃-refl (snocM-prefix-unique sn₁ sn₂)
+snocM-prefix-unique (brn sn₁ sn₂) (brn sn₃ sn₄) = ≃-brn (snocM-prefix-unique sn₁ sn₃) (snocM-prefix-unique sn₂ sn₄)
+snocM-prefix-unique (mu {s = s} sn₁) (mu sn₂) = ≃-⋯ {ϕ = ⦅ mu s ⦆ₛ} (snocM-prefix-unique sn₁ sn₂)
+
+snocM-⋯ᵣ⁻¹ : {p : Pol}{T : 𝕋}{ρ : m →ᵣ n} → SnocM p T (s ⋯ ρ) z → ∃[ z₀ ] SnocM p T s z₀
+snocM-⋯ᵣ⁻¹ {s = ` x} ()
+snocM-⋯ᵣ⁻¹ {s = end q} ()
+snocM-⋯ᵣ⁻¹ {s = ret} ()
+snocM-⋯ᵣ⁻¹ {s = acq} ()
+snocM-⋯ᵣ⁻¹ {s = `` γ} ()
+snocM-⋯ᵣ⁻¹ {s = skip} ()
+snocM-⋯ᵣ⁻¹ {s = msg q U} (here e) = _ , here e
+snocM-⋯ᵣ⁻¹ {s = brn q s₁ s₂} (brn sn₁ sn₂) = _ , brn (proj₂ (snocM-⋯ᵣ⁻¹ sn₁)) (proj₂ (snocM-⋯ᵣ⁻¹ sn₂))
+snocM-⋯ᵣ⁻¹ {s = s₁ ; s₂} (sn₁ ;₁ Sk) = _ , proj₂ (snocM-⋯ᵣ⁻¹ sn₁) ;₁ skips-⋯ᵣ⁻¹ Sk
+snocM-⋯ᵣ⁻¹ {s = s₁ ; s₂} (-;₂ sn₂) = _ , -;₂ proj₂ (snocM-⋯ᵣ⁻¹ sn₂)
+snocM-⋯ᵣ⁻¹ {s = mu s₀} (mu sn₀) = _ , mu (proj₂ (snocM-⋯ᵣ⁻¹ sn₀))
+
+RSUMM : {n : ℕ}(p : Pol)(T : 𝕋)(m : ℕ)(img : 𝔽 m → 𝕊 n)(t : 𝕊 m) → Set
+RSUMM {n} p T _ img t = ∃[ y ] EndsIn-` y t × (∃[ z′ ] SnocM p T (img y) z′) × (∀ x → img y ≢ ` x)
+
+snocM-leafLR : {p : Pol}{T : 𝕋}(w : 𝕊 n) → SnocM p T w z → (∃[ z′ ] SnocM p T w z′) × (∀ x → w ≢ ` x)
+snocM-leafLR (` x) ()
+snocM-leafLR (end q) ()
+snocM-leafLR ret ()
+snocM-leafLR acq ()
+snocM-leafLR (`` γ) ()
+snocM-leafLR skip ()
+snocM-leafLR (msg q U) sn = (_ , sn) , λ x ()
+snocM-leafLR (brn q u₁ u₂) sn = (_ , sn) , λ x ()
+snocM-leafLR (mu u) sn = (_ , sn) , λ x ()
+snocM-leafLR (u₁ ; u₂) sn = (_ , sn) , λ x ()
+
+snocM-⋯-sum : {p : Pol}{T : 𝕋}{ϕ : m →ₛ n} → (∀ x → ¬ Skips (`/id (ϕ x))) →
+  {t : 𝕊 m} → SnocM p T (t ⋯ ϕ) z →
+  (∃[ z′ ] SnocM p T t z′) ⊎ RSUMM p T _ (λ y → `/id (ϕ y)) t
+snocM-⋯-sum {ϕ = ϕ} ∀¬S {t = ` y} sn = let r , nv = snocM-leafLR (`/id (ϕ y)) sn in inj₂ (y , here , r , nv)
+snocM-⋯-sum ∀¬S {t = msg q U} (here e) = inj₁ (_ , here e)
+snocM-⋯-sum ∀¬S {t = end q} ()
+snocM-⋯-sum ∀¬S {t = ret} ()
+snocM-⋯-sum ∀¬S {t = acq} ()
+snocM-⋯-sum ∀¬S {t = `` γ} ()
+snocM-⋯-sum ∀¬S {t = skip} ()
+snocM-⋯-sum ∀¬S {t = brn q t₁ t₂} (brn sn₁ sn₂) with snocM-⋯-sum ∀¬S sn₁ | snocM-⋯-sum ∀¬S sn₂
+... | inj₁ (_ , l₁) | inj₁ (_ , l₂) = inj₁ (_ , brn l₁ l₂)
+... | inj₂ (y , E , snr , nv) | _ = inj₂ (y , brn (inj₁ E) , snr , nv)
+... | inj₁ _ | inj₂ (y , E , snr , nv) = inj₂ (y , brn (inj₂ E) , snr , nv)
+snocM-⋯-sum ∀¬S {t = t₁ ; t₂} (sn₁ ;₁ Sk) with snocM-⋯-sum ∀¬S sn₁
+... | inj₁ (_ , l₁) = inj₁ (_ , l₁ ;₁ skips-⋯⁻¹ Sk ∀¬S)
+... | inj₂ (y , E , snr , nv) = inj₂ (y , E ;₁ skips-⋯⁻¹ Sk ∀¬S , snr , nv)
+snocM-⋯-sum ∀¬S {t = t₁ ; t₂} (-;₂ sn₂) with snocM-⋯-sum ∀¬S sn₂
+... | inj₁ (_ , l₂) = inj₁ (_ , -;₂ l₂)
+... | inj₂ (y , E , snr , nv) = inj₂ (y , -;₂ E , snr , nv)
+snocM-⋯-sum {ϕ = ϕ} ∀¬S {t = mu t₀} (mu sn₀) with snocM-⋯-sum ∀¬S′ sn₀
+  where
+  ∀¬S′ : ∀ z → ¬ Skips (`/id ((ϕ ↑) z))
+  ∀¬S′ zero = ¬skips-`/` Kₛ
+  ∀¬S′ (suc z) = ∀¬S z ∘ skips-⋯ᵣ⁻¹ ∘ subst Skips (sym (wk-`/id (ϕ z)))
+... | inj₁ (_ , l₀) = inj₁ (_ , mu l₀)
+... | inj₂ (zero , _ , _ , nv) = ⊥-elim (nv zero (`/`-is-` ⦃ Kₛ ⦄ zero))
+... | inj₂ (suc y′ , E₀ , (z′ , sn′₀) , nv) =
+  inj₂ (y′ , mu E₀ , snocM-⋯ᵣ⁻¹ (subst (λ w → SnocM _ _ w z′) (wk-`/id (ϕ y′)) sn′₀) ,
+        λ x e → nv (suc x) (wk-`/id (ϕ y′) ■ cong (_⋯ weakenᵣ) e))
+
+snocM-⋯ : {p : Pol}{T : 𝕋}{ϕ : m →ₛ n} → SnocM p T w z → SnocM p T (w ⋯ ϕ) (z ⋯ ϕ)
+snocM-⋯ (here e) = here e
+snocM-⋯ (sn ;₁ Sk) = snocM-⋯ sn ;₁ skips-⋯ Sk
+snocM-⋯ (-;₂ sn) = -;₂ snocM-⋯ sn
+snocM-⋯ (brn sn₁ sn₂) = brn (snocM-⋯ sn₁) (snocM-⋯ sn₂)
+snocM-⋯ {ϕ = ϕ} (mu {s = s} {z = z} sn) =
+  subst (SnocM _ _ (mu (s ⋯ ϕ ↑))) (sym (dist-↑-⦅⦆-⋯ z (mu s) ϕ)) (mu (snocM-⋯ {ϕ = ϕ ↑} sn))
+
+snocM-unfold : {p : Pol}{T : 𝕋} → SnocM p T (mu s) z → SnocM p T (unfold s) z
+snocM-unfold (mu {s = s} sn) = snocM-⋯ {ϕ = ⦅ mu s ⦆ₛ} sn
+
+snocM-unfold⁻¹ : {p : Pol}{T : 𝕋} → SnocM p T (unfold s) z → ∃[ z′ ] SnocM p T (mu s) z′
+snocM-unfold⁻¹ {s = s} sn with skips? s
+... | yes Ss = ⊥-elim (skipsM⊥snocM (skips-⋯ Ss) sn)
+... | no ¬Ss with snocM-⋯-sum {ϕ = ⦅ mu s ⦆ₛ} (∀¬Sϕ {s = s} ¬Ss) sn
+...   | inj₁ (_ , l) = _ , mu l
+...   | inj₂ (zero , _ , (z′ , snr) , _) = z′ , snr
+...   | inj₂ (suc w , _ , _ , nv) = ⊥-elim (nv w refl)
+
+SnocRM : {n : ℕ} → Pol → 𝕋 → 𝕊 n → 𝕊 n → Set
+SnocRM {n} p T w₂ z = ∃[ z₂ ] SnocM p T w₂ z₂ × z ≃ z₂
+
+≃-snocM : {p : Pol}{T : 𝕋} → {w₁ w₂ : 𝕊 n} → w₁ ≃ w₂ → SnocM p T w₁ z → SnocRM p T w₂ z
+≃-snocM refl sn = _ , sn , ≃-refl
+≃-snocM {p = p}{T = T} (x ◅ xs) sn =
+  let z₂ , sn₂ , e = go x sn ; z₃ , sn₃ , e′ = ≃-snocM xs sn₂ in z₃ , sn₃ , ≃-trans e e′
+  where
+  go : {w₁ w₂ : 𝕊 _} → SymClosure _≃𝕊_ w₁ w₂ → SnocM p T w₁ z → SnocRM p T w₂ z
+  go (fwd ≃𝕊-μ) (mu {s = s} sn) = _ , snocM-⋯ {ϕ = ⦅ mu s ⦆ₛ} sn , ≃-refl
+  go (bwd ≃𝕊-μ) sn = let z₂ , sn₂ = snocM-unfold⁻¹ sn in z₂ , sn₂ , snocM-prefix-unique sn (snocM-unfold sn₂)
+  go (fwd (≃𝕊-;₁ x)) (sn₁ ;₁ Sk) = let z₂ , sn₂ , e = go (fwd x) sn₁ in z₂ , sn₂ ;₁ Sk , e
+  go (fwd (≃𝕊-;₁ x)) (-;₂ sn) = _ , -;₂ sn , ≃-; (Eq*.return x) ≃-refl
+  go (bwd (≃𝕊-;₁ x)) (sn₁ ;₁ Sk) = let z₂ , sn₂ , e = go (bwd x) sn₁ in z₂ , sn₂ ;₁ Sk , e
+  go (bwd (≃𝕊-;₁ x)) (-;₂ sn) = _ , -;₂ sn , ≃-; (≃-sym (Eq*.return x)) ≃-refl
+  go (fwd (≃𝕊-;₂ x)) (sn₁ ;₁ Sk) = _ , sn₁ ;₁ ≃-skips (Eq*.return x) Sk , ≃-refl
+  go (fwd (≃𝕊-;₂ x)) (-;₂ sn) = let z₂ , sn₂ , e = go (fwd x) sn in _ , -;₂ sn₂ , ≃-; ≃-refl e
+  go (bwd (≃𝕊-;₂ x)) (sn₁ ;₁ Sk) = _ , sn₁ ;₁ ≃-skips (≃-sym (Eq*.return x)) Sk , ≃-refl
+  go (bwd (≃𝕊-;₂ x)) (-;₂ sn) = let z₂ , sn₂ , e = go (bwd x) sn in _ , -;₂ sn₂ , ≃-; ≃-refl e
+  go (fwd ≃𝕊-skipˡ) (sn₁ ;₁ Sk) = ⊥-elim (skipsM⊥snocM skip sn₁)
+  go (fwd ≃𝕊-skipˡ) (-;₂ sn) = _ , sn , ≃-skipˡ
+  go (bwd ≃𝕊-skipˡ) sn = _ , -;₂ sn , ≃-sym ≃-skipˡ
+  go (fwd ≃𝕊-skipʳ) (sn₁ ;₁ Sk) = _ , sn₁ , ≃-refl
+  go (fwd ≃𝕊-skipʳ) (-;₂ sn) = ⊥-elim (skipsM⊥snocM skip sn)
+  go (bwd ≃𝕊-skipʳ) sn = _ , sn ;₁ skip , ≃-refl
+  go (fwd ≃𝕊-assoc) ((sn₁ ;₁ Sk₂) ;₁ Sk₃) = _ , sn₁ ;₁ (Sk₂ ; Sk₃) , ≃-refl
+  go (fwd ≃𝕊-assoc) ((-;₂ sn₂) ;₁ Sk₃) = _ , -;₂ (sn₂ ;₁ Sk₃) , ≃-refl
+  go (fwd ≃𝕊-assoc) (-;₂ sn₃) = _ , -;₂ (-;₂ sn₃) , ≃-assoc-;
+  go (bwd ≃𝕊-assoc) (sn₁ ;₁ (Sk₂ ; Sk₃)) = _ , (sn₁ ;₁ Sk₂) ;₁ Sk₃ , ≃-refl
+  go (bwd ≃𝕊-assoc) (-;₂ (sn₂ ;₁ Sk₃)) = _ , (-;₂ sn₂) ;₁ Sk₃ , ≃-refl
+  go (bwd ≃𝕊-assoc) (-;₂ (-;₂ sn₃)) = _ , -;₂ sn₃ , ≃-sym ≃-assoc-;
+  go (fwd ≃𝕊-distr) (brn sn₁ sn₂ ;₁ Sk) = _ , brn (sn₁ ;₁ Sk) (sn₂ ;₁ Sk) , ≃-refl
+  go (fwd ≃𝕊-distr) (-;₂ sn) = _ , brn (-;₂ sn) (-;₂ sn) , ≃-distr
+  go (bwd ≃𝕊-distr) (brn (sn₁ ;₁ Sk₁) (sn₂ ;₁ Sk₂)) = _ , brn sn₁ sn₂ ;₁ Sk₂ , ≃-refl
+  go (bwd ≃𝕊-distr) (brn (sn₁ ;₁ Sk₁) (-;₂ sn₂)) = ⊥-elim (skipsM⊥snocM Sk₁ sn₂)
+  go (bwd ≃𝕊-distr) (brn (-;₂ sn₁) (sn₂ ;₁ Sk₂)) = ⊥-elim (skipsM⊥snocM Sk₂ sn₁)
+  go (bwd ≃𝕊-distr) (brn (-;₂ sn₁) (-;₂ sn₂)) = _ , -;₂ sn₁ , ≃-trans (≃-brn ≃-refl (≃-; ≃-refl (snocM-prefix-unique sn₂ sn₁))) (≃-sym ≃-distr)
+  go (fwd (≃𝕊-brn₁ x)) (brn sn₁ sn₂) = let z₂ , sn₁′ , e = go (fwd x) sn₁ in _ , brn sn₁′ sn₂ , ≃-brn₁ e
+  go (fwd (≃𝕊-brn₂ x)) (brn sn₁ sn₂) = let z₂ , sn₂′ , e = go (fwd x) sn₂ in _ , brn sn₁ sn₂′ , ≃-brn₂ e
+  go (bwd (≃𝕊-brn₁ x)) (brn sn₁ sn₂) = let z₂ , sn₁′ , e = go (bwd x) sn₁ in _ , brn sn₁′ sn₂ , ≃-brn₁ e
+  go (bwd (≃𝕊-brn₂ x)) (brn sn₁ sn₂) = let z₂ , sn₂′ , e = go (bwd x) sn₂ in _ , brn sn₁ sn₂′ , ≃-brn₂ e
+  go (fwd (≃𝕊-msg x)) (here e) = _ , here (≃-trans (≃-sym x) e) , ≃-refl
+  go (bwd (≃𝕊-msg x)) (here e) = _ , here (≃-trans x e) , ≃-refl
+
+unsnoc-msg : {p : Pol}{T : 𝕋} → {x y z : 𝕊 n} →
+  x ; y ≃ z ; msg p T → Skips y ⊎ ∃[ y′ ] x ; y′ ≃ z × y′ ; msg p T ≃ y
+unsnoc-msg {p = p}{T = T} {x}{y}{z} eq
+  with z₂ , sn , zsk≃z₂ ← ≃-snocM (≃-sym eq) (-;₂ (here (≃-refl {t = T})))
+  with sn
+... | (_ ;₁ Sky) = inj₁ Sky
+... | (-;₂ sn-y) = inj₂ (_ , ≃-trans (≃-sym zsk≃z₂) ≃-skipʳ , ≃-sym (snocM-sound sn-y))
+
+atom-;-unsnoc : {a x y z : 𝕊 n} → Atom a → x ; y ≃ z ; a →
+  Skips y ⊎ ∃[ y′ ] x ; y′ ≃ z × y′ ; a ≃ y
+atom-;-unsnoc (`- {x = v}) eq = unsnoc-nonmsg `- (λ ()) eq
+atom-;-unsnoc end eq = unsnoc-nonmsg end (λ ()) eq
+atom-;-unsnoc ret eq = unsnoc-nonmsg ret (λ ()) eq
+atom-;-unsnoc acq eq = unsnoc-nonmsg acq (λ ()) eq
+atom-;-unsnoc ``- eq = unsnoc-nonmsg ``- (λ ()) eq
+atom-;-unsnoc msg eq = unsnoc-msg eq
