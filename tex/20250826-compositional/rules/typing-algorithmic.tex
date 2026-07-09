@@ -224,14 +224,12 @@
 
 % A-Case
 \DefRule {Case} {
-  \forall\ell.\CtxAlgSeqCheck{\E}{\E[\ell]}
-  \\
   \InferType[\CtxRestrict{\E}]
     {\E}
     {\TVariant{\ell:\T[\ell]}}
     {\Eff}
   \\
-  \InferType[\CtxVar {\EVar[\ell]} {\T[\ell]} \CtxJoin \CtxRestrict{\E[\ell]}]
+  \InferType[\CtxVar {\EVar[\ell]} {\T[\ell]} \CtxJoin \CtxRestrict*{\Fv(\E)^C}]
     {\E[\ell]}
     {\TU[\ell]}
     {\Eff[\ell]}

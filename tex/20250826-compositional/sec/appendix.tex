@@ -184,7 +184,8 @@
   \[
     \CaseJoinDir(\Ctx, X) = \begin{cases}
       \DirUnord & \text{if $\CtxRestrict*{X} \CtxPar \CtxRestrict*{X^C} \SubCtx \Ctx$}\\
-      \DirLeft & \text{otherwise}\\
+      \DirLeft & \text{if $\CtxRestrict*{X} \CtxSeq \CtxRestrict*{X^C} \SubCtx \Ctx$}\\
+      \text{undef.} & \text{otherwise}\\
     \end{cases}
   \]
   \caption{Context join $\Ctx[1] \CtxJoin \Ctx[2]$ joins two contexts
