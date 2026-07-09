@@ -17,6 +17,14 @@ module UV where
   dual/id record { pol = ‼ } = id
   dual/id record { pol = ⁇ } = Syn.dual
 
+  skips-dual/id⁺ : (α : UVar) → Skips s → Skips (dual/id α s)
+  skips-dual/id⁺ record { pol = ‼ } = id
+  skips-dual/id⁺ record { pol = ⁇ } = skips-dual⁺
+
+  skips-dual/id⁻ : (α : UVar) → Skips (dual/id α s) → Skips s
+  skips-dual/id⁻ record { pol = ‼ } = id
+  skips-dual/id⁻ record { pol = ⁇ } = skips-dual⁻
+
   record Sub : Set where
     field
       ap : UVar → 𝕊 0
@@ -35,10 +43,21 @@ module UV where
     ; ap-dual/dual = λ α → refl
     }
 
-  someSub : Sub
-  someSub = record { ap = end ∘ pol ; ap-¬skips = λ _ () ; ap-dual/dual = λ _ → refl }
+  subAll : ¬ Skips {0} s → Sub
+  subAll {s = s} ¬Ss = record
+    { ap = λ α → dual/id α s
+    ; ap-¬skips = λ α → ¬Ss ∘ skips-dual/id⁻ α
+    ; ap-dual/dual = λ where
+        record { pol = ‼ } → refl
+        record { pol = ⁇ } → dual-involutive s
+    }
 
-Constraint = 𝕋 × 𝕋
+  someSub : Sub
+  someSub = subAll {s = end ‼} λ()
+
+data Constraint : Set where
+  C-Eq : 𝕋 → 𝕋 → Constraint
+  C-Mob : 𝕋 → Constraint
 
 CSet : Set
 CSet = List Constraint

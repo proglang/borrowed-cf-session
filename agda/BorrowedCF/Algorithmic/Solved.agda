@@ -313,8 +313,12 @@ subTm-id {σ = σ} `case e `of⟨ e₁ ; e₂ ⟩ rewrite subTm-id {σ = σ} e 
 subCtx : Ctx n → UV.Sub → Ctx n
 subCtx Γ σ k = subTy (Γ k) σ
 
+SolvedCst : Constraint → UV.Sub → Set
+SolvedCst (C-Eq t u) σ = subTy t σ ≃ subTy u σ
+SolvedCst (C-Mob t) σ = Mobile (subTy t σ)
+
 SolvedΔ : CSet → UV.Sub → Set
-SolvedΔ Δ σ = flip All Δ λ (T₁ , T₂) → subTy T₁ σ ≃ subTy T₂ σ
+SolvedΔ Δ σ = flip All Δ (λ C → SolvedCst C σ)
 
 SolvedΓ : Ctx n → UV.Sub → Set
 SolvedΓ Γ σ = ∀ x →
