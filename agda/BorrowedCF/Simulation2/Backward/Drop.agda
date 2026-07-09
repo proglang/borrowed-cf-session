@@ -39,6 +39,8 @@ open import Data.Nat.ListAction using (sum)
 open import Data.Nat.Base using (NonZero)
 open TP using (BindGroup; _;_⊢ₚ_; inv-⟪⟫; inv-∥; inv-ν; bindCtx⇒chanCtx)
 open import Data.List.Relation.Unary.All as All using (All)
+open import Data.Fin.Base using (join; _↑ʳ_; _↑ˡ_)
+open import Data.Fin.Properties using (join-splitAt)
 
 open Fin.Patterns
 
@@ -151,11 +153,13 @@ drop-bodyeq b₁ c b₂ σ P₀ = refl
 ------------------------------------------------------------------------
 
 -- A block whose e₂ is * never yields a chanTriple with right slot ` 0F.
-Ub-e₂*-noRight0F : ∀ {N} b (e₁ : Tm (suc N)) (c : 𝔽 (suc N)) (v : 𝔽 (suc b)) {a} {d : 𝔽 (suc N)}
-  → Ub[ suc b ] (e₁ , c , *) v ≡ 𝓒[ a × d × ` 0F ] → ⊥
-Ub-e₂*-noRight0F zero     e₁ c 0F          eq = case proj₂ (⊗-inj eq) of λ ()
-Ub-e₂*-noRight0F (suc b') e₁ c 0F          eq = case proj₂ (⊗-inj eq) of λ ()
-Ub-e₂*-noRight0F (suc b') e₁ c (Fin.suc v) eq = Ub-e₂*-noRight0F b' * c v eq
+-- Indexed by the raw width k (matching Ub[_]'s 1 / suc(suc) clauses) so it
+-- covers the possibly-width-0 c and b₂ blocks (𝔽 0 is empty).
+Ub-e₂*-noRight0F : ∀ {N} k (e₁ : Tm (suc N)) (c : 𝔽 (suc N)) (v : 𝔽 k) {a} {d : 𝔽 (suc N)}
+  → Ub[ k ] (e₁ , c , *) v ≡ 𝓒[ a × d × ` 0F ] → ⊥
+Ub-e₂*-noRight0F (suc zero)     e₁ c 0F          eq = case proj₂ (⊗-inj eq) of λ ()
+Ub-e₂*-noRight0F (suc (suc k')) e₁ c 0F          eq = case proj₂ (⊗-inj eq) of λ ()
+Ub-e₂*-noRight0F (suc (suc k')) e₁ c (Fin.suc v) eq = Ub-e₂*-noRight0F (suc k') * c v eq
 
 -- The head block (e₂ = ` 0F): a right-slot ` 0F pins v to the LAST index fromℕ b.
 Ub-right0F⇒last : ∀ {N} b (e₁ : Tm (suc N)) (c : 𝔽 (suc N)) (v : 𝔽 (suc b)) {a} {d : 𝔽 (suc N)}
@@ -187,3 +191,45 @@ shiftᵈ t = t ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 1 ⋯ weaken*
 σregᵈ-pair V-λ       ()
 σregᵈ-pair (V-⊕ _)   ()
 σregᵈ-pair (V-⊗ V₁ V₂) eq = σregᵈ-var V₂ (proj₂ (⊗-inj eq))
+
+------------------------------------------------------------------------
+-- drop-image : the νσᵈ IMAGE INVERSION.  A drop cell 𝓒[ a × suc x × ` 0F ]
+-- equal to (` y) ⋯ νσᵈ must come from the HEAD block (right slot ` 0F rules
+-- out σ-region + c-block + b₂-block, all of which have right slot * / shifted),
+-- and Ub-right0F⇒last pins it to the head block's LAST index fromℕ b₁.
+------------------------------------------------------------------------
+
+drop-image : ∀ {m n} (b₁ c b₂ : ℕ) (σ : m →ₛ n) (Vσ : VSub σ)
+  (y : 𝔽 (suc b₁ + (c + 0) + (b₂ + 0) + m)) {a : Tm (3 + n)} {x : 𝔽 (2 + n)}
+  → 𝓒[ a × Fin.suc x × ` 0F ] ≡ νσᵈ b₁ c b₂ σ y
+  → y ≡ ((Fin.fromℕ b₁ ↑ˡ (c + 0)) ↑ˡ (b₂ + 0)) ↑ˡ m
+drop-image {m} {n} b₁ c b₂ σ Vσ y {a} {x} ceq
+  with Fin.splitAt (suc b₁ + (c + 0) + (b₂ + 0)) y in seq
+... | Sum.inj₂ i = ⊥-elim (σregᵈ-pair (Vσ i) (sym ceq))
+... | Sum.inj₁ d
+  with Fin.splitAt (suc b₁ + (c + 0)) d in weq
+...   | Sum.inj₂ w = ⊥-elim (Ub-e₂*-noRight0F (b₂ + 0) * 2F w (sym ceq))
+...   | Sum.inj₁ e
+  with Fin.splitAt (suc b₁) e in eeq
+...     | Sum.inj₂ w′ =
+          ⊥-elim (Ub-e₂*-noRight0F (c + 0) (` 0F) 1F w′
+                    (sym (ceq ■ ⋯-id (Ub[ c + 0 ] (` 0F , 1F , *) w′) (λ _ → refl))))
+...     | Sum.inj₁ v = y≡
+  where
+    U0 : Tm (3 + n)
+    U0 = Ub[ suc b₁ ] (wk * , 1F , ` 0F) v
+    ceq0 : 𝓒[ a × Fin.suc x × ` 0F ] ≡ U0
+    ceq0 = ceq ■ ⋯-id (U0 ⋯ weaken* ⦃ Kᵣ ⦄ 0) (λ _ → refl) ■ ⋯-id U0 (λ _ → refl)
+    v≡ : v ≡ Fin.fromℕ b₁
+    v≡ = Ub-right0F⇒last b₁ (wk *) 1F v (sym ceq0)
+    y≡d : y ≡ d ↑ˡ m
+    y≡d = sym (join-splitAt (suc b₁ + (c + 0) + (b₂ + 0)) m y) ■ cong (join _ m) seq
+    d≡e : d ≡ e ↑ˡ (b₂ + 0)
+    d≡e = sym (join-splitAt (suc b₁ + (c + 0)) (b₂ + 0) d) ■ cong (join _ (b₂ + 0)) weq
+    e≡v : e ≡ v ↑ˡ (c + 0)
+    e≡v = sym (join-splitAt (suc b₁) (c + 0) e) ■ cong (join _ (c + 0)) eeq
+    y≡ : y ≡ ((Fin.fromℕ b₁ ↑ˡ (c + 0)) ↑ˡ (b₂ + 0)) ↑ˡ m
+    y≡ = y≡d
+       ■ cong (_↑ˡ m) d≡e
+       ■ cong (λ z → (z ↑ˡ (b₂ + 0)) ↑ˡ m) e≡v
+       ■ cong (λ z → ((z ↑ˡ (c + 0)) ↑ˡ (b₂ + 0)) ↑ˡ m) v≡
