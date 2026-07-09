@@ -22,7 +22,8 @@ elimination, recursive unfolding, and closure under expression contexts.
 Process congruence $\Proc\Congruent\ProcQ$ is defined as the standard structural congruence on
 configurations: parallel composition is associative and commutative with unit
 $\PExp{\CUnit}$, independent channel introductions commute, and introductions may
-move across parallel composition when their endpoints are fresh. Its rules, found in the supplement in \cref{fig:configuration-congruence}, are used only to rearrange a
+move across parallel composition when their endpoints are fresh. \js{I think ``fresh'' is the wrong word here}
+Its rules, found in the supplement in \cref{fig:configuration-congruence}, are used only to rearrange a
 configuration so that a redex is exposed.
 
 \Cref{fig:process-reduction} gives the process reduction relation $\Proc\PReduce\ProcQ$.
