@@ -90,6 +90,10 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
     P ─→ₚ P′ →
     P ∥ Q ─→ₚ P′ ∥ Q
 
+  RU-Par-right :
+    Q ─→ₚ Q′ →
+    P ∥ Q ─→ₚ P ∥ Q′
+
   RU-Res :
     P ─→ₚ Q →
     ν P ─→ₚ ν Q
