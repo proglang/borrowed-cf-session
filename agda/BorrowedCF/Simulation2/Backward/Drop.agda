@@ -142,3 +142,25 @@ drop-bodyeq b₁ c b₂ σ P₀ = refl
     ... | Sum.inj₁ v = value-⋯ (Ub-V (suc b₁) (wk *) 1F (` 0F) V-K V-` v)
                          (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`)
     ... | Sum.inj₂ w′ = Ub-V (c + 0) (` 0F) 1F (wk *) V-` V-K w′
+
+------------------------------------------------------------------------
+-- Ub[_] right-slot keying.  The drop handle's distinguishing feature is the
+-- RIGHT slot ` 0F (unlike com, which keys on the middle channel).  Ub[_]'s
+-- recursion places the block's e₂ ONLY at the last index; every earlier index
+-- has right slot *.
+------------------------------------------------------------------------
+
+-- A block whose e₂ is * never yields a chanTriple with right slot ` 0F.
+Ub-e₂*-noRight0F : ∀ {N} b (e₁ : Tm (suc N)) (c : 𝔽 (suc N)) (v : 𝔽 (suc b)) {a} {d : 𝔽 (suc N)}
+  → Ub[ suc b ] (e₁ , c , *) v ≡ 𝓒[ a × d × ` 0F ] → ⊥
+Ub-e₂*-noRight0F zero     e₁ c 0F          eq = case proj₂ (⊗-inj eq) of λ ()
+Ub-e₂*-noRight0F (suc b') e₁ c 0F          eq = case proj₂ (⊗-inj eq) of λ ()
+Ub-e₂*-noRight0F (suc b') e₁ c (Fin.suc v) eq = Ub-e₂*-noRight0F b' * c v eq
+
+-- The head block (e₂ = ` 0F): a right-slot ` 0F pins v to the LAST index fromℕ b.
+Ub-right0F⇒last : ∀ {N} b (e₁ : Tm (suc N)) (c : 𝔽 (suc N)) (v : 𝔽 (suc b)) {a} {d : 𝔽 (suc N)}
+  → Ub[ suc b ] (e₁ , c , ` 0F) v ≡ 𝓒[ a × d × ` 0F ]
+  → v ≡ Fin.fromℕ b
+Ub-right0F⇒last zero     e₁ c 0F          eq = refl
+Ub-right0F⇒last (suc b') e₁ c 0F          eq = case proj₂ (⊗-inj eq) of λ ()
+Ub-right0F⇒last (suc b') e₁ c (Fin.suc v) eq = cong Fin.suc (Ub-right0F⇒last b' * c v eq)
