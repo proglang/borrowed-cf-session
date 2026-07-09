@@ -157,9 +157,8 @@
   \label{fig:translated-congruence}
 \end{figure}
 
-\FloatBarrier
-
 \section{Algorithmic Typing}
+\FloatBarrier
 
 \begin{figure}[htbp]
   \begin{minipage}{0.49\linewidth}
@@ -200,9 +199,6 @@
 \end{figure}
 
 \subsection{Constraint Checking with FreeST}
-
-In the implementation, we use FreeST \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22, almeida26:_frees_concur_progr_languag_with} version 5.0 to perform equivalence checking. To achieve this, we generate little FreeST programs that typechecks iff the equivalence constraints hold.
-
 For every equivalence constraint $\T[1] \CEq \T[2]$, we generate the following FreeST program:
 
 \begin{lstlisting}[numbers=left]
@@ -212,21 +208,24 @@ type T1 = ...
 type T2 : 1S
 type T2 = ...
 
-test : T1 -> T2
-test x = x
+id : T1 -> T2
+id x = x
 \end{lstlisting}
 
-FreeST 5.0 requires specifying kinds of type definitions. \lstinline|1S| means that the type is a session type. \lstinline|T1| and \lstinline|T2| are the translated types from the equivalence constraint. Because \lstinline|test| is the identity function, the only way it type checks is when \lstinline|T1| and \lstinline|T2| are equivalent types.
+FreeST 5.0 requires specifying kinds for type definitions. 
+Kind \lstinline|1S| says that the type needs to be a session type. 
+Let \lstinline|T1| and \lstinline|T2| are the translated types from the equivalence constraint, 
+it is easy to see that this program only succefully type checks, if \lstinline|T1| and \lstinline|T2| are equivalent types.
 
-The main parts of translation are:
+The main parts of the translation are:
 \begin{itemize}
   \item Translating inline $\mu$ recursion to explicit recursion.
-  \item Translating mobility and direction annotation on function and pair types.
+  \item Translating mobility and direction annotations on function and pair types.
 \end{itemize}
 
-Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ recursion to explicit recursion, because FreeST 5.0 only supports explicit recursion. Whenever we see a $\mu$ binder, we generate a fresh name and associate it with the recursion unrolled and translation applied. Then instead of the type, we return the associated name. Therefore, the conversation function takes a session type $S$ and returns a Freest Type $F$ and potentially a list of explicit type definitions.
-
-\Cref{fig:freest-translation} defines the translation of session types to FreeST types. The translation $\tofreest{\S}$ yields a pair $[F, U]$ consisting of a FreeST type $F$ and a set $U$ of session type definitions.
+To translate from $\mu$ to explicit recursion, we generate a fresh name and associate the name with the recursion unrolled and translation applied. 
+We then return the associated name, instead of the type. +
+Thus the translation function $\tofreest{\S}$ (\Cref{fig:freest-translation} ) takes a session type $S$ and returns a FreeST Type $F$ together with list of explicit type definitions.
 
 \begin{figure}[t!]
   \begin{align*}
@@ -284,7 +283,6 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
   \label{fig:freest-translation}
 \end{figure}
 
-
 \subsection{Soundness and the Completeness of the translation}
 
 \begin{definition}[Equivalence relation for \thecalculus types]
@@ -333,7 +331,7 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
   \label{lem:sound-translation}
 \end{lemma}
 \begin{proof}
-  We sketch a proof. The soundness proof mainly requires two things: The translation of annotations in the arrow and product types preserves equivalence and the equivalence of the explicit recursion with the $\mu$ binder syntax. For the former we can perform induction on the equivalence of $\T[1] \simeq \T[2]$ and use equivalence and bisimulation lemmas from \cite{DBLP:conf/icfp/ThiemannV16} for regular type and session type cases, respectively. The pairs we introduce for annotations can be handled trivially by the type equivalence rules. Then to show explicit recursion conversion preserves equivalence, we can use the laws for $\mu$ types from \cite{DBLP:conf/icfp/ThiemannV16}.
+  We sketch a proof. The soundness proof requires two things: the translation of annotations in the arrow and product types preserves equivalence and the equivalence of the explicit recursion with the $\mu$ binder syntax. For the former we can perform induction on the equivalence of $\T[1] \simeq \T[2]$ and use equivalence and bisimulation lemmas from \cite{DBLP:conf/icfp/ThiemannV16} for regular type and session type cases, respectively. The pairs we introduce for annotations can be handled trivially by the type equivalence rules. To show explicit recursion translation preserves equivalence, we can use the laws for $\mu$ types from \cite{DBLP:conf/icfp/ThiemannV16}.
 \end{proof}
 
 \begin{lemma}[Completeness of the translation]
@@ -343,10 +341,8 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
   Similar to \ref{lem:sound-translation} but the opposite direction.
 \end{proof}
 
+\subsection{Type Normalisation}
 \FloatBarrier
-
-\section{Type Normalisation}
-
 \begin{figure}
   \small
   \hfill \fbox{$\ConcatType {\T[in]} {\T[in]} = \T[out]$}
@@ -376,17 +372,10 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
   \label{fig:typing-normalisation}
 \end{figure}
 
-Type normalisation, denoted as $\NormaliseType {\T[in]} {\T[out]}$ in
-\Cref{fig:typing-normalisation}, is used in the elimination rules for
-algorithmic rules to expose the top-level type constructor
-\cite{DBLP:journals/iandc/AlmeidaMTV22}.
-
-\pt{Where is $\TerminatedType {\T}$ defined? Why is normalization terminating?}
-\mw{if this is known work, skip this figure and refer to \cite{DBLP:journals/iandc/AlmeidaMTV22}}
-
 \FloatBarrier
 
-\section{Metatheory: Blocked Expressions and Processes}
+\section{Metatheory}
+\label{sec:appendix-metatheory}
 
 \begin{figure}[htbp]
   \begin{mathpar}
@@ -406,3 +395,11 @@ algorithmic rules to expose the top-level type constructor
   \caption{Blocked Expressions (Blocked $\E$) and Blocked Processes (Blocked $\P$)}
   \label{fig:blocked-expr-proc}
 \end{figure}
+
+\subsection{Type Safety for Declarative Typing}
+\label{sec:appendix-metatheory-ts}
+
+
+\subsection{Soundness and Completeness for Algorithmic Typing}
+\label{sec:appendix-metatheory-sc}
+
