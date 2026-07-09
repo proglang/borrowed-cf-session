@@ -258,8 +258,8 @@ subConst-⊢ `fork = `fork
 subConst-⊢ {σ = σ} (`new {s = s} N)
   rewrite sym (subTy-dual {σ = σ} s)
   = `new (subTy-new N)
-subConst-⊢ (`lsplit s s′) = `lsplit (subTy s _) (subTy s′ _)
-subConst-⊢ (`rsplit s s′) = `rsplit (subTy s _) (subTy s′ _)
+subConst-⊢ (`lsplit s s′ ¬s′) = `lsplit (subTy s _) (subTy s′ _) (¬s′ ∘ subTy-skips⁻¹)
+subConst-⊢ (`rsplit s s′ ¬s′) = `rsplit (subTy s _) (subTy s′ _) (¬s′ ∘ subTy-skips⁻¹)
 -- subConst-⊢ (`lsplit ¬skipₛ s′) = `lsplit (¬skipₛ ∘ subTy-skips⁻¹) (subTy s′ _)
 -- subConst-⊢ (`rsplit ¬skipₛ s′) = `rsplit (¬skipₛ ∘ subTy-skips⁻¹) (subTy s′ _)
 subConst-⊢ `drop = `drop

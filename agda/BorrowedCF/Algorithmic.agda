@@ -149,14 +149,12 @@ data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
   A-LSplit :
     let α = UV.fresh m in
     (≤γ : Γ ∶ [] ≼ γ) →
-    ¬ Skips s →
     -----------------------------------------------------------------------------------
     Γ ; γ / m ⊢ K (`lsplit s) ⇒ ⟨ s ; `` α ⟩ →*M ⟨ s ⟩ ⊗ᴸ ⟨ `` α ⟩ ∣ ℙ ∣ ℙ ↑ [] / suc m
 
   A-RSplit :
     let α = record { var = m; pol = ‼ } in
     (≤γ : Γ ∶ [] ≼ γ) →
-    ¬ Skips s →
     -----------------------------------------------------------------------------------------------
     Γ ; γ / m ⊢ K (`rsplit s) ⇒ ⟨ s ; `` α ⟩ →*M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; `` α ⟩ ∣ ℙ ∣ ℙ ↑ [] / suc m
 
@@ -283,12 +281,12 @@ module _ {σ : UV.Sub} (Sσ : Solving σ) where
   sound (A-Const ≤γ Ac ⊢c) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
              (T-Const (subConst-⊢ ⊢c))
-  sound (A-LSplit ≤γ ¬skips) SΓ SΔ =
+  sound (A-LSplit ≤γ) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
-             (T-Const (`lsplit _ _))
-  sound (A-RSplit ≤γ ¬skips) SΓ SΔ =
+             (T-Const (`lsplit _ _ (UV.ap-¬skips σ _ ∘ skips-⋯ᵣ⁻¹)))
+  sound (A-RSplit ≤γ) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
-             (T-Const (`rsplit _ _))
+             (T-Const (`rsplit _ _ (UV.ap-¬skips σ _ ∘ skips-⋯ᵣ⁻¹)))
   sound (A-App {Δ₁ = Δ₁} ec ≤γ x y) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
              (sound-app ec x y SΓ (All.++⁻ˡ Δ₁ SΔ ) (All.++⁻ʳ Δ₁ SΔ))
@@ -417,10 +415,6 @@ reType SΓ Se ST d =
       (⊢-sub UV.someSub d ⊢≗ λ x → subTy-id (SΓ x)))
 
 postulate
-  reType-height :
-    (SΓ : Un.Π[ SolvedTy ∘ Γ ]) (Se : SolvedTm e) (ST : SolvedTy T)
-    (d : Γ ; γ ⊢ e ∶ T ∣ ϵ) → height (reType SΓ Se ST d) ≡ height d
-
   merge₂ : ∀ {σ₁ σ₂ Δ₁ Δ₂} → Solving σ₁ → Solving σ₂ → SolvedΔ Δ₁ σ₁ → SolvedΔ Δ₂ σ₂ →
            ∃[ σ ] Solving σ × SolvedΔ (Δ₁ ++ Δ₂) σ
 
@@ -429,9 +423,308 @@ postulate
 ⸴Π ST SΓ zero = ST
 ⸴Π ST SΓ (suc x) = SΓ x
 
+mobΔ-M : ∀ {n} {Γ : Ctx n} {σ} (γ : Struct n) → MobCx Γ γ → SolvedΔ (allMobile Γ γ) σ
+mobΔ-M (` x) (` m) = subTy-mobile m ∷ []
+mobΔ-M [] [] = []
+mobΔ-M (α ∥ β) (mα ∥ mβ) = All.++⁺ (mobΔ-M α mα) (mobΔ-M β mβ)
+mobΔ-M (α ; β) (mα ; mβ) = All.++⁺ (mobΔ-M α mα) (mobΔ-M β mβ)
+
+mobΔ : ∀ {n} {Γ : Ctx n} {γ a σ} → (Arr.Mobile a → MobCx Γ γ) →
+       SolvedΔ (mobConstraints (Arr.mob a) Γ γ) σ
+mobΔ {Γ = Γ} {γ = γ} {a = a} f = go (Arr.mob a) refl
+  where
+  go : (m : Mob) → Arr.mob a ≡ m → SolvedΔ (mobConstraints m Γ γ) _
+  go M eq = mobΔ-M _ (f eq)
+  go S eq = []
+
+CGoal : ∀ {n} → Ctx n → Struct n → ℕ → Tm n → 𝕋 → Eff → Set
+CGoal Γ γ m e T ϵ =
+  ∃[ σ ] ∃[ Δ ] ∃[ ϵ′ ] ∃[ nn ]
+     ϵ′ ≤ϵ ϵ × Solving σ × SolvedΔ Δ σ × Γ ; γ / m ⊢ e ⇐ T ∣ ϵ′ ↑ Δ / nn
+
+reType′ : Un.Π[ SolvedTy ∘ Γ ] → SolvedTm e → Γ ; γ ⊢ e ∶ T ∣ ϵ →
+          Γ ; γ ⊢ e ∶ subTy T UV.someSub ∣ ϵ
+reType′ SΓ Se d =
+  subst (λ e′ → _ ; _ ⊢ e′ ∶ _ ∣ _) (subTm-id Se)
+    (⊢-sub UV.someSub d ⊢≗ λ x → subTy-id (SΓ x))
+
+substTm-height : ∀ {n} {Γ : Ctx n} {γ e e′ T ϵ} (eq : e ≡ e′) (x : Γ ; γ ⊢ e ∶ T ∣ ϵ) →
+                 height (subst (λ z → Γ ; γ ⊢ z ∶ T ∣ ϵ) eq x) ≡ height x
+substTm-height refl x = refl
+
+substTy-height : ∀ {n} {Γ : Ctx n} {γ e T T′ ϵ} (eq : T ≡ T′) (x : Γ ; γ ⊢ e ∶ T ∣ ϵ) →
+                 height (subst (λ z → Γ ; γ ⊢ e ∶ z ∣ ϵ) eq x) ≡ height x
+substTy-height refl x = refl
+
+⊢≗-height : ∀ {n} {Γ₁ Γ₂ : Ctx n} {γ e T ϵ} (d : Γ₁ ; γ ⊢ e ∶ T ∣ ϵ) (eq : Γ₁ ≗ Γ₂) →
+            height (d ⊢≗ eq) ≡ height d
+⊢≗-height (T-Const _) eq = refl
+⊢≗-height (T-Var _ _) eq = refl
+⊢≗-height (T-Abs _ _ d) eq = cong suc (⊢≗-height d _)
+⊢≗-height (T-AbsRec _ _ d) eq = cong suc (⊢≗-height d _)
+⊢≗-height (T-AppUnr _ _ d₁ d₂) eq = cong suc (cong₂ Nat._⊔_ (⊢≗-height d₁ eq) (⊢≗-height d₂ eq))
+⊢≗-height (T-AppLin _ _ d₁ d₂) eq = cong suc (cong₂ Nat._⊔_ (⊢≗-height d₁ eq) (⊢≗-height d₂ eq))
+⊢≗-height (T-AppLeft _ _ d₁ d₂) eq = cong suc (cong₂ Nat._⊔_ (⊢≗-height d₁ eq) (⊢≗-height d₂ eq))
+⊢≗-height (T-AppRight _ _ d₁ d₂) eq = cong suc (cong₂ Nat._⊔_ (⊢≗-height d₁ eq) (⊢≗-height d₂ eq))
+⊢≗-height (T-Pair _ _ d₁ d₂) eq = cong suc (cong₂ Nat._⊔_ (⊢≗-height d₁ eq) (⊢≗-height d₂ eq))
+⊢≗-height (T-Let _ d₁ d₂) eq = cong suc (cong₂ Nat._⊔_ (⊢≗-height d₁ eq) (⊢≗-height d₂ _))
+⊢≗-height (T-Seq _ d₁ d₂) eq = cong suc (cong₂ Nat._⊔_ (⊢≗-height d₁ eq) (⊢≗-height d₂ eq))
+⊢≗-height (T-LetPair _ d₁ d₂) eq = cong suc (cong₂ Nat._⊔_ (⊢≗-height d₁ eq) (⊢≗-height d₂ _))
+⊢≗-height (T-Inj d) eq = cong suc (⊢≗-height d eq)
+⊢≗-height (T-Case _ d d₁ d₂) eq = cong suc (cong₂ Nat._⊔_ (cong₂ Nat._⊔_ (⊢≗-height d eq) (⊢≗-height d₁ _)) (⊢≗-height d₂ _))
+⊢≗-height (T-Conv _ _ d) eq = cong suc (⊢≗-height d eq)
+⊢≗-height (T-Weaken _ d) eq = cong suc (⊢≗-height d eq)
+
+⊢-sub-height : ∀ {n} {Γ : Ctx n} {γ e T ϵ} (σ : UV.Sub) (d : Γ ; γ ⊢ e ∶ T ∣ ϵ) →
+               height (⊢-sub σ d) ≡ height d
+⊢-sub-height σ (T-Const _) = refl
+⊢-sub-height σ (T-Var _ refl) = refl
+⊢-sub-height σ (T-Abs _ _ d) = cong suc (⊢≗-height (⊢-sub σ d) _ ■ ⊢-sub-height σ d)
+⊢-sub-height σ (T-AbsRec _ _ d) = cong suc (⊢≗-height (⊢-sub σ d) _ ■ ⊢-sub-height σ d)
+⊢-sub-height σ (T-AppUnr _ _ d₁ d₂) = cong suc (cong₂ Nat._⊔_ (⊢-sub-height σ d₁) (⊢-sub-height σ d₂))
+⊢-sub-height σ (T-AppLin _ _ d₁ d₂) = cong suc (cong₂ Nat._⊔_ (⊢-sub-height σ d₁) (⊢-sub-height σ d₂))
+⊢-sub-height σ (T-AppLeft _ _ d₁ d₂) = cong suc (cong₂ Nat._⊔_ (⊢-sub-height σ d₁) (⊢-sub-height σ d₂))
+⊢-sub-height σ (T-AppRight _ _ d₁ d₂) = cong suc (cong₂ Nat._⊔_ (⊢-sub-height σ d₁) (⊢-sub-height σ d₂))
+⊢-sub-height σ (T-Pair _ _ d₁ d₂) = cong suc (cong₂ Nat._⊔_ (⊢-sub-height σ d₁) (⊢-sub-height σ d₂))
+⊢-sub-height σ (T-Let _ d₁ d₂) = cong suc (cong₂ Nat._⊔_ (⊢-sub-height σ d₁) (⊢≗-height (⊢-sub σ d₂) _ ■ ⊢-sub-height σ d₂))
+⊢-sub-height σ (T-Seq _ d₁ d₂) = cong suc (cong₂ Nat._⊔_ (⊢-sub-height σ d₁) (⊢-sub-height σ d₂))
+⊢-sub-height σ (T-LetPair _ d₁ d₂) = cong suc (cong₂ Nat._⊔_ (⊢-sub-height σ d₁) (⊢≗-height (⊢-sub σ d₂) _ ■ ⊢-sub-height σ d₂))
+⊢-sub-height σ (T-Inj d) = cong suc (substTy-height _ _ ■ ⊢-sub-height σ d)
+⊢-sub-height σ (T-Case _ d d₁ d₂) = cong suc (cong₂ Nat._⊔_ (cong₂ Nat._⊔_ (⊢-sub-height σ d) (⊢≗-height (⊢-sub σ d₁) _ ■ ⊢-sub-height σ d₁)) (⊢≗-height (⊢-sub σ d₂) _ ■ ⊢-sub-height σ d₂))
+⊢-sub-height σ (T-Conv _ _ d) = cong suc (⊢-sub-height σ d)
+⊢-sub-height σ (T-Weaken _ d) = cong suc (⊢-sub-height σ d)
+
+reType-height : (SΓ : Un.Π[ SolvedTy ∘ Γ ]) (Se : SolvedTm e) (ST : SolvedTy T)
+                (d : Γ ; γ ⊢ e ∶ T ∣ ϵ) → height (reType SΓ Se ST d) ≡ height d
+reType-height SΓ Se ST d =
+  substTm-height (subTm-id Se) _ ■ substTy-height (subTy-id ST) _ ■ ⊢≗-height (⊢-sub UV.someSub d) (λ x → subTy-id (SΓ x)) ■ ⊢-sub-height UV.someSub d
+
+reType′-height : (SΓ : Un.Π[ SolvedTy ∘ Γ ]) (Se : SolvedTm e) (d : Γ ; γ ⊢ e ∶ T ∣ ϵ) →
+                 height (reType′ SΓ Se d) ≡ height d
+reType′-height SΓ Se d =
+  substTm-height (subTm-id Se) _ ■ ⊢≗-height (⊢-sub UV.someSub d) (λ x → subTy-id (SΓ x)) ■ ⊢-sub-height UV.someSub d
+
 postulate
-  mobΔ : ∀ {n} {Γ : Ctx n} {γ a σ} → (Arr.Mobile a → MobCx Γ γ) →
-         SolvedΔ (mobConstraints (Arr.mob a) Γ γ) σ
+  refine-fv : ∀ {γ′ : Struct n} (γ : Struct n) (d : Γ ; γ′ ⊢ e ∶ T ∣ ϵ) →
+              Σ[ d′ ∈ Γ ; γ ∣fv[ e ] ⊢ e ∶ T ∣ ϵ ] height d′ Nat.≤ height d
+  algo-weaken : ∀ {n} {Γ : Ctx n} {γ₁ γ₂ e T ϵ Δ m nn} → Γ ∶ γ₁ ≼ γ₂ →
+    Γ ; γ₁ / m ⊢ e ⇐ T ∣ ϵ ↑ Δ / nn → Γ ; γ₂ / m ⊢ e ⇐ T ∣ ϵ ↑ Δ / nn
+
+⊔ϵ-lub : ∀ {ϵ₁ ϵ₂ ϵ} → ϵ₁ ≤ϵ ϵ → ϵ₂ ≤ϵ ϵ → (ϵ₁ ⊔ϵ ϵ₂) ≤ϵ ϵ
+⊔ϵ-lub ℙ≤ϵ q = q
+⊔ϵ-lub 𝕀≤𝕀 q = 𝕀≤𝕀
+
+ϵ≤ℙ⇒≡ℙ : ∀ {ϵ} → ϵ ≤ϵ ℙ → ϵ ≡ ℙ
+ϵ≤ℙ⇒≡ℙ ℙ≤ϵ = refl
+
+pairEff : ∀ {p/s ϵ₁ ϵ₂ ϵ₁′ ϵ₂′} → Seq⇒Pure p/s ϵ₁ ϵ₂ → ϵ₁′ ≤ϵ ϵ₁ → ϵ₂′ ≤ϵ ϵ₂ →
+          (ϵ₁′ ⊔ϵ ϵ₂′) ≤ϵ ϵ₁ × (p/s ≡ seq → ϵ₂′ ≡ ℙ)
+pairEff par p q = ⊔ϵ-lub p q , λ ()
+pairEff seq p q = ⊔ϵ-lub p (≤ϵ-trans q ℙ≤ϵ) , λ _ → ϵ≤ℙ⇒≡ℙ q
+
+postulate
+  -- CORE (sound): restricting a join-combined context to a well-typed subterm's
+  -- free variables yields a subcontext of that subterm's own context.  Both
+  -- orientations of the same fact.  This is the single ordered-context-split
+  -- debt (sibling of parOrSeq?); the five per-rule split witnesses below are
+  -- *derived* from it.
+  ↓fv-≼  : ∀ {n} {Γ : Ctx n} {γ₁ γ₂ : Struct n} {e T ϵ} (a : Dir) →
+           Γ ; γ₁ ⊢ e ∶ T ∣ ϵ → Γ ∶ (join a γ₁ γ₂) ↓ fv e ≼ γ₁
+  ≤γ-letpair : ∀ {n} {Γ : Ctx n} {γ e₁ e₂} → Γ ∶ (γ ∣fv[ e₁ ]) ; (γ ↓ fvClose* 2 (fv e₂)) ≼ γ
+  ≤γ-case : ∀ {n} {Γ : Ctx n} {γ e} (p/s : ParSeq) → JoinParSeq Γ γ (fv e) p/s
+  refine-lp₂ : ∀ {n} {Γ : Ctx n} {γ : Struct n} {γ₂d : Struct n} {e₂ : Tm (2 + n)} {T₁ T₂ U ϵ} {ps : ParSeq} {dr : Dir}
+    (d₂ : (T₁ ⸴ T₂ ⸴ Γ) ; join ps (join dr (` zero) (` suc zero)) (𝐂.wk (𝐂.wk γ₂d)) ⊢ e₂ ∶ U ∣ ϵ) →
+    Σ[ d′ ∈ (subTy T₁ UV.someSub ⸴ subTy T₂ UV.someSub ⸴ Γ) ; (join dr (` zero) (` suc zero) ; 𝐂.wk (𝐂.wk (γ ↓ fvClose* 2 (fv e₂)))) ⊢ e₂ ∶ U ∣ ϵ ]
+        height d′ Nat.≤ height d₂
+  refine-cb : ∀ {n} {Γ : Ctx n} {γ : Struct n} {γ₂d : Struct n} {e : Tm n} {eb : Tm (suc n)} {T U ϵ} {ps : ParSeq}
+    (db : (T ⸴ Γ) ; join ps (` zero) (𝐂.wk γ₂d) ⊢ eb ∶ U ∣ ϵ) →
+    Σ[ d′ ∈ (subTy T UV.someSub ⸴ Γ) ; join ps (` zero) (𝐂.wk (γ ↓ ∁ (fv e))) ⊢ eb ∶ U ∣ ϵ ] height d′ Nat.≤ height db
+
+app-dir≡ : ∀ {n} {Γ : Ctx n} {γ e₁ e₂ T ϵ Δ m nn} {d₁ d₂ : Dir} → d₁ ≡ d₂ →
+  Γ ; γ / m ⊢ e₁ ·⟨ d₁ ⟩ e₂ ⇒ T ∣ ϵ ↑ Δ / nn → Γ ; γ / m ⊢ e₁ ·⟨ d₂ ⟩ e₂ ⇒ T ∣ ϵ ↑ Δ / nn
+app-dir≡ refl x = x
+
+¬SolvedTm-select : ∀ {n k} → ¬ SolvedTm (K {n} (`select k))
+¬SolvedTm-select (K ())
+
+¬SolvedTm-branch : ∀ {n} → ¬ SolvedTm (K {n} `branch)
+¬SolvedTm-branch (K ())
+
+-- The right-orientation of the core split fact, derived from ↓fv-≼ by join-flip.
+↓fv-≼ʳ : ∀ {n} {Γ : Ctx n} {γ₁ γ₂ : Struct n} {e T ϵ} (a : Dir) →
+         Γ ; γ₂ ⊢ e ∶ T ∣ ϵ → Γ ∶ (join a γ₁ γ₂) ↓ fv e ≼ γ₂
+↓fv-≼ʳ {γ₁ = γ₁} {γ₂} a d = ≼-trans (≼-refl (↓-mono-≈ (≈-sym (join-flip a)))) (↓fv-≼ {γ₁ = γ₂} {γ₂ = γ₁} (flipDir a) d)
+
+-- ≤γ for A-App: all four T-App shapes satisfy γ ≈ join (dir a) γ₂ γ₁, so this
+-- reduces to the core split fact applied on each side.
+≤γ-app : ∀ {n} {Γ : Ctx n} {γ γ₁ γ₂ : Struct n} {e₁ e₂ : Tm n} {S₁ S₂ ϵ₁ ϵ₂} (a : Dir) →
+         Γ ; γ₁ ⊢ e₁ ∶ S₁ ∣ ϵ₁ → Γ ; γ₂ ⊢ e₂ ∶ S₂ ∣ ϵ₂ →
+         Γ ∶ γ ≈ join a γ₂ γ₁ →
+         Γ ∶ join a (γ ∣fv[ e₂ ]) (γ ∣fv[ e₁ ]) ≼ γ
+≤γ-app a d₁ d₂ γ≈ =
+  ≼-trans (≼-join a (≼-trans (≼-refl (↓-mono-≈ γ≈)) (↓fv-≼ a d₂))
+                    (≼-trans (≼-refl (↓-mono-≈ γ≈)) (↓fv-≼ʳ a d₁)))
+          (≼-refl (≈-sym γ≈))
+
+-- ≤γ for A-Pair, derived from the core split fact.
+≤γ-par : ∀ {n} {Γ : Ctx n} {γ₁ γ₂ : Struct n} {e₁ e₂ T₁ T₂ ϵ₁ ϵ₂} (p/s : ParSeq) →
+  Γ ; γ₁ ⊢ e₁ ∶ T₁ ∣ ϵ₁ → Γ ; γ₂ ⊢ e₂ ∶ T₂ ∣ ϵ₂ →
+  Γ ∶ join (biasedDir p/s) ((join (biasedDir p/s) γ₁ γ₂) ↓ fv e₁) ((join (biasedDir p/s) γ₁ γ₂) ↓ fv e₂)
+    ≼ join (biasedDir p/s) γ₁ γ₂
+≤γ-par {γ₁ = γ₁} {γ₂ = γ₂} p/s d₁ d₂ = ≼-join (biasedDir p/s) (↓fv-≼ {γ₂ = γ₂} (biasedDir p/s) d₁) (↓fv-≼ʳ {γ₁ = γ₁} (biasedDir p/s) d₂)
+
+-- ≤γ for A-Seq (the ambient γ₁ ; γ₂ is join L γ₁ γ₂).
+≤γ-seq : ∀ {n} {Γ : Ctx n} {γ₁ γ₂ : Struct n} {e₁ e₂ T₁ T₂ ϵ₁ ϵ₂} →
+  Γ ; γ₁ ⊢ e₁ ∶ T₁ ∣ ϵ₁ → Γ ; γ₂ ⊢ e₂ ∶ T₂ ∣ ϵ₂ →
+  Γ ∶ ((γ₁ ; γ₂) ↓ fv e₁) ; ((γ₁ ; γ₂) ↓ fv e₂) ≼ γ₁ ; γ₂
+≤γ-seq {γ₁ = γ₁} {γ₂ = γ₂} d₁ d₂ = ≼-join L (↓fv-≼ {γ₂ = γ₂} L d₁) (↓fv-≼ʳ {γ₁ = γ₁} L d₂)
+
+lsplit-case : ∀ {n} {Γ : Ctx n} {γ s T m} → Γ ∶ [] ≼ γ →
+  ⊢ (`lsplit s) ∶ T → SolvedTy T → CGoal Γ γ m (K (`lsplit s)) T ℙ
+lsplit-case ≤γ (`lsplit s s′ ¬s′) (⟨ Ss ; Ss′ ⟩ ⟨ a ⟩→ Scod) =
+  let leaf = ≃-reflexive (subTy-id Ss′ ■ sym (𝐓.⋯-id s′ λ())) in
+  UV.subAll ¬s′ , _ , _ , _ , ≤ϵ-refl , subAll-solving ¬s′ Ss′ ,
+    (⟨ ≃-; ≃-refl leaf ⟩ `→ (≃-refl ⊗ ⟨ leaf ⟩)) ∷ [] , A-Check (A-LSplit ≤γ)
+
+rsplit-case : ∀ {n} {Γ : Ctx n} {γ s T m} → Γ ∶ [] ≼ γ →
+  ⊢ (`rsplit s) ∶ T → SolvedTy T → CGoal Γ γ m (K (`rsplit s)) T ℙ
+rsplit-case ≤γ (`rsplit s s′ ¬s′) (⟨ Ss ; Ss′ ⟩ ⟨ a ⟩→ Scod) =
+  let leaf = ≃-reflexive (subTy-id Ss′ ■ sym (𝐓.⋯-id s′ λ())) in
+  UV.subAll ¬s′ , _ , _ , _ , ≤ϵ-refl , subAll-solving ¬s′ Ss′ ,
+    (⟨ ≃-; ≃-refl leaf ⟩ `→ (≃-refl ⊗ ⟨ ≃-; ≃-refl leaf ⟩)) ∷ [] , A-Check (A-RSplit ≤γ)
+
+complete-fuel : (k : ℕ) (d : Γ ; γ ⊢ e ∶ T ∣ ϵ) → height d Nat.< k →
+  Un.Π[ SolvedTy ∘ Γ ] → SolvedTm e → SolvedTy T → CGoal Γ γ m e T ϵ
+complete-fuel zero d h< SΓ Se ST = ⊥-elim (Nat.n≮0 h<)
+complete-fuel (suc k) (T-Const {c = c} ⊢c) h< SΓ Se ST with algConst? c
+... | inj₁ Ac = UV.someSub , _ , _ , _ , ≤ϵ-refl , someSub-solving , ≃-refl ∷ [] , A-Check (A-Const (≼-∅ []) Ac ⊢c)
+... | inj₂ `lsplit = lsplit-case (≼-∅ []) ⊢c ST
+... | inj₂ `rsplit = rsplit-case (≼-∅ []) ⊢c ST
+... | inj₂ `select = ⊥-elim (¬SolvedTm-select Se)
+... | inj₂ `branch = ⊥-elim (¬SolvedTm-branch Se)
+complete-fuel (suc k) (T-Var x refl) h< SΓ Se ST =
+  UV.someSub , _ , _ , _ , ≤ϵ-refl , someSub-solving , ≃-refl ∷ [] , A-Check (A-Var (≼-refl refl))
+complete-fuel (suc k) (T-Abs Γ-unr Γ-mob d) h< SΓ (ƛ Se) (ST-T ⟨ a ⟩→ ST-U) =
+  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete-fuel k d (Nat.s≤s⁻¹ h<) (⸴Π ST-T SΓ) Se ST-U in
+  σ , _ , _ , n , ≤ϵ-refl , Sσ , All.++⁺ (mobΔ {a = a} {σ = σ} Γ-mob) SΔ , A-Abs Γ-unr ϵ′≤ A refl
+complete-fuel (suc k) (T-AbsRec Γ-unr a-unr d) h< SΓ (μ (ƛ Se)) (ST-T ⟨ a ⟩→ ST-U) =
+  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete-fuel k d (Nat.s≤s⁻¹ h<) (⸴Π ST-T (⸴Π (ST-T ⟨ a ⟩→ ST-U) SΓ)) Se ST-U in
+  σ , Δ , _ , n , ≤ϵ-refl , Sσ , SΔ , A-AbsRec Γ-unr a-unr ϵ′≤ A
+complete-fuel {γ = γ} {e = e₁ ·¹ e₂} (suc k) (T-AppUnr {a = a} {T = T} {U = U} a-unr ≤ₐ d₁ d₂) h< SΓ (Se₁ · Se₂) ST =
+  let hlt = Nat.s≤s⁻¹ h<
+      ref₁ , h₁≤ = refine-fv γ (reType′ SΓ Se₁ d₁)
+      ref₂ , h₂≤ = refine-fv γ (reType′ SΓ Se₂ d₂)
+      b₁ = Nat.≤-<-trans (Nat.≤-trans (Nat.≤-trans h₁≤ (Nat.≤-reflexive (reType′-height SΓ Se₁ d₁))) (Nat.m≤m⊔n _ _)) hlt
+      b₂ = Nat.≤-<-trans (Nat.≤-trans (Nat.≤-trans h₂≤ (Nat.≤-reflexive (reType′-height SΓ Se₂ d₂))) (Nat.m≤n⊔m _ _)) hlt
+      σ₁ , Δ₁ , ϵ₁′ , m′ , ϵ₁′≤ , Sσ₁ , SΔ₁ , A₁ = complete-fuel k ref₁ b₁ SΓ Se₁ (subTy-solved (T ⟨ a ⟩→ U) someSub-solving)
+      σ₂ , Δ₂ , ϵ₂′ , n , ϵ₂′≤ , Sσ₂ , SΔ₂ , A₂ = complete-fuel {m = m′} k ref₂ b₂ SΓ Se₂ (subTy-solved T someSub-solving)
+      σ , Sσ , SΔ = merge₂ Sσ₁ Sσ₂ SΔ₁ SΔ₂
+      ec = subst (λ dd → EffCompat dd ϵ₂′ ϵ₁′) (sym (Arr.ω⇒𝟙 a a-unr)) tt
+      app = app-dir≡ (Arr.ω⇒𝟙 a a-unr) (A-App ec (≤γ-app (Arr.dir a) d₁ d₂ (subst (λ dr → _ ∶ γ ≈ join dr _ _) (sym (Arr.ω⇒𝟙 a a-unr)) ∥-comm)) (A-Ann A₁) A₂)
+      cp = subst₂ _≃_ (sym (subTy-id ST)) (sym (subTy-id (subTy-solved U someSub-solving))) (≃-reflexive (sym (subTy-id ST)))
+  in σ , _ , _ , n , ⊔ϵ-lub (⊔ϵ-lub ϵ₁′≤ ϵ₂′≤) ≤ₐ , Sσ , cp ∷ SΔ , A-Check app
+complete-fuel {γ = γ} {e = e₁ ·¹ e₂} (suc k) (T-AppLin {a = a} {T = T} {U = U} a-par ≤ₐ d₁ d₂) h< SΓ (Se₁ · Se₂) ST =
+  let hlt = Nat.s≤s⁻¹ h<
+      ref₁ , h₁≤ = refine-fv γ (reType′ SΓ Se₁ d₁)
+      ref₂ , h₂≤ = refine-fv γ (reType′ SΓ Se₂ d₂)
+      b₁ = Nat.≤-<-trans (Nat.≤-trans (Nat.≤-trans h₁≤ (Nat.≤-reflexive (reType′-height SΓ Se₁ d₁))) (Nat.m≤m⊔n _ _)) hlt
+      b₂ = Nat.≤-<-trans (Nat.≤-trans (Nat.≤-trans h₂≤ (Nat.≤-reflexive (reType′-height SΓ Se₂ d₂))) (Nat.m≤n⊔m _ _)) hlt
+      σ₁ , Δ₁ , ϵ₁′ , m′ , ϵ₁′≤ , Sσ₁ , SΔ₁ , A₁ = complete-fuel k ref₁ b₁ SΓ Se₁ (subTy-solved (T ⟨ a ⟩→ U) someSub-solving)
+      σ₂ , Δ₂ , ϵ₂′ , n , ϵ₂′≤ , Sσ₂ , SΔ₂ , A₂ = complete-fuel {m = m′} k ref₂ b₂ SΓ Se₂ (subTy-solved T someSub-solving)
+      σ , Sσ , SΔ = merge₂ Sσ₁ Sσ₂ SΔ₁ SΔ₂
+      ec = subst (λ dd → EffCompat dd ϵ₂′ ϵ₁′) (sym (proj₂ a-par)) tt
+      app = app-dir≡ (proj₂ a-par) (A-App ec (≤γ-app (Arr.dir a) d₁ d₂ (subst (λ dr → _ ∶ γ ≈ join dr _ _) (sym (proj₂ a-par)) ∥-comm)) (A-Ann A₁) A₂)
+      cp = subst₂ _≃_ (sym (subTy-id ST)) (sym (subTy-id (subTy-solved U someSub-solving))) (≃-reflexive (sym (subTy-id ST)))
+  in σ , _ , _ , n , ⊔ϵ-lub (⊔ϵ-lub ϵ₁′≤ ϵ₂′≤) ≤ₐ , Sσ , cp ∷ SΔ , A-Check app
+complete-fuel {γ = γ} {e = e₁ ·ᴸ e₂} (suc k) (T-AppLeft {a = a} {T = T} {U = U} aL ≤ₐ d₁ d₂) h< SΓ (Se₁ · Se₂) ST =
+  let hlt = Nat.s≤s⁻¹ h<
+      ref₁ , h₁≤ = refine-fv γ (reType′ SΓ Se₁ d₁)
+      ref₂ , h₂≤ = refine-fv γ (reType′ SΓ Se₂ d₂)
+      b₁ = Nat.≤-<-trans (Nat.≤-trans (Nat.≤-trans h₁≤ (Nat.≤-reflexive (reType′-height SΓ Se₁ d₁))) (Nat.m≤m⊔n _ _)) hlt
+      b₂ = Nat.≤-<-trans (Nat.≤-trans (Nat.≤-trans h₂≤ (Nat.≤-reflexive (reType′-height SΓ Se₂ d₂))) (Nat.m≤n⊔m _ _)) hlt
+      σ₁ , Δ₁ , ϵ₁′ , m′ , ϵ₁′≤ , Sσ₁ , SΔ₁ , A₁ = complete-fuel k ref₁ b₁ SΓ Se₁ (subTy-solved (T ⟨ a ⟩→ U) someSub-solving)
+      σ₂ , Δ₂ , ϵ₂′ , n , ϵ₂′≤ , Sσ₂ , SΔ₂ , A₂ = complete-fuel {m = m′} k ref₂ b₂ SΓ Se₂ (subTy-solved T someSub-solving)
+      σ , Sσ , SΔ = merge₂ Sσ₁ Sσ₂ SΔ₁ SΔ₂
+      ec = subst (λ dd → EffCompat dd ϵ₂′ ϵ₁′) (sym aL) (ϵ≤ℙ⇒≡ℙ ϵ₁′≤)
+      app = app-dir≡ aL (A-App ec (≤γ-app (Arr.dir a) d₁ d₂ (subst (λ dr → _ ∶ γ ≈ join dr _ _) (sym (aL)) ≈-refl)) (A-Ann A₁) A₂)
+      cp = subst₂ _≃_ (sym (subTy-id ST)) (sym (subTy-id (subTy-solved U someSub-solving))) (≃-reflexive (sym (subTy-id ST)))
+  in σ , _ , _ , n , ⊔ϵ-lub (⊔ϵ-lub (≤ϵ-trans ϵ₁′≤ ℙ≤ϵ) ϵ₂′≤) ≤ₐ , Sσ , cp ∷ SΔ , A-Check app
+complete-fuel {γ = γ} {e = e₁ ·ᴿ e₂} (suc k) (T-AppRight {a = a} {T = T} {U = U} aR ≤ₐ d₁ d₂) h< SΓ (Se₁ · Se₂) ST =
+  let hlt = Nat.s≤s⁻¹ h<
+      ref₁ , h₁≤ = refine-fv γ (reType′ SΓ Se₁ d₁)
+      ref₂ , h₂≤ = refine-fv γ (reType′ SΓ Se₂ d₂)
+      b₁ = Nat.≤-<-trans (Nat.≤-trans (Nat.≤-trans h₁≤ (Nat.≤-reflexive (reType′-height SΓ Se₁ d₁))) (Nat.m≤m⊔n _ _)) hlt
+      b₂ = Nat.≤-<-trans (Nat.≤-trans (Nat.≤-trans h₂≤ (Nat.≤-reflexive (reType′-height SΓ Se₂ d₂))) (Nat.m≤n⊔m _ _)) hlt
+      σ₁ , Δ₁ , ϵ₁′ , m′ , ϵ₁′≤ , Sσ₁ , SΔ₁ , A₁ = complete-fuel k ref₁ b₁ SΓ Se₁ (subTy-solved (T ⟨ a ⟩→ U) someSub-solving)
+      σ₂ , Δ₂ , ϵ₂′ , n , ϵ₂′≤ , Sσ₂ , SΔ₂ , A₂ = complete-fuel {m = m′} k ref₂ b₂ SΓ Se₂ (subTy-solved T someSub-solving)
+      σ , Sσ , SΔ = merge₂ Sσ₁ Sσ₂ SΔ₁ SΔ₂
+      ec = subst (λ dd → EffCompat dd ϵ₂′ ϵ₁′) (sym aR) (ϵ≤ℙ⇒≡ℙ ϵ₂′≤)
+      app = app-dir≡ aR (A-App ec (≤γ-app (Arr.dir a) d₁ d₂ (subst (λ dr → _ ∶ γ ≈ join dr _ _) (sym (aR)) ≈-refl)) (A-Ann A₁) A₂)
+      cp = subst₂ _≃_ (sym (subTy-id ST)) (sym (subTy-id (subTy-solved U someSub-solving))) (≃-reflexive (sym (subTy-id ST)))
+  in σ , _ , _ , n , ⊔ϵ-lub (⊔ϵ-lub ϵ₁′≤ (≤ϵ-trans ϵ₂′≤ ℙ≤ϵ)) ≤ₐ , Sσ , cp ∷ SΔ , A-Check app
+complete-fuel {γ = γ} {e = e₁ ⊗ e₂} (suc k) (T-Pair p/s seq⇒p d₁ d₂) h< SΓ (Se₁ ⊗ Se₂) (ST-T ⊗⟨ d ⟩ ST-U) =
+  let hlt = Nat.s≤s⁻¹ h<
+      ref₁ , h₁≤ = refine-fv γ d₁
+      ref₂ , h₂≤ = refine-fv γ d₂
+      σ₁ , Δ₁ , ϵ₁′ , m′ , ϵ₁′≤ , Sσ₁ , SΔ₁ , A₁ =
+        complete-fuel k ref₁ (Nat.≤-<-trans (Nat.≤-trans h₁≤ (Nat.m≤m⊔n _ _)) hlt) SΓ Se₁ ST-T
+      σ₂ , Δ₂ , ϵ₂′ , n , ϵ₂′≤ , Sσ₂ , SΔ₂ , A₂ =
+        complete-fuel {m = m′} k ref₂ (Nat.≤-<-trans (Nat.≤-trans h₂≤ (Nat.m≤n⊔m _ _)) hlt) SΓ Se₂ ST-U
+      σ , Sσ , SΔ = merge₂ Sσ₁ Sσ₂ SΔ₁ SΔ₂
+      effB , s⇒p = pairEff seq⇒p ϵ₁′≤ ϵ₂′≤
+  in σ , Δ₁ ++ Δ₂ , _ , n , effB , Sσ , SΔ , A-Pair p/s (≤γ-par p/s d₁ d₂) s⇒p A₁ A₂
+complete-fuel (suc k) (T-Let p/s x y) h< SΓ () ST
+complete-fuel {γ = γ} {e = e₁ ; e₂} (suc k) (T-Seq {T = T} unr-T d₁ d₂) h< SΓ (Se₁ ; Se₂) ST =
+  let hlt = Nat.s≤s⁻¹ h<
+      ref₁ , h₁≤ = refine-fv γ (reType′ SΓ Se₁ d₁)
+      ref₂ , h₂≤ = refine-fv γ d₂
+      b₁ = Nat.≤-<-trans (Nat.≤-trans (Nat.≤-trans h₁≤ (Nat.≤-reflexive (reType′-height SΓ Se₁ d₁))) (Nat.m≤m⊔n _ _)) hlt
+      b₂ = Nat.≤-<-trans (Nat.≤-trans h₂≤ (Nat.m≤n⊔m _ _)) hlt
+      σ₁ , Δ₁ , ϵ₁′ , m′ , ϵ₁′≤ , Sσ₁ , SΔ₁ , A₁ = complete-fuel k ref₁ b₁ SΓ Se₁ (subTy-solved T someSub-solving)
+      σ₂ , Δ₂ , ϵ₂′ , n , ϵ₂′≤ , Sσ₂ , SΔ₂ , A₂ = complete-fuel {m = m′} k ref₂ b₂ SΓ Se₂ ST
+      σ , Sσ , SΔ = merge₂ Sσ₁ Sσ₂ SΔ₁ SΔ₂
+  in σ , _ , _ , n , ⊔ϵ-lub ϵ₁′≤ ϵ₂′≤ , Sσ , ≃-refl ∷ SΔ ,
+     A-Check (A-Seq (subTy-unr unr-T) (≤γ-seq d₁ d₂) (A-Ann A₁) (A-Ann A₂))
+complete-fuel {γ = γ} {e = `let⊗ e₁ `in e₂} (suc k) (T-LetPair {T₁ = T₁} {d = d} {T₂ = T₂} p/s {γ₂ = γ₂} d₁ d₂) h< SΓ (`let⊗ Se₁ `in Se₂) ST =
+  let hlt = Nat.s≤s⁻¹ h<
+      ref₁ , h₁≤ = refine-fv γ (reType′ SΓ Se₁ d₁)
+      ref₂ , h₂≤ = refine-lp₂ {γ = γ} {γ₂d = γ₂} {ps = p/s} {dr = d} d₂
+      b₁ = Nat.≤-<-trans (Nat.≤-trans (Nat.≤-trans h₁≤ (Nat.≤-reflexive (reType′-height SΓ Se₁ d₁))) (Nat.m≤m⊔n _ _)) hlt
+      b₂ = Nat.≤-<-trans (Nat.≤-trans h₂≤ (Nat.m≤n⊔m (height d₁) (height d₂))) hlt
+      σ₁ , Δ₁ , ϵ₁′ , m′ , ϵ₁′≤ , Sσ₁ , SΔ₁ , A₁ = complete-fuel k ref₁ b₁ SΓ Se₁ (subTy-solved (T₁ ⊗⟨ d ⟩ T₂) someSub-solving)
+      σ₂ , Δ₂ , ϵ₂′ , n , ϵ₂′≤ , Sσ₂ , SΔ₂ , A₂ = complete-fuel {m = m′} k ref₂ b₂ (⸴Π (subTy-solved T₁ someSub-solving) (⸴Π (subTy-solved T₂ someSub-solving) SΓ)) Se₂ ST
+      σ , Sσ , SΔ = merge₂ Sσ₁ Sσ₂ SΔ₁ SΔ₂
+  in σ , _ , _ , n , ⊔ϵ-lub ϵ₁′≤ ϵ₂′≤ , Sσ , ≃-refl ∷ SΔ ,
+     A-Check (A-LetPair (≤γ-letpair {γ = γ} {e₁ = e₁} {e₂ = e₂}) (A-Ann A₁) (A-Ann A₂))
+complete-fuel (suc k) (T-Inj {i = true} x) h< SΓ (`inj Se) (ST₁ ⊕ ST₂) =
+  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete-fuel k x (Nat.s≤s⁻¹ h<) SΓ Se ST₁ in
+  σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A-Inj A
+complete-fuel (suc k) (T-Inj {i = false} x) h< SΓ (`inj Se) (ST₁ ⊕ ST₂) =
+  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete-fuel k x (Nat.s≤s⁻¹ h<) SΓ Se ST₂ in
+  σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A-Inj A
+complete-fuel {γ = γ} {e = `case e `of⟨ e₁ ; e₂ ⟩} (suc k) (T-Case {T₁ = T₁} {T₂ = T₂} p/s {γ₂ = γ₂} de d₁ d₂) h< SΓ (`case Se `of⟨ Se₁ ; Se₂ ⟩) ST =
+  let hlt = Nat.s≤s⁻¹ h<
+      refe , he≤ = refine-fv γ (reType′ SΓ Se de)
+      ref₁ , h₁≤ = refine-cb {γ = γ} {γ₂d = γ₂} {e = e} {ps = p/s} d₁
+      ref₂ , h₂≤ = refine-cb {γ = γ} {γ₂d = γ₂} {e = e} {ps = p/s} d₂
+      be = Nat.≤-<-trans (Nat.≤-trans (Nat.≤-trans he≤ (Nat.≤-reflexive (reType′-height SΓ Se de))) (Nat.≤-trans (Nat.m≤m⊔n (height de) (height d₁)) (Nat.m≤m⊔n (height de Nat.⊔ height d₁) (height d₂)))) hlt
+      b₁ = Nat.≤-<-trans (Nat.≤-trans h₁≤ (Nat.≤-trans (Nat.m≤n⊔m (height de) (height d₁)) (Nat.m≤m⊔n (height de Nat.⊔ height d₁) (height d₂)))) hlt
+      b₂ = Nat.≤-<-trans (Nat.≤-trans h₂≤ (Nat.m≤n⊔m (height de Nat.⊔ height d₁) (height d₂))) hlt
+      σe , Δe , ϵe′ , m₁ , ϵe′≤ , Sσe , SΔe , Ae = complete-fuel k refe be SΓ Se (subTy-solved (T₁ ⊕ T₂) someSub-solving)
+      σ₁ , Δ₁ , ϵ₁′ , m₂ , ϵ₁′≤ , Sσ₁ , SΔ₁ , A₁ = complete-fuel {m = m₁} k ref₁ b₁ (⸴Π (subTy-solved T₁ someSub-solving) SΓ) Se₁ ST
+      σ₂ , Δ₂ , ϵ₂′ , n , ϵ₂′≤ , Sσ₂ , SΔ₂ , A₂ = complete-fuel {m = m₂} k ref₂ b₂ (⸴Π (subTy-solved T₂ someSub-solving) SΓ) Se₂ ST
+      σ′ , Sσ′ , SΔ′ = merge₂ Sσ₁ Sσ₂ SΔ₁ SΔ₂
+      σ , Sσ , SΔ = merge₂ Sσe Sσ′ SΔe SΔ′
+  in σ , _ , _ , n , ⊔ϵ-lub (⊔ϵ-lub ϵe′≤ ϵ₁′≤) ϵ₂′≤ , Sσ , ≃-refl ∷ ≃-refl ∷ SΔ ,
+     A-Check (A-Case p/s (≤γ-case {e = e} p/s) (A-Ann Ae) (A-Ann A₁) (A-Ann A₂))
+complete-fuel (suc k) (T-Conv {T = T} {U = U} T≃ ϵ≤ x) h< SΓ Se ST =
+  let ST-T = ≃-solved⁻¹ T≃ ST in
+  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete-fuel k x (Nat.s≤s⁻¹ h<) SΓ Se ST-T in
+  σ , C-Eq U T ∷ Δ , ϵ′ , n , ≤ϵ-trans ϵ′≤ ϵ≤ , Sσ ,
+    subst₂ _≃_ (sym (subTy-id ST)) (sym (subTy-id ST-T)) (≃-sym T≃) ∷ SΔ , A-Check (A-Ann A)
+complete-fuel (suc k) (T-Weaken γ≤ x) h< SΓ Se ST =
+  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete-fuel k x (Nat.s≤s⁻¹ h<) SΓ Se ST in
+  σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , algo-weaken γ≤ A
 
 complete :
   Un.Π[ SolvedTy ∘ Γ ] →
@@ -440,39 +733,7 @@ complete :
   Γ ; γ ⊢ e ∶ T ∣ ϵ →
   ∃[ σ ] ∃[ Δ ] ∃[ ϵ′ ] ∃[ n ]
      ϵ′ ≤ϵ ϵ × Solving σ × SolvedΔ Δ σ × Γ ; γ / m ⊢ e ⇐ T ∣ ϵ′ ↑ Δ / n
-complete SΓ Se ST (T-Const {c = c} ⊢c) with algConst? c
-... | inj₁ Ac =
-  UV.someSub , _ , _ , _ , ≤ϵ-refl , someSub-solving , ≃-refl ∷ [] , A-Check (A-Const (≼-∅ []) Ac ⊢c)
-... | inj₂ ¬Ac = {!¬Ac!}
-complete SΓ Se ST (T-Var x refl) =
-  UV.someSub , _ , _ , _ , ≤ϵ-refl , someSub-solving , ≃-refl ∷ [] , A-Check (A-Var (≼-refl refl))
-complete SΓ (ƛ Se) (ST-T ⟨ a ⟩→ ST-U) (T-Abs Γ-unr Γ-mob d) =
-  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete (⸴Π ST-T SΓ) Se ST-U d in
-  σ , _ , _ , n , ≤ϵ-refl , Sσ , All.++⁺ (mobΔ {a = a} {σ = σ} Γ-mob) SΔ , A-Abs Γ-unr ϵ′≤ A refl
-complete SΓ (μ (ƛ Se)) (ST-T ⟨ a ⟩→ ST-U) (T-AbsRec Γ-unr a-unr d) =
-  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete (⸴Π ST-T (⸴Π (ST-T ⟨ a ⟩→ ST-U) SΓ)) Se ST-U d in
-  σ , Δ , _ , n , ≤ϵ-refl , Sσ , SΔ , A-AbsRec Γ-unr a-unr ϵ′≤ A
-complete SΓ Se ST (T-AppUnr a-unr ≤ₐ x y) = {!!}
-complete SΓ Se ST (T-AppLin a-par ≤ₐ x x₁) = {!!}
-complete SΓ Se ST (T-AppLeft aL ≤ₐ x x₁) = {!!}
-complete SΓ Se ST (T-AppRight aR ≤ₐ x x₁) = {!!}
-complete SΓ Se ST (T-Pair p/s seq⇒p x x₁) = {!!}
-complete SΓ Se ST (T-Seq unr-T x y) = {!!}
-complete SΓ Se ST (T-LetPair p/s x y) = {!!}
-complete SΓ (`inj Se) (ST₁ ⊕ ST₂) (T-Inj {i = true} x) =
-  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete SΓ Se ST₁ x in
-  σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A-Inj A
-complete SΓ (`inj Se) (ST₁ ⊕ ST₂) (T-Inj {i = false} x) =
-  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete SΓ Se ST₂ x in
-  σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A-Inj A
-complete SΓ Se ST (T-Case p/s x y₁ y₂) = {!!}
-complete SΓ Se ST (T-Conv {T = T} {U = U} T≃ ϵ≤ x) =
-  let ST-T = ≃-solved⁻¹ T≃ ST in
-  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete SΓ Se ST-T x in
-  σ , C-Eq U T ∷ Δ , ϵ′ , n , ≤ϵ-trans ϵ′≤ ϵ≤ , Sσ ,
-    subst₂ _≃_ (sym (subTy-id ST)) (sym (subTy-id ST-T)) (≃-sym T≃) ∷ SΔ ,
-    A-Check (A-Ann A)
-complete SΓ Se ST (T-Weaken γ≤ x) = {!!}
+complete SΓ Se ST d = complete-fuel (suc (height d)) d Nat.≤-refl SΓ Se ST
 -- complete (T-Const {c = c} ⊢c) Se ST with isSplit? c
 -- complete (T-Const {c = _} (`lsplit s s′)) Se ST@(⟨ Ss ; Ss′ ⟩ ⟨ _ ⟩→ Sc) | yes (_ , inj₁ refl) =
 --   let Sσs  = subTy-solved Ss in
