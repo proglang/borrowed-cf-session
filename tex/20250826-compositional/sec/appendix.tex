@@ -412,6 +412,195 @@ Thus the translation function $\tofreest{\S}$ (\Cref{fig:freest-translation} ) t
 \subsection{Type Safety for Declarative Typing}
 \label{sec:appendix-metatheory-ts}
 
+\providecommand{\proofcase}[1]{\smallskip\noindent\textit{Case}~#1\quad}
+
+We give the proof of process progress
+(\cref{thm:process-progress}). The argument is the concurrent analogue of
+the sequential progress proof for expressions: an inductive walk over the
+process structure that, at every restriction, either exhibits a reduction or
+certifies that the configuration is genuinely deadlocked. The blocked-process
+predicate $\Blocked\Proc$ and the active-channel function $\BC(\Proc)$ used
+below are the ones from \cref{fig:blocked-expr-proc}; the evaluation and
+process contexts are those of \cref{fig:values-evaluation-contexts}.
+
+\paragraph{Preliminaries.}
+Throughout, $\SessCtx$ denotes a \emph{session context}: a context all of whose
+entries are session (channel) types. In such a context every variable denotes a
+channel endpoint. This is the intrinsic side condition on the value predicate:
+a variable counts as a value only under a channel context, so canonical-form
+reasoning for values is available exactly when the context is a session
+context.
+
+\begin{definition}[Poised thread, active constant]
+  \label{def:poised}
+  A thread $\PExp\E$ is \emph{poised} when $\E = \ECapp{\EApp\C\V}$ for some
+  constant $\C$ and value $\V$, i.e.\ when $\Blocked\E$ holds by
+  \textsc{B-ExpBlocked}. We call $\EApp\C\V$ its \emph{active redex}, $\C$ its
+  \emph{active constant}, and, when $\V$ (or its relevant component) is a
+  channel variable $\EVar$, we say the thread is \emph{poised on} $\EVar$.
+\end{definition}
+
+We partition the constants by the shape of the reduction they participate in.
+\begin{itemize}
+  \item \emph{Spawning} constants $\CNew,\CFork$: their active redex reduces at
+    the thread level, independently of any restriction, by \textsc{R-New}
+    resp.\ \textsc{R-Fork}. They contribute $\BC = \emptyset$.
+  \item \emph{Communicating} constants
+    $\CSend,\CRecv,\CSelect{},\CBranch,\CTerm,\CWait$: their active redex fires
+    only against a matching action on the \emph{dual} endpoint, by
+    \textsc{R-Com}, \textsc{R-Choice}, resp.\ \textsc{R-Close}. Each contributes
+    $\BC = \{\EVar\}$ for its channel operand $\EVar$.
+  \item \emph{Asynchronous} constants $\CDrop,\CDiscard,\CSplit,\CSSplit$: their
+    active redex fires alone once the operand channel is bound by an enclosing
+    restriction, by \textsc{R-Drop}, \textsc{R-Discard}, \textsc{R-LSplit},
+    resp.\ \textsc{R-RSplit}; no partner thread is required. They contribute
+    $\BC = \emptyset$.
+  \item \emph{Acquire} $\CAcq$ is the hybrid: it synchronizes with an
+    \emph{earlier} $\CDrop$ on the dual side through the one-bit flag recorded in
+    the binder. Its redex fires by \textsc{R-Acquire} exactly when that flag is
+    set --- syntactically, when the operand channel carries the leading
+    separator marker $\BLeadSep{}$ in the bind group --- and contributes
+    $\BC = \{\EVar\}$ otherwise.
+\end{itemize}
+
+\begin{lemma}[Thread progress]
+  \label{lem:thread-progress}
+  If $\HasType[\EffImpure]\SessCtx\E\BUnit$, then either $\E$ is a value,
+  or $\E \EReduce \E*$ for some $\E*$, or $\E$ is poised. Moreover, if $\E$ is a
+  value it is $\CUnit$.
+\end{lemma}
+\begin{proof}
+  The three-way alternative is expression progress
+  (\cref{thm:expression-progress}), noting that a stuck redex $\ECapp{\EApp\C\V}$
+  is exactly a poised thread. For the last clause: a value of type $\BUnit$ in a
+  session context is, by canonical forms, the constant $\CUnit$ (the only value
+  introduction for $\BUnit$; a variable would have a session type, not
+  $\BUnit$).
+\end{proof}
+
+\begin{lemma}[Synchronization]
+  \label{lem:sync}
+  Let $\PNew{\BSeq\EVar{\BindGroup[1]}}{\BSeq\EVary{\BindGroup[2]}}\Proc$ bind the
+  dual endpoints $\EVar : \SSeq\S{\S*}$ and $\EVary : \SDual{(\SSeq\S{\S*})}$,
+  and suppose one thread of $\Proc$ is poised on $\EVar$ with a communicating
+  active constant and another is poised on $\EVary$. Then the two active
+  constants are dual --- one of the pairs $(\CSend,\CRecv)$,
+  $(\CSelect{k},\CBranch)$, $(\CTerm,\CWait)$ --- and the restriction reduces by
+  \textsc{R-Com}, \textsc{R-Choice}, resp.\ \textsc{R-Close}.
+\end{lemma}
+\begin{proof}
+  The constant-typing rules force the operand session type of each poised
+  redex to be the head of the endpoint's session type. Since the two endpoints
+  are dual and duality maps $\SSend\T \mapsto \SRecv\T$,
+  $\SChoice{\ell:\S[\ell]}{} \mapsto \SBranch{\ell:\SDual{\S[\ell]}}{}$ and
+  $\STerm \mapsto \SWait$ (\cref{fig:session-laws}), the two heads are dual, so
+  the active constants match one synchronization rule, whose left-hand side is
+  precisely the given pair of poised redexes.
+\end{proof}
+
+\begin{theorem}[Process progress, restated]
+  \label{thm:process-progress-app}
+  If $\ProcHasType\SessCtx\Proc$, then either $\Proc \Congruent \PExp\CUnit$, or
+  $\Blocked\Proc$, or there exists $\Proc*$ with $\Proc \PReduce \Proc*$.
+\end{theorem}
+\begin{proof}
+  By induction on the derivation of $\ProcHasType\SessCtx\Proc$. The subsumption
+  rule \textsc{TP-Weaken} (which only relaxes the context ordering) is discharged
+  by the induction hypothesis, since neither $\PReduce$, $\Congruent$, nor
+  $\Blocked{-}$ depends on the ordering slack. We treat the three structural
+  rules; recall that $\Blocked{-}$ and $\Congruent$ are read up to the pruning of
+  terminated $\PExp\CUnit$ threads via \textsc{Par-Unit}, which we use silently
+  below.
+
+  \proofcase{\textsc{TP-Expr}, $\Proc = \PExp\E$ with $\HasType[\EffImpure]\SessCtx\E\BUnit$.}
+  Apply \cref{lem:thread-progress}.
+  \begin{itemize}
+    \item $\E$ is a value: then $\E = \CUnit$, so $\Proc = \PExp\CUnit$; the first
+      alternative holds.
+    \item $\E \EReduce \E*$: then $\Proc \PReduce \PExp{\E*}$ by \textsc{R-Exp};
+      the third alternative holds.
+    \item $\E = \ECapp{\EApp\C\V}$ is poised. If $\C \in \{\CNew,\CFork\}$, the
+      thread reduces by \textsc{R-New} resp.\ \textsc{R-Fork} (third
+      alternative). Otherwise $\C$ acts on a channel operand $\EVar$ which, as
+      $\Proc$ has no restriction, is free, hence bound in $\SessCtx$. No process
+      rule applies to a channel that no restriction binds --- every channel rule
+      \textsc{R-Com}, \dots, \textsc{R-Acquire} discharges a binder. Thus
+      $\Blocked\Proc$ by \textsc{B-ExpBlocked} (second alternative).
+  \end{itemize}
+
+  \proofcase{\textsc{TP-Par}, $\Proc = \PPar{\Proc[1]}{\Proc[2]}$.}
+  Apply the induction hypothesis to $\Proc[1]$ and $\Proc[2]$.
+  \begin{itemize}
+    \item If $\Proc[i] \PReduce \Proc[i]'$ for some $i$, then $\Proc \PReduce$ by
+      \textsc{R-Par} (for $i=2$, precede it with $\PPar{\Proc[1]}{\Proc[2]}
+      \Congruent \PPar{\Proc[2]}{\Proc[1]}$ and close under \textsc{R-Struct}).
+    \item Otherwise neither component reduces. If $\Proc[i] \Congruent
+      \PExp\CUnit$, then $\Proc \Congruent \Proc[3-i]$ by \textsc{Par-Unit}, and
+      we conclude from the alternative obtained for $\Proc[3-i]$.
+    \item Otherwise both components are blocked (each is, up to pruning, a
+      non-empty parallel composition of poised threads and blocked
+      restrictions), so $\Blocked\Proc$ by \textsc{B-ParBlocked}.
+  \end{itemize}
+
+  \proofcase{\textsc{TP-Res}, $\Proc = \PNew{\BindGroup[1]}{\BindGroup[2]}\ProcQ$.}
+  Inversion of \textsc{TP-Res} types $\ProcQ$ in $\SessCtx$ extended by the two
+  bind groups, which introduce the freshly bound dual endpoints; the extended
+  context is again a session context, so the induction hypothesis applies to
+  $\ProcQ$.
+  \begin{itemize}
+    \item $\ProcQ \PReduce \ProcQ'$: then $\Proc \PReduce
+      \PNew{\BindGroup[1]}{\BindGroup[2]}{\ProcQ'}$ by \textsc{R-Bind}.
+    \item $\ProcQ \Congruent \PExp\CUnit$: this cannot arise while
+      $\BindGroup[1],\BindGroup[2]$ bind unconsumed endpoints. Their session
+      types $\SSeq\S\STerm$ and $\SDual{(\SSeq\S\SWait)}$ are linear, and
+      $\BindGivesCtx{}{}{}$ forces every endpoint to be consumed by exactly one
+      thread; a body congruent to a single $\CUnit$ thread leaves them unused
+      and is untypable. (The terminal $\CUnit$ configuration is produced only
+      \emph{by} \textsc{R-Close}, which discharges the restriction in the same
+      step, so it is never the body \emph{under} a live restriction.)
+    \item $\ProcQ$ is blocked. This is the crux. Up to pruning, $\ProcQ$ is a
+      parallel composition of poised threads and blocked inner restrictions; the
+      inner restrictions are already handled by the induction hypothesis, so the
+      only channels not yet accounted for are the ones bound \emph{here}. We
+      analyze the poised threads that act on them.
+      \begin{enumerate}
+        \item If some thread is poised with an asynchronous constant
+          ($\CDrop,\CDiscard,\CSplit,\CSSplit$) on a channel bound here, or with
+          $\CAcq$ on a bound channel whose flag is set (leading separator
+          $\BLeadSep{}$ present), then --- after rotating that channel to the head
+          of the bind group by \textsc{Res-Swap}/\textsc{Res-Comm} under
+          \textsc{R-Struct} --- the restriction reduces by \textsc{R-Drop},
+          \textsc{R-Discard}, \textsc{R-LSplit}, \textsc{R-RSplit}, resp.\
+          \textsc{R-Acquire}. (These are exactly the constants with $\BC =
+          \emptyset$, whose steps need no partner: an endpoint poised on one of
+          them never blocks its restriction.)
+        \item Otherwise, if some channel bound here has its two dual endpoints
+          simultaneously poised at communicating constants, then by
+          \cref{lem:sync} the restriction reduces by \textsc{R-Com},
+          \textsc{R-Choice}, resp.\ \textsc{R-Close} (again rotating that channel
+          to the head first, if needed).
+        \item Otherwise, every redex poised on a channel bound here is either a
+          communicating action whose dual endpoint is \emph{not} poised (its
+          partner is a value thread or is itself blocked on a different channel),
+          or an $\CAcq$ whose flag is unset. In both cases the head pair
+          $(\EVar,\EVary)$ of the binder satisfies $\EVar \notin \BC(\ProcQ)$ or
+          $\EVary \notin \BC(\ProcQ)$; since any bound channel can be rotated to
+          the head by \textsc{Res-Swap}/\textsc{Res-Comm} while preserving both
+          $\Blocked{-}$ and the failure of synchronization, the premise of
+          \textsc{B-NuBlocked} holds. With $\Blocked\ProcQ$ from the induction
+          hypothesis, \textsc{B-NuBlocked} gives $\Blocked\Proc$.
+      \end{enumerate}
+  \end{itemize}
+  This exhausts the cases and closes the induction.
+\end{proof}
+
+\noindent\emph{Remark (role of the session-context hypothesis).}
+The hypothesis that $\SessCtx$ is a session context is used twice, both in the
+\textsc{TP-Expr} case: to conclude $\E = \CUnit$ from ``$\E$ is a value of type
+$\BUnit$'', and to guarantee that the operand of a stuck communicating redex is a
+\emph{channel} (so that the stuck thread is a genuine communication block rather
+than an open term of some other type). Dropping the hypothesis would admit free
+variables of arbitrary type and break both steps.
 
 \subsection{Soundness and Completeness for Algorithmic Typing}
 \label{sec:appendix-metatheory-sc}
