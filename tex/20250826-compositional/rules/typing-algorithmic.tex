@@ -231,11 +231,13 @@
     {\TVariant{\ell:\T[\ell]}}
     {\Eff}
   \\
-  \InferType[\CtxVar {\EVar[\ell]} {\T[\ell]} \CtxSeq \CtxRestrict{\E[\ell]}]
+  \InferType[\CtxVar {\EVar[\ell]} {\T[\ell]} \CtxJoin \CtxRestrict{\E[\ell]}]
     {\E[\ell]}
     {\TU[\ell]}
     {\Eff[\ell]}
     [\CSet[\ell]]
+  \\
+  \Dir = \CaseJoinDir(\Ctx, \Fv(\E))
   \\
   \ell' \in L
 }{

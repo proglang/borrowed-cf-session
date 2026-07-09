@@ -182,9 +182,15 @@
     \end{cases}
   \]
   \end{minipage}
+  \[
+    \CaseJoinDir(\Ctx, X) = \begin{cases}
+      \DirUnord & \text{if $\CtxRestrict*{X} \CtxPar \CtxRestrict*{X^C} \SubCtx \Ctx$}\\
+      \DirLeft & \text{otherwise}\\
+    \end{cases}
+  \]
   \caption{Context join $\Ctx[1] \CtxJoin \Ctx[2]$ joins two contexts
-    according to the direction $\Dir$ and context restriction
-    $\CtxRestrict*{X}$ restricts a context to a set of variables $X$}
+    according to the direction $\Dir$, context restriction
+    $\CtxRestrict*{X}$ restricts a context to a set of variables $X$, and $\CaseJoinDir$ calculates if a context $\Ctx$ restricted to a set $X$ can be joined parallelly with $\Ctx$ restricted to the complement set.}
   \label{fig:context-operators}
 \end{figure}
 
