@@ -57,6 +57,7 @@ open import BorrowedCF.Simulation2.Backward.Acq using (acq-reflect)
 open import BorrowedCF.Simulation2.Backward.Inversions using (inv-U-⟪⟫; inv-U-∥; inv-U-ν)
 open import BorrowedCF.Simulation2.Backward.SimResPhi using (φ-trichotomy; mk-sync; mk-drop; mk-struct)
 open import BorrowedCF.Simulation2.Backward.DropReflectGo using (drop-goB)
+open import BorrowedCF.Simulation2.Backward.UpToPhiEngineWF using (eng)
 open import BorrowedCF.Simulation.ReverseInv
   using (inv-ν-chanCx; νσ-φfree; νσ-φfree-VSub; U-ν-φfree-eq; ν-inj)
 open import BorrowedCF.Simulation.RevAdmin
@@ -82,6 +83,22 @@ syncs-of (b ∷ c ∷ Bp) = inj₂ (b , c , Bp , refl)
 ≈-∥-congʳ : ∀ {n} {P Q Rr : UP.Proc n} → P ≈ Q → Rr UP.∥ P ≈ Rr UP.∥ Q
 ≈-∥-congʳ c = ≋⇒≈ UP.∥-comm ◅◅ ≈-∥-congˡ c ◅◅ ≋⇒≈ UP.∥-comm
 
+-- sim←-base : the SINGLE residual reverse-inversion obligation, exactly
+--   UpToPhiEngineWF.Base — reflect a DIRECT untyped step on a process merely
+--   ≈-related (NOT ≡) to an image.  MACHINE-ESTABLISHED to require a
+--   φ-telescope-aware reverse ≈-inversion / calculus-statement design change:
+--   the νφ-comm φ-escape defeats strict image inversion
+--   (Simulation.RevUCong.reverse-U-≋-⊥, hole-free) and ε-absorption fails for a
+--   genuine φ-drop (Backward.DropNotAdmin, #acq increments).  Every remaining
+--   non-ε / φ-bearing sim← case funnels into this ONE hole via the WF engine
+--   `eng`; the proven channel-op ports (incl. drop-goB) close everything else.
+sim←-base : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
+          → {g : Struct m} {P : TP.Proc m} → Γ ; g ⊢ₚ P
+          → {R Q : UP.Proc n} → R ≈ U[ P ] σ → R UR.─→ₚ Q
+          → Σ[ P′ ∈ TP.Proc m ] (Star TR._─→ₚ_ P P′ × Q ≈ U[ P′ ] σ)
+sim←-base σ Vσ Γ-S ⊢P R≈ red =
+  {! Base : φ-telescope-aware reverse ≈-inversion — OPEN (needs calculus/statement design change). !}
+
 -- Mutual: sim← (≈-closed public entry), sim←ᵍ (≡-image inversion engine),
 -- simRes (RU-Res φ-nest peel, factored out to keep the σ : m →ₛ n scope index).
 sim←   : Backward-Sim
@@ -100,7 +117,7 @@ simRes : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ 
 -- sim← : ε prefix = engine at refl; genuine ≈-chain = documented non-ε hole.
 sim← σ Vσ Γ-S ⊢P ε        red = sim←ᵍ σ Vσ Γ-S ⊢P refl red
 sim← σ Vσ Γ-S ⊢P (c ◅ cs) red =
-  {! non-ε ≈-chain engine — φ-scattered-image ≋-normalization (research-scale hole). !}
+  eng σ Vσ Γ-S ⊢P (sim←-base σ Vσ Γ-S ⊢P) (c ◅ cs) red
 
 -- RU-Exp / RU-Fork : thread leaves (Backward.Leaf).
 sim←ᵍ σ Vσ Γ-S ⊢P eq (UR.RU-Exp step) = bwd-exp  σ Vσ Γ-S ⊢P (sym eq) step
@@ -159,8 +176,10 @@ simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq (inj₁ s₁) (inj₁ s
   subst (UP.ν X′ ≈_) (sym (U-ν-φfree-eq B₁ B₂ P₀′ σ s₁ s₂)) (≈-ν-cong c)
 simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq (inj₂ (b , c , Bp , refl)) sB₂
   with φ-trichotomy _ _ (subst (λ Z → Z UR.─→ₚ X′) (ν-injU bodyeq) sub)
-... | inj₁ φs = {! φ-sync descent !}
-... | inj₂ (inj₂ φst) = {! φ-struct → engine ?0 !}
+... | inj₁ φs =
+  eng σ Vσ Γ-S ⊢P (sim←-base σ Vσ Γ-S ⊢P) (≋⇒≈ (≡→≋ bodyeq)) (UR.RU-Res sub)
+... | inj₂ (inj₂ φst) =
+  eng σ Vσ Γ-S ⊢P (sim←-base σ Vσ Γ-S ⊢P) (≋⇒≈ (≡→≋ bodyeq)) (UR.RU-Res sub)
 ... | inj₂ (inj₁ (mk-drop F x P isdrop source target))
   with P′ , steps , codom ←
     drop-goB b c Bp B₂ σ Vσ Γ-S P₀ F ⊢P
@@ -168,4 +187,4 @@ simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq (inj₂ (b , c , Bp , r
              (ν-injU bodyeq ■ cong₂ UP.φ isdrop source) bodyeq) =
   P′ , steps , subst (λ Z → UP.ν Z ≈ U[ P′ ] σ) (sym target) codom
 simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq _ (inj₂ _) =
-  {! RU-Res φ-bearing (syncs B₂ ≥ 1): same finding as the syncs B₁ ≥ 1 clause. !}
+  eng σ Vσ Γ-S ⊢P (sim←-base σ Vσ Γ-S ⊢P) (≋⇒≈ (≡→≋ bodyeq)) (UR.RU-Res sub)
