@@ -37,13 +37,13 @@
 \DefRule {Select} {
   \InferType
     \E
-    {\T}
+    {\SChoice{\ell:\S[\ell]}{\ell\in L}}
     \Eff \\
-  \NormaliseType \T {\SChoice{\ell:\S[\ell]}{\ell\in L}}
+  \NormaliseType {\S[k]} {\S}
 }{
   \InferType
     {\EApp{\CSelect k}{\E}}
-    {\S[k]}
+    {\S}
     {\EffImpure}
 }
 
@@ -51,9 +51,8 @@
 \DefRule {Branch} {
   \InferType
     \E
-    {\T}
-    \Eff \\
-  \NormaliseType \T {\SBranch{\ell:\S[\ell]}{\ell\in L}}
+    {\SBranch{\ell:\S[\ell]}{\ell\in L}}
+    \Eff
 }{
   \InferType
     {\EApp{\CBranch}{\E}}
@@ -75,8 +74,9 @@
   \reqEff\Dir{\Eff[1]}{\Eff[2]} \\
   \CtxAlgJoinCheck{\E[1]}{\E[2]} \\\\
   \InferType [\CtxRestrict{\E[1]}] {\E[1]} {\TArr{\Mob}{\Dir,\Eff[3]} \T \TU} {\Eff[1]} [\CSet[1]] \\
+  \NormaliseType {\T}{\T*} \\
   \NormaliseType {\TU}{\TU*} \\
-  \CheckType [\CtxRestrict{\E[2]}] {\E[2]} {\T} {\Eff[2]} [\CSet[2]]
+  \CheckType [\CtxRestrict{\E[2]}] {\E[2]} {\T*} {\Eff[2]} [\CSet[2]]
 }{
   \InferType {\EAppD{\E[1]}{\E[2]}{\DirPrime}} {\TU*} {\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]} [\CSet[1] \CSJoin \CSet[2]]
 }
@@ -84,7 +84,7 @@
 
 % A-Annot
 \DefRule {Annot} {
-  \CheckType \E {\T} {\Eff} [\CSet] \\
+  \CheckType \E {\T*} {\Eff} [\CSet] \\
   \NormaliseType {\T} {\T*}
 } {
   \InferType {\E : \T} {\T*} \Eff [\CSet]
@@ -102,8 +102,9 @@
 \DefRule {Abs} {
   \CheckType[\CtxVar\EVar\T \CtxJoin \Ctx]
     \E
-    \TU
+    {\TU*}
     {\Eff*} \\
+  \NormaliseType {\TU} {\TU*} \\
   \Eff* \le \Eff \\
   \Dir = \DirNone \implies \Unr \Ctx \wedge \Mob = \MobMobile
 }{
@@ -116,16 +117,17 @@
 
 % A-AbsRec
 \DefRule {AbsRec} {
+  \NormaliseType {\TU} {\TU*} \\
+  \Eff* \le \Eff \\
+  \Unr\Ctx \\\\
   \CheckType[
     \CtxVar f {\TArr{\MobMobile}{\DirNone,\Eff} \T \TU}
       \CtxPar \CtxVar\EVar\T
       \CtxPar \Ctx
   ]
     \E
-    \TU
-    {\Eff*} \\
-  \Eff* \le \Eff \\
-  \Unr\Ctx \\
+    {\TU*}
+    {\Eff*}
 }{
   \CheckType
     {\EMu {\EAbs\EVar\E}}
@@ -137,15 +139,18 @@
 \DefRule {Pair} {
   \reqEff \Dir {\Eff[2]} {\Eff[1]}\\
   \CtxAlgJoinCheck{\E[1]}{\E[2]} \\\\
+    \NormaliseType {\T} {\T*} \\
+    \NormaliseType {\TU} {\TU*}
+    \\\\
   \CheckType[\CtxRestrict{\E[1]}]
     {\E[1]}
-    {\T}
+    {\T*}
     {\Eff[1]}
     [\CSet[1]]
   \\
   \CheckType[\CtxRestrict{\E[2]}]
     {\E[2]}
-    {\TU}
+    {\TU*}
     {\Eff[2]}
     [\CSet[2]]
 } {
@@ -206,8 +211,10 @@
 \DefRule {Inj} {
   \CheckType
     {\E}
-    {\T[\ell]}
+    {\T*}
     {\Eff}
+    \\
+    \NormaliseType {\T[\ell]} {\T*} \\
 }{
   \CheckType
     {\EInj k \E}

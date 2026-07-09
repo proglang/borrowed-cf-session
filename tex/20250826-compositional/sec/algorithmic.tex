@@ -21,40 +21,16 @@ $\TVAR$. We write $\AT$ for types that refer to $\AS$ instead of $\S$.
 
 Algorithmic typing collects a set of constraints $\CSet$. Constraints $C$
 come as either equality constraints between two types, or mobility constraints:
-\[
+$
   C \grmeq* \AT \CEq \ATU \grmor\CMobile \AT
-\]
+$.
 
-\begin{definition}[Closing substitution]
+\begin{definition}
   A substitution $\sigma : \TVAR \to \AS$ is a \emph{closing
     substitution} for  a set of constraints $\CSet$, written $\sigma
   \models \CSet$, if for every variable $\TVar$ in $\CSet$, $\sigma (\TVar) \in \S$ and all
   constraints are respected.
 \end{definition}
-\begin{figure}[tp]
-  \begin{minipage}{0.49\linewidth}
-  \[ \Ctx[1] \CtxJoin \Ctx[2] = \begin{cases}
-        \Ctx[1] \CtxPar \Ctx[2] & \text{if $\Dir \in \{ \DirUnord, \DirNone \}$} \\
-        \Ctx[1] \CtxSeq \Ctx[2] & \text{if $\Dir = \DirLeft$} \\
-        \Ctx[2] \CtxSeq \Ctx[1] & \text{if $\Dir = \DirRight$}
-     \end{cases}
-  \]
-  \end{minipage}
-  \begin{minipage}{0.49\linewidth}
-\[
-  \CtxRestrict*{X} = \begin{cases}
-    \CtxRestrict*[1]{X} \CtxPar \CtxRestrict*[2]{X} & \text{if $\Ctx=\Ctx[1] \CtxPar \Ctx[2]$} \\
-    \CtxRestrict*[1]{X} \CtxSeq \CtxRestrict*[2]{X} & \text{if $\Ctx=\Ctx[1] \CtxSeq \Ctx[2]$} \\
-    \CtxVar \EVar \T & \text{if $\Ctx=\CtxVar \EVar T$ and $\EVar \in X$} \\
-    \CtxEmpty & \text{otherwise}
-  \end{cases}
-\]
-  \end{minipage}
-  \caption{Context join $\Ctx[1] \CtxJoin \Ctx[2]$ joins two contexts according to the
-    direction $\Dir$ and context
-    restriction $\CtxRestrict*{X}$ restricts a context to a set of variables $X$}
-  \label{fig:context-operators}
-\end{figure}
 \begin{figure}
   \small
   \hfill \fbox{$\InferType \E \T \Eff$}
@@ -62,10 +38,10 @@ come as either equality constraints between two types, or mobility constraints:
     \RuleAlgVar \and
     \RuleAlgConst \and
     \RuleAlgAnnot \and
-    \RuleAlgLSplit \and
-    \RuleAlgRSplit \and
     \RuleAlgSelect \and
     \RuleAlgBranch \and
+    \RuleAlgLSplit \and
+    \RuleAlgRSplit \and
     \RuleAlgApp \and
     \RuleAlgSeq \and
     \RuleAlgLetPair \and
@@ -85,18 +61,26 @@ come as either equality constraints between two types, or mobility constraints:
   \label{fig:typing-algorithmic}
 \end{figure}
 
-\Cref{fig:typing-algorithmic} presents the algorithmic typing
-judgments, which are based on bidirectional typing~\cite{DBLP:journals/csur/DunfieldK21}. The
-synthesis judgment $\InferType \E \AT \Eff$ takes as input the context $\Ctx$
-and expression $\E$. It computes the expression's type $\AT$, its effect
-$\Eff$, and a set of constraints $\CSet$. The checking judgment $\CheckType \E
-\AT \Eff$ takes as input the context $\Ctx$, expression $\E$, and type $\AT$. It
-returns the expression's effect $\Eff$ as well as a set of constraints
-$\CSet$. Judgments make use of the context operators defined in
-\cref{fig:context-operators}. We use type normalisation~\cite{DBLP:journals/iandc/AlmeidaMTV22}, written $\NormaliseType {\T[in]} {\T[out]}$, to expose the top-level type constructor in synthesis judgements. The rules are given in the supplement in \cref{fig:typing-normalisation}.
+\Cref{fig:typing-algorithmic} presents the bidirectional algorithmic
+typing judgments~\cite{DBLP:journals/csur/DunfieldK21}. The synthesis
+judgment $\InferType \E \AT \Eff$ takes as input the context $\Ctx$
+and expression $\E$. It computes the expression's type $\AT$, its
+effect $\Eff$, and a set of constraints $\CSet$. The checking judgment
+$\CheckType \E \AT \Eff$ takes as input the context $\Ctx$, expression
+$\E$, and type $\AT$. It returns the expression's effect $\Eff$ as
+well as a set of constraints $\CSet$. Judgments make use of context
+join $\Ctx[1] \CtxJoin \Ctx[2]$, which joins two contexts according to
+the direction $\Dir$, and context restriction $\CtxRestrict*{X}$,
+which restricts a context to a set of variables $X$; the definitions
+are given in \cref{fig:context-operators}. Type
+normalisation~\cite{DBLP:journals/iandc/AlmeidaMTV22}, written
+$\NormaliseType {\T[in]} {\T[out]}$ (see
+\cref{fig:typing-normalisation}), exposes the top-level type
+constructor in synthesis judgements.
 
 We have checking rules for function definitions, pairs, sum
-injections, and checking against a synthesized type. For lambdas,
+injections, and checking against a synthesized type. They check
+against normalized types. For lambdas,
 \RuleName{A-Abs} enforces the supplied function type, which specifies
 the mobility $\Mob$, the direction $\Dir$, and the effect $\Eff$. If
 $\Mob = \MobMobile$, then all free variables in the lambda's body must
@@ -165,32 +149,24 @@ output types to be equal.
 \subsection{Constraint Solving}
 \label{sec:constraint-solving}
 
-An algorithmic typing for an expression $\E$ yields a set of constraints
-$\CSet$. In inference mode, the returned type $\AT$ may refer to unsolved type
-variables. Solving $\CSet$ and determining valid instantiations for all type
-variables boils down to a unification problem. Unfortunately, there is no
-unification algorithm readily available for the theory of context-free session
-types, which involves associativity, neutral elements, and distributivity. For
-this reason, we approach constraint solving by constraint simplification.
+An algorithmic typing for an expression $\E$ yields a set of
+constraints $\CSet$. In inference mode, the returned type $\AT$ may
+refer to unsolved type variables. Solving $\CSet$ and determining
+valid instantiations for all type variables boils down to a
+unification problem. Unfortunately, we are not aware of a unification
+algorithm for the theory of context-free session types, which involves
+associativity, neutral elements, and distributivity. Hence, we
+approach constraint solving by constraint simplification.
 
-The equivalence constraints in $\CSet$ are broken down according to the
-simplification rules given in \cref{fig:constraint-simplification} until no
-more rules apply. Constraints of the form $\TVar\CEq\AT$ provide a potential
-solution for unification variable $\TVar$. If there are unification variables occurring in
-$\CSet$ or $\AT$ for which no solution candidate can be discovered in this way
-the heuristic will fail and $\E$ is considered ill-typed.
-
-\begin{figure}[tp]
-  \begin{mathpar}
-    \RuleCSPair \and
-    \RuleCSSum \and
-    \RuleCSUnit \and
-    \RuleCSArrow \and
-    \RuleCSContext
-  \end{mathpar}
-  \caption{Constraint simplification}
-  \label{fig:constraint-simplification}
-\end{figure}
+The equivalence constraints in $\CSet$ are simplified by structural
+decomposition: pairs, sums, function types, and contexts are reduced
+componentwise, while unit constraints disappear. The rules are given
+in \cref{fig:constraint-simplification} and are applied until no more
+rules apply. Constraints of the form $\TVar\CEq\AT$ provide a potential
+solution for unification variable $\TVar$. If there are unification
+variables occurring in $\CSet$ or $\AT$ for which no solution candidate
+can be discovered in this way the heuristic will fail and $\E$ is
+considered ill-typed.
 
 The potential solutions have to be validated in respect to the whole set of
 constraints $\CSet$. One candidate is picked per variable and substituted
@@ -229,10 +205,13 @@ $\CSSplit$-result is split further with a prefix of more than just $\SAcq$.
 \subsection{Implementation}
 
 We supplement our theoretical work on the bidirectional type checking algorithm from this section with an implementation written in Rust. 
+It is based on the artifact \cite{saffrich25:_artif_borrow_from_session_types}
+and uses FreeST 5.0
+\cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22,
+  almeida26:_frees_concur_progr_languag_with} for equivalence checking
+of session types.
 
-We base our implementation on the existing infrastructure from \cite{saffrich25:_artif_borrow_from_session_types} and use FreeST 5.0 \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22, almeida26:_frees_concur_progr_languag_with} to perform equivalence checking for session types. 
-
-The Rust implementation comes with test cases that include the two motivational examples from \cref{sec:motivation}.
+The test cases of the Rust implementation include the motivational examples from \cref{sec:motivation}.
 
 %%% Local Variables:
 %%% mode: latex

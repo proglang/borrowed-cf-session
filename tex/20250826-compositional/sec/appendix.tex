@@ -120,7 +120,47 @@
 
 \FloatBarrier
 
-\section{Algorithmic Typing: Constraint Checking with FreeST}
+\section{Algorithmic Typing}
+
+\begin{figure}[htbp]
+  \begin{minipage}{0.49\linewidth}
+  \[
+    \Ctx[1] \CtxJoin \Ctx[2] = \begin{cases}
+      \Ctx[1] \CtxPar \Ctx[2] & \text{if $\Dir \in \{ \DirUnord, \DirNone \}$} \\
+      \Ctx[1] \CtxSeq \Ctx[2] & \text{if $\Dir = \DirLeft$} \\
+      \Ctx[2] \CtxSeq \Ctx[1] & \text{if $\Dir = \DirRight$}
+    \end{cases}
+  \]
+  \end{minipage}
+  \begin{minipage}{0.49\linewidth}
+  \[
+    \CtxRestrict*{X} = \begin{cases}
+      \CtxRestrict*[1]{X} \CtxPar \CtxRestrict*[2]{X} & \text{if $\Ctx=\Ctx[1] \CtxPar \Ctx[2]$} \\
+      \CtxRestrict*[1]{X} \CtxSeq \CtxRestrict*[2]{X} & \text{if $\Ctx=\Ctx[1] \CtxSeq \Ctx[2]$} \\
+      \CtxVar \EVar \T & \text{if $\Ctx=\CtxVar \EVar T$ and $\EVar \in X$} \\
+      \CtxEmpty & \text{otherwise}
+    \end{cases}
+  \]
+  \end{minipage}
+  \caption{Context join $\Ctx[1] \CtxJoin \Ctx[2]$ joins two contexts
+    according to the direction $\Dir$ and context restriction
+    $\CtxRestrict*{X}$ restricts a context to a set of variables $X$}
+  \label{fig:context-operators}
+\end{figure}
+
+\begin{figure}[htbp]
+  \begin{mathpar}
+    \RuleCSPair \and
+    \RuleCSSum \and
+    \RuleCSUnit \and
+    \RuleCSArrow \and
+    \RuleCSContext
+  \end{mathpar}
+  \caption{Constraint simplification}
+  \label{fig:constraint-simplification}
+\end{figure}
+
+\subsection{Constraint Checking with FreeST}
 
 In the implementation, we use FreeST \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22, almeida26:_frees_concur_progr_languag_with} version 5.0 to perform equivalence checking. To achieve this, we generate little FreeST programs that typechecks iff the equivalence constraints hold.
 
