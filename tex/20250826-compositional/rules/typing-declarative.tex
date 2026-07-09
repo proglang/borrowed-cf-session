@@ -88,11 +88,12 @@
   \HasType
     {\Ctx[1]}
     {\E[1]}
-    {\TArr{\Mob}{\DirNone,\Eff} \T \TU} \\
+    {\TArr{\Mob}{\DirNone,\Eff*} \T \TU} \\
   \HasType
     {\Ctx[2]}
     {\E[2]}
-    {\T}
+    {\T} \\
+  \Eff* \le \Eff
 }{
   \HasType
     {\Ctx[1] \CtxSeq \Ctx[2]}
@@ -105,11 +106,12 @@
   \HasType
     {\Ctx[1]}
     {\E[1]}
-    {\TArr{\Mob}{\DirUnord,\Eff} \T \TU} \\
+    {\TArr{\Mob}{\DirUnord,\Eff*} \T \TU} \\
   \HasType
     {\Ctx[2]}
     {\E[2]}
-    {\T}
+    {\T} \\
+  \Eff* \le \Eff
 }{
   \HasType
     {\Ctx[1] \CtxPar \Ctx[2]}
@@ -122,12 +124,13 @@
   \HasType[\EffPure]
     {\Ctx[1]}
     {\E[1]}
-    {\TArr{\Mob}{\DirLeft,\Eff} \T \TU}
+    {\TArr{\Mob}{\DirLeft,\Eff*} \T \TU}
   \\
   \HasType
     {\Ctx[2]}
     {\E[2]}
-    {\T}
+    {\T} \\
+  \Eff* \le \Eff
 }{
   \HasType
     {\Ctx[2] \CtxSeq \Ctx[1]}
@@ -140,12 +143,13 @@
   \HasType
     {\Ctx[1]}
     {\E[1]}
-    {\TArr{\Mob}{\DirRight,\Eff} \T \TU}
+    {\TArr{\Mob}{\DirRight,\Eff*} \T \TU}
     \\
   \HasType[\EffPure]
     {\Ctx[2]}
     {\E[2]}
-    {\T}
+    {\T} \\
+  \Eff* \le \Eff
 }{
   \HasType
     {\Ctx[1] \CtxSeq  \Ctx[2]}
