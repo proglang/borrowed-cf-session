@@ -124,3 +124,21 @@ drop-bodyeq : ∀ {m n} (b₁ c b₂ : ℕ) (σ : m →ₛ n)
             → U[ TP.ν (suc b₁ ∷ c ∷ []) (b₂ ∷ []) P₀ ] σ
               ≡ UP.ν (UP.φ UP.drop (U[ P₀ ] (νσᵈ b₁ c b₂ σ)))
 drop-bodyeq b₁ c b₂ σ P₀ = refl
+
+νσᵈ-VSub : ∀ {m n} (b₁ c b₂ : ℕ) (σ : m →ₛ n) → VSub σ → VSub (νσᵈ b₁ c b₂ σ)
+νσᵈ-VSub {m} {n} b₁ c b₂ σ Vσ i with Fin.splitAt (sum (suc b₁ ∷ c ∷ []) + (b₂ + 0)) i
+... | Sum.inj₂ u = value-⋯ (value-⋯ (value-⋯ (Vσ u)
+                     (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`))
+                     (weaken* ⦃ Kᵣ ⦄ 1) (λ _ → V-`))
+                     (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`)
+... | Sum.inj₁ d with Fin.splitAt (sum (suc b₁ ∷ c ∷ [])) d
+...   | Sum.inj₂ w = Ub-V (b₂ + 0) * 2F * V-K V-K w
+...   | Sum.inj₁ e = value-⋯ (inner e) (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`)
+  where
+    inner : (e : 𝔽 (sum (suc b₁ ∷ c ∷ []))) →
+            Value ([ Ub[ suc b₁ ] (wk * , 1F , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ 0
+                   , Ub[ c + 0 ] (` 0F , 1F , wk *) ]′ (Fin.splitAt (suc b₁) e))
+    inner e with Fin.splitAt (suc b₁) e
+    ... | Sum.inj₁ v = value-⋯ (Ub-V (suc b₁) (wk *) 1F (` 0F) V-K V-` v)
+                         (weaken* ⦃ Kᵣ ⦄ 0) (λ _ → V-`)
+    ... | Sum.inj₂ w′ = Ub-V (c + 0) (` 0F) 1F (wk *) V-` V-K w′
