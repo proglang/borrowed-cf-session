@@ -2,9 +2,9 @@
 \section{Related Work}
 \label{sec:related-work}
 
-\subsection{Session Types}
-\label{sec:session-types}
-
+\emph{Session Types.}
+% \label{sec:session-types}
+%
 Context-free session types (CFSTs) have been introduced by
 \citet{DBLP:conf/icfp/ThiemannV16} and further developed by
 \citet{DBLP:journals/toplas/Padovani19} and
@@ -77,9 +77,9 @@ functionality. Compared with these approaches, our proposal avoids
 type-level computation, permits interleaving of multiple sessions, and
 splits distinct session types independently at arbitrary positions.
 
-\subsection{Ordered Types}
-\label{sec:ordered-types}
-
+\emph{Ordered Types.}
+% \label{sec:ordered-types}
+%
 Ordered types go beyond linear types in eliding the exchange
 principle. Their formal basis is non-commutative logic
 \cite{DBLP:journals/mlq/Abrusci90a, ABRUSCI199929} and they have been
@@ -135,12 +135,12 @@ parallelism for ordered sequentiality seems to
 originate from work on concurrent Kleene algebra
 \cite{DBLP:conf/concur/HoareMSW09}, but \citet{CAIRES2008120} mentions it
 earlier in a type system for concurrent computation. It also appears
-in work on behavioral separation \cite{DBLP:conf/popl/CairesS13} where
-it is attributed to \citet{DBLP:journals/tcs/BloomE96a}.
+in work on behavioral separation \cite{DBLP:conf/popl/CairesS13}, attributed to
+\citet{DBLP:journals/tcs/BloomE96a}.
 
-\subsection{Borrowing}
-\label{sec:borrowing}
-
+\emph{Borrowing.}
+% \label{sec:borrowing}
+%
 The notion of borrowing arose out of the need to control
 aliasing in object oriented languages. It is closely tied to the notion of
 ownership, which gave rise to numerous type disciplines to statically control
@@ -161,7 +161,7 @@ memory-like resources, including borrowing permissions
 \cite{DBLP:conf/popl/NadenBAB12} and functional ownership systems
 \cite{DBLP:journals/corr/abs-2310-18166}.
 These systems address the interaction of linear ownership with
-aliasing, permissions, and lifetimes. Our setting is different because
+aliasing, permissions, and lifetimes. In our setting
 aliases are endpoints for communication protocols: their use changes
 the protocol state and, once sent to another process, may require
 run-time synchronization.
