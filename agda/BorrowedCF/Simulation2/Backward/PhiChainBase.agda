@@ -16,15 +16,19 @@
 --       RevUCong/DropNotAdmin obstructions refute strict image-inversion and
 --       ε-absorption respectively — strategies this proof never uses.)
 --
---     • ─→ᵃ links use the sum-typed administrative diamond `adia`: either the
---       step TRANSPORTS across the admin move (Q ≈ Q₁), or the step CANCELS with
---       it (Q ≈ Y), the latter closing with ZERO typed steps.  This is precisely
---       the "degrade to a weak codomain" that RevAdminTransportProbe identified
---       as necessary; the sum type supplies it.
+--     • ─→ᵃ links delegate to the CONTEXTUAL admin-step hypothesis `admin`,
+--       which reflects `red` across ONE leading administrative link WITH the
+--       tail context `Y ≈ U[ P ] σ` in scope.  The context is ESSENTIAL: the
+--       context-FREE single-step admin diamond is FALSE (a bwd admin link
+--       Y=⟪(discard·V);e⟫ ─→ᵃ R=⟪(*);e⟫ lets an E-Seq on R consume the ex-discard
+--       unit, and the resulting reduct is ≈-related to neither Y nor a Y-reduct
+--       — RevAdminTransportProbe).  With the tail context, thread-rigidity of ≋
+--       plus the image being discard-free forces the offending configuration to
+--       collapse, so `admin` (the residual) is TRUE.
 --
---   `adia` is the residual administrative-diamond obligation, isolated as a
---   hypothesis so this file is HOLE/POSTULATE-FREE.  It is discharged in
---   Backward.Adiamond.
+--   `admin` is the residual administrative obligation, isolated as a hypothesis
+--   so this file is HOLE/POSTULATE-FREE.  It is strictly SMALLER than Base
+--   (only admin-headed chains; every ≋/φ-escape case is discharged here).
 module BorrowedCF.Simulation2.Backward.PhiChainBase where
 
 open import BorrowedCF.Simulation2.Base
