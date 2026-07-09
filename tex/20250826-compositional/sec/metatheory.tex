@@ -40,11 +40,11 @@ For expressions, progress includes a concurrency-specific blocked case. Informal
 an expression is blocked when evaluation reaches a communication primitive in an
 evaluation context that cannot proceed on its own because it requires a matching
 action from another thread. The formal blocked-expression predicate is given in
-the supplementary material in \cref{fig:blocked-expr-proc}.
+the supplementary material in \cref{fig:blocked-expr-proc}. We write $\SessCtx$
+for a context $\Ctx$ that only contains session types.
 
 \begin{theorem}[Expression progress\;\AgdaBird]
-  Let $\Ctx$ only contain session types.
-  If $\HasType \Ctx \E \T$, then either $\E$ is a value or $\E$ is blocked on concurrent actions or there exists an $\E*$ such that $\E \EReduce \E*$.
+  If $\HasType \SessCtx \E \T$, then either $\E$ is a value or $\E$ is blocked on concurrent actions or there exists an $\E*$ such that $\E \EReduce \E*$.
 \end{theorem}
 
 A process is concurrently blocked, if the active threads are blocked and no
@@ -54,8 +54,7 @@ Process progress guarantees reduction only for non-terminal, non-blocked
 configurations. Thus, deadlocks remain possible.
 
 \begin{theorem}[Process progress\;\AgdaBird]
-  Let $\Ctx$ only contain session types.
-  If $\ProcHasType \Ctx \Proc$, then either $\Proc \Congruent \PExp{\CUnit}$ or an expression in $\Proc$ is blocked on concurrent actions or
+  If $\ProcHasType \SessCtx \Proc$, then either $\Proc \Congruent \PExp{\CUnit}$ or an expression in $\Proc$ is blocked on concurrent actions or
     there exists an $\Proc*$ such that $\Proc \PReduce \Proc*$.
 \end{theorem}
 
@@ -63,15 +62,13 @@ Progress for expressions and processes is complemented by preservation,
 yielding the usual safety invariant across reduction steps.
 
 \begin{theorem}[Expression preservation\;\AgdaBird]
-  Let $\Ctx$ only contain session types.
-  If $\HasType \Ctx \E \T$ and $\E \EReduce \E*$, then
-  $\HasType \Ctx {\E*} \T$.
+  If $\HasType \SessCtx \E \T$ and $\E \EReduce \E*$, then
+  $\HasType \SessCtx {\E*} \T$.
 \end{theorem}
 
 \begin{theorem}[Process preservation\;\AgdaBird]
-  Let $\Ctx$ only contain session types.
-  If $\ProcHasType \Ctx \Proc$ and $\Proc \PReduce \Proc*$, then
-  $\ProcHasType \Ctx {\Proc*}$.
+  If $\ProcHasType \SessCtx \Proc$ and $\Proc \PReduce \Proc*$, then
+  $\ProcHasType \SessCtx {\Proc*}$.
 \end{theorem}
 
 \subsection{Weak Operational Correspondence for Translation}
@@ -81,9 +78,9 @@ introduces administrative synchronization steps, correspondence is formulated
 as a weak operational correspondence up to zero or more target reductions and congruence.
 
 \begin{theorem}[Forward simulation\;\AgdaBird]
-  Let $\Ctx$ only contain session types and $\Sub$ be a value substitution.
+  Let $\Sub$ be a value substitution.
   Additionally, let $\Proc \TransProc[\Sub] \TProc*$ and $\ProcQ \TransProc[\Sub] \TProcQ*$.
-  If $\ProcHasType \Ctx \Proc$ and $\Proc \PReduce \ProcQ$, then
+  If $\ProcHasType \SessCtx \Proc$ and $\Proc \PReduce \ProcQ$, then
   either $\TProc* \TPReduce^{*} \TProcQ*$ or $\TProc* \Congruent \TProcQ*$.
 \end{theorem}
 
@@ -91,9 +88,9 @@ The converse direction states that every target step can be matched by a finite
 source computation, again modulo weak closure and congruence.
 
 \begin{theorem}[Backward simulation\;\AgdaBird]
-  Let $\Ctx$ only contain session types and $\Sub$ be a value substitution.
+  Let $\Sub$ be a value substitution.
   Additionally, let $\Proc \TransProc[\Sub] \TProc*$.
-  If $\ProcHasType \Ctx \Proc$ and $\TProc* \TPReduce \TProcR*$, then there
+  If $\ProcHasType \SessCtx \Proc$ and $\TProc* \TPReduce \TProcR*$, then there
   exist $\ProcQ$ and $\TProcQ*$ such that $\Proc \PReduce^{*} \ProcQ$ and
   $\TProcR* \TPReduce^{*} \TProcQ*$ where $\ProcQ \TransProc[\Sub] \TProcQ*$.
 \end{theorem}
