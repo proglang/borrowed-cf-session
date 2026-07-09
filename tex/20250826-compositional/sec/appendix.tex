@@ -68,6 +68,45 @@
 
 \section{Dynamics: Congruence and Reduction Rules}
 
+\begin{figure}[tp]
+\begin{align*}
+  \U,\V \grmeq
+    & \C
+      \grmor \EVar
+      \grmor \EAbs \EVar\E
+      \grmor \EInj{i} \V
+      \grmor \EPair \U\V
+      % \grmor \CSend \V 
+              \tag{Values}
+  \\
+  \EC \grmeq&
+              \ECEmpty
+              \grmor \EAppD[\DirLeft] \EC\E
+              \grmor \EAppD[\DirLeft] \V\EC
+              \grmor \EAppD[\DirRight] \E\EC
+              \grmor \EAppD[\DirRight] \EC\V
+              \grmor \ESeq \EC\E
+              \grmor \EPair \EC\E
+              \grmor \EPair \V\EC
+              \\ \grmor
+    & \EInj{i}\EC \grmor \ELet {\EPair \EVar\EVar}\EC\E
+              \grmor \ECase \EC {\ECaseBranch* i \EVar \E}
+              \tag{Evaluation contexts}
+  \\
+  \FC \grmeq
+  & \PExp \EC
+    \tag{Thread evaluation contexts}
+  \\
+  \CC \grmeq
+  & \ECEmpty
+    \grmor \PPar{\CC}{\Proc}
+    \grmor \PNew \BindGroup\BindGroup \CC
+    \tag{Process contexts}
+\end{align*}
+  \caption{Values and evaluation contexts}
+  \label{fig:values-evaluation-contexts}
+\end{figure}
+
 \begin{figure}[htbp]
   \begin{mathpar}
     \RuleExpRedApp \and

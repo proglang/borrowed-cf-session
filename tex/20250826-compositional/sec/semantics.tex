@@ -1,54 +1,18 @@
 \section{Dynamics}
 \label{sec:semantics}
-\begin{figure}[tp]
-\begin{align*}
-  \U,\V \grmeq
-    & \C
-      \grmor \EVar
-      \grmor \EAbs \EVar\E
-      \grmor \EInj{i} \V
-      \grmor \EPair \U\V
-      % \grmor \CSend \V 
-              \tag{Values}
-  \\
-  \EC \grmeq&
-              \ECEmpty
-              \grmor \EAppD[\DirLeft] \EC\E
-              \grmor \EAppD[\DirLeft] \V\EC
-              \grmor \EAppD[\DirRight] \E\EC
-              \grmor \EAppD[\DirRight] \EC\V
-              \grmor \ESeq \EC\E
-              \grmor \EPair \EC\E
-              \grmor \EPair \V\EC
-              \\ \grmor
-    & \EInj{i}\EC \grmor \ELet {\EPair \EVar\EVar}\EC\E
-              \grmor \ECase \EC {\ECaseBranch* i \EVar \E}
-              \tag{Evaluation contexts}
-  \\
-  \FC \grmeq
-  & \PExp \EC
-    \tag{Thread evaluation contexts}
-  \\
-  \CC \grmeq
-  & \ECEmpty
-    \grmor \PPar{\CC}{\Proc}
-    \grmor \PNew \BindGroup\BindGroup \CC
-    \tag{Process contexts}
-\end{align*}
-  \caption{Values and evaluation contexts}
-  \label{fig:values-evaluation-contexts}
-\end{figure}
+
 This section presents a small-step operational semantics for the core language of
 \cref{fig:syntax}.  
 
-\Cref{fig:values-evaluation-contexts} contains the
-basic definitions.
-Values are the usual weak-head normal forms: constants, variables
+%\Cref{fig:values-evaluation-contexts} contains the
+% basic definitions.
+We classify values $\U, \V$ as expressions that are the usual weak-head normal forms: constants, variables
 acting as channel names,
-abstractions, injections of values, and pairs of values.  Evaluation
-contexts are standard except for the cases for directed application where the direction changes the evaluation order.  A thread context embeds an evaluation context in a
-single running thread and process contexts close under parallel
+abstractions, injections of values, and pairs of values. Evaluation
+contexts $\EC$ are standard except for the cases for directed application where the direction changes the evaluation order.  A thread context $\FC$ embeds an evaluation context in a
+single running thread and process contexts $\CC$ close under parallel
 composition and channel introduction.  
+Formal specifications for all four are recorded in the supplement in \cref{fig:values-evaluation-contexts}.
 
 We omit the presentation for standard expression reduction
 relation $\E[1]\EReduce\E[2]$, found in the supplement in \cref{fig:expression-reduction}. It includes

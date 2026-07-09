@@ -128,13 +128,12 @@ Session types themselves are quotiented by a standard equational theory used by
 type conversion: sequential composition is associative with $\SSkip$ as neutral
 element, recursion unfolds equi-recursively, and a continuation distributes
 homomorphically through internal and external choice. The induced congruence is
-the equivalence $\CEq$ that appears throughout the type system---in particular
-whenever we require a session to be equivalent to $\SSkip$. 
+the equivalence $\CEq$ that appears throughout the type system.
 
 A fresh
 channel offers dual protocols to its two endpoints. Duality, denoted $\SDual\T$, is the standard
-involution that swaps send with receive and internal with external choice, and. We leave duality undefined on the synchronization markers $\SDrop$ and $\SAcq$, which never
-occur on a fresh channel. Both the equational laws and the duality laws are
+involution that swaps send with receive and internal with external choice. We leave duality undefined on the synchronization markers $\SDrop$ and $\SAcq$, which never
+occur on a $\SNew$ channel. Both the equational laws and the duality laws are
 collected in \cref{fig:session-laws} in the supplement.
 
 \begin{figure}
@@ -162,7 +161,7 @@ collected in \cref{fig:session-laws} in the supplement.
 creation produces a pair of dual endpoints, each protected by an initial
 $\SAcq$ marker and closed respectively by $\STerm$ and $\SWait$. The session
 supplied to $\CNew$ must be a source protocol: the side condition $\SNew\S$
-restricts it to $\SSkip$, sends, receives, choices, branches, sequencing, and
+restricts it to skips, sends, receives, choices, branches, sequencing, and
 recursion, excluding the synchronization-like markers $\SAcq$, $\SDrop$,
 $\STerm$, and $\SWait$, which are introduced only by remote splitting and
 closing. Communication
