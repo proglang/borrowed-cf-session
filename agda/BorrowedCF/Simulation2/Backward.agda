@@ -55,6 +55,8 @@ open import BorrowedCF.Simulation2.Backward.Close using (close-reflect)
 open import BorrowedCF.Simulation2.Backward.Com using (com-reflect)
 open import BorrowedCF.Simulation2.Backward.Acq using (acq-reflect)
 open import BorrowedCF.Simulation2.Backward.Inversions using (inv-U-⟪⟫; inv-U-∥; inv-U-ν)
+open import BorrowedCF.Simulation2.Backward.SimResPhi using (φ-trichotomy; mk-sync; mk-drop; mk-struct)
+open import BorrowedCF.Simulation2.Backward.DropReflectGo using (drop-goB)
 open import BorrowedCF.Simulation.ReverseInv
   using (inv-ν-chanCx; νσ-φfree; νσ-φfree-VSub; U-ν-φfree-eq; ν-inj)
 open import BorrowedCF.Simulation.RevAdmin
@@ -72,6 +74,9 @@ syncs-of : (B : TP.BindGroup)
 syncs-of []           = inj₁ refl
 syncs-of (b ∷ [])     = inj₁ refl
 syncs-of (b ∷ c ∷ Bp) = inj₂ (b , c , Bp , refl)
+
+ν-injU : ∀ {k} {X Y : UP.Proc (2 + k)} → UP.ν X ≡ UP.ν Y → X ≡ Y
+ν-injU refl = refl
 
 -- right ∥-congruence for ≈, from ∥-comm + the left version (no new generator).
 ≈-∥-congʳ : ∀ {n} {P Q Rr : UP.Proc n} → P ≈ Q → Rr UP.∥ P ≈ Rr UP.∥ Q
@@ -152,8 +157,15 @@ simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq (inj₁ s₁) (inj₁ s
         Γ′-S ⊢body (ν-inj (Eq.trans bodyeq (U-ν-φfree-eq B₁ B₂ P₀ σ s₁ s₂))) sub =
   TP.ν B₁ B₂ P₀′ , ⋆-gmap (TP.ν B₁ B₂) TR.R-Bind steps ,
   subst (UP.ν X′ ≈_) (sym (U-ν-φfree-eq B₁ B₂ P₀′ σ s₁ s₂)) (≈-ν-cong c)
-simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq (inj₂ _) _ =
-  {! RU-Res φ-bearing (syncs B₁ ≥ 1): Sync-descent + Struct-bounce (sc-measure WF)
-     + innermost RU-Drop; needs R-Drop interior-block generalization (calculus change). !}
+simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq (inj₂ (b , c , Bp , refl)) sB₂
+  with φ-trichotomy _ _ (subst (λ Z → Z UR.─→ₚ X′) (ν-injU bodyeq) sub)
+... | inj₁ φs = {! φ-sync descent !}
+... | inj₂ (inj₂ φst) = {! φ-struct → engine ?0 !}
+... | inj₂ (inj₁ (mk-drop F x P isdrop source target))
+  with P′ , steps , codom ←
+    drop-goB b c Bp B₂ σ Vσ Γ-S P₀ F ⊢P
+      (subst (λ Z → UP.ν Z ≡ U[ TP.ν (b ∷ c ∷ Bp) B₂ P₀ ] σ)
+             (ν-injU bodyeq ■ cong₂ UP.φ isdrop source) bodyeq) =
+  P′ , steps , subst (λ Z → UP.ν Z ≈ U[ P′ ] σ) (sym target) codom
 simRes σ Vσ Γ-S B₁ B₂ P₀ ⊢P X X′ sub bodyeq _ (inj₂ _) =
   {! RU-Res φ-bearing (syncs B₂ ≥ 1): same finding as the syncs B₁ ≥ 1 clause. !}
