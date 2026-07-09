@@ -93,7 +93,7 @@ $\Eff$, and a set of constraints $\CSet$. The checking judgment $\CheckType \E
 \AT \Eff$ takes as input the context $\Ctx$, expression $\E$, and type $\AT$. It
 returns the expression's effect $\Eff$ as well as a set of constraints
 $\CSet$. Judgments make use of the context operators defined in
-\cref{fig:context-operators}. Type normalisation defined in \Cref{fig:typing-normalisation}, denoted as $\NormaliseType {\T[in]} {\T[out]}$, is used to expose the top-level type constructor \cite{DBLP:journals/iandc/AlmeidaMTV22} in synthesis judgements.
+\cref{fig:context-operators}. We use type normalisation~\cite{DBLP:journals/iandc/AlmeidaMTV22}, written $\NormaliseType {\T[in]} {\T[out]}$, to expose the top-level type constructor in synthesis judgements. The rules are given in the supplement in \cref{fig:typing-normalisation}.
 
 We have checking rules for function definitions, pairs, sum
 injections, and checking against a synthesized type. For lambdas,
@@ -115,8 +115,8 @@ from the subterms and propagate them.
 
 In the synthesis rules, the context in the variable rule
 \RuleName{A-Var} must subsume to a single variable binding and it must be
-empty for most constants, then it normalises the inferred type. A type annotation (\RuleName{A-Annot})
-$\E:\T$ synthesizes $\T$ and checks $\E$ against $\T$, then normalises the type. Rule
+empty for most constants, then it normalises the inferred type. A type annotation
+$\E:\T$ (\RuleName{A-Annot}) synthesizes $\T$ and checks $\E$ against $\T$, then normalises the type. Rule
 \RuleName{A-LSplit} asks for $\CSplit$ to be annotated with the
 borrowed type ${\S}$. This annotation defines the output type
 $\TArr{\MobMobile}{\DirUnord,\EffPure} {\SSeq\S\TVar}
@@ -219,9 +219,9 @@ fresh variable $\TVar$ occurs nested in the function result type not composed
 with other session types. The function itself is linear, guaranteeing that a
 value of the result type will be lying around. \js{continue here}
 
-$\SSkip$ as well as any other skipping session type \js{do we use this
-terminology?} are never valid solutions for unification variables as this would
-be equivalent to splitting a session type from itself.
+$\SSkip$ as well as any other session types equivalent to skip \js{do we use this
+terminology?} are never valid solutions for unification variables, because this would
+be allow to split a session type off from itself.
 
 One instance where the heuristic falls short is when the second component of a
 $\CSSplit$-result is split further with a prefix of more than just $\SAcq$.
@@ -230,7 +230,7 @@ $\CSSplit$-result is split further with a prefix of more than just $\SAcq$.
 
 We supplement our theoretical work on the bidirectional type checking algorithm from this section with an implementation written in Rust. 
 
-We based our implementation on the existing infrastructure from \cite{saffrich25:_artif_borrow_from_session_types} and use FreeST 5.0 \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22, almeida26:_frees_concur_progr_languag_with} to perform equivalence checking for session types. 
+We base our implementation on the existing infrastructure from \cite{saffrich25:_artif_borrow_from_session_types} and use FreeST 5.0 \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22, almeida26:_frees_concur_progr_languag_with} to perform equivalence checking for session types. 
 
 The Rust implementation comes with test cases that include the two motivational examples from \cref{sec:motivation}.
 
