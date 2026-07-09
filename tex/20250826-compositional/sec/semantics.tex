@@ -11,7 +11,7 @@ acting as channel names,
 abstractions, injections of values, and pairs of values. Evaluation
 contexts $\EC$ are standard except for the cases for directed application where the direction changes the evaluation order.  A process-local context $\FC$ embeds an evaluation context in a
 single running process and process contexts $\CC$ close under parallel
-composition and channel introduction.  
+composition and restriction.
 Formal specifications for all four categories are shown in \cref{fig:values-evaluation-contexts}.
 
 We omit the presentation of call-by-value expression reduction
@@ -53,10 +53,10 @@ between the two endpoints of a channel, and structural closure.
 \end{figure}
 
 Rule \RuleName{R-Exp} embeds an expression step in the selected process-local context.
-Rule \RuleName{R-New} allocates a fresh channel and returns the two
+Rule \RuleName{R-New} introduces a fresh channel restriction and returns the two
 endpoints as a pair.  Each endpoint is placed behind an initial separator
-in its binder group, matching the acquiring session type assigned to channel
-creation in \cref{fig:process-typing}.  Rule \RuleName{R-Fork} spawns the
+in its binder group, matching the acquiring session type assigned to the
+restriction introduced by channel creation in \cref{fig:process-typing}.  Rule \RuleName{R-Fork} spawns the
 thunked process in parallel and returns unit to the forking process.
 
 Communication rules operate on the heads of dual binder groups.  Rule

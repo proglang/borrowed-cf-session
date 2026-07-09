@@ -586,7 +586,7 @@ one of three states in $\phi$: \lstinline{drop}, \lstinline{acq}, or
 borrowed prefix and the incoming flag of the suffix.
 
 An \lstinline{rsplit} creates a flag in state
-\lstinline{drop} and a channel creation sets its flag to \lstinline{acq}.
+\lstinline{drop} and a freshly restricted channel sets its flag to \lstinline{acq}.
 Intuitively, \lstinline{drop} means that the left, borrowed
 part of a remote split is still active, \lstinline{acq} means that it
 has been dropped and the right, suffix part may acquire, and \lstinline{done}

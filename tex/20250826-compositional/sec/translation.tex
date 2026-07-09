@@ -37,8 +37,8 @@ semantics of \cref{sec:semantics}.
 
 The syntax of constants, values, and expressions remains unchanged.
 \Cref{fig:unr-syntax} replaces source configurations by target
-configurations $\TProc$.  The form $\TPNew[xy]\TProc$ introduces a
-primitive channel with endpoints $\TEVar$ and $\TEVary$ scoped over $\TProc$; this is the
+configurations $\TProc$.  The form $\TPNew[xy]\TProc$ is a
+primitive-channel restriction with endpoints $\TEVar$ and $\TEVary$ scoped over $\TProc$; this is the
 standard restriction construct of session calculi
 \cite{gay.vasconcelos:session-types}.  The form
 $\TPSync[\TEVarz]\Flag\TProc$ introduces a synchronization cell $\TEVarz$ with state
@@ -101,9 +101,9 @@ $\V$ do not matter.
 
 The target rules mirror the source process rules of
 \cref{fig:process-reduction}, but make synchronization explicit.  Rule
-\textsc{RU-New} allocates one primitive channel and two already-dropped
+\textsc{RU-New} introduces one primitive-channel restriction and two already-dropped
 synchronization cells, corresponding to the leading acquire markers resulting
-from source channel creation.  Rule \textsc{RU-LSplit} performs a local split by
+from source channel restriction.  Rule \textsc{RU-LSplit} performs a local split by
 sharing the same primitive data channel between the two returned triples and
 distributing the existing pre- and post-cells.  Rule \textsc{RU-RSplit}
 allocates a fresh synchronization cell: the left channel receives it as a
@@ -144,7 +144,7 @@ by a substitution $\Sub$ that maps source endpoint variables to translated
 channel triples.  Rule \textsc{Tr-Exp} embeds a source process after applying
 this accumulated substitution to its expression.  Parallel composition is
 homomorphic.  A source restriction is translated by translating each binder
-group against one endpoint of a fresh primitive channel, collecting the
+group against one endpoint of a fresh primitive-channel restriction, collecting the
 substitutions produced by those binder groups, translating the body under the
 extended substitution, and wrapping the resulting process in the
 synchronization contexts produced by the binder-group translations.
