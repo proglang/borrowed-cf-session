@@ -19,26 +19,26 @@ undecidable problem
 \cite{DBLP:journals/toplas/Padovani19,DBLP:journals/tcs/SilvaMV26}.
 
 CFSTs are one starting point of our investigation. Symmetric
-composition makes them well-suited to splitting local borrows. Only
-remote borrows require extra synchronization machinery. Compared to
-the CFST work and the implemented system FreeST based on it
-\cite{almeida26:_frees_concur_progr_languag_with}, our calculus
-does not consider polymorphism. We rely on the FreeST
+composition makes them well-suited to expressing the split for local
+borrows. Only remote borrows require extra synchronization
+machinery. Compared to the CFST work and the implemented system FreeST
+based on it \cite{almeida26:_frees_concur_progr_languag_with}, our
+calculus does not consider polymorphism. We rely on the FreeST
 implementation as an external constraint solver for splitting
-constraints. 
+constraints.
 
 
 The most closely related work is ``Borrowing from Session Types'' (BST) \cite{DBLP:journals/pacmpl/SaffrichS0V25}.
 They present a similar approach to borrowing, but for regular session types, rather than CFST.
 Our type system is heavily inspired by theirs, as it also relies on
-BI-contexts that enforce a run-time ordering on operations.
+BI-contexts that enable checking the correct run-time ordering of session operations.
 We build on their translation from borrowing notation to explicit
 splits, but adapt it to account for the distinction between local and
 remote splits. The main technical differences are fourfold. First, BST
 defines the semantics of borrowing by translation, whereas
 \thecalculus has a direct operational semantics based on binder
 groups. Second, \thecalculus distinguishes mobile, remote borrows from
-bounded, local borrows (\cref{fig:bounded-session-types}); local
+local borrows (\cref{fig:bounded-session-types}); local
 borrows are ordered by typing and evaluation and therefore avoid the
 synchronization required by remote borrows. Third, splitting CFSTs
 requires constraint generation modulo type equivalence rather than the
@@ -57,57 +57,59 @@ manifest in the session type, similar to our pair of $\CDrop$-$\CAcq$
 operators, but it may admit deadlock.  A subsequent work extends
 manifest sharing to guarantee freedom of deadlock \cite{DBLP:conf/esop/BalzerTP19}.
 
-Borrowing is not the only way to avoid resource-passing style in
-session types. Several monadic
-APIs for session types with a similar goal exist~\cite{DBLP:conf/haskell/PucellaT08,DBLP:journals/scp/ImaiYY19,DBLP:conf/padl/NeubauerT04,DBLP:journals/jfp/Padovani17}.
-\citet{DBLP:journals/jfp/Padovani17} provides a monadic API on top of session
-primitives that eliminates explicit channel manipulation for functions
-that involve a single session. This API enables nesting of sessions,
-but not interleaving multiple sessions. Its primitive operations can
-``split'' a session type and their monadic
-composition can split arbitrarily large prefixes.
-Subsequent work
+Resource-passing style can also be hidden by monadic interfaces rather
+than by borrowing. A number of session-typed APIs pursue this
+direction~\cite{DBLP:conf/haskell/PucellaT08,DBLP:journals/scp/ImaiYY19,DBLP:conf/padl/NeubauerT04,DBLP:journals/jfp/Padovani17}.
+\citet{DBLP:journals/jfp/Padovani17} builds a monadic layer over
+session primitives that abstracts away explicit channel handling for
+functions using a single session. This interface supports nested
+sessions, but not interleavings among several sessions. Its primitive
+operations decompose a session type, and monadic composition extends
+this decomposition to prefixes of arbitrary length. Later systems
 \cite{DBLP:conf/haskell/PucellaT08,sackman08:_session_types_haskel}
-handles multiple sessions, but represents
-them with a stack of capabilities at the type level. Monadic
-composition splits prefixes of multiple sessions, but these prefixes are not
-independent. \citet{DBLP:journals/corr/abs-1110-4163} extend this
-work with session type inference and \citet{DBLP:journals/scp/ImaiYY19} provide an
-update with further functionality.
-In comparison, our proposal does not require type-level computations,
-provides for interleaving multiple sessions, and for splitting
-multiple session types independently at
-arbitrary positions.
+cover several sessions by representing the available capabilities as a
+type-level stack. Their monadic composition decomposes prefixes of
+multiple sessions at once, but the resulting prefixes remain coupled
+rather than independent. \citet{DBLP:journals/corr/abs-1110-4163}
+add session type inference to this line of work, and
+\citet{DBLP:journals/scp/ImaiYY19} extend it with further
+functionality. Compared with these approaches, our proposal avoids
+type-level computation, permits interleaving of multiple sessions, and
+splits distinct session types independently at arbitrary positions.
 
 \subsection{Ordered Types}
 \label{sec:ordered-types}
 
 Ordered types go beyond linear types in eliding the exchange
-principle. Their formal basis is  non-commutative logic
+principle. Their formal basis is non-commutative logic
 \cite{DBLP:journals/mlq/Abrusci90a, ABRUSCI199929} and they have been
 introduced to a computer science setting by \citet{lambek58:_mathem_senten_struc,
-  lambek60:_calcul_syntac_types}  to describe
-sentence structure in natural languages.
-Law and order \cite{DBLP:journals/pacmpl/Saffrich0024} is a precursor
-of BST. It draws inspiration from work on
-non-commutative logic and ordered lambda calculus
+  lambek60:_calcul_syntac_types} to describe
+sentence structure in natural languages. Ordered lambda calculi
 \cite{DBLP:conf/tlca/PolakowP99, DBLP:journals/entcs/PolakowP99}
-and puts it to work in the context of typestate. It targets sequential
-programming, so it is not concerned with synchronization issues, at all.
+bring the same non-exchange discipline to functional programming.
 
-Other work on ordered types and lambda calculi is concerned with
-memory management and memory layout
+Early programming-language applications of ordered types and lambda
+calculi are concerned with memory management and memory layout
 \cite{DBLP:conf/popl/PetersenHCP03} or stack allocation
-\cite{DBLP:conf/tldi/AhmedW03}. Like Law and order, BST, and the
-present work, these earlier works deviate quickly from the pure,
-proof-theoretic form of ordered lambda calculus \cite{DBLP:conf/tlca/PolakowP99,
-  DBLP:journals/entcs/PolakowP99}. Each develops a calculus that picks
-up ideas, but puts significant domain-specific elements on top, to the
-extent that even basic elimination principles
-change. \citet{DBLP:conf/tldi/AhmedW03} share with our work the use of
+\cite{DBLP:conf/tldi/AhmedW03}. These works already illustrate a
+pattern also followed by Law and Order, BST, and the present work:
+ordered calculi are adapted to specific programming disciplines rather
+than used in their pure proof-theoretic form. Each calculus picks up
+the ordered structure, but adds substantial domain-specific elements,
+to the extent that even basic elimination principles change.
+\citet{DBLP:conf/tldi/AhmedW03} share with our work the use of
 BI-contexts to distinguish ordered and unordered binding groups.
 
-\citet{DBLP:journals/pacmpl/CutlerWNHGSP24} present an application of
+Closer to our setting, Law and order
+\cite{DBLP:journals/pacmpl/Saffrich0024} is a precursor of BST. It
+draws inspiration from non-commutative logic and ordered lambda
+calculus and puts it to work in the context of typestate. It targets
+sequential programming, so it is not concerned with synchronization
+issues.
+
+A different group of applications uses order to express consumption of
+structured input. \citet{DBLP:journals/pacmpl/CutlerWNHGSP24} apply
 ordered types to typing a calculus for streaming data. Ordering in
 their system expresses temporal ordering in an input stream, that is, a
 stream of type $s\cdot t$ is a stream of type $s$ followed by a stream
@@ -121,8 +123,15 @@ tree-structured data using ordered linear types
 \cite{DBLP:journals/jfp/KodamaSK08,DBLP:journals/jip/SatoSK11},
 specialized to a fixed binary tree representation.
 
-The subtyping rule $(A;B) \| (C;D) \IsSSubtypeOf (A \| B) ; (C \| D)$
-that weakens parallelism for ordered sequentiality seems to
+\citet{DBLP:journals/pacmpl/SchaeferVAN25} apply ordered linear
+types to build a logical framework for the construction of verified
+parsers. Order and linearity are used to describe the input string:
+characters have to be processed in order and must not be duplicated by
+the parser.
+
+Finally, the subtyping rule
+$(A;B) \| (C;D) \IsSSubtypeOf (A \| B) ; (C \| D)$ that weakens
+parallelism for ordered sequentiality seems to
 originate from work on concurrent Kleene algebra
 \cite{DBLP:conf/concur/HoareMSW09}, but \citet{CAIRES2008120} mentions it
 earlier in a type system for concurrent computation. It also appears
@@ -160,31 +169,28 @@ run-time synchronization.
 \citet{DBLP:journals/pacmpl/WagnerGML025} derive borrowing from a
 linear lambda calculus for manual memory management. Their Borrow
 Calculus supports immutable and mutable borrows, lexical lifetimes, and
-reborrowing without adding borrowing primitives to the operational
-semantics; soundness is semantic, via Borrow Logic, and yields
-termination and leak freedom. We share the perspective that borrowing
-is a disciplined way to relax linear resource passing temporarily.
-However, our resources are session endpoints rather than memory
-locations. This changes the problem: every borrowed endpoint is a
-mutable communication capability, borrowing computes a prefix/suffix
-decomposition of a session type, and remote borrows must be sequenced
-by explicit synchronization. Thus our focus is on context-free session
-type splitting, direct concurrent semantics, and an implementation-level
-translation, rather than on a separation-logic model of memory
-borrowing.
+reborrowing without operational borrowing primitives; soundness is
+semantic, via Borrow Logic, and yields termination and leak freedom.
+This shares our view of borrowing as temporarily relaxing linear
+resource passing, but our resources are session endpoints rather than
+memory locations: each borrowed endpoint is a mutable communication
+capability, borrowing computes a prefix/suffix decomposition, and
+remote borrows require explicit synchronization. Thus our focus is on
+context-free session type splitting, direct concurrent semantics, and
+an implementation-level translation, rather than on a separation-logic
+model of memory borrowing.
 
 \citet{DBLP:journals/pacmpl/VillaniHDJ25} develop Tree Borrows, a
 dynamic aliasing model for Rust that tracks derived references and raw
-pointers in a tree of permissions. Like our target semantics, Tree
-Borrows gives operational content to the idea that a borrow is a
-derived capability whose use can restrict the original owner and other
-aliases. The resemblance stops at this level of authority tracking:
-Tree Borrows governs memory accesses and undefined behavior for Rust
-pointers, whereas our borrows split session types into a borrowed
-protocol prefix and a residual suffix. In particular, our remote
-borrows require explicit synchronization to order communication on the
-borrowed prefix before communication on the suffix; Tree Borrows has no
-corresponding notion of protocol residual or cross-process handoff.
+pointers in a tree of permissions. It likewise gives operational
+content to borrows as derived capabilities whose use can restrict the
+original owner and aliases, but only at the level of authority
+tracking: Tree Borrows governs Rust pointer accesses and undefined
+behavior, whereas our borrows split session types into a borrowed
+prefix and a residual suffix. Remote borrows also require explicit
+synchronization to order communication on the prefix before the suffix,
+with no corresponding notion of protocol residual or cross-process
+handoff in Tree Borrows.
 
 Overall, prior borrowing systems manage aliasing of memory-like
 resources, whereas our contribution is to make borrowing compute and
