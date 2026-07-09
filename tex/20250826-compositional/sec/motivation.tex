@@ -302,7 +302,8 @@ Its working is best illustrated with the example trace.
 To keep the trace short (\cref{fig:local-split-trace}), the
 reduction starts at the local suffix in \lstinline{renderRest}.
 \begin{figure}
-\begin{subfigure}[t]{0.49\linewidth}
+\begin{minipage}[t]{0.49\linewidth}
+\begin{subfigure}[t]{\linewidth}
 \begin{lstlisting}[numbers=left]
 K(c) =
   let c2 = select Child c in
@@ -310,9 +311,37 @@ K(c) =
   renderMsgArea msgs c3;
   close (select Done c4)
 \end{lstlisting}
-\caption{Translated program.}
+\caption{Local-split program.}
 \label{fig:local-split-program}
-\end{subfigure}\hfill
+\end{subfigure}
+
+\medskip
+
+\setcounter{subfigure}{2}
+\begin{subfigure}[t]{\linewidth}
+\begin{lstlisting}
+    nu[c][...]
+    let c1, c2 = rsplit c in
+    fork (lambda() -> renderProf user c1);
+    let msgs = ... in
+    renderRest msgs (acquire c2)
+~>
+    nu[c1|c2][...]
+    fork (lambda() -> renderProf user c1);
+    let msgs = ... in
+    renderRest msgs (acquire c2)
+~>*  [ drop c1 ]
+    nu[|c2][...]
+    renderRest msgs (acquire c2)
+~>
+    nu[c2][...]
+    renderRest msgs c2
+\end{lstlisting}
+\caption{Remote split and acquire.}
+\label{fig:remote-split-trace}
+\end{subfigure}
+\end{minipage}\hfill
+\setcounter{subfigure}{1}
 \begin{subfigure}[t]{0.49\linewidth}
 \begin{lstlisting}
 nu[c][d..] in
@@ -341,10 +370,11 @@ nu[c][d..] in
    close c4)
 ~> (P_d'[*] || *)
 \end{lstlisting}
-\caption{Reduction suffix.}
+\caption{Local-split reduction suffix.}
 \label{fig:local-split-trace}
 \end{subfigure}
-\caption{Local splitting in the suffix of \lstinline{renderRest}.
+\setcounter{subfigure}{3}
+\caption{Local and remote splitting in the suffix of \lstinline{renderRest}.
 The processes $P_d$ and $P_d'$ abbreviate client-side
 computation on the other endpoint.}
 \label{fig:local-split-reduction}
@@ -398,29 +428,11 @@ because synchronization is made explicit using the \lstinline{Acq} and
 Executing this code takes the following steps (ignoring the activity
 at the other end of the channel). The bracketed step abbreviates the
 forked process running \lstinline{renderProf} until its final
-\lstinline{drop c1}.
-\begin{lstlisting}
-    nu[c][...]
-    let c1, c2 = rsplit c in
-    fork (lambda() -> renderProf user c1);
-    let msgs = ... in
-    renderRest msgs (acquire c2)
-~>
-    nu[c1|c2][...]
-    fork (lambda() -> renderProf user c1);
-    let msgs = ... in
-    renderRest msgs (acquire c2)
-~>*  [ drop c1 ]
-    nu[|c2][...]
-    renderRest msgs (acquire c2)
-~>
-    nu[c2][...]
-    renderRest msgs c2
-\end{lstlisting}
+\lstinline{drop c1}; the trace appears in \cref{fig:remote-split-trace}.
 In summary, the \lstinline{rsplit} replaces one channel name by
 \lstinline{[c1|c2]}, where ``\lstinline{|}'' marks a remote split. The
 \lstinline{drop} is only enabled 
-if its argument is the last name directly before a ``\lstinline{|}''.
+if its argument name comes last before a ``\lstinline{|}''.
 The \lstinline{acquire} is only enabled if the preceding list segment has
 been processed as in \lstinline{[|c2]}. Executing the \lstinline{acquire}
 in the last step removes the exhausted segment and separator, yielding
