@@ -2,18 +2,13 @@
 \section{Introduction}
 \label{sec:introduction}
 
-Concurrency is no longer an implementation detail. To make effective
-use of multi-core hardware and distributed infrastructure, modern
-software systems decompose their work into cooperating activities that
-may run in different threads, on different cores, or on different
-machines. These activities cannot remain isolated: they must exchange
-data, coordinate progress, and agree on the order of their
-interactions. Getting these protocols right is difficult. A missed
-message, an unexpected choice, or a communication step performed in
-the wrong state can turn an otherwise natural decomposition into a
-source of subtle failures. A robust discipline should
-therefore specify the data exchanged by concurrent components
-and the order in which those exchanges may occur.
+Concurrent programs decompose computation into activities that
+communicate across processes, cores, or machines. Such communication is
+governed by protocols, and these protocols are easy to get wrong: a
+message may be missing, a choice may be unexpected, or an action may
+occur in the wrong state. A type discipline for concurrency should
+therefore specify both the data exchanged by components and the order
+in which those exchanges may occur.
 
 Session types
 \cite{DBLP:conf/concur/Honda93,HondaVK98,Gay_Vasconcelos_2025}
@@ -64,8 +59,8 @@ given by a translation to a calculus from the literature
 drawbacks. As the source calculus has no direct semantics, it is
 difficult to perform optimizations at the source level. Moreover, the
 translation is uniform in the sense that it does not distinguish
-between local borrows that remain in the same thread and remote
-borrows that are passed to other threads. This uniformity leads to
+between local borrows that remain in the same process and remote
+borrows that are passed to other processes. This uniformity leads to
 inefficiency because local borrows can elide the synchronization
 machinery needed for remote borrows. 
 
@@ -81,7 +76,7 @@ threads the channel explicitly and relies on polymorphic recursion,
 whereas the \thecalculus version uses local borrowing to consume one
 prefix of the channel after another. \Cref{sec:local-remote-borr} then
 uses a streaming HTML renderer to show why remote borrowing is
-different: once a borrow crosses a thread boundary, evaluation order
+different: once a borrow crosses a process boundary, evaluation order
 alone no longer sequences the borrowed prefix and the residual
 session, so synchronization is needed.
 
@@ -111,8 +106,8 @@ The core conceptual contributions of this paper are as follows.
   from a session and a borrowed prefix type modulo the equational
   theory of CFSTs.
 \item We distinguish local borrowing from remote borrowing. Local
-  borrows remain in one thread and can be ordered by evaluation and
-  typing alone; remote borrows cross thread boundaries and therefore
+  borrows remain in one process and can be ordered by evaluation and
+  typing alone; remote borrows cross process boundaries and therefore
   require explicit synchronization.
 \item We give \thecalculus a direct operational semantics. This
   semantics serves as an abstract specification of borrowing, rather
@@ -129,7 +124,7 @@ The remaining contributions are mainly technical.
   soundness and completeness statements for the algorithmic system.
 \item We define a lower-level run-time calculus with explicit channel
   representations and synchronization flags, and translate typed
-  \thecalculus threads to this calculus.
+  \thecalculus processes to this calculus.
 \item We state the metatheoretic obligations connecting the layers,
   including type soundness for the direct semantics and a bisimulation
   result for the translation.

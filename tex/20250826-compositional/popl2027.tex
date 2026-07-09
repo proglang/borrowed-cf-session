@@ -67,9 +67,9 @@ preserving the linear invariant that communication advances protocol
 state.
 
 A key novelty is the distinction between local and remote
-borrows. Local borrows remain in one thread, where ordered linear typing
+borrows. Local borrows remain in one process, where ordered linear typing
 guarantees that the borrowed prefix is processed before the residual
-suffix. Remote borrows may cross thread boundaries; they require explicit
+suffix. Remote borrows may cross process boundaries; they require explicit
 synchronization to ensure that the borrowed prefix is processed before
 the residual suffix. The calculus has a direct operational
 semantics, an algorithmic type system based on

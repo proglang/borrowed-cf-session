@@ -9,8 +9,8 @@ This section presents a small-step operational semantics for the core language o
 We classify values $\U, \V$ as expressions that are the usual weak-head normal forms: constants, variables
 acting as channel names,
 abstractions, injections of values, and pairs of values. Evaluation
-contexts $\EC$ are standard except for the cases for directed application where the direction changes the evaluation order.  A thread context $\FC$ embeds an evaluation context in a
-single running thread and process contexts $\CC$ close under parallel
+contexts $\EC$ are standard except for the cases for directed application where the direction changes the evaluation order.  A process-local context $\FC$ embeds an evaluation context in a
+single running process and process contexts $\CC$ close under parallel
 composition and channel introduction.  
 Formal specifications for all four categories are recorded in \cref{fig:values-evaluation-contexts}.
 
@@ -27,7 +27,7 @@ Its rules, found in the supplement in \cref{fig:configuration-congruence}, are u
 configuration so that a redex is exposed.
 
 \Cref{fig:process-reduction} gives the process reduction relation $\Proc\PReduce\ProcQ$.
-There are three groups of rules: ordinary computation inside a thread, synchronization
+There are three groups of rules: ordinary computation inside a process, synchronization
 between the two endpoints of a channel, and structural closure.
 
 \begin{figure}[t!]
@@ -51,12 +51,12 @@ between the two endpoints of a channel, and structural closure.
   \label{fig:process-reduction}
 \end{figure}
 
-Rule \RuleName{R-Exp} embeds an expression step in the selected thread context.
+Rule \RuleName{R-Exp} embeds an expression step in the selected process-local context.
 Rule \RuleName{R-New} allocates a fresh channel and returns the two
 endpoints as a pair.  Each endpoint is placed behind an initial separator
 in its binder group, matching the acquiring session type assigned to channel
 creation in \cref{fig:process-typing}.  Rule \RuleName{R-Fork} spawns the
-thunked process in parallel and returns unit to the forking thread.
+thunked process in parallel and returns unit to the forking process.
 
 Communication rules operate on the heads of dual binder groups.  Rule
 \RuleName{R-Com} synchronizes send and receive, transfers the transmitted value,
@@ -80,7 +80,7 @@ Dropping removes the endpoint immediately to the left of the separator and
 exposes the separator at the front of the remaining group.  Acquiring can fire
 only once the separator is exposed; it removes the separator and returns the
 endpoint on the right.  Thus remote splitting transfers control from one
-thread to another only after the prefix of the original endpoint has been
+process to another only after the prefix of the original endpoint has been
 consumed.
 
 Finally, \RuleName{R-Par} and \RuleName{R-Bind} close reduction under parallel

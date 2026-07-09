@@ -178,7 +178,7 @@ of \lstinline{c}.
 
 \Cref{sec:borr-from-cont} demonstrated
  \emph{local borrowing}, where the borrows remain in the same
-thread and they are processed sequentially, following the evaluation order.
+process and they are processed sequentially, following the evaluation order.
 
 In this local setting, operations on borrows are
 cheap: borrowing merely names the next prefix of the same channel and
@@ -202,7 +202,7 @@ child consumes an \lstinline{HtmlChan} prefix and then continues with
 the rest of the child stream.
 
 Now consider a renderer (\Cref{lst:rendering-example}) that emits a user panel whose first child is
-computed by another process while the main thread obtains user
+computed by another process while the main process obtains user
 messages, say, from a database. We assume that
 \lstinline{renderProf} and \lstinline{renderMsgArea} render
 one HTML node on a channel of type \lstinline{HtmlChan; Drop} and
@@ -279,7 +279,7 @@ operators. This translation is analogous to a translation in previous work
 presentation along with a correctness proof. The novelty in our work
 is the presence of \emph{two} operators, \lstinline{lsplit} for local
 borrows and \lstinline{rsplit} for remote borrows. Borrows used in the
-same thread elaborate to \lstinline{lsplit} while borrows used across
+same process elaborate to \lstinline{lsplit} while borrows used across
 \lstinline{fork} or sent to another process elaborate to
 \lstinline{rsplit}.  Our discussion starts with the local variant and 
 we show the translation of \lstinline{renderRest} in
