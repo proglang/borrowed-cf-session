@@ -48,14 +48,6 @@ open import Relation.Binary.Construct.Closure.Symmetric using (SymClosure; fwd; 
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_)
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
 
--- The administrative diamond, one ─→ᵃ generator link in EITHER direction against
--- a direct reduction: transport (Q ≈ Q₁ with Y ─→ₚ Q₁) or cancel (Q ≈ Y).
-ADiamond : Set
-ADiamond = ∀ {n} {R Y Q : UP.Proc n}
-         → (R ─→ᵃ Y) Sum.⊎ (Y ─→ᵃ R)
-         → R UR.─→ₚ Q
-         → (Σ[ Q₁ ∈ UP.Proc n ] (Y UR.─→ₚ Q₁) × (Q ≈ Q₁)) Sum.⊎ (Q ≈ Y)
-
 module _ {m n : ℕ} (σ : m →ₛ n) (Vσ : VSub σ) {Γ : Ctx m} (Γ-S : ChanCx Γ)
          {g : Struct m} {P : TP.Proc m} (⊢P : Γ ; g ⊢ₚ P) where
 
@@ -66,27 +58,31 @@ module _ {m n : ℕ} (σ : m →ₛ n) (Vσ : VSub σ) {Γ : Ctx m} (Γ-S : Chan
   Strict : Set
   Strict = ∀ {R Q : UP.Proc n} → R ≡ U[ P ] σ → R UR.─→ₚ Q → Res Q
 
-  base-from-strict : Strict → ADiamond
+  -- residual: reflect a direct step across ONE leading admin link, with the
+  -- tail context Y ≈ U[ P ] σ in scope.  Strictly SMALLER than Base (only
+  -- admin-headed chains; every ≋ / φ-escape case is discharged below).  The
+  -- context is ESSENTIAL: the context-free single-step admin diamond is FALSE
+  -- (RevAdminTransportProbe), but with the tail context ≋-thread-rigidity plus
+  -- the image being discard-free collapses the offending configuration.
+  AdminStep : Set
+  AdminStep = ∀ {R Y Q : UP.Proc n}
+            → (R ─→ᵃ Y) Sum.⊎ (Y ─→ᵃ R)
+            → Y ≈ U[ P ] σ
+            → R UR.─→ₚ Q
+            → Res Q
+
+  base-from-strict : Strict → AdminStep
                    → ∀ {R Q : UP.Proc n} → R ≈ U[ P ] σ → R UR.─→ₚ Q → Res Q
   -- ε : R ≡ U[ P ] σ, strict reflection.
-  base-from-strict strict adia ε red = strict refl red
+  base-from-strict strict admin ε red = strict refl red
   -- ≋ link forward (r : R ≋ Y): re-wrap, reduct unchanged.
-  base-from-strict strict adia (fwd (Sum.inj₁ r) ◅ rest) red =
-    base-from-strict strict adia rest (UR.RU-Struct (Eq*.symmetric _≋′_ r) red ε)
+  base-from-strict strict admin (fwd (Sum.inj₁ r) ◅ rest) red =
+    base-from-strict strict admin rest (UR.RU-Struct (Eq*.symmetric _≋′_ r) red ε)
   -- ≋ link backward (r : Y ≋ R): re-wrap directly.
-  base-from-strict strict adia (bwd (Sum.inj₁ r) ◅ rest) red =
-    base-from-strict strict adia rest (UR.RU-Struct r red ε)
-  -- ─→ᵃ link forward (a : R ─→ᵃ Y): administrative diamond.
-  base-from-strict strict adia (fwd (Sum.inj₂ a) ◅ rest) red
-    with adia (Sum.inj₁ a) red
-  ... | Sum.inj₁ (Q₁ , red₁ , Q≈Q₁)
-        with P′ , steps , c ← base-from-strict strict adia rest red₁
-      = P′ , steps , ≈-trans Q≈Q₁ c
-  ... | Sum.inj₂ Q≈Y = P , ε , ≈-trans Q≈Y rest
-  -- ─→ᵃ link backward (a : Y ─→ᵃ R): administrative diamond, other direction.
-  base-from-strict strict adia (bwd (Sum.inj₂ a) ◅ rest) red
-    with adia (Sum.inj₂ a) red
-  ... | Sum.inj₁ (Q₁ , red₁ , Q≈Q₁)
-        with P′ , steps , c ← base-from-strict strict adia rest red₁
-      = P′ , steps , ≈-trans Q≈Q₁ c
-  ... | Sum.inj₂ Q≈Y = P , ε , ≈-trans Q≈Y rest
+  base-from-strict strict admin (bwd (Sum.inj₁ r) ◅ rest) red =
+    base-from-strict strict admin rest (UR.RU-Struct r red ε)
+  -- ─→ᵃ link (either direction): delegate to the contextual admin residual.
+  base-from-strict strict admin (fwd (Sum.inj₂ a) ◅ rest) red =
+    admin (Sum.inj₁ a) rest red
+  base-from-strict strict admin (bwd (Sum.inj₂ a) ◅ rest) red =
+    admin (Sum.inj₂ a) rest red
