@@ -388,6 +388,43 @@ someSub-solving = subAll-solving (λ ()) end
 ⊢-sub σ (T-Conv T≃ ϵ≤ d) = T-Conv (subTy-≃ T≃) ϵ≤ (⊢-sub σ d)
 ⊢-sub σ (T-Weaken γ≤ d) = T-Weaken (≼-map⁺ subTy-unr subTy-mobile γ≤) (⊢-sub σ d)
 
+------------------------------------------------------------------------
+-- Completeness infrastructure.
+------------------------------------------------------------------------
+
+height : Γ ; γ ⊢ e ∶ T ∣ ϵ → ℕ
+height (T-Const _) = 0
+height (T-Var _ _) = 0
+height (T-Abs _ _ d) = suc (height d)
+height (T-AbsRec _ _ d) = suc (height d)
+height (T-AppUnr _ _ d₁ d₂) = suc (height d₁ Nat.⊔ height d₂)
+height (T-AppLin _ _ d₁ d₂) = suc (height d₁ Nat.⊔ height d₂)
+height (T-AppLeft _ _ d₁ d₂) = suc (height d₁ Nat.⊔ height d₂)
+height (T-AppRight _ _ d₁ d₂) = suc (height d₁ Nat.⊔ height d₂)
+height (T-Pair _ _ d₁ d₂) = suc (height d₁ Nat.⊔ height d₂)
+height (T-Let _ d₁ d₂) = suc (height d₁ Nat.⊔ height d₂)
+height (T-Seq _ d₁ d₂) = suc (height d₁ Nat.⊔ height d₂)
+height (T-LetPair _ d₁ d₂) = suc (height d₁ Nat.⊔ height d₂)
+height (T-Inj d) = suc (height d)
+height (T-Case _ d d₁ d₂) = suc (height d Nat.⊔ height d₁ Nat.⊔ height d₂)
+height (T-Conv _ _ d) = suc (height d)
+height (T-Weaken _ d) = suc (height d)
+
+reType : Un.Π[ SolvedTy ∘ Γ ] → SolvedTm e → SolvedTy T → Γ ; γ ⊢ e ∶ T ∣ ϵ → Γ ; γ ⊢ e ∶ T ∣ ϵ
+reType SΓ Se ST d =
+  subst (λ e′ → _ ; _ ⊢ e′ ∶ _ ∣ _) (subTm-id Se)
+    (subst (λ T′ → _ ; _ ⊢ _ ∶ T′ ∣ _) (subTy-id ST)
+      (⊢-sub UV.someSub d ⊢≗ λ x → subTy-id (SΓ x)))
+
+postulate
+  reType-height :
+    (SΓ : Un.Π[ SolvedTy ∘ Γ ]) (Se : SolvedTm e) (ST : SolvedTy T)
+    (d : Γ ; γ ⊢ e ∶ T ∣ ϵ) → height (reType SΓ Se ST d) ≡ height d
+
+  merge₂ : ∀ {σ₁ σ₂ Δ₁ Δ₂} → Solving σ₁ → Solving σ₂ → SolvedΔ Δ₁ σ₁ → SolvedΔ Δ₂ σ₂ →
+           ∃[ σ ] Solving σ × SolvedΔ (Δ₁ ++ Δ₂) σ
+
+
 complete :
   Un.Π[ SolvedTy ∘ Γ ] →
   SolvedTm e →
