@@ -44,12 +44,9 @@ Consider an example from \citet{DBLP:conf/icfp/ThiemannV16} for serializing bina
 type Tree = Leaf
           | Node int Tree Tree
 \end{lstlisting}
-Here is the corresponding session type \lstinline{TreeChannel}:
+Here is the corresponding session type \lstinline{TreeChan}:
 \begin{lstlisting}
-type TreeChannel = oplus{
-  Leaf: Skip,
-  Node: !int; TreeChannel; TreeChannel
-}
+type TreeChan = oplus{ Leaf: Skip, Node: !int; TreeChan; TreeChan }
 \end{lstlisting}
 \begin{figure}[tp]
   \begin{subfigure}[t]{0.49\linewidth}
@@ -73,11 +70,11 @@ branch : &{elli: Si} -> <elli: Si>
   \caption{Session type APIs}
   \label{fig:session-type-apis}
 \end{figure}
-The type \lstinline{TreeChannel} is called context-free because it is
+The type \lstinline{TreeChan} is called context-free because it is
 recursively defined and the recursion is not restricted to tail
 positions. The \lstinline{Node} alternative is an example where the
-\lstinline{TreeChannel} type refers two times in a row to itself. The
-first occurrence of \lstinline{TreeChannel} in this
+\lstinline{TreeChan} type refers two times in a row to itself. The
+first occurrence of \lstinline{TreeChan} in this
 type is illegal in regular session type systems (e.g.,
 \cite{DBLP:journals/jfp/GayV10,DBLP:conf/esop/LindleyM15,Gay_Vasconcelos_2025}) because
 they syntactically restrict recursion to tail position. Context-free
@@ -98,13 +95,13 @@ same labeled alternatives. Standard pattern matching suffices to
 decode the chosen alternative and continue.
 Given the types and the CFST API, we can implement the serialization function:
 \begin{lstlisting}[numbers=left]
-sendTree : Tree -> forallsigma.TreeChannel;sigma -> sigma
+sendTree : Tree -> forallsigma.TreeChan;sigma -> sigma
 sendTree Leaf c =
   select Leaf c
 sendTree (Node x l r) c =
-  let c1 = select Node c   (* c1 : !int; TreeChannel; TreeChannel; sigma *)
-      c2 = send x c1       (* c2 : TreeChannel; TreeChannel; sigma *)
-      c3 = sendTree l c2   (* c3 : TreeChannel; sigma *)
+  let c1 = select Node c   (* c1 : !int; TreeChan; TreeChan; sigma *)
+      c2 = send x c1       (* c2 : TreeChan; TreeChan; sigma *)
+      c3 = sendTree l c2   (* c3 : TreeChan; sigma *)
       c4 = sendTree r c3   (* c4 : sigma *)
   in  c4
 \end{lstlisting}
@@ -117,7 +114,7 @@ Second, the \lstinline{Node} branch of \lstinline{sendTree} relies on
 polymorphic recursion. To see this, consider the type of
 \lstinline{c2} in line 6--7. To invoke \lstinline{sendTree}
 recursively, we need to instantiate the type argument
-\lstinline{sigma} with \lstinline{TreeChannel; sigma} rather than just
+\lstinline{sigma} with \lstinline{TreeChan; sigma} rather than just
 \lstinline{sigma}, which is the
 telltale for polymorphic recursion.
 
@@ -131,18 +128,18 @@ reason). To make this switch apparent, we present code
 using the \thecalculus API with grey background and golden keywords.
 \lstset{style=eclipse-new}
 \begin{lstlisting}[numbers=left]
-sendTreeB : Tree -> TreeChannel -> Skip
-sendTreeB Leaf c =          (* c : TreeChannel *)
+sendTreeB : Tree -> TreeChan -> Skip
+sendTreeB Leaf c =          (* c : TreeChan *)
   select Leaf c
 sendTreeB (Node x l r) c =
-  let c = select Node c in  (* c : !Int; TreeChannel; TreeChannel *)
-  send x &c;                (* c : TreeChannel; TreeChannel *)
-  sendTreeB l &c;           (* c : TreeChannel *)
+  let c = select Node c in  (* c : !Int; TreeChan; TreeChan *)
+  send x &c;                (* c : TreeChan; TreeChan *)
+  sendTreeB l &c;           (* c : TreeChan *)
   sendTreeB r &c
 \end{lstlisting}
 What has changed? First, the type of \lstinline{sendTreeB} is no longer polymorphic over the
 continuation type. Instead, the channel argument \lstinline{c} starts
-out at type \lstinline{TreeChannel} without specifying a
+out at type \lstinline{TreeChan} without specifying a
 continuation. The return type is \lstinline{Skip}, which indicates an inactive
 channel. Values of type \lstinline{Skip} are
 unrestricted and can be discarded \os{$\SSkip$ is not unrestricted anymore}.
@@ -192,49 +189,43 @@ another process. As an example, suppose a server-side renderer streams
 HTML nodes to a client instead of constructing a DOM tree in
 memory first. A small protocol for such a renderer is as follows.
 \begin{lstlisting}
-type HtmlChannel = oplus{
-  Text: !String,
-  Elem: !String; ChildrenChannel
-}
-type ChildrenChannel = oplus{
-  Done: Skip,
-  Child: HtmlChannel; ChildrenChannel
-}
+type HtmlChan  = oplus{ Text: !String, Elem: !String; ChildChan }
+type ChildChan = oplus{ Done: Skip,    Child: HtmlChan; ChildChan }
 \end{lstlisting}
 The \lstinline{Elem} alternative first sends a tag name, and then a sequence of children. The 
 \lstinline{Child} alternative is context-free in the same sense as the
-\lstinline{Node} alternative of \lstinline{TreeChannel}: rendering one
-child consumes an \lstinline{HtmlChannel} prefix and then continues with
+\lstinline{Node} alternative of \lstinline{TreeChan}: rendering one
+child consumes an \lstinline{HtmlChan} prefix and then continues with
 the rest of the child stream.
 
 Now consider a renderer (\Cref{lst:rendering-example}) that emits a user panel whose first child is
 computed by another process while the main thread obtains user
 messages, say, from a database. We assume that
 \lstinline{renderProfile} and \lstinline{renderMsgArea} render
-one HTML node on a channel of type \lstinline{HtmlChannel; Drop} and
-\lstinline{HtmlChannel}, respectively. The type \lstinline{Drop}
+one HTML node on a channel of type \lstinline{HtmlChan; Drop} and
+\lstinline{HtmlChan}, respectively. The type \lstinline{Drop}
 is a new session type that comes with a companion type
 \lstinline{Acq}. They indicate the placement of synchronization
 operations that ensure correct handover of ownership from the borrowed session
 to the session's suffix.
 \begin{lstlisting}[numbers=left,float,caption={Rendering example},captionpos=b,label={lst:rendering-example}]
-renderUser : User -> HtmlChannel; Close -> Unit
+renderUser : User -> HtmlChan; Close -> Unit
 renderUser user c =
   let c = select Elem c in
   send "div" &c;
   let c = select Child c in
   fork (lambda() -> renderProfile user &c);
-  (* c : Acq; ChildrenChannel; Close *)
+  (* c : Acq; ChildChan; Close *)
   let msgs = getMessages user in
   renderRest msgs (acquire c)
 
-renderRest : Messages -> ChildrenChannel; Close -> Unit
+renderRest : Messages -> ChildChan; Close -> Unit
 renderRest msgs c =
   let c = select Child c in
   renderMsgArea msgs &c;
   close (select Done c)
 
-renderProfile : User -> HtmlChannel;Drop -> Unit
+renderProfile : User -> HtmlChan;Drop -> Unit
 renderProfile user c = ... drop c
 \end{lstlisting}
 The function \lstinline{renderUser} starts an HTML element and then
@@ -389,9 +380,9 @@ lines 5--7:
 \end{lstlisting}
 It translates to the following \thecalculus code.
 \begin{lstlisting}
-(* initially                  c : HtmlChannel; ChildrenChannel; Close *)
-let c1, c2 = rsplit c in   (* c1 : HtmlChannel; Drop *)
-                           (* c2 : Acq; ChildrenChannel; Close *)
+(* initially                  c : HtmlChan; ChildChan; Close *)
+let c1, c2 = rsplit c in   (* c1 : HtmlChan; Drop *)
+                           (* c2 : Acq; ChildChan; Close *)
 fork (lambda() -> renderProfile user c1);
 let msgs = getMessages user in
 renderRest msgs (acquire c2)
@@ -588,7 +579,7 @@ must be dropped after use. A synchronization binder
 $(\varphi z \mapsto \phi)P$ binds a flag name $z$ in $P$ and stores
 one of three states in $\phi$: \lstinline{drop}, \lstinline{acq}, or
 \lstinline{done}. This flag $z$ implements the separator in
-\lstinline{nu[c1|c2][...]}. It is placed as the outgoing flag of the
+\lstinline{nu[c1|c2][...]}. It is the outgoing flag of the
 borrowed prefix and the incoming flag of the suffix.
 
 An \lstinline{rsplit} creates a flag in state
