@@ -380,7 +380,7 @@ someSub-solving = subAll-solving (λ ()) end
   T-LetPair p/s (⊢-sub σ d₁)
             (⊢-sub σ d₂ ⊢≗ λ z → ⸴-dist (flip subTy σ) z ■ ⸴-cong refl (⸴-dist (flip subTy σ)) z)
 ⊢-sub σ (T-Inj {i = i} d) =
-  T-Inj (subst (subCtx _ σ ; _ ⊢ subTm _ σ ∶_∣ _) (if-float (flip subTy σ) i) (⊢-sub σ d))
+  T-Inj (subst (_ ; _ ⊢ _ ∶_∣ _) (if-float (flip subTy σ) i) (⊢-sub σ d))
 ⊢-sub σ (T-Case p/s d d₁ d₂) =
   T-Case p/s (⊢-sub σ d)
              (⊢-sub σ d₁ ⊢≗ ⸴-dist (flip subTy σ))
@@ -393,29 +393,36 @@ complete :
   SolvedTm e →
   SolvedTy T →
   Γ ; γ ⊢ e ∶ T ∣ ϵ →
-  ∃[ σ ] ∃[ Δ ] ∃[ n ]
-     Solving σ × SolvedΔ Δ σ × Γ ; γ / m ⊢ e ⇐ T ∣ ϵ ↑ Δ / n
+  ∃[ σ ] ∃[ Δ ] ∃[ ϵ′ ] ∃[ n ]
+     ϵ′ ≤ϵ ϵ × Solving σ × SolvedΔ Δ σ × Γ ; γ / m ⊢ e ⇐ T ∣ ϵ′ ↑ Δ / n
 complete SΓ Se ST (T-Const {c = c} ⊢c) with algConst? c
 ... | inj₁ Ac =
-  UV.someSub , _ , _ , someSub-solving , ≃-refl ∷ [] , A-Check (A-Const (≼-∅ []) Ac ⊢c)
+  UV.someSub , _ , _ , _ , ≤ϵ-refl , someSub-solving , ≃-refl ∷ [] , A-Check (A-Const (≼-∅ []) Ac ⊢c)
 ... | inj₂ ¬Ac = {!¬Ac!}
 complete SΓ Se ST (T-Var x refl) =
-  UV.someSub , _ , _ , someSub-solving , ≃-refl ∷ [] , A-Check (A-Var (≼-refl refl))
+  UV.someSub , _ , _ , _ , ≤ϵ-refl , someSub-solving , ≃-refl ∷ [] , A-Check (A-Var (≼-refl refl))
 complete SΓ Se ST (T-Abs Γ-unr Γ-mob x) = {!!}
 complete SΓ Se ST (T-AbsRec Γ-unr a-unr x) = {!!}
-complete SΓ (Se₁ · Se₂) ST (T-AppUnr a-unr ≤ₐ x y) =
-  let σx , Δx , _ , Sx , SΔx , Ax = complete SΓ Se₁ {!!} x in
-  let σy , Δy , _ , Sy , SΔy , Ay = complete SΓ Se₁ {!!} x in
-  {!!} , {!!} , {!!} , {!!} , {!!} , A-Check (A-App _ {!!} {!Ax!} {!!})
+complete SΓ Se ST (T-AppUnr a-unr ≤ₐ x y) = {!!}
 complete SΓ Se ST (T-AppLin a-par ≤ₐ x x₁) = {!!}
 complete SΓ Se ST (T-AppLeft aL ≤ₐ x x₁) = {!!}
 complete SΓ Se ST (T-AppRight aR ≤ₐ x x₁) = {!!}
 complete SΓ Se ST (T-Pair p/s seq⇒p x x₁) = {!!}
 complete SΓ Se ST (T-Seq unr-T x y) = {!!}
 complete SΓ Se ST (T-LetPair p/s x y) = {!!}
-complete SΓ Se ST (T-Inj x) = {!!}
+complete SΓ (`inj Se) (ST₁ ⊕ ST₂) (T-Inj {i = true} x) =
+  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete SΓ Se ST₁ x in
+  σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A-Inj A
+complete SΓ (`inj Se) (ST₁ ⊕ ST₂) (T-Inj {i = false} x) =
+  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete SΓ Se ST₂ x in
+  σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A-Inj A
 complete SΓ Se ST (T-Case p/s x y₁ y₂) = {!!}
-complete SΓ Se ST (T-Conv T≃ ϵ≤ x) = {!!}
+complete SΓ Se ST (T-Conv {T = T} {U = U} T≃ ϵ≤ x) =
+  let ST-T = ≃-solved⁻¹ T≃ ST in
+  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete SΓ Se ST-T x in
+  σ , C-Eq U T ∷ Δ , ϵ′ , n , ≤ϵ-trans ϵ′≤ ϵ≤ , Sσ ,
+    subst₂ _≃_ (sym (subTy-id ST)) (sym (subTy-id ST-T)) (≃-sym T≃) ∷ SΔ ,
+    A-Check (A-Ann A)
 complete SΓ Se ST (T-Weaken γ≤ x) = {!!}
 -- complete (T-Const {c = c} ⊢c) Se ST with isSplit? c
 -- complete (T-Const {c = _} (`lsplit s s′)) Se ST@(⟨ Ss ; Ss′ ⟩ ⟨ _ ⟩→ Sc) | yes (_ , inj₁ refl) =
