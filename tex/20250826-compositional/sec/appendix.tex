@@ -250,9 +250,17 @@ Translating a session type $\S$ to a Freest Type $F$ requires translating $\mu$ 
 
 \begin{lemma}[Soundness of the translation]
   If $\T[1] \simeq \T[2]$, then $F_1 [U_1] \simeq F_2 [U_2]$ where $(F_1, U_1) = \tofreest{\T[1]}$ and $(F_2, U_2) = \tofreest{\T[2]}$.
+  \label{lem:sound-translation}
 \end{lemma}
 \begin{proof}
   We sketch a proof. The soundness proof mainly requires two things: The translation of annotations in the arrow and product types preserves equivalence and the equivalence of the explicit recursion with the $\mu$ binder syntax. For the former we can perform induction on the equivalence of $\T[1] \simeq \T[2]$ and use equivalence and bisimulation lemmas from \cite{DBLP:conf/icfp/ThiemannV16} for regular type and session type cases, respectively. The pairs we introduce for annotations can be handled trivially by the type equivalence rules. Then to show explicit recursion conversion preserves equivalence, we can use the laws for $\mu$ types from \cite{DBLP:conf/icfp/ThiemannV16}.
+\end{proof}
+
+\begin{lemma}[Completeness of the translation]
+  Let $(F_1, U_1) = \tofreest{\T[1]}$ and $(F_2, U_2) = \tofreest{\T[2]}$. If $F_1 [U_1] \simeq F_2 [U_2]$, then $\T[1] \simeq \T[2]$.
+\end{lemma}
+\begin{proof}
+  Similar to \ref{lem:sound-translation} but the opposite direction.
 \end{proof}
 
 \FloatBarrier
