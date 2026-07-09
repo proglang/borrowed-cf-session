@@ -16,7 +16,7 @@ address precisely this problem: they are a type discipline for
 structured communication
 protocols. Their core features are typed, bidirectional message
 exchange and typed choices. They ensure protocol fidelity as well as type soundness,
-when embedded in concurrent lambda calculus. There is a significant body of
+for pi calculus as well as for concurrent lambda calculus. There is a significant body of
 literature on session types, which is well appreciated in 
 survey articles and books
 \cite{DBLP:journals/csur/HuttelLVCCDMPRT16,
@@ -83,7 +83,7 @@ session, so synchronization is needed.
 The tree example also exposes the core technical issue. The move from regular 
 session types to CFSTs makes borrowing technically more delicate. In a
 regular session type, the prefix consumed by a borrow is exposed by
-the syntactic structure of the type as well as unfolding
+the syntactic structure of the type as well as by unfolding
 recursion. For CFSTs, however, the desired 
 prefix may only become visible after reassociating sequential
 composition, eliminating \lstinline{Skip}, distributing continuations
@@ -102,8 +102,8 @@ The core conceptual contributions of this paper are as follows.
   resource-passing and continuation-polymorphic programming style that
   plain CFSTs impose.
 \item We identify session-type splitting as the central operation
-  behind borrowing for CFSTs. Splitting must compute a residual suffix
-  from a session and a borrowed prefix type modulo the equational
+  behind borrowing for CFSTs. Splitting must check a residual suffix
+  against a session and a borrowed prefix type modulo the equational
   theory of CFSTs.
 \item We distinguish local borrowing from remote borrowing. Local
   borrows remain in one process and can be ordered by evaluation and
@@ -116,17 +116,16 @@ The core conceptual contributions of this paper are as follows.
 
 The remaining contributions are mainly technical.
 \begin{itemize}
-\item We define a declarative type system with ordered/BI-style
-  contexts, effects, mobility, boundedness, and typing rules for the
-  local and remote split operations.
-\item We present an algorithmic typing judgment that generates
-  constraints for split-induced session-type variables, together with
-  soundness and completeness statements for the algorithmic system.
-\item We define a lower-level run-time calculus with explicit channel
+\item We define a declarative type system with ordered contexts inspired by
+  Bunched Implications \cite{DBLP:journals/bsl/OHearnP99}, effects, mobility, and
+  boundedness.
+\item We present a constraint-based algorithmic typing judgment, together with
+  soundness and completeness statements against the declarative system.
+\item We define a low-level run-time calculus with explicit channel
   representations and synchronization flags, and translate typed
   \thecalculus processes to this calculus.
 \item We state the metatheoretic obligations connecting the layers,
-  including type soundness for the direct semantics and a bisimulation
+  including type soundness for the direct semantics and a weak simulation
   result for the translation.
 \item We describe an implementation path for type checking that
   leverages the implementation of FreeST
