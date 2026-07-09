@@ -1,8 +1,10 @@
 \section{Metatheory}
 \label{sec:metatheory}
 
-This section summarizes the main metatheoretic guarantees of \thecalculus. All definitions from the previous sections have been formalized in 
-Agda. We mark the theorems we proved mechanically with a little agda bird after the theorem name. Non-mechanized proofs are deferred to the supplement.
+This section summarizes the main metatheoretical results for \thecalculus. All
+definitions from the previous sections have been formalized in
+Agda. We mark the theorems we proved mechanically with a little agda bird after
+the theorem name. Non-mechanized proofs are shown in the supplement.
 
 We first state type safety for declarative typing, then weak operational
 correspondence for the translation, and finally soundness and completeness of
@@ -79,8 +81,8 @@ The proof is deferred to \cref{sec:appendix-metatheory-ts}.
 \subsection{Weak Operational Correspondence for Translation}
 
 We can relate source reduction and target reduction. Since the translation
-introduces administrative synchronization steps, correspondence is formulated
-as a weak operational correspondence up to zero or more target reductions and congruence.
+introduces administrative synchronization steps, we obtain
+a weak operational correspondence up to zero or more target reductions and congruence.
 
 \begin{theorem}[Forward simulation\;\AgdaBird]
   Let $\Sub$ be a value substitution.

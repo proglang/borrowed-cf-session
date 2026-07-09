@@ -12,16 +12,17 @@ abstractions, injections of values, and pairs of values. Evaluation
 contexts $\EC$ are standard except for the cases for directed application where the direction changes the evaluation order.  A process-local context $\FC$ embeds an evaluation context in a
 single running process and process contexts $\CC$ close under parallel
 composition and channel introduction.  
-Formal specifications for all four categories are recorded in \cref{fig:values-evaluation-contexts}.
+Formal specifications for all four categories are shown in \cref{fig:values-evaluation-contexts}.
 
-We omit the presentation for standard expression reduction
-relation $\E[1]\EReduce\E[2]$, found in the supplement in \cref{fig:expression-reduction}. It includes
+We omit the presentation of call-by-value expression reduction
+$\E[1]\EReduce\E[2]$, found in the supplement in
+\cref{fig:expression-reduction}. It includes the standard
 computational steps for beta-reduction, sequencing, pair and variant
 elimination, recursive unfolding, and closure under expression contexts.
 
 Process congruence $\Proc\Congruent\ProcQ$ is defined as the standard structural congruence on
 configurations: parallel composition is associative and commutative with unit
-$\PExp{\CUnit}$, independent channel introductions commute, and introductions may
+$\PExp{\CUnit}$, independent channel restrictions commute, and restrictions may
 move across parallel composition. 
 Its rules, found in the supplement in \cref{fig:configuration-congruence}, are used only to rearrange a
 configuration so that a redex is exposed.
@@ -78,14 +79,14 @@ remote handoff tracked statically by the $\SDrop$ and $\SAcq$ constructors in
 Rules \RuleName{R-Drop} and \RuleName{R-Acquire} move across such a separator.
 Dropping removes the endpoint immediately to the left of the separator and
 exposes the separator at the front of the remaining group.  Acquiring can fire
-only once the separator is exposed; it removes the separator and returns the
+once the separator is exposed; it removes the separator and returns the
 endpoint on the right.  Thus remote splitting transfers control from one
 process to another only after the prefix of the original endpoint has been
 consumed.
 
 Finally, \RuleName{R-Par} and \RuleName{R-Bind} close reduction under parallel
 composition and restriction.  Rule \RuleName{R-Struct} closes the relation under
-the process congruence, so that reductions
+process congruence, so that reductions
 may use associativity, commutativity, and scope movement to expose a redex.
 
 

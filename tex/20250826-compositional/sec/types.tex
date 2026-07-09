@@ -54,22 +54,21 @@ $\SSkip$ carries no communication obligation and is discharged when checking
 boundedness (rule \RuleName{Te-Seq1}).
 
 A mobile session has the form $\SSeq\SAcq\S$ with $\Bounded\S$. The leading
-acquire marks a remotely borrowed endpoint, and boundedness ensures that the
+acquire marks the suffix of a remotely borrowed endpoint, and boundedness ensures that the
 borrowed prefix can be completed without consuming an unbounded residual owned
 elsewhere. This is the essential case: a borrowed endpoint may move across
-processes exactly because its remaining protocol is a finite, bounded
+processes because its protocol is a finite, bounded
 obligation. Mobility extends from sessions to ordinary values: Unit is mobile;
-products and variants are mobile pointwise; a function value is mobile exactly
-when its arrow carries the mobile annotation, which in turn means the function
+products and variants are mobile pointwise; a function value is mobile if its
+arrow carries the mobile annotation, which in turn means the function 
 closes over mobile values only. Context mobility is pointwise, so a process may
-fork or send only closures whose captured assumptions satisfy the same
-discipline.
+fork or send only closures whose captured assumptions are mobile.
 
 A companion predicate $\Unr\T$ (and $\Unr\Ctx$ on contexts) identifies the
 duplicable fragment: unit, componentwise-unrestricted products and variants,
 and functions of direction $\DirNone$, lifted pointwise to contexts. It governs
 contraction, weakening, and recursive-function introduction, and every
-unrestricted context is also mobile. The full story is deferred to
+unrestricted context is also mobile. The full definition is shown in
 \cref{fig:omitted-predicates} in the supplement.
 
 \begin{figure}
@@ -113,11 +112,10 @@ context as unit. Sequential composition is associative and preserves order.
 Unrestricted contexts contract under $\CtxPar$, which is the only source of
 implicit duplication. Mobile contexts may move between $\CtxPar$ and
 $\CtxSeq$ connectives, reflecting that the type system is not
-responsible for ordering access to mobile values. Any unrestricted
-context is also mobile (cf.~\cref{fig:bounded-session-types}).
+responsible for ordering access to mobile values.
 
-Weakening $\Ctx[1]\SubCtx\Ctx[2]$ is separate from equality. The exchange axiom in the subcontext
-relation is the concurrent-Kleene-algebra law that embeds two independent
+The exchange axiom in the subcontext
+relation  $\Ctx[1]\SubCtx\Ctx[2]$ is the concurrent-Kleene-algebra law that embeds two independent
 ordered computations into one ordered computation over parallel
 components \cite{DBLP:journals/jlp/HoareMSW11}.
 The second subcontext rule admits unused unrestricted assumptions. By
@@ -157,7 +155,7 @@ collected in \cref{fig:session-laws} in the supplement.
   \label{fig:constant-typing}
 \end{figure}
 
-\Cref{fig:constant-typing} assign closed types to constants. Channel
+\Cref{fig:constant-typing} assigns closed types to constants. Channel
 creation produces a pair of dual endpoints, each protected by an initial
 $\SAcq$ marker and closed respectively by $\STerm$ and $\SWait$. The session
 supplied to $\CNew$ must be a source protocol: the side condition $\SNew\S$
@@ -175,9 +173,8 @@ $\SSeq{\S[1]}{\S[2]}$ into an ordered pair containing the borrowed prefix and
 the residual suffix. The ordering enforces that the prefix must be
 consumed before starting with the suffix. Remote splitting, $\CSSplit$, produces an unordered pair
 in which the prefix ends in $\SDrop$ and the residual begins with $\SAcq$. The
-operational semantics uses these markers to synchronize drop and acquire
-across processes. The constants $\CDrop$ and $\CAcq$ eliminate the
-corresponding markers. Forking expects a mobile impure computation from unit to
+constants $\CDrop$ and $\CAcq$ eliminate the 
+corresponding marker types. Forking expects a mobile impure computation from unit to
 unit, and $\CDiscard$ consumes an endpoint whose session is equivalent to
 $\SSkip$.
 
@@ -210,9 +207,10 @@ $\SSkip$.
 
 The expression typing judgment $\HasType[\Eff]\Ctx\E\T$ in
 \cref{fig:typing-declarative} records both resource usage and effects. The
-context $\Ctx$ describes the assumptions consumed by $\E$. The effect
-annotation is an upper bound: pure expressions may be used where impure
-expressions are expected, but not conversely.
+context $\Ctx$ describes the assumptions consumed by $\E$ to compute a value of
+type $\T$. The effect
+annotation $\Eff$ is an upper bound: pure expressions may be used where impure
+expressions are expected.
 
 Constants and variables are pure and use exactly the resources shown in their
 types. Function introduction records how the argument is positioned relative
@@ -221,12 +219,12 @@ with the captured context, left- and right-ordered functions place it before or
 after the captured context respectively and unrestricted recursive functions use direction
 $\DirNone$ and may only capture an unrestricted context. Application composes
 the contexts of the function and argument according to the arrow direction.
-The ordered application rules also enforce the expected purity side condition:
+The ordered application rules enforce the expected purity side condition:
 the expression evaluated outside the function's direction must be
 pure. In particular, the $\DirLeft$-annotated abstraction puts the
 argument left of the captured context. Hence, its application must
 evaluate the argument before the function, which implies that the
-function must be pure. Any other abstraction can be evaluated
+function must be pure. Any other application can be evaluated
 left-to-right as common.
 
 Pair introduction mirrors function application. Unordered pairs combine their

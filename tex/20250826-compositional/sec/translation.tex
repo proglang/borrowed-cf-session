@@ -1,7 +1,7 @@
 \section{Translation}
 \label{sec:translation}
 
-The calculus presented in \cref{sec:expr-proc,sec:types,sec:algorithmic-typing}
+The calculus presented in \cref{sec:expr-proc,sec:types,sec:semantics}
 records ownership and ordering in a linear type system and, dynamically, in
 binder groups.  This section defines an untyped run-time calculus that is
 closer to an actual implementation of splitting and borrowing.  The
@@ -43,13 +43,14 @@ standard restriction construct of session calculi
 \cite{gay.vasconcelos:session-types}.  The form
 $\TPSync[\TEVarz]\Flag\TProc$ introduces a synchronization cell $\TEVarz$ with state
 $\Flag$ scoped over $\TProc$.  These cells are asynchronous
-variables, similar to IVars and MVars
+variables, similar to MVars
 \cite{DBLP:journals/toplas/ArvindNP89,DBLP:conf/popl/JonesGF96}.  A
-cell in state $\FlagInit$ records that the corresponding $\CDrop$ has not yet happened; a cell
+cell in state $\FlagInit$ records that the corresponding $\CDrop$ must happen next; a cell
 in state $\FlagDropped$ records that the $\CDrop$ has happened and an $\CAcq$ may
 proceed.
 
-The channels of the target calculus are \emph{primitive channels}.  A
+We call the channels of the target calculus \emph{primitive channels} to
+distinguish them from (translated) source channels.  A
 translated source channel is represented by a value
 $\targettermcolor{c}=\TEChan[\E[1]]\TEVary[\E[2]]$, a triple consisting of an
 optional pre-synchronization cell $\E[1]$, a primitive data channel
@@ -101,8 +102,8 @@ $\V$ do not matter.
 The target rules mirror the source process rules of
 \cref{fig:process-reduction}, but make synchronization explicit.  Rule
 \textsc{RU-New} allocates one primitive channel and two already-dropped
-synchronization cells, corresponding to the leading acquire markers created by
-source channel creation.  Rule \textsc{RU-LSplit} performs a local split by
+synchronization cells, corresponding to the leading acquire markers resulting
+from source channel creation.  Rule \textsc{RU-LSplit} performs a local split by
 sharing the same primitive data channel between the two returned triples and
 distributing the existing pre- and post-cells.  Rule \textsc{RU-RSplit}
 allocates a fresh synchronization cell: the left channel receives it as a

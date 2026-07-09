@@ -4,9 +4,8 @@
 
 Context-free session types (CFSTs) extend regular session types with a
 general sequential composition operator. A type $S_1;S_2$ describes a
-session that first behaves as $S_1$ and then continues as $S_2$. The
-inactive session \lstinline{Skip} is the unit of this composition and
-composition is associative.
+session that first behaves as $S_1$ and then continues as $S_2$. 
+Composition is associative with unit \lstinline{Skip}, the inactive session.
 % , that is, \lstinline{Skip};$S = S =
 % S$;\lstinline{Skip} and $(S_1;S_2);S_3 = S_1;(S_2;S_3)$.
 Thus
@@ -18,8 +17,8 @@ Sequential composition also interacts with choice in the expected way.
 Appending a continuation to a choice appends it to every branch:
 $(\oplus\{\ell_i:S_i\}_{i\in I});T =
 \oplus\{\ell_i:S_i;T\}_{i\in I}$. The same law holds for external
-choice. These equations are what make non-tail-recursive protocols
-usable as ordinary session types: a continuation can be pushed through
+choice. These equations make non-tail-recursive protocols
+usable as session types: a continuation can be pushed through
 the structure of a type until it reaches the leaves of a protocol.
 
 As usual for session types, channels are linear resources. A channel
@@ -29,7 +28,7 @@ continuation type. Linearity is what makes the session type track the
 state of the protocol, but it also forces programs to thread channels
 explicitly from one operation to the next.
 
-Additional remarks on design choices in this example, including why
+Additional remarks on design choices in this section, including why
 some operations remain in resource-passing style, are given in the
 supplement in \cref{sec:remarks}.
 
@@ -124,7 +123,7 @@ telltale for polymorphic recursion.
 Our new language {\thecalculus} amends these problems. The type
 definitions remain unchanged, but the implementation of
 \lstinline{sendTreeB} relies on the session API with borrowing shown in
-\cref{lst:bcfst-api}: the \lstinline{send} and \lstinline{recv} adopt
+\cref{lst:bcfst-api}: the operations \lstinline{send} and \lstinline{recv} adopt
 the borrowing style, but \lstinline{select} and \lstinline{branch}
 remain in resource-passing style (see \cref{sec:remarks} for the
 reason). To make this switch apparent, we present code
@@ -145,8 +144,6 @@ continuation type. Instead, the channel argument \lstinline{c} starts
 out at type \lstinline{TreeChan} without specifying a
 continuation. The return type is \lstinline{Skip}, which indicates an inactive
 channel. 
-% Values of type \lstinline{Skip} are
-% unrestricted and can be discarded \os{$\SSkip$ is not unrestricted anymore}.
 Second, there is no explicit resource
 passing, except for \lstinline{select}. Each use of the borrow notation
 \lstinline{&c} implicitly splits off a prefix of the session type
@@ -180,7 +177,6 @@ of \lstinline{c}.
 \Cref{sec:borr-from-cont} demonstrated
  \emph{local borrowing}, where the borrows remain in the same
 process and they are processed sequentially, following the evaluation order.
-
 In this local setting, operations on borrows are
 cheap: borrowing merely names the next prefix of the same channel and
 leaves the suffix for the surrounding computation. No other process can
@@ -191,7 +187,7 @@ sequencing.
 However, in some situations we want to send a borrow to
 another process. As an example, suppose a server-side renderer streams
 HTML nodes to a client instead of constructing a DOM tree in
-memory first. A small protocol for such a renderer is as follows.
+memory first. Here is a protocol for such a renderer.
 \begin{lstlisting}
 type HtmlChan  = oplus{ Text: !String, Elem: !String; ChildChan }
 type ChildChan = oplus{ Done: Skip,    Child: HtmlChan; ChildChan }
@@ -203,7 +199,7 @@ child consumes an \lstinline{HtmlChan} prefix and then continues with
 the rest of the child stream.
 
 Now consider a renderer (\Cref{lst:rendering-example}) that emits a user panel whose first child is
-computed by another process while the main process obtains user
+computed by another process while the main process loads user
 messages, say, from a database. We assume that
 \lstinline{renderProf} and \lstinline{renderMsgArea} render
 one HTML node on a channel of type \lstinline{HtmlChan; Drop} and
@@ -284,20 +280,17 @@ same process elaborate to \lstinline{lsplit} while borrows used across
 \lstinline{fork} or sent to another process elaborate to
 \lstinline{rsplit}.  Our discussion starts with the local variant and 
 we show the translation of \lstinline{renderRest} in
-\thecalculus.
+\thecalculus in \cref{fig:local-split-program}.
 
-As an example, we use the local part of
-\lstinline{renderRest} shown in
-\cref{fig:local-split-program}.
 Execution proceeds by repeatedly exposing the next local prefix of the
 channel sequence. \Cref{fig:local-split-trace} shows a suffix of its reduction
 sequence.
-The \lstinline{nu[c][d] in ...} operator is a channel abstraction as known
+The \lstinline{nu[c][d] in ...} operator is a channel restriction as known
 from session calculi \cite{Gay_Vasconcelos_2025}. It introduces a
 communication channel with endpoint names \lstinline{c} and 
-\lstinline{d}. We generalize channel abstraction so that each
+\lstinline{d}. We generalize channel restriction so that each
 compartment \lstinline{[c]} and \lstinline{[d]} contains a
-\emph{binder group}: a flat list of channel names and separator markers.
+\emph{binder group}: a list of channel names and separator markers.
 Its working is best illustrated with the example trace.
 
 To keep the trace short (\cref{fig:local-split-trace}), the
@@ -306,7 +299,7 @@ reduction starts at the local suffix in \lstinline{renderRest}.
 \begin{minipage}[t]{0.49\linewidth}
 \begin{subfigure}[t]{\linewidth}
 \begin{lstlisting}[numbers=left]
-K(c) =
+renderRest msgs c =
   let c2 = select Child c in
   let c3, c4 = lsplit c2 in
   renderMsgArea msgs c3;
@@ -327,12 +320,12 @@ K(c) =
     let msgs = ... in
     renderRest msgs (acquire c2)
 ~>
-    nu[c1|c2][...]
+    nu[c1||c2][...]
     fork (lambda() -> renderProf user c1);
     let msgs = ... in
     renderRest msgs (acquire c2)
 ~>*  [ drop c1 ]
-    nu[|c2][...]
+    nu[||c2][...]
     renderRest msgs (acquire c2)
 ~>
     nu[c2][...]
@@ -401,11 +394,12 @@ the splitting on \lstinline{c}. The only constraint is that, in the
 end, when \lstinline{close} and \lstinline{wait} calls match, the
 reduction requires that only one channel name is left in each
 compartment. Under this condition, the channel can be closed and
-eliminated. The figure does not show the transitions of the client $P_d$.
+eliminated. The figure does not show the transitions of the client $P_d$, which
+are independent.
 
 For remote borrowing, we incorporate the 
-\lstinline{acquire} primitive. Hence, we indicate a remote split with the
-symbol ``\lstinline{|}'' in the compartment. As an example, we consider the translation of
+\lstinline{acquire} primitive and indicate a remote split with the
+symbol ``\lstinline{||}'' in the compartment. As an example, we consider the translation of
 lines 5--7:
 \begin{lstlisting}
   fork (lambda() -> renderProf user &c);
@@ -426,16 +420,17 @@ and \lstinline{c2} are used in different processes. The
 \lstinline{rsplit} returns an ordinary (linear) pair of channels
 because synchronization is made explicit using the \lstinline{Acq} and
 \lstinline{Drop} types.
-Executing this code takes the following steps (ignoring the activity
+Executing this code takes the steps shown  in
+\cref{fig:remote-split-trace}  (ignoring the activity 
 at the other end of the channel). The bracketed step abbreviates the
 forked process running \lstinline{renderProf} until its final
-\lstinline{drop c1}; the trace appears in \cref{fig:remote-split-trace}.
+\lstinline{drop c1}.
 In summary, the \lstinline{rsplit} replaces one channel name by
-\lstinline{[c1|c2]}, where ``\lstinline{|}'' marks a remote split. The
+\lstinline{[c1||c2]}, where ``\lstinline{||}'' marks a remote split. The
 \lstinline{drop} is only enabled 
-if its argument name comes last before a ``\lstinline{|}''.
+if its argument name comes last before a ``\lstinline{||}''.
 The \lstinline{acquire} is only enabled if the preceding list segment has
-been processed as in \lstinline{[|c2]}. Executing the \lstinline{acquire}
+been processed as in \lstinline{[||c2]}. Executing the \lstinline{acquire}
 in the last step removes the exhausted segment and separator, yielding
 \lstinline{[c2]}.
 
@@ -587,7 +582,7 @@ must be dropped after use. A synchronization binder
 $(\varphi z \mapsto \phi)P$ binds a flag name $z$ in $P$ and stores
 one of three states in $\phi$: \lstinline{drop}, \lstinline{acq}, or
 \lstinline{done}. This flag $z$ implements the separator in
-\lstinline{nu[c1|c2][...]}. It is the outgoing flag of the
+\lstinline{nu[c1||c2][...]}. It is the outgoing flag of the
 borrowed prefix and the incoming flag of the suffix.
 
 An \lstinline{rsplit} creates a flag in state

@@ -44,3 +44,12 @@
   \csred
   \CSet \cup \CSet*
 }
+
+\DefRule {Swap} {\AT \notin \TVAR} {
+  \AT \CEq \TVar
+  \csred
+  \left\{
+    \TVar \CEq \AT
+  \right\}
+}
+

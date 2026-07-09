@@ -136,7 +136,7 @@ determines which subterm can have effects as prescribed by $\reqEff
     (\DirRight,\_,\EffPure)\}
 \end{align*}
 Apart from that, rule \RuleName{A-App} synthesizes the function type,
-checks against the argument type and normalizes the return type. Sequential execution
+checks against the normalized argument type and normalizes the return type. Sequential execution
 requires that the sequence of the required contexts for the
 expressions can be subsumed from the incoming context. Rule
 \RuleName{A-LetPair} considers its subexpressions in sequence and
@@ -154,19 +154,18 @@ refer to unsolved unification variables. Solving $\CSet$ boils down to a unifica
 aware of a unification algorithm for the theory of context-free session
 types, which involves associativity, neutral elements, and
 distributivity. Hence, we
-approach constraint solving by constraint simplification.
+approach constraint solving by constraint simplification followed by a sound heuristic.
 
 The equivalence constraints in $\CSet$ are simplified by structural
 decomposition: pairs, sums, function types, and contexts are reduced
 componentwise, while unit constraints disappear. The full rule set is given
-in \cref{fig:constraint-simplification}. The rules are applied until a fixed point is reached. Constraints of the form $\TVar\CEq\AT$ provide a potential
-solution for unification variable $\TVar$. If we are let with unification
+in \cref{fig:constraint-simplification}. The rules are applied
+exhaustively. Constraints of the form $\TVar\CEq\AT$ provide a potential 
+solution for unification variable $\TVar$. If we are left with unification
 variables occurring in $\CSet$ or $\AT$ for which no solution candidate
-is found, the heuristic will fail and $\E$ is
-considered ill-typed.
+is found, the heuristic fails and $\E$ is rejected.
 
-Potential solutions have to first be identified and then validated in respect to the whole set of
-constraints $\CSet$.
+Potential solutions have to first be identified and then validated with respect to the set $\CSet$.
 
 We non-deterministically pick one candidate instantiation per variable, resulting in
 a variable-free $\CSet*$\!. 
@@ -179,7 +178,7 @@ respects type-equivalence it is not possible to construct mobility constraints
 that are satisfied by one but not the other candidate.
 
 The mobility constraints are easily
-validated because $\Mobile\T$ is decidable. 
+validated after solving the unification constraints because $\Mobile\T$ is decidable. 
 The equality constraints can be verified because the equivalence of CFSTs is
 decidable~\cite{DBLP:conf/tacas/AlmeidaMV20}. 
 Because our type language is richer than ordinary CFSTs (e.\,g. the distinction
@@ -207,7 +206,7 @@ translation and sketches a correctness proof for the encoding.
 \subsection{Implementation}
 
 We supplement our theoretical work on the bidirectional type checking algorithm from this section with an implementation written in Rust. 
-It is based on the artifact \cite{saffrich25:_artif_borrow_from_session_types}
+It is based on an artifact of prior work \cite{saffrich25:_artif_borrow_from_session_types}
 and uses FreeST 5.0
 \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22,
   almeida26:_frees_concur_progr_languag_with} for equivalence checking
