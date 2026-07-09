@@ -22,6 +22,7 @@ import BorrowedCF.Processes.Typed             as TP
 import BorrowedCF.Processes.Untyped           as UP
 import BorrowedCF.Reduction.Processes.Typed   as TR
 import BorrowedCF.Reduction.Processes.Untyped as UR
+open import BorrowedCF.Processes.Bisim using (Ub[_])
 open import BorrowedCF.Simulation.ReverseInv
   using (νσ; ⊗-inj; νσ-VSub; close-arg-var; head⊗′; U-ν-singleton; frameApp-reflect;
          frame-fusion-gen; frame-cong)
@@ -101,3 +102,25 @@ drop-arg-decomp (T-AppUnr _ _ ⊢fn ⊢arg) = _ , _ , _ , fn-drop-dom ⊢fn , �
 drop-arg-decomp (T-AppLin _ _ ⊢fn ⊢arg) = _ , _ , _ , fn-drop-dom ⊢fn , ⊢arg
 drop-arg-decomp (T-Conv _ _ d) = drop-arg-decomp d
 drop-arg-decomp (T-Weaken _ d) = drop-arg-decomp d
+
+------------------------------------------------------------------------
+-- νσᵈ : the φ-body substitution for the drop good shape
+--   B₁ = suc b₁ ∷ c ∷ [] , B₂ = b₂ ∷ [] .  The 2-block first group is exactly
+--   what makes the image head with φ; U[_] of this good shape peels to
+--   ν (φ drop (U[ body ] (νσᵈ …))) by refl.
+------------------------------------------------------------------------
+
+νσᵈ : ∀ {m n} (b₁ c b₂ : ℕ) (σ : m →ₛ n)
+    → (sum (suc b₁ ∷ c ∷ []) + sum (b₂ ∷ []) + m) →ₛ (3 + n)
+νσᵈ b₁ c b₂ σ =
+  ((λ x → ([ Ub[ suc b₁ ] (wk * , 1F , ` 0F) ·ₖ weaken* ⦃ Kᵣ ⦄ 0
+            , Ub[ c + 0 ] (` 0F , 1F , wk *) ]′ (Fin.splitAt (suc b₁) x))
+            ⋯ weaken* ⦃ Kᵣ ⦄ 0)
+    ++ₛ Ub[ b₂ + 0 ] (* , 2F , *))
+  ++ₛ (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 1 ⋯ weaken* ⦃ Kᵣ ⦄ 0)
+
+drop-bodyeq : ∀ {m n} (b₁ c b₂ : ℕ) (σ : m →ₛ n)
+              (P₀ : TP.Proc (sum (suc b₁ ∷ c ∷ []) + sum (b₂ ∷ []) + m))
+            → U[ TP.ν (suc b₁ ∷ c ∷ []) (b₂ ∷ []) P₀ ] σ
+              ≡ UP.ν (UP.φ UP.drop (U[ P₀ ] (νσᵈ b₁ c b₂ σ)))
+drop-bodyeq b₁ c b₂ σ P₀ = refl
