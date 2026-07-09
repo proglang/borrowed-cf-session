@@ -2,6 +2,35 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
+We have presented \thecalculus, a calculus of context-free session
+types with borrowing.  The central operation is session-type
+splitting: a borrow consumes a prefix of a protocol and leaves a
+residual suffix, but for CFSTs this operation must be understood
+modulo the equational theory of sequential composition, choices,
+skipping behavior, and recursion.  Borrowing therefore lifts the
+programming convenience of temporary access from regular session types
+to the richer protocol structure of CFSTs, while preserving the
+linear view that using an endpoint advances its protocol state.
+
+The calculus separates local from remote borrowing.  Local borrows
+stay within a process and can be sequenced by ordered typing and
+evaluation alone; remote borrows may cross process boundaries and
+therefore require an explicit handoff between the borrowed prefix and
+the residual suffix.  This distinction is reflected throughout the
+development: in the declarative type system, in the direct operational
+semantics based on binder groups, and in the translation to a lower
+level calculus with primitive channels and synchronization cells.  The
+algorithmic type system reduces the splitting obligations to
+constraints over CFST equivalence, for which our implementation
+reuses the FreeST solver.
+
+The resulting picture is that borrowing is not merely syntactic
+sugar for passing endpoints around.  In the presence of context-free
+session types, it is a disciplined way to compute and schedule pieces
+of a communication protocol.  Several directions remain open,
+including stronger inference for split constraints, richer programming
+interfaces that avoid undecidable subtyping, and integration with
+larger CFST implementations.
 
 
 %%% Local Variables:

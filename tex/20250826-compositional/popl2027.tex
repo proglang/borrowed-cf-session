@@ -34,7 +34,7 @@
 \email{weidner@cs.uni-freiburg.de}
 \affiliation{%
   \institution{University of Freiburg}
-  % \city{Hekla}
+  % \city{Freiburg}
   \country{Germany}}
 \orcid{0009-0008-1152-165X}
 
@@ -42,9 +42,39 @@
 
 % \institute{University of Freiburg, Freiburg, Germany}
 
+%  Sentence 1: Modern [domain] systems increasingly rely on [technology], but they suffer from [general issue].
+%  Sentence 2: Existing approaches fail to solve [specific bottleneck] due to [technical reason].
+%  Sentence 3: In this paper, we introduce [System/Algorithm Name], a novel framework designed to [core mechanism].
+%  Sentence 4: By utilizing [key optimization/technique], our approach reduces [metric] without sacrificing [other metric].
+%  Sentence 5: Evaluation on [standard dataset/benchmark] shows that our method outperforms current state-of-the-art by [X]% in [metric].
+
+
 \begin{document}
 \begin{abstract}
-  Abstract: TBD
+Context-free session types (CFSTs) support expressive communication
+protocols, but programming with them tends to expose the linear
+threading of endpoints in both types and terms. This resource-passing
+style makes modular session programs cumbersome, especially when a
+component uses only a prefix of one or more protocols and returns the
+residual endpoints to its caller.
+
+We extend CFSTs with borrowing. A borrow splits a session type into a
+borrowed protocol prefix and a residual suffix; for CFSTs, this split
+must be computed modulo the equational theory of sequential
+composition, choices, skipping behavior, and recursion. The resulting
+calculus supports direct-style use of session endpoints while
+preserving the linear invariant that communication advances protocol
+state.
+
+A key novelty is the distinction between local and remote
+borrows. Local borrows remain in one thread, where ordered linear typing
+guarantees that the borrowed prefix is processed before the residual
+suffix. Remote borrows may cross thread boundaries; they require explicit
+synchronization to ensure that the borrowed prefix is processed before
+the residual suffix. We give the calculus a direct operational
+semantics, an algorithmic type system based on CFST equivalence
+constraints, and a translation to a lower-level calculus with explicit
+synchronization.
 \end{abstract}
 \maketitle
 
