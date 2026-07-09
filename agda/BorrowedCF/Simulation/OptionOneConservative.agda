@@ -78,3 +78,41 @@ module _ {n : ℕ} (s : 𝕊 0) (F : Frame* (2 + n))
   lsplit-1F-adm : ν body₁ ─→ₚ ν reduct₁
   lsplit-1F-adm =
     RU-Struct (Eq*.return ν-swap′) core (Eq*.symmetric _ (Eq*.return ν-swap′))
+
+-- Same argument for a DUAL-PAIR rule (RU-Com), showing the mechanism is not
+-- lsplit-specific: the swapped-orientation communication (send at 1F / recv at
+-- 0F) is derivable from the 0F/1F-oriented RU-Com via ν-swap′.
+module _ {n : ℕ} (F₁ F₂ : Frame* (2 + n)) {e : Tm (2 + n)} (V : Value e)
+         {e₁ e₁′ e₂ e₂′ : Tm (2 + n)} {P : Proc (2 + n)} where
+
+  com-body₁ com-reduct₁ : Proc (2 + n)
+  com-body₁   = ⟪ F₁ [ K `send ·¹ (e ⊗ 𝓒[ e₁ × 1F × e₁′ ]) ]* ⟫
+              ∥ ( ⟪ F₂ [ K `recv ·¹ 𝓒[ e₂ × 0F × e₂′ ] ]* ⟫ ∥ P )
+  com-reduct₁ = ⟪ F₁ [ * ]* ⟫ ∥ ( ⟪ F₂ [ e ]* ⟫ ∥ P )
+
+  com-lhsEq : ν (com-body₁ ⋯ₚ swapᵣ 1 1)
+        ≡ ν ( ⟪ (F₁ ⋯ᶠ* swapᵣ 1 1)
+                 [ K `send ·¹ ((e ⋯ swapᵣ 1 1)
+                     ⊗ 𝓒[ e₁ ⋯ swapᵣ 1 1 × 0F × e₁′ ⋯ swapᵣ 1 1 ]) ]* ⟫
+            ∥ ( ⟪ (F₂ ⋯ᶠ* swapᵣ 1 1)
+                   [ K `recv ·¹ 𝓒[ e₂ ⋯ swapᵣ 1 1 × 1F × e₂′ ⋯ swapᵣ 1 1 ] ]* ⟫
+              ∥ (P ⋯ₚ swapᵣ 1 1) ) )
+  com-lhsEq = cong₂ (λ z₁ z₂ → ν (⟪ z₁ ⟫ ∥ (⟪ z₂ ⟫ ∥ (P ⋯ₚ swapᵣ 1 1))))
+                (fp* F₁ (swapᵣ 1 1) {t = K `send ·¹ (e ⊗ 𝓒[ e₁ × 1F × e₁′ ])})
+                (fp* F₂ (swapᵣ 1 1) {t = K `recv ·¹ 𝓒[ e₂ × 0F × e₂′ ]})
+
+  com-rhsEq : ν (com-reduct₁ ⋯ₚ swapᵣ 1 1)
+        ≡ ν ( ⟪ (F₁ ⋯ᶠ* swapᵣ 1 1) [ * ]* ⟫
+            ∥ ( ⟪ (F₂ ⋯ᶠ* swapᵣ 1 1) [ e ⋯ swapᵣ 1 1 ]* ⟫ ∥ (P ⋯ₚ swapᵣ 1 1) ) )
+  com-rhsEq = cong₂ (λ z₁ z₂ → ν (⟪ z₁ ⟫ ∥ (⟪ z₂ ⟫ ∥ (P ⋯ₚ swapᵣ 1 1))))
+                (fp* F₁ (swapᵣ 1 1) {t = *})
+                (fp* F₂ (swapᵣ 1 1) {t = e})
+
+  com-core : ν (com-body₁ ⋯ₚ swapᵣ 1 1) ─→ₚ ν (com-reduct₁ ⋯ₚ swapᵣ 1 1)
+  com-core = subst₂ _─→ₚ_ (sym com-lhsEq) (sym com-rhsEq)
+               (RU-Com {e = e ⋯ swapᵣ 1 1} (F₁ ⋯ᶠ* swapᵣ 1 1) (F₂ ⋯ᶠ* swapᵣ 1 1)
+                       (value-⋯ V (swapᵣ 1 1) (λ x → V-`)))
+
+  com-1F-adm : ν com-body₁ ─→ₚ ν com-reduct₁
+  com-1F-adm =
+    RU-Struct (Eq*.return ν-swap′) com-core (Eq*.symmetric _ (Eq*.return ν-swap′))
