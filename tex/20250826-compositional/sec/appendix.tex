@@ -504,9 +504,8 @@ Classify the constants by their value of $\BC$ (\cref{fig:blocked-expr-proc}):
   $\Blocked\Proc$, or $\Proc \PReduce \Proc*$ for some $\Proc*$.
 \end{theorem}
 \begin{proof}
-  Induction on $\ProcHasType\SessCtx\Proc$; \textsc{TP-Weaken} follows from the
-  induction hypothesis. Throughout, $\Blocked{-}$ and $\Congruent$ are read up to
-  pruning of $\PExp\CUnit$ threads by \textsc{Par-Unit}.
+  Induction on the derivation of $\ProcHasType\SessCtx\Proc$; \textsc{TP-Weaken}
+  follows from the induction hypothesis.
 
   \proofcase{\textsc{TP-Expr}, $\Proc = \PExp\E$, $\HasType[\EffImpure]\SessCtx\E\BUnit$.}
   By \cref{lem:thread-progress}:
@@ -520,15 +519,20 @@ Classify the constants by their value of $\BC$ (\cref{fig:blocked-expr-proc}):
   \end{itemize}
 
   \proofcase{\textsc{TP-Par}, $\Proc = \PPar{\Proc[1]}{\Proc[2]}$.}
-  By the induction hypothesis on $\Proc[1],\Proc[2]$:
+  Apply the induction hypothesis to $\Proc[1]$ and to $\Proc[2]$.
   \begin{itemize}
-    \item $\Proc[i] \PReduce \Proc[i]'$ for some $i$: then $\Proc \PReduce$ by
-      \textsc{R-Par}, using $\PPar{\Proc[1]}{\Proc[2]} \Congruent
-      \PPar{\Proc[2]}{\Proc[1]}$ with \textsc{R-Struct} for $i = 2$.
-    \item $\Proc[i] \Congruent \PExp\CUnit$: then $\Proc \Congruent \Proc[3-i]$
-      by \textsc{Par-Unit}, and the claim holds for $\Proc[3-i]$.
-    \item $\Proc[1]$ and $\Proc[2]$ blocked: $\Blocked\Proc$ by
-      \textsc{B-ParBlocked}.
+    \item If $\Proc[1] \PReduce \Proc[1]'$, then $\Proc \PReduce
+      \PPar{\Proc[1]'}{\Proc[2]}$ by \textsc{R-Par}; symmetrically, if
+      $\Proc[2] \PReduce \Proc[2]'$, then $\Proc \PReduce
+      \PPar{\Proc[1]}{\Proc[2]'}$ by \textsc{R-Par} together with
+      $\Proc \Congruent \PPar{\Proc[2]}{\Proc[1]}$ (\textsc{Par-Comm}) and
+      \textsc{R-Struct}.
+    \item Otherwise, if $\Proc[1] \Congruent \PExp\CUnit$, then $\Proc \Congruent
+      \Proc[2]$ by \textsc{Par-Unit}, and the claim for $\Proc$ is the claim
+      already established for $\Proc[2]$; symmetrically if $\Proc[2] \Congruent
+      \PExp\CUnit$.
+    \item Otherwise $\Proc[1]$ and $\Proc[2]$ are both blocked, and
+      $\Blocked\Proc$ by \textsc{B-ParBlocked}.
   \end{itemize}
 
   \proofcase{\textsc{TP-Res}, $\Proc = \PNew{\BindGroup[1]}{\BindGroup[2]}\ProcQ$.}
@@ -542,26 +546,35 @@ Classify the constants by their value of $\BC$ (\cref{fig:blocked-expr-proc}):
       $\BindGroup[1],\BindGroup[2]$ carry linear session types $\SSeq\S\STerm$,
       $\SDual{(\SSeq\S\SWait)}$, and $\BindGivesCtx{}{}{}$ requires each to be
       consumed by a thread, so a body $\Congruent \PExp\CUnit$ is untypable.
-    \item $\ProcQ$ blocked. Up to pruning, $\ProcQ$ is a parallel composition of
-      poised threads and blocked restrictions, the latter closed by the
-      induction hypothesis. Consider the poised threads acting on the endpoints
-      bound here.
+    \item $\ProcQ$ blocked. By the definition of $\Blocked{-}$, every thread of
+      $\ProcQ$ is poised and every restriction inside $\ProcQ$ is blocked; the
+      inner restrictions are closed by the induction hypothesis, so only the
+      channel bound \emph{here} remains. This restriction binds one channel with
+      two dual endpoints: $\EVar$, the head of $\BindGroup[1]$, governed by $\S$,
+      and $\EVary$, the head of $\BindGroup[2]$, governed by $\SDual\S$. (Earlier
+      splits may have left further fragments in $\BindGroup[1],\BindGroup[2]$;
+      \textsc{R-LSplit} and \textsc{R-RSplit} act on such a fragment in place,
+      wherever it sits in its group.) Exactly one of the following holds.
       \begin{enumerate}
-        \item Some thread is poised with $\CDrop,\CDiscard,\CSplit,\CSSplit$ on a
-          bound endpoint, or with $\CAcq$ on a bound endpoint carrying
-          $\BLeadSep{}$. Rotating that endpoint to the binder head by
-          \textsc{Res-Swap}, \textsc{Res-Comm}, \textsc{R-Struct}, the
-          restriction reduces by \textsc{R-Drop}, \textsc{R-Discard},
-          \textsc{R-LSplit}, \textsc{R-RSplit}, resp.\ \textsc{R-Acquire}.
-        \item Some bound channel has both dual endpoints poised at communicating
-          constants. By \cref{lem:sync} the restriction reduces by
+        \item A thread is poised on a fragment of $\BindGroup[1]$ or
+          $\BindGroup[2]$ with $\CSplit$ or $\CSSplit$, or on $\EVar$ or $\EVary$
+          with $\CDrop$ or $\CDiscard$, or on $\EVar$ or $\EVary$ with $\CAcq$
+          while the marker $\BLeadSep{}$ is present. The matching rule
+          \textsc{R-LSplit}, \textsc{R-RSplit}, \textsc{R-Drop},
+          \textsc{R-Discard}, resp.\ \textsc{R-Acquire} fires and $\Proc$ reduces.
+        \item Case (1) does not apply, and two distinct threads are poised at
+          communicating actions on the two ends of the bound channel: one on
+          $\EVar$ and one on $\EVary$. Since $\EVar$ and $\EVary$ are the two ends
+          of a single channel their session types are dual, so by \cref{lem:sync}
+          the two actions form a matched pair, one of $(\CSend,\CRecv)$,
+          $(\CSelect{k},\CBranch)$, $(\CTerm,\CWait)$, and $\Proc$ reduces by
           \textsc{R-Com}, \textsc{R-Choice}, resp.\ \textsc{R-Close}.
-        \item Otherwise every redex poised on a bound endpoint is a communicating
-          constant whose dual endpoint is not poised, or $\CAcq$ without
-          $\BLeadSep{}$. Then the head pair satisfies $\EVar \notin \BC(\ProcQ)$
-          or $\EVary \notin \BC(\ProcQ)$; rotation by \textsc{Res-Swap},
-          \textsc{Res-Comm} preserves this and $\Blocked{-}$, so
-          \textsc{B-NuBlocked} yields $\Blocked\Proc$.
+        \item Neither (1) nor (2) applies. Then at least one of $\EVar,\EVary$ is
+          not poised at a communicating action, i.e.\ $\EVar \notin \BC(\ProcQ)$
+          or $\EVary \notin \BC(\ProcQ)$: the endpoint holds no thread ready to
+          communicate on it, so no synchronization with the other end is
+          possible. This is the premise of \textsc{B-NuBlocked}, which, with
+          $\Blocked\ProcQ$, gives $\Blocked\Proc$.
       \end{enumerate}
   \end{itemize}
 \end{proof}
