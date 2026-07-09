@@ -18,8 +18,8 @@ open Fin.Patterns
 -- Simulation2.Frames.─→-⋯ₛ; every renaming is a value substitution).
 
 ─→-⋯ᵣ : (ρ : m →ᵣ n) → {e₁ e₂ : Tm m} → e₁ ─→ e₂ → e₁ ⋯ ρ ─→ e₂ ⋯ ρ
-─→-⋯ᵣ ρ (E-App {a} {_} {b} V) =
-  subst₂ _─→_ refl (sym (dist-↑-⦅⦆-⋯ b a ρ)) (E-App (value-⋯ V ρ (λ x → V-`)))
+─→-⋯ᵣ ρ (E-App {b} {a} V) =
+  subst₂ _─→_ refl (sym (dist-↑-⦅⦆-⋯ a b ρ)) (E-App (value-⋯ V ρ (λ x → V-`)))
 ─→-⋯ᵣ ρ (E-Seq V) = E-Seq (value-⋯ V ρ (λ x → V-`))
 ─→-⋯ᵣ ρ (E-Let {e₁} {e₂} V) =
   subst₂ _─→_ refl (sym (dist-↑-⦅⦆-⋯ e₂ e₁ ρ)) (E-Let (value-⋯ V ρ (λ x → V-`)))
@@ -95,6 +95,7 @@ red-⋯ₚ : {m n : ℕ} {R Q : Proc m} (ρ : m →ᵣ n) →
          R ─→ₚ Q → (R ⋯ₚ ρ) ─→ₚ (Q ⋯ₚ ρ)
 red-⋯ₚ ρ (RU-Exp red) = RU-Exp (⋯→-⋯ᵣ ρ red)
 red-⋯ₚ ρ (RU-Par r)   = RU-Par (red-⋯ₚ ρ r)
+red-⋯ₚ ρ (RU-Par-right r) = RU-Par-right (red-⋯ₚ ρ r)
 red-⋯ₚ ρ (RU-Res r)   = RU-Res (red-⋯ₚ (ρ ↑* 2) r)
 red-⋯ₚ ρ (RU-Sync r)  = RU-Sync (red-⋯ₚ (ρ ↑) r)
 red-⋯ₚ ρ (RU-Struct c₁ r c₂) = RU-Struct (c₁ ≋-⋯ ρ) (red-⋯ₚ ρ r) (c₂ ≋-⋯ ρ)
@@ -191,7 +192,7 @@ red-⋯ₚ ρ (RU-New {s = s} F) =
     (cong ⟪_⟫ (sym (fp* F ρ {t = K (`new s) ·¹ *})))
     (cong (λ z → ν (φ acq (φ acq ⟪ z ⟫)))
           (sym (fp* (F ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) (ρ ↑* 2 ↑ ↑)
-                    {t = 𝓒[ ` 0F × 3F × * ] ⊗ 𝓒[ ` 1F × 2F × * ]}
+                    {t = 𝓒[ ` 1F × 2F × * ] ⊗ 𝓒[ ` 0F × 3F × * ]}
                 ■ cong (_[ _ ]*) Feq)))
     (RU-New (F ⋯ᶠ* ρ))
   where

@@ -73,6 +73,10 @@ syncs-of []           = inj₁ refl
 syncs-of (b ∷ [])     = inj₁ refl
 syncs-of (b ∷ c ∷ Bp) = inj₂ (b , c , Bp , refl)
 
+-- right ∥-congruence for ≈, from ∥-comm + the left version (no new generator).
+≈-∥-congʳ : ∀ {n} {P Q Rr : UP.Proc n} → P ≈ Q → Rr UP.∥ P ≈ Rr UP.∥ Q
+≈-∥-congʳ c = ≋⇒≈ UP.∥-comm ◅◅ ≈-∥-congˡ c ◅◅ ≋⇒≈ UP.∥-comm
+
 -- Mutual: sim← (≈-closed public entry), sim←ᵍ (≡-image inversion engine),
 -- simRes (RU-Res φ-nest peel, factored out to keep the σ : m →ₛ n scope index).
 sim←   : Backward-Sim
@@ -108,6 +112,15 @@ sim←ᵍ σ Vσ Γ-S {P = P₁ TP.∥ P₂}   ⊢P refl (UR.RU-Par sub)
   with _ , _ , _ , ⊢P₁ , _ ← inv-∥ ⊢P
   with P₁′ , step₁ , c₁ ← sim←ᵍ σ Vσ Γ-S ⊢P₁ refl sub =
   P₁′ TP.∥ P₂ , ⋆-gmap (TP._∥ P₂) TR.R-Par step₁ , ≈-∥-congˡ c₁
+-- RU-Par-right : recurse on the RIGHT, reflect via typed ∥-comm sandwich.
+sim←ᵍ σ Vσ Γ-S {P = TP.⟪ e ⟫}     ⊢P () (UR.RU-Par-right sub)
+sim←ᵍ σ Vσ Γ-S {P = TP.ν B₁ B₂ P} ⊢P () (UR.RU-Par-right sub)
+sim←ᵍ σ Vσ Γ-S {P = P₁ TP.∥ P₂}   ⊢P refl (UR.RU-Par-right sub)
+  with _ , _ , _ , _ , ⊢P₂ ← inv-∥ ⊢P
+  with P₂′ , step₂ , c₂ ← sim←ᵍ σ Vσ Γ-S ⊢P₂ refl sub =
+  P₁ TP.∥ P₂′
+  , ⋆-gmap (P₁ TP.∥_) (λ st → TR.R-Struct TP.∥-comm (TR.R-Par st) TP.∥-comm) step₂
+  , ≈-∥-congʳ c₂
 -- RU-Res : φ-nest peel (simRes).
 sim←ᵍ σ Vσ Γ-S {P = P} ⊢P eq (UR.RU-Res {P = X} {Q = X′} sub)
   with B₁ , B₂ , P₀ , refl , bodyeq ← inv-U-ν P σ (sym eq)

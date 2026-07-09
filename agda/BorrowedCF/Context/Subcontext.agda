@@ -84,17 +84,10 @@ module _ where
   ≼-map⁺ Uf Mf (≼-refl x) = ≼-refl (≈-map⁺ Uf Mf x)
   ≼-map⁺ Uf Mf (≼-∅ x) = ≼-∅ (allCx-gmap Uf x)
   ≼-map⁺ Uf Mf ≼-wk = ≼-wk
-  ≼-map⁺ Uf Mf (≼-trans x x₁) = ≼-trans (≼-map⁺ Uf Mf x) (≼-map⁺ Uf Mf x₁)
+  ≼-map⁺ Uf Mf (≼-trans x x₁)  = ≼-trans  (≼-map⁺ Uf Mf x) (≼-map⁺ Uf Mf x₁)
   ≼-map⁺ Uf Mf (≼-cong-; x x₁) = ≼-cong-; (≼-map⁺ Uf Mf x) (≼-map⁺ Uf Mf x₁)
   ≼-map⁺ Uf Mf (≼-cong-∥ x x₁) = ≼-cong-∥ (≼-map⁺ Uf Mf x) (≼-map⁺ Uf Mf x₁)
 
-{-
-_≼?_ : Bin.Decidable (Γ ∶_≼_)
-(` x) ≼? (` y) = map′ (≼-refl ∘ ≈-reflexive ∘ cong `_) {!!} (x Fin.≟ y)
-(` x) ≼? [] = no `x⋠[]
-(` x) ≼? (α ∥ β) = {!!}
-(` x) ≼? (α ; β) = {!!}
-[] ≼? β = map′ ≼-∅ (unrCx-≼ []) (unrCx? β)
-(α₁ ∥ α₂) ≼? β = {!!}
-(α₁ ; α₂) ≼? β = {!!}
--}
+postulate
+  -- The subcontext relation is decidable, see Saffrich et. al. 2024.
+  _∶_≼?_ : (Γ : Ctx n) → Bin.Decidable (Γ ∶_≼_)

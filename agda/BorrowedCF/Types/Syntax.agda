@@ -372,3 +372,13 @@ dual-involutive (`` α) rewrite dualPol-involutive (UVar.pol α) = refl
 μPrefix : ∀ {κ x} → Ty κ x → ℕ
 μPrefix (mu t)  = 1 + μPrefix t
 μPrefix _       = 0
+
+skips-dual⁺ : Skips s → Skips (dual s)
+skips-dual⁺ skip = skip
+skips-dual⁺ (x ; x₁) = skips-dual⁺ x ; skips-dual⁺ x₁
+skips-dual⁺ (mu x) = mu (skips-dual⁺ x)
+
+skips-dual⁻ : Skips (dual s) → Skips s
+skips-dual⁻ {s = mu s} (mu x) = mu (skips-dual⁻ x)
+skips-dual⁻ {s = s₁ ; s₂} (x ; x₁) = skips-dual⁻ x ; skips-dual⁻ x₁
+skips-dual⁻ {s = skip} skip = skip

@@ -148,7 +148,7 @@ infix 4 ⊢_∶_
 
 data ⊢_∶_ : Const → 𝕋 → Set where
   `unit : ⊢ `unit ∶ `⊤
-  `discard : ⊢ `discard ∶ ⟨ skip ⟩ →*M `⊤ ∣ ℙ
+  `discard : ⊢ `discard ∶ ⟨ skip ⟩ →*M `⊤ ∣ 𝕀
 
   `fork : ⊢ `fork ∶ (`⊤ →1M `⊤ ∣ 𝕀) →*M `⊤ ∣ ℙ
 

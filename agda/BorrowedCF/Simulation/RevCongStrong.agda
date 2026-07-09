@@ -34,9 +34,9 @@ open import Data.Sum using (_⊎_; inj₁; inj₂)
 open Nat using (_≤_; ≤-refl; n≤1+n)
 
 open UP using (Proc; _≋′_; _≋_; _∥_;
-               ∥-assoc′; ∥-cong′; ν-cong′; φ-cong′;
-               ∥-assoc; ∥-cong; ν-cong; φ-cong)
-open UR using (_─→ₚ_; RU-Par; RU-Res; RU-Sync; RU-Struct)
+               ∥-comm′; ∥-assoc′; ∥-cong′; ν-cong′; φ-cong′;
+               ∥-comm; ∥-assoc; ∥-cong; ν-cong; φ-cong)
+open UR using (_─→ₚ_; RU-Par; RU-Par-right; RU-Res; RU-Sync; RU-Struct)
 
 private
   variable
@@ -49,6 +49,7 @@ private
 -- Total number of ─→ₚ constructor nodes (RU-Struct counts its inner one + 1).
 ∣_∣ : {R Q : Proc n} → R ─→ₚ Q → ℕ
 ∣ RU-Par r       ∣ = suc ∣ r ∣
+∣ RU-Par-right r ∣ = suc ∣ r ∣
 ∣ RU-Res r       ∣ = suc ∣ r ∣
 ∣ RU-Sync r      ∣ = suc ∣ r ∣
 ∣ RU-Struct _ r _ ∣ = suc ∣ r ∣
@@ -60,6 +61,7 @@ private
 -- terminate, so they are "free".
 sc : {R Q : Proc n} → R ─→ₚ Q → ℕ
 sc (RU-Par r)        = sc r
+sc (RU-Par-right r)  = sc r
 sc (RU-Res r)        = sc r
 sc (RU-Sync r)       = sc r
 sc (RU-Struct _ r _) = suc (sc r)
@@ -103,6 +105,15 @@ sc _                 = 0
 ≋′-sim-strongᵐ ∥-assoc′ (RU-Par sub) =
   _ , RU-Par (RU-Par sub) , n≤1+n _ , ∥-assoc
 
+-- (3b) ∥-commutativity, either orientation of the reduction: genuinely replay
+--      by swapping RU-Par ↔ RU-Par-right.  No RU-Struct, sc preserved.  (This
+--      is what the newly-added RU-Par-right rule unblocks; the old note at the
+--      bottom claiming ∥-comm forces a +1 is now STALE.)
+≋′-sim-strongᵐ ∥-comm′ (RU-Par sub) =
+  _ , RU-Par-right sub , n≤1+n _ , ∥-comm
+≋′-sim-strongᵐ ∥-comm′ (RU-Par-right sub) =
+  _ , RU-Par sub , n≤1+n _ , ∥-comm
+
 -- (4) everything else: no genuine constructor is available (see note), so the
 --     only witness is the wrapping fallback, costing +1 RU-Struct.
 ≋′-sim-strongᵐ c red = _ , ≋-step (Eq*.return c) red , ≤-refl , ε
@@ -143,6 +154,12 @@ sc _                 = 0
 ≋′-sim-strong-revᵐ ∥-assoc′ (RU-Par (RU-Par sub)) =
   _ , RU-Par sub , n≤1+n _ , Eq*.symmetric _ ∥-assoc
 
+-- (3b) ∥-commutativity, mirror: swap RU-Par ↔ RU-Par-right.  No RU-Struct.
+≋′-sim-strong-revᵐ ∥-comm′ (RU-Par sub) =
+  _ , RU-Par-right sub , n≤1+n _ , ∥-comm
+≋′-sim-strong-revᵐ ∥-comm′ (RU-Par-right sub) =
+  _ , RU-Par sub , n≤1+n _ , ∥-comm
+
 -- (4) fallback wrapper.  R′ ≋ R (return g) then R ─→ Q, so R′ ─→ Q directly.
 ≋′-sim-strong-revᵐ g red = _ , RU-Struct (Eq*.return g) red ε , ≤-refl , ε
 
@@ -164,17 +181,16 @@ sc _                 = 0
 ≋′±-sim-strong (bwd g) red = ≋′-sim-strong-rev g red
 
 ------------------------------------------------------------------------
--- Machine-checked obstruction:  ─→ₚ reduces ONLY the LEFT of _∥_.
---
---   Every reduction of  A ∥ B  is either a RU-Par reducing A, or a RU-Struct.
---   No constructor reduces the RIGHT (B).  Hence for  ∥-comm′ : A∥B ≋′ B∥A,
---   a step  RU-Par (A ─→ A′) : A∥B ─→ A′∥B  has NO genuine replay on  B∥A
---   (whose reduct B∥A′ would require reducing the right of B∥A): only a
---   RU-Struct wrapper works, which is the unavoidable +1 in case (4).
+-- Reduction inversion for  _∥_.  With RU-Par-right now in the calculus,
+-- BOTH sides of a  A ∥ B  reduction are genuinely reachable, so the old
+-- "left-only" obstruction (that forced ∥-comm to a +1 RU-Struct) is GONE:
+-- the right disjunct below now feeds off  ∥-comm + RU-Par, not a fresh
+-- RU-Struct wrapper.
 ------------------------------------------------------------------------
 
 ∥-red-inv : {A B C : Proc n} → A ∥ B ─→ₚ C
           → (∃[ A′ ] Σ[ r ∈ A ─→ₚ A′ ] C ≡ A′ ∥ B)
           ⊎ (∃[ R′ ] ∃[ P′ ] Σ[ c₁ ∈ (A ∥ B) ≋ R′ ] Σ[ r ∈ R′ ─→ₚ P′ ] P′ ≋ C)
 ∥-red-inv (RU-Par r)          = inj₁ (_ , r , refl)
+∥-red-inv (RU-Par-right r)    = inj₂ (_ , _ , ∥-comm , RU-Par r , ∥-comm)
 ∥-red-inv (RU-Struct c₁ r c₂) = inj₂ (_ , _ , c₁ , r , c₂)

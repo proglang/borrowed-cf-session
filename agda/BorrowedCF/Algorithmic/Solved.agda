@@ -123,16 +123,28 @@ module _ where
   subTy-unfold : (s : 𝕊 (suc n)) → unfold (subTy s σ) ≡ subTy (unfold s) σ
   subTy-unfold {σ = σ} s = ⋯-cong (subTy s σ) (λ{ zero → refl ; (suc x) → refl }) ■ subTy-⋯ s
 
-subTy-≃ : s₁ ≃ s₂ → subTy s₁ σ ≃ subTy s₂ σ
-subTy-≃ {σ = σ} = Eq*.gmap (flip subTy σ) go where
-  go : s₁ ≃𝕊 s₂ → subTy s₁ σ ≃𝕊 subTy s₂ σ
-  go (≃𝕊-;₁ eq) = ≃𝕊-;₁ (go eq)
-  go (≃𝕊-;₂ eq) = ≃𝕊-;₂ (go eq)
-  go ≃𝕊-skipˡ = ≃𝕊-skipˡ
-  go ≃𝕊-skipʳ = ≃𝕊-skipʳ
-  go ≃𝕊-assoc = ≃𝕊-assoc
-  go ≃𝕊-distr = ≃𝕊-distr
-  go {s₁ = mu s} ≃𝕊-μ = subst (mu (subTy s σ) ≃𝕊_) (subTy-unfold s) ≃𝕊-μ
+subTy-≃ : ∀ {κ x} {a b : Ty κ x} → a ≃ b → subTy a σ ≃ subTy b σ
+subTy-≃ {σ = σ} {𝕤} refl = refl
+subTy-≃ {σ = σ} {𝕤} (x ◅ xs) = go x ◅ subTy-≃ xs where
+  goF : ∀ {s₁ s₂ : 𝕊 _} → s₁ ≃𝕊 s₂ → subTy s₁ σ ≃𝕊 subTy s₂ σ
+  go  : ∀ {s₁ s₂ : 𝕊 _} → Sym.SymClosure _≃𝕊_ s₁ s₂ → Sym.SymClosure _≃𝕊_ (subTy s₁ σ) (subTy s₂ σ)
+  go (fwd y) = fwd (goF y)
+  go (bwd y) = bwd (goF y)
+  goF (≃𝕊-;₁ eq) = ≃𝕊-;₁ (goF eq)
+  goF (≃𝕊-;₂ eq) = ≃𝕊-;₂ (goF eq)
+  goF ≃𝕊-skipˡ = ≃𝕊-skipˡ
+  goF ≃𝕊-skipʳ = ≃𝕊-skipʳ
+  goF ≃𝕊-assoc = ≃𝕊-assoc
+  goF ≃𝕊-distr = ≃𝕊-distr
+  goF {s₁ = mu s} ≃𝕊-μ = subst (mu (subTy s σ) ≃𝕊_) (subTy-unfold s) ≃𝕊-μ
+  goF (≃𝕊-msg eq) = ≃𝕊-msg (subTy-≃ eq)
+  goF (≃𝕊-brn₁ eq) = ≃𝕊-brn₁ (goF eq)
+  goF (≃𝕊-brn₂ eq) = ≃𝕊-brn₂ (goF eq)
+subTy-≃ {σ = σ} {𝕥} `⊤ = `⊤
+subTy-≃ {σ = σ} {𝕥} (eq ⊗ eq₁) = subTy-≃ eq ⊗ subTy-≃ eq₁
+subTy-≃ {σ = σ} {𝕥} (eq ⊕ eq₁) = subTy-≃ eq ⊕ subTy-≃ eq₁
+subTy-≃ {σ = σ} {𝕥} (eq `→ eq₁) = subTy-≃ eq `→ subTy-≃ eq₁
+subTy-≃ {σ = σ} {𝕥} ⟨ eq ⟩ = ⟨ subTy-≃ eq ⟩
 
 subTy-skips : Skips s → Skips (subTy s σ)
 subTy-skips skip = skip
@@ -301,8 +313,12 @@ subTm-id {σ = σ} `case e `of⟨ e₁ ; e₂ ⟩ rewrite subTm-id {σ = σ} e 
 subCtx : Ctx n → UV.Sub → Ctx n
 subCtx Γ σ k = subTy (Γ k) σ
 
+SolvedCst : Constraint → UV.Sub → Set
+SolvedCst (C-Eq t u) σ = subTy t σ ≃ subTy u σ
+SolvedCst (C-Mob t) σ = Mobile (subTy t σ)
+
 SolvedΔ : CSet → UV.Sub → Set
-SolvedΔ Δ σ = flip All Δ λ (T₁ , T₂) → subTy T₁ σ ≃ subTy T₂ σ
+SolvedΔ Δ σ = flip All Δ (λ C → SolvedCst C σ)
 
 SolvedΓ : Ctx n → UV.Sub → Set
 SolvedΓ Γ σ = ∀ x →

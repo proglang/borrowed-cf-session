@@ -46,6 +46,7 @@ the supplementary material in \cref{fig:blocked-expr-proc}. We write $\SessCtx$
 for a context $\Ctx$ that only contains session types.
 
 \begin{theorem}[Expression progress\;\AgdaBird]
+  \label{thm:expression-progress}
   If $\HasType \SessCtx \E \T$, then either $\E$ is a value or $\E$ is blocked on concurrent actions or there exists an $\E*$ such that $\E \EReduce \E*$.
 \end{theorem}
 
@@ -56,9 +57,11 @@ Process progress guarantees reduction only for non-terminal, non-blocked
 configurations. Thus, deadlocks remain possible.
 
 \begin{theorem}[Process progress\;\AgdaBird]
+  \label{thm:process-progress}
   If $\ProcHasType \SessCtx \Proc$, then either $\Proc \Congruent \PExp{\CUnit}$ or an expression in $\Proc$ is blocked on concurrent actions or
     there exists an $\Proc*$ such that $\Proc \PReduce \Proc*$.
 \end{theorem}
+The proof is deferred to \cref{sec:appendix-metatheory-ts}.
 
 Progress for expressions and processes is complemented by preservation,
 yielding the usual safety invariant across reduction steps.
