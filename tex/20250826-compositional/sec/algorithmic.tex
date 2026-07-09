@@ -148,47 +148,47 @@ output types to be equal.
 
 \subsection{Constraint Solving}
 \label{sec:constraint-solving}
-
 An algorithmic typing for an expression $\E$ yields a set of
 constraints $\CSet$. In inference mode, the returned type $\AT$ may
-refer to unsolved type variables. Solving $\CSet$ and determining
-valid instantiations for all type variables boils down to a
-unification problem. Unfortunately, we are not aware of a unification
-algorithm for the theory of context-free session types, which involves
-associativity, neutral elements, and distributivity. Hence, we
+refer to unsolved unification variables. Solving $\CSet$ boils down to a unification problem, but we are not
+aware of a unification algorithm for the theory of context-free session
+types, which involves associativity, neutral elements, and
+distributivity. Hence, we
 approach constraint solving by constraint simplification.
 
 The equivalence constraints in $\CSet$ are simplified by structural
 decomposition: pairs, sums, function types, and contexts are reduced
-componentwise, while unit constraints disappear. The rules are given
-in \cref{fig:constraint-simplification} and are applied until no more
-rules apply. Constraints of the form $\TVar\CEq\AT$ provide a potential
-solution for unification variable $\TVar$. If there are unification
+componentwise, while unit constraints disappear. The full rule set is given
+in \cref{fig:constraint-simplification}. The rules are applied until a fixed point is reached. Constraints of the form $\TVar\CEq\AT$ provide a potential
+solution for unification variable $\TVar$. If we are let with unification
 variables occurring in $\CSet$ or $\AT$ for which no solution candidate
-can be discovered in this way the heuristic will fail and $\E$ is
+is found, the heuristic will fail and $\E$ is
 considered ill-typed.
 
-Potential solutions have to be validated in respect to the whole set of
-constraints $\CSet$. One candidate is picked per variable and substituted
-giving a variable-free $\CSet*$\!. The mobility constraints are easily
-validated since for any type $\T$ it is decidable if $\Mobile\T$. The
-equalities can be verified because the equivalence of CFSTs is
-decidable~\cite{DBLP:conf/tacas/AlmeidaMV20}. Since the type language of this
-paper contains constructs not part of ordinary CFSTs (e.\,g. the distinction
-between left and right-ordered function types) an equivalence respecting
-encoding from our types to CFSTs is necessary.
-\Cref{sec:algorithmic-typing-appendix} in the appendix describes the
-translation and sketches the proofs of its correctness. If, at this point,
-there are constraints that are not satisfied the program is considered
-ill-typed. \js{refering some $\E$ above and ``program'' here, need to fix this}
+Potential solutions have to first be identified and then validated in respect to the whole set of
+constraints $\CSet$.
 
+We non-deterministically pick one candidate instantiation per variable, resulting in
+a variable-free $\CSet*$\!. 
 If there are multiple candidates for a unification variable the type to be substituted
-into $\CSet$ can be picked non-deterministically. Consider the case where after
-simplification there two constraints $\TVar \CEq \T$ and $\TVar \CEq \TU$. If
-$\T$ is not a valid solution for $\TVar$, then $\TU$ will not be one either.
-The equality $\T \simeq \TU$ must hold whichever type is picked. Since mobility
+into $\CSet$ can be picked non-deterministically. To see this, consider the case where after
+simplification there are two constraints $\TVar \CEq \T$ and $\TVar \CEq \TU$. If
+$\T$ is not a valid solution for $\TVar$, then $\TU$ is also not a solution.
+The equality $\T \simeq \TU$ must hold for all types that can be selected. Since mobility
 respects type-equivalence it is not possible to construct mobility constraints
 that are satisfied by one but not the other candidate.
+
+The mobility constraints are easily
+validated because $\Mobile\T$ is decidable. 
+The equality constraints can be verified because the equivalence of CFSTs is
+decidable~\cite{DBLP:conf/tacas/AlmeidaMV20}. 
+Because our type language is richer than ordinary CFSTs (e.\,g. the distinction
+between left and right-ordered function types), we require
+an equivalence respecting encoding from our types to CFSTs.
+\Cref{sec:algorithmic-typing-appendix} describes the
+translation and sketches a correctness proof for the encoding. 
+
+
 
 % In the following we sketch why our heuristic is able to infer useful
 % information. Fresh unification variables are only introduced through
@@ -211,7 +211,7 @@ It is based on the artifact \cite{saffrich25:_artif_borrow_from_session_types}
 and uses FreeST 5.0
 \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22,
   almeida26:_frees_concur_progr_languag_with} for equivalence checking
-of session types.
+of session types. The FreeST integration is described more closely in \cref{sec:appendix-implementation}
 The test cases of the Rust implementation include the motivational examples from \cref{sec:motivation}.
 
 %%% Local Variables:

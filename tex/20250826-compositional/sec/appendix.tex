@@ -1,8 +1,6 @@
 \FloatBarrier
 \appendix
 
-\FloatBarrier
-
 \section{Types: Session-Type Laws and Well Formedness Predicates}
 \label{sec:appendix-types}
 
@@ -139,6 +137,7 @@
 
 \section{Translation: Congruence of Translated Processes}
 
+
 \begin{figure}[htbp]
   \begin{mathpar}
     %\RuleTransCongRefl \and
@@ -206,7 +205,41 @@
   \label{fig:constraint-simplification}
 \end{figure}
 
-\subsection{Constraint Checking with FreeST}
+\subsection{Type Normalisation}
+\begin{figure}
+  \small
+  \hfill \fbox{$\ConcatType {\T[in]} {\T[in]} = \T[out]$}
+  \begin{mathpar}
+    \TypeConcatenationSkip
+
+    \TypeConcatenationSemiDist
+
+    \TypeConcatenationNonSemi
+  \end{mathpar}
+
+  \hfill \fbox{$\NormaliseType {\T[in]} {\T[out]}$}
+  \begin{mathpar}
+    \TypeNormalisationSemiSkips
+    
+    \TypeNormalisationSemi
+
+    \TypeNormalisationMu
+
+    \TypeNormalisationChoiceSemi
+
+    \TypeNormalisationBranchSemi
+
+    \TypeNormalisationIdentity
+  \end{mathpar}
+  \caption{Type Normalisation}
+  \label{fig:typing-normalisation}
+\end{figure}
+
+
+\subsection{Implementation}
+\label{sec:appendix-implementation}
+\subsubsection{Constraint Checking with FreeST}
+
 In the implementation, we use FreeST \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22, almeida26:_frees_concur_progr_languag_with} version 5.0 to perform equivalence checking. To achieve this, we generate little FreeST programs that typechecks iff the equivalence constraints hold.
 
 For every equivalence constraint $\T[1] \CEq \T[2]$, we generate the following FreeST program:
@@ -293,7 +326,7 @@ Thus the translation function $\tofreest{\S}$ (\Cref{fig:freest-translation} ) t
   \label{fig:freest-translation}
 \end{figure}
 
-\subsection{Soundness and the Completeness of the translation}
+\subsubsection{Soundness and the Completeness of the translation}
 
 \begin{definition}[Equivalence relation for \thecalculus types]
   The equivalence relation $\simeq$ on \thecalculus types is the least congruence closed under the equivalence rules from \cite{DBLP:conf/icfp/ThiemannV16} extended with rules in \Cref{fig:cfstb-equivalence}.
@@ -351,37 +384,6 @@ Thus the translation function $\tofreest{\S}$ (\Cref{fig:freest-translation} ) t
   Similar to \ref{lem:sound-translation} but the opposite direction.
 \end{proof}
 
-\subsection{Type Normalisation}
-\FloatBarrier
-\begin{figure}
-  \small
-  \hfill \fbox{$\ConcatType {\T[in]} {\T[in]} = \T[out]$}
-  \begin{mathpar}
-    \TypeConcatenationSkip
-
-    \TypeConcatenationSemiDist
-
-    \TypeConcatenationNonSemi
-  \end{mathpar}
-
-  \hfill \fbox{$\NormaliseType {\T[in]} {\T[out]}$}
-  \begin{mathpar}
-    \TypeNormalisationSemiSkips
-    
-    \TypeNormalisationSemi
-
-    \TypeNormalisationMu
-
-    \TypeNormalisationChoiceSemi
-
-    \TypeNormalisationBranchSemi
-
-    \TypeNormalisationIdentity
-  \end{mathpar}
-  \caption{Type Normalisation}
-  \label{fig:typing-normalisation}
-\end{figure}
-
 \FloatBarrier
 
 \section{Metatheory}
@@ -412,4 +414,6 @@ Thus the translation function $\tofreest{\S}$ (\Cref{fig:freest-translation} ) t
 
 \subsection{Soundness and Completeness for Algorithmic Typing}
 \label{sec:appendix-metatheory-sc}
+
+\FloatBarrier
 
