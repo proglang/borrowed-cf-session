@@ -68,8 +68,8 @@ and expression $\E$. It computes the expression's type $\AT$, its
 effect $\Eff$, and a set of constraints $\CSet$. The checking judgment
 $\CheckType \E \AT \Eff$ takes as input the context $\Ctx$, expression
 $\E$, and type $\AT$. It returns the expression's effect $\Eff$ as
-well as a set of constraints $\CSet$. Judgments make use of context
-join $\Ctx[1] \CtxJoin \Ctx[2]$, which joins two contexts according to
+well as a set of constraints $\CSet$. Judgements make use of context
+join $\Ctx[1] \CtxJoin* \Ctx[2]$, which joins two contexts according to
 the direction $\Dir$, and context restriction $\CtxRestrict*{X}$,
 which restricts a context to a set of variables $X$; the definitions
 are given in \cref{fig:context-operators}. Type
@@ -168,17 +168,19 @@ variables occurring in $\CSet$ or $\AT$ for which no solution candidate
 can be discovered in this way the heuristic will fail and $\E$ is
 considered ill-typed.
 
-The potential solutions have to be validated in respect to the whole set of
+Potential solutions have to be validated in respect to the whole set of
 constraints $\CSet$. One candidate is picked per variable and substituted
 giving a variable-free $\CSet*$\!. The mobility constraints are easily
 validated since for any type $\T$ it is decidable if $\Mobile\T$. The
-equalities are passed to FreeST which implements a decision procedure for
-equivalence of CFSTs. Since the type language of this paper contains constructs
-not part of FreeST (e.\,g. the distinction between left and right-ordered
-function types) an encoding from our types to FreeST is necessary.
-\js{reference to the encoding} If there are constraints that are not satisfied
-at this point the program is considered ill-typed. \js{refering some $\E$ above
-and ``program'' here, need to fix this}\mw{remove FreeST reference in favor of citing the decidablity of normalization.}
+equalities can be verified because the equivalence of CFSTs is
+decidable~\cite{DBLP:conf/tacas/AlmeidaMV20}. Since the type language of this
+paper contains constructs not part of ordinary CFSTs (e.\,g. the distinction
+between left and right-ordered function types) an equivalence respecting
+encoding from our types to CFSTs is necessary.
+\Cref{sec:algorithmic-typing-appendix} in the appendix describes the
+translation and sketches the proofs of its correctness. If, at this point,
+there are constraints that are not satisfied the program is considered
+ill-typed. \js{refering some $\E$ above and ``program'' here, need to fix this}
 
 If there are multiple candidates for a unification variable the type to be substituted
 into $\CSet$ can be picked non-deterministically. Consider the case where after
@@ -188,19 +190,19 @@ The equality $\T \simeq \TU$ must hold whichever type is picked. Since mobility
 respects type-equivalence it is not possible to construct mobility constraints
 that are satisfied by one but not the other candidate.
 
-In the following we sketch why our heuristic is able to infer useful
-information. Fresh unification variables are only introduced through
-\RuleName{A-LSplit} and \RuleName{A-RSplit}. In the case for $\CSplit$ the
-fresh variable $\TVar$ occurs nested in the function result type not composed
-with other session types. The function itself is linear, guaranteeing that a
-value of the result type will be lying around. \js{continue here}
-
-$\SSkip$ as well as any other session types equivalent to skip \js{do we use this
-terminology?} are never valid solutions for unification variables, because this would
-be allow to split a session type off from itself.
-
-One instance where the heuristic falls short is when the second component of a
-$\CSSplit$-result is split further with a prefix of more than just $\SAcq$.
+% In the following we sketch why our heuristic is able to infer useful
+% information. Fresh unification variables are only introduced through
+% \RuleName{A-LSplit} and \RuleName{A-RSplit}. In the case for $\CSplit$ the
+% fresh variable $\TVar$ occurs nested in the function result type not composed
+% with other session types. The function itself is linear, guaranteeing that a
+% value of the result type will be lying around. \js{continue here}
+% 
+% $\SSkip$ as well as any other session types equivalent to skip \js{do we use this
+% terminology?} are never valid solutions for unification variables, because this would
+% be allow to split a session type off from itself.
+% 
+% One instance where the heuristic falls short is when the second component of a
+% $\CSSplit$-result is split further with a prefix of more than just $\SAcq$.
 
 \subsection{Implementation}
 
@@ -210,7 +212,6 @@ and uses FreeST 5.0
 \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22,
   almeida26:_frees_concur_progr_languag_with} for equivalence checking
 of session types.
-
 The test cases of the Rust implementation include the motivational examples from \cref{sec:motivation}.
 
 %%% Local Variables:

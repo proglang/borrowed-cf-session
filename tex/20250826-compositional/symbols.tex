@@ -164,7 +164,7 @@
 \NewDocumentCommand\CtxRestrict{s O{} m}{
   \Ctx[#2]\metacolor{{\mkern1.2mu}|_{\IfBooleanTF{#1}{#3}{\Fv(#3)}}}
 }
-\newcommand*\CtxJoin[1][\Dir]{\stackrel{#1}{\metacolor{\bowtie}}}
+\NewDocumentCommand\CtxJoin{s O{\Dir}}{\stackrel{\IfBooleanT{#1}{\smash}{#2}}{\metacolor{\bowtie}}}
 \newcommand*\CtxAlgJoinCheck[3][]{
   \CtxRestrict[#1]{#2} \CtxJoin \CtxRestrict[#1]{#3} \SubCtx \Ctx[#1]
 }

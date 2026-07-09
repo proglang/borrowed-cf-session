@@ -157,8 +157,10 @@
   \label{fig:translated-congruence}
 \end{figure}
 
-\section{Algorithmic Typing}
 \FloatBarrier
+
+\section{Algorithmic Typing}
+\label{sec:algorithmic-typing-appendix}
 
 \begin{figure}[htbp]
   \begin{minipage}{0.49\linewidth}
@@ -199,6 +201,8 @@
 \end{figure}
 
 \subsection{Constraint Checking with FreeST}
+In the implementation, we use FreeST \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22, almeida26:_frees_concur_progr_languag_with} version 5.0 to perform equivalence checking. To achieve this, we generate little FreeST programs that typechecks iff the equivalence constraints hold.
+
 For every equivalence constraint $\T[1] \CEq \T[2]$, we generate the following FreeST program:
 
 \begin{lstlisting}[numbers=left]
