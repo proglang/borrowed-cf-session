@@ -164,3 +164,26 @@ Ub-right0F⇒last : ∀ {N} b (e₁ : Tm (suc N)) (c : 𝔽 (suc N)) (v : 𝔽 (
 Ub-right0F⇒last zero     e₁ c 0F          eq = refl
 Ub-right0F⇒last (suc b') e₁ c 0F          eq = case proj₂ (⊗-inj eq) of λ ()
 Ub-right0F⇒last (suc b') e₁ c (Fin.suc v) eq = cong Fin.suc (Ub-right0F⇒last b' * c v eq)
+
+------------------------------------------------------------------------
+-- νσᵈ σ-region refuters.  The σ-region maps each σ-value through
+-- weaken 2 ⋯ weaken 1 ⋯ weaken 0, pushing all its variables above 0F, so it
+-- can never be a chanTriple with right slot ` 0F.
+------------------------------------------------------------------------
+
+shiftᵈ : ∀ {n} → Tm n → Tm (3 + n)
+shiftᵈ t = t ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ 1 ⋯ weaken* ⦃ Kᵣ ⦄ 0
+
+σregᵈ-var : ∀ {n} {t : Tm n} → Value t → shiftᵈ t ≡ ` 0F → ⊥
+σregᵈ-var V-`       ()
+σregᵈ-var V-K       ()
+σregᵈ-var V-λ       ()
+σregᵈ-var (V-⊗ _ _) ()
+σregᵈ-var (V-⊕ _)   ()
+
+σregᵈ-pair : ∀ {n} {t : Tm n} → Value t → ∀ {a : Tm (3 + n)} → shiftᵈ t ≡ a ⊗ (` 0F) → ⊥
+σregᵈ-pair V-`       ()
+σregᵈ-pair V-K       ()
+σregᵈ-pair V-λ       ()
+σregᵈ-pair (V-⊕ _)   ()
+σregᵈ-pair (V-⊗ V₁ V₂) eq = σregᵈ-var V₂ (proj₂ (⊗-inj eq))
