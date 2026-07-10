@@ -63,3 +63,40 @@ join-absorb L {A} B U dom⊆ =
   ≼-trans (≼-refl (≈-sym (∥/;-transmute (Sum.inj₂ (UnrCx⇒MobCx U))))) (∥-absorb B U dom⊆)
 join-absorb R {A} B U dom⊆ =
   ≼-trans (≼-refl (≈-sym (∥/;-transmute (Sum.inj₁ (UnrCx⇒MobCx U))) ◅◅ ∥-comm)) (∥-absorb B U dom⊆)
+
+-- ≈-strength versions (join a A B ≈ A for Unr, dom-covered B).
+mutual
+  mv-≈ : {n : ℕ} {Γ : Ctx n} (A : Struct n) {y : 𝔽 n} → y ∈ dom A → Unr (Γ y) → Γ ∶ A ∥ (` y) ≈ A
+  mv-≈ (` z) {y} y∈ u with x∈⁅y⁆⇒x≡y z y∈
+  ... | refl = ≈-sym (∥-dup (` u))
+  mv-≈ [] y∈ u = ⊥-elim (∉⊥ y∈)
+  mv-≈ (α ∥ β) {y} y∈ u with x∈p∪q⁻ (dom α) (dom β) y∈
+  ... | Sum.inj₁ y∈α = (∥-assoc ◅◅ ∥-cong ≈-refl ∥-comm ◅◅ ≈-sym ∥-assoc) ◅◅ ∥-cong (mv-≈ α y∈α u) ≈-refl
+  ... | Sum.inj₂ y∈β = ∥-assoc ◅◅ ∥-cong ≈-refl (mv-≈ β y∈β u)
+  mv-≈ (α ; β) {y} y∈ u with x∈p∪q⁻ (dom α) (dom β) y∈
+  ... | Sum.inj₁ y∈α =
+    (∥/;-transmute (Sum.inj₂ (mob-y u)) ◅◅ ;-assoc ◅◅ ;-cong ≈-refl (mob-COMMA-comm (Sum.inj₂ (mob-y u))) ◅◅ ≈-sym ;-assoc)
+    ◅◅ ;-cong (seq-mv-≈ α y∈α u) ≈-refl
+  ... | Sum.inj₂ y∈β =
+    (∥/;-transmute (Sum.inj₂ (mob-y u)) ◅◅ ;-assoc) ◅◅ ;-cong ≈-refl (seq-mv-≈ β y∈β u)
+
+  seq-mv-≈ : {n : ℕ} {Γ : Ctx n} (A : Struct n) {y : 𝔽 n} → y ∈ dom A → Unr (Γ y) → Γ ∶ A ; (` y) ≈ A
+  seq-mv-≈ A y∈ u = ≈-sym (∥/;-transmute (Sum.inj₂ (mob-y u))) ◅◅ mv-≈ A y∈ u
+
+∥-absorb-≈ : {n : ℕ} {Γ : Ctx n} {A : Struct n} (B : Struct n) →
+             AllCx Unr Γ B → dom B ⊆ dom A → Γ ∶ A ∥ B ≈ A
+∥-absorb-≈ [] _ _ = ∥-unit₂
+∥-absorb-≈ {A = A} (` y) (` u) dom⊆ = mv-≈ A (dom⊆ (x∈⁅x⁆ y)) u
+∥-absorb-≈ {A = A} (B₁ ∥ B₂) (U₁ ∥ U₂) dom⊆ =
+  ≈-sym ∥-assoc ◅◅ ∥-cong (∥-absorb-≈ B₁ U₁ (⊆-trans (p⊆p∪q (dom B₂)) dom⊆)) ≈-refl
+  ◅◅ ∥-absorb-≈ B₂ U₂ (⊆-trans (q⊆p∪q (dom B₁) (dom B₂)) dom⊆)
+∥-absorb-≈ {A = A} (B₁ ; B₂) (U₁ ; U₂) dom⊆ =
+  ∥-cong ≈-refl (≈-sym (∥/;-transmute (Sum.inj₁ (UnrCx⇒MobCx U₁)))) ◅◅ ≈-sym ∥-assoc
+  ◅◅ ∥-cong (∥-absorb-≈ B₁ U₁ (⊆-trans (p⊆p∪q (dom B₂)) dom⊆)) ≈-refl
+  ◅◅ ∥-absorb-≈ B₂ U₂ (⊆-trans (q⊆p∪q (dom B₁) (dom B₂)) dom⊆)
+
+join-absorb-≈ : {n : ℕ} {Γ : Ctx n} (a : Dir) {A : Struct n} (B : Struct n) →
+                AllCx Unr Γ B → dom B ⊆ dom A → Γ ∶ join a A B ≈ A
+join-absorb-≈ 𝟙 B U dom⊆ = ∥-absorb-≈ B U dom⊆
+join-absorb-≈ L {A} B U dom⊆ = ≈-sym (∥/;-transmute (Sum.inj₂ (UnrCx⇒MobCx U))) ◅◅ ∥-absorb-≈ B U dom⊆
+join-absorb-≈ R {A} B U dom⊆ = ≈-sym (∥/;-transmute (Sum.inj₁ (UnrCx⇒MobCx U))) ◅◅ ∥-comm ◅◅ ∥-absorb-≈ B U dom⊆
