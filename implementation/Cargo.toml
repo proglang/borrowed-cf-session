@@ -1,0 +1,19 @@
+[package]
+name = "cstb"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# most recent version required becaues of pull-request for using spans
+# with byte instead of codepoint indices.
+# https://github.com/zesterer/ariadne/pull/102
+# ariadne = { git = "https://github.com/zesterer/ariadne", branch = "main" }
+ariadne = "0.5.1"
+clap = { version = "4.3.23", features = ["derive"] }
+logos = "0.13.0"
+peg = "0.8.2"
+rand = "0.8.5"
+tempfile = "3.27.0"
+
+[dev-dependencies]
+proptest = "1.11.0"
