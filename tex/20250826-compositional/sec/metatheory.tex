@@ -3,12 +3,8 @@
 
 This section summarizes the main metatheoretical results for \thecalculus. All
 definitions from the previous sections have been formalized in
-Agda. We mark the theorems we proved mechanically with a little agda bird after
+Agda. We mark the theorems we proved mechanically with a little Agda bird after
 the theorem name. Non-mechanized proofs are shown in the supplement.
-
-We first state type safety for declarative typing, then weak operational
-correspondence for the translation, and finally soundness and completeness of
-algorithmic typing.
 
 \subsection{Type Safety for Declarative Typing}
 
@@ -16,25 +12,24 @@ Preservation
 yields the usual safety invariant across reduction steps.
 
 \begin{theorem}[Expression preservation\;\AgdaBird]
-  If $\HasType \SessCtx \E \T$ and $\E \EReduce \E*$, then
+  If\/ $\HasType \SessCtx \E \T$ and $\E \EReduce \E*$, then
   $\HasType \SessCtx {\E*} \T$.
 \end{theorem}
 
 \begin{theorem}[Process preservation]
-  If $\ProcHasType \SessCtx \Proc$ and $\Proc \PReduce \Proc*$, then
+  If\/ $\ProcHasType \SessCtx \Proc$ and $\Proc \PReduce \Proc*$, then
   $\ProcHasType \SessCtx {\Proc*}$.
 \end{theorem}
 
-We complement preservation with progress.
-For expressions, progress includes a concurrency-specific blocked case. Informally,
-an expression is blocked when evaluation reaches a communication primitive in an
-evaluation context that cannot proceed on its own because it requires a matching
-action from another thread. The formal blocked-expression predicate is given in \cref{fig:blocked-expr-proc}. We write $\SessCtx$
-for a context $\Ctx$ that only contains session types.
+We complement preservation with progress. Expressions are not guaranteed to
+reduce to values but may be blocked on a constant applied to a value. The
+reduction of constants is part of the process semantics.
 
 \begin{theorem}[Expression progress\;\AgdaBird]
   \label{thm:expression-progress}
-  If $\HasType \SessCtx \E \T$, then either $\E$ is a value or $\E$ is blocked on concurrent actions or there exists an $\E*$ such that $\E \EReduce \E*$.
+  If\/ $\HasType \SessCtx \E \T$, then either $\E$ is a value, or there exist
+  an evaluation context $\EC$, constant $\C$ and value $\V$ such that
+  $\E=\ECapp{\EApp\C\V}$, or there exists an $\E*$ such that $\E \EReduce \E*$.
 \end{theorem}
 
 A process is concurrently blocked, if the active threads are blocked and no
@@ -45,7 +40,7 @@ configurations. Thus, deadlocks remain possible.
 
 \begin{theorem}[Process progress]
   \label{thm:process-progress}
-  If $\ProcHasType \SessCtx \Proc$, then either $\Proc \Congruent \PExp{\CUnit}$ or an expression in $\Proc$ is blocked on concurrent actions or
+  If\/ $\ProcHasType \SessCtx \Proc$, then either $\Proc \Congruent \PExp{\CUnit}$ or an expression in $\Proc$ is blocked on concurrent actions or
     there exists an $\Proc*$ such that $\Proc \PReduce \Proc*$.
 \end{theorem}
 The proof is deferred to \cref{sec:appendix-metatheory-ts}.
@@ -58,11 +53,11 @@ run-time configuration under a value substitution $\Sub$ over the channel contex
 $\SessCtx$ of $\Ctx$. The translation introduces administrative
 synchronization steps, hence both directions only hold up to a weak bisimilarity $\Bisim$,
 which identifies run-time configurations that differ only by administrative
-drop and acquire steps, discarded synchronization cells, and the reordering of
+drop and acquire steps, channel discards, and the reordering of
 independent binders.
 
 \begin{theorem}[Forward simulation\;\AgdaBird]
-  If $\Proc \PReduce \Proc*$, then there exists a run-time configuration
+  If $\Proc \PReduce \Proc*$\!, then there exists
   $\TProcQ$ such that $\TransP\Proc \TPReduce^{*} \TProcQ$ and
   $\TProcQ \Bisim \TransP{\Proc*}$.
 \end{theorem}
@@ -70,45 +65,41 @@ independent binders.
 The converse direction matches every target step by a finite source computation,
 again up to $\Bisim$.
 
-\begin{theorem}[Backward simulation]
-  For all run-time configurations $\TProcR$ and $\TProcQ$ with
+\begin{conjecture}[Backward simulation]
+  For all $\TProcR$ and $\TProcQ$ with
   $\TProcR \Bisim \TransP\Proc$, if $\TProcR \TPReduce \TProcQ$, then there
   exists a source process $\Proc*$ such that $\Proc \PReduce^{*} \Proc*$ and
   $\TProcQ \Bisim \TransP{\Proc*}$.
-\end{theorem}
+\end{conjecture}
+A proof sketch is provided in the supplement.
+
+
 \subsection{Soundness and Completeness for Algorithmic Typing}
 
 We now connect algorithmic typing with declarative typing. Soundness says
 that any solved algorithmic judgment denotes a valid declarative typing, while
 completeness says that declarative typings can be reconstructed algorithmically.
 
-\begin{theorem}[Expression checking soundness\;\AgdaBird]
-  If $\CheckType \E \AT \Eff$ and $\sigma \models \CSet$ is a closing
+\begin{theorem}[Algorithmic typing soundness\;\AgdaBird]
+  If either $\CheckType \E \AT \Eff$ or $\InferType \E \AT \Eff$
+  and $\sigma \models \CSet$ is a closing
   substitution such that $\Fv(\AT) \subseteq \dom(\sigma)$, then
   $\HasType \Ctx \E {\AT{[\sigma]}}$.
 \end{theorem}
 
-The same soundness statement holds for inference mode.
-
-\begin{theorem}[Expression inference soundness\;\AgdaBird]
-  If $\InferType \E \AT \Eff$ and $\sigma \models \CSet$ is a closing
-  substitution such that $\Fv(\AT) \subseteq \dom(\sigma)$, then
-  $\HasType \Ctx \E {\AT{[\sigma]}}$.
-\end{theorem}
-
-For completeness, we again first cover checking and then synthesis.
-
-\begin{theorem}[Expression checking completeness]
-  If $\HasType \Ctx \E \T$, then
-  $\CheckType \E \AT \Eff$ for some type $\AT$, set of constraints $\CSet$,
-  and closing substitution $\sigma$ such that $\T = \AT{[\sigma]}$.
-\end{theorem}
-
-\begin{theorem}[Expression inference completeness]
-  If $\HasType \Ctx \E \T$ and $\E$ is in synthesis form, then
-  $\InferType \E \AT \Eff$ for some type $\AT$, set of constraints $\CSet$,
-  and closing substitution $\sigma$ such that $\T = \AT{[\sigma]}$.
-\end{theorem}
+% For completeness, we again first cover checking and then synthesis.
+% 
+% \begin{theorem}[Expression checking completeness]
+%   If $\HasType \Ctx \E \T$, then
+%   $\CheckType \E \AT \Eff$ for some type $\AT$, set of constraints $\CSet$,
+%   and closing substitution $\sigma$ such that $\T = \AT{[\sigma]}$.
+% \end{theorem}
+% 
+% \begin{theorem}[Expression inference completeness]
+%   If $\HasType \Ctx \E \T$ and $\E$ is in synthesis form, then
+%   $\InferType \E \AT \Eff$ for some type $\AT$, set of constraints $\CSet$,
+%   and closing substitution $\sigma$ such that $\T = \AT{[\sigma]}$.
+% \end{theorem}
 
 %%% Local Variables:
 %%% mode: latex
