@@ -72,9 +72,8 @@ unrestricted context is also mobile. The full definition is shown in
 \cref{fig:omitted-predicates} in the supplement.
 
 \begin{figure}
-  \medskip
   Equality of typing contexts is the equivalence closure of the following
-  axioms.
+  axioms.\smallskip
   \begin{mathpar}
     \CtxEmpty\CtxPar\Ctx = \Ctx \and
     \Ctx[1] \CtxPar \Ctx[2] = \Ctx[2] \CtxPar \Ctx[1] \and
@@ -87,8 +86,9 @@ unrestricted context is also mobile. The full definition is shown in
       = \Ctx[1] \CtxSeq \Ctx[2]}
   \end{mathpar}
 
-  \medskip
-  Subcontext relation for weakening.
+  \bigskip
+  The subcontext relation for weakening is the reflexive, transitive congruence
+  closure\\ of these two axioms.\vspace{-\medskipamount}
   \begin{mathpar}
     (\Ctx[1] \CtxPar \Ctx[3]) \CtxSeq (\Ctx[2] \CtxPar \Ctx[4])
     \SubCtx
@@ -102,7 +102,7 @@ unrestricted context is also mobile. The full definition is shown in
       \Ctx
     }
   \end{mathpar}
-  \caption{Context structure}
+  \caption{Equality of contexts and the subcontext relation $\Ctx\SubCtx\Ctx$}
   \label{fig:syntax-types}
 \end{figure}
 
