@@ -40,7 +40,6 @@ open import BorrowedCF.Simulation.Forward.Acq     using (U-acq→)    public
 open import BorrowedCF.Simulation.Support.Frames using (⋯→-⋯ₛ; ++ₛ-VSub; weaken-VSub)
 open import BorrowedCF.Simulation.Support.Congruence using (U-≋)
 open import BorrowedCF.Simulation.Support.TranslationProperties using (UB-cong-─→)
-open TP using (⊢-≋)
 
 -- ── sim→ WIRING MAP (every typed constructor MUST be dispatched here; Agda's
 --    coverage checker enforces completeness when sim→ is assembled) ──

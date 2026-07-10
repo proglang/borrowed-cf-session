@@ -10,7 +10,7 @@ open import BorrowedCF.Reduction.Base
 open import BorrowedCF.Reduction.Expressions using (inv-`⊤)
 open import BorrowedCF.Context as 𝐂
 import BorrowedCF.Context.Substitution as 𝐂
-open import BorrowedCF.Processes.Typed hiding (⊢-≋; _⊢⋯ₚ⁻¹_)
+open import BorrowedCF.Processes.Typed 
 open import BorrowedCF.ProcessesInv using (⊢⋯ₚ⁻¹)
 open import BorrowedCF.Context.Domain
 import BorrowedCF.Context.Base as CB
