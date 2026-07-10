@@ -10,34 +10,6 @@ We first state type safety for declarative typing, then weak operational
 correspondence for the translation, and finally soundness and completeness of
 algorithmic typing.
 
-% \subsection{Structural Properties}
-% \begin{lemma}[Unrestricted decomposition]
-%   Every context $\Ctx$ can be separated into contexts $\Ctx[1], \Ctx[2]$ with
-%   $\Ctx = \Ctx[1] \CtxPar \Ctx[2]$ such that $\Unr\Ctx[1]$ and $\Unr\T$ is
-%   not derivable for any $\CtxVar\EVar\T \in \Ctx[2]$.
-% \end{lemma}
-% \begin{proof}
-%   \texttt{unjoinUnr}
-% \end{proof}
-% 
-% \begin{lemma}[Monoidal properties of contexts]
-%   The context constructors satisfy the following properties with respect to
-%   context equality.
-%   \begin{itemize}
-%     \item Sequential composition \textup{($\Ctx[1] \CtxSeq \Ctx[2]$)} forms a
-%       monoid with identity $\CtxEmpty$.
-%     \item Parallel composition \textup{($\Ctx[1] \CtxPar \Ctx[2]$)} forms a
-%       commutative monoid with identity $\CtxEmpty$.
-%   \end{itemize}
-% \end{lemma}
-% 
-% \begin{lemma}[Unrestricted contexts are mobile]
-%   $\Unr\Ctx \implies \Mobile\Ctx$.
-% \end{lemma}
-% \begin{proof}
-%   By induction over $\Ctx$ and the types of bound variables therein.
-% \end{proof}
-
 \subsection{Type Safety for Declarative Typing}
 
 Preservation
@@ -48,7 +20,7 @@ yields the usual safety invariant across reduction steps.
   $\HasType \SessCtx {\E*} \T$.
 \end{theorem}
 
-\begin{theorem}[Process preservation\;\AgdaBird]
+\begin{theorem}[Process preservation]
   If $\ProcHasType \SessCtx \Proc$ and $\Proc \PReduce \Proc*$, then
   $\ProcHasType \SessCtx {\Proc*}$.
 \end{theorem}
@@ -71,35 +43,38 @@ predicate is given in \cref{fig:blocked-expr-proc}.
 Process progress guarantees reduction only for non-blocked
 configurations. Thus, deadlocks remain possible.
 
-\begin{theorem}[Process progress\;\AgdaBird]
+\begin{theorem}[Process progress]
   \label{thm:process-progress}
   If $\ProcHasType \SessCtx \Proc$, then either $\Proc \Congruent \PExp{\CUnit}$ or an expression in $\Proc$ is blocked on concurrent actions or
     there exists an $\Proc*$ such that $\Proc \PReduce \Proc*$.
 \end{theorem}
 The proof is deferred to \cref{sec:appendix-metatheory-ts}.
 
-\subsection{Weak Operational Correspondence for Translation}
+\subsection{Weak Simulation for Translation}
 
-We can relate source reduction and target reduction. Since the translation
-introduces administrative synchronization steps, we obtain
-a weak operational correspondence up to zero or more target reductions and congruence.
+We relate source and target reduction through the process translation
+$\TransP\Proc$, which maps a well-typed process $\ProcHasType \Ctx \Proc$ to its
+run-time configuration under a value substitution $\Sub$ over the channel context
+$\SessCtx$ of $\Ctx$. The translation introduces administrative
+synchronization steps, hence both directions only hold up to a weak bisimilarity $\Bisim$,
+which identifies run-time configurations that differ only by administrative
+drop and acquire steps, discarded synchronization cells, and the reordering of
+independent binders.
 
 \begin{theorem}[Forward simulation\;\AgdaBird]
-  Let $\Sub$ be a value substitution.
-  Additionally, let $\Proc \TransProc[\Sub] \TProc*$ and $\ProcQ \TransProc[\Sub] \TProcQ*$.
-  If $\ProcHasType \SessCtx \Proc$ and $\Proc \PReduce \ProcQ$, then
-  either $\TProc* \TPReduce^{*} \TProcQ*$ or $\TProc* \Congruent \TProcQ*$.
+  If $\Proc \PReduce \Proc*$, then there exists a run-time configuration
+  $\TProcQ$ such that $\TransP\Proc \TPReduce^{*} \TProcQ$ and
+  $\TProcQ \Bisim \TransP{\Proc*}$.
 \end{theorem}
 
-The converse direction states that every target step can be matched by a finite
-source computation, again modulo weak closure and congruence.
+The converse direction matches every target step by a finite source computation,
+again up to $\Bisim$.
 
-\begin{theorem}[Backward simulation\;\AgdaBird]
-  Let $\Sub$ be a value substitution.
-  Additionally, let $\Proc \TransProc[\Sub] \TProc*$.
-  If $\ProcHasType \SessCtx \Proc$ and $\TProc* \TPReduce \TProcR*$, then there
-  exist $\ProcQ$ and $\TProcQ*$ such that $\Proc \PReduce^{*} \ProcQ$ and
-  $\TProcR* \TPReduce^{*} \TProcQ*$ where $\ProcQ \TransProc[\Sub] \TProcQ*$.
+\begin{theorem}[Backward simulation]
+  For all run-time configurations $\TProcR$ and $\TProcQ$ with
+  $\TProcR \Bisim \TransP\Proc$, if $\TProcR \TPReduce \TProcQ$, then there
+  exists a source process $\Proc*$ such that $\Proc \PReduce^{*} \Proc*$ and
+  $\TProcQ \Bisim \TransP{\Proc*}$.
 \end{theorem}
 \subsection{Soundness and Completeness for Algorithmic Typing}
 
@@ -123,13 +98,13 @@ The same soundness statement holds for inference mode.
 
 For completeness, we again first cover checking and then synthesis.
 
-\begin{theorem}[Expression checking completeness\;\AgdaBird]
+\begin{theorem}[Expression checking completeness]
   If $\HasType \Ctx \E \T$, then
   $\CheckType \E \AT \Eff$ for some type $\AT$, set of constraints $\CSet$,
   and closing substitution $\sigma$ such that $\T = \AT{[\sigma]}$.
 \end{theorem}
 
-\begin{theorem}[Expression inference completeness\;\AgdaBird]
+\begin{theorem}[Expression inference completeness]
   If $\HasType \Ctx \E \T$ and $\E$ is in synthesis form, then
   $\InferType \E \AT \Eff$ for some type $\AT$, set of constraints $\CSet$,
   and closing substitution $\sigma$ such that $\T = \AT{[\sigma]}$.

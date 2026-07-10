@@ -468,6 +468,11 @@
 % Congruence
 \newcommand{\Congruent}{\equiv}
 
+% Weak bisimilarity used for the operational correspondence: it quotients the
+% administrative drop/acquire steps and the structural symmetries under which
+% the process translation is not a homomorphism.
+\newcommand*\Bisim{\mathrel{\metacolor{\approx}}}
+
 % Translations
 \newcommand*\TrCmd[2]{\metacolor{\mathcal{T}_{#1}(#2)}}
 \newcommand*\TrRel[1]{\leadsto_{#1}}
@@ -476,6 +481,9 @@
 \newcommand\TrBG{\TrCmd B}
 
 \newcommand*\TransProc[1][\Sub]{\stackrel{#1}{\TrRel{}}}
+% Process translation as a function: the run-time configuration of a well-typed
+% source process #2 under the value substitution #1 (default \Sub).
+\newcommand*\TransP[2][\Sub]{\metacolor{\llbracket #2 \rrbracket_{#1}}}
 \NewDocumentCommand\TransBind{O{\E} m o}{\stackrel{\targettermcolor{#1}}{\TrRel{}} #2 \IfValueT{#3}{\mid #3}}
 
 \newcommand*\TA[2]{\metacolor{\llbracket #1;#2 \rrbracket_{\Gamma}}}
