@@ -96,10 +96,10 @@ assocSwap-swap a b {n} x with Fin.splitAt a x in eqa
                ■ cong (Fin.join a (b + n)) eqa
                ■ cong (a ↑ʳ_) (sym (Fin.join-splitAt b n q) ■ cong (Fin.join b n) eqb))
 
-assocSwapₚ-invU : ∀ {n} (P : UP.Proc (2 + (2 + n)))
-               → (P UP.⋯ₚ assocSwapᵣ 2 2) UP.⋯ₚ assocSwapᵣ 2 2 ≡ P
-assocSwapₚ-invU P = UP.fusionₚ P (assocSwapᵣ 2 2) (assocSwapᵣ 2 2)
-                  ■ local-⋯ₚ-id P (assocSwap-swap 2 2)
+assocSwapₚ-invU : ∀ {a b n} (P : UP.Proc (a + (b + n)))
+               → (P UP.⋯ₚ assocSwapᵣ a b) UP.⋯ₚ assocSwapᵣ b a ≡ P
+assocSwapₚ-invU {a} {b} P = UP.fusionₚ P (assocSwapᵣ a b) (assocSwapᵣ b a)
+                          ■ local-⋯ₚ-id P (assocSwap-swap a b)
 
 ------------------------------------------------------------------------
 -- ν-comm′ reflection (equivariance analog of ν-swap′, with assocSwapᵣ 2 2).
@@ -119,9 +119,42 @@ assocSwapₚ-invU P = UP.fusionₚ P (assocSwapᵣ 2 2) (assocSwapᵣ 2 2)
   → (sub : (body UP.⋯ₚ assocSwapᵣ 2 2) UR.─→ₚ T)
   → Res σ P (UP.ν (UP.ν T))
 νcomm-reflect σ {P} rec {body} imgeq {T} sub
-  with sub′ ← subst (λ Z → Z UR.─→ₚ (T UP.⋯ₚ assocSwapᵣ 2 2)) (assocSwapₚ-invU body)
+  with sub′ ← subst (λ Z → Z UR.─→ₚ (T UP.⋯ₚ assocSwapᵣ 2 2)) (assocSwapₚ-invU {2} {2} body)
                     (red-⋯ₚ (assocSwapᵣ 2 2) sub)
   with P′ , steps , codom ←
     rec (subst (λ Z → Z UR.─→ₚ UP.ν (UP.ν (T UP.⋯ₚ assocSwapᵣ 2 2))) (sym imgeq)
                (UR.RU-Res (UR.RU-Res sub′)))
   = P′ , steps , ≈-trans (≋⇒≈ (Eq*.return (UP.ν-comm′ {P = T}))) codom
+
+------------------------------------------------------------------------
+-- νφ-comm′ SYNC-escape reflection — closes EscapeReflect's Sync-Residual for a
+-- single νφ-comm′ escape.
+--
+--   c₁'s leading link is  νφ-comm′ :  U[ P ] σ = ν (φ x P′) ≋′
+--   φ x (ν (P′ ⋯ₚ assocSwapᵣ 1 2)).  The escaped form is φ-headed; the residual
+--   RU-Sync fires the ν-body:  RU-Sync (RU-Res r) with
+--   r : P′ ⋯ₚ assocSwapᵣ 1 2 ─→ₚ Z.  UN-escape by equivariance (red-⋯ₚ over the
+--   INVERSE reindex assocSwapᵣ 2 1) and fire  RU-Res (RU-Sync ·)  on the strict
+--   image ν (φ x P′); the re-escape ν (φ x ·) ≋ φ x (ν ·) is absorbed by ≈.
+------------------------------------------------------------------------
+
+νφsync-reflect :
+  ∀ {m n} (σ : m →ₛ n) {P : TP.Proc m}
+  → (rec : ∀ {Q′} → U[ P ] σ UR.─→ₚ Q′ → Res σ P Q′)
+  → {x : UP.Flag} {P′body : UP.Proc (1 + (2 + n))}
+  → U[ P ] σ ≡ UP.ν (UP.φ x P′body)
+  → {Z : UP.Proc (2 + (1 + n))}
+  → (r : (P′body UP.⋯ₚ assocSwapᵣ 1 2) UR.─→ₚ Z)
+  → Res σ P (UP.φ x (UP.ν Z))
+νφsync-reflect σ {P} rec {x} {P′body} imgeq {Z} r
+  with r′ ← subst (λ W → W UR.─→ₚ (Z UP.⋯ₚ assocSwapᵣ 2 1)) (assocSwapₚ-invU {1} {2} P′body)
+                  (red-⋯ₚ (assocSwapᵣ 2 1) r)
+  with P′ , steps , codom ←
+    rec (subst (λ W → W UR.─→ₚ UP.ν (UP.φ x (Z UP.⋯ₚ assocSwapᵣ 2 1))) (sym imgeq)
+               (UR.RU-Res (UR.RU-Sync r′)))
+  = P′ , steps
+  , ≈-trans (≋⇒≈ (Eq*.symmetric _
+      (subst (λ W → UP.ν (UP.φ x (Z UP.⋯ₚ assocSwapᵣ 2 1)) UP.≋ UP.φ x (UP.ν W))
+             (assocSwapₚ-invU {2} {1} Z)
+             (Eq*.return (UP.νφ-comm′ {x = x})))))
+      codom
