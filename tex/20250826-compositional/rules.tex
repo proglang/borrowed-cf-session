@@ -23,14 +23,23 @@
 %   \RulePrefixExampleMyRule
 %
 % which produces the \inferrule with the name "PrintedNamePrefixMyRule"
-\NewDocumentCommand \DefRule {o m m m} {
-  \expandafter \DefRuleHelper \expandafter {\RuleNamePrefix} {#1} {#2} {#3} {#4}
+\NewDocumentCommand \DefRule {s o m m m} {
+  \expandafter \DefRuleHelper \expandafter {\RuleNamePrefix} {#1} {#2} {#3} {#4} {#5}
 }
 
-\newcommand*\DefRuleHelper[5]{
-  \expandafter \newcommand \csname \RuleCmdPrefix #3\endcsname
+\newcommand*\DefRuleHelper[6]{
+  \IfBooleanTF {#2}
     {
-      \inferrule[#1#3]{#4}{#5} \IfValueT{#2}{~#2}
+      \expandafter \newcommand \csname \RuleCmdPrefix #4\endcsname
+        {
+          \inferrule*[#3]{#5}{#6}
+        }
+    }
+    {
+      \expandafter \newcommand \csname \RuleCmdPrefix #4\endcsname
+        {
+          \inferrule[#1#4]{#5}{#6} \IfValueT{#3}{~#3}
+        }
     }
 }
 
