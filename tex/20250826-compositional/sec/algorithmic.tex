@@ -166,7 +166,6 @@ variables occurring in $\CSet$ or $\AT$ for which no solution candidate
 is found, the heuristic fails and $\E$ is rejected.
 
 Potential solutions have to first be identified and then validated with respect to the set $\CSet$.
-
 We non-deterministically pick one candidate instantiation per variable, resulting in
 a variable-free $\CSet*$\!. 
 If there are multiple candidates for a unification variable the type to be substituted
@@ -174,8 +173,7 @@ into $\CSet$ can be picked non-deterministically. To see this, consider the case
 simplification there are two constraints $\TVar \CEq \T$ and $\TVar \CEq \TU$. If
 $\T$ is not a valid solution for $\TVar$, then $\TU$ is also not a solution.
 The equality $\T \simeq \TU$ must hold for all types that can be selected. Since mobility
-respects type-equivalence it is not possible to construct mobility constraints
-that are satisfied by one but not the other candidate.
+respects type-equivalence no mobility constraints exist validated by one but not the other candidate.
 
 The mobility constraints are easily
 validated after solving the unification constraints because $\Mobile\T$ is decidable. 
