@@ -25,6 +25,9 @@ private variable
   e e₁ e₂ e₃ e′ e₁′ e₂′ : Tm n
 
 open import BorrowedCF.Algorithmic.Split public
+open import BorrowedCF.Algorithmic.LinUnique
+open import BorrowedCF.Algorithmic.SoundSplit
+open import BorrowedCF.Algorithmic.Strengthen
 
 fv-subTm : (e : Tm n) → fv (subTm e σ) ≡ fv e
 fv-subTm (` x) = refl
@@ -421,6 +424,30 @@ mobΔ {Γ = Γ} {γ = γ} {a = a} f = go (Arr.mob a) refl
   go : (m : Mob) → Arr.mob a ≡ m → SolvedΔ (mobConstraints m Γ γ) _
   go M eq = mobΔ-M _ (f eq)
   go S eq = []
+
+
+substγ-height : ∀ {n} {Γ : Ctx n} {γ₁ γ₂ e T ϵ} (eq : γ₁ ≡ γ₂) (d : Γ ; γ₁ ⊢ e ∶ T ∣ ϵ) →
+                height (subst (λ z → Γ ; z ⊢ e ∶ T ∣ ϵ) eq d) ≡ height d
+substγ-height refl d = refl
+
+⊢-↓-height : ∀ {n} {Γ : Ctx n} {γ e T ϵ X} (fv⊆ : fv e ⊆ X) (d : Γ ; γ ⊢ e ∶ T ∣ ϵ) →
+             height (⊢-↓ fv⊆ d) ≡ height d
+⊢-↓-height _ (T-Const ⊢c) = refl
+⊢-↓-height fv⊆ (T-Var x refl) = substγ-height _ (T-Var x refl)
+⊢-↓-height fv⊆ (T-Abs Γ-unr Γ-mob d) = cong suc (substγ-height _ (⊢-↓ (fvClose-⊆ fv⊆) d) ■ ⊢-↓-height (fvClose-⊆ fv⊆) d)
+⊢-↓-height fv⊆ (T-AbsRec Γ-unr a-unr d) = cong suc (substγ-height _ (⊢-↓ (fvClose-⊆ (fvClose-⊆ fv⊆)) d) ■ ⊢-↓-height (fvClose-⊆ (fvClose-⊆ fv⊆)) d)
+⊢-↓-height fv⊆ (T-AppUnr a-unr ≤ₐ d₁ d₂) = cong suc (cong₂ Nat._⊔_ (⊢-↓-height (S.⊆-trans (S.p⊆p∪q _) fv⊆) d₁) (⊢-↓-height (S.⊆-trans (S.q⊆p∪q _ _) fv⊆) d₂))
+⊢-↓-height fv⊆ (T-AppLin a-par ≤ₐ d₁ d₂) = cong suc (cong₂ Nat._⊔_ (⊢-↓-height (S.⊆-trans (S.p⊆p∪q _) fv⊆) d₁) (⊢-↓-height (S.⊆-trans (S.q⊆p∪q _ _) fv⊆) d₂))
+⊢-↓-height fv⊆ (T-AppLeft aL ≤ₐ d₁ d₂) = cong suc (cong₂ Nat._⊔_ (⊢-↓-height (S.⊆-trans (S.p⊆p∪q _) fv⊆) d₁) (⊢-↓-height (S.⊆-trans (S.q⊆p∪q _ _) fv⊆) d₂))
+⊢-↓-height fv⊆ (T-AppRight aR ≤ₐ d₁ d₂) = cong suc (cong₂ Nat._⊔_ (⊢-↓-height (S.⊆-trans (S.p⊆p∪q _) fv⊆) d₁) (⊢-↓-height (S.⊆-trans (S.q⊆p∪q _ _) fv⊆) d₂))
+⊢-↓-height fv⊆ (T-Pair p/s seq⇒p d₁ d₂) = substγ-height _ _ ■ cong suc (cong₂ Nat._⊔_ (⊢-↓-height (S.⊆-trans (S.p⊆p∪q _) fv⊆) d₁) (⊢-↓-height (S.⊆-trans (S.q⊆p∪q _ _) fv⊆) d₂))
+⊢-↓-height fv⊆ (T-Seq unr-T d₁ d₂) = cong suc (cong₂ Nat._⊔_ (⊢-↓-height (S.⊆-trans (S.p⊆p∪q _) fv⊆) d₁) (⊢-↓-height (S.⊆-trans (S.q⊆p∪q _ _) fv⊆) d₂))
+⊢-↓-height fv⊆ (T-Let p/s d₁ d₂) = substγ-height _ _ ■ cong suc (cong₂ Nat._⊔_ (⊢-↓-height (S.⊆-trans (S.p⊆p∪q _) fv⊆) d₁) (substγ-height _ (⊢-↓ (fvClose-⊆ (S.⊆-trans (S.q⊆p∪q _ _) fv⊆)) d₂) ■ ⊢-↓-height (fvClose-⊆ (S.⊆-trans (S.q⊆p∪q _ _) fv⊆)) d₂))
+⊢-↓-height fv⊆ (T-LetPair p/s d₁ d₂) = substγ-height _ _ ■ cong suc (cong₂ Nat._⊔_ (⊢-↓-height (S.⊆-trans (S.p⊆p∪q _) fv⊆) d₁) (substγ-height _ (⊢-↓ (fvClose*2-⊆ (S.⊆-trans (S.q⊆p∪q _ _) fv⊆)) d₂) ■ ⊢-↓-height (fvClose*2-⊆ (S.⊆-trans (S.q⊆p∪q _ _) fv⊆)) d₂))
+⊢-↓-height fv⊆ (T-Inj d) = cong suc (⊢-↓-height fv⊆ d)
+⊢-↓-height fv⊆ (T-Case p/s de d₁ d₂) = substγ-height _ _ ■ cong suc (cong₂ Nat._⊔_ (cong₂ Nat._⊔_ (⊢-↓-height (S.⊆-trans (S.p⊆p∪q _) fv⊆) de) (substγ-height _ (⊢-↓ (fvClose-⊆ (S.⊆-trans (S.p⊆p∪q _) (S.⊆-trans (S.q⊆p∪q _ _) fv⊆))) d₁) ■ ⊢-↓-height (fvClose-⊆ (S.⊆-trans (S.p⊆p∪q _) (S.⊆-trans (S.q⊆p∪q _ _) fv⊆))) d₁)) (substγ-height _ (⊢-↓ (fvClose-⊆ (S.⊆-trans (S.q⊆p∪q _ _) (S.⊆-trans (S.q⊆p∪q _ _) fv⊆))) d₂) ■ ⊢-↓-height (fvClose-⊆ (S.⊆-trans (S.q⊆p∪q _ _) (S.⊆-trans (S.q⊆p∪q _ _) fv⊆))) d₂))
+⊢-↓-height fv⊆ (T-Conv T≃ ϵ≤ d) = cong suc (⊢-↓-height fv⊆ d)
+⊢-↓-height fv⊆ (T-Weaken γ≤ d) = cong suc (⊢-↓-height fv⊆ d)
 
 CGoal : ∀ {n} → Ctx n → Struct n → ℕ → Tm n → 𝕋 → Eff → Set
 CGoal Γ γ m e T ϵ =
