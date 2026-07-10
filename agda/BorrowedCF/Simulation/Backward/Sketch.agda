@@ -1,76 +1,69 @@
--- | BACKWARD (completeness) simulation — PROOF SKETCH.
+-- | BACKWARD (completeness) simulation — STATUS MAP.
 --
---   sim← below is the completeness dispatch, one clause per untyped-reduction
---   constructor.  Every clause is a HOLE with a ONE-SENTENCE justification and a
---   status tag:
---       [PROVEN <technique>]  — mechanised hole/postulate-free in the (now
---                               deleted, git-preserved) exploration tree; a hole
---                               HERE only because the cleanup removed the proof
---                               modules.  Recover any of them with `git log`.
---       [OPEN <blocker>]      — genuinely unproved; the blocker is stated.
+--   The WIRED dispatch is the sibling module  BorrowedCF.Simulation.Backward
+--   (file Backward.agda): there  sim← / sim←ᵍ  reflect each untyped step, with the
+--   proven cases wired to their reflector modules and the open case isolated as a
+--   single hole  sim←-base.  This module is the status map for that dispatch.
 --
---   The SINGLE genuinely-open case is RU-Struct (structural-congruence closure).
---   All 15 other constructors, and every SINGLE-link / head-preserving RU-Struct
---   generator, are proven.
+--   GOAL — paper "Bisimulation" lemma, reverse half (…/sec/translation.tex:226):
+--     for a well-typed  P  and value substitution  σ,  every untyped step
+--         U[ P ] σ  ─→ₚ  Q
+--     is matched by typed steps  P ─→ₚ* P′  with  Q ≈ U[ P′ ] σ,  where the
+--     administrative equivalence is  ≈ = EqClosure (≋ ∪ ─→ᵃ)  (⊇ ≋).
+--     The exact Agda statement is  Backward.Backward-Sim  (in Backward.agda).
 --
---   Codomain is shown with the untyped structural congruence ≋; the full result
---   uses the administrative equivalence  ≈ = EqClosure (≋ ∪ ─→ᵃ)  (⊇ ≋), which
---   additionally absorbs the discard-GC steps.  Paper "Bisimulation" lemma,
---   reverse half (tex/.../sec/translation.tex:226).
---
---   This module imports only Simulation.Base + base modules, so it is
---   self-contained.
 module BorrowedCF.Simulation.Backward.Sketch where
 
-open import BorrowedCF.Simulation.Base
-import BorrowedCF.Processes.Typed             as TP
-import BorrowedCF.Processes.Untyped           as UP
-import BorrowedCF.Reduction.Processes.Typed   as TR
-import BorrowedCF.Reduction.Processes.Untyped as UR
-open import BorrowedCF.Context using (Ctx; Struct)
-open TP using (_；_⊢ₚ_)
-open import Data.Product using (Σ-syntax; _×_)
-open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star)
-
--- The backward-simulation result type (codomain shown with ≋; full proof: ≈ ⊇ ≋).
-Res : ∀ {m n} (σ : m →ₛ n) (P : TP.Proc m) (Q : UP.Proc n) → Set
-Res σ P Q = Σ[ P′ ∈ TP.Proc _ ] (Star TR._─→ₚ_ P P′ × (Q UP.≋ U[ P′ ] σ))
-
--- sim← : dispatch on the untyped step  red : R ─→ₚ Q  with  R ≡ U[ P ] σ.
-sim← : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
-     → {g : Struct m} {P : TP.Proc m} → Γ ； g ⊢ₚ P
-     → {R Q : UP.Proc n} → R ≡ U[ P ] σ → R UR.─→ₚ Q
-     → Res σ P Q
-
--- [PROVEN dual-of-R-Exp] P is a thread ⟪e⟫; reflect the expression step (e⋯σ)⋯→e₂ to a typed e─→e′ by the substitution/frame lemma.
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-Exp x)             = {!  !}
--- [PROVEN dual-of-R-Fork] the fork redex spawns the image of the typed forked thread; reflects to R-Fork.
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-Fork F V)          = {!  !}
--- [PROVEN dual-of-R-New] the ν(φ acq φ acq …) allocation is the image of a fresh channel; reflects to R-New.
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-New F)             = {!  !}
--- [PROVEN dual-of-R-LSplit] local split (no new sync cell); the redex on the strict image reflects to R-LSplit.
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-LSplit F)          = {!  !}
--- [PROVEN dual-of-R-RSplit] remote split allocates a fresh unset sync cell; the redex on the strict image reflects to R-RSplit.
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-RSplit F)          = {!  !}
--- [PROVEN dual-of-R-Drop] the φ-drop handshake flips drop→acq at the head block; reflects to R-Drop (drop-goB).
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-Drop F)            = {!  !}
--- [PROVEN administrative] discard-GC is silent: take P′ = P, the reduct is absorbed (Q ≈ U[P]σ via a-discard).
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-Discard F V)       = {!  !}
--- [PROVEN dual-of-R-Acq] consumes a set flag under the ν; reflects to R-Acq.
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-Acquire F)         = {!  !}
--- [PROVEN dual-of-R-Close] the two close frames on the strict image reflect to R-Close.
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-Close F₁ F₂)       = {!  !}
--- [PROVEN dual-of-R-Com] message passing between the two frames reflects to R-Com.
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-Com F₁ F₂ V)       = {!  !}
--- [PROVEN dual-of-R-Choice] branch-k selection reflects to R-Choice.
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-Choice F₁ F₂ k)    = {!  !}
--- [PROVEN congruence] recurse on the left component and wrap the result with R-Par.
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-Par r)             = {!  !}
--- [PROVEN congruence] recurse on the right component via a typed ∥-comm sandwich.
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-Par-right r)       = {!  !}
--- [PROVEN ν-peel] recurse under the ν (simRes / the φ-telescope interior engine).
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-Res r)             = {!  !}
--- [PROVEN φ-descent, arising cases] descend one φ level; flag-sensitive steps at a φ-comm'd cell do not arise on image-order telescopes (SeedProbe).
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-Sync r)            = {!  !}
--- genuinly open case: termination is the obstacle
-sim← σ Vσ Γ-S ⊢P eq (UR.RU-Struct c₁ inner c₂) = {!  !}
+------------------------------------------------------------------------
+-- WIRED & PROVEN  (Backward.sim←ᵍ, hole/postulate-free; wired term ↦ module)
+------------------------------------------------------------------------
+--   RU-Exp      ↦ bwd-exp        Backward.Leaf     (dual of R-Exp)
+--   RU-Fork     ↦ bwd-fork       Backward.Leaf     (dual of R-Fork)
+--   RU-New      ↦ bwd-new        Backward.Leaf     (dual of R-New)
+--   RU-Discard  ↦ a-discard      RevAdmin          (silent; P′ = P, absorbed in ≈)
+--   RU-Par      ↦ inv-U-∥ + rec  Backward          (wrap with R-Par)
+--   RU-Par-rgt  ↦ rec + ∥-comm   Backward          (right component)
+--   RU-Res      ↦ simRes         Backward          (φ-nest peel under the ν)
+--   RU-Com      ↦ com-reflect    Backward.Com      (dual of R-Com)
+--   RU-Close    ↦ close-reflect  Backward.Close    (dual of R-Close)
+--   RU-Choice   ↦ choice-reflect Backward.Choice   (dual of R-Choice)
+--   RU-Acquire  ↦ acq-reflect    Backward.Acq      (dual of R-Acq)
+--   RU-Drop     ↦ drop-goB       Backward.DropReflectGo  (dual of R-Drop; the full
+--                                drop-reflect tower DropReflect/DropGo/DropConfine/
+--                                DropCollapse/DropGoB/…)
+--   RU-LSplit   ↦ lsplit-reflect Backward.LSplit   (dual of R-LSplit, VSub-only)
+--   RU-RSplit   ↦ rsplit-reflect Backward.RSplit   (dual of R-RSplit, VSub-only)
+--
+------------------------------------------------------------------------
+-- OPEN  (the single hole,  Backward.sim←-base)
+------------------------------------------------------------------------
+--   RU-Struct   ↦ {! sim←-base !}   reflect a DIRECT step on a merely-≈-related
+--     (not ≡) image — the φ-telescope-aware reverse inversion.  Every non-ε /
+--     φ-bearing case funnels here via the WF engine UpToPhiEngineWF.eng and the
+--     interior engine PhiTelescopeWF.tel.  BLOCKER: TERMINATION / proof
+--     architecture — the RU-Struct ≋-chain interconverts with the reduction's
+--     RU-Struct wrapper, so no simple measure descends; a non-final νφ-comm /
+--     ν-ext / φ-ext escape yields a φ-headed non-image (RevUCong.reverse-U-≋-⊥).
+--     NOT a counterexample and NOT a needed calculus change.
+--
+------------------------------------------------------------------------
+-- PROVEN BUT NOT WIRED  (per-generator RU-Struct reflectors; standalone exit-0;
+--   removed in the cleanup, recoverable from git at the noted commits)
+------------------------------------------------------------------------
+--   ν-swap′ / ν-comm′ / νφ-comm′-sync  via red-⋯ₚ equivariance + involutivity
+--                                                RUStructDispatch  (1ef7107, e878b65)
+--   ∥-comm′ / ∥-assoc′ / ∥-unit′  strict image bridges
+--                                                ImageBridges      (8a03316)
+--   νφ-comm′ / ν-ext′ / φ-ext′  escapes, route 3 EscapeReflect     (677df26)
+--   φ-comm′  same-flag equivariant; different-flag INESSENTIAL on acq-outermost
+--     images (disables, never exposes)           SeedProbe / PhiCommReflect
+--   reduction-renaming preserves the measure ∣_∣  RUStructWF        (f54ac56, 1aab907)
+--   These close every SINGLE-link / head-preserving generator; only the
+--   compound-chain composition (above) is left, and it is the sim←-base hole.
+--
+------------------------------------------------------------------------
+-- STATUS: forward = COMPLETE (Simulation.Forward.sim→, 14/14).
+--         backward = all 14 direct constructor cases WIRED & proven; sole open
+--                    obligation = sim←-base (φ-telescope reverse inversion;
+--                    blocker is termination / proof architecture).
+------------------------------------------------------------------------
