@@ -516,14 +516,15 @@ unfolding of definitions in the following way:
 
 \begin{figure}[tp]
   \begin{mathpar}
-    \RuleExpValueReady \and
-    \RuleExpConstReady \and
-    \RuleParReady \and
-    \RuleNuReady \and
+    \RuleExpValueBlocked \and
+    \RuleExpConstBlocked \and
+    % \RuleParReady \and
+    % \RuleNuReady \and
     \RuleParBlocked \and
-    \RuleNuBlockedHere \and
-    \RuleNuBlockedHereAcq \and
-    \RuleNuBlockedThere
+    \RuleNuBlocked \and
+    \RuleNuBlockedAcq
+    % \RuleNuBlockedAcq \and
+    % \RuleNuBlockedThere
   \end{mathpar}
   where
   \[
@@ -544,7 +545,7 @@ unfolding of definitions in the following way:
       \AcqBlockedChannelsDiscard 
     \end{array}
   \]
-  \caption{Ready and Blocked Processes (Ready $\Proc$, Blocked $\Proc$)}
+  \caption{Blocked Processes (Blocked $\Proc$)}
   \label{fig:blocked-expr-proc}
 \end{figure}
 

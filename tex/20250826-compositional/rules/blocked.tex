@@ -10,28 +10,28 @@
 
 % B-ExpBlocked
 
-\DefRule{ExpValueReady} {} {
-  \Ready{\PExp{\CUnit}}
+\DefRule{ExpValueBlocked} {} {
+  \Blocked{\PExp{\CUnit}}
 }
 
-\DefRule {ExpConstReady} {
+\DefRule {ExpConstBlocked} {
   c \notin \{\CNew, \CFork, \CSplit, \CSSplit, \CDrop, \CDiscard\}
 } {
-  \Ready{\FC{[\EApp\C\V]}}
+  \Blocked{\FC{[\EApp\C\V]}}
 }
 
-\DefRule {ParReady} {
-  \Ready{\Proc[1]} \\
-  \Ready{\Proc[2]}
-} {
-  \Ready{\PPar{\Proc[1]}{\Proc[2]}}
-}
-
-\DefRule {NuReady} {
-  \Ready{\Proc}
-} {
- \Ready{\PNew{{\BindGroup[1]}}{{\BindGroup[2]}}{\Proc}}
-}
+% \DefRule {ParReady} {
+%   \Ready{\Proc[1]} \\
+%   \Ready{\Proc[2]}
+% } {
+%   \Ready{\PPar{\Proc[1]}{\Proc[2]}}
+% }
+% 
+% \DefRule {NuReady} {
+%   \Ready{\Proc}
+% } {
+%  \Ready{\PNew{{\BindGroup[1]}}{{\BindGroup[2]}}{\Proc}}
+% }
 
 % B-ParBlocked
 \DefRule {ParBlocked} {
@@ -42,28 +42,36 @@
 }
 
 % B-NuBlockedHere
-\DefRule {NuBlockedHere} {
+\DefRule {NuBlocked} {
   \{\EVar, \EVary\} \cap \BC(\Proc) \ne  \{\EVar, \EVary\} \\
-  \Ready{\Proc}
+  \Blocked{\Proc}
 }{
   \Blocked{\PNew{\BSeq{\EVar}{\BindGroup[1]}}{\BSeq{\EVary}{\BindGroup[2]}}{\Proc}}
 }
 
-% B-NuBlockedHereAcq
-\DefRule {NuBlockedHereAcq} {
-  \EVar \in \AC(\Proc)\\ 
-  \BindGroup[i] = \EVary \BindGroup \BSep \EVar \BindGroup* \\
-  \Ready{\Proc}
+\DefRule {NuBlockedAcq} {
+  \EVar \notin \AC(\Proc) \\
+  \BindGroup[i] = \BSeq{\BSep}{\EVar\BindGroup} \\
+  \Blocked{\Proc} 
 }{
   \Blocked{\PNew{{\BindGroup[1]}}{{\BindGroup[2]}}{\Proc}}
 }
 
+% B-NuBlockedHereAcq
+% \DefRule {NuBlockedAcq} {
+%   \EVary* \in \AC(\Proc)\\ 
+%   \BindGroup[i] = \EVary[i] \BindGroup \BSep \EVary* \BindGroup* \\
+%   \Blocked{\Proc}
+% }{
+%   \Blocked{\PNew{\BSeq{\EVary[1]}{\BindGroup[1]}}{\BSeq{\EVary[2]}{\BindGroup[2]}}{\Proc}}
+% }
+% 
 % B-NuBlockedThere
-\DefRule {NuBlockedThere} {
-  \Blocked{\Proc}
-}{
-  \Blocked{\PNew{{\BindGroup[1]}}{{\BindGroup[2]}}{\Proc}}
-}
+% \DefRule {NuBlockedThere} {
+%   \Blocked{\Proc}
+% }{
+%   \Blocked{\PNew{{\BindGroup[1]}}{{\BindGroup[2]}}{\Proc}}
+% }
 
 \newcommand*\BlockedChannelsSend{
   \BC(\FCapp{\EApp\CSend{(\EPair\V\EVar)}}) = \{\EVar\}
