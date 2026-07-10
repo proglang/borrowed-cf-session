@@ -68,3 +68,13 @@ linUnique-flip {γ₁ = γ₁} {γ₂} a lu x ¬u =
   Γ ∶ ((γ₁ ; γ₂) ↓ fv e₁) ; ((γ₁ ; γ₂) ↓ fv e₂) ≼ γ₁ ; γ₂
 ≤γ-seq-wf {γ₁ = γ₁} {γ₂} lu d₁ d₂ =
   ≼-join L (↓fv-≼-wf {γ₂ = γ₂} L lu d₁) (↓fv-≼ʳ-wf {γ₁ = γ₁} L lu d₂)
+
+
+≤γ-app-wf : {n : ℕ} {Γ : Ctx n} {γ γ₁ γ₂ : Struct n} {e₁ e₂ : Tm n} {S₁ S₂ : 𝕋} {ϵ₁ ϵ₂ : Eff} (a : Dir) →
+  LinUnique Γ γ → Γ ∶ γ ≈ join a γ₂ γ₁ → Γ ; γ₁ ⊢ e₁ ∶ S₁ ∣ ϵ₁ → Γ ; γ₂ ⊢ e₂ ∶ S₂ ∣ ϵ₂ →
+  Γ ∶ join a (γ ∣fv[ e₂ ]) (γ ∣fv[ e₁ ]) ≼ γ
+≤γ-app-wf a lu γ≈ d₁ d₂ =
+  ≼-trans (≼-join a (≼-trans (≼-refl (↓-mono-≈ γ≈)) (↓fv-≼-wf a lu' d₂))
+                    (≼-trans (≼-refl (↓-mono-≈ γ≈)) (↓fv-≼ʳ-wf a lu' d₁)))
+          (≼-refl (≈-sym γ≈))
+  where lu' = linUnique-≈ γ≈ lu

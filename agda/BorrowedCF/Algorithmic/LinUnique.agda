@@ -242,3 +242,6 @@ cnt-↓-≤ (α ; β) x = +-mono-≤ (cnt-↓-≤ α x) (cnt-↓-≤ β x)
 linUnique-↓ : {n : ℕ} {Γ : Ctx n} {γ : Struct n} {X : Subset n} →
               LinUnique Γ γ → LinUnique Γ (γ ↓ X)
 linUnique-↓ {γ = γ} lu x ¬u = ≤-trans (cnt-↓-≤ γ x) (lu x ¬u)
+
+linUnique-≈ : {n : ℕ} {Γ : Ctx n} {γ γ′ : Struct n} → Γ ∶ γ ≈ γ′ → LinUnique Γ γ → LinUnique Γ γ′
+linUnique-≈ γ≈ lu x ¬u = subst (_≤ 1) (≈-cnt ¬u γ≈) (lu x ¬u)
