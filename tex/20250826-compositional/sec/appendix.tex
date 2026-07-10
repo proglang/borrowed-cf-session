@@ -526,8 +526,11 @@ unfolding of definitions in the following way:
     \begin{array}{ll}
       \BlockedChannelsSend & \BlockedChannelsRecv \\
       \BlockedChannelsSelect & \BlockedChannelsBranch \\
+      \BlockedChannelsTerm & \BlockedChannelsWait \\
+      \BlockedChannelsAcquire & \BlockedChannelsDrop \\
       \BlockedChannelsLSplit & \BlockedChannelsRSplit \\
-      \BlockedChannelsFork
+      \BlockedChannelsFork & \BlockedChannelsNew \\
+      \BlockedChannelsDiscard &
     \end{array}
   \]
   \caption{Blocked Expressions (Blocked $\E$) and Blocked Processes (Blocked $\Proc$)}

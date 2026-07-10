@@ -1,0 +1,69 @@
+-- | BACKWARD (completeness) simulation — STATUS MAP.
+--
+--   The WIRED dispatch is the sibling module  BorrowedCF.Simulation.Backward
+--   (file Backward.agda): there  sim← / sim←ᵍ  reflect each untyped step, with the
+--   proven cases wired to their reflector modules and the open case isolated as a
+--   single hole  sim←-base.  This module is the status map for that dispatch.
+--
+--   GOAL — paper "Bisimulation" lemma, reverse half (…/sec/translation.tex:226):
+--     for a well-typed  P  and value substitution  σ,  every untyped step
+--         U[ P ] σ  ─→ₚ  Q
+--     is matched by typed steps  P ─→ₚ* P′  with  Q ≈ U[ P′ ] σ,  where the
+--     administrative equivalence is  ≈ = EqClosure (≋ ∪ ─→ᵃ)  (⊇ ≋).
+--     The exact Agda statement is  Backward.Backward-Sim  (in Backward.agda).
+--
+module BorrowedCF.Simulation.Backward.Sketch where
+
+------------------------------------------------------------------------
+-- WIRED & PROVEN  (Backward.sim←ᵍ, hole/postulate-free; wired term ↦ module)
+------------------------------------------------------------------------
+--   RU-Exp      ↦ bwd-exp        Backward.Leaf     (dual of R-Exp)
+--   RU-Fork     ↦ bwd-fork       Backward.Leaf     (dual of R-Fork)
+--   RU-New      ↦ bwd-new        Backward.Leaf     (dual of R-New)
+--   RU-Discard  ↦ a-discard      RevAdmin          (silent; P′ = P, absorbed in ≈)
+--   RU-Par      ↦ inv-U-∥ + rec  Backward          (wrap with R-Par)
+--   RU-Par-rgt  ↦ rec + ∥-comm   Backward          (right component)
+--   RU-Res      ↦ simRes         Backward          (φ-nest peel under the ν)
+--   RU-Com      ↦ com-reflect    Backward.Com      (dual of R-Com)
+--   RU-Close    ↦ close-reflect  Backward.Close    (dual of R-Close)
+--   RU-Choice   ↦ choice-reflect Backward.Choice   (dual of R-Choice)
+--   RU-Acquire  ↦ acq-reflect    Backward.Acq      (dual of R-Acq)
+--   RU-Drop     ↦ drop-goB       Backward.DropReflectGo  (dual of R-Drop; the full
+--                                drop-reflect tower DropReflect/DropGo/DropConfine/
+--                                DropCollapse/DropGoB/…)
+--   RU-LSplit   ↦ lsplit-reflect Backward.LSplit   (dual of R-LSplit, VSub-only)
+--   RU-RSplit   ↦ rsplit-reflect Backward.RSplit   (dual of R-RSplit, VSub-only)
+--
+------------------------------------------------------------------------
+-- OPEN  (the single hole,  Backward.sim←-base)
+------------------------------------------------------------------------
+--   RU-Struct   ↦ {! sim←-base !}   reflect a DIRECT step on a merely-≈-related
+--     (not ≡) image — the φ-telescope-aware reverse inversion.  Every non-ε /
+--     φ-bearing case funnels here via the WF engine UpToPhiEngineWF.eng and the
+--     interior engine PhiTelescopeWF.tel.  BLOCKER: TERMINATION / proof
+--     architecture — the RU-Struct ≋-chain interconverts with the reduction's
+--     RU-Struct wrapper, so no simple measure descends; a non-final νφ-comm /
+--     ν-ext / φ-ext escape yields a φ-headed non-image (RevUCong.reverse-U-≋-⊥).
+--     NOT a counterexample and NOT a needed calculus change.
+--
+------------------------------------------------------------------------
+-- PROVEN BUT NOT WIRED  (per-generator RU-Struct reflectors; standalone exit-0;
+--   removed in the cleanup, recoverable from git at the noted commits)
+------------------------------------------------------------------------
+--   ν-swap′ / ν-comm′ / νφ-comm′-sync  via red-⋯ₚ equivariance + involutivity
+--                                                RUStructDispatch  (1ef7107, e878b65)
+--   ∥-comm′ / ∥-assoc′ / ∥-unit′  strict image bridges
+--                                                ImageBridges      (8a03316)
+--   νφ-comm′ / ν-ext′ / φ-ext′  escapes, route 3 EscapeReflect     (677df26)
+--   φ-comm′  same-flag equivariant; different-flag INESSENTIAL on acq-outermost
+--     images (disables, never exposes)           SeedProbe / PhiCommReflect
+--   reduction-renaming preserves the measure ∣_∣  RUStructWF        (f54ac56, 1aab907)
+--   These close every SINGLE-link / head-preserving generator; only the
+--   compound-chain composition (above) is left, and it is the sim←-base hole.
+--
+------------------------------------------------------------------------
+-- STATUS: forward = COMPLETE (Simulation.Forward.sim→, 14/14).
+--         backward = all 14 direct constructor cases WIRED & proven; sole open
+--                    obligation = sim←-base (φ-telescope reverse inversion;
+--                    blocker is termination / proof architecture).
+------------------------------------------------------------------------
