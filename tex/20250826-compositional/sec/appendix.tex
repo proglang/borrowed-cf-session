@@ -282,14 +282,22 @@ parameters in the actual code to simplify type checking.
 
 In the implementation, we use FreeST \cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22, almeida26:_frees_concur_progr_languag_with} version 5.0 to perform equivalence checking. To achieve this, we generate little FreeST programs that typechecks iff the equivalence constraints hold.
 
-For every equivalence constraint $\T[1] \CEq \T[2]$, we generate the following FreeST program:
+For example, let $\T[1] = \SRec{\SVar}{\SSeq {\SSeq {\SSend{\BInt}} {\SSend {\BString}}} {\SVar}}$ and $\T[2] = \SRec{\SVar}{\SSeq {\SSkip} {\SSeq {\SSeq {\SSend{\BInt}} {\SSend {\BString}}} {\SVar}}}$. For the constraint $\T[1] \CEq \T[2]$ we generate the following FreeST program:
 
 \begin{lstlisting}[numbers=left]
+
+type X_T1 : 1S
+type X_T1 = !Int; !String; X_T1
+
 type T1 : 1S
-type T1 = ...
+type T1 = X_T1
+
+
+type X_T2 : 1S
+type X_T2 = Skip; !Int; !String; X_T2
 
 type T2 : 1S
-type T2 = ...
+type T2 = X_T2
 
 id : T1 -> T2
 id x = x
@@ -307,8 +315,8 @@ The main parts of the translation are:
 \end{itemize}
 
 To translate from $\mu$ to explicit recursion, we generate a fresh name and associate the name with the recursion unrolled and translation applied. 
-We then return the associated name, instead of the type. +
-Thus the translation function $\tofreest{\S}$ (\Cref{fig:freest-translation} ) takes a session type $S$ and returns a FreeST Type $F$ together with list of explicit type definitions.
+We then return the associated name, instead of the type.
+Thus the translation function $\tofreest{\S}$ (\Cref{fig:freest-translation}) takes a session type $S$ and returns a FreeST Type $F$ together with list of explicit type definitions.
 
 \begin{figure}[t!]
   \begin{align*}
