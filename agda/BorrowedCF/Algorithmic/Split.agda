@@ -111,3 +111,9 @@ typed⇒complement-Unr {γ = γ} (T-Case {e = ec} {e₁ = e₁} {e₂ = e₂} p/
 typed⇒complement-Unr (T-Conv _ _ d) = typed⇒complement-Unr d
 typed⇒complement-Unr (T-Weaken γ≤ d) =
   allCx-weaken (λ u → u) (↓-mono-≼ γ≤) (typed⇒complement-Unr d)
+
+-- A well-typed term is still typed under its context restricted to its free
+-- variables, and that restriction is a subcontext (sound, no uniqueness needed).
+own-≼ : ∀ {n} {Γ : Ctx n} {γ : Struct n} {e : Tm n} {T : 𝕋} {ϵ : Eff} →
+  (d : Γ ; γ ⊢ e ∶ T ∣ ϵ) → Γ ∶ γ ↓ fv e ≼ γ
+own-≼ {γ = γ} d = ↓-strip≼ γ (typed⇒complement-Unr d)
