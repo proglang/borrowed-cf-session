@@ -52,9 +52,9 @@ proceed.
 We call the channels of the target calculus \emph{primitive channels} to
 distinguish them from (translated) source channels.  A
 translated source channel is represented by a value
-$\targettermcolor{c}=\TEChan[\E[1]]\TEVary[\E[2]]$, a triple consisting of an
-optional pre-synchronization cell $\E[1]$, a primitive data channel
-$\TEVary$, and an optional post-synchronization cell $\E[2]$.  The default
+$\targettermcolor{c}=\TEChan[\V[1]]\TEVary[\V[2]]$, a triple consisting of an
+optional pre-synchronization cell $\V[1]$, a primitive data channel
+$\TEVary$, and an optional post-synchronization cell $\V[2]$.  The default
 optional component is $\CUnit$.  A nontrivial pre-cell is consumed by
 $\CAcq$ before the endpoint is used.  A nontrivial post-cell is signaled by
 $\CDrop$ when ownership of the endpoint prefix is released.  Communication,
