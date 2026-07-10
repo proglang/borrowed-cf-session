@@ -598,7 +598,7 @@ Allocation creates a primitive channel pair and one synchronization
 flag for each endpoint. The fresh endpoints carry incoming flags that
 are already in the \lstinline{acq} state. Thus, an initial
 \lstinline{acquire} is required to reduce each channel to normal
-operation, after which a cleanup rule removes the flag from the 
+operation, removing the flag from the 
 channel triple by replacing it with \lstinline{*}. Once these optional
 flag components are absent, communication is just ordinary
 session communication: \lstinline{send}/\lstinline{recv},
@@ -626,9 +626,8 @@ matching incoming obligation to call \lstinline{acquire}. Calling
 \lstinline{drop} changes the flag from \lstinline{drop} to
 \lstinline{acq} and returns immediately, so the notification is
 asynchronous. A later \lstinline{acquire} on the suffix can fire only
-after this state change. It changes the flag to \lstinline{done} and
-returns the channel. A cleanup rule then removes the synchronization
-flag altogether. Thus a remote split pays for exactly the
+after this state change and removes the synchronization
+flag. Thus a remote split pays for exactly the
 synchronization needed to coordinate the two processes operating on
 the channel, whereas a local
 split pays nothing beyond sharing the channel representation.
