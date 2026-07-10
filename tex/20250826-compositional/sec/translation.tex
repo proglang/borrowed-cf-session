@@ -36,8 +36,8 @@ semantics of \cref{sec:semantics}.
 \end{figure}
 
 The syntax of constants, values, and expressions remains unchanged.
-\Cref{fig:unr-syntax} replaces source configurations by target
-configurations $\TProc$.  The form $\TPNew[xy]\TProc$ is a
+\Cref{fig:unr-syntax} defines target
+configurations $\TProc$ and contexts $\TCC$.  The form $\TPNew[xy]\TProc$ is a
 primitive-channel restriction with endpoints $\TEVar$ and $\TEVary$ scoped over $\TProc$; this is the
 standard restriction construct of session calculi
 \cite{Gay_Vasconcelos_2025}.  The form
@@ -62,8 +62,8 @@ choice, and close operate on the primitive data channel; the extra cells encode
 the ordering constraints on remote borrows that source binder groups
 enforce directly. Local borrows do not use this machinery.
 
-Target processes are quotiented by the congruence of
-\cref{fig:translated-congruence}.  The parallel and restriction laws are the
+Target processes are quotiented by the congruence in
+\cref{fig:translated-congruence}.  Its parallel and restriction laws are the
 usual ones.  The additional laws commute independent synchronization binders
 with each other and with channel binders, and extend synchronization scope
 across parallel composition when the cell is fresh for the other component.
@@ -106,12 +106,12 @@ synchronization cells, corresponding to the leading acquire markers resulting
 from source channel restriction.  Rule \textsc{RU-LSplit} performs a local split by
 sharing the same primitive data channel between the two returned triples and
 distributing the existing pre- and post-cells.  Rule \textsc{RU-RSplit}
-allocates a fresh synchronization cell: the left channel receives it as a
+allocates a fresh synchronization cell in state $\FlagInit$: the left channel receives it as a
 post-cell, and the right channel receives it as a pre-cell.  Consequently
 \textsc{RU-Drop} can signal the cell without blocking, while
 \textsc{RU-Acquire} can proceed only after the signal is present.  The
 communication, choice, and close rules synchronize on the primitive channel
-component.  The remaining rules close reduction under parallel composition,
+component.  Remaining rules close reduction under parallel composition,
 channel restriction, synchronization-cell restriction, and structural
 congruence.
 
