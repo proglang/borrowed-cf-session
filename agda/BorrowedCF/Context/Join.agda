@@ -142,3 +142,5 @@ join-flip 𝟙 = ∥-comm
 join-≼-∥ : (p/s : ParSeq) → Γ ∶ join p/s α β ≼ α ∥ β
 join-≼-∥ par = ≼-refl refl
 join-≼-∥ seq = ;-≼-∥
+
+postulate parOrSeq? : Γ ∶ α ; β ≼ γ → Σ[ p/s ∈ ParSeq ] Γ ∶ join p/s α β ≼ γ
