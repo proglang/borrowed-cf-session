@@ -179,3 +179,51 @@ sibling-Unr {Γ = Γ} a {γ₁} {γ₂} {e} lu d = allCx-Unr-dom (γ₂ ↓ fv e
         ... | no ¬u = ⊥-elim (2≰1 (≤-trans
               (+-mono-≤ (fv⇒cnt d (↓-dom γ₂ (fv e) y∈)) (∈dom⇒cnt γ₂ (↓-dom⊆dom γ₂ y∈)))
               (subst (_≤ 1) (cnt-join a γ₁ γ₂ y) (lu y ¬u))))
+
+open import Data.Nat.Properties using (+-assoc; +-identityʳ; ≤-reflexive)
+open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (ε; _◅_)
+open import Relation.Binary.Construct.Closure.Symmetric using (fwd; bwd)
+
+unrcx-cnt0 : {n : ℕ} {Γ : Ctx n} {α : Struct n} {x : 𝔽 n} →
+             UnrCx Γ α → (Unr (Γ x) → ⊥) → cnt α x ≡ 0
+unrcx-cnt0 {α = ` z} {x} (` py) nu with x ≟F z
+... | yes refl = ⊥-elim (nu py)
+... | no  _    = refl
+unrcx-cnt0 [] nu = refl
+unrcx-cnt0 {α = α ∥ β} (Uα ∥ Uβ) nu = cong₂ _+_ (unrcx-cnt0 Uα nu) (unrcx-cnt0 Uβ nu)
+unrcx-cnt0 {α = α ; β} (Uα ; Uβ) nu = cong₂ _+_ (unrcx-cnt0 Uα nu) (unrcx-cnt0 Uβ nu)
+
+≈'-cnt : {n : ℕ} {Γ : Ctx n} {α β : Struct n} {x : 𝔽 n} →
+         (Unr (Γ x) → ⊥) → Γ ∶ α ≈′ β → cnt α x ≡ cnt β x
+≈'-cnt {x = x} nu (;′-assoc {α = α} {β} {γ}) = +-assoc (cnt α x) (cnt β x) (cnt γ x)
+≈'-cnt nu (;′-cong₁ e) = cong (_+ _) (≈'-cnt nu e)
+≈'-cnt nu (;′-cong₂ e) = cong (_ +_) (≈'-cnt nu e)
+≈'-cnt {x = x} nu (∥′-unit {α = α}) = +-identityʳ (cnt α x)
+≈'-cnt {x = x} nu (∥′-assoc {α = α} {β} {γ}) = +-assoc (cnt α x) (cnt β x) (cnt γ x)
+≈'-cnt {x = x} nu (∥′-comm {α = α} {β}) = +-comm (cnt α x) (cnt β x)
+≈'-cnt nu (∥′-cong₁ e) = cong (_+ _) (≈'-cnt nu e)
+≈'-cnt {x = x} nu (∥′-dup {α = α} U) with unrcx-cnt0 {x = x} U nu
+... | c0 = c0 ■ sym (cong₂ _+_ c0 c0)
+≈'-cnt nu (∥′-tm-; U) = refl
+
+≈-cnt : {n : ℕ} {Γ : Ctx n} {α β : Struct n} {x : 𝔽 n} →
+        (Unr (Γ x) → ⊥) → Γ ∶ α ≈ β → cnt α x ≡ cnt β x
+≈-cnt nu ε = refl
+≈-cnt nu (fwd e ◅ es) = ≈'-cnt nu e ■ ≈-cnt nu es
+≈-cnt nu (bwd e ◅ es) = sym (≈'-cnt nu e) ■ ≈-cnt nu es
+
+rearrange4 : (a b c d : ℕ) → (a + b) + (c + d) ≡ (a + c) + (b + d)
+rearrange4 a b c d =
+  +-assoc a b (c + d) ■ cong (a +_) (sym (+-assoc b c d))
+  ■ cong (λ z → a + (z + d)) (+-comm b c) ■ cong (a +_) (+-assoc c b d)
+  ■ sym (+-assoc a c (b + d))
+
+≼-cnt : {n : ℕ} {Γ : Ctx n} {α β : Struct n} {x : 𝔽 n} →
+        (Unr (Γ x) → ⊥) → Γ ∶ α ≼ β → cnt α x ≤ cnt β x
+≼-cnt nu (≼-refl e) = ≤-reflexive (≈-cnt nu e)
+≼-cnt nu (≼-∅ U) = z≤n
+≼-cnt {x = x} nu (≼-wk {α₁} {α₂} {β₁} {β₂}) =
+  ≤-reflexive (rearrange4 (cnt α₁ x) (cnt α₂ x) (cnt β₁ x) (cnt β₂ x))
+≼-cnt nu (≼-trans p q) = ≤-trans (≼-cnt nu p) (≼-cnt nu q)
+≼-cnt nu (≼-cong-; p q) = +-mono-≤ (≼-cnt nu p) (≼-cnt nu q)
+≼-cnt nu (≼-cong-∥ p q) = +-mono-≤ (≼-cnt nu p) (≼-cnt nu q)
