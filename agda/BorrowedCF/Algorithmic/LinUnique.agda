@@ -1,7 +1,7 @@
 module BorrowedCF.Algorithmic.LinUnique where
 
 open import Data.Fin.Subset renaming (⊥ to ⁅⁆)
-open import Data.Fin.Subset.Properties using (x∈⁅x⁆; x∈⁅y⁆⇒x≡y; ∉⊥; x∈p∪q⁻; x∈p∪q⁺)
+open import Data.Fin.Subset.Properties using (x∈⁅x⁆; x∈⁅y⁆⇒x≡y; ∉⊥; x∈p∪q⁻; x∈p∪q⁺; _∈?_)
 open import Data.Fin using () renaming (zero to fz; suc to fs)
 open import Data.Fin.Properties using () renaming (_≟_ to _≟F_)
 open import Data.Nat using (ℕ; zero; suc; _+_; _≤_; s≤s; z≤n)
@@ -227,3 +227,18 @@ rearrange4 a b c d =
 ≼-cnt nu (≼-trans p q) = ≤-trans (≼-cnt nu p) (≼-cnt nu q)
 ≼-cnt nu (≼-cong-; p q) = +-mono-≤ (≼-cnt nu p) (≼-cnt nu q)
 ≼-cnt nu (≼-cong-∥ p q) = +-mono-≤ (≼-cnt nu p) (≼-cnt nu q)
+
+cnt-↓-≤ : {n : ℕ} (γ : Struct n) {X : Subset n} (x : 𝔽 n) → cnt (γ ↓ X) x ≤ cnt γ x
+cnt-↓-≤ (` y) {X} x with y ∈? X
+... | yes _ = ≤-refl-c (cnt (` y) x)
+  where ≤-refl-c : (k : ℕ) → k ≤ k
+        ≤-refl-c zero = z≤n
+        ≤-refl-c (suc k) = s≤s (≤-refl-c k)
+... | no _  = z≤n
+cnt-↓-≤ [] x = z≤n
+cnt-↓-≤ (α ∥ β) x = +-mono-≤ (cnt-↓-≤ α x) (cnt-↓-≤ β x)
+cnt-↓-≤ (α ; β) x = +-mono-≤ (cnt-↓-≤ α x) (cnt-↓-≤ β x)
+
+linUnique-↓ : {n : ℕ} {Γ : Ctx n} {γ : Struct n} {X : Subset n} →
+              LinUnique Γ γ → LinUnique Γ (γ ↓ X)
+linUnique-↓ {γ = γ} lu x ¬u = ≤-trans (cnt-↓-≤ γ x) (lu x ¬u)
