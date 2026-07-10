@@ -580,8 +580,8 @@ incoming flag $in$ records whether the channel must be acquired before
 it can be used. The outgoing flag $out$ records whether the channel
 must be dropped after use. A synchronization binder
 $(\varphi z \mapsto \phi)P$ binds a flag name $z$ in $P$ and stores
-one of three states in $\phi$: \lstinline{drop}, \lstinline{acq}, or
-\lstinline{done}. This flag $z$ implements the separator in
+one of two states in $\phi$: \lstinline{drop} or \lstinline{acq}.
+This flag $z$ implements the separator in
 \lstinline{nu[c1||c2][...]}. It is the outgoing flag of the
 borrowed prefix and the incoming flag of the suffix.
 
@@ -589,9 +589,8 @@ An \lstinline{rsplit} creates a flag in state
 \lstinline{drop} and a freshly restricted channel sets its flag to \lstinline{acq}.
 Intuitively, \lstinline{drop} means that the left, borrowed
 part of a remote split is still active, \lstinline{acq} means that it
-has been dropped and the right, suffix part may acquire, and \lstinline{done}
-means that the synchronization has served its purpose and can be
-removed. This mechanism implements an ownership transfer of the
+has been dropped and the right, suffix part may acquire.
+This mechanism implements an ownership transfer of the
 primitive channel from the borrowed part to the suffix.
 
 Allocation creates a primitive channel pair and one synchronization
