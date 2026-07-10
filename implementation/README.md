@@ -53,6 +53,8 @@ and then typecheck and run the file `SOURCE_FILE`:
 cargo run -- SOURCE_FILE
 ```
 
+The type checker requires [FreeST](https://freest-lang.github.io/) to be on the `PATH`. The minimum required version of FreeST is 5.0.
+
 ## Syntax
 
 The following grammar describes the complete, concrete syntax supported by the interpreter.

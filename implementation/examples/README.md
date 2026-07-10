@@ -10,25 +10,17 @@ The examples are located in two subdirectories:
 
 2.  In `negative/` are examples of ill-typed programs.
 
-The files in these subdirectories are named as followed:
-
-- Files starting with `paper-` are examples taken verbatim from the paper.
-
-- Files starting with `math-server-` show how to incrementally build a math-server.
-
-- Files starting with `other` are extra examples.
-
 ## Running Examples
 
 The examples can be run either manually, e.g.
 
 ```bash
-cargo run -- examples/positive/example-branching.bgv
+cargo run -- examples/positive/renderUser.bgv
 ```
 
 or for an already installed interpreter:
 ```bash
-bsti examples/positive/example-branching.bgv
+cstb examples/positive/renderUser.bgv
 ```
 
 The examples can also be run all at once via
