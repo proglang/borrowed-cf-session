@@ -33,7 +33,7 @@
 }
 
 \DefRule {Semi} {
-    {\T} \CNEq \SSkip \\
+    \neg ({\T} \SEq \SSkip) \\
     \NormaliseType {\T} {\T'}
 }{
     \NormaliseType {\SSeq {\T} \TU} {\ConcatType {\T'} {\TU}}
