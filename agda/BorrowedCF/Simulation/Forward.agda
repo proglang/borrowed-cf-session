@@ -17,6 +17,7 @@ import BorrowedCF.Reduction.Processes.Typed   as TR
 import BorrowedCF.Reduction.Processes.Untyped as UR
 open import Data.Product using (Σ-syntax; _×_)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star)
+open import BorrowedCF.TypedEq using (⊢-≋)
 
 Forward-Sim : Set
 Forward-Sim =

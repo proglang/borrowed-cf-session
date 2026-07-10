@@ -62,7 +62,7 @@ brₛ↑* k ⊢ϕ γ = 𝐂.⋯-cong γ (lift-disg* k (σ≗ϕ ⊢ϕ)) ■ 𝐂.
       Frdom z∈ = [ dom-⋯wkʳ⊆fresh (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂))
                  , dom-⋯wkʳ⊆fresh (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁)) ]′
                  (x∈p∪q⁻ _ _ z∈)
-      γr , part1 , part2 = descend-absK k Δ inj (ϕ-any⇐ ⊢ϕ) 𝟙 Fr Fr′ γ′ γ Frinv Frdom ≼b
+      γr , part1 , part2 = descend-absK k Δ inj (ϕ-any⇐ ⊢ϕ) (ϕ-any⇐ ⊢ϕ) 𝟙 Fr Fr′ γ′ γ Frinv Frdom ≼b
       body = subst-γₚ (cong (join 𝟙 Fr) (wk^≡weaken* k γr)) (TP-Weaken part1 p″)
   in γr
    , ≼-respˡ-≈ (≈-reflexive (sym (brₛ ⊢ϕ γr))) part2

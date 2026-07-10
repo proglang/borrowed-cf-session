@@ -88,24 +88,24 @@ un-wk^-Unr zero    Δ a = a
 un-wk^-Unr (suc k) Δ {Γ} a =
   un-wk^-Unr k (Δ ∘ suc) (un-wk-Unr (allCx-≗ (λ y → sym (⸴-⸴*-cons {Γ₁ = Δ} {Γ₂ = Γ} y)) a))
 
-↑*ᵣ-preserves-⇐ : (k : ℕ) (Δ : Ctx k) {ρ : m →ᵣ n} {Γ₁ : Ctx m} {Γ₂ : Ctx n} →
-  ρ 𝐂.Preserves[ Unr ] Γ₁ ⇐ Γ₂ → (ρ 𝐂.↑* k) 𝐂.Preserves[ Unr ] (Δ ⸴* Γ₁) ⇐ (Δ ⸴* Γ₂)
+↑*ᵣ-preserves-⇐ : ∀ {ℓ} {P : Pred 𝕋 ℓ} (k : ℕ) (Δ : Ctx k) {ρ : m →ᵣ n} {Γ₁ : Ctx m} {Γ₂ : Ctx n} →
+  ρ 𝐂.Preserves[ P ] Γ₁ ⇐ Γ₂ → (ρ 𝐂.↑* k) 𝐂.Preserves[ P ] (Δ ⸴* Γ₁) ⇐ (Δ ⸴* Γ₂)
 ↑*ᵣ-preserves-⇐ zero    Δ pre = pre
-↑*ᵣ-preserves-⇐ (suc k) Δ {ρ} {Γ₁} {Γ₂} pre {x} au =
-  subst Unr (⸴-⸴*-cons {Γ₁ = Δ} {Γ₂ = Γ₁} x)
+↑*ᵣ-preserves-⇐ {P = P} (suc k) Δ {ρ} {Γ₁} {Γ₂} pre {x} au =
+  subst P (⸴-⸴*-cons {Γ₁ = Δ} {Γ₂ = Γ₁} x)
     (↑ᵣ-preserves-⇐ (↑*ᵣ-preserves-⇐ k (Δ ∘ suc) pre) {x}
       (allCx-≗ (λ y → sym (⸴-⸴*-cons {Γ₁ = Δ} {Γ₂ = Γ₂} y)) au))
 
 descend-absK : ∀ {m n} {AD} ⦃ _ : Join AD ⦄ {Γ₁ : Ctx m} {Γ₂ : Ctx n} {ρ : m →ᵣ n}
   (k : ℕ) (Δ : Ctx k) →
-  𝐂.Inj ρ → ρ 𝐂.Preserves[ Unr ] Γ₁ ⇐ Γ₂ →
+  𝐂.Inj ρ → ρ 𝐂.Preserves[ Unr ] Γ₁ ⇐ Γ₂ → ρ 𝐂.Preserves[ Mobile ] Γ₁ ⇐ Γ₂ →
   (dd : AD) (Fr : Struct (k + m)) (Fr′ : Struct (k + n))
   (A : Struct (k + m)) (γa : Struct n) →
   Fr 𝐂.⋯ (ρ 𝐂.↑* k) ≡ Fr′ →
   dom Fr′ ⊆ freshᵏ n k →
   (Δ ⸴* Γ₂) ∶ (A 𝐂.⋯ (ρ 𝐂.↑* k)) ≼ join dd Fr′ (wk^ k γa) →
   ∃[ γr ] ((Δ ⸴* Γ₁) ∶ A ≼ join dd Fr (wk^ k γr)) × (Γ₂ ∶ (γr 𝐂.⋯ ρ) ≼ γa)
-descend-absK {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {ρ = ρ} k Δ inj-ρ pre dd Fr Fr′ A γa Frinv Frdom ≼b
+descend-absK {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {ρ = ρ} k Δ inj-ρ pre preM dd Fr Fr′ A γa Frinv Frdom ≼b
   = γr , part1 , part2
   where
   Xtrue : Subset (k + n)
@@ -132,6 +132,7 @@ descend-absK {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {ρ = ρ} k Δ inj-ρ pre d
   part1 : (Δ ⸴* Γ₁) ∶ A ≼ join dd Fr (wk^ k γr)
   part1 = ≼-⋯⁻¹ {α = A} {β = join dd Fr (wk^ k γr)} {ϕ = ρ 𝐂.↑* k}
             (Inj-↑* k inj-ρ) (λ {x} → ↑*ᵣ-preserves-⇐ k Δ pre {x})
+            (λ {x} → ↑*ᵣ-preserves-⇐ k Δ preM {x})
             (subst₂ ((Δ ⸴* Γ₂) ∶_≼_) lhs-eq rhs-eq (↓-mono-≼ {X = Xd0} ≼b))
   wk^-eq : (wk^ k γa) ↓ ∁ Xtrue ≡ wk^ k (γa ↓ ∁ (dropᵏ k Xtrue))
   wk^-eq = wk^↓ k γa (∁ Xtrue) ■ cong (λ z → wk^ k (γa ↓ z)) (dropᵏ-∁ k Xtrue)
