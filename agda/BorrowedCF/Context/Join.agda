@@ -135,8 +135,6 @@ join-flip L = refl
 join-flip R = refl
 join-flip 𝟙 = ∥-comm
 
-postulate parOrSeq? : Γ ∶ α ; β ≼ γ → Σ[ p/s ∈ ParSeq ] Γ ∶ join p/s α β ≼ γ
-
 ;-≼-join : (p/s : ParSeq) → Γ ∶ α ; β ≼ join p/s α β
 ;-≼-join par = ;-≼-∥
 ;-≼-join seq = ≼-refl refl

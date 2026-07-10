@@ -525,7 +525,7 @@ snocM-prefix-unique (-;₂ sn₁) (-;₂ sn₂) = ≃-; ≃-refl (snocM-prefi
 snocM-prefix-unique (brn sn₁ sn₂) (brn sn₃ sn₄) = ≃-brn (snocM-prefix-unique sn₁ sn₃) (snocM-prefix-unique sn₂ sn₄)
 snocM-prefix-unique (mu {s = s} sn₁) (mu sn₂) = ≃-⋯ {ϕ = ⦅ mu s ⦆ₛ} (snocM-prefix-unique sn₁ sn₂)
 
-snocM-⋯ᵣ⁻¹ : {p : Pol}{T : 𝕋}{ρ : m →ᵣ n} → SnocM p T (s ⋯ ρ) z → ∃[ z₀ ] SnocM p T s z₀
+snocM-⋯ᵣ⁻¹ : {p : Pol}{T : 𝕋}{ρ : m →ᵣ n} → SnocM p T (s ⋯ᵣ ρ) z → ∃[ z₀ ] SnocM p T s z₀
 snocM-⋯ᵣ⁻¹ {s = ` x} ()
 snocM-⋯ᵣ⁻¹ {s = end q} ()
 snocM-⋯ᵣ⁻¹ {s = ret} ()
@@ -554,7 +554,7 @@ snocM-leafLR (mu u) sn = (_ , sn) , λ x ()
 snocM-leafLR (u₁ ; u₂) sn = (_ , sn) , λ x ()
 
 snocM-⋯-sum : {p : Pol}{T : 𝕋}{ϕ : m →ₛ n} → (∀ x → ¬ Skips (`/id (ϕ x))) →
-  {t : 𝕊 m} → SnocM p T (t ⋯ ϕ) z →
+  {t : 𝕊 m} → SnocM p T (t ⋯ₛ ϕ) z →
   (∃[ z′ ] SnocM p T t z′) ⊎ RSUMM p T _ (λ y → `/id (ϕ y)) t
 snocM-⋯-sum {ϕ = ϕ} ∀¬S {t = ` y} sn = let r , nv = snocM-leafLR (`/id (ϕ y)) sn in inj₂ (y , here , r , nv)
 snocM-⋯-sum ∀¬S {t = msg q U} (here e) = inj₁ (_ , here e)

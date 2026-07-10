@@ -202,7 +202,7 @@ closedatom-⋯ᵣ⁻¹ {s = ret} ret = ret
 closedatom-⋯ᵣ⁻¹ {s = acq} acq = acq
 closedatom-⋯ᵣ⁻¹ {s = `` α} ``- = ``-
 
-¬snoc-wk-zero : {α : 𝕊 n} → ¬ Snoc (α ⋯ weakenᵣ) (` zero) z
+¬snoc-wk-zero : {α : 𝕊 n} → ¬ Snoc (α ⋯ᵣ weakenᵣ) (` zero) z
 ¬snoc-wk-zero {α = ` x} ()
 ¬snoc-wk-zero {α = end p} ()
 ¬snoc-wk-zero {α = msg p t} ()
