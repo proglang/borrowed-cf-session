@@ -201,9 +201,9 @@ weaken*-lookup {k} {n} Δ Γ x = cong (Δ ⸴* Γ) (𝐂.weaken*~wkˡ k x) ■ l
   where lk : (Δ ⸴* Γ) (k ↑ʳ x) ≡ Γ x
         lk rewrite Fin.splitAt-↑ʳ k n x = refl
 
-weaken*-pres⇐ : ∀ {k n} (Δ : Ctx k) {Γ : Ctx n} →
-  𝐂._Preserves[_]_⇐_ ⦃ 𝐂.Kᵣ ⦄ (𝐂.weaken* k) Unr Γ (Δ ⸴* Γ)
-weaken*-pres⇐ Δ {Γ} {x} (` u) = subst Unr (weaken*-lookup Δ Γ x) u
+weaken*-pres⇐ : ∀ {ℓ} {P : Pred 𝕋 ℓ} {k n} (Δ : Ctx k) {Γ : Ctx n} →
+  𝐂._Preserves[_]_⇐_ ⦃ 𝐂.Kᵣ ⦄ (𝐂.weaken* k) P Γ (Δ ⸴* Γ)
+weaken*-pres⇐ {P = P} Δ {Γ} {x} (` u) = subst P (weaken*-lookup Δ Γ x) u
 
 -- weaken*'s image avoids the fresh (binder) region
 wk*∈∁fresh : ∀ {n} k (x : 𝔽 n) → 𝐂.weaken* k x ∈ ∁ (freshᵏ n k)
@@ -266,11 +266,11 @@ dom-⋯wk*⊆∁fresh k X {y} y∈ with dom-⋯-InImage X {ϕ = 𝐂.weaken* k} 
     H1b = ≼-respʳ-≈ RHSb≈ (↓-mono-≼ {X = base} H1)
 
     C : Γ ∶ ζ₁ ∥ ζ₂ ≼ γ
-    C = ≼-⋯⁻¹ {ϕ = 𝐂.weaken* k} (Inj-wk* k) (weaken*-pres⇐ Δ)
+    C = ≼-⋯⁻¹ {ϕ = 𝐂.weaken* k} (Inj-wk* k) (weaken*-pres⇐ Δ) (weaken*-pres⇐ Δ)
           (subst (λ z → (Δ ⸴* Γ) ∶ z ≼ γwk) (sym (cong₂ _∥_ e₁ e₂)) H1b)
 
     D : Γ ∶ γ₁′ ≼ ζ₁
-    D = ≼-⋯⁻¹ {ϕ = 𝐂.weaken* k} (Inj-wk* k) (weaken*-pres⇐ Δ)
+    D = ≼-⋯⁻¹ {ϕ = 𝐂.weaken* k} (Inj-wk* k) (weaken*-pres⇐ Δ) (weaken*-pres⇐ Δ)
           (subst₂ (λ a b → (Δ ⸴* Γ) ∶ a ≼ b)
                   (↓-identity-⊆ (γ₁′ 𝐂.⋯ᵣ 𝐂.weaken* k) {∁ (freshᵏ n k)} (dom-⋯wk*⊆∁fresh k γ₁′))
                   (sym e₁) (↓-mono-≼ {X = base} H2))
@@ -372,7 +372,7 @@ dom-⋯wk*⊆∁fresh k X {y} y∈ with dom-⋯-InImage X {ϕ = 𝐂.weaken* k} 
             (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ _)
               ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ _)
               ∥ ((γ₁ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂)) ∥ (γ₂ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂)))
-          ≲⟨ ≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.wk*-preserves (Γ₁ ⸴* Γ₂)) ≤γ) ⟩
+          ≲⟨ ≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.wk*-preserves (Γ₁ ⸴* Γ₂)) (𝐂.wk*-preserves (Γ₁ ⸴* Γ₂)) ≤γ) ⟩
             (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ _)
               ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ _)
               ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* (sum B₁ + sum B₂))
