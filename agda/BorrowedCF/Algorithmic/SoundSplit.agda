@@ -40,3 +40,31 @@ open Nat.Variables
     (≼-trans (join-absorb a (γ₂ ↓ fv e) (sibling-Unr a lu d) dom⊆) (own-≼ d))
   where dom⊆ : dom (γ₂ ↓ fv e) ⊆ dom (γ₁ ↓ fv e)
         dom⊆ {y} y∈ = ∈dom↓ γ₁ (cnt⇒∈dom γ₁ (fv⇒cnt d (↓-dom γ₂ (fv e) y∈))) (↓-dom γ₂ (fv e) y∈)
+
+open import Data.Nat using (_≤_)
+open import Data.Nat.Properties using (+-comm)
+open import BorrowedCF.Context.Join using (≼-join; join-flip; biasedDir)
+
+linUnique-flip : {n : ℕ} {Γ : Ctx n} {γ₁ γ₂ : Struct n} (a : Dir) →
+                 LinUnique Γ (join a γ₁ γ₂) → LinUnique Γ (join (flipDir a) γ₂ γ₁)
+linUnique-flip {γ₁ = γ₁} {γ₂} a lu x ¬u =
+  subst (_≤ 1) (cnt-join a γ₁ γ₂ x ■ +-comm (cnt γ₁ x) (cnt γ₂ x) ■ sym (cnt-join (flipDir a) γ₂ γ₁ x)) (lu x ¬u)
+
+↓fv-≼ʳ-wf : {n : ℕ} {Γ : Ctx n} {γ₁ γ₂ : Struct n} {e : Tm n} {T : 𝕋} {ϵ : Eff} (a : Dir) →
+            LinUnique Γ (join a γ₁ γ₂) → Γ ; γ₂ ⊢ e ∶ T ∣ ϵ → Γ ∶ (join a γ₁ γ₂) ↓ fv e ≼ γ₂
+↓fv-≼ʳ-wf {γ₁ = γ₁} {γ₂} a lu d =
+  ≼-trans (≼-refl (↓-mono-≈ (≈-sym (join-flip a))))
+          (↓fv-≼-wf {γ₁ = γ₂} {γ₂ = γ₁} (flipDir a) (linUnique-flip a lu) d)
+
+≤γ-par-wf : {n : ℕ} {Γ : Ctx n} {γ₁ γ₂ : Struct n} {e₁ e₂ : Tm n} {T₁ T₂ : 𝕋} {ϵ₁ ϵ₂ : Eff} (p/s : ParSeq) →
+  LinUnique Γ (join (biasedDir p/s) γ₁ γ₂) → Γ ; γ₁ ⊢ e₁ ∶ T₁ ∣ ϵ₁ → Γ ; γ₂ ⊢ e₂ ∶ T₂ ∣ ϵ₂ →
+  Γ ∶ join (biasedDir p/s) ((join (biasedDir p/s) γ₁ γ₂) ↓ fv e₁) ((join (biasedDir p/s) γ₁ γ₂) ↓ fv e₂)
+    ≼ join (biasedDir p/s) γ₁ γ₂
+≤γ-par-wf {γ₁ = γ₁} {γ₂} p/s lu d₁ d₂ =
+  ≼-join (biasedDir p/s) (↓fv-≼-wf {γ₂ = γ₂} (biasedDir p/s) lu d₁) (↓fv-≼ʳ-wf {γ₁ = γ₁} (biasedDir p/s) lu d₂)
+
+≤γ-seq-wf : {n : ℕ} {Γ : Ctx n} {γ₁ γ₂ : Struct n} {e₁ e₂ : Tm n} {T₁ T₂ : 𝕋} {ϵ₁ ϵ₂ : Eff} →
+  LinUnique Γ (γ₁ ; γ₂) → Γ ; γ₁ ⊢ e₁ ∶ T₁ ∣ ϵ₁ → Γ ; γ₂ ⊢ e₂ ∶ T₂ ∣ ϵ₂ →
+  Γ ∶ ((γ₁ ; γ₂) ↓ fv e₁) ; ((γ₁ ; γ₂) ↓ fv e₂) ≼ γ₁ ; γ₂
+≤γ-seq-wf {γ₁ = γ₁} {γ₂} lu d₁ d₂ =
+  ≼-join L (↓fv-≼-wf {γ₂ = γ₂} L lu d₁) (↓fv-≼ʳ-wf {γ₁ = γ₁} L lu d₂)
