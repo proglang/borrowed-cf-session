@@ -45,14 +45,18 @@
 }
 
 % CT-LSplit
-\DefRule {LSplit} {} {
+\DefRule {LSplit} {
+  \neg (\S[2] \SEq \SSkip)
+} {
   \HasCType
     {\CSplit_{\S[1],\S[2]}}
     {\TArr{\MobMobile}{\DirUnord,\EffPure}{\SSeq {\S[1]}{\S[2]}}{\TPairOrd{\S[1]}{\S[2]}}}
 }
 
 % CT-RSplit
-\DefRule {RSplit} {} {
+\DefRule {RSplit} {
+  \neg (\S[2] \SEq \SSkip)
+} {
   \HasCType
   {\CSSplit_{\S[1],\S[2]}}
   {\TArr{\MobMobile}{\DirUnord,
