@@ -1,7 +1,5 @@
 # Supplement for `Context-Free Session Types with Borrowing`
 
-This supplement bundles three parts, each with its own README.
-
 ## Structure
 
 ```
