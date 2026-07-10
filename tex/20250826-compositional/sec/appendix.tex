@@ -516,9 +516,13 @@ unfolding of definitions in the following way:
 
 \begin{figure}[tp]
   \begin{mathpar}
-    \RuleExpBlocked \and
+    \RuleExpValueReady \and
+    \RuleExpConstReady \and
+    \RuleParReady \and
+    \RuleNuReady \and
     \RuleParBlocked \and
     \RuleNuBlockedHere \and
+    \RuleNuBlockedHereAcq \and
     \RuleNuBlockedThere
   \end{mathpar}
   where
@@ -530,10 +534,17 @@ unfolding of definitions in the following way:
       \BlockedChannelsAcquire & \BlockedChannelsDrop \\
       \BlockedChannelsLSplit & \BlockedChannelsRSplit \\
       \BlockedChannelsFork & \BlockedChannelsNew \\
-      \BlockedChannelsDiscard &
+      \BlockedChannelsDiscard \\\\
+      \AcqBlockedChannelsSend & \AcqBlockedChannelsRecv \\
+      \AcqBlockedChannelsSelect & \AcqBlockedChannelsBranch \\
+      \AcqBlockedChannelsTerm & \AcqBlockedChannelsWait \\
+      \AcqBlockedChannelsAcquire & \AcqBlockedChannelsDrop \\
+      \AcqBlockedChannelsLSplit & \AcqBlockedChannelsRSplit \\
+      \AcqBlockedChannelsFork & \AcqBlockedChannelsNew \\
+      \AcqBlockedChannelsDiscard 
     \end{array}
   \]
-  \caption{Blocked Expressions (Blocked $\E$) and Blocked Processes (Blocked $\Proc$)}
+  \caption{Ready and Blocked Processes (Ready $\Proc$, Blocked $\Proc$)}
   \label{fig:blocked-expr-proc}
 \end{figure}
 

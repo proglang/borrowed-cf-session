@@ -4,11 +4,33 @@
 \def\RuleNamePrefix{B-}
 
 \newcommand*\Blocked[1]{\operatorname{\mathsf{Blocked}}\,{#1}}
+\newcommand*\Ready[1]{\operatorname{\mathsf{Ready}}\,{#1}}
 \newcommand*\BC{\operatorname{\mathsf{BC}}}
+\newcommand*\AC{\operatorname{\mathsf{AC}}}
 
 % B-ExpBlocked
-\DefRule {ExpBlocked} {} {
-  \Blocked{\EC{[\EApp\C\V]}}
+
+\DefRule{ExpValueReady} {} {
+  \Ready{\PExp{\CUnit}}
+}
+
+\DefRule {ExpConstReady} {
+  c \notin \{\CNew, \CFork, \CSplit, \CSSplit, \CDrop, \CDiscard\}
+} {
+  \Ready{\FC{[\EApp\C\V]}}
+}
+
+\DefRule {ParReady} {
+  \Ready{\Proc[1]} \\
+  \Ready{\Proc[2]}
+} {
+  \Ready{\PPar{\Proc[1]}{\Proc[2]}}
+}
+
+\DefRule {NuReady} {
+  \Ready{\Proc}
+} {
+ \Ready{\PNew{{\BindGroup[1]}}{{\BindGroup[2]}}{\Proc}}
 }
 
 % B-ParBlocked
@@ -21,16 +43,26 @@
 
 % B-NuBlockedHere
 \DefRule {NuBlockedHere} {
-  \EVar \notin \BC(\Proc) \lor \EVary \notin \BC(\Proc)
+  \{\EVar, \EVary\} \cap \BC(\Proc) \ne  \{\EVar, \EVary\} \\
+  \Ready{\Proc}
 }{
   \Blocked{\PNew{\BSeq{\EVar}{\BindGroup[1]}}{\BSeq{\EVary}{\BindGroup[2]}}{\Proc}}
+}
+
+% B-NuBlockedHereAcq
+\DefRule {NuBlockedHereAcq} {
+  \EVar \in \AC(\Proc)\\ 
+  \BindGroup[i] = \EVary \BindGroup \BSep \EVar \BindGroup* \\
+  \Ready{\Proc}
+}{
+  \Blocked{\PNew{{\BindGroup[1]}}{{\BindGroup[2]}}{\Proc}}
 }
 
 % B-NuBlockedThere
 \DefRule {NuBlockedThere} {
   \Blocked{\Proc}
 }{
-  \Blocked{\PNew{\BSeq{\EVar}{\BindGroup[1]}}{\BSeq{\EVary}{\BindGroup[2]}}{\Proc}}
+  \Blocked{\PNew{{\BindGroup[1]}}{{\BindGroup[2]}}{\Proc}}
 }
 
 \newcommand*\BlockedChannelsSend{
@@ -58,7 +90,7 @@
 }
 
 \newcommand*\BlockedChannelsAcquire{
-  \BC(\FCapp{\EApp\CAcq\EVar}) = \{\EVar\}
+  \BC(\FCapp{\EApp\CAcq\EVar}) =  \emptyset
 }
 
 \newcommand*\BlockedChannelsDrop{
@@ -84,6 +116,59 @@
 \newcommand*\BlockedChannelsDiscard{
   \BC(\FCapp{\EApp\CDiscard\EVar}) = \emptyset
 }
+
+\newcommand*\AcqBlockedChannelsSend{
+  \AC(\FCapp{\EApp\CSend{(\EPair\V\EVar)}}) = \emptyset
+}
+
+\newcommand*\AcqBlockedChannelsRecv{
+  \AC(\FCapp{\EApp\CRecv\EVar}) =  \emptyset
+}
+
+\newcommand*\AcqBlockedChannelsSelect{
+  \AC(\FCapp{\EApp{\CSelect{k}}\EVar}) =  \emptyset
+}
+
+\newcommand*\AcqBlockedChannelsBranch{
+  \AC(\FCapp{\EApp\CBranch\EVar}) =  \emptyset
+}
+
+\newcommand*\AcqBlockedChannelsTerm{
+  \AC(\FCapp{\EApp\CTerm\EVar}) = \emptyset
+}
+
+\newcommand*\AcqBlockedChannelsWait{
+  \AC(\FCapp{\EApp\CWait\EVar}) =  \emptyset
+}
+
+\newcommand*\AcqBlockedChannelsAcquire{
+  \AC(\FCapp{\EApp\CAcq\EVar}) = \{\EVar\}
+}
+
+\newcommand*\AcqBlockedChannelsDrop{
+  \AC(\FCapp{\EApp\CDrop\EVar}) = \emptyset
+}
+
+\newcommand*\AcqBlockedChannelsLSplit{
+  \AC(\FCapp{\EApp\CSplit\EVar}) = \emptyset
+}
+
+\newcommand*\AcqBlockedChannelsRSplit{
+  \AC(\FCapp{\EApp\CSSplit\EVar}) = \emptyset
+}
+
+\newcommand*\AcqBlockedChannelsFork{
+  \AC(\FCapp{\EApp\CFork\V}) = \emptyset
+}
+
+\newcommand*\AcqBlockedChannelsNew{
+  \AC(\FCapp{\EApp\CNew\E}) = \emptyset
+}
+
+\newcommand*\AcqBlockedChannelsDiscard{
+  \AC(\FCapp{\EApp\CDiscard\EVar}) = \emptyset
+}
+
 
 %%% Local Variables:
 %%% mode: latex
