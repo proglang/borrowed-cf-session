@@ -126,7 +126,7 @@ Session types themselves are quotiented by a standard equational theory used by
 type conversion: sequential composition is associative with $\SSkip$ as neutral
 element, recursion unfolds equi-recursively, and a continuation distributes
 homomorphically through internal and external choice. The induced congruence is
-the equivalence $\CEq$ that appears throughout the type system.
+the equivalence $\SEq$ that appears throughout the type system.
 
 A fresh
 channel offers dual protocols to its two endpoints. Duality, denoted $\SDual\T$, is the standard
@@ -137,8 +137,8 @@ collected in \cref{fig:session-laws} in the supplement.
 \begin{figure}
   \begin{mathpar}
     \RuleCTUnit \and
-    \RuleCTNew \and
     \RuleCTFork \and
+    \RuleCTNew \and
     \RuleCTLSplit \and
     \RuleCTRSplit \and
     \RuleCTDrop \and
