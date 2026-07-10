@@ -19,9 +19,16 @@
   \Blocked{\PPar{\Proc[1]}{\Proc[2]}}
 }
 
-% B-NuBlocked
-\DefRule {NuBlocked} {
+% B-NuBlockedHere
+\DefRule {NuBlockedHere} {
   \EVar \notin \BC(\Proc) \lor \EVary \notin \BC(\Proc)
+}{
+  \Blocked{\PNew{\BSeq{\EVar}{\BindGroup[1]}}{\BSeq{\EVary}{\BindGroup[2]}}{\Proc}}
+}
+
+% B-NuBlockedThere
+\DefRule {NuBlockedThere} {
+  \Blocked{\Proc}
 }{
   \Blocked{\PNew{\BSeq{\EVar}{\BindGroup[1]}}{\BSeq{\EVary}{\BindGroup[2]}}{\Proc}}
 }

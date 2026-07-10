@@ -4,6 +4,8 @@ This is the Agda formalization accompanying the paper. It defines the calculus
 (CSTB), its type system, the untyped run-time calculus and its translation, and
 proves the metatheoretical results marked with the Agda bird in the paper.
 
+Note: Checking all files may take a serious amount of time (up to half an hour).
+
 ## Requirements
 
 Agda: [v2.8.0](https://agda.readthedocs.io/en/v2.8.0/getting-started/installation.html)
