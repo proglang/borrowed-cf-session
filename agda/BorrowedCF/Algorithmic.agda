@@ -24,20 +24,7 @@ open EffProperties
 private variable
   e e₁ e₂ e₃ e′ e₁′ e₂′ : Tm n
 
-open V using () renaming (tail to fvClose; drop to fvClose*) public
-
-fv : Tm n → Subset n
-fv (` x) = ⁅ x ⁆
-fv (K c) = ⁅⁆
-fv (ƛ e) = fvClose (fv e)
-fv (μ e) = fvClose (fv e)
-fv (e₁ ·⟨ _ ⟩ e₂) = fv e₁ ∪ fv e₂
-fv (e₁ ; e₂) = fv e₁ ∪ fv e₂
-fv (e₁ ⊗ e₂) = fv e₁ ∪ fv e₂
-fv (`let e₁ `in e₂) = fv e₁ ∪ fvClose (fv e₂)
-fv (`let⊗ e₁ `in e₂) = fv e₁ ∪ fvClose* 2 (fv e₂)
-fv (`inj i e) = fv e
-fv (`case e `of⟨ e₁ ; e₂ ⟩) = fv e ∪ fvClose (fv e₁) ∪ fvClose (fv e₂)
+open import BorrowedCF.Algorithmic.Split public
 
 fv-subTm : (e : Tm n) → fv (subTm e σ) ≡ fv e
 fv-subTm (` x) = refl
@@ -68,8 +55,6 @@ fv[wk `inj i e ] = fv[wk e ]
 fv[wk `case e `of⟨ e₁ ; e₂ ⟩ ] = {!!}
 -}
 
-_∣fv[_] : Struct n → Tm n → Struct n
-γ ∣fv[ e ] = γ ↓ fv e
 
 data Mode : Set where
   chk inf : Mode
