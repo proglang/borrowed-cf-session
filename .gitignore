@@ -315,6 +315,7 @@ TSWLatexianTemp*
 # agda
 *.agdai
 agda-check.sh
+agda-safe.sh
 
 # claude
 CLAUDE.md

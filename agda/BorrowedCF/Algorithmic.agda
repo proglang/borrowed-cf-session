@@ -39,6 +39,9 @@ fv (`let⊗ e₁ `in e₂) = fv e₁ ∪ fvClose* 2 (fv e₂)
 fv (`inj i e) = fv e
 fv (`case e `of⟨ e₁ ; e₂ ⟩) = fv e ∪ fvClose (fv e₁) ∪ fvClose (fv e₂)
 
+_∣fv[_] : Struct n → Tm n → Struct n
+γ ∣fv[ e ] = γ ↓ fv e
+
 fv-subTm : (e : Tm n) → fv (subTm e σ) ≡ fv e
 fv-subTm (` x) = refl
 fv-subTm (K c) = refl
@@ -68,8 +71,6 @@ fv[wk `inj i e ] = fv[wk e ]
 fv[wk `case e `of⟨ e₁ ; e₂ ⟩ ] = {!!}
 -}
 
-_∣fv[_] : Struct n → Tm n → Struct n
-γ ∣fv[ e ] = γ ↓ fv e
 
 data Mode : Set where
   chk inf : Mode
@@ -149,14 +150,12 @@ data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
   A-LSplit :
     let α = UV.fresh m in
     (≤γ : Γ ∶ [] ≼ γ) →
-    ¬ Skips s →
     -----------------------------------------------------------------------------------
     Γ ; γ / m ⊢ K (`lsplit s) ⇒ ⟨ s ; `` α ⟩ →*M ⟨ s ⟩ ⊗ᴸ ⟨ `` α ⟩ ∣ ℙ ∣ ℙ ↑ [] / suc m
 
   A-RSplit :
     let α = record { var = m; pol = ‼ } in
     (≤γ : Γ ∶ [] ≼ γ) →
-    ¬ Skips s →
     -----------------------------------------------------------------------------------------------
     Γ ; γ / m ⊢ K (`rsplit s) ⇒ ⟨ s ; `` α ⟩ →*M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; `` α ⟩ ∣ ℙ ∣ ℙ ↑ [] / suc m
 
@@ -283,12 +282,12 @@ module _ {σ : UV.Sub} (Sσ : Solving σ) where
   sound (A-Const ≤γ Ac ⊢c) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
              (T-Const (subConst-⊢ ⊢c))
-  sound (A-LSplit ≤γ ¬skips) SΓ SΔ =
+  sound (A-LSplit ≤γ) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
-             (T-Const (`lsplit _ _))
-  sound (A-RSplit ≤γ ¬skips) SΓ SΔ =
+             (T-Const (`lsplit _ _ (UV.ap-¬skips σ _ ∘ skips-⋯ᵣ⁻¹)))
+  sound (A-RSplit ≤γ) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
-             (T-Const (`rsplit _ _))
+             (T-Const (`rsplit _ _ (UV.ap-¬skips σ _ ∘ skips-⋯ᵣ⁻¹)))
   sound (A-App {Δ₁ = Δ₁} ec ≤γ x y) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
              (sound-app ec x y SΓ (All.++⁻ˡ Δ₁ SΔ ) (All.++⁻ʳ Δ₁ SΔ))
@@ -387,72 +386,3 @@ someSub-solving = subAll-solving (λ ()) end
              (⊢-sub σ d₂ ⊢≗ ⸴-dist (flip subTy σ))
 ⊢-sub σ (T-Conv T≃ ϵ≤ d) = T-Conv (subTy-≃ T≃) ϵ≤ (⊢-sub σ d)
 ⊢-sub σ (T-Weaken γ≤ d) = T-Weaken (≼-map⁺ subTy-unr subTy-mobile γ≤) (⊢-sub σ d)
-
-complete :
-  Un.Π[ SolvedTy ∘ Γ ] →
-  SolvedTm e →
-  SolvedTy T →
-  Γ ; γ ⊢ e ∶ T ∣ ϵ →
-  ∃[ σ ] ∃[ Δ ] ∃[ ϵ′ ] ∃[ n ]
-     ϵ′ ≤ϵ ϵ × Solving σ × SolvedΔ Δ σ × Γ ; γ / m ⊢ e ⇐ T ∣ ϵ′ ↑ Δ / n
-complete SΓ Se ST (T-Const {c = c} ⊢c) with algConst? c
-... | inj₁ Ac =
-  UV.someSub , _ , _ , _ , ≤ϵ-refl , someSub-solving , ≃-refl ∷ [] , A-Check (A-Const (≼-∅ []) Ac ⊢c)
-... | inj₂ ¬Ac = {!¬Ac!}
-complete SΓ Se ST (T-Var x refl) =
-  UV.someSub , _ , _ , _ , ≤ϵ-refl , someSub-solving , ≃-refl ∷ [] , A-Check (A-Var (≼-refl refl))
-complete SΓ Se ST (T-Abs Γ-unr Γ-mob x) = {!!}
-complete SΓ Se ST (T-AbsRec Γ-unr a-unr x) = {!!}
-complete SΓ Se ST (T-AppUnr a-unr ≤ₐ x y) = {!!}
-complete SΓ Se ST (T-AppLin a-par ≤ₐ x x₁) = {!!}
-complete SΓ Se ST (T-AppLeft aL ≤ₐ x x₁) = {!!}
-complete SΓ Se ST (T-AppRight aR ≤ₐ x x₁) = {!!}
-complete SΓ Se ST (T-Pair p/s seq⇒p x x₁) = {!!}
-complete SΓ Se ST (T-Seq unr-T x y) = {!!}
-complete SΓ Se ST (T-LetPair p/s x y) = {!!}
-complete SΓ (`inj Se) (ST₁ ⊕ ST₂) (T-Inj {i = true} x) =
-  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete SΓ Se ST₁ x in
-  σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A-Inj A
-complete SΓ (`inj Se) (ST₁ ⊕ ST₂) (T-Inj {i = false} x) =
-  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete SΓ Se ST₂ x in
-  σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A-Inj A
-complete SΓ Se ST (T-Case p/s x y₁ y₂) = {!!}
-complete SΓ Se ST (T-Conv {T = T} {U = U} T≃ ϵ≤ x) =
-  let ST-T = ≃-solved⁻¹ T≃ ST in
-  let σ , Δ , ϵ′ , n , ϵ′≤ , Sσ , SΔ , A = complete SΓ Se ST-T x in
-  σ , C-Eq U T ∷ Δ , ϵ′ , n , ≤ϵ-trans ϵ′≤ ϵ≤ , Sσ ,
-    subst₂ _≃_ (sym (subTy-id ST)) (sym (subTy-id ST-T)) (≃-sym T≃) ∷ SΔ ,
-    A-Check (A-Ann A)
-complete SΓ Se ST (T-Weaken γ≤ x) = {!!}
--- complete (T-Const {c = c} ⊢c) Se ST with isSplit? c
--- complete (T-Const {c = _} (`lsplit s s′)) Se ST@(⟨ Ss ; Ss′ ⟩ ⟨ _ ⟩→ Sc) | yes (_ , inj₁ refl) =
---   let Sσs  = subTy-solved Ss in
---   let Sσs′ = subst SolvedTy (sym (𝐓.⋯-id s′ λ())) Ss′ in
---   let σ[s′]≃wk[s′] = ≃-reflexive (subTy-id Ss′ ■ sym (𝐓.⋯-id s′ λ())) in
---   _ , const s′
---     , (subTy-solved ST , ⟨ Sσs ; Sσs′ ⟩ ⟨ _ ⟩→ ⟨ Sσs ⟩ ⊗⟨ L ⟩ ⟨ Sσs′ ⟩ ,
---         ⟨ ≃-; ≃-refl σ[s′]≃wk[s′] ⟩ `→ (≃-refl ⊗ ⟨ σ[s′]≃wk[s′] ⟩)) ∷ []
---     , A-Check (A-LSplit (≼-refl refl))
--- complete (T-Const {c = _} (`rsplit s s′)) Se ST | yes (_ , inj₂ refl) = {!!}
--- ... | no no-split =
---   _ , const skip
---     , (subTy-solved ST , subTy-solved ST , ≃-refl) ∷ []
---     , A-Check (A-Const (≼-refl refl) (λ s z → no-split (s , inj₁ z)) (λ s z → no-split (s , inj₂ z)) ⊢c)
--- complete (T-Var x T-eq) Se ST = {!!}
--- complete (T-Abs Γ-unr Γ-mob e) Se ST = {!!}
--- complete (T-AbsRec x x₁ e) Se ST = {!!}
--- complete (T-AppUnr x f e) S[fe] ST =
---   let _ , σf , Sf , Af = complete f {!!} {!!} in
---   _ , {!!} , {!!}
---     , A-Check (A-App {!!} {!!} {!!} {!Af!} {!!})
--- complete (T-AppLin x e e₁) Se ST = {!!}
--- complete (T-AppLeft x e e₁) Se ST = {!!}
--- complete (T-AppRight x e e₁) Se ST = {!!}
--- complete (T-Pair p/s e e₁ x) Se ST = {!!}
--- complete (T-Let p/s e e₁) Se ST = {!!}
--- complete (T-LetUnit p/s e e₁) Se ST = {!!}
--- complete (T-LetPair p/s e e₁) Se ST = {!!}
--- complete (T-Inj e) Se ST = {!!}
--- complete (T-Case p/s e e₁ e₂) Se ST = {!!}
--- complete (T-Conv T≃ ϵ≤ e) Se ST = {!!}
--- complete (T-Weaken γ≤ e) Se ST = {!!}

@@ -1,0 +1,31 @@
+# Rust
+target/
+
+# Vim
+*.swp
+*.swo
+
+# Latex
+auto/
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Misc
+.#*
+
+# MACOS
+.DS_Store
+
+# Nix
+.direnv
+result
+
+# Temp Freest files
+*.temp.fst
+
+# proptest
+proptest-regressions

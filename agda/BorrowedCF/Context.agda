@@ -23,9 +23,3 @@ seq⇒pure-ℙϵ⁻¹ seq = refl
 mk-seq⇒pure : ∀ {p/s ϵ₁ ϵ₂} → (p/s ≡ seq → ϵ₂ ≡ ℙ) → ∃[ ϵ₁′ ] ∃[ ϵ₂′ ] ϵ₁ ≤ϵ ϵ₁′ × ϵ₂ ≤ϵ ϵ₂′ × ϵ₁′ ≤ϵ (ϵ₁ ⊔ϵ ϵ₂) × Seq⇒Pure p/s ϵ₁′ ϵ₂′
 mk-seq⇒pure {p/s = par} {ϵ₁} {ϵ₂} seq⇒P = _ , _ , x≤x⊔y ϵ₁ ϵ₂ , x≤y⊔x ϵ₁ ϵ₂ , ≤ϵ-refl , par where open EffProperties
 mk-seq⇒pure {p/s = seq} seq⇒P rewrite seq⇒P refl = _ , _ , ≤ϵ-refl , ℙ≤ϵ , x≤x⊔y _ _ , seq where open EffProperties
-
--- seq⇒pure-≤ : ∀ {p/s} → Seq⇒Pure p/s ϵ₂ ϵ′ → ϵ₁ ≤ϵ ϵ₂ → Seq⇒Pure p/s ϵ₁ ϵ′
--- seq⇒pure-≤ {ℙ} par ℙ≤ϵ = {!!}
--- seq⇒pure-≤ {𝕀} par ℙ≤ϵ = {!!}
--- seq⇒pure-≤ par 𝕀≤𝕀 = {!!}
--- seq⇒pure-≤ seq x₁ = {!!}

@@ -299,16 +299,26 @@ In the implementation, we use FreeST
 checking. To this end, we generate little FreeST programs that typecheck if and
 only if the equivalence constraints hold. 
 
+
 For every equivalence constraint $\T[1] \CEq \T[2]$, we generate the following
 FreeST program consisting of type definitions for $\T[1]$ and $\T[2]$ as well as
-an identity function mapping $\T[1]$ to $\T[2]$. Here is an example.
+an identity function mapping $\T[1]$ to $\T[2]$. 
+For example, let $\T[1] = \SRec{\SVar}{\SSeq {\SSeq {\SSend{\BInt}} {\SSend {\BString}}} {\SVar}}$ and $\T[2] = \SRec{\SVar}{\SSeq {\SSkip} {\SSeq {\SSeq {\SSend{\BInt}} {\SSend {\BString}}} {\SVar}}}$. For the constraint $\T[1] \CEq \T[2]$ we generate the following FreeST program:
 
 \begin{lstlisting}[numbers=left]
+
+type X_T1 : 1S
+type X_T1 = !Int; !String; X_T1
+
 type T1 : 1S
-type T1 = ...
+type T1 = X_T1
+
+
+type X_T2 : 1S
+type X_T2 = Skip; !Int; !String; X_T2
 
 type T2 : 1S
-type T2 = ...
+type T2 = X_T2
 
 id : T1 -> T2
 id x = x
@@ -327,6 +337,7 @@ The main parts of the translation are:
     types.
   \item Translating effects.
 \end{itemize}
+
 
 To translate a $\mu$-type to explicit recursion, we generate a fresh name and
 associate the name with the recursion unrolled and translation applied.

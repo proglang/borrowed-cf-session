@@ -154,9 +154,9 @@ data ⊢_∶_ : Const → 𝕋 → Set where
 
   `new  : New s → ⊢ `new s ∶ `⊤ →*M ⟨ acq ; (s ; end ⁇) ⟩ ⊗¹ ⟨ acq ; (dual s ; end ‼) ⟩ ∣ ℙ
 
-  `lsplit : (s s′ : 𝕊 0) →
+  `lsplit : (s s′ : 𝕊 0) → ¬ Skips s′ →
     ⊢ `lsplit s ∶ ⟨ s ; s′ ⟩ →*M ⟨ s ⟩       ⊗ᴸ ⟨ s′ ⟩       ∣ ℙ
-  `rsplit : (s s′ : 𝕊 0) →
+  `rsplit : (s s′ : 𝕊 0) → ¬ Skips s′ →
     ⊢ `rsplit s ∶ ⟨ s ; s′ ⟩ →*M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; s′ ⟩ ∣ ℙ
 
   `drop : ⊢ `drop ∶ ⟨ ret ⟩     →*M `⊤    ∣ 𝕀
@@ -175,8 +175,8 @@ data ⊢_∶_ : Const → 𝕋 → Set where
 constFnUnr : ∀ {c} → ⊢ c ∶ T ⟨ a ⟩→ U → Arr.Unr a
 constFnUnr `fork = refl
 constFnUnr (`new x) = refl
-constFnUnr (`lsplit x s′) = refl
-constFnUnr (`rsplit x s′) = refl
+constFnUnr (`lsplit x s′ _) = refl
+constFnUnr (`rsplit x s′ _) = refl
 constFnUnr `drop = refl
 constFnUnr `discard = refl
 constFnUnr `acq = refl
