@@ -1,0 +1,606 @@
+\input{popl2027-preamble}
+
+\newcommand*\Kind{\kappa}
+\newcommand*\KVal{\mathsf{Type}}
+\newcommand*\KSess{\mathsf{Session}}
+\newcommand*\Qual{Q}
+\newcommand*\Prop{q}
+\newcommand*\TyCtx{\Phi}
+\newcommand*\Entails{\mathrel{\vDash}}
+\newcommand*\Dualable{\operatorname{\mathsf{dualable}}}
+\newcommand*\NonSkip{\operatorname{\mathsf{nonskip}}}
+\newcommand*\Wf{\mathrel{\mathsf{wf}}}
+\newcommand*\TyAbs[3]{\termcolor{\Lambda (#1).\,#2 \Rightarrow #3}}
+\newcommand*\TyApp[2]{\termcolor{#1[#2]}}
+\newcommand*\Pack[3]{\termcolor{\Keyword{pack}\,\langle #1,#2\rangle\,\Keyword{as}\,#3}}
+\newcommand*\Open[4]{\termcolor{\Keyword{open}\,\langle #1,#2\rangle=#3\,\Keyword{in}\,#4}}
+
+\title{Qualified System~F Polymorphism for \thecalculus}
+\author{Design note}
+
+\begin{document}
+\begin{abstract}
+This note proposes a conservative, explicitly typed polymorphic extension of
+the declarative system of \thecalculus.  Universal and existential types are
+qualified by the static predicates already observed by the monomorphic type
+system.  Type variables and assumptions about them are kept in an
+intuitionistic context separate from the ordered expression-variable context.
+Type abstraction, type application, packing, and opening add only
+expression-level reductions; the process syntax and process reduction rules
+are unchanged.
+\end{abstract}
+\maketitle
+
+\section{Design summary}
+
+The extension follows explicitly typed System~F.  A universal value is
+introduced by a term such as
+\[
+  \TyAbs{\alpha:\KVal}{\Mobile\alpha}{\V}.
+\]
+The qualification is checked when the abstraction is instantiated; it is not
+a run-time argument.  Existential packages use the same qualifications to
+record properties of a hidden witness.
+
+Three features of the monomorphic system require care.  First, a type
+variable must distinguish ordinary types from session types.  Second, the
+rules inspect more properties than mobility: unrestrictedness, boundedness,
+eligibility for channel creation, dualability, and nontriviality of a split
+suffix are all relevant.  Third, type abstraction is restricted to an
+already-formed value.  The form $\TyAbs{\alpha:\Kind}{\Qual}{\V}$ adds no
+closure and delays no computation; its resource properties are inherited from
+$\V$.
+
+\section{Syntax and static contexts}
+
+Let $\alpha,\beta$ range over polymorphic type variables.  They are distinct
+from the recursively bound session variables $X$ of $\mu X.S$.  The extension
+adds the following grammar; all elided cases are inherited unchanged from the
+paper.
+
+\begin{figure}[H]
+  \small
+  \begin{align*}
+    \Kind &\grmeq \KVal \grmor \KSess
+      \tag{Kinds} \\
+    \Prop &\grmeq
+       \Unr\T
+       \grmor \Mobile\T
+       \grmor \Bounded\S
+       \grmor \SNew\S
+       \\
+       &\qquad
+       \grmor \Dualable\S
+       \grmor \NonSkip\S
+       \grmor \T \SEq \TU
+      \tag{Atomic qualifications} \\
+    \Qual &\grmeq \top \grmor \Prop \grmor \Qual\land\Qual
+      \tag{Qualifications} \\
+    \TyCtx &\grmeq \emptyset
+       \grmor \TyCtx,\alpha:\Kind
+       \grmor \TyCtx,\Prop
+      \tag{Type-and-constraint contexts} \\
+    \T &\grmeq \cdots \grmor \alpha
+       \grmor \forall(\alpha:\Kind).\,\Qual\Rightarrow\T
+       \\
+       &\qquad
+       \grmor \exists(\alpha:\Kind).\,\Qual\land\T
+      \tag{Types} \\
+    \S &\grmeq \cdots \grmor \alpha \grmor \SDual\S
+      \tag{Session types} \\
+    \E &\grmeq \cdots
+       \grmor \TyAbs{\alpha:\Kind}{\Qual}{\V}
+       \grmor \TyApp\E\T \\
+       &\qquad
+       \grmor \Pack\T\E{\exists(\alpha:\Kind).\Qual\land\T}
+       \\
+       &\qquad
+       \grmor \Open\alpha\EVar\E\E
+      \tag{Expressions}
+  \end{align*}
+  \caption{Polymorphic syntax}
+  \label{fig:poly-syntax}
+\end{figure}
+
+Kinds are deliberately small.  A session has kind $\KSess$ and may also be
+used as an ordinary value type; universal and existential types have kind
+$\KVal$, not $\KSess$.  Thus quantification can hide a session endpoint inside
+a package, but it does not turn the package itself into a session protocol.
+Quantification is impredicative at kind $\KVal$: a type argument may itself be
+universal or existential.
+
+The context $\TyCtx$ is intuitionistic: its entries admit exchange,
+contraction, and weakening.  It contains rigid type variables and assumptions
+about them.  In contrast, $\Ctx$ remains the ordered resource context of
+expression variables.  The extended expression typing judgment is
+\[
+  \TyCtx\,;\,\Ctx \vdash \E : \T \mid \Eff.
+\]
+No type variable or qualification is represented by an entry in $\Ctx$.
+
+A type abstraction does not create a closure.  Its body must already be a
+value, and evaluation never proceeds underneath $\Lambda$.  Consequently,
+universal types need neither a closure annotation nor a latent effect.  Their
+mobility and unrestrictedness are derived from the type of the wrapped value.
+
+\section{Qualifications and entailment}
+
+We write $\TyCtx\Entails\Prop$ for constraint entailment and extend it
+pointwise to conjunctions.  The entailment relation contains an assumption
+rule and reads every predicate rule of the monomorphic system as a Horn
+clause.  In particular, the structural rules for products, variants,
+functions, sessions, and contexts continue to apply when their premises are
+entailed rather than syntactically decidable.
+
+The following closure principles are representative.
+\begin{figure}[H]
+  \begin{mathpar}
+    \inferrule*[right=Q-Assume]{\Prop\in\TyCtx}{\TyCtx\Entails\Prop}
+    \and
+    \inferrule*[right=Q-Unr-Mobile]{\TyCtx\Entails\Unr\T}
+      {\TyCtx\Entails\Mobile\T}
+    \and
+    \inferrule*[right=Q-Acq]{\TyCtx\Entails\Bounded\S}
+      {\TyCtx\Entails\Mobile{(\SSeq\SAcq\S)}}
+    \\
+    \inferrule*[right=Q-Skip-Unr]{\TyCtx\Entails \S\SEq\SSkip}
+      {\TyCtx\Entails\Unr\S}
+    \and
+    \inferrule*[right=Q-Skip-Mobile]{\TyCtx\Entails \S\SEq\SSkip}
+      {\TyCtx\Entails\Mobile\S}
+    \and
+    \inferrule*[right=Q-New-Dual]{\TyCtx\Entails\SNew\S}
+      {\TyCtx\Entails\Dualable\S}
+    \\
+    \inferrule*[right=Q-NonSkip]{
+      \TyCtx\Entails\neg(\S\SEq\SSkip)
+    }{
+      \TyCtx\Entails\NonSkip\S
+    }
+    \and
+    \inferrule*[right=Q-Cong]{
+      \TyCtx\Entails \T\SEq\TU \\
+      \TyCtx\Entails \Prop[\T/\alpha]
+    }{
+      \TyCtx\Entails \Prop[\TU/\alpha]
+    }
+  \end{mathpar}
+  \caption{Selected qualification-entailment principles}
+  \label{fig:poly-entailment}
+\end{figure}
+
+The predicates have the following roles.
+
+\paragraph{Unrestrictedness.}
+$\Unr\T$ is required whenever a value may be weakened, contracted, or ignored,
+including sequencing and unrestricted recursion.  Linearity remains the
+default, so no positive $\mathsf{linear}$ qualification is needed.
+
+\paragraph{Mobility.}
+$\Mobile\T$ is required for communication and for moving captured values
+between processes.  It also controls the equations that identify ordered and
+unordered context composition.
+
+\paragraph{Boundedness.}
+$\Bounded\S$ is needed separately because it entails mobility of
+$\SSeq\SAcq\S$.  Replacing it everywhere by a mobility constraint would lose
+the compositional rule used for acquired session suffixes.
+
+\paragraph{Channel creation and duality.}
+$\SNew\S$ states that $\S$ is a source protocol accepted by $\CNew$ and by
+process restriction.  A suspended dual $\SDual\alpha$ is unavoidable in the
+polymorphic type of $\CNew$.  Because duality is undefined for $\SDrop$ and
+$\SAcq$, formation of $\SDual\S$ requires $\Dualable\S$.  The existing
+$\SNew\S$ predicate entails dualability, but the latter is useful independently
+for generic code over protocols containing $\STerm$ or $\SWait$.
+
+\paragraph{Non-skip suffixes.}
+The split constants require $\neg(\S[2]\SEq\SSkip)$.  Generic splitting
+therefore needs the stable abbreviation
+$\NonSkip\S\equiv\neg(\S\SEq\SSkip)$.  Without this qualification, a
+polymorphic split could be instantiated with a suffix rejected by the
+monomorphic rule.
+
+\paragraph{Equality.}
+An equality qualification records relationships between abstract types modulo
+the existing type and CFST equational theories.  It is useful for generic code
+whose protocol decomposition is known abstractly.  All predicate
+qualifications are invariant under this equality.
+
+There is no separate $\Skips\S$ qualification: the declarative rules that need
+this information already use $\S\SEq\SSkip$.  Likewise, $\Ord\T$ is not part of
+the proposed interface because no declarative typing rule inspects it.  Effects
+and directions remain explicit type annotations rather than properties of type
+variables.
+
+For closed arguments, all atomic qualifications reduce to the existing
+decisions, including CFST equivalence for equality and $\NonSkip$.  Under
+abstract variables, entailment uses assumptions, congruence, and the structural
+predicate rules; it never guesses a property of a rigid variable.
+
+\section{Kinding and context structure}
+
+The judgment $\TyCtx\vdash\T:\Kind$ is standard.  Selected rules are shown
+below.  We write $\TyCtx\vdash\Qual\ \Wf$ when all free type variables of a
+qualification are bound and its predicate arguments have the required kinds.
+
+\begin{figure}[H]
+  \begin{mathpar}
+    \inferrule*[right=K-Var]{\alpha:\Kind\in\TyCtx}
+      {\TyCtx\vdash\alpha:\Kind}
+    \and
+    \inferrule*[right=K-Session-Type]{\TyCtx\vdash\S:\KSess}
+      {\TyCtx\vdash\S:\KVal}
+    \\
+    \inferrule*[right=K-Dual]{
+      \TyCtx\vdash\S:\KSess \\
+      \TyCtx\Entails\Dualable\S
+    }{
+      \TyCtx\vdash\SDual\S:\KSess
+    }
+    \\
+    \inferrule*[right=K-All]{
+      \TyCtx,\alpha:\Kind\vdash\Qual\ \Wf \\
+      \TyCtx,\alpha:\Kind,\Qual\vdash\T:\KVal
+    }{
+      \TyCtx\vdash
+        \forall(\alpha:\Kind).\Qual\Rightarrow\T
+        :\KVal
+    }
+    \\
+    \inferrule*[right=K-Exists]{
+      \TyCtx,\alpha:\Kind\vdash\Qual\ \Wf \\
+      \TyCtx,\alpha:\Kind,\Qual\vdash\T:\KVal
+    }{
+      \TyCtx\vdash
+        \exists(\alpha:\Kind).\Qual\land\T
+        :\KVal
+    }
+  \end{mathpar}
+  \caption{Selected kinding rules}
+  \label{fig:poly-kinding}
+\end{figure}
+
+All inherited type constructors receive their expected kinding rules.  In
+particular, sequential composition and recursive session formation require
+$\KSess$ operands, while the payload of send or receive only requires
+$\KVal$.  The qualifier entries of $\TyCtx$ are propositions, not kinds.
+
+Context equality and the subcontext preorder must be indexed by $\TyCtx$:
+\[
+  \TyCtx\vdash\Ctx[1]=\Ctx[2]
+  \qquad\text{and}\qquad
+  \TyCtx\vdash\Ctx[1]\SubCtx\Ctx[2].
+\]
+The equations from the paper are unchanged, but their side conditions use
+entailment.  For example, $\Unr\alpha\in\TyCtx$ permits an assumption
+$x:\alpha$ to contract, and $\Mobile\alpha\in\TyCtx$ permits it to move between
+ordered and unordered context composition.  This parameterization is
+essential: keeping only $\Ctx$ in the judgment would make qualifications on
+abstract types invisible to the ordered context algebra.
+
+\section{Universal types}
+
+\begin{figure}[H]
+  \begin{mathpar}
+    \inferrule*[right=T-TAbs]{
+      \TyCtx,\alpha:\Kind,\Qual\,;\,\Ctx
+        \vdash \V:\T\mid\EffPure \\
+      \TyCtx,\alpha:\Kind\vdash\Qual\ \Wf \\
+      \alpha\notin\Fv(\Ctx)
+    }{
+      \TyCtx\,;\,\Ctx \vdash
+        \TyAbs{\alpha:\Kind}{\Qual}{\V}
+        :\forall(\alpha:\Kind).\Qual\Rightarrow\T
+        \mid\EffPure
+    }
+    \\
+    \inferrule*[right=T-TApp]{
+      \TyCtx\,;\,\Ctx\vdash \E:
+        \forall(\alpha:\Kind).\Qual\Rightarrow\T
+        \mid\Eff \\
+      \TyCtx\vdash\TU:\Kind \\
+      \TyCtx\Entails\Qual[\TU/\alpha]
+    }{
+      \TyCtx\,;\,\Ctx\vdash
+        \TyApp\E\TU:\T[\TU/\alpha]\mid\Eff
+    }
+  \end{mathpar}
+  \caption{Universal introduction and elimination}
+  \label{fig:poly-universal-typing}
+\end{figure}
+
+The abstraction rule applies only when the body is already a value.  It checks
+that value under a fresh rigid variable and the declared qualification.  Type
+application introduces no latent computation: it evaluates its operator and
+then substitutes the type argument into the wrapped value.  Both rules are
+therefore pure apart from the effect needed to evaluate the operator of the
+type application.
+
+The new classification rules for universal types are
+\begin{mathpar}
+  \inferrule{
+    \TyCtx,\alpha:\Kind,\Qual\Entails\Mobile\T
+  }{
+    \TyCtx\Entails
+      \Mobile{(\forall(\alpha:\Kind).\Qual\Rightarrow\T)}}
+  \and
+  \inferrule{
+    \TyCtx,\alpha:\Kind,\Qual\Entails\Unr\T
+  }{
+    \TyCtx\Entails
+      \Unr{(\forall(\alpha:\Kind).\Qual\Rightarrow\T)}}.
+\end{mathpar}
+These rules mirror the existential classification rules below.  Their
+soundness relies on value inversion: a value of mobile, respectively
+unrestricted, type can use only a mobile, respectively unrestricted,
+expression context.  This argument would fail for an arbitrary expression,
+which is why \RuleName{T-TAbs} requires the body to be a value.
+
+\section{Existential types}
+
+Existential introduction supplies an explicit witness.  Elimination exposes a
+fresh rigid type variable, its qualification, and the packed value.  The
+result type and the surrounding expression-variable context may not mention
+the hidden variable.
+
+\begin{figure}[H]
+  \begin{mathpar}
+    \inferrule*[right=T-Pack]{
+      \TyCtx\vdash\TU:\Kind \\
+      \TyCtx\Entails\Qual[\TU/\alpha] \\
+      \TyCtx\,;\,\Ctx\vdash
+        \E:\T[\TU/\alpha]\mid\Eff
+    }{
+      \TyCtx\,;\,\Ctx\vdash
+      \Pack\TU\E{\exists(\alpha:\Kind).\Qual\land\T}
+      :\exists(\alpha:\Kind).\Qual\land\T\mid\Eff
+    }
+    \\
+    \inferrule*[right=T-Open]{
+      \TyCtx\,;\,\Ctx[1]\vdash
+        \E[1]:\exists(\alpha:\Kind).\Qual\land\T\mid\Eff \\
+      \TyCtx,\alpha:\Kind,\Qual\,;\,
+        (\CtxVar\EVar\T\CtxPatOp\Ctx[2])
+        \vdash\E[2]:\TU\mid\Eff \\
+      \alpha\notin\Fv(\Ctx[2],\TU)
+    }{
+      \TyCtx\,;\,(\Ctx[1]\CtxPatOp\Ctx[2])\vdash
+        \Open\alpha\EVar{\E[1]}{\E[2]}:\TU\mid\Eff
+    }
+  \end{mathpar}
+  \caption{Existential introduction and elimination}
+  \label{fig:poly-existential-typing}
+\end{figure}
+
+As in the paper's let rule, $\CtxPatOp$ ranges over ordered and unordered
+context composition and is chosen consistently in the premise and conclusion.
+The qualification is available only while checking the body of the open.
+
+An existential package has the run-time resources of its payload.  Its
+classifications are therefore derived under the abstract witness and its
+qualification:
+\begin{mathpar}
+  \inferrule{
+    \TyCtx,\alpha:\Kind,\Qual\Entails\Mobile\T
+  }{
+    \TyCtx\Entails\Mobile{(\exists(\alpha:\Kind).\Qual\land\T)}
+  }
+  \and
+  \inferrule{
+    \TyCtx,\alpha:\Kind,\Qual\Entails\Unr\T
+  }{
+    \TyCtx\Entails\Unr{(\exists(\alpha:\Kind).\Qual\land\T)}.
+  }
+\end{mathpar}
+For example,
+\[
+  \exists(\alpha:\KVal).\Mobile\alpha\land\alpha
+\]
+is mobile, while $\exists(\alpha:\KVal).\top\land\alpha$ is not.  Similarly,
+$\exists(\alpha:\KSess).\Bounded\alpha\land(\SSeq\SAcq\alpha)$ is mobile by
+the acquired-session rule.
+
+\section{Lifting the monomorphic rules}
+
+Every declarative judgment in the paper is prefixed by $\TyCtx$.  The shape of
+the inherited rules is otherwise unchanged.  Predicate and equality side
+conditions become entailments.  Representative replacements are
+\[
+\begin{array}{lll}
+  \RuleName{T-Seq}:& \TyCtx\Entails\Unr\T,
+    &\text{the discarded result is unrestricted};\\
+  \RuleName{CT-Send}/\RuleName{CT-Recv}:&
+    \TyCtx\Entails\Mobile\T,
+    &\text{the payload crosses a process boundary};\\
+  \RuleName{CT-LSplit}/\RuleName{CT-RSplit}:&
+    \TyCtx\Entails\NonSkip\S[2],
+    &\text{the residual suffix is nontrivial};\\
+  \RuleName{TP-Res}:& \TyCtx\Entails\SNew\S,
+    &\text{restriction uses a source protocol};\\
+  \RuleName{T-Conv}:& \TyCtx\Entails\T\SEq\TU,
+    &\text{conversion may use abstract equations}.
+\end{array}
+\]
+The abstraction rules for ordinary functions continue to test mobility or
+unrestrictedness of their captured expression context through entailment.
+Process typing becomes $\TyCtx\,;\,\Ctx\vdash\Proc$; binder-group typing is
+similarly parameterized.  Type variables never enter binder groups at run
+time.
+
+The type-indexed primitive families can now be presented as explicitly
+polymorphic constants.  Representative signatures are
+\begin{align*}
+  \CSend :{}&
+    \forall(\alpha:\KVal).
+      \Mobile\alpha\Rightarrow
+      \TArr{\MobMobile}{\DirNone,\EffImpure}
+        {\TPairUnord\alpha{\SSend\alpha}}{\BUnit},\\
+  \CRecv :{}&
+    \forall(\alpha:\KVal).
+      \Mobile\alpha\Rightarrow
+      \TArr{\MobMobile}{\DirNone,\EffImpure}{\SRecv\alpha}{\alpha},\\
+  \CNew :{}&
+    \forall(\alpha:\KSess).
+      \SNew\alpha\Rightarrow
+      \TArr{\MobMobile}{\DirNone,\EffPure}{\BUnit}
+      {\TPairUnord
+        {\SSeq\SAcq{\SSeq\alpha\STerm}}
+        {\SSeq\SAcq{\SSeq{\SDual\alpha}\SWait}}},\\
+  \CSplit :{}&
+    \forall(\alpha:\KSess).
+    \top\Rightarrow
+    \forall(\beta:\KSess).
+    \NonSkip\beta\Rightarrow
+      \TArr{\MobMobile}{\DirUnord,\EffPure}
+        {\SSeq\alpha\beta}{\TPairOrd\alpha\beta},\\
+  \CSSplit :{}&
+    \forall(\alpha:\KSess).
+    \top\Rightarrow
+    \forall(\beta:\KSess).
+    \NonSkip\beta\Rightarrow
+      \TArr{\MobMobile}{\DirUnord,\EffPure}
+        {\SSeq\alpha\beta}
+        {\TPairUnord{\SSeq\alpha\SDrop}{\SSeq\SAcq\beta}}.
+\end{align*}
+Thus $\CSend_{\T}$ is written $\TyApp\CSend\T$, and similarly for the other
+formerly indexed constants.  The existing monomorphic constant rules are the
+instances of these signatures.  Choice and branch constants can quantify the
+finite family $(\S[\ell]:\KSess)_{\ell\in L}$ componentwise; no row
+polymorphism is required for the core extension.
+
+\section{Recursion}
+
+Polymorphism does not generalize recursion.  The only recursive expression is
+the recursive-function form $\EMu{\EAbs\EVar\E}$.  In particular, there is no
+rule for $\mu f.\V$ at an arbitrary unrestricted type.  Writing
+\[
+  A = \TArr{\MobMobile}{\DirNone,\Eff}\T\TU,
+\]
+the existing recursive-function rule is lifted to the type-and-constraint
+context as follows.
+\begin{mathpar}
+  \inferrule*[right=T-AbsUnr]{
+    \TyCtx\,;\,
+      (\CtxVar{f}{A} \CtxPar \CtxVar{\EVar}{\T} \CtxPar \Ctx)
+      \vdash\E:\TU\mid\Eff \\
+    \TyCtx\Entails\Unr\Ctx
+  }{
+    \TyCtx\,;\,\Ctx\vdash
+      \EMu{\EAbs\EVar\E}:A\mid\EffPure
+  }
+\end{mathpar}
+The recursive variable $f$ has the single arrow type $A$ throughout the body.
+Consequently, this extension supports polymorphic values in recursive
+functions but does not add polymorphic recursion.  Admitting a term such as
+$\mu f.\TyAbs{\alpha:\Kind}{\Qual}{\V}$ would violate the restriction to the
+$\mu f.\lambda x.\E$ form and is intentionally excluded.
+
+\section{Expression dynamics}
+
+Type abstractions and existential packages extend values.  The evaluation
+contexts evaluate the operator of a type application, the payload of a
+package, and the scrutinee of an open:
+\begin{align*}
+  \V &\grmeq \cdots
+    \grmor \TyAbs{\alpha:\Kind}{\Qual}{\V}
+    \grmor \Pack\T\V{\exists(\alpha:\Kind).\Qual\land\T},\\
+  \EC &\grmeq \cdots
+    \grmor \TyApp\EC\T
+    \grmor \Pack\T\EC{\exists(\alpha:\Kind).\Qual\land\T}
+    \grmor \Open\alpha\EVar\EC\E.
+\end{align*}
+The new axiomatic reductions are
+\begin{mathpar}
+  \inferrule*[right=E-TApp]{}{
+    \TyApp{(\TyAbs{\alpha:\Kind}{\Qual}{\V})}\T
+      \EReduce \V[\T/\alpha]
+  }
+  \and
+  \inferrule*[right=E-Open]{}{
+    \Open\alpha\EVar
+      {\Pack\T\V{\exists(\beta:\Kind).\Qual\land\TU}}
+      \E
+    \EReduce
+      \E[\T/\alpha][\V/\EVar]
+  }.
+\end{mathpar}
+Qualification annotations have no dynamic evidence.  Type abstraction adds no
+closure and suspends no computation: its body is already a value, and
+\RuleName{E-TApp} only performs type substitution in that value.  No evaluation
+context descends underneath $\Lambda$.  Type arguments, qualifications, and
+the $\Lambda$ wrapper can therefore be erased without introducing a run-time
+thunk.
+
+The only recursion reduction is the existing unfolding of a recursive
+function, specialized to its well-typed shape:
+\begin{mathpar}
+  \inferrule*[right=E-Unfold]{}{
+    \EMu{(\EAbs\EVar\E)}
+      \EReduce
+    \Subs{(\EAbs\EVar\E)}{\EMu{(\EAbs\EVar\E)}}f
+  }.
+\end{mathpar}
+
+No process form and no process reduction axiom is added.  The existing
+\RuleName{R-Exp} rule already lifts every expression reduction through a
+process-local evaluation context.  Communication, splitting, restriction,
+drop/acquire synchronization, process congruence, and all structural closure
+rules are literally unchanged.  This is the sense in which polymorphism is
+operationally orthogonal to the process semantics.
+
+\section{Metatheoretic obligations}
+
+The extension adds the standard lemmas for qualified System~F.
+
+\begin{enumerate}
+\item \emph{Entailment substitution.}  If
+  $\TyCtx,\alpha:\Kind,\Qual\Entails\Prop$,
+  $\TyCtx\vdash\TU:\Kind$, and
+  $\TyCtx\Entails\Qual[\TU/\alpha]$, then
+  $\TyCtx\Entails\Prop[\TU/\alpha]$.
+\item \emph{Type substitution.}  Typing, kinding, context equality, and the
+  subcontext relation are preserved by a type substitution satisfying the
+  qualification of its binder.
+\item \emph{Existential escape.}  The side condition on \RuleName{T-Open}
+  ensures that opening a package cannot expose its witness in the result type
+  or in an outer resource assumption.
+\item \emph{Preservation and progress.}  The two new beta rules follow from
+  type substitution and ordinary term substitution.  Universal canonical
+  forms are type abstractions whose bodies are values; existential canonical
+  forms are packages.
+\item \emph{Process safety.}  Process preservation and progress require no
+  new process cases.  Their expression case invokes the extended expression
+  theorems.
+\end{enumerate}
+
+For an algorithmic system, $\TyCtx$ should remain separate from the paper's
+generated unification constraints $\CSet$.  Variables in $\TyCtx$ are rigid;
+unification variables are flexible.  Explicit abstraction and application
+make quantifier placement and instantiation inputs to checking, while
+qualification entailment reuses the existing predicate checks and CFST
+equivalence procedure.  Equality assumptions over rigid variables are used by
+congruence and conversion, not solved by unification.
+
+\section{Recommended core}
+
+The smallest useful version contains both kinds, universal and existential
+types, the qualifications
+\[
+  \Unr\T,\quad \Mobile\T,\quad \Bounded\S,\quad \SNew\S,\quad
+  \Dualable\S,\quad \NonSkip\S,\quad \T\SEq\TU,
+\]
+together with the value restriction on type abstraction.  Of these,
+$\Dualable$ can be hidden from surface syntax if suspended duals are generated
+only by the polymorphic type of $\CNew$; it is still needed internally to make
+$\SDual\alpha$ well formed.  Equality qualifications may likewise be omitted
+from an initial implementation if abstract protocol refinements are not
+required.  The remaining five predicates are directly observed by the
+declarative rules and should not be collapsed into mobility alone.
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
