@@ -10,8 +10,9 @@
 \newcommand*\Dualable{\operatorname{\mathsf{dualable}}}
 \newcommand*\NonSkip{\operatorname{\mathsf{nonskip}}}
 \newcommand*\Wf{\mathrel{\mathsf{wf}}}
+\newcommand*\TForall[4]{\typecolor{\forall(#1:#2).\,#3\Rightarrow#4}}
+\newcommand*\TExistsQ[4]{\typecolor{\exists(#1:#2).\,#3\land#4}}
 \newcommand*\TyAbs[3]{\termcolor{\Lambda (#1).\,#2 \Rightarrow #3}}
-\newcommand*\TyApp[2]{\termcolor{#1[#2]}}
 \newcommand*\Pack[3]{\termcolor{\Keyword{pack}\,\langle #1,#2\rangle\,\Keyword{as}\,#3}}
 \newcommand*\Open[4]{\termcolor{\Keyword{open}\,\langle #1,#2\rangle=#3\,\Keyword{in}\,#4}}
 
@@ -82,18 +83,18 @@ paper.
        \grmor \TyCtx,\Prop
       \tag{Type-and-constraint contexts} \\
     \T &\grmeq \cdots \grmor \alpha
-       \grmor \forall(\alpha:\Kind).\,\Qual\Rightarrow\T
+       \grmor \TForall\alpha\Kind\Qual\T
        \\
        &\qquad
-       \grmor \exists(\alpha:\Kind).\,\Qual\land\T
+       \grmor \TExistsQ\alpha\Kind\Qual\T
       \tag{Types} \\
     \S &\grmeq \cdots \grmor \alpha \grmor \SDual\S
       \tag{Session types} \\
     \E &\grmeq \cdots
        \grmor \TyAbs{\alpha:\Kind}{\Qual}{\V}
-       \grmor \TyApp\E\T \\
+       \grmor \E{[\T]} \\
        &\qquad
-       \grmor \Pack\T\E{\exists(\alpha:\Kind).\Qual\land\T}
+       \grmor \Pack\T\E{\TExistsQ\alpha\Kind\Qual\T}
        \\
        &\qquad
        \grmor \Open\alpha\EVar\E\E
@@ -218,9 +219,9 @@ admissible rules.
     \\
     \inferrule*[right=Q-Cong]{
       \TyCtx\Entails \T\SEq\TU \\
-      \TyCtx\Entails \Prop[\T/\alpha]
+      \TyCtx\Entails \Prop{[\T/\alpha]}
     }{
-      \TyCtx\Entails \Prop[\TU/\alpha]
+      \TyCtx\Entails \Prop{[\TU/\alpha]}
     }
   \end{mathpar}
   \caption{Postulated and derived qualification-entailment rules}
@@ -328,14 +329,14 @@ For example, consider a wrapper around local splitting (arrow annotations are
 shown explicitly):
 \begin{align*}
   \mathsf{splitAs}:{}&
-    \forall(\alpha,\beta,\gamma:\KSess).\\[-.3ex]
-  &\quad ((\alpha\SEq\SSeq{\beta}{\gamma})\land\NonSkip\gamma)
-      \Rightarrow\\[-.3ex]
+    \typecolor{\forall(\alpha,\beta,\gamma:\KSess).}\\[-.3ex]
+  &\quad \typecolor{((\alpha\SEq\SSeq{\beta}{\gamma})\land\NonSkip\gamma)
+      \Rightarrow}\\[-.3ex]
   &\quad
       \TArr{\MobMobile}{\DirNone,\EffPure}
         \alpha{\TPairOrd\beta\gamma},\\
-  \mathsf{splitAs}[\alpha][\beta][\gamma]\,c ={}&
-    \EApp{(\TyApp{(\TyApp\CSplit\beta)}\gamma)}c.
+  \mathsf{splitAs}{[\alpha]}{[\beta]}{[\gamma]}\,c ={}&
+    \EApp{\CSplit{[\beta]}{[\gamma]}}c.
 \end{align*}
 The instantiated split constant expects $c:\SSeq{\beta}{\gamma}$, whereas the
 wrapper receives $c:\alpha$.  The equality qualification is used by
@@ -396,8 +397,7 @@ kinds.
       \TyCtx,\alpha:\Kind,\Qual\vdash\T:\KVal
     }{
       \TyCtx\vdash
-        \forall(\alpha:\Kind).\Qual\Rightarrow\T
-        :\KVal
+        \TForall\alpha\Kind\Qual\T :\KVal
     }
     \\
     \inferrule*[right=K-Exists]{
@@ -405,8 +405,7 @@ kinds.
       \TyCtx,\alpha:\Kind,\Qual\vdash\T:\KVal
     }{
       \TyCtx\vdash
-        \exists(\alpha:\Kind).\Qual\land\T
-        :\KVal
+        \TExistsQ\alpha\Kind\Qual\T :\KVal
     }
   \end{mathpar}
   \caption{Selected kinding rules}
@@ -510,19 +509,19 @@ type variables invisible to the ordered context algebra.
     }{
       \TyCtx\,;\,\Ctx \vdash
         \TyAbs{\alpha:\Kind}{\Qual}{\V}
-        :\forall(\alpha:\Kind).\Qual\Rightarrow\T
+        :\TForall\alpha\Kind\Qual\T
         \mid\EffPure
     }
     \\
     \inferrule*[right=T-TApp]{
       \TyCtx\,;\,\Ctx\vdash \E:
-        \forall(\alpha:\Kind).\Qual\Rightarrow\T
+        \TForall\alpha\Kind\Qual\T
         \mid\Eff \\
       \TyCtx\vdash\TU:\Kind \\
-      \TyCtx\Entails\Qual[\TU/\alpha]
+      \TyCtx\Entails\Qual{[\TU/\alpha]}
     }{
       \TyCtx\,;\,\Ctx\vdash
-        \TyApp\E\TU:\T[\TU/\alpha]\mid\Eff
+        \E{[\TU]}:\T{[\TU/\alpha]}\mid\Eff
     }
   \end{mathpar}
   \caption{Universal introduction and elimination}
@@ -542,13 +541,13 @@ The new predicate rules for universal types are
     \TyCtx,\alpha:\Kind,\Qual\Entails\Mobile\T
   }{
     \TyCtx\Entails
-      \Mobile{(\forall(\alpha:\Kind).\Qual\Rightarrow\T)}}
+      \Mobile{(\TForall\alpha\Kind\Qual\T)}}
   \and
   \inferrule{
     \TyCtx,\alpha:\Kind,\Qual\Entails\Unr\T
   }{
     \TyCtx\Entails
-      \Unr{(\forall(\alpha:\Kind).\Qual\Rightarrow\T)}}.
+      \Unr{(\TForall\alpha\Kind\Qual\T)}}.
 \end{mathpar}
 These rules mirror the existential predicate rules below.  Their
 soundness relies on value inversion: a value of mobile, respectively
@@ -567,18 +566,18 @@ the hidden variable.
   \begin{mathpar}
     \inferrule*[right=T-Pack]{
       \TyCtx\vdash\TU:\Kind \\
-      \TyCtx\Entails\Qual[\TU/\alpha] \\
+      \TyCtx\Entails\Qual{[\TU/\alpha]} \\
       \TyCtx\,;\,\Ctx\vdash
-        \E:\T[\TU/\alpha]\mid\Eff
+        \E:\T{[\TU/\alpha]}\mid\Eff
     }{
       \TyCtx\,;\,\Ctx\vdash
-      \Pack\TU\E{\exists(\alpha:\Kind).\Qual\land\T}
-      :\exists(\alpha:\Kind).\Qual\land\T\mid\Eff
+      \Pack\TU\E{\TExistsQ\alpha\Kind\Qual\T}
+      :\TExistsQ\alpha\Kind\Qual\T\mid\Eff
     }
     \\
     \inferrule*[right=T-Open]{
       \TyCtx\,;\,\Ctx[1]\vdash
-        \E[1]:\exists(\alpha:\Kind).\Qual\land\T\mid\Eff \\
+        \E[1]:\TExistsQ\alpha\Kind\Qual\T\mid\Eff \\
       \TyCtx,\alpha:\Kind,\Qual\,;\,
         (\CtxVar\EVar\T\CtxPatOp\Ctx[2])
         \vdash\E[2]:\TU\mid\Eff \\
@@ -603,21 +602,21 @@ type variable and its qualification:
   \inferrule{
     \TyCtx,\alpha:\Kind,\Qual\Entails\Mobile\T
   }{
-    \TyCtx\Entails\Mobile{(\exists(\alpha:\Kind).\Qual\land\T)}
+    \TyCtx\Entails\Mobile{(\TExistsQ\alpha\Kind\Qual\T)}
   }
   \and
   \inferrule{
     \TyCtx,\alpha:\Kind,\Qual\Entails\Unr\T
   }{
-    \TyCtx\Entails\Unr{(\exists(\alpha:\Kind).\Qual\land\T)}.
+    \TyCtx\Entails\Unr{(\TExistsQ\alpha\Kind\Qual\T)}.
   }
 \end{mathpar}
 For example,
 \[
-  \exists(\alpha:\KVal).\Mobile\alpha\land\alpha
+  \TExistsQ\alpha\KVal{\Mobile\alpha}\alpha
 \]
-is mobile, while $\exists(\alpha:\KVal).\top\land\alpha$ is not.  Similarly,
-$\exists(\alpha:\KSess).\Bounded\alpha\land(\SSeq\SAcq\alpha)$ is mobile by
+is mobile, while $\TExistsQ\alpha\KVal\top\alpha$ is not.  Similarly,
+$\TExistsQ\alpha\KSess{\Bounded\alpha}{(\SSeq\SAcq\alpha)}$ is mobile by
 the acquired-session rule.
 
 \section{Lifting the monomorphic rules}
@@ -651,38 +650,31 @@ The type-indexed primitive families can now be presented as explicitly
 polymorphic constants.  Representative signatures are
 \begin{align*}
   \CSend :{}&
-    \forall(\alpha:\KVal).
-      \Mobile\alpha\Rightarrow
+    \TForall\alpha\KVal{\Mobile\alpha}
       \TArr{\MobMobile}{\DirNone,\EffImpure}
         {\TPairUnord\alpha{\SSend\alpha}}{\BUnit},\\
   \CRecv :{}&
-    \forall(\alpha:\KVal).
-      \Mobile\alpha\Rightarrow
+    \TForall\alpha\KVal{\Mobile\alpha}
       \TArr{\MobMobile}{\DirNone,\EffImpure}{\SRecv\alpha}{\alpha},\\
   \CNew :{}&
-    \forall(\alpha:\KSess).
-      \SNew\alpha\Rightarrow
+    \TForall\alpha\KSess{\SNew\alpha}
       \TArr{\MobMobile}{\DirNone,\EffPure}{\BUnit}
       {\TPairUnord
         {\SSeq\SAcq{\SSeq\alpha\STerm}}
         {\SSeq\SAcq{\SSeq{\SDual\alpha}\SWait}}},\\
   \CSplit :{}&
-    \forall(\alpha:\KSess).
-    \top\Rightarrow
-    \forall(\beta:\KSess).
-    \NonSkip\beta\Rightarrow
-      \TArr{\MobMobile}{\DirUnord,\EffPure}
-        {\SSeq\alpha\beta}{\TPairOrd\alpha\beta},\\
+    \TForall\alpha\KSess\top
+      {\TForall\beta\KSess{\NonSkip\beta}
+        {\TArr{\MobMobile}{\DirUnord,\EffPure}
+          {\SSeq\alpha\beta}{\TPairOrd\alpha\beta}}},\\
   \CSSplit :{}&
-    \forall(\alpha:\KSess).
-    \top\Rightarrow
-    \forall(\beta:\KSess).
-    \NonSkip\beta\Rightarrow
-      \TArr{\MobMobile}{\DirUnord,\EffPure}
-        {\SSeq\alpha\beta}
-        {\TPairUnord{\SSeq\alpha\SDrop}{\SSeq\SAcq\beta}}.
+    \TForall\alpha\KSess\top
+      {\TForall\beta\KSess{\NonSkip\beta}
+        {\TArr{\MobMobile}{\DirUnord,\EffPure}
+          {\SSeq\alpha\beta}
+          {\TPairUnord{\SSeq\alpha\SDrop}{\SSeq\SAcq\beta}}}}.
 \end{align*}
-Thus $\CSend_{\T}$ is written $\TyApp\CSend\T$, and similarly for the other
+Thus $\CSend_{\T}$ is written $\CSend{[\T]}$, and similarly for the other
 formerly indexed constants.  The existing monomorphic constant rules are the
 instances of these signatures.  Choice and branch constants can quantify the
 finite family $(\S[\ell]:\KSess)_{\ell\in L}$ componentwise; no row
@@ -723,25 +715,25 @@ package, and the scrutinee of an open:
 \begin{align*}
   \V &\grmeq \cdots
     \grmor \TyAbs{\alpha:\Kind}{\Qual}{\V}
-    \grmor \Pack\T\V{\exists(\alpha:\Kind).\Qual\land\T},\\
+    \grmor \Pack\T\V{\TExistsQ\alpha\Kind\Qual\T},\\
   \EC &\grmeq \cdots
-    \grmor \TyApp\EC\T
-    \grmor \Pack\T\EC{\exists(\alpha:\Kind).\Qual\land\T}
+    \grmor \EC{[\T]}
+    \grmor \Pack\T\EC{\TExistsQ\alpha\Kind\Qual\T}
     \grmor \Open\alpha\EVar\EC\E.
 \end{align*}
 The new axiomatic reductions are
 \begin{mathpar}
   \inferrule*[right=E-TApp]{}{
-    \TyApp{(\TyAbs{\alpha:\Kind}{\Qual}{\V})}\T
-      \EReduce \V[\T/\alpha]
+    (\TyAbs{\alpha:\Kind}{\Qual}{\V}){[\T]}
+      \EReduce \V{[\T/\alpha]}
   }
   \and
   \inferrule*[right=E-Open]{}{
     \Open\alpha\EVar
-      {\Pack\T\V{\exists(\beta:\Kind).\Qual\land\TU}}
+      {\Pack\T\V{\TExistsQ\beta\Kind\Qual\TU}}
       \E
     \EReduce
-      \E[\T/\alpha][\V/\EVar]
+      \E{[\T/\alpha]}{[\V/\EVar]}
   }.
 \end{mathpar}
 Qualification annotations have no dynamic evidence.  Type abstraction adds no
@@ -776,8 +768,8 @@ The extension adds the standard lemmas for qualified System~F.
 \item \emph{Entailment substitution.}  If
   $\TyCtx,\alpha:\Kind,\Qual\Entails\Prop$,
   $\TyCtx\vdash\TU:\Kind$, and
-  $\TyCtx\Entails\Qual[\TU/\alpha]$, then
-  $\TyCtx\Entails\Prop[\TU/\alpha]$.
+  $\TyCtx\Entails\Qual{[\TU/\alpha]}$, then
+  $\TyCtx\Entails\Prop{[\TU/\alpha]}$.
 \item \emph{Type substitution.}  Typing, kinding, context equality, and the
   subcontext relation are preserved by a type substitution satisfying the
   qualification of its binder.
