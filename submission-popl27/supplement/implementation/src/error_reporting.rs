@@ -1,0 +1,741 @@
+use std::{collections::HashSet, ops::Range};
+
+use crate::{
+    constraint::ConstraintSolutionError,
+    lexer::LexerError,
+    syntax::SType,
+    type_checker::TypeError,
+    util::{pretty::pretty_def, span::Span},
+};
+use ariadne::{ColorGenerator, IndexType, Label, Report, ReportKind, Source};
+use peg::error::ParseError;
+
+#[derive(Debug, Clone)]
+pub enum IErr {
+    Lexer(LexerError),
+    Parser(ParseError<usize>),
+    Typing(TypeError),
+    Constraint(ConstraintSolutionError),
+    Equivalence {
+        ty1: SType,
+        ty2: SType,
+        reason: String,
+    },
+}
+
+pub struct CSource {
+    pub path: String,
+    pub data: String,
+}
+
+pub struct CLabel {
+    pub span: Range<usize>,
+    pub msg: String,
+}
+
+pub fn label(span: Range<usize>, msg: impl AsRef<str>) -> CLabel {
+    CLabel {
+        span,
+        msg: msg.as_ref().to_string(),
+    }
+}
+
+pub fn trim_span(src: &str, span: Range<usize>) -> Range<usize> {
+    if span.start < src.len() && span.end <= src.len() {
+        let bytes: Vec<u8> = src.bytes().collect();
+        let mut s = span.start;
+        loop {
+            if bytes[s].is_ascii_whitespace() && s < span.end {
+                s += 1;
+            } else if bytes[s] == b'#' {
+                while s < span.end && bytes[s] != b'\n' {
+                    s += 1
+                }
+            } else {
+                break;
+            }
+        }
+        let mut e = span.end;
+        loop {
+            if e > s && bytes[e - 1].is_ascii_whitespace() {
+                e -= 1;
+            } else {
+                let mut i = e;
+                let mut found_comment = false;
+                loop {
+                    if i <= s || bytes[i - 1] == b'\n' {
+                        break;
+                    } else if bytes[i - 1] == b'#' {
+                        i -= 1;
+                        e = i;
+                        found_comment = true;
+                        break;
+                    } else {
+                        i -= 1
+                    }
+                }
+                if !found_comment {
+                    break;
+                }
+            }
+        }
+        Span { start: s, end: e }
+    } else {
+        span
+    }
+}
+
+fn report(
+    src: &CSource,
+    loc: Range<usize>,
+    msg: impl AsRef<str>,
+    labels: impl IntoIterator<Item = CLabel>,
+) {
+    let src_content = std::fs::read_to_string(&src.path).unwrap();
+    let loc = trim_span(&src_content, loc);
+    let mut colors = ColorGenerator::new();
+    let a = colors.next();
+    Report::build(ReportKind::Error, (&src.path, loc))
+        .with_config(ariadne::Config::default().with_index_type(IndexType::Byte))
+        .with_message(msg.as_ref())
+        .with_labels(labels.into_iter().map(|l| {
+            let sp = trim_span(&src_content, l.span);
+            Label::new((&src.path, sp))
+                .with_message(l.msg)
+                .with_color(a)
+        }))
+        .finish()
+        .print((&src.path, Source::from(&src.data)))
+        .unwrap();
+}
+
+pub fn report_error(src_path: &str, src: &str, e: IErr) {
+    let src = CSource {
+        path: src_path.to_string(),
+        data: src.to_string(),
+    };
+
+    match e {
+        IErr::Lexer(e) => {
+            report(
+                &src,
+                e.span.clone(),
+                "Lexing failed",
+                [label(e.span, "Lexer got stuck here")],
+            );
+        }
+        IErr::Parser(e) => {
+            report(
+                &src,
+                e.location..e.location,
+                "Parsing failed",
+                [label(
+                    e.location..e.location,
+                    format!("Expected {}", e.expected),
+                )],
+            );
+        }
+        IErr::Typing(e) => match e {
+            TypeError::UndefinedVariable(x) => {
+                report(
+                    &src,
+                    x.span.clone(),
+                    "Type Error",
+                    [label(x.span, "Undefined Variable")],
+                );
+            }
+            TypeError::Mismatch(e, t_expected, t_actual) => {
+                let expected = match t_expected {
+                    Ok(t) => pretty_def(&t.val),
+                    Err(t) => t,
+                };
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "This expression has type {} but should have {}",
+                            pretty_def(&t_actual.val),
+                            expected,
+                        ),
+                    )],
+                );
+            }
+            TypeError::Op2Mismatch(e, t_expected, t_actual1, t_actual2) => {
+                let expected = match t_expected {
+                    Ok(t) => pretty_def(&t.val),
+                    Err(t) => t,
+                };
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "The operands have types '{}' and '{}' but both should have type '{}'",
+                            pretty_def(&t_actual1.val),
+                            pretty_def(&t_actual2.val),
+                            expected,
+                        ),
+                    )],
+                );
+            }
+            TypeError::MismatchMult(e, t, m_expected, m_actual) => {
+                let expected = match m_expected {
+                    Ok(m) => pretty_def(&m.val),
+                    Err(s) => s,
+                };
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "This expression has type {} with multiplicity {}, but should have multiplicity {}.",
+                            pretty_def(&t.val),
+                            pretty_def(&m_actual.val),
+                            expected,
+                        ),
+                    )],
+                );
+            }
+            TypeError::MismatchEffSub(e, p_expected, p_actual) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "This expression has effect {}, which is not a subeffect of {}",
+                            pretty_def(&p_actual.val),
+                            pretty_def(&p_expected.val),
+                        ),
+                    )],
+                );
+            }
+            TypeError::MismatchEff(e, p_expected, p_actual) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "This expression has effect {}, but should have effect {}",
+                            pretty_def(&p_actual.val),
+                            pretty_def(&p_expected.val),
+                        ),
+                    )],
+                );
+            }
+            TypeError::MismatchLabel(e, l, t) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "The label '{}' is not part of the expected variant type '{}'.",
+                            l,
+                            pretty_def(&t),
+                        ),
+                    )],
+                );
+            }
+            TypeError::TypeAnnotationMissing(e) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(e.span, "This expression requires a type annotation")],
+                );
+            }
+            TypeError::CtxSplitFailed(e, ctx, ctx2) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "In this expression, splitting the context \n    {}\n and rejoining it resulted in a non-subtype context \n    {}",
+                            pretty_def(&ctx.simplify()),
+                            pretty_def(&ctx2.simplify())
+                        ),
+                    )],
+                );
+            }
+            TypeError::CtxCtxSplitFailed(e, ctx, xs) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "In this expression, failed to split context {} by free variables {}",
+                            pretty_def(&ctx.simplify()),
+                            pretty_def(&xs)
+                        ),
+                    )],
+                );
+            }
+            TypeError::Shadowing(e, x) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "In this expression, the variable {} is introduced, which shadows another variable.",
+                            pretty_def(&x)
+                        ),
+                    )],
+                );
+            }
+            TypeError::CtxNotUnr(e, ctx) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "This unrestricted lambda abstraction tries to capture a non-unrestricted context {}",
+                            pretty_def(&ctx.simplify())
+                        ),
+                    )],
+                );
+            }
+            TypeError::AbsNotMobile(e, ty) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "This unrestricted lambda abstraction is not mobile {}",
+                            pretty_def(&ty)
+                        ),
+                    )],
+                );
+            }
+            TypeError::SeqDropsOrd(e, t) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "First sub-expression in sequence needs to have an unrestricted type instead of {}.",
+                            pretty_def(&t)
+                        ),
+                    )],
+                );
+            }
+            TypeError::LeftOverVar(e, x, s, s_used) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "This expression binds variable '{}' to session type '{}', but {}",
+                            pretty_def(&x),
+                            pretty_def(&s),
+                            if let Some(s_used) = s_used {
+                                format!(
+                                    "only the following prefix was used in the body: {}",
+                                    pretty_def(&s_used)
+                                )
+                            } else {
+                                format!("the variable was not used in the body.")
+                            }
+                        ),
+                    )],
+                );
+            }
+            TypeError::LeftOverCtx(e, ctx) => {
+                let mut xs = HashSet::new();
+                ctx.map_binds(&mut |x, t| {
+                    if !t.is_unr() {
+                        xs.insert(x.clone());
+                    }
+                });
+                let ctx = ctx.restrict(&xs).simplify();
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "This expression has unused variables that must be used:  {}",
+                            pretty_def(&ctx)
+                        ),
+                    )],
+                );
+            }
+            TypeError::MultipleClauses(e) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!("Function declarations need exactly one pattern match clause.",),
+                    )],
+                );
+            }
+            TypeError::NotEnoughPatterns(e) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!("Wrong amount of patterns for type annotation.",),
+                    )],
+                );
+            }
+            TypeError::PatternMismatch(p, t) => {
+                report(
+                    &src,
+                    p.span.clone(),
+                    "Type Error",
+                    [label(
+                        p.span,
+                        format!("Pattern does not describe type {}.", pretty_def(&t)),
+                    )],
+                );
+            }
+            TypeError::ClauseWithWrongId(e, x, y) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "Function clause has name '{}' instead of '{}'.",
+                            pretty_def(&x),
+                            pretty_def(&y)
+                        ),
+                    )],
+                );
+            }
+            TypeError::ClauseWithZeroPatterns(e) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!("Function clause needs to have at least one pattern.",),
+                    )],
+                );
+            }
+            TypeError::InvalidSplit(e, s, s1) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "The expected type {} is not a prefix of the variables type {}.",
+                            pretty_def(s1),
+                            pretty_def(s)
+                        ),
+                    )],
+                );
+            }
+            TypeError::CaseMissingLabel(e, t, l) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "No clause covers label '{}' of type '{}'.",
+                            l,
+                            pretty_def(t)
+                        ),
+                    )],
+                );
+            }
+            TypeError::CaseExtraLabel(e, t, l) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "The label '{}' does not occur in type '{}'. You may want to delete the corresponding clause.",
+                            l,
+                            pretty_def(t)
+                        ),
+                    )],
+                );
+            }
+            TypeError::CaseDuplicateLabel(e, _t, l) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!("Multiple cases for the same label '{}'.", l),
+                    )],
+                );
+            }
+            TypeError::CaseClauseTypeMismatch(e, t1, t2) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "The branches have different types: '{}' is not equal to '{}'.",
+                            pretty_def(&t1),
+                            pretty_def(&t2)
+                        ),
+                    )],
+                );
+            }
+            TypeError::CaseLeftOverMismatch(e, x, s1, s2) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "The branches use variable '{}' of session type in different ways: '{}' is not the same as {}.",
+                            x,
+                            pretty_def(&s1),
+                            if let Some(s2) = s2 {
+                                format!("'{}'", pretty_def(&s2))
+                            } else {
+                                format!("not using 'x' at all.")
+                            }
+                        ),
+                    )],
+                );
+            }
+            TypeError::VariantEmpty(e) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!("Empty variant types are not allowed."),
+                    )],
+                );
+            }
+            TypeError::VariantDuplicateLabel(e, t, l) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "Variant type {} contains the label '{}' more than once.",
+                            pretty_def(t),
+                            l
+                        ),
+                    )],
+                );
+            }
+            TypeError::RecursiveNonFunctionBinding(e, x) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "This expression uses variable '{}' recursively, but '{}' does not have an unrestricted function type.",
+                            x.val, x.val,
+                        ),
+                    )],
+                );
+            }
+            TypeError::WfNonContractive(s, x) => {
+                report(
+                    &src,
+                    s.span.clone(),
+                    "Type Error",
+                    [label(
+                        s.span,
+                        format!(
+                            "This session type is non-contractive in variable '{}'.",
+                            x.val,
+                        ),
+                    )],
+                );
+            }
+            TypeError::WfEmptyChoice(s) => {
+                report(
+                    &src,
+                    s.span.clone(),
+                    "Type Error",
+                    [label(
+                        s.span,
+                        format!("This session type has an empty choice, which is not allowed.",),
+                    )],
+                );
+            }
+            TypeError::WfEmptyVariant(t) => {
+                report(
+                    &src,
+                    t.span.clone(),
+                    "Type Error",
+                    [label(
+                        t.span,
+                        format!("This variant type is empty, which is not allowed.",),
+                    )],
+                );
+            }
+            TypeError::MainReturnsOrd(e, t) => {
+                report(
+                    &src,
+                    e.span.clone(),
+                    "Type Error",
+                    [label(
+                        e.span,
+                        format!(
+                            "Main expression needs to have an unrestricted type, but instead has type '{}'.",
+                            pretty_def(t)
+                        ),
+                    )],
+                );
+            }
+            TypeError::WfSessionNotClosed(s, x) => {
+                report(
+                    &src,
+                    s.span.clone(),
+                    "Type Error",
+                    [label(
+                        s.span,
+                        format!(
+                            "Variable '{}' is not bound by a µ-binder. Session types need to be closed.",
+                            pretty_def(x)
+                        ),
+                    )],
+                );
+            }
+            TypeError::WfSessionShadowing(s, x) => {
+                report(
+                    &src,
+                    s.span.clone(),
+                    "Type Error",
+                    [label(
+                        s.span,
+                        format!(
+                            "Variable '{}' was already bound further outside. Shadowing is not allowed in session types.",
+                            pretty_def(x)
+                        ),
+                    )],
+                );
+            }
+            TypeError::TypeNotValidForNew(s) => {
+                report(
+                    &src,
+                    s.span.clone(),
+                    "Type Error",
+                    [label(
+                        s.span,
+                        format!(
+                            "This expression creates a new channel with a session type that contains Close, Wait, Acq or Ret. This is not allowed",
+                        ),
+                    )],
+                );
+            }
+            TypeError::SessionTypeOnlySkips(s) => {
+                report(
+                    &src,
+                    s.span.clone(),
+                    "Type Error",
+                    [label(
+                        s.span,
+                        format!("This session type only contains Skip, which is not allowed.",),
+                    )],
+                );
+            }
+            TypeError::SessionTypeNotMobileInContext(_, ctx, id) => {
+                report(
+                    &src,
+                    id.span.clone(),
+                    "Type Error",
+                    [label(
+                        id.span.clone(),
+                        format!(
+                            "This variable {} is not mobile in the context {}.",
+                            pretty_def(&id),
+                            pretty_def(&ctx.simplify())
+                        ),
+                    )],
+                );
+            }
+            TypeError::UndefinedAlias(id) => {
+                report(
+                    &src,
+                    id.span.clone(),
+                    "Type Error",
+                    [label(
+                        id.span,
+                        format!("Type alias '{}' is not defined.", &id.val),
+                    )],
+                );
+            }
+        },
+        IErr::Constraint(ConstraintSolutionError::AssignmentNotMobile { expr, id, ctx }) => {
+            let (_, ty) = ctx.lookup_ord_pure(&id).unwrap();
+            report(
+                &src,
+                expr.span.clone(),
+                "Constraint Solution Error",
+                [label(
+                    expr.span,
+                    format!(
+                        "Type {} is not mobile in context: {}",
+                        pretty_def(&ty.val),
+                        pretty_def(&ctx.simplify())
+                    ),
+                )],
+            );
+        }
+        IErr::Equivalence { ty1, ty2, reason } => {
+            report(
+                &src,
+                ty1.span.clone(),
+                "Eqivalence Error",
+                [label(
+                    ty1.span.clone(),
+                    format!(
+                        "Type {} is not equivalent to type {}. Reason: {}",
+                        pretty_def(&ty1.val),
+                        pretty_def(&ty2.val),
+                        reason
+                    ),
+                )],
+            );
+        }
+    }
+}

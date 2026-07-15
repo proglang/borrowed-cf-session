@@ -1,0 +1,6 @@
+services:
+  cstb:
+    build: .
+
+    volumes:
+      - .:/cstb
