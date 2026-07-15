@@ -89,10 +89,10 @@ open ≈-Equivalence
 
 module ≈-Reasoning {n} {Γ : Ctx n} = SetoidReasoning (≈-setoid Γ)
 
-≈-map⁺ : {f : 𝕋 → 𝕋} → Unr ⊆ Unr ∘ f → Mobile ⊆ Mobile ∘ f → Γ ∶ α ≈ β → f ∘ Γ ∶ α ≈ β
+≈-map⁺ : {f : 𝕋 → 𝕋} → Unr ⊆ Unr ∘ f → Mobile ⊆ Mobile ∘ f → Γ ∶ α ≈ β → V.map f Γ ∶ α ≈ β
 ≈-map⁺ {f = f} Uf Mf = Eq*.map go
   where
-  go : (Γ ∶_≈′_) ⇒ (f ∘ Γ ∶_≈′_)
+  go : (Γ ∶_≈′_) ⇒ (V.map f Γ ∶_≈′_)
   go ;′-assoc = ;′-assoc
   go (;′-cong₁ x) = ;′-cong₁ (go x)
   go (;′-cong₂ x) = ;′-cong₂ (go x)
@@ -100,21 +100,8 @@ module ≈-Reasoning {n} {Γ : Ctx n} = SetoidReasoning (≈-setoid Γ)
   go ∥′-assoc = ∥′-assoc
   go ∥′-comm = ∥′-comm
   go (∥′-cong₁ x) = ∥′-cong₁ (go x)
-  go (∥′-dup U) = ∥′-dup (allCx-gmap Uf U)
-  go (∥′-tm-; U) = ∥′-tm-; (Sum.map (allCx-gmap Mf) (allCx-gmap Mf) U)
-
-≈-≗ : Γ₁ ≗ Γ₂ → Γ₁ ∶ α ≈ β → Γ₂ ∶ α ≈ β
-≈-≗ {Γ₁ = Γ₁} {Γ₂ = Γ₂} eq = Eq*.map go where
-  go : Γ₁ ∶ α ≈′ β → Γ₂ ∶ α ≈′ β
-  go ;′-assoc = ;′-assoc
-  go (;′-cong₁ x) = ;′-cong₁ (go x)
-  go (;′-cong₂ x) = ;′-cong₂ (go x)
-  go ∥′-unit = ∥′-unit
-  go ∥′-assoc = ∥′-assoc
-  go ∥′-comm = ∥′-comm
-  go (∥′-cong₁ x) = ∥′-cong₁ (go x)
-  go (∥′-dup U) = ∥′-dup (allCx-≗ eq U)
-  go (∥′-tm-; U) = ∥′-tm-; (Sum.map (allCx-≗ eq) (allCx-≗ eq) U)
+  go (∥′-dup U) = ∥′-dup (allCx-map⁺ Uf U)
+  go (∥′-tm-; U) = ∥′-tm-; (Sum.map (allCx-map⁺ Mf) (allCx-map⁺ Mf) U)
 
 ∥-isCommutativeMonoid : (Γ : Ctx n) → IsCommutativeMonoid (Γ ∶_≈_) _∥_ []
 ∥-isCommutativeMonoid Γ = record
@@ -176,7 +163,7 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} {Γ : Ctx n} where
   allCx-≈ (bwd x ◅ xs) ΠP = allCx-≈ xs (go-bwd x ΠP)
 
 unjoinUnr : (Γ : Ctx n) (γ : Struct n) → ∃[ α ] ∃[ β ] Γ ∶ α ∥ β ≈ γ × AllCx Unr Γ α × AllCx (Un.∁ Unr) Γ β
-unjoinUnr Γ (` x) with unr? (Γ x)
+unjoinUnr Γ (` x) with unr? (lookup Γ x)
 ... | yes Ux = _ , _ , ∥-unit₂ , (` Ux) , []
 ... | no ¬Ux = _ , _ , ∥-unit₁ , [] , (` ¬Ux)
 unjoinUnr Γ [] = _ , _ , ∥-unit₁ , [] , []

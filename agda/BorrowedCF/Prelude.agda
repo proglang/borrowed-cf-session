@@ -133,7 +133,7 @@ module V where
   open import Data.Vec public
   open import Data.Vec.Properties public
 
-open V using (Vec; []; _∷_; lookup; lookup-map; ∷-injective) public
+open V using (Vec; []; _∷_; _[_]=_; here; there; lookup; lookup-map) public
 
 module Π where
   open import Data.Product public

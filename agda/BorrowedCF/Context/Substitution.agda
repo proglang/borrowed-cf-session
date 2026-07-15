@@ -80,10 +80,10 @@ Inj = Injective _≡_ _≡_
 ⋯-injective {α = _ ; _} {_ ; _} ϕ-inj eq = cong₂ _;_ (⋯-injective ϕ-inj (;-injective eq .proj₁)) (⋯-injective ϕ-inj (;-injective eq .proj₂))
 
 _Preserves[_]_⇒_ : ∀ {ℓ} ⦃ K : Kit 𝓕 ⦄ → m –[ K ]→ n → Pred 𝕋 ℓ → Ctx m → Ctx n → Set _
-σ Preserves[ P ] Γ₁ ⇒ Γ₂ = ∀ {x} → P (Γ₁ x) → AllCx P Γ₂ (`/id (σ x))
+σ Preserves[ P ] Γ₁ ⇒ Γ₂ = ∀ {x} → P (lookup Γ₁ x) → AllCx P Γ₂ (`/id (σ x))
 
 _Preserves[_]_⇐_ : ∀ {ℓ} ⦃ K : Kit 𝓕 ⦄ → m –[ K ]→ n → Pred 𝕋 ℓ → Ctx m → Ctx n → Set _
-σ Preserves[ P ] Γ₁ ⇐ Γ₂ = ∀ {x} → AllCx P Γ₂ (`/id (σ x)) → P (Γ₁ x)
+σ Preserves[ P ] Γ₁ ⇐ Γ₂ = ∀ {x} → AllCx P Γ₂ (`/id (σ x)) → P (lookup Γ₁ x)
 
 module _ {ℓ} {P : Pred 𝕋 ℓ} where
   allCx-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} → ϕ Preserves[ P ] Γ₁ ⇒ Γ₂ → AllCx P Γ₁ γ → AllCx P Γ₂ (γ ⋯ ϕ)
@@ -105,12 +105,12 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
   allCx-wk = allCx-⋯ wk-preserves
 
   wk*-preserves : (Γ : Ctx m) {Γ′ : Ctx n} → weaken* ⦃ Kᵣ ⦄ m Preserves[ P ] Γ′ ⇒ (Γ ⸴* Γ′)
-  wk*-preserves {zero}  Γ px = ` px
-  wk*-preserves {suc m} Γ px = allCx-≗ ⸴-⸴*-cons (allCx-wk (wk*-preserves (Γ ∘ suc) px))
+  wk*-preserves []      px = ` px
+  wk*-preserves (T ⸴ Γ) px = allCx-wk (wk*-preserves Γ px)
 
   ↑-preserves : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ {ϕ : m –[ K ]→ n} → ϕ Preserves[ P ] Γ₁ ⇒ Γ₂ → (ϕ ↑) Preserves[ P ] (T ⸴ Γ₁) ⇒ (T ⸴ Γ₂)
-  ↑-preserves ⦃ K ⦄ p⇒ {zero}  px = subst (AllCx P _) (sym (`/`-is-` ⦃ K ⦄ zero)) (` px)
-  ↑-preserves ⦃ K ⦄ p⇒ {suc x} px = subst (AllCx P _) (wk-`/id _) (allCx-wk (p⇒ px))
+  ↑-preserves ⦃ K = K ⦄ ϕ-pres {zero}  px = subst (AllCx P _) (sym (`/`-is-` ⦃ K ⦄ zero)) (` px)
+  ↑-preserves ⦃ K = K ⦄ ϕ-pres {suc x} px = subst (AllCx P _) (wk-`/id _) (allCx-wk (ϕ-pres px))
 
 ≈′-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} →
   ϕ Preserves[ Unr ] Γ₁ ⇒ Γ₂ →
@@ -140,7 +140,7 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
 ∥′-unit⁻¹ : ∀ {x y} → Γ ∶ (` x) ∥ [] ≈′ (` y) → x ≡ y
 ∥′-unit⁻¹ ∥′-unit = refl
 
-∥′-dup⁻¹ : ∀ {x y z} → Γ ∶ ` x ≈′ (` y) ∥ (` z) → x ≡ y × x ≡ z × Unr (Γ x)
+∥′-dup⁻¹ : ∀ {x y z} → Γ ∶ ` x ≈′ (` y) ∥ (` z) → x ≡ y × x ≡ z × Unr (lookup Γ x)
 ∥′-dup⁻¹ (∥′-dup (` U)) = refl , refl , U
 
 ≈′-⋯⁻¹ : {ϕ : m →ᵣ n} →
@@ -216,5 +216,3 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} where
 ≼-⋯ σ-unr σ-mob (≼-trans  x y) = ≼-trans (≼-⋯ σ-unr σ-mob x) (≼-⋯ σ-unr σ-mob y)
 ≼-⋯ σ-unr σ-mob (≼-cong-; x y) = ≼-cong-; (≼-⋯ σ-unr σ-mob x) (≼-⋯ σ-unr σ-mob y)
 ≼-⋯ σ-unr σ-mob (≼-cong-∥ x y) = ≼-cong-∥ (≼-⋯ σ-unr σ-mob x) (≼-⋯ σ-unr σ-mob y)
-
-

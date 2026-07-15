@@ -1,6 +1,7 @@
 module BorrowedCF.Terms where
 
 open import Data.Bool using () renaming (Bool to Side; true to L; false to R) public
+open import Data.Vec.Relation.Binary.Pointwise.Inductive as PW using (Pointwise; Pointwise-≡⇒≡)
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Types
@@ -18,21 +19,6 @@ data Const : Set where
   `lsplit `rsplit : 𝕊 0 → Const
   `select : Bool → Const
   `branch : Const
-
-isSplit? : (c : Const) → Dec (∃[ s ] (c ≡ `lsplit s ⊎ c ≡ `rsplit s))
-isSplit? `unit = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
-isSplit? `fork = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
-isSplit? `send = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
-isSplit? `recv = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
-isSplit? `drop = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
-isSplit? `acq = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
-isSplit? `discard = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
-isSplit? (`end x) = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
-isSplit? (`new x) = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
-isSplit? (`select x) = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
-isSplit? (`branch) = no λ{ (_ , inj₁ ()) ; (_ , inj₂ ()) }
-isSplit? (`lsplit x) = yes (x , inj₁ refl)
-isSplit? (`rsplit x) = yes (x , inj₂ refl)
 
 data Tm (n : ℕ) : Set where
   `_ : 𝔽 n → Tm n
@@ -198,7 +184,7 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
     Γ ; [] ⊢ K c ∶ T ∣ ℙ
 
   T-Var : ∀ x →
-    (T-eq : Γ x ≡ T) →
+    (T-eq : lookup Γ x ≡ T) →
     ---------------------
     Γ ; ` x ⊢ ` x ∶ T ∣ ℙ
 
@@ -316,27 +302,19 @@ record TKit (K : Kit 𝓕) : Set₁ where
 
   field
     𝓕[_;_⊢_∶_] : Ctx n → Struct n → 𝓕 n → 𝕋 → Set
-    ⊢id/` : (x : 𝔽 n) → 𝓕[ Γ ; ` x ⊢ id/` x ∶ Γ x ]
+    ⊢id/` : (x : 𝔽 n) → 𝓕[ Γ ; ` x ⊢ id/` x ∶ lookup Γ x ]
     ⊢`/id : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ T ] → Γ ; γ ⊢ `/id x/t ∶ T ∣ ℙ
     ⊢wk : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ U ] → 𝓕[ T ⸴ Γ ; 𝐂.wk γ ⊢ wk x/t ∶ U ]
-    ⊢𝓕-≗ : {x : 𝓕 n} → Γ₁ ≗ Γ₂ → 𝓕[ Γ₁ ; γ ⊢ x ∶ T ] → 𝓕[ Γ₂ ; γ ⊢ x ∶ T ]
 
   infix 4 _∶_⊢_⇒_
 
   record _∶_⊢_⇒_ (ϕ : m –[ K ]→ n) (σ : m 𝐂.→ₛ n) (Γ₁ : Ctx m) (Γ₂ : Ctx n) : Set where
     field
-      _&_ : ∀ x → 𝓕[ Γ₂ ; σ x ⊢ ϕ x ∶ Γ₁ x ]
+      _&_ : ∀ x → 𝓕[ Γ₂ ; σ x ⊢ ϕ x ∶ lookup Γ₁ x ]
       &-unr : σ 𝐂.Preserves[ Unr ] Γ₁ ⇒ Γ₂
       &-mob : σ 𝐂.Preserves[ Mobile ] Γ₁ ⇒ Γ₂
 
   open _∶_⊢_⇒_ public
-
-  ⊢⇒-≗ : {ϕ : m –[ K ]→ n} {σ : m 𝐂.→ₛ n} {Γ₁ Γ₁′ : Ctx m} {Γ₂ Γ₂′ : Ctx n} → Γ₁ ≗ Γ₁′ → Γ₂ ≗ Γ₂′ → ϕ ∶ σ ⊢ Γ₁ ⇒ Γ₂ → ϕ ∶ σ ⊢ Γ₁′ ⇒ Γ₂′
-  ⊢⇒-≗ eq₁ eq₂ ⊢ϕ = record
-    { _&_ = λ x → subst 𝓕[ _ ; _ ⊢ _ ∶_] (eq₁ x) (⊢𝓕-≗ eq₂ (⊢ϕ & x))
-    ; &-unr = λ x → allCx-≗ eq₂ (&-unr ⊢ϕ (subst Unr (sym (eq₁ _)) x))
-    ; &-mob = λ x → allCx-≗ eq₂ (&-mob ⊢ϕ (subst Mobile (sym (eq₁ _)) x))
-    }
 
   ⊢id : {Γ : Ctx n} → idₖ ∶ 𝐂.idₛ ⊢ Γ ⇒ Γ
   ⊢id = record { _&_ = ⊢id/` ; &-unr = `_ ; &-mob = `_ }
@@ -349,8 +327,8 @@ record TKit (K : Kit 𝓕) : Set₁ where
     }
 
   ⊢↑* : ∀ (Γ : Ctx m) {ϕ : n₁ –[ K ]→ n₂} {σ} → ϕ ∶ σ ⊢ Γ₁ ⇒ Γ₂ → ϕ ↑* m ∶ σ 𝐂.↑* m ⊢ Γ ⸴* Γ₁ ⇒ Γ ⸴* Γ₂
-  ⊢↑* {zero} Γ ⊢ϕ = ⊢ϕ
-  ⊢↑* {suc m} Γ ⊢ϕ = ⊢⇒-≗ ⸴-⸴*-cons ⸴-⸴*-cons (⊢↑ (⊢↑* (Γ ∘ suc) ⊢ϕ))
+  ⊢↑* [] ⊢ϕ = ⊢ϕ
+  ⊢↑* (T ∷ Γ) ⊢ϕ = ⊢↑ (⊢↑* Γ ⊢ϕ)
 
   ⊢sub : {x/t : 𝓕 n} → 𝓕[ Γ ; γ ⊢ x/t ∶ T ] → (Unr T → UnrCx Γ γ) → (Mobile T → MobCx Γ γ) → ⦅ x/t ⦆ ∶ 𝐂.⦅ γ ⦆ ⊢ T ⸴ Γ ⇒ Γ
   ⊢sub ⊢x/t γ-unr γ-mob = record
@@ -368,13 +346,13 @@ record TKit (K : Kit 𝓕) : Set₁ where
     ; &-unr = subst (UnrCx (Γ ⸴* Γ′)) (cong `_ (𝐂.weaken*~wkˡ m _) ■ sym (𝐂.weaken*~wkˡ m _)) ∘ 𝐂.wk*-preserves Γ {Γ′}
     ; &-mob = subst (MobCx (Γ ⸴* Γ′)) (cong `_ (𝐂.weaken*~wkˡ m _) ■ sym (𝐂.weaken*~wkˡ m _)) ∘ 𝐂.wk*-preserves Γ {Γ′}
     }
-    where go : ∀ {m} (Γ : Ctx m) x → 𝓕[ Γ ⸴* Γ′ ; 𝐂.weaken* m x ⊢ weaken* m x ∶ Γ′ x ]
-          go {zero}  Γ = ⊢id/`
-          go {suc m} Γ = ⊢𝓕-≗ ⸴-⸴*-cons ∘ ⊢wk ∘ go (Γ ∘ suc)
+    where go : ∀ {m} (Γ : Ctx m) x → 𝓕[ Γ ⸴* Γ′ ; 𝐂.weaken* m x ⊢ weaken* m x ∶ Γ′ ﹫ x ]
+          go []      = ⊢id/`
+          go (T ∷ Γ) = ⊢wk ∘ go Γ
 
-infix 4 _∶_⊢[_]_⇒_
+infix 4 _∶_⊢[_]_⇒_ _⊢_⇒ᵣ_
 
-_∶_⊢[_]_⇒_ : ∀ {K : Kit 𝓕} → m –[ K ]→ n → m 𝐂.→ₛ n → TKit K → Ctx m → Ctx n → Set
+_∶_⊢[_]_⇒_ : {K : Kit 𝓕} → m –[ K ]→ n → m 𝐂.→ₛ n → TKit K → Ctx m → Ctx n → Set
 ϕ ∶ σ ⊢[ TK ] Γ₁ ⇒ Γ₂ = ϕ ∶ σ ⊢ Γ₁ ⇒ Γ₂ where open TKit TK
 
 open TKit ⦃ ... ⦄ public
@@ -438,42 +416,13 @@ _⊢⋯_ {σ = σ} (T-Case p/s {γ₁} {γ₂} x x₁ x₂) ⊢ϕ =
 T-Conv eq ϵ≤ x ⊢⋯ ⊢ϕ = T-Conv eq ϵ≤ (x ⊢⋯ ⊢ϕ)
 T-Weaken γ≤ x ⊢⋯ ⊢ϕ = T-Weaken (𝐂.≼-⋯ (&-unr ⊢ϕ) (&-mob ⊢ϕ) γ≤) (x ⊢⋯ ⊢ϕ)
 
-infixl 5 _⊢≗_
-
-_⊢≗_ : Γ₁ ; γ ⊢ e ∶ T ∣ ϵ → Γ₁ ≗ Γ₂ → Γ₂ ; γ ⊢ e ∶ T ∣ ϵ
-T-Const x ⊢≗ eq = T-Const x
-T-Var x T-eq ⊢≗ eq = T-Var x (sym (eq _) ■ T-eq)
-T-Abs Γ-unr Γ-mob x ⊢≗ eq =
-  let open Fin.Patterns in
-  T-Abs (allCx-≗ eq ∘ Γ-unr) (allCx-≗ eq ∘ Γ-mob) (x ⊢≗ λ{ 0F → refl; (suc x) → eq x })
-T-AbsRec Γ-unr a-unr x ⊢≗ eq =
-  let open Fin.Patterns in
-  T-AbsRec (allCx-≗ eq Γ-unr) a-unr $ x ⊢≗ λ{ 0F → refl; 1F → refl; (suc (suc x)) → eq x }
-T-AppUnr   a-unr ≤ₐ x₁ x₂ ⊢≗ eq = T-AppUnr   a-unr ≤ₐ (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
-T-AppLin   a-lin ≤ₐ x₁ x₂ ⊢≗ eq = T-AppLin   a-lin ≤ₐ (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
-T-AppLeft  aL    ≤ₐ x₁ x₂ ⊢≗ eq = T-AppLeft  aL    ≤ₐ (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
-T-AppRight aR    ≤ₐ x₁ x₂ ⊢≗ eq = T-AppRight aR    ≤ₐ (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
-T-Pair p/s seq⇒pure x₁ x₂ ⊢≗ eq = T-Pair p/s seq⇒pure (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
-T-Let p/s x₁ x₂ ⊢≗ eq = T-Let p/s (x₁ ⊢≗ eq) (x₂ ⊢≗ λ{ zero → refl; (suc x) → eq x })
-T-Seq unr-T x₁ x₂ ⊢≗ eq = T-Seq unr-T (x₁ ⊢≗ eq) (x₂ ⊢≗ eq)
-T-LetPair p/s x₁ x₂ ⊢≗ eq =
-  let open Fin.Patterns in
-  T-LetPair p/s (x₁ ⊢≗ eq) $ x₂ ⊢≗ λ{ 0F → refl; 1F → refl; (suc (suc x)) → eq x }
-T-Inj x ⊢≗ eq = T-Inj (x ⊢≗ eq)
-T-Case {T₁ = T₁} {T₂ = T₂} p/s x x₁ x₂ ⊢≗ eq =
-  let eq′ T = λ{ zero → refl; (suc x) → eq x } in
-  T-Case p/s (x ⊢≗ eq) (x₁ ⊢≗ eq′ T₁) (x₂ ⊢≗ eq′ T₂)
-T-Conv T≃ ϵ≤ x ⊢≗ eq = T-Conv T≃ ϵ≤ (x ⊢≗ eq)
-T-Weaken γ≤ x ⊢≗ eq = T-Weaken (≼-≗ eq γ≤) (x ⊢≗ eq)
-
 instance
   TKᵣ : TKit Kᵣ
   TKᵣ = record
-    { 𝓕[_;_⊢_∶_] = λ Γ γ x T → γ ≡ ` x × Γ x ≡ T
-    ; ⊢id/` = λ x → refl , refl
-    ; ⊢`/id = λ{ (refl , T-eq) → T-Var _ T-eq }
-    ; ⊢wk   = λ{ (refl , T-eq) → refl , T-eq }
-    ; ⊢𝓕-≗  = λ{ Γ-eq (γ-eq , T-eq) → γ-eq , (sym (Γ-eq _) ■ T-eq) }
+    { 𝓕[_;_⊢_∶_] = λ Γ γ x T → γ ≡ ` x × Γ [ x ]= T
+    ; ⊢id/` = λ x → refl , V.lookup⇒[]= _ _ refl
+    ; ⊢`/id = λ{ (refl , [x]=T) → T-Var _ (V.[]=⇒lookup [x]=T) }
+    ; ⊢wk   = λ{ (refl , [x]=T) → refl , there [x]=T }
     }
 
   TKₛ : TKit Kₛ
@@ -483,33 +432,80 @@ instance
     ; ⊢`/id = λ x → x
     ; ⊢wk   = λ {_} {Γ} {γ} {T} {U} x → subst (_ ;_⊢ _ ∶ _ ∣ _) (𝐂.⋯-congᶜ γ λ _ → refl) $
                 x ⊢⋯ ⊢weaken ⦃ TKᵣ ⦄ {T = U} Γ
-    ; ⊢𝓕-≗  = λ Γ-eq x → x ⊢≗ Γ-eq
     }
 
 open TKit TKᵣ using () renaming (⊢weaken to ⊢weakenᵣ) public
 open TKit TKₛ using () renaming (⊢sub to ⊢subₛ) public
+
+_⊢_⇒ᵣ_ : m →ᵣ n → Ctx m → Ctx n → Set
+_⊢_⇒ᵣ_ ρ = ρ ∶ `_ ∘ ρ ⊢[ TKᵣ ]_⇒_
 
 infixl 5 _⊢⋯ₛ_
 
 _⊢⋯ₛ_ : ∀ {ϕ : m →ₖ n} {σ} → Γ₁ ; γ ⊢ e ∶ T ∣ ϵ → ϕ ∶ σ ⊢[ TKₛ ] Γ₁ ⇒ Γ₂ → Γ₂ ; γ 𝐂.⋯ σ ⊢ e ⋯ ϕ ∶ T ∣ ϵ
 _⊢⋯ₛ_ = _⊢⋯_ ⦃ TK = TKₛ ⦄
 
-⊢swapᵣ : (Γ₁ : Ctx m₁) (Γ₂ : Ctx m₂) {Γ : Ctx n} → swapᵣ m₁ m₂ ∶ `_ ∘ 𝐂.swapᵣ m₁ m₂ {n} ⊢[ TKᵣ ] (Γ₁ ⸴* Γ₂) ⸴* Γ ⇒ (Γ₂ ⸴* Γ₁) ⸴* Γ
-⊢swapᵣ Γ₁ Γ₂ = record
-  { _&_ = λ x → refl , ++-swapᵣ Γ₁ Γ₂ x
-  ; &-unr = `_ ∘ subst Unr (sym (++-swapᵣ Γ₁ Γ₂ _))
-  ; &-mob = `_ ∘ subst Mobile (sym (++-swapᵣ Γ₁ Γ₂ _))
+⊢ren : {ρ : 𝔽 m → 𝔽 n} → (∀ x → Γ₁ ﹫ x ≡ Γ₂ ﹫ ρ x) → ρ ⊢ Γ₁ ⇒ᵣ Γ₂
+⊢ren eq = record
+  { _&_ = λ x → refl , V.lookup⇒[]= _ _ (sym (eq x))
+  ; &-unr = `_ ∘ subst Unr (eq _)
+  ; &-mob = `_ ∘ subst Mobile (eq _)
   }
+
+⊢swapᵣ : (Γ₁ : Ctx m₁) (Γ₂ : Ctx m₂) {Γ : Ctx n} → swapᵣ m₁ m₂ {n} ⊢ (Γ₁ ⸴* Γ₂) ⸴* Γ ⇒ᵣ (Γ₂ ⸴* Γ₁) ⸴* Γ
+⊢swapᵣ Γ₁ Γ₂ = ⊢ren (eq Γ₁ Γ₂) where
+  eq : (Γ₁ : Ctx m₁) (Γ₂ : Ctx m₂) {Γ : Ctx n} → ∀ x → ((Γ₁ ⸴* Γ₂) ⸴* Γ) ﹫ x ≡ ((Γ₂ ⸴* Γ₁) ⸴* Γ) ﹫ swapᵣ m₁ m₂ x
+  eq {m₁ = m₁} {m₂} Γ₁ Γ₂ {Γ} x
+    with splitAt (m₁ + m₂) x in eq₁
+  ... | inj₂ xₙ =
+    cong (lookup ((Γ₁ ⸴* Γ₂) ⸴* Γ)) (sym (splitAt⁻¹-↑ʳ eq₁))
+      ■ V.lookup-++ʳ (Γ₁ ⸴* Γ₂) Γ xₙ
+      ■ sym (V.lookup-++ʳ (Γ₂ ⸴* Γ₁) Γ xₙ)
+  ... | inj₁ xₘ
+    with splitAt m₁ xₘ in eq₂
+  ... | inj₁ x₁ =
+    cong (lookup ((Γ₁ ⸴* Γ₂) ⸴* Γ)) (sym (splitAt⁻¹-↑ˡ eq₁))
+      ■ V.lookup-++ˡ (Γ₁ ⸴* Γ₂) Γ xₘ
+      ■ cong (lookup (Γ₁ ⸴* Γ₂)) (sym (splitAt⁻¹-↑ˡ eq₂))
+      ■ V.lookup-++ˡ Γ₁ Γ₂ x₁
+      ■ sym (V.lookup-++ʳ Γ₂ Γ₁ x₁)
+      ■ sym (V.lookup-++ˡ (Γ₂ ⸴* Γ₁) Γ _)
+  ... | inj₂ x₂ =
+    cong (lookup ((Γ₁ ⸴* Γ₂) ⸴* Γ)) (sym (splitAt⁻¹-↑ˡ eq₁))
+      ■ V.lookup-++ˡ (Γ₁ ⸴* Γ₂) Γ xₘ
+      ■ cong (lookup (Γ₁ ⸴* Γ₂)) (sym (splitAt⁻¹-↑ʳ eq₂))
+      ■ V.lookup-++ʳ Γ₁ Γ₂ x₂
+      ■ sym (V.lookup-++ˡ Γ₂ Γ₁ x₂)
+      ■ sym (V.lookup-++ˡ (Γ₂ ⸴* Γ₁) Γ _)
 
 ⊢assocSwapᵣ : (Γ₁ : Ctx m₁) (Γ₂ : Ctx m₂) {Γ : Ctx n} →
-  assocSwapᵣ m₁ m₂ ∶ `_ ∘ 𝐂.assocSwapᵣ m₁ m₂ {n} ⊢[ TKᵣ ] Γ₁ ⸴* (Γ₂ ⸴* Γ) ⇒ Γ₂ ⸴* (Γ₁ ⸴* Γ)
-⊢assocSwapᵣ Γ₁ Γ₂ = record
-  { _&_ = λ x → refl , ++-assocSwapᵣ Γ₁ Γ₂ x
-  ; &-unr = `_ ∘ subst Unr (sym (++-assocSwapᵣ Γ₁ Γ₂ _))
-  ; &-mob = `_ ∘ subst Mobile (sym (++-assocSwapᵣ Γ₁ Γ₂ _))
-  }
+  assocSwapᵣ m₁ m₂ {n} ⊢ Γ₁ ⸴* (Γ₂ ⸴* Γ) ⇒ᵣ Γ₂ ⸴* (Γ₁ ⸴* Γ)
+⊢assocSwapᵣ Γ₁ Γ₂ = ⊢ren (eq Γ₁ Γ₂) where
+  eq : (Γ₁ : Ctx m₁) (Γ₂ : Ctx m₂) {Γ : Ctx n} → ∀ x → (Γ₁ ⸴* (Γ₂ ⸴* Γ)) ﹫ x ≡ (Γ₂ ⸴* (Γ₁ ⸴* Γ)) ﹫ assocSwapᵣ m₁ m₂ x
+  eq {m₁ = m₁} {m₂} Γ₁ Γ₂ {Γ} x
+    with splitAt m₁ x in eq₁
+  ... | inj₁ y =
+    cong (lookup (Γ₁ ⸴* (Γ₂ ⸴* Γ))) (sym (splitAt⁻¹-↑ˡ eq₁))
+      ■ V.lookup-++ˡ Γ₁ (Γ₂ ⸴* Γ) y
+      ■ sym (V.lookup-++ˡ Γ₁ Γ y)
+      ■ sym (V.lookup-++ʳ Γ₂ (Γ₁ ⸴* Γ) _)
+  ... | inj₂ y
+    with splitAt m₂ y in eq₂
+  ... | inj₁ z =
+    cong (lookup (Γ₁ ⸴* (Γ₂ ⸴* Γ))) (sym (splitAt⁻¹-↑ʳ eq₁))
+      ■ V.lookup-++ʳ Γ₁ (Γ₂ ⸴* Γ) _
+      ■ cong (lookup (Γ₂ ⸴* Γ)) (sym (splitAt⁻¹-↑ˡ eq₂))
+      ■ V.lookup-++ˡ Γ₂ Γ _
+      ■ sym (V.lookup-++ˡ Γ₂ (Γ₁ ⸴* Γ) _)
+  ... | inj₂ z =
+    cong (lookup (Γ₁ ⸴* (Γ₂ ⸴* Γ))) (sym (splitAt⁻¹-↑ʳ eq₁))
+      ■ V.lookup-++ʳ Γ₁ (Γ₂ ⸴* Γ) _
+      ■ cong (lookup (Γ₂ ⸴* Γ)) (sym (splitAt⁻¹-↑ʳ eq₂))
+      ■ V.lookup-++ʳ Γ₂ Γ _
+      ■ sym (V.lookup-++ʳ Γ₁ Γ _)
+      ■ sym (V.lookup-++ʳ Γ₂ (Γ₁ ⸴* Γ) _)
 
-inv-` : ∀ {x} → Γ ; γ ⊢ ` x ∶ T ∣ ϵ → T ≃ Γ x × Γ ∶ ` x ≼ γ
+inv-` : ∀ {x} → Γ ; γ ⊢ ` x ∶ T ∣ ϵ → T ≃ Γ ﹫ x × Γ ∶ ` x ≼ γ
 inv-` (T-Var x T-eq) = ≃-reflexive (sym T-eq) , ≼-refl refl
 inv-` (T-Conv T≃ ϵ≤ x) = Π.map₁ (λ T≃′ → ≃-trans (≃-sym T≃) T≃′) (inv-` x)
 inv-` (T-Weaken γ≤ x) = inv-` x .proj₁ , ≼-trans (inv-` x .proj₂) γ≤

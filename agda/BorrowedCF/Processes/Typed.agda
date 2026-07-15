@@ -2,12 +2,14 @@ module BorrowedCF.Processes.Typed where
 
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
-open import Data.List.Relation.Unary.All as All using (All; []; _∷_)
-open import Data.List.Relation.Unary.All.Properties as All using ()
-open import Data.Vec.Functional as F using ()
+open import Data.List.Relation.Unary.All as Allᴸ using ([]; _∷_) renaming (All to Allᴸ)
+open import Data.Vec.Relation.Unary.All as Allⱽ using ([]; _∷_) renaming (All to Allⱽ)
 open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosure)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (Star; _◅_; _◅◅_; kleisliStar) renaming (ε to refl)
 open import Relation.Binary.Construct.Closure.Symmetric as Sym using (SymClosure; fwd; bwd; symmetric)
+
+import Data.Vec.Relation.Unary.All.Properties as Allⱽ
+import Data.List.Relation.Unary.All.Properties as Allᴸ
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
@@ -139,100 +141,94 @@ structBinder : (B : BindGroup) → Struct (sum B)
 structBinder [] = []
 structBinder (b ∷ B) = (structNSeq b 𝐂.⋯ᵣ 𝐂.wkʳ (sum B)) ∥ (structBinder B 𝐂.⋯ᵣ 𝐂.wkˡ b)
 
-data BindCtx′ (s : 𝕊 0) : ∀ n → Ctx n → Set where
-  nil : Skips s → BindCtx′ s 0 Γ
-  cons : ∀ {b} (s₁ s₂ : 𝕊 0) {Γ Γ′} →
+data BindCtx′ (s : 𝕊 0) : Ctx n → Set where
+  nil : Skips s → BindCtx′ s []
+  cons : ∀ (s₁ s₂ : 𝕊 0) →
     (¬skips : ¬ Skips s) →
     (s-split : s₁ ; s₂ ≃ s) →
-    (s₁-cons : ⟨ s₁ ⟩ ⸴ Γ′ ≗ Γ) →
-    BindCtx′ s₂ b Γ′ → BindCtx′ s (suc b) Γ
+    BindCtx′ s₂ Γ → BindCtx′ s (⟨ s₁ ⟩ ∷ Γ)
 
-data BindCtx (s : 𝕊 0) : (B : BindGroup) (Γ : Ctx (sum B)) → Set where
-  last : ∀ {b} {Γ} →
-    BindCtx′ s b (Γ ∘ wkʳ 0) → BindCtx s L.[ b ] Γ
-  cons-ret/acq : ∀ {b} (s₁ : 𝕊 0) {s₂ : 𝕊 0} {Γ₁ Γ₂ Γ}
-    (s≃ : s₁ ; s₂ ≃ s) (Γ≗ : Γ₁ ⸴* Γ₂ ≗ Γ) →
-    BindCtx′ (s₁ ; ret) b Γ₁ → BindCtx (acq ; s₂) B Γ₂ → BindCtx s (b ∷ B) Γ
+data BindCtx (s : 𝕊 0) : (B : BindGroup) → Ctx (sum B) → Set where
+  last :
+    BindCtx′ s Γ →
+    --------------------------
+    BindCtx s L.[ n ] Γ
+
+  cons-ret/acq :
+    (s₁ : 𝕊 0) {s₂ : 𝕊 0} {Γ₁ : Ctx n} {Γ₂ : Ctx (sum B)} →
+    (s≃ : s₁ ; s₂ ≃ s) →
+    BindCtx′ (s₁ ; ret) Γ₁ →
+    BindCtx  (acq ; s₂) B Γ₂ →
+    ----------------------------
+    BindCtx s (n ∷ B) (Γ₁ ⸴* Γ₂)
+
   cons-acq :
-    BindCtx (acq ; s) B Γ → BindCtx s (0 ∷ B) Γ
+    BindCtx (acq ; s) B Γ →
+    -----------------------
+    BindCtx s (0 ∷ B) Γ
 
-bindCtx′⇒chanCtx : BindCtx′ s n Γ → ChanCx Γ
-bindCtx′⇒chanCtx (cons _ _ ¬skips s-split Γ≗ b) zero = _ , sym (Γ≗ zero)
-bindCtx′⇒chanCtx (cons _ _ ¬skips s-split Γ≗ b) (suc x) = Π.map₂ (sym (Γ≗ (suc x)) ■_) (bindCtx′⇒chanCtx b x)
+bindCtx′⇒chanCtx : BindCtx′ s Γ → ChanCx Γ
+bindCtx′⇒chanCtx (nil x) = []
+bindCtx′⇒chanCtx (cons s₁ s₂ ¬skips s-split b) = (_ , refl) ∷ bindCtx′⇒chanCtx b
 
 bindCtx⇒chanCtx : ∀ {B Γ} → BindCtx s B Γ → ChanCx Γ
-bindCtx⇒chanCtx {B = b ∷ _} {Γ} (last b′) x =
-  Π.map₂ (λ eq → cong Γ (sym (Fin.join-splitAt b 0 x) ■ [,-]-cong (λ()) (splitAt b x) ■ sym ([,]-∘ (_↑ˡ 0) (splitAt b x))) ■ eq)
-    $ bindCtx′⇒chanCtx b′
-    $ Sum.fromInj₁ (λ())
-    $ splitAt b x
-bindCtx⇒chanCtx {B = b ∷ _} (cons-ret/acq _ {Γ₁ = Γ₁} {Γ₂} s≃ Γ≗ b₁ b₂) x with splitAt b x in eq
-... | inj₁ x₁ = Π.map₂ (λ eq′ → sym (Γ≗ x) ■ cong [ Γ₁ , Γ₂ ] eq ■ eq′) (bindCtx′⇒chanCtx b₁ x₁)
-... | inj₂ x₂ = Π.map₂ (λ eq′ → sym (Γ≗ x) ■ cong [ Γ₁ , Γ₂ ] eq ■ eq′) (bindCtx⇒chanCtx b₂ x₂)
-bindCtx⇒chanCtx {B = b ∷ _} (cons-acq b′) x = bindCtx⇒chanCtx b′ x
+bindCtx⇒chanCtx (last x) = bindCtx′⇒chanCtx x
+bindCtx⇒chanCtx (cons-ret/acq s₁ s≃ x C) = Allⱽ.++⁺ (bindCtx′⇒chanCtx x) (bindCtx⇒chanCtx C)
+bindCtx⇒chanCtx (cons-acq C) = bindCtx⇒chanCtx C
 
 bindCtx-B≢[] : ¬ BindCtx s [] Γ
 bindCtx-B≢[] ()
 
-bindCtx′-Γ≗ : Γ₁ ≗ Γ₂ → BindCtx′ s n Γ₁ → BindCtx′ s n Γ₂
-bindCtx′-Γ≗ eq (nil x) = (nil x)
-bindCtx′-Γ≗ eq (cons _ _ ¬skips s-split Γ≗ C) = cons _ _ ¬skips s-split (λ k → Γ≗ k ■ eq k) C
-
-bindCtx-Γ≗ : Γ₁ ≗ Γ₂ → BindCtx s B Γ₁ → BindCtx s B Γ₂
-bindCtx-Γ≗ eq (last x) = last (bindCtx′-Γ≗ (λ k → eq (wkʳ 0 k)) x)
-bindCtx-Γ≗ eq (cons-ret/acq _ s≃ Γ≗ x C) = cons-ret/acq _ s≃ (λ k → Γ≗ k ■ eq k) x C
-bindCtx-Γ≗ eq (cons-acq C) = cons-acq (bindCtx-Γ≗ eq C)
-
-bindCtx′-≃ : s₁ ≃ s₂ → BindCtx′ s₁ n Γ → BindCtx′ s₂ n Γ
+bindCtx′-≃ : s₁ ≃ s₂ → BindCtx′ s₁ Γ → BindCtx′ s₂ Γ
 bindCtx′-≃ eq (nil x) = nil (≃-skips eq x)
-bindCtx′-≃ eq (cons _ _ ¬skips s≃ Γ≗ C) = cons _ _ (¬skips ∘ ≃-skips (≃-sym eq)) (≃-trans s≃ eq) Γ≗ C
+bindCtx′-≃ eq (cons _ _ ¬skips s≃ C) = cons _ _ (¬skips ∘ ≃-skips (≃-sym eq)) (≃-trans s≃ eq) C
 
 bindCtx-≃ : s₁ ≃ s₂ → BindCtx s₁ B Γ → BindCtx s₂ B Γ
 bindCtx-≃ eq (last x) = last (bindCtx′-≃ eq x)
-bindCtx-≃ eq (cons-ret/acq _ s≃ Γ≗ x C) = cons-ret/acq _ (≃-trans s≃ eq) Γ≗ x C
+bindCtx-≃ eq (cons-ret/acq _ s≃ x C) = cons-ret/acq _ (≃-trans s≃ eq) x C
 bindCtx-≃ eq (cons-acq C) = cons-acq (bindCtx-≃ (≃-; refl eq) C)
 
 bindCtx-inv-cons : ∀ {b Γ} → .(0 < L.length B) → BindCtx s (b ∷ B) Γ →
   ∃[ s₁ ] ∃[ s₂ ] ∃[ Γ₁ ] ∃[ Γ₂ ]
     s₁ ; s₂ ≃ s
-      × Γ₁ ⸴* Γ₂ ≗ Γ
-      × BindCtx′ (s₁ ; ret) b Γ₁
+      × Γ₁ ⸴* Γ₂ ≡ Γ
+      × BindCtx′ (s₁ ; ret) Γ₁
       × BindCtx (acq ; s₂) B Γ₂
   ⊎
-  Σ[ b≡0 ∈ b ≡ 0 ] BindCtx (acq ; s) B (Γ ∘ Fin.cast (cong (_+ sum B) (sym b≡0)))
-bindCtx-inv-cons 0< (cons-ret/acq s₁ s≃ Γ≗ x C) = inj₁ (s₁ , _ , _ , _ , s≃ , Γ≗ , x , C)
-bindCtx-inv-cons {Γ = Γ} 0< (cons-acq C) = inj₂ (refl , bindCtx-Γ≗ (cong Γ ∘ sym ∘ Fin.cast-is-id refl) C)
+  Σ[ b≡0 ∈ b ≡ 0 ] BindCtx (acq ; s) B (V.drop b Γ)
+bindCtx-inv-cons 0< (cons-ret/acq s₁ s≃ x C) = inj₁ (s₁ , _ , _ , _ , s≃ , refl , x , C)
+bindCtx-inv-cons {Γ = Γ} 0< (cons-acq C) = inj₂ (refl , C)
 
-bindCtx-inv-msg : Γ 0F ≃ ⟨ msg p T ⟩ → BindCtx s (suc n ∷ B) Γ →
-  ∃[ s₂ ] msg p T ; s₂ ≃ s × BindCtx s₂ (n ∷ B) (Γ ∘ suc)
-bindCtx-inv-msg isMsg (last (cons s₁ s₂ ¬skips s-split s₁-cons x)) =
-  s₂ , ≃-trans (≃-; (≃-⟨⟩⁻¹ (≃-trans (≃-sym isMsg) (≃-reflexive (sym (s₁-cons 0F))))) refl) s-split , last (bindCtx′-Γ≗ (s₁-cons ∘ suc) x)
-bindCtx-inv-msg {n = n} isMsg (cons-ret/acq s′ {s″} s≃ Γ≗ (cons s₁ s₂ ¬skips s-split s₁-cons x) C)
+bindCtx-inv-msg : s′ ≃ msg p T′ → BindCtx s (suc n ∷ B) (⟨ s′ ⟩ ∷ Γ) →
+  ∃[ s₂ ] msg p T′ ; s₂ ≃ s × BindCtx s₂ (n ∷ B) Γ
+bindCtx-inv-msg {s′} {Γ = Γ} isMsg C with ⟨ s′ ⟩ ∷ Γ in Γ-eq
+bindCtx-inv-msg isMsg (last (cons s₁ s₂ ¬skips s-split x)) | Γ′
+  with (refl , refl) ← V.∷-injective Γ-eq =
+  s₂ , ≃-trans (≃-; ((≃-sym isMsg)) refl) s-split , last x
+bindCtx-inv-msg isMsg (cons-ret/acq s′ {s″} s≃ (cons s₁ s₂ ¬skips s-split x) C) | Γ′
+  with (refl , refl) ← V.∷-injective Γ-eq
   with atom-;-unsnoc ret s-split
 ... | inj₂ (s₂′ , s₁s₂′ , s₂′ret) =
   (s₂′ ; s″)
-    , ≃-trans (≃-sym ≃-assoc-;)
-        (≃-trans (≃-; (≃-trans (≃-; (≃-⟨⟩⁻¹ (≃-trans (≃-sym isMsg) (≃-reflexive (sym (Γ≗ 0F) ■ sym (s₁-cons 0F))))) refl) s₁s₂′) refl) s≃)
-    , cons-ret/acq s₂′ ≃-refl
-        (λ y → [-,]-cong (s₁-cons ∘ suc) (splitAt n y) ■ sym ([,]-map (splitAt n y)) ■ Γ≗ (suc y))
-        (bindCtx′-≃ (≃-sym s₂′ret) x) C
+    , ≃-trans (≃-trans (≃-sym ≃-assoc-;) (≃-; (≃-trans (≃-; (≃-sym isMsg) refl) s₁s₂′) refl)) s≃
+    , cons-ret/acq s₂′ refl (bindCtx′-≃ (≃-sym s₂′ret) x) C
 ... | inj₁ Ss₂ = ⊥-elim $ atomKind≢⇒≄-;ʳ msg ret (λ()) $
   ≃-trans ≃-skipˡ
     $ ≃-trans (≃-sym ≃-skipʳ)
-    $ ≃-trans (≃-; (≃-⟨⟩⁻¹ (≃-trans (≃-sym isMsg) (≃-reflexive (sym (Γ≗ 0F) ■ sym (s₁-cons 0F))))) (skips⇒skip≃ Ss₂)) s-split
+    $ ≃-trans (≃-; (≃-sym isMsg) (skips⇒skip≃ Ss₂)) s-split
 
 ⊢ᴮ_ : Pred BindGroup _
-⊢ᴮ B = All NonZero (L.drop 1 B)
+⊢ᴮ B = Allᴸ NonZero (L.drop 1 B)
 
 ⊢ᴮ-lsplit : ∀ B₁ m {n} {B₂} → ⊢ᴮ (B₁ ++ (m + 1 + n) ∷ B₂) → ⊢ᴮ (B₁ ++ (m + 2 + n) ∷ B₂)
 ⊢ᴮ-lsplit [] m x = x
-⊢ᴮ-lsplit (_ ∷ B₁) m {n} x with y ∷ x′ ← All.++⁻ʳ B₁ x =
+⊢ᴮ-lsplit (_ ∷ B₁) m {n} x with y ∷ x′ ← Allᴸ.++⁻ʳ B₁ x =
   let eq = +-assoc (suc m) 1 n ■ sym (+-suc m (suc n)) ■ sym (+-assoc m 2 n) in
-  All.++⁺ (All.++⁻ˡ B₁ x) (Nat.>-nonZero (subst (0 Nat.<_) eq (Nat.m<n⇒m<1+n (Nat.>-nonZero⁻¹ _ ⦃ y ⦄))) ∷ x′)
+  Allᴸ.++⁺ (Allᴸ.++⁻ˡ B₁ x) (Nat.>-nonZero (subst (0 Nat.<_) eq (Nat.m<n⇒m<1+n (Nat.>-nonZero⁻¹ _ ⦃ y ⦄))) ∷ x′)
 
 ⊢ᴮ-rsplit : ∀ B₁ {B₂} → ⊢ᴮ (B₁ ++ suc n ∷ B₂) → ⊢ᴮ (B₁ ++ 1 ∷ suc n ∷ B₂)
 ⊢ᴮ-rsplit [] x = _ ∷ x
-⊢ᴮ-rsplit (_ ∷ B₁) x = All.++⁺ (All.++⁻ˡ B₁ x) (_ ∷ All.++⁻ʳ B₁ x)
+⊢ᴮ-rsplit (_ ∷ B₁) x = Allᴸ.++⁺ (Allᴸ.++⁻ˡ B₁ x) (_ ∷ Allᴸ.++⁻ʳ B₁ x)
 
 infix 4 _;_⊢ₚ_
 
@@ -260,14 +256,6 @@ data _;_⊢ₚ_ (Γ : Ctx n) : Struct n → Proc n → Set where
     (γ≤ : Γ ∶ γ₁ ≼ γ₂) →
     Γ ; γ₁ ⊢ₚ P →
     Γ ; γ₂ ⊢ₚ P
-
-infixl 5 _⊢≗ₚ_
-
-postulate
-  funext : {A : Set} {B : A → Set} {f g : (x : A) → B x} → (∀ x → f x ≡ g x) → f ≡ g
-
-_⊢≗ₚ_ : Γ₁ ; γ ⊢ₚ P → Γ₁ ≗ Γ₂ → Γ₂ ; γ ⊢ₚ P
-_⊢≗ₚ_ {γ = γ} {P = P} p eq = subst (λ Γ → Γ ; γ ⊢ₚ P) (funext eq) p
 
 subst-γₚ : γ₁ ≡ γ₂ → Γ ; γ₁ ⊢ₚ P → Γ ; γ₂ ⊢ₚ P
 subst-γₚ refl x = x

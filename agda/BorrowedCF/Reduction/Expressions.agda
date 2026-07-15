@@ -1,5 +1,10 @@
 module BorrowedCF.Reduction.Expressions where
 
+open import Data.Vec.Relation.Unary.All as All using (All; []; _∷_)
+open import Data.Vec.Relation.Unary.Any as Any using (Any; here; there)
+open import Data.Vec.Membership.Propositional
+open import Data.Vec.Membership.Propositional.Properties
+
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Types
@@ -65,14 +70,14 @@ module _ (Γ-S : ChanCx Γ) where
   inv-`⊤ V (T-Const `unit)  = refl , (≼-∅ [])
   inv-`⊤ V (T-Conv `⊤ ϵ≤ e) = inv-`⊤ V e
   inv-`⊤ V (T-Weaken γ≤ e)  = Π.map₂ (λ z → ≼-trans z γ≤) (inv-`⊤ V e)
-  inv-`⊤ V (T-Var x T-eq)   = case sym T-eq ■ Γ-S x .proj₂ of λ()
+  inv-`⊤ V (T-Var x T-eq)   = chanCx-contradiction Γ-S x T-eq λ()
 
   inv-arr : Value e → Γ ; γ ⊢ e ∶ T ⟨ a ⟩→ U ∣ ϵ →
     ∃[ T′ ] ∃[ U′ ] ∃[ ϵ ] T ≃ T′ × U ≃ U′ × ϵ ≤ϵ Arr.eff a ×
       ((∃[ c ] e ≡ K c × ⊢ c ∶ T′ ⟨ record a { eff = ϵ } ⟩→ U′)
         ⊎ (∃[ e′ ] e ≡ ƛ e′ × T′ ⸴ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) ⊢ e′ ∶ U′ ∣ ϵ))
   inv-arr V (T-Const c) = _ , _ , _ , ≃-refl , ≃-refl , ≤ϵ-refl , inj₁ (_ , refl , c)
-  inv-arr V (T-Var x T-eq) = case sym T-eq ■ Γ-S x .proj₂ of λ()
+  inv-arr V (T-Var x T-eq) = chanCx-contradiction Γ-S x T-eq λ()
   inv-arr V (T-Abs Γ-unr Γ-mob e) = _ , _ , _ , ≃-refl , ≃-refl , ≤ϵ-refl , inj₂ (_ , refl , e)
   inv-arr V (T-Conv (eq₁ `→ eq₂) ϵ≤ e)
     with _ , _ , _ , T≃ , U≃ , ϵ′≤ , x ← inv-arr V e
@@ -85,19 +90,19 @@ module _ (Γ-S : ChanCx Γ) where
     = _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₂ (_ , eq , T-Weaken (≼-join (Arr.dir a) (≼-refl refl) (𝐂.≼-⋯ 𝐂.wk-preserves 𝐂.wk-preserves γ≤)) x)
 
   value×⊗⇒⊗ : Value e → Γ ; γ ⊢ e ∶ T ⊗⟨ d ⟩ U ∣ ϵ → ∃[ e₁ ] ∃[ e₂ ] e ≡ e₁ ⊗ e₂
-  value×⊗⇒⊗ V (T-Var x T-eq) = case sym T-eq ■ Γ-S x .proj₂ of λ()
+  value×⊗⇒⊗ V (T-Var x T-eq) = chanCx-contradiction Γ-S x T-eq λ()
   value×⊗⇒⊗ V (T-Pair p/s seq⇒p x x₁) = _ , _ , refl
   value×⊗⇒⊗ V (T-Conv (_ ⊗ _) ϵ≤ x) = value×⊗⇒⊗ V x
   value×⊗⇒⊗ V (T-Weaken γ≤ x) = value×⊗⇒⊗ V x
 
   value×⊕⇒`inj : Value e → Γ ; γ ⊢ e ∶ T ⊕ U ∣ ϵ → ∃[ e′ ] ∃[ i ] e ≡ `inj i e′
-  value×⊕⇒`inj V (T-Var x T-eq) = case sym T-eq ■ Γ-S x .proj₂ of λ()
+  value×⊕⇒`inj V (T-Var x T-eq) = chanCx-contradiction Γ-S x T-eq λ()
   value×⊕⇒`inj V (T-Inj x) = _ , _ , refl
   value×⊕⇒`inj V (T-Conv (_ ⊕ _) ϵ≤ x) = value×⊕⇒`inj V x
   value×⊕⇒`inj V (T-Weaken γ≤ x) = value×⊕⇒`inj V x
 
   inv-session : Value e → Γ ; γ ⊢ e ∶ ⟨ s ⟩ ∣ ϵ →
-    ∃[ s′ ] ∃[ x ] s ≃ s′ × e ≡ ` x × Γ x ≡ ⟨ s′ ⟩ × Γ ∶ ` x ≼ γ
+    ∃[ s′ ] ∃[ x ] s ≃ s′ × e ≡ ` x × Γ ﹫ x ≡ ⟨ s′ ⟩ × Γ ∶ ` x ≼ γ
   inv-session V (T-Var x T-eq) = _ , x , refl , refl , T-eq , ≼-refl refl
   inv-session V (T-Conv ⟨ eq ⟩ ϵ≤ x)
     = let _ , _ , eq-s , eq-e , eq-Γ , γ≤′ = inv-session V x in

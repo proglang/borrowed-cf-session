@@ -1,6 +1,7 @@
 module BorrowedCF.Reduction.Base where
 
-open import Data.List.Relation.Unary.All as All using (All; []; _∷_)
+open import Data.Vec.Relation.Unary.All as All using (All; []; _∷_)
+open import Data.Vec.Membership.Propositional.Properties
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
@@ -24,12 +25,13 @@ open Variables
 -- context Γ where `ChanCx Γ` holds.
 
 ChanCx : Ctx n → Set
-ChanCx Γ = ∀ x → ∃ λ s → Γ x ≡ ⟨ s ⟩
+ChanCx = All λ T → ∃[ s ] T ≡ ⟨ s ⟩
 
-chanCx-⸴* : ChanCx Γ₁ → ChanCx Γ₂ → ChanCx (Γ₁ ⸴* Γ₂)
-chanCx-⸴* {m} Γ₁-S Γ₂-S i with splitAt m i
-... | inj₁ i₁ = Γ₁-S i₁
-... | inj₂ i₂ = Γ₂-S i₂
+chanCx-lookup : ChanCx Γ → (x : 𝔽 n) → ∃[ s ] Γ ﹫ x ≡ ⟨ s ⟩
+chanCx-lookup Γ-S x = All.lookup Γ-S (∈-lookup x _)
+
+chanCx-contradiction : ∀ {a} {A : Set a} → ChanCx Γ → (x : 𝔽 n) → Γ ﹫ x ≡ T → (∀ {s} → T ≢ ⟨ s ⟩) → A
+chanCx-contradiction Γ-S x eq notS = ⊥-elim (notS (sym eq ■ chanCx-lookup Γ-S x .proj₂))
 
 data Value {n} : Tm n → Set where
   V-` : ∀ {x} → Value (` x)

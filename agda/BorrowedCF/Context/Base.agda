@@ -5,40 +5,12 @@ open import BorrowedCF.Types
 
 open Nat.Variables
 
-import Data.Vec.Functional
-open Data.Vec.Functional using (Vector)
-open Data.Vec.Functional using () renaming (_∷_ to _⸴_; _++_ to _⸴*_) public
+open import Data.Vec using () renaming (_∷_ to _⸴_; _++_ to _⸴*_; lookup to infix 6 _﹫_) public
 
-Ctx = Vector 𝕋
+Ctx = Vec 𝕋
 
 variable
   Γ Γ₁ Γ₂ Γ₃ Γ′ : Ctx n
-
-⸴-cons : Γ zero ⸴ Γ ∘ suc ≗ Γ
-⸴-cons zero = refl
-⸴-cons (suc x) = refl
-
-⸴-⸴*-assoc : (T : 𝕋) (Γ₁ : Ctx m) (Γ₂ : Ctx n) → (T ⸴ Γ₁) ⸴* Γ₂ ≗ T ⸴ (Γ₁ ⸴* Γ₂)
-⸴-⸴*-assoc _ _ _ zero = refl
-⸴-⸴*-assoc {m} _ _ _ (suc x) = [,]-map (splitAt m x)
-
-⸴-⸴*-cons : Γ₁ zero ⸴ Γ₁ ∘ suc ⸴* Γ₂ ≗ Γ₁ ⸴* Γ₂
-⸴-⸴*-cons zero = refl
-⸴-⸴*-cons {m} (suc x) = sym ([,]-map (splitAt m x))
-
-⸴-dist : ∀ {a} {A : Set a} (f : 𝕋 → A) {T : 𝕋} {Γ : Ctx m} → f ∘ (T ⸴ Γ) ≗ f T ⸴ f ∘ Γ
-⸴-dist f zero = refl
-⸴-dist f (suc x) = refl
-
-⸴-cong : T ≡ U → Γ₁ ≗ Γ₂ → T ⸴ Γ₁ ≗ U ⸴ Γ₂
-⸴-cong eq eqs zero = eq
-⸴-cong eq eqs (suc x) = eqs x
-
-{-
-⸴*-sum++-split : (xs ys : List ℕ) (Γ : Ctx (sum (xs ++ ys))) →
-  Σ[ Γ₁ ∈ Ctx (sum xs) ] Σ[ Γ₂ ∈ Ctx (sum ys) ] (Γ₁ ⸴* Γ₂) ≗ ?
-⸴*-sum++-split = ?
--}
 
 data ParSeq : Set where
   par seq : ParSeq
@@ -96,13 +68,7 @@ module _ {ℓ} (P : Pred 𝕋 ℓ) (Γ : Ctx n) where
     []  : AllCx []
     _∥_ : AllCx α → AllCx β → AllCx (α ∥ β)
     _;_ : AllCx α → AllCx β → AllCx (α ; β)
-    `_  : ∀ {x} → P (Γ x) → AllCx (` x)
-
-allCx-≗ : ∀ {ℓ} {P : Pred 𝕋 ℓ} → Γ ≗ Γ′ → AllCx P Γ γ → AllCx P Γ′ γ
-allCx-≗ eq [] = []
-allCx-≗ eq (x ∥ y) = allCx-≗ eq x ∥ allCx-≗ eq y
-allCx-≗ eq (x ; y) = allCx-≗ eq x ; allCx-≗ eq y
-allCx-≗ eq (`_ {x} px) rewrite eq x = ` px
+    `_  : ∀ {x} → P (lookup Γ x) → AllCx (` x)
 
 module _ {ℓ} {P : Pred 𝕋 ℓ} {Γ : Ctx n} where
   allCx-∥⁻¹ : AllCx P Γ (α ∥ β) → AllCx P Γ α × AllCx P Γ β
@@ -112,20 +78,20 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} {Γ : Ctx n} where
   allCx-;⁻¹ (x ; y) = x , y
 
   allCx? : Decidable P → Decidable (AllCx P Γ)
-  allCx? P? (` x) = map′ `_ (λ{ (` Px) → Px }) (P? (Γ x))
+  allCx? P? (` x) = map′ `_ (λ{ (` Px) → Px }) (P? (lookup Γ x))
   allCx? P? [] = yes []
   allCx? P? (α ∥ β) = map′ (uncurry _∥_) allCx-∥⁻¹ (allCx? P? α ×-dec allCx? P? β)
   allCx? P? (α ; β) = map′ (uncurry _;_) allCx-;⁻¹ (allCx? P? α ×-dec allCx? P? β)
 
 module _ {p q} {P : Pred 𝕋 p} {Q : Pred 𝕋 q} where
-  allCx-gmap : {f : 𝕋 → 𝕋} → P ⊆ Q ∘ f → AllCx P Γ ⊆ AllCx Q (f ∘ Γ)
-  allCx-gmap p⊆q [] = []
-  allCx-gmap p⊆q (x ∥ y) = allCx-gmap p⊆q x ∥ allCx-gmap p⊆q y
-  allCx-gmap p⊆q (x ; y) = allCx-gmap p⊆q x ; allCx-gmap p⊆q y
-  allCx-gmap p⊆q (` x) = ` p⊆q x
+  allCx-map⁺ : {f : 𝕋 → 𝕋} → P ⊆ Q ∘ f → AllCx P Γ ⊆ AllCx Q (V.map f Γ)
+  allCx-map⁺ p⊆q [] = []
+  allCx-map⁺ p⊆q (α ∥ β) = allCx-map⁺ p⊆q α ∥ allCx-map⁺ p⊆q β
+  allCx-map⁺ p⊆q (α ; β) = allCx-map⁺ p⊆q α ; allCx-map⁺ p⊆q β
+  allCx-map⁺ {Γ = Γ} {f = f} p⊆q (` px) = ` subst Q (sym (V.lookup-map _ f Γ)) (p⊆q px)
 
   allCx-map : (P ⊆ Q) → AllCx P Γ ⊆ AllCx Q Γ
-  allCx-map = allCx-gmap {f = id}
+  allCx-map p⊆q = subst (λ Γ → AllCx Q Γ _) (V.map-id _) ∘ allCx-map⁺ {f = id} p⊆q
 
 UnrCx : REL (Ctx n) (Struct n) _
 UnrCx = AllCx Unr

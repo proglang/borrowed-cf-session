@@ -5,7 +5,6 @@ import Data.List.Relation.Unary.All.Properties as All
 
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
-open import Data.Vec.Functional as F using ()
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (_◅◅_) renaming (ε to refl)
 
 open import BorrowedCF.Prelude
