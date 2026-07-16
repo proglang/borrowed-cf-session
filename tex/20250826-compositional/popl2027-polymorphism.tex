@@ -10,6 +10,7 @@
 \newcommand*\Dualable{\operatorname{\mathsf{dualable}}}
 \newcommand*\NonSkip{\operatorname{\mathsf{nonskip}}}
 \newcommand*\Wf{\mathrel{\mathsf{wf}}}
+\newcommand*\FunVal[1]{\operatorname{\mathsf{funval}}(#1)}
 \newcommand*\TForall[4]{\typecolor{\forall(#1:#2).\,#3\Rightarrow#4}}
 \newcommand*\TExistsQ[4]{\typecolor{\exists(#1:#2).\,#3\land#4}}
 \newcommand*\TyAbs[3]{\termcolor{\Lambda (#1).\,#2 \Rightarrow #3}}
@@ -51,14 +52,19 @@ eligibility for channel creation, dualability, and nontriviality of a split
 suffix are all relevant.  Third, type abstraction is restricted to an
 already-formed value.  The form $\TyAbs{\alpha:\Kind}{\Qual}{\V}$ adds no
 closure and delays no computation; its resource properties are inherited from
-$\V$.
+$\V$.  Finally, fixed points remain restricted to functions, but may pass
+through existing type abstractions before reaching the function abstraction.
+A fixed point is itself a value and unfolds only when supplied with a type or
+value argument.  This guarded form admits polymorphic recursion without
+admitting fixed points at arbitrary unrestricted types.
 
 \section{Syntax and static contexts}
 
 Let $\alpha,\beta$ range over polymorphic type variables.  They are distinct
 from the recursively bound session variables $X$ of $\mu X.S$.  The extension
-adds the following grammar; all elided cases are inherited unchanged from the
-paper.
+adds the following grammar.  Elided cases are inherited unchanged from the
+paper, except that the recursive expression $\mu f.\E$ is refined to the
+function-shaped value form shown below.
 
 \begin{figure}[H]
   \footnotesize
@@ -90,6 +96,18 @@ paper.
       \tag{Types} \\
     \S &\grmeq \cdots \grmor \alpha \grmor \SDual\S
       \tag{Session types} \\
+    \U,\V &\grmeq
+       \C
+       \grmor \EVar
+       \grmor \EAbs\EVar\E
+       \grmor \EInj i\V
+       \grmor \EPair\U\V
+       \\
+       &\qquad
+       \grmor \TyAbs{\alpha:\Kind}{\Qual}{\V}
+       \grmor \Pack\T\V{\TExistsQ\alpha\Kind\Qual\T}
+       \grmor \EMu\V\quad(\FunVal\V)
+      \tag{Values} \\
     \E &\grmeq \cdots
        \grmor \TyAbs{\alpha:\Kind}{\Qual}{\V}
        \grmor \E{[\T]} \\
@@ -98,6 +116,7 @@ paper.
        \\
        &\qquad
        \grmor \Open\alpha\EVar\E\E
+       \grmor \EMu\V
       \tag{Expressions}
   \end{align*}
   \caption{Polymorphic syntax}
@@ -110,6 +129,10 @@ $\KVal$, not $\KSess$.  Thus quantification can hide a session endpoint inside
 a package, but it does not turn the package itself into a session protocol.
 Quantification is impredicative at kind $\KVal$: a type argument may itself be
 universal or existential.
+
+In particular, $\EMu\V$ is a value, subject to the syntactic judgment
+$\FunVal\V$ defined in \cref{sec:poly-recursion}.  The body $\V$ must consist
+of zero or more type abstractions followed by one function abstraction.
 
 The context $\TyCtx$ is intuitionistic: its entries admit exchange,
 contraction, and weakening.  It contains type-variable declarations and
@@ -681,41 +704,90 @@ finite family $(\S[\ell]:\KSess)_{\ell\in L}$ componentwise; no row
 polymorphism is required for the core extension.
 
 \section{Recursion}
+\label{sec:poly-recursion}
 
-Polymorphism does not generalize recursion.  The only recursive expression is
-the recursive-function form $\EMu{\EAbs\EVar\E}$.  In particular, there is no
-rule for $\mu f.\V$ at an arbitrary unrestricted type.  Writing
+Recursion is factored from unrestricted function introduction.  This
+factorization admits polymorphic recursion while retaining the operational
+restriction that every fixed point is guarded by a function abstraction.
+First, writing
 \[
   A = \TArr{\MobMobile}{\DirNone,\Eff}\T\TU,
 \]
-the existing recursive-function rule is lifted to the type-and-constraint
-context as follows.
+an unrestricted function is introduced independently of recursion:
 \begin{mathpar}
   \inferrule*[right=T-AbsUnr]{
     \TyCtx\,;\,
-      (\CtxVar{f}{A} \CtxPar \CtxVar{\EVar}{\T} \CtxPar \Ctx)
+      (\CtxVar{\EVar}{\T} \CtxPar \Ctx)
       \vdash\E:\TU\mid\Eff \\
     \TyCtx\Entails\Unr\Ctx
   }{
     \TyCtx\,;\,\Ctx\vdash
-      \EMu{\EAbs\EVar\E}:A\mid\EffPure
+      \EAbs\EVar\E:A\mid\EffPure
   }
 \end{mathpar}
-The recursive variable $f$ has the single arrow type $A$ throughout the body.
-Consequently, this extension supports polymorphic values in recursive
-functions but does not add polymorphic recursion.  Admitting a term such as
-$\mu f.\TyAbs{\alpha:\Kind}{\Qual}{\V}$ would violate the restriction to the
-$\mu f.\lambda x.\E$ form and is intentionally excluded.
+This is the abstraction component of the paper's existing
+\RuleName{T-AbsUnr}; the recursive binder is moved to a separate rule.
+
+The following syntactic judgment recognizes values whose erasure is a
+function.  Type abstractions may precede the lambda, but no pair, package, or
+other value constructor may intervene.
+\begin{mathpar}
+  \inferrule*[right=FV-Abs]{}{
+    \FunVal{\EAbs\EVar\E}
+  }
+  \and
+  \inferrule*[right=FV-TAbs]{
+    \FunVal\V
+  }{
+    \FunVal{\TyAbs{\alpha:\Kind}{\Qual}{\V}}
+  }
+\end{mathpar}
+The fixed-point rule ranges over exactly these values:
+\begin{mathpar}
+  \inferrule*[right=T-Fix]{
+    \TyCtx\,;\,(\CtxVar f\T \CtxPar \Ctx)
+      \vdash\V:\T\mid\EffPure \\
+    \TyCtx\Entails\Unr\T \\
+    \FunVal\V
+  }{
+    \TyCtx\,;\,\Ctx\vdash
+      \EMu\V:\T\mid\EffPure
+  }.
+\end{mathpar}
+The conclusion $\EMu\V$ is a value by the grammar in
+\cref{fig:poly-syntax}; \RuleName{T-Fix} does not trigger an unfolding step.
+Because the final lambda is checked by \RuleName{T-AbsUnr}, its captured
+context, including $f:\T$, must be unrestricted.  The explicit
+$\Unr\T$ premise records the corresponding requirement on the recursive
+variable.  The original rule is recovered by taking
+$\V=\EAbs\EVar\E$.
+
+For polymorphic recursion, take
+\[
+  \V =
+    \TyAbs{\alpha:\Kind}{\Qual}{\EAbs\EVar\E}
+  \qquad\text{and}\qquad
+  \T = \TForall\alpha\Kind\Qual A.
+\]
+The premise of \RuleName{T-Fix} checks $\V$ with $f:\T$ in scope.  Hence the
+body $\E$ may invoke $f$ at any admissible type argument, including one
+different from $\alpha$.  Further type abstractions are handled by repeated
+applications of \RuleName{FV-TAbs}; no separate big-lambda form is required.
+
+The declarative rule may leave $\T$ implicit.  An algorithmic presentation
+should instead use an annotation such as $\EMu[(f:\T)]\V$, or require an
+equivalent surrounding ascription, because the complete polymorphic type of a
+recursive variable must be supplied rather than inferred circularly.  The
+annotation supplies only the self type; its type variables remain bound by the
+ordinary $\Lambda$ forms in $\V$.
 
 \section{Expression dynamics}
 
-Type abstractions and existential packages extend values.  The evaluation
-contexts evaluate the operator of a type application, the payload of a
-package, and the scrutinee of an open:
+The complete value grammar is given in \cref{fig:poly-syntax}.  In particular,
+a fixed point satisfying $\FunVal\V$ is a value and does not reduce in
+isolation.  The evaluation contexts evaluate the operator of a type
+application, the payload of a package, and the scrutinee of an open:
 \begin{align*}
-  \V &\grmeq \cdots
-    \grmor \TyAbs{\alpha:\Kind}{\Qual}{\V}
-    \grmor \Pack\T\V{\TExistsQ\alpha\Kind\Qual\T},\\
   \EC &\grmeq \cdots
     \grmor \EC{[\T]}
     \grmor \Pack\T\EC{\TExistsQ\alpha\Kind\Qual\T}
@@ -743,15 +815,29 @@ context descends underneath $\Lambda$.  Type arguments, qualifications, and
 the $\Lambda$ wrapper can therefore be erased without introducing a run-time
 thunk.
 
-The only recursion reduction is the existing unfolding of a recursive
-function, specialized to its well-typed shape:
+Unfolding is demand driven.  Either a type argument or a value argument
+triggers one unfolding step, while the argument remains in place:
 \begin{mathpar}
-  \inferrule*[right=E-Unfold]{}{
-    \EMu{(\EAbs\EVar\E)}
+  \inferrule*[right=E-FixTApp]{}{
+    \bigl(\EMu\V\bigr){[\T]}
       \EReduce
-    \Subs{(\EAbs\EVar\E)}{\EMu{(\EAbs\EVar\E)}}f
-  }.
+    \bigl(\Subs\V{\EMu\V}f\bigr){[\T]}
+  }
+  \and
+  \inferrule*[right=E-FixApp]{}{
+    \EApp{(\EMu\V)}\U
+      \EReduce
+    \EApp{(\Subs\V{\EMu\V}f)}\U
+  }
 \end{mathpar}
+The rules do not inspect the shape of $\V$ beyond the restriction imposed by
+the value grammar.  Typing inversion guarantees that a fixed point receiving a
+type argument unfolds to a type abstraction, whereas one receiving a value
+argument unfolds to a lambda.  The ordinary \RuleName{E-TApp} or
+\RuleName{E-App} rule can therefore take the next step.  Substitution retains
+the original fixed point at recursive occurrences, so they keep the complete
+polymorphic type and may instantiate it differently.  No reduction applies to
+a fixed point that is merely stored, passed, or returned.
 
 No process form and no process reduction axiom is added.  The existing
 \RuleName{R-Exp} rule already lifts every expression reduction through a
@@ -776,10 +862,19 @@ The extension adds the standard lemmas for qualified System~F.
 \item \emph{Existential escape.}  The side condition on \RuleName{T-Open}
   ensures that opening a package cannot expose its witness in the result type
   or in an outer resource assumption.
-\item \emph{Preservation and progress.}  The two new beta rules follow from
-  type substitution and ordinary term substitution.  Universal canonical
-  forms are type abstractions whose bodies are values; existential canonical
-  forms are packages.
+\item \emph{Fixed-point canonical forms.}  The $\FunVal\V$ judgment is
+  preserved by type and term substitution.  Typing inversion shows that the
+  body of a fixed-point value at universal type starts with a type
+  abstraction, whereas the body of one at arrow type is a lambda.  Hence a
+  well-typed fixed point reduces precisely when the corresponding type or
+  value argument is present.
+\item \emph{Preservation and progress.}  Type application and package opening
+  follow from type substitution and ordinary term substitution.  The
+  fixed-point application cases additionally use the substitution lemma for
+  the unrestricted recursive variable.  Universal canonical forms are type
+  abstractions or fixed-point values whose bodies start with a type
+  abstraction; arrow canonical forms are lambdas or fixed-point values whose
+  bodies are lambdas.  Existential canonical forms are packages.
 \item \emph{Process safety.}  Process preservation and progress require no
   new process cases.  Their expression case invokes the extended expression
   theorems.
@@ -792,7 +887,9 @@ $\CSet$ are unification variables and may be solved.  Explicit abstraction and
 application make quantifier placement and instantiation inputs to checking,
 while qualification entailment reuses the existing predicate checks and CFST
 equivalence procedure.  Equality assumptions over type variables are used by
-congruence and conversion, not solved by unification.
+congruence and conversion, not solved by unification.  The algorithmic
+fixed-point rule additionally checks the supplied type of the recursive
+variable; it does not infer a polymorphic recursive type.
 
 \section{Recommended core}
 
@@ -802,7 +899,8 @@ types, the qualifications
   \Unr\T,\quad \Mobile\T,\quad \Bounded\S,\quad \SNew\S,\quad
   \Dualable\S,\quad \NonSkip\S,\quad \T\SEq\TU,
 \]
-together with the value restriction on type abstraction.  Of these,
+together with the value restriction on type abstraction and the
+function-shape restriction on fixed points.  Of these,
 $\Dualable$ can be hidden from surface syntax if suspended duals are generated
 only by the polymorphic type of $\CNew$; it is still needed internally to make
 $\SDual\alpha$ well formed.  Equality qualifications may likewise be omitted
