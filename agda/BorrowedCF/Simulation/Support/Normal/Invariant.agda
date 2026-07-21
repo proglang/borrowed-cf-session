@@ -101,3 +101,63 @@ open Nat.Variables
 ≋-φcount ε           = refl
 ≋-φcount (fwd g ◅ c) = ≋′-φcount g ■ ≋-φcount c
 ≋-φcount (bwd g ◅ c) = sym (≋′-φcount g) ■ ≋-φcount c
+
+------------------------------------------------------------------------
+-- A third, sharper invariant: the number of LIVE threads.
+------------------------------------------------------------------------
+
+-- A thread is live unless it is literally the spent `unit` that ∥-unit′
+-- inserts and removes.  `K c ⋯ ρ = K c`, so this is renaming-stable.
+-- Split on the constant separately, so that `tcount (K c)` reduces to a
+-- scope-independent ℕ and the renaming lemma below is refl in every case.
+cLive : Const → ℕ
+cLive `unit = 0
+cLive _     = 1
+
+tcount : ∀ {n} → Tm n → ℕ
+tcount (K c) = cLive c
+tcount _     = 1
+
+tcount-⋯ : ∀ {n m} (e : Tm n) (ρ : n →ᵣ m) → tcount (e ⋯ ρ) ≡ tcount e
+tcount-⋯ (` x)                      ρ = refl
+tcount-⋯ (K c)                      ρ = refl
+tcount-⋯ (ƛ e)                      ρ = refl
+tcount-⋯ (μ e)                      ρ = refl
+tcount-⋯ (e₁ ·⟨ d ⟩ e₂)             ρ = refl
+tcount-⋯ (e₁ ; e₂)                    ρ = refl
+tcount-⋯ (e₁ ⊗ e₂)                  ρ = refl
+tcount-⋯ (`let e₁ `in e₂)           ρ = refl
+tcount-⋯ (`let⊗ e₁ `in e₂)          ρ = refl
+tcount-⋯ (`inj i e)                 ρ = refl
+tcount-⋯ (`case e `of⟨ e₁ ; e₂ ⟩)     ρ = refl
+
+thrcount : ∀ {n} → Proc n → ℕ
+thrcount ⟪ e ⟫   = tcount e
+thrcount (P ∥ Q) = thrcount P + thrcount Q
+thrcount (ν P)   = thrcount P
+thrcount (φ _ P) = thrcount P
+
+thrcount-⋯ₚ : ∀ {n m} (P : Proc n) (ρ : n →ᵣ m) → thrcount (P ⋯ₚ ρ) ≡ thrcount P
+thrcount-⋯ₚ ⟪ e ⟫   ρ = tcount-⋯ e ρ
+thrcount-⋯ₚ (P ∥ Q) ρ = cong₂ _+_ (thrcount-⋯ₚ P ρ) (thrcount-⋯ₚ Q ρ)
+thrcount-⋯ₚ (ν P)   ρ = thrcount-⋯ₚ P (ρ ↑* 2)
+thrcount-⋯ₚ (φ _ P) ρ = thrcount-⋯ₚ P (ρ ↑)
+
+≋′-thrcount : ∀ {n} {P Q : Proc n} → P ≋′ Q → thrcount P ≡ thrcount Q
+≋′-thrcount (∥-comm′ {P = P} {Q}) = Nat.+-comm (thrcount P) (thrcount Q)
+≋′-thrcount (∥-assoc′ {P₁ = P₁} {P₂} {P₃}) = sym (Nat.+-assoc (thrcount P₁) (thrcount P₂) (thrcount P₃))
+≋′-thrcount ∥-unit′ = refl
+≋′-thrcount (ν-swap′ {P = P}) = sym (thrcount-⋯ₚ P _)
+≋′-thrcount (ν-comm′ {P = P}) = sym (thrcount-⋯ₚ P _)
+≋′-thrcount (φ-comm′ {P = P}) = sym (thrcount-⋯ₚ P _)
+≋′-thrcount (νφ-comm′ {P = P}) = sym (thrcount-⋯ₚ P _)
+≋′-thrcount (ν-ext′ {P = P} {Q}) = cong (_+ thrcount Q) (sym (thrcount-⋯ₚ P _))
+≋′-thrcount (φ-ext′ {P = P} {Q}) = cong (_+ thrcount Q) (sym (thrcount-⋯ₚ P _))
+≋′-thrcount (∥-cong′ g) = cong (_+ _) (≋′-thrcount g)
+≋′-thrcount (ν-cong′ g) = ≋′-thrcount g
+≋′-thrcount (φ-cong′ g) = ≋′-thrcount g
+
+≋-thrcount : ∀ {n} {P Q : Proc n} → P ≋ Q → thrcount P ≡ thrcount Q
+≋-thrcount ε           = refl
+≋-thrcount (fwd g ◅ c) = ≋′-thrcount g ■ ≋-thrcount c
+≋-thrcount (bwd g ◅ c) = sym (≋′-thrcount g) ■ ≋-thrcount c
