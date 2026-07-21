@@ -139,7 +139,7 @@ module Π where
   open import Data.Product public
   open import Data.Product.Properties public
 
-open Π using (_×_; _,_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∄; ∃-syntax; curry; uncurry) public
+open Π using (_×_; _,_; -,_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∄; ∃-syntax; curry; uncurry) public
 
 import Relation.Binary
 import Relation.Unary

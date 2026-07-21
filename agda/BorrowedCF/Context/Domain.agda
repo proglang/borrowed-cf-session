@@ -54,11 +54,26 @@ _↓_ : Struct n → Subset n → Struct n
 ↓-idempotent : (γ : Struct n) (X : Subset n) → γ ↓ X ↓ X ≡ γ ↓ X
 ↓-idempotent γ X = ↓-identity-⊆ (γ ↓ X) {X} (↓-dom γ X)
 
-↓-empty : (γ : Struct n) → Γ ∶ γ ↓ ⁅⁆ ≈ []
-↓-empty (` x) rewrite dec-false (x ∈? ⁅⁆) ∉⁅⁆ = refl
-↓-empty [] = refl
-↓-empty (α ∥ β) = ≈-trans (∥-cong (↓-empty α) (↓-empty β)) ∥-unit₂
-↓-empty (α ; β) = ≈-trans (;-cong (↓-empty α) (↓-empty β)) ;-unit₂
+↓-empty : (γ : Struct n) (X : Subset n) → Empty (dom γ ∩ X) → Γ ∶ γ ↓ X ≈ []
+↓-empty [] X nil = refl
+↓-empty (α ∥ β) X nil =
+  ≈-trans (∥-cong (↓-empty α _ (nil ∘ Π.map₂ (x∈p∩q⁺ ∘ Π.map₁ (x∈p∪q⁺ ∘ inj₁) ∘ x∈p∩q⁻ (dom α) X)))
+                  (↓-empty β _ (nil ∘ Π.map₂ (x∈p∩q⁺ ∘ Π.map₁ (x∈p∪q⁺ ∘ inj₂) ∘ x∈p∩q⁻ (dom β) X))))
+          ∥-unit₂
+↓-empty (α ; β) X nil =
+  ≈-trans (;-cong (↓-empty α _ (nil ∘ Π.map₂ (x∈p∩q⁺ ∘ Π.map₁ (x∈p∪q⁺ ∘ inj₁) ∘ x∈p∩q⁻ (dom α) X)))
+                  (↓-empty β _ (nil ∘ Π.map₂ (x∈p∩q⁺ ∘ Π.map₁ (x∈p∪q⁺ ∘ inj₂) ∘ x∈p∩q⁻ (dom β) X))))
+          ;-unit₂
+↓-empty (` x) X nil
+  rewrite dec-false (x ∈? X) λ x∈X → nil (_ , x∈p∩q⁺ (x∈⁅x⁆ _ , x∈X))
+  = refl
+
+↓-empty-⁅⁆ : (γ : Struct n) → Γ ∶ γ ↓ ⁅⁆ ≈ []
+↓-empty-⁅⁆ γ = ↓-empty γ _ (∉⁅⁆ ∘ proj₂ ∘ x∈p∩q⁻ _ _ ∘ proj₂)
+
+dom-empty⇒≈[] : (γ : Struct n) → Empty (dom γ) → Γ ∶ γ ≈ []
+dom-empty⇒≈[] γ nil = subst (_ ∶_≈ []) (↓-identity-⊆ γ (⊆-reflexive (Empty-unique nil)))
+                                       (↓-empty γ ⁅⁆ (nil ∘ Π.map₂ (proj₁ ∘ x∈p∩q⁻ _ _)))
 
 ≈⇒dom≡ : Γ ∶ α ≈ β → dom α ≡ dom β
 ≈⇒dom≡ = Eq*.gfold isEquivalence dom ≈′⇒dom≡
@@ -80,40 +95,24 @@ dom≢⇒≉ dom≢ a≈b = dom≢ (≈⇒dom≡ a≈b)
 `x≉[] : ∀ {x} → ¬ Γ ∶ ` x ≈ []
 `x≉[] {x = x} = dom≢⇒≉ λ ⁅x⁆≡⁅⁆ → ∉⁅⁆ (subst (x ∈_) ⁅x⁆≡⁅⁆ (x∈⁅x⁆ x))
 
-dom⁅⁆⇒[] : (γ : Struct n) → dom γ ≡ ⁅⁆ → Γ ∶ γ ≈ []
-dom⁅⁆⇒[] (` x) eq = contradiction (subst (x ∈_) eq (x∈⁅x⁆ x)) ∉⁅⁆
-dom⁅⁆⇒[] [] eq = refl
-dom⁅⁆⇒[] (α ∥ β) eq = ≈-trans (∥-cong (dom⁅⁆⇒[] α (⊆-antisym (⊆-trans (p⊆p∪q (dom β)) (⊆-reflexive eq))
-                                                             (⊥-elim ∘ ∉⁅⁆)))
-                                      (dom⁅⁆⇒[] β ((⊆-antisym (⊆-trans (q⊆p∪q (dom α) (dom β)) (⊆-reflexive eq))
-                                                             (⊥-elim ∘ ∉⁅⁆)))))
-                              ∥-unit₂
-dom⁅⁆⇒[] (α ; β) eq = ≈-trans (;-cong (dom⁅⁆⇒[] α (⊆-antisym (⊆-trans (p⊆p∪q (dom β)) (⊆-reflexive eq))
-                                                             (⊥-elim ∘ ∉⁅⁆)))
-                                      (dom⁅⁆⇒[] β ((⊆-antisym (⊆-trans (q⊆p∪q (dom α) (dom β)) (⊆-reflexive eq))
-                                                              (⊥-elim ∘ ∉⁅⁆)))))
-                              ;-unit₂
-
-↓-empty⁻¹ : (γ : Struct n) (X : Subset n) → Γ ∶ γ ↓ X ≈ [] → dom γ ∩ X ≡ ⁅⁆
-↓-empty⁻¹ (` x) X eq with x ∈? X
-... | yes x∈ = contradiction eq `x≉[]
-... | no  x∉ = ⊆-antisym (⊥-elim ∘ x∉ ∘ (λ (y∈⁅x⁆ , y∈X) → subst (_∈ X) (x∈⁅y⁆⇒x≡y _ y∈⁅x⁆) y∈X) ∘ x∈p∩q⁻ ⁅ x ⁆ X)
-                         (⊥-elim ∘ ∉⁅⁆)
-↓-empty⁻¹ [] X eq = ∩-zeroˡ X
-↓-empty⁻¹ {Γ = Γ} (α ∥ β) X eq =
-  ∩-distribʳ-∪ X (dom α) (dom β)
-    ■ cong₂ _∪_ (↓-empty⁻¹ {Γ = Γ} α X (dom⁅⁆⇒[] _ (⊆-antisym (⊆-trans (p⊆p∪q _) (⊆-reflexive (≈⇒dom≡ eq)))
-                                                              (⊥-elim ∘ ∉⁅⁆))))
-                (↓-empty⁻¹ {Γ = Γ} β X (dom⁅⁆⇒[] _ (⊆-antisym (⊆-trans (q⊆p∪q _ _) (⊆-reflexive (≈⇒dom≡ eq)))
-                                                              (⊥-elim ∘ ∉⁅⁆))))
-    ■ ∪-identityˡ ⁅⁆
-↓-empty⁻¹ {Γ = Γ} (α ; β) X eq =
-  ∩-distribʳ-∪ X (dom α) (dom β)
-    ■ cong₂ _∪_ (↓-empty⁻¹ {Γ = Γ} α X (dom⁅⁆⇒[] _ (⊆-antisym (⊆-trans (p⊆p∪q _) (⊆-reflexive (≈⇒dom≡ eq)))
-                                                              (⊥-elim ∘ ∉⁅⁆))))
-                (↓-empty⁻¹ {Γ = Γ} β X (dom⁅⁆⇒[] _ (⊆-antisym (⊆-trans (q⊆p∪q _ _) (⊆-reflexive (≈⇒dom≡ eq)))
-                                                              (⊥-elim ∘ ∉⁅⁆))))
-    ■ ∪-identityˡ ⁅⁆
+↓-empty⁻¹ : (γ : Struct n) (X : Subset n) → Γ ∶ γ ↓ X ≈ [] → Empty (dom γ ∩ X)
+↓-empty⁻¹ (` x) X eq (y , y∈)
+  using y∈⁅x⁆ , x/y∈X ← x∈p∩q⁻ _ _ y∈
+  with refl ← x∈⁅y⁆⇒x≡y x y∈⁅x⁆
+  = `x≉[] (≈-trans (≈-reflexive (if-cong (sym (dec-true (x ∈? X) x/y∈X)))) eq)
+↓-empty⁻¹ [] X eq (y , y∈) = ∉⁅⁆ (x∈p∩q⁻ _ _ y∈ .proj₁)
+↓-empty⁻¹ {Γ = Γ} (α ∥ β) X eq (y , y∈) = let y∈αβ , y∈X = x∈p∩q⁻ _ _ y∈ in
+  [ ↓-empty⁻¹ {Γ = Γ} α X (dom-empty⇒≈[] _ (∉⁅⁆ ∘ subst (_ ∈_) (≈⇒dom≡ eq) ∘ x∈p∪q⁺ ∘ inj₁ ∘ proj₂))
+      ∘ -,_ ∘ x∈p∩q⁺ ∘ (_, y∈X)
+  , ↓-empty⁻¹ {Γ = Γ} β X (dom-empty⇒≈[] _ (∉⁅⁆ ∘ subst (_ ∈_) (≈⇒dom≡ eq) ∘ x∈p∪q⁺ ∘ inj₂ ∘ proj₂))
+      ∘ -,_ ∘ x∈p∩q⁺ ∘ (_, y∈X)
+  ]′ (x∈p∪q⁻ _ _ y∈αβ)
+↓-empty⁻¹ {Γ = Γ} (α ; β) X eq (y , y∈) = let y∈αβ , y∈X = x∈p∩q⁻ _ _ y∈ in
+  [ ↓-empty⁻¹ {Γ = Γ} α X (dom-empty⇒≈[] _ (∉⁅⁆ ∘ subst (_ ∈_) (≈⇒dom≡ eq) ∘ x∈p∪q⁺ ∘ inj₁ ∘ proj₂))
+      ∘ -,_ ∘ x∈p∩q⁺ ∘ (_, y∈X)
+  , ↓-empty⁻¹ {Γ = Γ} β X (dom-empty⇒≈[] _ (∉⁅⁆ ∘ subst (_ ∈_) (≈⇒dom≡ eq) ∘ x∈p∪q⁺ ∘ inj₂ ∘ proj₂))
+      ∘ -,_ ∘ x∈p∩q⁺ ∘ (_, y∈X)
+  ]′ (x∈p∪q⁻ _ _ y∈αβ)
 
 ≼⇒dom⊆ : Γ ∶ α ≼ β → dom α ⊆ dom β
 ≼⇒dom⊆ (≼-refl x) = ⊆-reflexive (≈⇒dom≡ x)
@@ -138,7 +137,15 @@ dom⊈⇒⋠ dom⊈ α≼β = dom⊈ (≼⇒dom⊆ α≼β)
 `x⋠[] : ∀ {x} → ¬ Γ ∶ ` x ≼ []
 `x⋠[] {x = x} = dom⊈⇒⋠ λ ⁅x⁆⊆⁅⁆ → ∉⁅⁆ (⁅x⁆⊆⁅⁆ (x∈⁅x⁆ x))
 
--- ↓ (context restriction) interacts with AllCx / ≈ / ≼ (all renaming-free).
+≼-↓∥↓∁ : (γ : Struct n) (X : Subset n) → Γ ∶ γ ≼ (γ ↓ X) ∥ (γ ↓ ∁ X)
+≼-↓∥↓∁ []      X = ≼-∅ ([] ∥ [])
+≼-↓∥↓∁ (α ∥ β) X = ≼-trans (≼-cong-∥ (≼-↓∥↓∁ α X) (≼-↓∥↓∁ β X)) (≼-refl ∥-comm₄)
+≼-↓∥↓∁ (α ; β) X = ≼-trans (≼-cong-; (≼-↓∥↓∁ α X) (≼-↓∥↓∁ β X)) ≼-wk
+≼-↓∥↓∁ (` x) X with x ∈? X
+... | yes x∈ rewrite dec-false (x ∈? ∁ X) (x∈p⇒x∉∁p x∈) = ≼-refl (≈-sym ∥-unit₂)
+... | no  x∉ rewrite dec-true  (x ∈? ∁ X) (x∉p⇒x∈∁p x∉) = ≼-refl (≈-sym ∥-unit₁)
+
+-- ↓ (context restriction) interacts with AllCx / ≈ / ≼
 
 allCx-↓ : ∀ {ℓ}{P : Pred 𝕋 ℓ}{X} → AllCx P Γ γ → AllCx P Γ (γ ↓ X)
 allCx-↓ {γ = ` y} {X = X} (` p) with y ∈? X
@@ -276,5 +283,3 @@ drop-∁ (suc m) (x ∷ X) = drop-∁ m X
 
 ⊆-∁⁺ : {X Y : Subset n} → X ⊆ Y → ∁ Y ⊆ ∁ X
 ⊆-∁⁺ X⊆Y x∈∁Y = x∉p⇒x∈∁p λ x∈X → x∈∁p⇒x∉p x∈∁Y (X⊆Y x∈X)
-
--- Subset extension.

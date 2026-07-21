@@ -49,6 +49,11 @@ _⋯ₚ_ : ⦃ K : Kit 𝓕 ⦄ → Proc m → m –[ K ]→ n → Proc n
 P ∥ Q ⋯ₚ ϕ = (P ⋯ₚ ϕ) ∥ (Q ⋯ₚ ϕ)
 ν B₁ B₂ P ⋯ₚ ϕ = ν B₁ B₂ (P ⋯ₚ ϕ ↑* (sum B₁ + sum B₂))
 
+⋯ₚ-id≗ : (P : Proc n) {ϕ : n →ᵣ n} → ϕ ≗ id → P ⋯ₚ ϕ ≡ P
+⋯ₚ-id≗ ⟪ e ⟫ eq = cong ⟪_⟫ (⋯-id e eq)
+⋯ₚ-id≗ (P ∥ Q) eq = cong₂ _∥_ (⋯ₚ-id≗ P eq) (⋯ₚ-id≗ Q eq)
+⋯ₚ-id≗ (ν B₁ B₂ P) eq = cong (ν B₁ B₂) (⋯ₚ-id≗ P (id↑* _ eq))
+
 ⋯ₚ-cong : ⦃ K : Kit 𝓕 ⦄ (P : Proc m) {ϕ₁ ϕ₂ : m –[ K ]→ n} → ϕ₁ ≗ ϕ₂ → P ⋯ₚ ϕ₁ ≡ P ⋯ₚ ϕ₂
 ⋯ₚ-cong ⟪ e ⟫ eq = cong ⟪_⟫ (⋯-cong e eq)
 ⋯ₚ-cong (P ∥ Q) eq = cong₂ _∥_ (⋯ₚ-cong P eq) (⋯ₚ-cong Q eq)

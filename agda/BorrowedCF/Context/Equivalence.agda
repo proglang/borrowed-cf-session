@@ -89,6 +89,15 @@ open ≈-Equivalence
 
 module ≈-Reasoning {n} {Γ : Ctx n} = SetoidReasoning (≈-setoid Γ)
 
+∥-comm₄ : ∀ {Γ : Ctx n} {a b c d} → Γ ∶ (a ∥ b) ∥ (c ∥ d) ≈ (a ∥ c) ∥ (b ∥ d)
+∥-comm₄ {a = a} {b} {c} {d} = let open ≈-Reasoning in
+  begin (a ∥ b) ∥ (c ∥ d)  ≈⟨ ∥-assoc ⟩
+        a ∥ (b ∥ (c ∥ d))  ≈⟨ ∥-cong ≈-refl ∥-assoc ⟨
+        a ∥ ((b ∥ c) ∥ d)  ≈⟨ ∥-cong ≈-refl (∥-cong ∥-comm ≈-refl) ⟩
+        a ∥ ((c ∥ b) ∥ d)  ≈⟨ ∥-cong ≈-refl ∥-assoc ⟩
+        a ∥ (c ∥ (b ∥ d))  ≈⟨ ∥-assoc ⟨
+        (a ∥ c) ∥ (b ∥ d)  ∎
+
 ≈-map⁺ : {f : 𝕋 → 𝕋} → Unr ⊆ Unr ∘ f → Mobile ⊆ Mobile ∘ f → Γ ∶ α ≈ β → V.map f Γ ∶ α ≈ β
 ≈-map⁺ {f = f} Uf Mf = Eq*.map go
   where

@@ -18,16 +18,27 @@ fresh : (n k : ℕ) → Subset (k + n)
 fresh n zero    = ⁅⁆
 fresh n (suc k) = inside ∷ fresh n k
 
-↑ˡ∈fresh : (k n : ℕ) (x : 𝔽 k) → (x ↑ˡ n) ∈ fresh n k
-↑ˡ∈fresh (suc k) n zero    = here
-↑ˡ∈fresh (suc k) n (suc x) = there (↑ˡ∈fresh k n x)
+wkʳ∈fresh : (k n : ℕ) (x : 𝔽 k) → wkʳ n x ∈ fresh n k
+wkʳ∈fresh (suc k) n zero    = here
+wkʳ∈fresh (suc k) n (suc x) = there (wkʳ∈fresh k n x)
 
-↑ʳ∉fresh : (k : ℕ) {y : 𝔽 n} → k ↑ʳ y ∉ fresh n k
-↑ʳ∉fresh zero    x         = ∉⊥ x
-↑ʳ∉fresh (suc k) (there x) = ↑ʳ∉fresh k x
+wkˡ∉fresh : (k : ℕ) {y : 𝔽 n} → wkˡ k y ∉ fresh n k
+wkˡ∉fresh zero    x         = ∉⊥ x
+wkˡ∉fresh (suc k) (there x) = wkˡ∉fresh k x
 
-dom⋯wkʳ⊆fresh : ∀ m (γ : Struct n) → dom (γ 𝐂.⋯ᵣ 𝐂.wkʳ m) ⊆ fresh m n
-dom⋯wkʳ⊆fresh m γ x∈ = subst (_∈ fresh m _) (∈dom⋯⇒∈img γ {wkʳ m} x∈ .proj₂) (↑ˡ∈fresh _ m _)
+wk*∈∁fresh : ∀ m (x : 𝔽 n) → weaken* m x ∈ ∁ (fresh n m)
+wk*∈∁fresh m x = x∉p⇒x∈∁p (subst (_∉ _) (sym (weaken*~wkˡ m _)) (wkˡ∉fresh m))
+
+dom⋯wkʳ⊆fresh : ∀ m (γ : Struct n) → dom (γ 𝐂.⋯ᵣ wkʳ m) ⊆ fresh m n
+dom⋯wkʳ⊆fresh m γ x∈ = subst (_∈ fresh m _) (∈dom⋯⇒∈img γ {wkʳ m} x∈ .proj₂) (wkʳ∈fresh _ m _)
+
+dom⋯wk*⊆∁fresh : ∀ m (γ : Struct n) → dom (γ 𝐂.⋯ᵣ weaken* m) ⊆ ∁ (fresh n m)
+dom⋯wk*⊆∁fresh m γ x∈ = subst (_∈ ∁ _) (∈dom⋯⇒∈img γ x∈ .proj₂) (wk*∈∁fresh m _)
+
+∉fresh⇒∈img : ∀ m {x : 𝔽 (m + n)} → x ∉ fresh n m → x ∈img weaken* m
+∉fresh⇒∈img zero            x∉ = _ , refl
+∉fresh⇒∈img (suc m) {zero}  x∉ = contradiction here x∉
+∉fresh⇒∈img (suc m) {suc x} x∉ = Π.map₂ (cong suc) (∉fresh⇒∈img m (x∉ ∘ there))
 
 descend-absK : ∀ {AD} ⦃ _ : Join AD ⦄ {Γ₁ : Ctx m} {Γ₂ : Ctx n} {ρ : m →ᵣ n}
   (k : ℕ) (Δ : Ctx k) →
@@ -48,7 +59,7 @@ descend-absK {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {ρ = ρ} k Δ inj-ρ ρ⇔
   img : ∀ {y} → y ∈ dom (γa ↓ V.drop k Xd0) → y ∈img ρ
   img {y} y∈ with x∈p∪q⁻ Xtrue (fresh n k) (∈drop⁻ k (↓-dom γa (V.drop k Xd0) y∈))
   ... | inj₁ sy∈   = ∈img-↑*⁻ k y (∈dom⋯⇒∈img A sy∈)
-  ... | inj₂ sy∈fr = contradiction sy∈fr (↑ʳ∉fresh k)
+  ... | inj₂ sy∈fr = contradiction sy∈fr (wkˡ∉fresh k)
   pim = ⋯-preimage {ρ = ρ} (γa ↓ V.drop k Xd0) img
   γr = proj₁ pim
   eqr : γr 𝐂.⋯ ρ ≡ γa ↓ V.drop k Xd0
