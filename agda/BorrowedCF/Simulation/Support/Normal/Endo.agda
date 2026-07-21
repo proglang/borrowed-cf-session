@@ -30,6 +30,19 @@ open Nat.Variables
 ++ᵗ-idʳ (tν t)   = cong tν     (++ᵗ-idʳ t)
 ++ᵗ-idʳ (tφ f t) = cong (tφ f) (++ᵗ-idʳ t)
 
+++ᵗ-assoc : ∀ {n k j i} (t : Tel n k) (s : Tel k j) (u : Tel j i) →
+            (t ++ᵗ s) ++ᵗ u ≡ t ++ᵗ (s ++ᵗ u)
+++ᵗ-assoc []       s u = refl
+++ᵗ-assoc (tν t)   s u = cong tν     (++ᵗ-assoc t s u)
+++ᵗ-assoc (tφ f t) s u = cong (tφ f) (++ᵗ-assoc t s u)
+
+-- Weakening through a concatenation is weakening twice.
+wkTel-++ᵗ : ∀ {n k j} (t : Tel n k) (s : Tel k j) (x : 𝔽 n) →
+            wkTel (t ++ᵗ s) x ≡ wkTel s (wkTel t x)
+wkTel-++ᵗ []       s x = refl
+wkTel-++ᵗ (tν t)   s x = wkTel-++ᵗ t s (weaken* ⦃ Kᵣ ⦄ 2 x)
+wkTel-++ᵗ (tφ f t) s x = wkTel-++ᵗ t s (weaken* ⦃ Kᵣ ⦄ 1 x)
+
 ------------------------------------------------------------------------
 -- Re-basing at the telescope's own scope.
 ------------------------------------------------------------------------
