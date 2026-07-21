@@ -23,6 +23,7 @@ open import BorrowedCF.Simulation.Support.Normal.Norm using (nf; combine)
 open import BorrowedCF.Simulation.Support.Normal.Equiv
 open import BorrowedCF.Simulation.Support.Normal.Endo
 open import BorrowedCF.Simulation.Support.Normal.CongL using (combine-congˡ)
+open import BorrowedCF.Simulation.Support.Normal.Comm  using (combine-comm)
 open import BorrowedCF.Simulation.Support.Normal.Nat
   using (NF-≡; nf-nat; innerOf-renTel; innerOf-++ᵗ; renTel-renTel; renTel-++ᵗ;
          wkTel-renTel; wkTel-nat; liftRen-·; liftRen-++ᵗ; liftRen-cong;
@@ -232,7 +233,7 @@ combine-assoc (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) (mkNF {j₃} t�
 ≋′⇒~ (ν-cong′ c) = ~-νNF (≋′⇒~ c)
 ≋′⇒~ (φ-cong′ c) = ~-φNF (≋′⇒~ c)
 
-≋′⇒~ ∥-comm′  = {!   !}
+≋′⇒~ (∥-comm′ {P = P} {Q = Q}) = combine-comm (nf P) (nf Q)
 ≋′⇒~ (∥-assoc′ {P₁ = P₁} {P₂} {P₃}) =
   ≡→~ (sym (combine-assoc (nf P₁) (nf P₂) (nf P₃)))
 ≋′⇒~ (ν-ext′ {P = P} {Q = Q}) =

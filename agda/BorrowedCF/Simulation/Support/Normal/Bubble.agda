@@ -2,9 +2,9 @@
 --
 --   `combine` (Normal.Norm) is asymmetric: the SECOND argument's telescope ends
 --   up outermost.  Extruding a binder out of the second argument is therefore an
---   outright equality (Normal.Sound's `combine-ν` / `combine-φ`); extruding one
---   out of the FIRST argument has to move that binder across the whole of the
---   second telescope, and that is only true up to `~`.
+--   outright equality (`combine-ν` / `combine-φ`, below); extruding one out of
+--   the FIRST argument has to move that binder across the whole of the second
+--   telescope, and that is only true up to `~`.
 --
 --   This module builds that move.  `bubbleν` / `bubbleφ` fire one adjacent
 --   transposition per binder of the prefix telescope, so the composite renaming
@@ -21,9 +21,11 @@ open import BorrowedCF.Simulation.Support.Normal.Norm using (combine)
 open import BorrowedCF.Simulation.Support.Normal.Equiv
 open import BorrowedCF.Simulation.Support.Normal.Shift
 open import BorrowedCF.Simulation.Support.Normal.Endo
-  using (liftId-id; liftId-liftRen; wkTel-idᵗ; renTel-idᵗ; ++ᵗ-idʳ)
+  using (liftId-id)
 open import BorrowedCF.Simulation.Support.Normal.Nat
-  using (NF-≡; map-fuse; map-++ᴸ; liftRen-cong)
+  using (NF-≡; map-fuse; map-++ᴸ; liftRen-cong; map-⋯-subst; subst-++;
+         subst-tν; subst-tφ; subst-wkTel; subst-++ᵗ; innerOf-renTel;
+         renTel-renTel; wkTel-renTel; liftRen-·)
 
 open import Data.List using (List; []; _∷_; _++_; map)
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
@@ -279,3 +281,265 @@ bubbleφ f (tφ g s) u es =
                    ≡ liftId u (bubφ (tφ g s)) x
     fuse x = cong (liftId u (bubφ s)) (liftId-++ᵗ (shift1 s) u (assocSwapᵣ 1 1) x)
                ■ liftId-· u (liftId (shift1 s) (assocSwapᵣ 1 1)) (bubφ s) x
+
+------------------------------------------------------------------------
+-- What the bubble renaming does.
+------------------------------------------------------------------------
+
+-- Two facts, and exactly the two the extrusion needs: on names weakened in from
+-- the base, `bubν s` is the base weakening lifted past the ν; on the ν's own two
+-- names it is the weakening that puts them back at the front.
+
+bubν-wkTel : ∀ {n j} (s : Tel n j) (x : 𝔽 (2 + n)) →
+             bubν s (wkTel (shift2 s) x) ≡ (wkTel s ↑* 2) x
+bubν-wkTel []       x = sym (id↑* 2 (λ _ → refl) x)
+bubν-wkTel (tν s)   x =
+  cong (bubν s) (liftId-wkTel (shift2 s) (assocSwapᵣ 2 2) (weaken* ⦃ Kᵣ ⦄ 2 x))
+    ■ bubν-wkTel s (assocSwapᵣ 2 2 (weaken* ⦃ Kᵣ ⦄ 2 x))
+    ■ cong (wkTel s ↑* 2) (aswap22-wk x)
+    ■ sym (dist-↑*-· 2 (weaken* ⦃ Kᵣ ⦄ 2) (wkTel s) x)
+bubν-wkTel (tφ f s) x =
+  cong (bubν s) (liftId-wkTel (shift2 s) (assocSwapᵣ 1 2) (weaken* ⦃ Kᵣ ⦄ 1 x))
+    ■ bubν-wkTel s (assocSwapᵣ 1 2 (weaken* ⦃ Kᵣ ⦄ 1 x))
+    ■ cong (wkTel s ↑* 2) (aswap12-wk x)
+    ■ sym (dist-↑*-· 2 (weaken* ⦃ Kᵣ ⦄ 1) (wkTel s) x)
+
+bubν-liftRen2 : ∀ {n j} (s : Tel n j) (x : 𝔽 j) →
+                bubν s (liftRen2 s (weaken* ⦃ Kᵣ ⦄ 2) x) ≡ weaken* ⦃ Kᵣ ⦄ 2 x
+bubν-liftRen2 []       x = refl
+bubν-liftRen2 (tν s)   x =
+  cong (bubν s) ( liftId-liftRen2 s (weaken* ⦃ Kᵣ ⦄ 2 ↑* 2) (assocSwapᵣ 2 2) x
+                ■ liftRen2-cong s aswap22-lift x )
+    ■ bubν-liftRen2 s x
+bubν-liftRen2 (tφ f s) x =
+  cong (bubν s) ( liftId-liftRen2 s (weaken* ⦃ Kᵣ ⦄ 2 ↑* 1) (assocSwapᵣ 1 2) x
+                ■ liftRen2-cong s aswap12-lift x )
+    ■ bubν-liftRen2 s x
+
+bubφ-wkTel : ∀ {n j} (s : Tel n j) (x : 𝔽 (1 + n)) →
+             bubφ s (wkTel (shift1 s) x) ≡ (wkTel s ↑* 1) x
+bubφ-wkTel []       x = sym (id↑* 1 (λ _ → refl) x)
+bubφ-wkTel (tν s)   x =
+  cong (bubφ s) (liftId-wkTel (shift1 s) (assocSwapᵣ 2 1) (weaken* ⦃ Kᵣ ⦄ 2 x))
+    ■ bubφ-wkTel s (assocSwapᵣ 2 1 (weaken* ⦃ Kᵣ ⦄ 2 x))
+    ■ cong (wkTel s ↑* 1) (aswap21-wk x)
+    ■ sym (dist-↑*-· 1 (weaken* ⦃ Kᵣ ⦄ 2) (wkTel s) x)
+bubφ-wkTel (tφ f s) x =
+  cong (bubφ s) (liftId-wkTel (shift1 s) (assocSwapᵣ 1 1) (weaken* ⦃ Kᵣ ⦄ 1 x))
+    ■ bubφ-wkTel s (assocSwapᵣ 1 1 (weaken* ⦃ Kᵣ ⦄ 1 x))
+    ■ cong (wkTel s ↑* 1) (aswap11-wk x)
+    ■ sym (dist-↑*-· 1 (weaken* ⦃ Kᵣ ⦄ 1) (wkTel s) x)
+
+bubφ-liftRen1 : ∀ {n j} (s : Tel n j) (x : 𝔽 j) →
+                bubφ s (liftRen1 s (weaken* ⦃ Kᵣ ⦄ 1) x) ≡ weaken* ⦃ Kᵣ ⦄ 1 x
+bubφ-liftRen1 []       x = refl
+bubφ-liftRen1 (tν s)   x =
+  cong (bubφ s) ( liftId-liftRen1 s (weaken* ⦃ Kᵣ ⦄ 1 ↑* 2) (assocSwapᵣ 2 1) x
+                ■ liftRen1-cong s aswap21-lift x )
+    ■ bubφ-liftRen1 s x
+bubφ-liftRen1 (tφ f s) x =
+  cong (bubφ s) ( liftId-liftRen1 s (weaken* ⦃ Kᵣ ⦄ 1 ↑* 1) (assocSwapᵣ 1 1) x
+                ■ liftRen1-cong s aswap11-lift x )
+    ■ bubφ-liftRen1 s x
+
+------------------------------------------------------------------------
+-- Moving a re-basing index, by J.
+------------------------------------------------------------------------
+
+-- `combine` re-bases its first telescope at the SECOND one's inner scope, and
+-- the extrusion changes that scope (`innerOf t₂ (2 + n)` versus `2 + j₂`).  That
+-- index sits in the MIDDLE of the composite, so a single `subst` on the outer
+-- index cannot reach it; these three lemmas move it by J instead.
+
+telMid : ∀ {n c d a b} (eq : a ≡ b) (T : Tel n a) (t : Tel c d) →
+         subst (Tel n) (cong (innerOf t) eq) (T ++ᵗ renTel t a)
+           ≡ subst (Tel n) eq T ++ᵗ renTel t b
+telMid refl T t = refl
+
+liftMid : ∀ {c d a b} (eq : a ≡ b) (t : Tel c d) {ρ : c →ᵣ a} {ρ′ : c →ᵣ b} →
+          (∀ y → subst 𝔽 eq (ρ y) ≡ ρ′ y) →
+          ∀ x → subst 𝔽 (cong (innerOf t) eq) (liftRen t ρ x) ≡ liftRen t ρ′ x
+liftMid refl t h x = liftRen-cong t h x
+
+wkMid : ∀ {c d a b} (eq : a ≡ b) (t : Tel c d) (y : 𝔽 a) →
+        subst 𝔽 (cong (innerOf t) eq) (wkTel (renTel t a) y)
+          ≡ wkTel (renTel t b) (subst 𝔽 eq y)
+wkMid refl t y = refl
+
+------------------------------------------------------------------------
+-- Extruding a binder out of `combine`'s FIRST argument.
+------------------------------------------------------------------------
+
+combine-extrudeˡ-ν : ∀ {n} (N₁ : NF (2 + n)) (N₂ : NF n) →
+  combine (νNF N₁) N₂ ~ νNF (combine N₁ (renNF N₂ (2 + n) (weaken* ⦃ Kᵣ ⦄ 2)))
+combine-extrudeˡ-ν {n} (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) =
+  ~-trans (≡→~ (sym eqL)) (~-trans (~-sym (bubbleν t₂ u E)) (≡→~ (sym eqR)))
+  where
+    w2 : n →ᵣ 2 + n
+    w2 = weaken* ⦃ Kᵣ ⦄ 2
+
+    sh : innerOf t₂ (2 + n) ≡ 2 + j₂
+    sh = shift2-innerOf t₂
+
+    u : Tel (2 + j₂) (innerOf t₁ (2 + j₂))
+    u = renTel t₁ (2 + j₂)
+
+    E : List (Tm (innerOf t₁ (2 + j₂)))
+    E =  map (_⋯ liftRen t₁ (wkTel (shift2 t₂)))       es₁
+      ++ map (_⋯ (liftRen2 t₂ w2 ·ₖ wkTel u))          es₂
+
+    h₁ : ∀ x → subst 𝔽 (cong (innerOf t₁) sh)
+                 (liftRen t₁ (wkTel (renTel t₂ (2 + n))) x)
+                 ≡ liftRen t₁ (wkTel (shift2 t₂)) x
+    h₁ = liftMid sh t₁ (λ y → subst-wkTel sh (renTel t₂ (2 + n)) y
+                                ■ cong (λ T → wkTel T y) (shift2-renTel t₂))
+
+    h₂ : ∀ x → subst 𝔽 (cong (innerOf t₁) sh)
+                 ((liftRen t₂ w2 ·ₖ wkTel (renTel t₁ (innerOf t₂ (2 + n)))) x)
+                 ≡ (liftRen2 t₂ w2 ·ₖ wkTel u) x
+    h₂ x = wkMid sh t₁ (liftRen t₂ w2 x) ■ cong (wkTel u) (liftRen2-liftRen t₂ w2 x)
+
+    eqR : νNF (combine (mkNF t₁ es₁) (renNF (mkNF t₂ es₂) (2 + n) w2))
+            ≡ mkNF (tν (shift2 t₂ ++ᵗ u)) E
+    eqR = NF-≡ (cong (innerOf t₁) sh)
+            ( subst-tν (cong (innerOf t₁) sh) _
+            ■ cong tν ( telMid sh (renTel t₂ (2 + n)) t₁
+                      ■ cong (_++ᵗ u) (shift2-renTel t₂) ) )
+            ( cong (subst (λ j → List (Tm j)) (cong (innerOf t₁) sh))
+                   (cong (map (_⋯ liftRen t₁ (wkTel (renTel t₂ (2 + n)))) es₁ ++_)
+                         (map-fuse (liftRen t₂ w2)
+                                   (wkTel (renTel t₁ (innerOf t₂ (2 + n)))) es₂))
+            ■ subst-++ (cong (innerOf t₁) sh) _ _
+            ■ cong₂ _++_ (map-⋯-subst (cong (innerOf t₁) sh) h₁ es₁)
+                         (map-⋯-subst (cong (innerOf t₁) sh) h₂ es₂) )
+
+    g₁ : ∀ x → (liftRen t₁ (wkTel (shift2 t₂)) ·ₖ liftId u (bubν t₂)) x
+                 ≡ liftRen t₁ (wkTel t₂ ↑* 2) x
+    g₁ x = liftId-liftRen-· t₁ (wkTel (shift2 t₂)) (bubν t₂) x
+             ■ liftRen-cong t₁ (bubν-wkTel t₂) x
+
+    g₂ : ∀ x → ((liftRen2 t₂ w2 ·ₖ wkTel u) ·ₖ liftId u (bubν t₂)) x
+                 ≡ wkTel (tν u) x
+    g₂ x = liftId-wkTel u (bubν t₂) (liftRen2 t₂ w2 x)
+             ■ cong (wkTel u) (bubν-liftRen2 t₂ x)
+
+    eqL : mkNF (t₂ ++ᵗ tν u) (map (_⋯ liftId u (bubν t₂)) E)
+            ≡ combine (νNF (mkNF t₁ es₁)) (mkNF t₂ es₂)
+    eqL = cong (mkNF (t₂ ++ᵗ tν u))
+            ( map-++ᴸ (liftId u (bubν t₂))
+                (map (_⋯ liftRen t₁ (wkTel (shift2 t₂))) es₁)
+                (map (_⋯ (liftRen2 t₂ w2 ·ₖ wkTel u))    es₂)
+            ■ cong₂ _++_ (map-fuse (liftRen t₁ (wkTel (shift2 t₂)))
+                                   (liftId u (bubν t₂)) es₁)
+                         (map-fuse (liftRen2 t₂ w2 ·ₖ wkTel u)
+                                   (liftId u (bubν t₂)) es₂)
+            ■ cong₂ _++_ (map-⋯-cong g₁ es₁) (map-⋯-cong g₂ es₂) )
+
+combine-extrudeˡ-φ : ∀ {n} (f : Flag) (N₁ : NF (1 + n)) (N₂ : NF n) →
+  combine (φNF f N₁) N₂ ~ φNF f (combine N₁ (renNF N₂ (1 + n) (weaken* ⦃ Kᵣ ⦄ 1)))
+combine-extrudeˡ-φ {n} f (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) =
+  ~-trans (≡→~ (sym eqL)) (~-trans (~-sym (bubbleφ f t₂ u E)) (≡→~ (sym eqR)))
+  where
+    w1 : n →ᵣ 1 + n
+    w1 = weaken* ⦃ Kᵣ ⦄ 1
+
+    sh : innerOf t₂ (1 + n) ≡ 1 + j₂
+    sh = shift1-innerOf t₂
+
+    u : Tel (1 + j₂) (innerOf t₁ (1 + j₂))
+    u = renTel t₁ (1 + j₂)
+
+    E : List (Tm (innerOf t₁ (1 + j₂)))
+    E =  map (_⋯ liftRen t₁ (wkTel (shift1 t₂)))       es₁
+      ++ map (_⋯ (liftRen1 t₂ w1 ·ₖ wkTel u))          es₂
+
+    h₁ : ∀ x → subst 𝔽 (cong (innerOf t₁) sh)
+                 (liftRen t₁ (wkTel (renTel t₂ (1 + n))) x)
+                 ≡ liftRen t₁ (wkTel (shift1 t₂)) x
+    h₁ = liftMid sh t₁ (λ y → subst-wkTel sh (renTel t₂ (1 + n)) y
+                                ■ cong (λ T → wkTel T y) (shift1-renTel t₂))
+
+    h₂ : ∀ x → subst 𝔽 (cong (innerOf t₁) sh)
+                 ((liftRen t₂ w1 ·ₖ wkTel (renTel t₁ (innerOf t₂ (1 + n)))) x)
+                 ≡ (liftRen1 t₂ w1 ·ₖ wkTel u) x
+    h₂ x = wkMid sh t₁ (liftRen t₂ w1 x) ■ cong (wkTel u) (liftRen1-liftRen t₂ w1 x)
+
+    eqR : φNF f (combine (mkNF t₁ es₁) (renNF (mkNF t₂ es₂) (1 + n) w1))
+            ≡ mkNF (tφ f (shift1 t₂ ++ᵗ u)) E
+    eqR = NF-≡ (cong (innerOf t₁) sh)
+            ( subst-tφ (cong (innerOf t₁) sh) f _
+            ■ cong (tφ f) ( telMid sh (renTel t₂ (1 + n)) t₁
+                          ■ cong (_++ᵗ u) (shift1-renTel t₂) ) )
+            ( cong (subst (λ j → List (Tm j)) (cong (innerOf t₁) sh))
+                   (cong (map (_⋯ liftRen t₁ (wkTel (renTel t₂ (1 + n)))) es₁ ++_)
+                         (map-fuse (liftRen t₂ w1)
+                                   (wkTel (renTel t₁ (innerOf t₂ (1 + n)))) es₂))
+            ■ subst-++ (cong (innerOf t₁) sh) _ _
+            ■ cong₂ _++_ (map-⋯-subst (cong (innerOf t₁) sh) h₁ es₁)
+                         (map-⋯-subst (cong (innerOf t₁) sh) h₂ es₂) )
+
+    g₁ : ∀ x → (liftRen t₁ (wkTel (shift1 t₂)) ·ₖ liftId u (bubφ t₂)) x
+                 ≡ liftRen t₁ (wkTel t₂ ↑* 1) x
+    g₁ x = liftId-liftRen-· t₁ (wkTel (shift1 t₂)) (bubφ t₂) x
+             ■ liftRen-cong t₁ (bubφ-wkTel t₂) x
+
+    g₂ : ∀ x → ((liftRen1 t₂ w1 ·ₖ wkTel u) ·ₖ liftId u (bubφ t₂)) x
+                 ≡ wkTel (tφ f u) x
+    g₂ x = liftId-wkTel u (bubφ t₂) (liftRen1 t₂ w1 x)
+             ■ cong (wkTel u) (bubφ-liftRen1 t₂ x)
+
+    eqL : mkNF (t₂ ++ᵗ tφ f u) (map (_⋯ liftId u (bubφ t₂)) E)
+            ≡ combine (φNF f (mkNF t₁ es₁)) (mkNF t₂ es₂)
+    eqL = cong (mkNF (t₂ ++ᵗ tφ f u))
+            ( map-++ᴸ (liftId u (bubφ t₂))
+                (map (_⋯ liftRen t₁ (wkTel (shift1 t₂))) es₁)
+                (map (_⋯ (liftRen1 t₂ w1 ·ₖ wkTel u))    es₂)
+            ■ cong₂ _++_ (map-fuse (liftRen t₁ (wkTel (shift1 t₂)))
+                                   (liftId u (bubφ t₂)) es₁)
+                         (map-fuse (liftRen1 t₂ w1 ·ₖ wkTel u)
+                                   (liftId u (bubφ t₂)) es₂)
+            ■ cong₂ _++_ (map-⋯-cong g₁ es₁) (map-⋯-cong g₂ es₂) )
+
+------------------------------------------------------------------------
+-- Extruding a binder out of `combine`'s SECOND argument.
+------------------------------------------------------------------------
+
+-- The easy direction, an outright equality: both sides are `t₂` over `t₁`
+-- re-based underneath it, and `renTel-renTel` says it does not matter WHERE `t₁`
+-- gets re-based.  (Normal.Sound proves the same two lemmas; it is a consumer of
+-- this module, not a dependency, so they are re-proved here.)
+combine-ν : ∀ {n} (N₁ : NF n) (N₂ : NF (2 + n)) →
+            νNF (combine (renNF N₁ (2 + n) (weaken* ⦃ Kᵣ ⦄ 2)) N₂) ≡ combine N₁ (νNF N₂)
+combine-ν {n} (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) =
+  NF-≡ e
+    ( subst-tν e (t₂ ++ᵗ renTel (renTel t₁ (2 + n)) j₂)
+    ■ cong tν ( subst-++ᵗ t₂ e (renTel (renTel t₁ (2 + n)) j₂)
+              ■ cong (t₂ ++ᵗ_) (renTel-renTel t₁ (2 + n) j₂) ) )
+    ( cong (subst (λ j → List (Tm j)) e)
+           (cong₂ _++_ (map-fuse (liftRen t₁ (weaken* ⦃ Kᵣ ⦄ 2))
+                                 (liftRen (renTel t₁ (2 + n)) (wkTel t₂)) es₁)
+                       refl)
+    ■ subst-++ e _ _
+    ■ cong₂ _++_ (map-⋯-subst e (liftRen-· t₁ (weaken* ⦃ Kᵣ ⦄ 2) (wkTel t₂)) es₁)
+                 (map-⋯-subst e (wkTel-renTel t₁ (2 + n) j₂) es₂) )
+  where
+    e : innerOf (renTel t₁ (2 + n)) j₂ ≡ innerOf t₁ j₂
+    e = innerOf-renTel t₁ (2 + n) j₂
+
+combine-φ : ∀ {n} (f : Flag) (N₁ : NF n) (N₂ : NF (1 + n)) →
+            φNF f (combine (renNF N₁ (1 + n) (weaken* ⦃ Kᵣ ⦄ 1)) N₂) ≡ combine N₁ (φNF f N₂)
+combine-φ {n} f (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) =
+  NF-≡ e
+    ( subst-tφ e f (t₂ ++ᵗ renTel (renTel t₁ (1 + n)) j₂)
+    ■ cong (tφ f) ( subst-++ᵗ t₂ e (renTel (renTel t₁ (1 + n)) j₂)
+                  ■ cong (t₂ ++ᵗ_) (renTel-renTel t₁ (1 + n) j₂) ) )
+    ( cong (subst (λ j → List (Tm j)) e)
+           (cong₂ _++_ (map-fuse (liftRen t₁ (weaken* ⦃ Kᵣ ⦄ 1))
+                                 (liftRen (renTel t₁ (1 + n)) (wkTel t₂)) es₁)
+                       refl)
+    ■ subst-++ e _ _
+    ■ cong₂ _++_ (map-⋯-subst e (liftRen-· t₁ (weaken* ⦃ Kᵣ ⦄ 1) (wkTel t₂)) es₁)
+                 (map-⋯-subst e (wkTel-renTel t₁ (1 + n) j₂) es₂) )
+  where
+    e : innerOf (renTel t₁ (1 + n)) j₂ ≡ innerOf t₁ j₂
+    e = innerOf-renTel t₁ (1 + n) j₂
