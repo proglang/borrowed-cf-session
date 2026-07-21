@@ -9,9 +9,12 @@
 --     * ∥-unit′ is the `unit-del` generator; ∥-assoc′, ν-ext′ and φ-ext′ are
 --       outright EQUALITIES of normal forms — `combine` already associates and
 --       already extrudes binders, which is what makes `nf` a normaliser at all.
+--       (`combine-ν` / `combine-φ` live in Normal.Bubble, which needs them for
+--       the extrusion; importing them from there avoids a second copy.)
 --     * ∥-comm′ is the only one with real content: `combine` puts its second
 --       argument's telescope outermost, so commuting the two sides has to move
---       a whole telescope past another one.
+--       a whole telescope past another one.  It is Normal.Comm's `combine-comm`.
+--     * ∥-cong′ is Normal.CongL's `combine-congˡ`.
 module BorrowedCF.Simulation.Support.Normal.Sound where
 
 open import BorrowedCF.Prelude
@@ -23,11 +26,12 @@ open import BorrowedCF.Simulation.Support.Normal.Norm using (nf; combine)
 open import BorrowedCF.Simulation.Support.Normal.Equiv
 open import BorrowedCF.Simulation.Support.Normal.Endo
 open import BorrowedCF.Simulation.Support.Normal.CongL using (combine-congˡ)
-open import BorrowedCF.Simulation.Support.Normal.Comm  using (combine-comm)
+open import BorrowedCF.Simulation.Support.Normal.Comm   using (combine-comm)
+open import BorrowedCF.Simulation.Support.Normal.Bubble using (combine-ν; combine-φ)
 open import BorrowedCF.Simulation.Support.Normal.Nat
   using (NF-≡; nf-nat; innerOf-renTel; innerOf-++ᵗ; renTel-renTel; renTel-++ᵗ;
          wkTel-renTel; wkTel-nat; liftRen-·; liftRen-++ᵗ; liftRen-cong;
-         subst-tν; subst-tφ; subst-++ᵗ; subst-++; subst-■; subst-wkTel;
+         subst-++ᵗ; subst-++; subst-■; subst-wkTel;
          map-fuse; map-⋯-subst; map-++ᴸ)
 
 open import Data.List using (List; []; _∷_; _++_; map)
@@ -57,49 +61,6 @@ unit-combine (mkNF t es) =
     map-id : ∀ {k} (xs : List (Tm k)) → map (_⋯ idₖ ⦃ Kᵣ ⦄) xs ≡ xs
     map-id []       = refl
     map-id (x ∷ xs) = cong₂ _∷_ (⋯-id x (λ _ → refl)) (map-id xs)
-
-------------------------------------------------------------------------
--- Binder extrusion: `combine` already does it.
-------------------------------------------------------------------------
-
--- Both sides are `t₂` over `t₁` re-based underneath it; the only difference is
--- WHERE `t₁` gets re-based — at `2 + n` before the merge, or at `j₂` during it —
--- and `renTel-renTel` says that does not matter.
-combine-ν : ∀ {n} (N₁ : NF n) (N₂ : NF (2 + n)) →
-            νNF (combine (renNF N₁ (2 + n) (weaken* ⦃ Kᵣ ⦄ 2)) N₂) ≡ combine N₁ (νNF N₂)
-combine-ν {n} (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) =
-  NF-≡ e
-    ( subst-tν e (t₂ ++ᵗ renTel (renTel t₁ (2 + n)) j₂)
-    ■ cong tν ( subst-++ᵗ t₂ e (renTel (renTel t₁ (2 + n)) j₂)
-              ■ cong (t₂ ++ᵗ_) (renTel-renTel t₁ (2 + n) j₂) ) )
-    ( cong (subst (λ j → List (Tm j)) e)
-           (cong₂ _++_ (map-fuse (liftRen t₁ (weaken* ⦃ Kᵣ ⦄ 2))
-                                 (liftRen (renTel t₁ (2 + n)) (wkTel t₂)) es₁)
-                       refl)
-    ■ subst-++ e _ _
-    ■ cong₂ _++_ (map-⋯-subst e (liftRen-· t₁ (weaken* ⦃ Kᵣ ⦄ 2) (wkTel t₂)) es₁)
-                 (map-⋯-subst e (wkTel-renTel t₁ (2 + n) j₂) es₂) )
-  where
-    e : innerOf (renTel t₁ (2 + n)) j₂ ≡ innerOf t₁ j₂
-    e = innerOf-renTel t₁ (2 + n) j₂
-
-combine-φ : ∀ {n} (f : Flag) (N₁ : NF n) (N₂ : NF (1 + n)) →
-            φNF f (combine (renNF N₁ (1 + n) (weaken* ⦃ Kᵣ ⦄ 1)) N₂) ≡ combine N₁ (φNF f N₂)
-combine-φ {n} f (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) =
-  NF-≡ e
-    ( subst-tφ e f (t₂ ++ᵗ renTel (renTel t₁ (1 + n)) j₂)
-    ■ cong (tφ f) ( subst-++ᵗ t₂ e (renTel (renTel t₁ (1 + n)) j₂)
-                  ■ cong (t₂ ++ᵗ_) (renTel-renTel t₁ (1 + n) j₂) ) )
-    ( cong (subst (λ j → List (Tm j)) e)
-           (cong₂ _++_ (map-fuse (liftRen t₁ (weaken* ⦃ Kᵣ ⦄ 1))
-                                 (liftRen (renTel t₁ (1 + n)) (wkTel t₂)) es₁)
-                       refl)
-    ■ subst-++ e _ _
-    ■ cong₂ _++_ (map-⋯-subst e (liftRen-· t₁ (weaken* ⦃ Kᵣ ⦄ 1) (wkTel t₂)) es₁)
-                 (map-⋯-subst e (wkTel-renTel t₁ (1 + n) j₂) es₂) )
-  where
-    e : innerOf (renTel t₁ (1 + n)) j₂ ≡ innerOf t₁ j₂
-    e = innerOf-renTel t₁ (1 + n) j₂
 
 ------------------------------------------------------------------------
 -- `combine` associates.
