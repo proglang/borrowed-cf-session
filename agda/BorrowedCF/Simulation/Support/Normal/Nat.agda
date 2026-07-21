@@ -133,30 +133,204 @@ liftRen-· (tφ f t) ρ σ x =
     ■ liftRen-cong t (λ y → sym (dist-↑-· ρ σ y)) x
 
 ------------------------------------------------------------------------
--- Naturality, modulo ONE lemma about `combine`.
+-- D.  `wkTel` is natural: re-basing a telescope re-bases its weakening.
+------------------------------------------------------------------------
+
+-- The only genuinely NEW fact the ∥ case needs, and the only one with no
+-- transport in it: the two ways of getting from the outer scope into the inner
+-- one — weaken through `t`, then rename — agree.
+wkTel-nat : ∀ {n k n′} (t : Tel n k) (ρ : n →ᵣ n′) (x : 𝔽 n) →
+            wkTel (renTel t n′) (ρ x) ≡ liftRen t ρ (wkTel t x)
+wkTel-nat []       ρ x = refl
+wkTel-nat (tν t)   ρ x =
+  cong (wkTel (renTel t _)) (↑*-wk ρ 2 x) ■ wkTel-nat t (ρ ↑* 2) (weaken* ⦃ Kᵣ ⦄ 2 x)
+wkTel-nat (tφ f t) ρ x =
+  cong (wkTel (renTel t _)) (↑*-wk ρ 1 x) ■ wkTel-nat t (ρ ↑)   (weaken* ⦃ Kᵣ ⦄ 1 x)
+
+------------------------------------------------------------------------
+-- Transport plumbing.
+------------------------------------------------------------------------
+
+subst-■ : ∀ (A : ℕ → Set) {a b c} (p : a ≡ b) (q : b ≡ c) (x : A a) →
+          subst A (p ■ q) x ≡ subst A q (subst A p x)
+subst-■ A refl q x = refl
+
+-- Two transports landing in a COMMON scope determine an equation between the
+-- endpoints.  This is what lets the naturality proof route both sides through a
+-- single mid-point instead of chaining substs end to end.
+joinSubst : ∀ (A : ℕ → Set) {a b m} (p : a ≡ m) (q : b ≡ m) (x : A a) (y : A b) →
+            subst A p x ≡ subst A q y → subst A (p ■ sym q) x ≡ y
+joinSubst A refl refl x y h = h
+
+subst-++ᵗ : ∀ {n k j j′} (t : Tel n k) (eq : j ≡ j′) (s : Tel k j) →
+            subst (Tel n) eq (t ++ᵗ s) ≡ t ++ᵗ subst (Tel k) eq s
+subst-++ᵗ t refl s = refl
+
+subst-wkTel : ∀ {n k k′} (eq : k ≡ k′) (t : Tel n k) (x : 𝔽 n) →
+              subst 𝔽 eq (wkTel t x) ≡ wkTel (subst (Tel n) eq t) x
+subst-wkTel refl t x = refl
+
+-- A + D packaged: re-basing twice weakens like re-basing once.
+wkTel-renTel : ∀ {n k} (t : Tel n k) (a b : ℕ) (x : 𝔽 b) →
+               subst 𝔽 (innerOf-renTel t a b) (wkTel (renTel (renTel t a) b) x)
+                 ≡ wkTel (renTel t b) x
+wkTel-renTel t a b x =
+  subst-wkTel (innerOf-renTel t a b) (renTel (renTel t a) b) x
+    ■ cong (λ T → wkTel T x) (renTel-renTel t a b)
+
+subst-++ : ∀ {k k′} (eq : k ≡ k′) (xs ys : List (Tm k)) →
+           subst (λ j → List (Tm j)) eq (xs ++ ys)
+             ≡ subst (λ j → List (Tm j)) eq xs ++ subst (λ j → List (Tm j)) eq ys
+subst-++ refl xs ys = refl
+
+map-++ᴸ : ∀ {a b} (σ : a →ᵣ b) (xs ys : List (Tm a)) →
+          map (_⋯ σ) (xs ++ ys) ≡ map (_⋯ σ) xs ++ map (_⋯ σ) ys
+map-++ᴸ σ []       ys = refl
+map-++ᴸ σ (x ∷ xs) ys = cong (_ ∷_) (map-++ᴸ σ xs ys)
+
+map-fuse : ∀ {a b c} (σ : a →ᵣ b) (τ : b →ᵣ c) (es : List (Tm a)) →
+           map (_⋯ τ) (map (_⋯ σ) es) ≡ map (_⋯ (σ ·ₖ τ)) es
+map-fuse σ τ []       = refl
+map-fuse σ τ (e ∷ es) = cong₂ _∷_ (fusion e σ τ) (map-fuse σ τ es)
+
+-- Transporting a renamed thread list is renaming by the transported renaming.
+map-⋯-subst : ∀ {a k k′} (eq : k ≡ k′) {σ : a →ᵣ k} {σ′ : a →ᵣ k′} →
+              (∀ x → subst 𝔽 eq (σ x) ≡ σ′ x) → (es : List (Tm a)) →
+              subst (λ j → List (Tm j)) eq (map (_⋯ σ) es) ≡ map (_⋯ σ′) es
+map-⋯-subst refl h []       = refl
+map-⋯-subst refl h (e ∷ es) = cong₂ _∷_ (⋯-cong e h) (map-⋯-subst refl h es)
+
+------------------------------------------------------------------------
+-- Naturality.
 ------------------------------------------------------------------------
 
 -- The leaf, ν and φ cases of naturality are DEFINITIONAL: `renNF` pushes
 -- `renTel`/`liftRen` under a head binder exactly the way `nf` does, so they are
 -- `refl` and two `cong`s.  Everything that is left is the ∥ case, i.e. that
--- `combine` commutes with re-basing.  Isolating it as a hypothesis (rather than
--- a hole) records that the reduction is COMPLETE: naturality is `Combine-nat`
--- and nothing else.
+-- `combine` commutes with re-basing.
 Combine-nat : Set
 Combine-nat = ∀ {n n′} (N₁ N₂ : NF n) (ρ : n →ᵣ n′) →
               combine (renNF N₁ n′ ρ) (renNF N₂ n′ ρ) ≡ renNF (combine N₁ N₂) n′ ρ
 
-module _ (combine-nat : Combine-nat) where
+-- Both sides are a normal form over `renTel t₂ n′ ++ᵗ renTel t₁ (innerOf t₂ n′)`
+-- once their inner scopes are identified; the proof routes each side to that
+-- common mid-point (`joinSubst`) rather than transporting one into the other.
+combine-nat : Combine-nat
+combine-nat {n} {n′} (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) ρ =
+  NF-≡ (p ■ sym q)
+       (joinSubst (Tel n′) p q
+          (renTel t₂ n′ ++ᵗ renTel (renTel t₁ n′) j₂′)
+          (renTel (t₂ ++ᵗ renTel t₁ j₂) n′)
+          (telL ■ sym telR))
+       (joinSubst (λ j → List (Tm j)) p q
+          ( map (_⋯ liftRen (renTel t₁ n′) (wkTel (renTel t₂ n′)))
+                (map (_⋯ liftRen t₁ ρ) es₁)
+         ++ map (_⋯ wkTel (renTel (renTel t₁ n′) j₂′))
+                (map (_⋯ liftRen t₂ ρ) es₂) )
+          ( map (_⋯ liftRen (t₂ ++ᵗ renTel t₁ j₂) ρ)
+                ( map (_⋯ liftRen t₁ (wkTel t₂)) es₁
+               ++ map (_⋯ wkTel (renTel t₁ j₂)) es₂ ) )
+          (thrL ■ sym thrR))
+  where
+    j₂′ : ℕ
+    j₂′ = innerOf t₂ n′
 
-  nf-nat : ∀ {n n′} (P : Proc n) (ρ : n →ᵣ n′) → nf (P ⋯ₚ ρ) ≡ renNF (nf P) n′ ρ
-  nf-nat ⟪ e ⟫   ρ = refl
-  nf-nat (ν P)   ρ = cong νNF     (nf-nat P (ρ ↑* 2))
-  nf-nat (φ f P) ρ = cong (φNF f) (nf-nat P (ρ ↑))
-  nf-nat (P ∥ Q) ρ =
-    cong₂ combine (nf-nat P ρ) (nf-nat Q ρ) ■ combine-nat (nf P) (nf Q) ρ
+    p : innerOf (renTel t₁ n′) j₂′ ≡ innerOf t₁ j₂′
+    p = innerOf-renTel t₁ n′ j₂′
+
+    q₁ : innerOf (t₂ ++ᵗ renTel t₁ j₂) n′ ≡ innerOf (renTel t₁ j₂) j₂′
+    q₁ = innerOf-++ᵗ t₂ (renTel t₁ j₂) n′
+
+    q₂ : innerOf (renTel t₁ j₂) j₂′ ≡ innerOf t₁ j₂′
+    q₂ = innerOf-renTel t₁ j₂ j₂′
+
+    q : innerOf (t₂ ++ᵗ renTel t₁ j₂) n′ ≡ innerOf t₁ j₂′
+    q = q₁ ■ q₂
+
+    μ₁ : j₁ →ᵣ innerOf t₁ j₂′
+    μ₁ = liftRen t₁ (ρ ·ₖ wkTel (renTel t₂ n′))
+
+    μ₂ : j₂ →ᵣ innerOf t₁ j₂′
+    μ₂ = liftRen t₂ ρ ·ₖ wkTel (renTel t₁ j₂′)
+
+    telL : subst (Tel n′) p (renTel t₂ n′ ++ᵗ renTel (renTel t₁ n′) j₂′)
+             ≡ renTel t₂ n′ ++ᵗ renTel t₁ j₂′
+    telL = subst-++ᵗ (renTel t₂ n′) p (renTel (renTel t₁ n′) j₂′)
+             ■ cong (renTel t₂ n′ ++ᵗ_) (renTel-renTel t₁ n′ j₂′)
+
+    telR : subst (Tel n′) q (renTel (t₂ ++ᵗ renTel t₁ j₂) n′)
+             ≡ renTel t₂ n′ ++ᵗ renTel t₁ j₂′
+    telR = subst-■ (Tel n′) q₁ q₂ _
+             ■ cong (subst (Tel n′) q₂) (renTel-++ᵗ t₂ (renTel t₁ j₂) n′)
+             ■ subst-++ᵗ (renTel t₂ n′) q₂ (renTel (renTel t₁ j₂) j₂′)
+             ■ cong (renTel t₂ n′ ++ᵗ_) (renTel-renTel t₁ j₂ j₂′)
+
+    h₁ : ∀ x → subst 𝔽 p
+                 ((liftRen t₁ ρ ·ₖ liftRen (renTel t₁ n′) (wkTel (renTel t₂ n′))) x)
+                 ≡ μ₁ x
+    h₁ = liftRen-· t₁ ρ (wkTel (renTel t₂ n′))
+
+    h₂ : ∀ x → subst 𝔽 p
+                 ((liftRen t₂ ρ ·ₖ wkTel (renTel (renTel t₁ n′) j₂′)) x)
+                 ≡ μ₂ x
+    h₂ x = wkTel-renTel t₁ n′ j₂′ (liftRen t₂ ρ x)
+
+    thrL : subst (λ j → List (Tm j)) p
+             ( map (_⋯ liftRen (renTel t₁ n′) (wkTel (renTel t₂ n′)))
+                   (map (_⋯ liftRen t₁ ρ) es₁)
+            ++ map (_⋯ wkTel (renTel (renTel t₁ n′) j₂′))
+                   (map (_⋯ liftRen t₂ ρ) es₂) )
+             ≡ map (_⋯ μ₁) es₁ ++ map (_⋯ μ₂) es₂
+    thrL = cong (subst (λ j → List (Tm j)) p)
+                (cong₂ _++_ (map-fuse (liftRen t₁ ρ) _ es₁)
+                            (map-fuse (liftRen t₂ ρ) _ es₂))
+             ■ subst-++ p _ _
+             ■ cong₂ _++_ (map-⋯-subst p h₁ es₁) (map-⋯-subst p h₂ es₂)
+
+    g₁ : ∀ x → subst 𝔽 q
+                 ((liftRen t₁ (wkTel t₂) ·ₖ liftRen (t₂ ++ᵗ renTel t₁ j₂) ρ) x)
+                 ≡ μ₁ x
+    g₁ x = subst-■ 𝔽 q₁ q₂ _
+             ■ cong (subst 𝔽 q₂)
+                 (liftRen-++ᵗ t₂ (renTel t₁ j₂) ρ (liftRen t₁ (wkTel t₂) x))
+             ■ liftRen-· t₁ (wkTel t₂) (liftRen t₂ ρ) x
+             ■ liftRen-cong t₁ (λ y → sym (wkTel-nat t₂ ρ y)) x
+
+    g₂ : ∀ x → subst 𝔽 q
+                 ((wkTel (renTel t₁ j₂) ·ₖ liftRen (t₂ ++ᵗ renTel t₁ j₂) ρ) x)
+                 ≡ μ₂ x
+    g₂ x = subst-■ 𝔽 q₁ q₂ _
+             ■ cong (subst 𝔽 q₂)
+                 ( liftRen-++ᵗ t₂ (renTel t₁ j₂) ρ (wkTel (renTel t₁ j₂) x)
+                 ■ sym (wkTel-nat (renTel t₁ j₂) (liftRen t₂ ρ) x) )
+             ■ wkTel-renTel t₁ j₂ j₂′ (liftRen t₂ ρ x)
+
+    thrR : subst (λ j → List (Tm j)) q
+             ( map (_⋯ liftRen (t₂ ++ᵗ renTel t₁ j₂) ρ)
+                   ( map (_⋯ liftRen t₁ (wkTel t₂)) es₁
+                  ++ map (_⋯ wkTel (renTel t₁ j₂)) es₂ ) )
+             ≡ map (_⋯ μ₁) es₁ ++ map (_⋯ μ₂) es₂
+    thrR = cong (subst (λ j → List (Tm j)) q)
+                ( map-++ᴸ (liftRen (t₂ ++ᵗ renTel t₁ j₂) ρ)
+                    (map (_⋯ liftRen t₁ (wkTel t₂)) es₁)
+                    (map (_⋯ wkTel (renTel t₁ j₂)) es₂)
+                ■ cong₂ _++_
+                    (map-fuse (liftRen t₁ (wkTel t₂))
+                              (liftRen (t₂ ++ᵗ renTel t₁ j₂) ρ) es₁)
+                    (map-fuse (wkTel (renTel t₁ j₂))
+                              (liftRen (t₂ ++ᵗ renTel t₁ j₂) ρ) es₂) )
+             ■ subst-++ q _ _
+             ■ cong₂ _++_ (map-⋯-subst q g₁ es₁) (map-⋯-subst q g₂ es₂)
+
+nf-nat : ∀ {n n′} (P : Proc n) (ρ : n →ᵣ n′) → nf (P ⋯ₚ ρ) ≡ renNF (nf P) n′ ρ
+nf-nat ⟪ e ⟫   ρ = refl
+nf-nat (ν P)   ρ = cong νNF     (nf-nat P (ρ ↑* 2))
+nf-nat (φ f P) ρ = cong (φNF f) (nf-nat P (ρ ↑))
+nf-nat (P ∥ Q) ρ =
+  cong₂ combine (nf-nat P ρ) (nf-nat Q ρ) ■ combine-nat (nf P) (nf Q) ρ
 
 ------------------------------------------------------------------------
--- Status of `Combine-nat`.
+-- How `combine-nat` goes through.
 ------------------------------------------------------------------------
 --
 --   Writing N₁ = mkNF t₁ es₁ (t₁ : Tel n j₁) and N₂ = mkNF t₂ es₂ (t₂ : Tel n j₂),
@@ -166,23 +340,22 @@ module _ (combine-nat : Combine-nat) where
 --       RHS : innerOf (t₂ ++ᵗ renTel t₁ j₂) n′
 --
 --   both equal to `innerOf t₁ (innerOf t₂ n′)` by `innerOf-renTel` /
---   `innerOf-++ᵗ`, but only PROPOSITIONALLY.  Every ingredient needed to bridge
---   that gap is now proved above:
+--   `innerOf-++ᵗ`, but only PROPOSITIONALLY.  Rather than transport one side
+--   into the other, the proof sends BOTH to that common mid-point and glues with
+--   `joinSubst`; that keeps every sub-lemma stated in its own natural direction:
 --
 --     telescope half : renTel-renTel (A) and renTel-++ᵗ (B), both by induction
 --                      with the subst-pushing helpers subst-tν / subst-tφ;
 --     renaming half  : liftRen-++ᵗ and liftRen-· (C), pointwise on variables,
 --                      with liftRen-cong and the Kits laws dist-↑*-· / dist-↑-·;
+--     the new fact   : wkTel-nat (D), that re-basing a telescope re-bases its
+--                      weakening — the one ingredient with no transport in it,
+--                      and the one that makes the two mid-point renamings meet;
 --     packaging      : NF-≡, which discharges the index transport once on the
 --                      packed normal form.
 --
---   What remains is the ASSEMBLY: instantiate NF-≡ with the composite index
---   equality and feed it the telescope equation from A+B and the thread equation
---   from C, the latter also needing `subst` pushed through `_++_` / `map` and a
---   `⋯`-fusion step to turn (e ⋯ ρ₁) ⋯ ρ₂ into e ⋯ (ρ₁ ·ₖ ρ₂).
---
---   Representation note, now settled: keep the two-index `Tel n k`.  Indexing by
---   a scope-free `Shape` would make re-basing the identity and kill A and B, but
+--   Representation note, settled: keep the two-index `Tel n k`.  Indexing by a
+--   scope-free `Shape` would make re-basing the identity and kill A and B, but
 --   it moves the transport into `combine`'s DEFINITION — its threads would have
 --   to cross `inner (s₂ ++ˢ s₁) n ≡ inner s₁ (inner s₂ n)` — which is strictly
 --   worse than carrying it in this proof only.
