@@ -30,6 +30,8 @@ open import BorrowedCF.Simulation.Support.Normal.Nat
 
 open import Data.List using (List; []; _∷_; _++_; map)
 open import Data.List.Properties using (++-assoc)
+open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (ε; _◅_)
+open import Relation.Binary.Construct.Closure.Symmetric using (fwd; bwd)
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
 
 open Nat.Variables
@@ -240,3 +242,11 @@ combine-assoc (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) (mkNF {j₃} t�
   ≡→~ ( sym (combine-φ x (nf P) (nf Q))
       ■ cong (λ N → φNF x (combine N (nf Q))) (sym (nf-nat P (weaken* ⦃ Kᵣ ⦄ 1))) )
 ≋′⇒~ (∥-cong′ c) = {!   !}
+
+-- The equivalence closure, one link at a time.  `Eq*.gmap` does not apply: a
+-- single ≋′ generator can take several ~ steps (∥-unit′ takes one equality and
+-- one generator), so the image is `~`, not `~₁`.
+≋⇒~ : ∀ {n} {P Q : Proc n} → P ≋ Q → nf P ~ nf Q
+≋⇒~ ε           = ~-refl
+≋⇒~ (fwd g ◅ c) = ~-trans (≋′⇒~ g)         (≋⇒~ c)
+≋⇒~ (bwd g ◅ c) = ~-trans (~-sym (≋′⇒~ g)) (≋⇒~ c)
