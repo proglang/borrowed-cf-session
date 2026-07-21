@@ -4,6 +4,7 @@ open import Data.Vec.Relation.Unary.All as All using (All; []; _∷_)
 open import Data.Vec.Relation.Unary.Any as Any using (Any; here; there)
 open import Data.Vec.Membership.Propositional
 open import Data.Vec.Membership.Propositional.Properties
+open import Function.Related.Propositional
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
@@ -87,7 +88,7 @@ module _ (Γ-S : ChanCx Γ) where
   ... | _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₁ x
     = _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₁ x
   ... | _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₂ (_ , eq , x)
-    = _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₂ (_ , eq , T-Weaken (≼-join (Arr.dir a) (≼-refl refl) (𝐂.≼-⋯ 𝐂.wk-preserves 𝐂.wk-preserves γ≤)) x)
+    = _ , _ , _ , T≃ , U≃ , ϵ″≤ , inj₂ (_ , eq , T-Weaken (≼-join (Arr.dir a) (≼-refl refl) (𝐂.≼-⋯ (𝐂.⇔→⇒ ⦃ 𝐂.Kₛ ⦄ {Γ} (𝐂.wk-⇔ ⦃ 𝐂.Kₛ ⦄)) γ≤)) x)
 
   value×⊗⇒⊗ : Value e → Γ ; γ ⊢ e ∶ T ⊗⟨ d ⟩ U ∣ ϵ → ∃[ e₁ ] ∃[ e₂ ] e ≡ e₁ ⊗ e₂
   value×⊗⇒⊗ V (T-Var x T-eq) = chanCx-contradiction Γ-S x T-eq λ()
@@ -208,8 +209,8 @@ module _ (Γ-S : ChanCx Γ) where
               ∎
       in
       T-Weaken γ≤′ $
-        e′ ⊢⋯ₛ ⊢subₛ (e₁′ ⊢⋯ ⊢weakenᵣ _) (λ U → 𝐂.allCx-⋯ `_ (unr×value⇒unrCx U V₁ e₁′))
-                                         (λ m → 𝐂.allCx-⋯ `_ (mobile×value⇒mobCx m V₁ e₁′))
+        e′ ⊢⋯ₛ ⊢subₛ (e₁′ ⊢⋯ ⊢weakenᵣ _) (λ U → 𝐂.allCx-wk (unr×value⇒unrCx U V₁ e₁′))
+                                         (λ m → 𝐂.allCx-wk (mobile×value⇒mobCx m V₁ e₁′))
            ⊢⋯ₛ ⊢subₛ e₂′ (λ U → unr×value⇒unrCx U V₂ e₂′) (λ m → mobile×value⇒mobCx m V₂ e₂′)
   preservation′ (T-AbsRec {γ = γ} {a = a} {T = T} {U = U} Γ-unr a-unr e) E-Unfold =
     let γ≤ = begin

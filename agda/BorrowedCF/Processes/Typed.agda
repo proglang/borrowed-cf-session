@@ -1,8 +1,10 @@
 module BorrowedCF.Processes.Typed where
 
+open import Data.Fin.Subset using (_⊆_)
+open import Data.Fin.Subset.Properties using (x∈p∪q⁻)
+open import Data.List.Relation.Unary.All as Allᴸ using ([]; _∷_) renaming (All to Allᴸ)
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
-open import Data.List.Relation.Unary.All as Allᴸ using ([]; _∷_) renaming (All to Allᴸ)
 open import Data.Vec.Relation.Unary.All as Allⱽ using ([]; _∷_) renaming (All to Allⱽ)
 open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosure)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (Star; _◅_; _◅◅_; kleisliStar) renaming (ε to refl)
@@ -13,6 +15,8 @@ import Data.List.Relation.Unary.All.Properties as Allᴸ
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
+open import BorrowedCF.Terms.DescendK
+open import BorrowedCF.Terms.SubstitutionInversion
 open import BorrowedCF.Types
 open import BorrowedCF.Types.AtomSnoc using (atomKind≢⇒≄-;ʳ)
 open import BorrowedCF.Types.AtomUnsnoc using (atom-;-unsnoc)
@@ -131,6 +135,7 @@ module _ where
   eq ≋-⋯ ϕ = gmap (_⋯ₚ ϕ) ⋯-preserves-≋′ eq
 
 open import BorrowedCF.Context as 𝐂
+open import BorrowedCF.Context.Domain using (dom)
 import BorrowedCF.Context.Substitution as 𝐂
 
 structNSeq : ∀ m → Struct m
@@ -283,9 +288,10 @@ inv-ν : {Γ : Ctx n} → Γ ; γ ⊢ₚ ν B₁ B₂ P →
                         ∥ (γ 𝐂.⋯ᵣ 𝐂.weaken* _)
                         ⊢ₚ P
 inv-ν (TP-Res N p ⊢B₁ ⊢B₂ C C′ P) = _ , _ , _ , _ , N , ⊢B₁ , ⊢B₂ , C , C′ , P
-inv-ν (TP-Weaken γ≤ p) =
+inv-ν {Γ = Γ} (TP-Weaken γ≤ p) =
   let Γ₁ , Γ₂ , _ , _ , N , ⊢B₁ , ⊢B₂ , C , C′ , p′ = inv-ν p in
-  _ , _ , _ , _ , N , ⊢B₁ , ⊢B₂ , C , C′ , TP-Weaken (≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.wk*-preserves (Γ₁ ⸴* Γ₂)) (𝐂.wk*-preserves (Γ₁ ⸴* Γ₂)) γ≤)) p′
+  _ , _ , _ , _ , N , ⊢B₁ , ⊢B₂ , C , C′
+    , TP-Weaken (≼-cong-∥ (≼-refl refl) (𝐂.≼-⋯ (𝐂.⇔→⇒  ⦃ 𝐂.Kᵣ ⦄ {Γ} (𝐂.wk*-⇔ ⦃ 𝐂.Kᵣ ⦄ (Γ₁ ⸴* Γ₂))) γ≤)) p′
 
 infixl 5 _⊢⋯ₚ_
 
@@ -308,4 +314,53 @@ _⊢⋯ₚ_ {γ = γ} {σ = σ} (TP-Res {B₁ = B₁} {B₂ = B₂} N p ⊢B₁ 
           ■ 𝐂.conv-⋯ᵣₛ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁))))
         (sym (𝐂.⋯-↑*-wk γ σ (sum B₁ + sum B₂))))
     $ P ⊢⋯ₚ ⊢↑* _ ⊢ϕ
-TP-Weaken γ≤ p ⊢⋯ₚ ⊢ϕ = TP-Weaken (𝐂.≼-⋯ (&-unr ⊢ϕ) (&-mob ⊢ϕ) γ≤) (p ⊢⋯ₚ ⊢ϕ)
+TP-Weaken γ≤ p ⊢⋯ₚ ⊢ϕ = TP-Weaken (𝐂.≼-⋯ (TKit.&-⇒ ⊢ϕ) γ≤) (p ⊢⋯ₚ ⊢ϕ)
+
+lift-disg* : (k : ℕ) {ρ : m →ᵣ n} {σ : m 𝐂.→ₛ n} →
+  (∀ x → ` ρ x ≡ σ x) →
+  (∀ x → ` (ρ 𝐂.↑* k) x ≡ (σ 𝐂.↑* k) x)
+lift-disg* zero    eq = eq
+lift-disg* (suc k) {ρ} {σ} eq = lift-disg (lift-disg* k eq)
+
+brₛ↑* : (k : ℕ) {ϕ : m →ᵣ n} {σ : _} {Γ₁ : Ctx m} {Γ₂ : Ctx n} →
+  ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ → (γ : Struct (k + m)) →
+  γ 𝐂.⋯ᵣ ϕ 𝐂.↑* k ≡ γ 𝐂.⋯ σ 𝐂.↑* k
+brₛ↑* k ⊢ϕ γ = sym (𝐂.conv-⋯ᵣₛ γ) ■ 𝐂.⋯-cong γ (lift-disg* k (⊢ren-ϕ≗σ ⊢ϕ))
+
+infixl 5 _⊢⋯ₚ⁻¹_/_
+
+_⊢⋯ₚ⁻¹_/_ : ∀ {Γ₁ : Ctx m} {Γ₂ : Ctx n} {γ} {ϕ : m →ᵣ n} {σ} →
+  Γ₂ ; γ ⊢ₚ P ⋯ₚ ϕ →
+  ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ →
+  𝐂.Inj ϕ →
+  ∃[ γ′ ] Γ₂ ∶ γ′ 𝐂.⋯ σ ≼ γ × Γ₁ ; γ′ ⊢ₚ P
+_⊢⋯ₚ⁻¹_/_ {P = ⟪ e ⟫} p ⊢ϕ inj =
+  let γ′ , ≤γ , ⊢e′ = ⊢⋯⁻¹ inj (inv-⟪⟫ p) ⊢ϕ
+  in γ′ , ≤γ , TP-Expr ⊢e′
+_⊢⋯ₚ⁻¹_/_ {P = P ∥ Q} p ⊢ϕ inj =
+  let α , β , ≤ , p₁ , p₂ = inv-∥ p
+      α′ , ≤α , p₁′ = p₁ ⊢⋯ₚ⁻¹ ⊢ϕ / inj
+      β′ , ≤β , p₂′ = p₂ ⊢⋯ₚ⁻¹ ⊢ϕ / inj
+  in α′ ∥ β′ , ≼-trans (≼-cong-∥ ≤α ≤β) ≤ , TP-Par p₁′ p₂′
+_⊢⋯ₚ⁻¹_/_ {n = n} {P = ν B₁ B₂ P} p ⊢ϕ inj =
+  let Γ₁ᵥ , Γ₂ᵥ , _ , pol , N , ⊢B₁ , ⊢B₂ , C , C′ , p′ = inv-ν p
+      k = sum B₁ + sum B₂
+      Δ = Γ₁ᵥ ⸴* Γ₂ᵥ
+      Fr′ = (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂) 𝐂.⋯ᵣ 𝐂.wkʳ n)
+          ∥ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁) 𝐂.⋯ᵣ 𝐂.wkʳ n)
+      γ′ , ≤γ , p″ = p′ ⊢⋯ₚ⁻¹ ⊢↑* Δ ⊢ϕ / ↑*-inj k inj
+      ≤γᵣ = subst (_ ∶_≼ _) (sym (brₛ↑* k ⊢ϕ γ′)) ≤γ
+      Frinv = cong₂ _∥_
+               (𝐂.fusion (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂)) _ _
+                 ■ 𝐂.⋯-cong (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂)) (𝐂.wkʳ-cancels-↑* ⦃ 𝐂.Kᵣ ⦄ k _))
+               (𝐂.fusion (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁)) _ _
+                 ■ 𝐂.⋯-cong (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁)) (𝐂.wkʳ-cancels-↑* ⦃ 𝐂.Kᵣ ⦄ k _))
+      Frdom : dom Fr′ ⊆ fresh n k
+      Frdom z∈ = [ dom⋯wkʳ⊆fresh _ (structBinder B₁ 𝐂.⋯ᵣ 𝐂.wkʳ (sum B₂))
+                 , dom⋯wkʳ⊆fresh _ (structBinder B₂ 𝐂.⋯ᵣ 𝐂.wkˡ (sum B₁))
+                 ]′
+                 (x∈p∪q⁻ _ _ z∈)
+      γr , part1 , part2 = descend-absK k Δ inj (⊢ren-ϕ⇔ ⊢ϕ) 𝟙 _ _ γ′ _ Frinv Frdom ≤γᵣ
+  in γr
+   , ≼-respˡ-≈ (≈-reflexive (brₛ ⊢ϕ γr)) part2
+   , TP-Res N pol ⊢B₁ ⊢B₂ C C′ (TP-Weaken part1 p″)

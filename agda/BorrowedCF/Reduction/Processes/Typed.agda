@@ -9,7 +9,6 @@ open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using 
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms as Terms hiding (wk)
-open import BorrowedCF.TermsInv using (_⊢⋯⁻¹_/_)
 open import BorrowedCF.Processes.Typed
 open import BorrowedCF.Processes.Renamings
 open import BorrowedCF.Types

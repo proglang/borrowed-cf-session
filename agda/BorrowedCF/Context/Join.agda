@@ -3,6 +3,7 @@ module BorrowedCF.Context.Join where
 open import BorrowedCF.Prelude
 open import BorrowedCF.Types
 open import BorrowedCF.Context.Base
+open import BorrowedCF.Context.Domain
 open import BorrowedCF.Context.Equivalence
 open import BorrowedCF.Context.Subcontext
 open import BorrowedCF.Context.Substitution
@@ -85,6 +86,12 @@ record Join (A : Set) : Set where
   ... | L = allCx-;⁻¹
   ... | R = Π.swap ∘ allCx-;⁻¹
   ... | 𝟙 = allCx-∥⁻¹
+
+  join-↓ : ∀ a (α β : Struct n) {X} → join a α β ↓ X ≡ join a (α ↓ X) (β ↓ X)
+  join-↓ a α β with joinDir a
+  ... | 𝟙 = refl
+  ... | L = refl
+  ... | R = refl
 
 {-
   module _ where

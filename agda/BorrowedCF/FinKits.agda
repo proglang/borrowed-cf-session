@@ -57,7 +57,7 @@ record Syntax : Set₁ where
     weaken : n →ₖ suc n
     weaken = wkm id
 
-    weaken* : (m : ℕ) → n →ₖ m + n
+    weaken* : (m : ℕ) {n : ℕ} → n →ₖ m + n
     weaken* zero    = id
     weaken* (suc m) = wkm (weaken* m)
 
@@ -88,7 +88,7 @@ record Syntax : Set₁ where
     wkʳ : ∀ m → n →ₖ n + m
     wkʳ m x = id/` (x ↑ˡ m)
 
-    weaken*~wkˡ : ∀ m → weaken* {n} m ≗ wkˡ m
+    weaken*~wkˡ : ∀ m → weaken* m {n} ≗ wkˡ m
     weaken*~wkˡ zero x = refl
     weaken*~wkˡ (suc m) x = trans (cong wk (weaken*~wkˡ m x)) (wk-id/` (m ↑ʳ x))
 
@@ -134,6 +134,24 @@ record Syntax : Set₁ where
 
     _⋯ₛ_ : Tm m → m –[ Kₛ ]→ n → Tm n
     _⋯ₛ_ = _⋯_
+
+    Inj : m →ᵣ n → Set
+    Inj = Injective _≡_ _≡_
+
+    wk-inj : Inj {n} weaken
+    wk-inj = Fin.suc-injective
+
+    wk*-inj : ∀ m {n} → Inj (weaken* m {n})
+    wk*-inj zero    eq = eq
+    wk*-inj (suc m) eq = wk*-inj m (wk-inj eq)
+
+    ↑-inj : {ρ : m →ᵣ n} → Inj ρ → Inj (ρ ↑)
+    ↑-inj inj-ρ {zero}  {zero}  eq = refl
+    ↑-inj inj-ρ {suc x} {suc y} eq = cong suc (inj-ρ (wk-inj eq))
+
+    ↑*-inj : ∀ m {ρ : n₁ →ᵣ n₂} → Inj ρ → Inj (ρ ↑* m)
+    ↑*-inj zero    inj-ρ eq = inj-ρ eq
+    ↑*-inj (suc m) inj-ρ eq = ↑-inj (↑*-inj m inj-ρ) eq
 
     record WkKit (K : Kit 𝓕): Set₁ where
       private instance _ = K

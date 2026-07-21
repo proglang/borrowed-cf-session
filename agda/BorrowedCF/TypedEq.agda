@@ -315,10 +315,11 @@ dom-⋯wk*⊆∁fresh k X {y} y∈ with dom-⋯-InImage X {ϕ = 𝐂.weaken* k} 
       ζ₂ , O1 , O2 = νext-split Δ {Fr = Frₐ ∥ Frᵦ} {γ = γ} dom⊆ (≼-respʳ-≈ (≈-sym 𝐂.∥-assoc) H1) H2
   in ζ₂ , ≼-respʳ-≈ 𝐂.∥-assoc O1 , O2
 
+infixl 5 _/_⊢-≋_
 
-⊢-≋ : ChanCx Γ → P ≋ Q → Γ ; γ ⊢ₚ P → Γ ; γ ⊢ₚ Q
-⊢-≋ Γ-S refl     = id
-⊢-≋ Γ-S (x ◅ xs) = ⊢-≋ Γ-S xs ∘ go Γ-S x where
+_/_⊢-≋_ : ChanCx Γ → Γ ; γ ⊢ₚ P → P ≋ Q → Γ ; γ ⊢ₚ Q
+Γ-S / p ⊢-≋ refl     = p
+Γ-S / p ⊢-≋ (x ◅ xs) = Γ-S / go p Γ-S ⊢-≋ xs where
   go : ChanCx Γ → SymClosure _≋′_ P Q → Γ ; γ ⊢ₚ P → Γ ; γ ⊢ₚ Q
   go Γ-S (fwd ∥-comm′) p₀
     with _ , _ , γ≤ , p , q ← inv-∥ p₀

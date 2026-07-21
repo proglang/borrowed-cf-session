@@ -8,6 +8,8 @@ open import BorrowedCF.Context.Equivalence public
 open import BorrowedCF.Context.Join public
 open import BorrowedCF.Context.Subcontext public
 
+open import BorrowedCF.Context.Substitution using (≈-⋯; ≈-⋯⁻¹; ≼-⋯; ≼-⋯⁻¹) public
+
 data Seq⇒Pure : ParSeq → Rel Eff 0ℓ where
   par : Seq⇒Pure par ϵ ϵ
   seq : Seq⇒Pure seq ϵ ℙ

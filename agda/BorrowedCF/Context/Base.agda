@@ -71,6 +71,15 @@ module _ {ℓ} (P : Pred 𝕋 ℓ) (Γ : Ctx n) where
     `_  : ∀ {x} → P (lookup Γ x) → AllCx (` x)
 
 module _ {ℓ} {P : Pred 𝕋 ℓ} {Γ : Ctx n} where
+  allCx-`-injective : ∀ {x} {p q : P (Γ ﹫ x)} → (AllCx P Γ (` x) ∋ (` p)) ≡ (` q) → p ≡ q
+  allCx-`-injective refl = refl
+
+  allCx-`⁻¹ : ∀ {x} → AllCx P Γ (` x) → P (Γ ﹫ x)
+  allCx-`⁻¹ (` px) = px
+
+  allCx-`⁻¹-injective : ∀ {x} {p q : AllCx P Γ (` x)} → allCx-`⁻¹ p ≡ allCx-`⁻¹ q → p ≡ q
+  allCx-`⁻¹-injective {p = ` _} {` _} eq = cong `_ eq
+
   allCx-∥⁻¹ : AllCx P Γ (α ∥ β) → AllCx P Γ α × AllCx P Γ β
   allCx-∥⁻¹ (x ∥ y) = x , y
 
