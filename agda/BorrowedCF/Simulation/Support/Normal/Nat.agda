@@ -63,6 +63,76 @@ NF-≡ : ∀ {n k k′} (eq : k ≡ k′)
 NF-≡ refl refl refl = refl
 
 ------------------------------------------------------------------------
+-- Pushing a scope transport under a head binder (by J).
+------------------------------------------------------------------------
+
+subst-tν : ∀ {n k k′} (eq : k ≡ k′) (X : Tel (2 + n) k) →
+           subst (Tel n) eq (tν X) ≡ tν (subst (Tel (2 + n)) eq X)
+subst-tν refl X = refl
+
+subst-tφ : ∀ {n k k′} (eq : k ≡ k′) (f : Flag) (X : Tel (1 + n) k) →
+           subst (Tel n) eq (tφ f X) ≡ tφ f (subst (Tel (1 + n)) eq X)
+subst-tφ refl f X = refl
+
+------------------------------------------------------------------------
+-- A.  Re-basing is idempotent: only the SHAPE of a telescope survives it.
+------------------------------------------------------------------------
+
+renTel-renTel : ∀ {n k} (t : Tel n k) (a b : ℕ) →
+                subst (Tel b) (innerOf-renTel t a b) (renTel (renTel t a) b) ≡ renTel t b
+renTel-renTel []       a b = refl
+renTel-renTel (tν t)   a b =
+  subst-tν (innerOf-renTel t (2 + a) (2 + b)) _
+    ■ cong tν (renTel-renTel t (2 + a) (2 + b))
+renTel-renTel (tφ f t) a b =
+  subst-tφ (innerOf-renTel t (1 + a) (1 + b)) f _
+    ■ cong (tφ f) (renTel-renTel t (1 + a) (1 + b))
+
+------------------------------------------------------------------------
+-- B.  Re-basing distributes over concatenation.
+------------------------------------------------------------------------
+
+renTel-++ᵗ : ∀ {n k j} (t : Tel n k) (s : Tel k j) (b : ℕ) →
+             subst (Tel b) (innerOf-++ᵗ t s b) (renTel (t ++ᵗ s) b)
+               ≡ renTel t b ++ᵗ renTel s (innerOf t b)
+renTel-++ᵗ []       s b = refl
+renTel-++ᵗ (tν t)   s b =
+  subst-tν (innerOf-++ᵗ t s (2 + b)) _ ■ cong tν (renTel-++ᵗ t s (2 + b))
+renTel-++ᵗ (tφ f t) s b =
+  subst-tφ (innerOf-++ᵗ t s (1 + b)) f _ ■ cong (tφ f) (renTel-++ᵗ t s (1 + b))
+
+------------------------------------------------------------------------
+-- C.  The matching facts for the lifted renamings, pointwise on variables.
+------------------------------------------------------------------------
+
+liftRen-cong : ∀ {n k n′} (t : Tel n k) {ρ₁ ρ₂ : n →ᵣ n′} →
+               ρ₁ ≗ ρ₂ → liftRen t ρ₁ ≗ liftRen t ρ₂
+liftRen-cong []       eq = eq
+liftRen-cong (tν t)   eq = liftRen-cong t (eq ~↑* 2)
+liftRen-cong (tφ f t) eq = liftRen-cong t (eq ~↑)
+
+-- Lifting along a concatenation is lifting twice.
+liftRen-++ᵗ : ∀ {n k j n′} (t : Tel n k) (s : Tel k j) (ρ : n →ᵣ n′) (x : 𝔽 j) →
+              subst 𝔽 (innerOf-++ᵗ t s n′) (liftRen (t ++ᵗ s) ρ x)
+                ≡ liftRen s (liftRen t ρ) x
+liftRen-++ᵗ []       s ρ x = refl
+liftRen-++ᵗ (tν t)   s ρ x = liftRen-++ᵗ t s (ρ ↑* 2) x
+liftRen-++ᵗ (tφ f t) s ρ x = liftRen-++ᵗ t s (ρ ↑)   x
+
+-- Lifting composes: re-basing the telescope is exactly what lets the two lifts
+-- meet.
+liftRen-· : ∀ {n k n′ a} (t : Tel n k) (ρ : n →ᵣ n′) (σ : n′ →ᵣ a) (x : 𝔽 k) →
+            subst 𝔽 (innerOf-renTel t n′ a) (liftRen (renTel t n′) σ (liftRen t ρ x))
+              ≡ liftRen t (ρ ·ₖ σ) x
+liftRen-· []       ρ σ x = refl
+liftRen-· (tν t)   ρ σ x =
+  liftRen-· t (ρ ↑* 2) (σ ↑* 2) x
+    ■ liftRen-cong t (λ y → sym (dist-↑*-· 2 ρ σ y)) x
+liftRen-· (tφ f t) ρ σ x =
+  liftRen-· t (ρ ↑) (σ ↑) x
+    ■ liftRen-cong t (λ y → sym (dist-↑-· ρ σ y)) x
+
+------------------------------------------------------------------------
 -- Naturality, modulo ONE lemma about `combine`.
 ------------------------------------------------------------------------
 
@@ -86,7 +156,7 @@ module _ (combine-nat : Combine-nat) where
     cong₂ combine (nf-nat P ρ) (nf-nat Q ρ) ■ combine-nat (nf P) (nf Q) ρ
 
 ------------------------------------------------------------------------
--- What `Combine-nat` needs, and why it is the awkward one.
+-- Status of `Combine-nat`.
 ------------------------------------------------------------------------
 --
 --   Writing N₁ = mkNF t₁ es₁ (t₁ : Tel n j₁) and N₂ = mkNF t₂ es₂ (t₂ : Tel n j₂),
@@ -95,20 +165,24 @@ module _ (combine-nat : Combine-nat) where
 --       LHS : innerOf (renTel t₁ n′) (innerOf t₂ n′)
 --       RHS : innerOf (t₂ ++ᵗ renTel t₁ j₂) n′
 --
---   which the lemmas above reconcile — both equal `innerOf t₁ (innerOf t₂ n′)`
---   — but only PROPOSITIONALLY.  A proof therefore needs, besides `NF-≡`:
+--   both equal to `innerOf t₁ (innerOf t₂ n′)` by `innerOf-renTel` /
+--   `innerOf-++ᵗ`, but only PROPOSITIONALLY.  Every ingredient needed to bridge
+--   that gap is now proved above:
 --
---     A.  subst (Tel b) (innerOf-renTel t a b) (renTel (renTel t a) b) ≡ renTel t b
---     B.  subst (Tel b) (innerOf-++ᵗ t s b) (renTel (t ++ᵗ s) b)
---           ≡ renTel t b ++ᵗ renTel s (innerOf t b)
+--     telescope half : renTel-renTel (A) and renTel-++ᵗ (B), both by induction
+--                      with the subst-pushing helpers subst-tν / subst-tφ;
+--     renaming half  : liftRen-++ᵗ and liftRen-· (C), pointwise on variables,
+--                      with liftRen-cong and the Kits laws dist-↑*-· / dist-↑-·;
+--     packaging      : NF-≡, which discharges the index transport once on the
+--                      packed normal form.
 --
---   plus the matching `liftRen`/`wkTel` composition facts for the thread lists.
---   Both A and B go through by induction on the telescope with a `subst`-pushing
---   helper (`subst (Tel n) eq (tν X) ≡ tν (subst (Tel _) eq X)`, by J).
+--   What remains is the ASSEMBLY: instantiate NF-≡ with the composite index
+--   equality and feed it the telescope equation from A+B and the thread equation
+--   from C, the latter also needing `subst` pushed through `_++_` / `map` and a
+--   `⋯`-fusion step to turn (e ⋯ ρ₁) ⋯ ρ₂ into e ⋯ (ρ₁ ·ₖ ρ₂).
 --
---   This is the one place the two-index `Tel n k` representation stops paying
---   for itself.  The alternative — indexing normal forms by a scope-free
---   `Shape` with `inner : Shape → ℕ → ℕ`, so that re-basing is the IDENTITY —
---   makes A and B vanish and the telescope half of `Combine-nat` `refl`, at the
---   cost of making `plug-++` (currently definitional) carry the transport
---   instead.  Which representation to settle on is the open design call.
+--   Representation note, now settled: keep the two-index `Tel n k`.  Indexing by
+--   a scope-free `Shape` would make re-basing the identity and kill A and B, but
+--   it moves the transport into `combine`'s DEFINITION — its threads would have
+--   to cross `inner (s₂ ++ˢ s₁) n ≡ inner s₁ (inner s₂ n)` — which is strictly
+--   worse than carrying it in this proof only.
