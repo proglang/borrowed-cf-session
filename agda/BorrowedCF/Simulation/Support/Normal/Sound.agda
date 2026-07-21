@@ -22,6 +22,7 @@ open import BorrowedCF.Simulation.Support.Normal.Rename
 open import BorrowedCF.Simulation.Support.Normal.Norm using (nf; combine)
 open import BorrowedCF.Simulation.Support.Normal.Equiv
 open import BorrowedCF.Simulation.Support.Normal.Endo
+open import BorrowedCF.Simulation.Support.Normal.CongL using (combine-congˡ)
 open import BorrowedCF.Simulation.Support.Normal.Nat
   using (NF-≡; nf-nat; innerOf-renTel; innerOf-++ᵗ; renTel-renTel; renTel-++ᵗ;
          wkTel-renTel; wkTel-nat; liftRen-·; liftRen-++ᵗ; liftRen-cong;
@@ -241,7 +242,7 @@ combine-assoc (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) (mkNF {j₃} t�
 ≋′⇒~ (φ-ext′ {P = P} {Q = Q} {x}) =
   ≡→~ ( sym (combine-φ x (nf P) (nf Q))
       ■ cong (λ N → φNF x (combine N (nf Q))) (sym (nf-nat P (weaken* ⦃ Kᵣ ⦄ 1))) )
-≋′⇒~ (∥-cong′ c) = {!   !}
+≋′⇒~ (∥-cong′ {Q = Q} c) = combine-congˡ (nf Q) (≋′⇒~ c)
 
 -- The equivalence closure, one link at a time.  `Eq*.gmap` does not apply: a
 -- single ≋′ generator can take several ~ steps (∥-unit′ takes one equality and
