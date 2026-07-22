@@ -1,7 +1,10 @@
 -- | Coherence probe for Normal.Realise's stated-open hypotheses.
 --
 --   RESULT (machine-checked): the three `Set`s `BswpThreadCoh`,
---   `BswpThreadCohᵇ` and `FlipResidue` are UNINHABITABLE as stated.
+--   `BswpThreadCohᵇ` and `FlipResidue` are UNINHABITABLE as ORIGINALLY
+--   stated (without alignment premises).  The original statements are kept
+--   verbatim below as `*-unaligned`; `Realise` now states the ALIGNED
+--   versions, proven in `RealiseCohProof`.
 --
 --   Why.  Each statement quantifies over BOTH a positional decomposition of
 --   the normal form (`s`/`v`, resp. `s`/`a`/`rb`/`t′`) AND a typed telescope
@@ -30,17 +33,21 @@ module BorrowedCF.Simulation.Support.Normal.RealiseCoh where
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Processes.Typed using (BindGroup)
-open import BorrowedCF.Simulation.Support.TypedPrenex using (TTel; []ᵗ; tνᵗ)
+open import BorrowedCF.Simulation.Support.TypedPrenex
+  using (TTel; []ᵗ; tνᵗ; _++ᵗᵗ_; _⋯ᵗᵉˡ_; _↑ᵗᵉˡ_)
 open import BorrowedCF.Simulation.Support.Normal.Form
   using (Tel; []; tν; tφ; _++ᵗ_; NF; mkNF; tel; thr)
+open import BorrowedCF.Simulation.Support.Normal.Equiv using (liftId)
 open import BorrowedCF.Simulation.Support.Normal.FactorBase
   using (Run; rnil; Block; bnil;
          _~ᵩ_; _~ᵩ₁_; φφᵩ; νφᵩ; thrᵩ; delᵩ; φcountᵗ; φcountᵗ-++ᵗ)
-open import BorrowedCF.Simulation.Support.Normal.PrenexImage using (Bσ)
-open import BorrowedCF.Simulation.Support.Normal.Realise
-  using (BswpThreadCoh; BswpThreadCohᵇ; FlipResidue; ImageOf)
+open import BorrowedCF.Simulation.Support.Normal.Factor
+  using (bswapTel; bswapRen)
+open import BorrowedCF.Simulation.Support.Normal.PrenexImage using (Bσ; BScope)
+open import BorrowedCF.Simulation.Support.Normal.Realise using (ImageOf)
 
 open import Data.List using (List; []; _∷_; _++_; map)
+open import Data.Nat.ListAction using (sum)
 open import Data.List.Relation.Binary.Permutation.Propositional
   using (_↭_) renaming (refl to ↭refl; prep to ↭prep; swap to ↭swap; trans to ↭tr)
 open import Data.Product using (_×_; _,_)
@@ -104,6 +111,59 @@ private
 ... | z′ , e = e ■ Σw-~ᵩ c z′
 
 ------------------------------------------------------------------------
+-- Verbatim local copies of the three OLD (alignment-free) statements, so
+-- the refutations below remain standalone machine-checked facts after
+-- `Realise` repairs its interface with the alignment premises.
+------------------------------------------------------------------------
+
+BswpThreadCoh-unaligned : Set
+BswpThreadCoh-unaligned =
+  ∀ {m q k p} (u : TTel m q) (G₁ G₂ A₁ A₂ : BindGroup)
+    (t₂ : TTel (sum A₁ + sum A₂ + (sum G₁ + sum G₂ + q)) k)
+    (es : List (Tm k)) (σ : m →ₛ p)
+    {j i m′ k′} (s : Tel p j) (a : Tel (2 + j) i) (ra : Run a)
+    {rb : Tel (2 + i) m′} (w : Run rb) (t′ : Tel m′ k′) (bt : Block t′)
+    (es₁ : List (Tm k′)) →
+    mkNF (s ++ᵗ tν (a ++ᵗ tν (rb ++ᵗ t′))) es₁
+      ≡ ImageOf (u ++ᵗᵗ tνᵗ G₁ G₂ (tνᵗ A₁ A₂ t₂)) es p σ →
+    (eqk : k′ ≡ BScope (u ++ᵗᵗ tνᵗ A₁ A₂ (tνᵗ G₁ G₂
+                  (t₂ ⋯ᵗᵉˡ assocSwapᵣ (sum A₁ + sum A₂) (sum G₁ + sum G₂)))) p) →
+    subst (List ∘ Tm) eqk (map (_⋯ bswapRen a w t′) es₁)
+      ≡ map (_⋯ Bσ (u ++ᵗᵗ tνᵗ A₁ A₂ (tνᵗ G₁ G₂
+                 (t₂ ⋯ᵗᵉˡ assocSwapᵣ (sum A₁ + sum A₂) (sum G₁ + sum G₂)))) σ)
+            (map (_⋯ (t₂ ↑ᵗᵉˡ assocSwapᵣ (sum A₁ + sum A₂) (sum G₁ + sum G₂))) es)
+          ++ (K `unit ∷ [])
+
+BswpThreadCohᵇ-unaligned : Set
+BswpThreadCohᵇ-unaligned =
+  ∀ {m q k p} (u : TTel m q) (G₁ G₂ A₁ A₂ : BindGroup)
+    (t₂ : TTel (sum A₁ + sum A₂ + (sum G₁ + sum G₂ + q)) k)
+    (es : List (Tm k)) (σ : m →ₛ p)
+    {j i m′ k′} (s : Tel p j) (a : Tel (2 + j) i) (ra : Run a)
+    {rb : Tel (2 + i) m′} (w : Run rb) (t′ : Tel m′ k′) (bt : Block t′)
+    (es₁ : List (Tm k′)) →
+    mkNF (s ++ᵗ bswapTel a w t′) (map (_⋯ bswapRen a w t′) es₁)
+      ≡ ImageOf (u ++ᵗᵗ tνᵗ G₁ G₂ (tνᵗ A₁ A₂ t₂)) es p σ →
+    (eqk : k′ ≡ BScope (u ++ᵗᵗ tνᵗ A₁ A₂ (tνᵗ G₁ G₂
+                  (t₂ ⋯ᵗᵉˡ assocSwapᵣ (sum A₁ + sum A₂) (sum G₁ + sum G₂)))) p) →
+    subst (List ∘ Tm) eqk es₁
+      ≡ map (_⋯ Bσ (u ++ᵗᵗ tνᵗ A₁ A₂ (tνᵗ G₁ G₂
+                 (t₂ ⋯ᵗᵉˡ assocSwapᵣ (sum A₁ + sum A₂) (sum G₁ + sum G₂)))) σ)
+            (map (_⋯ (t₂ ↑ᵗᵉˡ assocSwapᵣ (sum A₁ + sum A₂) (sum G₁ + sum G₂))) es)
+          ++ (K `unit ∷ [])
+
+FlipResidue-unaligned : Set
+FlipResidue-unaligned =
+  ∀ {m q k p} (u : TTel m q) (G₁ G₂ : BindGroup)
+    (t₀ : TTel (sum G₁ + sum G₂ + q) k)
+    (es : List (Tm k)) (σ : m →ₛ p)
+    {j k′} (s : Tel p j) (v : Tel (2 + j) k′) (es₁ : List (Tm k′)) →
+    mkNF (s ++ᵗ tν v) es₁ ≡ ImageOf (u ++ᵗᵗ tνᵗ G₁ G₂ t₀) es p σ →
+    mkNF (s ++ᵗ tν v) (map (_⋯ liftId v (swapᵣ 1 1)) es₁)
+      ~ᵩ ImageOf (u ++ᵗᵗ tνᵗ G₂ G₁ (t₀ ⋯ᵗᵉˡ swapᵣ (sum G₁) (sum G₂)))
+                 (map (_⋯ (t₀ ↑ᵗᵉˡ swapᵣ (sum G₁) (sum G₂))) es) p σ
+
+------------------------------------------------------------------------
 -- The misaligned instances.
 --
 --   All bind groups are the singleton `1 ∷ []` (sum 1, no syncs), so every
@@ -144,17 +204,17 @@ private
 -- The refutations.
 ------------------------------------------------------------------------
 
-bswpThreadCoh-⊥ : BswpThreadCoh → ⊥
+bswpThreadCoh-⊥ : BswpThreadCoh-unaligned → ⊥
 bswpThreadCoh-⊥ coh
   with coh []ᵗ B₁ B₁ B₁ B₁ tS esS σ₀ (tν []) [] rnil rnil [] bnil es₁S refl refl
 ... | ()
 
-bswpThreadCohᵇ-⊥ : BswpThreadCohᵇ → ⊥
+bswpThreadCohᵇ-⊥ : BswpThreadCohᵇ-unaligned → ⊥
 bswpThreadCohᵇ-⊥ coh
   with coh []ᵗ B₁ B₁ B₁ B₁ tS esS σ₀ (tν []) [] rnil rnil [] bnil es₁S refl refl
 ... | ()
 
-flipResidue-⊥ : FlipResidue → ⊥
+flipResidue-⊥ : FlipResidue-unaligned → ⊥
 flipResidue-⊥ fl
   with Σw-~ᵩ (fl []ᵗ B₁ B₁ tF esF σ₀ (tν []) [] es₁F refl) refl
 ... | ()

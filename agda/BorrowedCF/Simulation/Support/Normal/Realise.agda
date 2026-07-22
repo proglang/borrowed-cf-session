@@ -121,6 +121,10 @@ BswpThreadCoh =
     {j i m′ k′} (s : Tel p j) (a : Tel (2 + j) i) (ra : Run a)
     {rb : Tel (2 + i) m′} (w : Run rb) (t′ : Tel m′ k′) (bt : Block t′)
     (es₁ : List (Tm k′)) →
+    (pre≡ : BShape u ≡ shape s) →
+    (fl₁ : syncFlags G₁ ++ syncFlags G₂ ≡ runFlags ra) →
+    (fl₂ : syncFlags A₁ ++ syncFlags A₂ ≡ runFlags w) →
+    (X≡₂ : BShape t₂ ≡ shape t′) →
     mkNF (s ++ᵗ tν (a ++ᵗ tν (rb ++ᵗ t′))) es₁
       ≡ ImageOf (u ++ᵗᵗ tνᵗ G₁ G₂ (tνᵗ A₁ A₂ t₂)) es p σ →
     (eqk : k′ ≡ BScope (u ++ᵗᵗ tνᵗ A₁ A₂ (tνᵗ G₁ G₂
@@ -146,6 +150,9 @@ FlipResidue =
     (t₀ : TTel (sum G₁ + sum G₂ + q) k)
     (es : List (Tm k)) (σ : m →ₛ p)
     {j k′} (s : Tel p j) (v : Tel (2 + j) k′) (es₁ : List (Tm k′)) →
+    (pre≡ : BShape u ≡ shape s) →
+    (Y≡ : (map sφ (syncFlags G₁) ++ map sφ (syncFlags G₂)) ++ BShape t₀
+            ≡ shape v) →
     mkNF (s ++ᵗ tν v) es₁ ≡ ImageOf (u ++ᵗᵗ tνᵗ G₁ G₂ t₀) es p σ →
     mkNF (s ++ᵗ tν v) (map (_⋯ liftId v (swapᵣ 1 1)) es₁)
       ~ᵩ ImageOf (u ++ᵗᵗ tνᵗ G₂ G₁ (t₀ ⋯ᵗᵉˡ swapᵣ (sum G₁) (sum G₂)))
@@ -224,7 +231,7 @@ realise-bswp coh t es σ s {a} ra {rb} w {t′} bt es₁ eq
                 (t₂ ⋯ᵗᵉˡ assocSwapᵣ (sum A₁ + sum A₂) (sum G₁ + sum G₂)))))
              (pars-⋯ₚᵗ es (t₂ ↑ᵗᵉˡ assocSwapᵣ (sum A₁ + sum A₂) (sum G₁ + sum G₂)))) ) )
     (≡→~ᵩ (mkNF-cong eqk telPart
-      (coh u G₁ G₂ A₁ A₂ t₂ es σ s a ra w t′ bt es₁ eq eqk)))
+      (coh u G₁ G₂ A₁ A₂ t₂ es σ s a ra w t′ bt es₁ pre≡ fl₁ fl₂ X≡₂ eq eqk)))
 
 ------------------------------------------------------------------------
 -- Realising an endpoint flip (modulo OPEN #2).
@@ -252,7 +259,7 @@ realise-flip flip t es σ s v es₁ eq
         ◅◅ ≡→≋ᵗ (cong
              (plugᵗ (tνᵗ G₂ G₁ (t₀ ⋯ᵗᵉˡ swapᵣ (sum G₁) (sum G₂))))
              (pars-⋯ₚᵗ es (t₀ ↑ᵗᵉˡ swapᵣ (sum G₁) (sum G₂)))) ) )
-    (flip u G₁ G₂ t₀ es σ s v es₁ eq)
+    (flip u G₁ G₂ t₀ es σ s v es₁ pre≡ Y≡ eq)
 
 ------------------------------------------------------------------------
 -- The exact-image forward step: all five generators.
@@ -371,6 +378,10 @@ BswpThreadCohᵇ =
     {j i m′ k′} (s : Tel p j) (a : Tel (2 + j) i) (ra : Run a)
     {rb : Tel (2 + i) m′} (w : Run rb) (t′ : Tel m′ k′) (bt : Block t′)
     (es₁ : List (Tm k′)) →
+    (pre≡ : BShape u ≡ shape s) →
+    (fl₁ : syncFlags G₁ ++ syncFlags G₂ ≡ runFlags w) →
+    (fl₂ : syncFlags A₁ ++ syncFlags A₂ ≡ runFlags ra) →
+    (X≡₂ : BShape t₂ ≡ shape t′) →
     mkNF (s ++ᵗ bswapTel a w t′) (map (_⋯ bswapRen a w t′) es₁)
       ≡ ImageOf (u ++ᵗᵗ tνᵗ G₁ G₂ (tνᵗ A₁ A₂ t₂)) es p σ →
     (eqk : k′ ≡ BScope (u ++ᵗᵗ tνᵗ A₁ A₂ (tνᵗ G₁ G₂
@@ -460,7 +471,7 @@ realise-bswpᵇ coh t es σ s {a} ra {rb} w {t′} bt es₁ eq
                 (t₂ ⋯ᵗᵉˡ assocSwapᵣ (sum A₁ + sum A₂) (sum G₁ + sum G₂)))))
              (pars-⋯ₚᵗ es (t₂ ↑ᵗᵉˡ assocSwapᵣ (sum A₁ + sum A₂) (sum G₁ + sum G₂)))) ) )
     (≡→~ᵩ (mkNF-cong eqk telPart
-      (coh u G₁ G₂ A₁ A₂ t₂ es σ s a ra w t′ bt es₁ eq eqk)))
+      (coh u G₁ G₂ A₁ A₂ t₂ es σ s a ra w t′ bt es₁ pre≡ fl₁ fl₂ X≡₂ eq eqk)))
 
 ------------------------------------------------------------------------
 -- The exact-image step, TOTAL over both orientations.  With this, the
