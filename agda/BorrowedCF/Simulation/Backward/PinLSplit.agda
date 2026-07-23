@@ -16,21 +16,28 @@
 --       node-of-the-telescope vs ambient; PinConj.{Bσ-ambient,Bσ-node} compute
 --       Bσ on both: ambient variables go to `σ y ⋯ BσWk`, node variables to
 --       the node's canonical handle `νHandle B₁ B₂ _ z ⋯ BσWk t₂ _`.
---     Stages 2-tail/3/4            OPEN — `pin-lsplit-fire`, TWO holes:
---       NODE case: (a) the single-node handle analysis of νHandle
---            (SplitsH2.canonₛ-handleq machinery) + BσWk-middle arithmetic;
---            (b) typed firing: rearrange prenexᵗ P by typed ≋ (node-to-front
---            via ν-comm, thread-to-front via ∥ moves) to R-LSplit's rigid
---            shape, fire, wrap with R-Struct; (c) codomain: pointed
---            thread-replacement congruence of ~ plus the forward
---            U-lsplit-step image, closing with ≋⇒≈.
---       AMBIENT case: σ-escape — the redex channel appears to come from the
---            ambient σ.  NOT excludable from the Witness record alone: needs
---            precisely the boundary-preservation of the witness renaming
---            (ρ 0F telescope-bound vs BσWk-images ambient) that the slot
---            factorisation theory provides.  This is the probe's verdict on
---            the factor′ bypass: it shrinks the needed slot theory to this
---            single side condition, but does not eliminate it.
+--     Stage A (layout → rule)      CLOSED — PinFireBase: sink construction
+--       (node-to-backᵗ), sink-pin, groupAt/atk-eq.
+--     Stage B/C (rearrange + fire) CLOSED — PinFire.fire-node: the binding
+--       node is sunk to the INNERMOST position (so the redex thread needs no
+--       strengthening), the thread is fronted, `z` is split on the groups
+--       (ν-swap′ for the second), and R-LSplit fires under R-Bind*/R-Struct.
+--       The NODE case below returns that single typed step, star-wrapped.
+--     Stage D (codomain)           ONE hole — `C[reduct] ≈ U[ P′ ] σ`.
+--       PinCodomain provides the pointed thread-replacement congruence of ~
+--       (`~-replace`), the pointed context presentation (`ctx-replace`), and
+--       their composite `reduct-image-~ : nf (C[reduct]) ~` the image block
+--       normal form with ONE entry replaced by the reduct thread.  The
+--       residual gap is the reduct-image identification
+--           mkNF (BTel t n) (setAt i′ (T′ ⋯ ρ)) ~ nf (U[ P′ ] σ)
+--       — the νHandle/Bσ analogues of SplitsLQ's canonₛ-lwkq and
+--       canonₛ-handleq(-b1) slot lemmas (grown-block handle = old handle +
+--       lwk-invisibility for the other threads), plus re-deriving the fired
+--       thread from `reduct-image-~`'s landing membership so the two
+--       replacement sites coincide.  The image-side STEP is free:
+--       sim→ σ Vσ Γ-S ⊢P st : U[ P ] σ ─→ᵤ U[ P′ ] σ.
+--       AMBIENT case: CLOSED — σ-escape refuted by the boundary premise
+--       (PinBound/PinAmb).
 module BorrowedCF.Simulation.Backward.PinLSplit where
 
 open import BorrowedCF.Simulation.Base
@@ -51,6 +58,7 @@ open import BorrowedCF.Simulation.Support.Frames using (frame-plug₁; frame*-�
 open import BorrowedCF.Simulation.Backward.LSplit using (lsplit-arg-chan)
 open import BorrowedCF.Simulation.Backward.PinBound using (pin-lsplit-redex-bound)
 open import BorrowedCF.Simulation.Backward.PinAmb using (σ-escape-refute)
+open import BorrowedCF.Simulation.Backward.PinFire using (fire-node)
 open import BorrowedCF.Simulation.Backward.PinConj
   using (⊢-prenex-thread; tsplit; Bσ-ambient; Bσ-node)
 
@@ -87,23 +95,28 @@ pin-lsplit-fire :
   → Σ[ P′ ∈ TP.Proc m ] (Star TR._─→ₚ_ P P′
       × C [ UP.ν (UP.⟪ F [ ((e₁ ⊗ (` 0F)) ⊗ (K `unit)) ⊗ (((K `unit) ⊗ (` 0F)) ⊗ e₂) ]* ⟫ UP.∥ P₁) ]ᴷ
           ≈ U[ P′ ] σ)
-pin-lsplit-fire σ Vσ Γ-S {P = P} ⊢P C c ρ F₀ x₀ m† Γ*-S ⊢e† Feq xeq bnd
+pin-lsplit-fire σ Vσ Γ-S {P = P} ⊢P C {s = s} c ρ F₀ x₀ m† Γ*-S ⊢e† Feq xeq bnd
   with tsplit (tel (prenexᵗ P)) x₀
-... | inj₂ (a , t₁ , B₁ , B₂ , t₂ , teq , z , x₀eq) rewrite teq =
-  let node-escape = sym (Bσ-node t₁ B₁ B₂ t₂ σ z)
-                  ■ cong (Bσ (t₁ ++ᵗᵗ tνᵗ B₁ B₂ t₂) σ) (sym x₀eq)
-                  ■ xeq
-  in
-  {! OPEN (node case): x₀ sits in node (t₁ ∣ B₁ B₂ ∣ t₂) at offset z, and
-     node-escape pins the triple to `νHandle B₁ B₂ (Bσ t₁ σ) z ⋯ BσWk t₂ _`
-     (PinConj.Bσ-node).  Remaining:
-     (a) the SINGLE-node handle analysis of νHandle (SplitsH2.canonₛ-handleq
-         machinery) + BσWk-middle arithmetic, forcing z into the b₁-block at
-         an lsplit-able offset and the handle components to the canonical L/R,
-     (b) typed firing: rearrange plugᵗ (t₁ ++ᵗᵗ tνᵗ B₁ B₂ t₂) by typed ≋
-         (RealiseBase-style moves) to R-LSplit's rigid shape, fire, R-Struct,
-     (c) codomain: pointed thread-replacement congruence of ~ + the forward
-         U-lsplit-step image, closed with ≋⇒≈. !}
+... | inj₂ (a , t₁ , B₁ , B₂ , t₂ , teq , z , x₀eq)
+  with P′ , st ← fire-node t₁ B₁ B₂ t₂ (thr (prenexᵗ P))
+        (subst (λ t → P TP.≋ plugᵗ t (parsᵗ (thr (prenexᵗ P)))) teq (prenex-soundᵗ P))
+        s F₀ z
+        (subst (λ v → (F₀ [ K (`lsplit s) ·¹ (` v) ]*) ∈ thr (prenexᵗ P)) x₀eq m†)
+  = P′ , st ◅ ε ,
+  {! OPEN (Stage D, codomain): C[reduct] ≈ U[ P′ ] σ.
+     Stages A-C are CLOSED: `st : P ─→ₚ P′` fires the pinned redex via
+     PinFire.fire-node (sink node-to-back, thread-to-front, groupAt/atk-eq,
+     R-LSplit under R-Bind*/R-Struct).  Available for this hole:
+       * the image-side step  sim→ σ Vσ Γ-S ⊢P st : U[ P ] σ ─→ᵤ U[ P′ ] σ
+         (Simulation.Forward.sim→ is total),
+       * the input ≋ `c`, the pinning equations Feq / xeq / bnd, and the
+         node-escape triple  subst (λ t → (` x₀) ⋯ Bσ t σ ≡ _) teq xeq
+         composed with PinConj.Bσ-node,
+       * PinCodomain's pointed thread-replacement congruence for ~
+         (setAt / ~-replace) for the nf-level conjugation.
+     Route: nf-conjugate `c` (≋⇒~ + image-block-~), replace the pinned
+     thread on both ends (~-replace), identify the replaced image list with
+     `nf (U[ P′ ] σ)` via the reduct handle equations, close with ~⇒≋ / ≋⇒≈. !}
 ... | inj₁ (y , x₀eq) =
   let σ-escape = sym (Bσ-ambient (tel (prenexᵗ P)) σ y)
                ■ cong (Bσ (tel (prenexᵗ P)) σ) (sym x₀eq)
