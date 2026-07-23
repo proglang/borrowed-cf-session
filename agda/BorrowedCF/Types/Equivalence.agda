@@ -106,12 +106,43 @@ module ≃-Reasoning {κ x} = SetoidReasoning (≃-setoid κ x)
 ≃-assoc-; : (s₁ ; s₂) ; s₃ ≃ s₁ ; (s₂ ; s₃)
 ≃-assoc-; = Eq*.return ≃𝕊-assoc
 
+≃-brn₁ : s₁ ≃ s₂ → brn p s₁ s ≃ brn p s₂ s
+≃-brn₁ = Eq*.gmap _ ≃𝕊-brn₁
+
+≃-brn₂ : s₁ ≃ s₂ → brn p s s₁ ≃ brn p s s₂
+≃-brn₂ = Eq*.gmap _ ≃𝕊-brn₂
+
+≃-brn : s₁ ≃ s₁′ → s₂ ≃ s₂′ → brn p s₁ s₂ ≃ brn p s₁′ s₂′
+≃-brn e₁ e₂ = ≃-brn₁ e₁ ◅◅ ≃-brn₂ e₂
+
+≃-distr : brn p s₁ s₂ ; s ≃ brn p (s₁ ; s) (s₂ ; s)
+≃-distr = Eq*.return ≃𝕊-distr
+
+≃-⋯ : {ϕ : m →ₛ n} → s₁ ≃ s₂ → s₁ ⋯ ϕ ≃ s₂ ⋯ ϕ
+≃-⋯ {ϕ = ϕ} = go′ where
+  go : {ϕ : m →ₛ n} → s₁ ≃𝕊 s₂ → s₁ ⋯ ϕ ≃ s₂ ⋯ ϕ
+  go (≃𝕊-;₁ x) = ≃-; (go x) ≃-refl
+  go (≃𝕊-;₂ x) = ≃-; ≃-refl (go x)
+  go ≃𝕊-skipˡ = ≃-skipˡ
+  go ≃𝕊-skipʳ = ≃-skipʳ
+  go {ϕ = ϕ} (≃𝕊-μ {s = s}) =
+    subst (λ w → mu (s ⋯ ϕ ↑) ≃ w) (sym (dist-↑-⦅⦆-⋯ s (mu s) ϕ)) ≃-μ
+  go ≃𝕊-assoc = ≃-assoc-;
+  go ≃𝕊-distr = ≃-distr
+  go (≃𝕊-msg x) = Eq*.return (≃𝕊-msg x)
+  go (≃𝕊-brn₁ x) = ≃-brn₁ (go x)
+  go (≃𝕊-brn₂ x) = ≃-brn₂ (go x)
+
+  go′ : {ϕ : m →ₛ n} → s₁ ≃ s₂ → s₁ ⋯ ϕ ≃ s₂ ⋯ ϕ
+  go′ refl = refl
+  go′ (fwd x ◅ xs) = go x ◅◅ go′ xs
+  go′ (bwd x ◅ xs) = ≃-sym (go x) ◅◅ go′ xs
+
 ≃-⟨⟩⁻¹ : ⟨ s₁ ⟩ ≃ ⟨ s₂ ⟩ → s₁ ≃ s₂
 ≃-⟨⟩⁻¹ ⟨ eq ⟩ = eq
 
 ≃-⊗⁻¹ : T₁ ⊗⟨ d₁ ⟩ U₁ ≃ T₂ ⊗⟨ d₂ ⟩ U₂ → T₁ ≃ T₂ × d₁ ≡ d₂ × U₁ ≃ U₂
 ≃-⊗⁻¹ (eq₁ ⊗ eq₂) = eq₁ , refl , eq₂
-
 
 ≃-skips : Skips {n} Respects _≃_
 ≃-skips refl s = s
@@ -190,6 +221,118 @@ atom-⋯ᵣ msg = msg
 atom-⋯ᵣ ret = ret
 atom-⋯ᵣ acq = acq
 atom-⋯ᵣ ``- = ``-
+
+¬skips-atom : {a : 𝕊 n} → Atom a → ¬ Skips a
+¬skips-atom `-  ()
+¬skips-atom end ()
+¬skips-atom msg ()
+¬skips-atom ret ()
+¬skips-atom acq ()
+¬skips-atom ``- ()
+
+¬atom-; : ¬ Atom (s₁ ; s₂)
+¬atom-; ()
+
+¬atom-brn : ¬ Atom (brn p s₁ s₂)
+¬atom-brn ()
+
+data AtomLike : 𝕊 n → Set where
+  refl : Atom s → AtomLike s
+  _;₁_ : AtomLike s₁ → Skips s₂ → AtomLike (s₁ ; s₂)
+  _;₂_ : Skips s₁ → AtomLike s₂ → AtomLike (s₁ ; s₂)
+  mu   : AtomLike s → AtomLike (mu s)
+
+atomLike⊥skips : AtomLike s → Skips s → ⊥
+atomLike⊥skips (refl ()) skip
+atomLike⊥skips (a ;₁ _)  (z₁ ; z₂) = atomLike⊥skips a z₁
+atomLike⊥skips (_ ;₂ a)  (z₁ ; z₂) = atomLike⊥skips a z₂
+atomLike⊥skips (mu a)    (mu z)    = atomLike⊥skips a z
+
+atomLike-⋯ᵣ : {ϕ : m →ᵣ n} → AtomLike s → AtomLike (s ⋯ᵣ ϕ)
+atomLike-⋯ᵣ (refl A) = refl (atom-⋯ᵣ A)
+atomLike-⋯ᵣ (a ;₁ x) = atomLike-⋯ᵣ a ;₁ skips-⋯ x
+atomLike-⋯ᵣ (x ;₂ a) = skips-⋯ x ;₂ atomLike-⋯ᵣ a
+atomLike-⋯ᵣ (mu a)   = mu (atomLike-⋯ᵣ a)
+
+atomLike-⋯ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ {ϕ : m –[ K ]→ n} → AtomLike s → (∀ z → AtomLike (`/id (ϕ z))) → AtomLike (s ⋯ ϕ)
+atomLike-⋯ (refl `-)  Aϕ = Aϕ _
+atomLike-⋯ (refl end) Aϕ = refl end
+atomLike-⋯ (refl msg) Aϕ = refl msg
+atomLike-⋯ (refl ret) Aϕ = refl ret
+atomLike-⋯ (refl acq) Aϕ = refl acq
+atomLike-⋯ (refl ``-) Aϕ = refl ``-
+atomLike-⋯ (a ;₁ x)   Aϕ = atomLike-⋯ a Aϕ ;₁ skips-⋯ x
+atomLike-⋯ (x ;₂ a)   Aϕ = skips-⋯ x ;₂ atomLike-⋯ a Aϕ
+atomLike-⋯ ⦃ K ⦄ (mu a) Aϕ = mu (atomLike-⋯ a λ where
+  zero → refl (subst Atom (sym (`/`-is-` ⦃ K ⦄ _)) `-)
+  (suc x) → subst AtomLike (wk-`/id _) (atomLike-⋯ᵣ (Aϕ x)))
+
+atomLike-⋯⁻¹ : ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ {ϕ : m –[ K ]→ n} → AtomLike (s ⋯ ϕ) →  (∀ z → ¬ Skips (`/id (ϕ z))) → AtomLike s
+atomLike-⋯⁻¹ {s = skip}      (refl ())
+atomLike-⋯⁻¹ {s = brn p _ _} (refl ())
+atomLike-⋯⁻¹ {s = ` x}       a ¬Sϕ = refl `-
+atomLike-⋯⁻¹ {s = end p}     a ¬Sϕ = refl end
+atomLike-⋯⁻¹ {s = msg p t}   a ¬Sϕ = refl msg
+atomLike-⋯⁻¹ {s = s₁ ; s₂}   (a ;₁ x) ¬Sϕ = atomLike-⋯⁻¹ a ¬Sϕ ;₁ skips-⋯⁻¹ x ¬Sϕ
+atomLike-⋯⁻¹ {s = s₁ ; s₂}   (x ;₂ a) ¬Sϕ = skips-⋯⁻¹ x ¬Sϕ ;₂ atomLike-⋯⁻¹ a ¬Sϕ
+atomLike-⋯⁻¹ {s = ret}       a ¬Sϕ = refl ret
+atomLike-⋯⁻¹ {s = acq}       a ¬Sϕ = refl acq
+atomLike-⋯⁻¹ {s = `` α}      a ¬Sϕ = refl ``-
+atomLike-⋯⁻¹ {s = mu s} ⦃ K ⦄(mu a) ¬Sϕ = mu (atomLike-⋯⁻¹ a λ where
+  zero    → ¬skips-`/` K
+  (suc x) → ¬Sϕ x ∘ skips-⋯ᵣ⁻¹ ∘ subst Skips (sym (wk-`/id _)))
+
+atomLike-≃ : s₁ ≃ s₂ → AtomLike s₁ → AtomLike s₂
+atomLike-≃ refl = id
+atomLike-≃ (x ◅ xs) = atomLike-≃ xs ∘ go x where
+  go : SymClosure _≃𝕊_ s₁ s₂ → AtomLike s₁ → AtomLike s₂
+  go (fwd (≃𝕊-msg x)) a = refl msg
+  go (bwd (≃𝕊-msg x)) a = refl msg
+  go (fwd (≃𝕊-;₁ x)) (a ;₁ z) = go (fwd x) a ;₁ z
+  go (fwd (≃𝕊-;₁ x)) (z ;₂ a) = ≃-skips (Eq*.return x) z ;₂ a
+  go (fwd (≃𝕊-;₂ x)) (a ;₁ z) = a ;₁ ≃-skips (Eq*.return x) z
+  go (fwd (≃𝕊-;₂ x)) (z ;₂ a) = z ;₂ go (fwd x) a
+  go (fwd ≃𝕊-skipˡ)  (refl () ;₁ z)
+  go (fwd ≃𝕊-skipˡ)  (z ;₂ a) = a
+  go (fwd ≃𝕊-skipʳ)  (a ;₁ z) = a
+  go (fwd ≃𝕊-skipʳ)  (z ;₂ refl ())
+  go (fwd ≃𝕊-μ)      (mu a) = atomLike-⋯ a λ where
+    zero    → mu a
+    (suc x) → refl `-
+  go (fwd ≃𝕊-assoc) ((a ;₁ x) ;₁ y) = a ;₁ (x ; y)
+  go (fwd ≃𝕊-assoc) ((x ;₂ a) ;₁ y) = x ;₂ (a ;₁ y)
+  go (fwd ≃𝕊-assoc) ((x ;  y) ;₂ a) = x ;₂ (y ;₂ a)
+  go (fwd ≃𝕊-distr) (refl () ;₁ x)
+  go (bwd (≃𝕊-;₁ x)) (a ;₁ z) = go (bwd x) a ;₁ z
+  go (bwd (≃𝕊-;₁ x)) (z ;₂ a) = ≃-skips (≃-sym (Eq*.return x)) z ;₂ a
+  go (bwd (≃𝕊-;₂ x)) (a ;₁ z) = a ;₁ ≃-skips (≃-sym (Eq*.return x)) z
+  go (bwd (≃𝕊-;₂ x)) (z ;₂ a) = z ;₂ go (bwd x) a
+  go (bwd ≃𝕊-skipˡ) a = skip ;₂ a
+  go (bwd ≃𝕊-skipʳ) a = a ;₁ skip
+  go (bwd ≃𝕊-μ) a = mu (atomLike-⋯⁻¹ a λ where
+    zero    z → atomLike⊥skips a (≃-skips ≃-μ z)
+    (suc x) ())
+  go (bwd ≃𝕊-assoc) (a ;₁ (x ;  y)) = (a ;₁ x) ;₁ y
+  go (bwd ≃𝕊-assoc) (x ;₂ (a ;₁ y)) = (x ;₂ a) ;₁ y
+  go (bwd ≃𝕊-assoc) (x ;₂ (y ;₂ a)) = (x ; y) ;₂ a
+  go (bwd ≃𝕊-distr) (refl ())
+  go (bwd (≃𝕊-brn₁ x)) (refl ())
+  go (bwd (≃𝕊-brn₂ x)) (refl ())
+
+atomLike-;⁻ : AtomLike (s₁ ; s₂) → AtomLike s₁ × Skips s₂ ⊎ AtomLike s₂ × Skips s₁
+atomLike-;⁻ (a ;₁ x) = inj₁ (a , x)
+atomLike-;⁻ (x ;₂ a) = inj₂ (a , x)
+
+atom-;⁻ : Atom s → s ≃ s₁ ; s₂ → s ≃ s₁ × Skips s₂ ⊎ s ≃ s₂ × Skips s₁
+atom-;⁻ A eq with atomLike-;⁻ (atomLike-≃ eq (refl A))
+... | inj₁ (a , z) = inj₁ (≃-trans eq (≃-skipsʳ z) , z)
+... | inj₂ (a , z) = inj₂ (≃-trans eq (≃-skipsˡ z) , z)
+
+¬atomLike-brn : ¬ AtomLike (brn p s₁ s₂)
+¬atomLike-brn (refl ())
+
+atom≄brn : Atom s → s ≄ brn p s₁ s₂
+atom≄brn A eq = ¬atomLike-brn (atomLike-≃ eq (refl A))
 
 data All/One : Set where
   all one : All/One
@@ -413,45 +556,3 @@ private
 
 atom-≃′-;ʳ-skips : {a₁ a₂ : 𝕊 n} → Atom a₁ → Atom a₂ → {s : 𝕊 n} → s ; a₁ ≃𝕊 a₂ → Skips s × a₁ ≡ a₂
 atom-≃′-;ʳ-skips A₁ A₂ ≃𝕊-skipˡ = skip , refl
-
-{-
-atom-;ʳ-⁻¹-′ : {a₁ a₂ : 𝕊 n} → Atom a₁ → Atom a₂ → {s s₁ s₂ : 𝕊 n} → s₁ ; a₁ ≃𝕊 s → s₂ ; a₂ ≃𝕊 s → s₁ ≃ s₂ × a₁ ≡ a₂
-atom-;ʳ-⁻¹-′ A₁ A₂ (≃𝕊-;₁ eq₁) (≃𝕊-;₁ eq₂) = ≃-trans (Eq*.return eq₁) (≃-sym (Eq*.return eq₂)) , refl
-atom-;ʳ-⁻¹-′ A₁ A₂ (≃𝕊-;₁ eq₁) (≃𝕊-;₂ eq₂) = contradiction eq₂ (atom-≄′ˡ A₂)
-atom-;ʳ-⁻¹-′ A₁ A₂ (≃𝕊-;₂ eq₁) (≃𝕊-;₁ eq₂) = contradiction eq₁ (atom-≄′ˡ A₁)
-atom-;ʳ-⁻¹-′ A₁ A₂ (≃𝕊-;₂ eq₁) (≃𝕊-;₂ eq₂) = contradiction eq₁ (atom-≄′ˡ A₁)
-atom-;ʳ-⁻¹-′ A₁ A₂ (≃𝕊-;₂ eq₁) ≃𝕊-assoc = contradiction eq₁ (atom-≄′ˡ A₁)
-atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-skipˡ ≃𝕊-skipˡ = refl , refl
-atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-assoc (≃𝕊-;₂ eq₂) = contradiction eq₂ (atom-≄′ˡ A₂)
-atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-assoc ≃𝕊-assoc = refl , refl
-atom-;ʳ-⁻¹-′ A₁ A₂ ≃𝕊-distr ≃𝕊-distr = refl , refl
--}
-
-
-
--- atom-refl-;-skips⁻¹ : Atom s → (s′ : 𝕊 n) → s ≃ s ; s′ → Skips s′
--- atom-refl-;-skips⁻¹ a (` x) eq = {!!}
--- atom-refl-;-skips⁻¹ a (end p) eq = {!!}
--- atom-refl-;-skips⁻¹ a (msg p t) eq = {!!}
--- atom-refl-;-skips⁻¹ a (brn p s₁ s₂) eq = {!!}
--- atom-refl-;-skips⁻¹ a (mu s) eq = {!!}
--- atom-refl-;-skips⁻¹ a (s₁ ; s₂) eq = {!!}
--- atom-refl-;-skips⁻¹ a skip eq = {!!}
--- atom-refl-;-skips⁻¹ a ret eq = {!!}
--- atom-refl-;-skips⁻¹ a acq eq = {!!}
--- atom-refl-;-skips⁻¹ a (`` α) eq = {!!}
-
--- -- atom-refl-;-skips⁻¹ : Atom s → s ≃ s ; s′ → Skips s′
--- -- atom-refl-;-skips⁻¹ `-  (fwd () ◅ eq)
--- -- atom-refl-;-skips⁻¹ end (fwd () ◅ eq)
--- -- atom-refl-;-skips⁻¹ msg (fwd () ◅ eq)
--- -- atom-refl-;-skips⁻¹ ret (fwd () ◅ eq)
--- -- atom-refl-;-skips⁻¹ acq (fwd () ◅ eq)
--- -- atom-refl-;-skips⁻¹ ``- (fwd () ◅ eq)
--- -- atom-refl-;-skips⁻¹ `-  (bwd x ◅ eq) = {!!}
--- -- atom-refl-;-skips⁻¹ end (bwd x ◅ eq) = {!!}
--- -- atom-refl-;-skips⁻¹ msg (bwd x ◅ eq) = {!!}
--- -- atom-refl-;-skips⁻¹ ret (bwd x ◅ eq) = {!!}
--- -- atom-refl-;-skips⁻¹ acq (bwd x ◅ eq) = {!!}
--- -- atom-refl-;-skips⁻¹ ``- (bwd x ◅ eq) = {!!}
-
