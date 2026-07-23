@@ -41,14 +41,16 @@ import BorrowedCF.Reduction.Processes.Typed   as TR
 open import BorrowedCF.Simulation.Support.StepDecomp using (Ctx*; _[_]ᴷ)
 open import BorrowedCF.Simulation.Support.RevAdmin using (_≈_)
 open import BorrowedCF.Simulation.Support.TypedPrenex
-open import BorrowedCF.Simulation.Support.Normal.PrenexImage using (BScope; Bσ)
+open import BorrowedCF.Simulation.Support.Normal.Form using (wkTel)
+open import BorrowedCF.Simulation.Support.Normal.PrenexImage using (BScope; BTel; Bσ)
 open import BorrowedCF.Simulation.Support.Normal.PrenexImageVSub using (Bσ-VSub)
 open import BorrowedCF.Simulation.Support.ReverseInv
   using (frameApp-reflect; close-arg-var)
 open import BorrowedCF.Simulation.Support.InvFrame using (strengthen-frame)
 open import BorrowedCF.Simulation.Support.Frames using (frame-plug₁; frame*-⋯)
 open import BorrowedCF.Simulation.Backward.LSplit using (lsplit-arg-chan)
-open import BorrowedCF.Simulation.Backward.PinBase using (pin-lsplit-redex)
+open import BorrowedCF.Simulation.Backward.PinBound using (pin-lsplit-redex-bound)
+open import BorrowedCF.Simulation.Backward.PinAmb using (σ-escape-refute)
 open import BorrowedCF.Simulation.Backward.PinConj
   using (⊢-prenex-thread; tsplit; Bσ-ambient; Bσ-node)
 
@@ -81,10 +83,11 @@ pin-lsplit-fire :
   → Γ* ; β ⊢ F₀ [ K (`lsplit s) ·¹ (` x₀) ]* ∶ `⊤ ∣ 𝕀
   → F ⋯ᶠ* ρ ≡ frame*-⋯ F₀ (Bσ (tel (prenexᵗ P)) σ) (Bσ-VSub (tel (prenexᵗ P)) Vσ)
   → (` x₀) ⋯ Bσ (tel (prenexᵗ P)) σ ≡ ((e₁ ⋯ ρ) ⊗ (` ρ 0F)) ⊗ (e₂ ⋯ ρ)
+  → (∀ z → ρ 0F ≢ wkTel (BTel (tel (prenexᵗ P)) n) z)
   → Σ[ P′ ∈ TP.Proc m ] (Star TR._─→ₚ_ P P′
       × C [ UP.ν (UP.⟪ F [ ((e₁ ⊗ (` 0F)) ⊗ (K `unit)) ⊗ (((K `unit) ⊗ (` 0F)) ⊗ e₂) ]* ⟫ UP.∥ P₁) ]ᴷ
           ≈ U[ P′ ] σ)
-pin-lsplit-fire σ Vσ Γ-S {P = P} ⊢P C c ρ F₀ x₀ m† Γ*-S ⊢e† Feq xeq
+pin-lsplit-fire σ Vσ Γ-S {P = P} ⊢P C c ρ F₀ x₀ m† Γ*-S ⊢e† Feq xeq bnd
   with tsplit (tel (prenexᵗ P)) x₀
 ... | inj₂ (a , t₁ , B₁ , B₂ , t₂ , teq , z , x₀eq) rewrite teq =
   let node-escape = sym (Bσ-node t₁ B₁ B₂ t₂ σ z)
@@ -105,12 +108,7 @@ pin-lsplit-fire σ Vσ Γ-S {P = P} ⊢P C c ρ F₀ x₀ m† Γ*-S ⊢e† Feq
   let σ-escape = sym (Bσ-ambient (tel (prenexᵗ P)) σ y)
                ■ cong (Bσ (tel (prenexᵗ P)) σ) (sym x₀eq)
                ■ xeq
-  in {! OPEN (ambient case): σ-escape : σ y ⋯ BσWk (tel (prenexᵗ P)) _ ≡
-        ((e₁ ⋯ ρ) ⊗ (` ρ 0F)) ⊗ (e₂ ⋯ ρ) — the redex channel appears to come
-        from the AMBIENT σ.  Excluding this needs exactly the slot side
-        condition (ρ 0F is telescope-bound, but BσWk-images of σ-values have
-        ambient middles) that the slot-factorisation theory would provide;
-        it is NOT derivable from the Witness record alone. !}
+  in ⊥-elim (σ-escape-refute (tel (prenexᵗ P)) σ y bnd σ-escape)
 
 ------------------------------------------------------------------------
 -- The target: the ≋-core ObsBase instance for RU-LSplit, in context.
@@ -126,7 +124,7 @@ pin-lsplit :
       × C [ UP.ν (UP.⟪ F [ ((e₁ ⊗ (` 0F)) ⊗ (K `unit)) ⊗ (((K `unit) ⊗ (` 0F)) ⊗ e₂) ]* ⟫ UP.∥ P₁) ]ᴷ
           ≈ U[ P′ ] σ)
 pin-lsplit σ Vσ Γ-S {P = P} ⊢P C {s} {e₁} {e₂} {P₁} {F} c
-  with ρ , e† , m† , eq ← pin-lsplit-redex P σ C s F c
+  with ρ , e† , m† , eq , bnd ← pin-lsplit-redex-bound P σ C s F c
   with Γ* , β , Γ*-S , ⊢e† ← ⊢-prenex-thread Γ-S ⊢P m†
   with F₀ , arg₀ , refl , Feq , argeq ←
        frameApp-reflect Γ*-S e† ⊢e† (Bσ (tel (prenexᵗ P)) σ)
@@ -135,4 +133,4 @@ pin-lsplit σ Vσ Γ-S {P = P} ⊢P C {s} {e₁} {e₂} {P₁} {F} c
   with _ , (_ , _ , ⊢app) , _ , _ ← strengthen-frame F₀ ⊢e†
   with _ , _ , _ , _ , ⊢arg₀ , ch ← lsplit-arg-chan ⊢app
   with x₀ , refl ← close-arg-var arg₀ ⊢arg₀ ch (Bσ (tel (prenexᵗ P)) σ) (sym argeq)
-  = pin-lsplit-fire σ Vσ Γ-S ⊢P C c ρ F₀ x₀ m† Γ*-S ⊢e† Feq (sym argeq)
+  = pin-lsplit-fire σ Vσ Γ-S ⊢P C c ρ F₀ x₀ m† Γ*-S ⊢e† Feq (sym argeq) bnd
