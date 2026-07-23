@@ -60,7 +60,7 @@ descend-absK {n = n} {Γ₁ = Γ₁} {Γ₂ = Γ₂} {ρ = ρ} k Δ inj-ρ ρ⇔
   img {y} y∈ with x∈p∪q⁻ Xtrue (fresh n k) (∈drop⁻ k (↓-dom γa (V.drop k Xd0) y∈))
   ... | inj₁ sy∈   = ∈img-↑*⁻ k y (∈dom⋯⇒∈img A sy∈)
   ... | inj₂ sy∈fr = contradiction sy∈fr (wkˡ∉fresh k)
-  pim = ⋯-preimage {ρ = ρ} (γa ↓ V.drop k Xd0) img
+  pim = ⋯-preimage (γa ↓ V.drop k Xd0) {ρ} img
   γr = proj₁ pim
   eqr : γr 𝐂.⋯ ρ ≡ γa ↓ V.drop k Xd0
   eqr = proj₂ pim

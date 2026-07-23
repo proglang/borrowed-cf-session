@@ -166,11 +166,11 @@ private
     base = ∁ (fresh n k)
     γwk = γ 𝐂.⋯ᵣ 𝐂.weaken* k
 
-    pim₁ = 𝐂.⋯-preimage {ρ = 𝐂.weaken* k} (Γγ₁ ↓ base) (λ y∈ → ∉fresh⇒∈img k (x∈∁p⇒x∉p (↓-dom Γγ₁ base y∈)))
+    pim₁ = 𝐂.⋯-preimage (Γγ₁ ↓ base) {𝐂.weaken* k} (λ y∈ → ∉fresh⇒∈img k (x∈∁p⇒x∉p (↓-dom Γγ₁ base y∈)))
     ζ₁ = proj₁ pim₁
     e₁ : ζ₁ 𝐂.⋯ᵣ 𝐂.weaken* k ≡ Γγ₁ ↓ base
     e₁ = proj₂ pim₁
-    pim₂ = 𝐂.⋯-preimage {ρ = 𝐂.weaken* k} (Γγ₂ ↓ base) (λ y∈ → ∉fresh⇒∈img k (x∈∁p⇒x∉p (↓-dom Γγ₂ base y∈)))
+    pim₂ = 𝐂.⋯-preimage (Γγ₂ ↓ base) {𝐂.weaken* k} (λ y∈ → ∉fresh⇒∈img k (x∈∁p⇒x∉p (↓-dom Γγ₂ base y∈)))
     ζ₂ = proj₁ pim₂
     e₂ : ζ₂ 𝐂.⋯ᵣ 𝐂.weaken* k ≡ Γγ₂ ↓ base
     e₂ = proj₂ pim₂

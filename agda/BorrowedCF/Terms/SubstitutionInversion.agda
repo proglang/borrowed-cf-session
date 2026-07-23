@@ -78,7 +78,7 @@ brₛ↑↑ ⊢ϕ γ = sym (𝐂.conv-⋯ᵣₛ γ) ■ 𝐂.⋯-cong γ (lift-d
   let a , Ta , Ua , γa , T≃ , γa≼γ , uc , mc , d = inv-ƛ p
       γb′ , ≼b , pb = ⊢⋯⁻¹ {e = e} {T = Ua} {ϵ = Arr.eff a} {ϕ = ρ ↑ᵣ} (↑-inj inj) d (⊢↑ ⊢ϕ)
       ≼bᵣ = subst (λ z → _ ∶ z ≼ _) (sym (brₛ↑ ⊢ϕ γb′)) ≼b
-      γr , p1 , p2 = descend-abs inj (⊢ren-ϕ⇔ ⊢ϕ) (Arr.dir a) γb′ γa ≼bᵣ
+      γr , p1 , p2 = descend-abs inj (⊢ren-ϕ⇔ ⊢ϕ) (Arr.dir a) γa γb′ ≼bᵣ
       out≼ = ≼-trans (subst (λ z → _ ∶ z ≼ γa) (brₛ ⊢ϕ γr) p2) γa≼γ
       uc′ = λ ua → 𝐂.allCx-⋯⁻¹ (𝐂.⇔-preserves[ reverseImplication ] ⦃ 𝐂.Kₛ ⦄ Γ₁ (⊢ren-ϕ⇔ ⊢ϕ)) (allCx-strengthen p2 (uc ua))
       mc′ = λ ma → 𝐂.allCx-⋯⁻¹ (𝐂.⇔-preserves[ reverseImplication ] ⦃ 𝐂.Kₛ ⦄ Γ₁ (⊢ren-ϕ⇔ ⊢ϕ)) (allCx-strengthen p2 (mc ma))
@@ -88,10 +88,7 @@ brₛ↑↑ ⊢ϕ γ = sym (𝐂.conv-⋯ᵣₛ γ) ■ 𝐂.⋯-cong γ (lift-d
       γbb , ≼bb , pbb = ⊢⋯⁻¹ {e = e} {T = U} {ϵ = Arr.eff a} {ϕ = ρ ↑ᵣ ↑ᵣ}
                           (↑-inj (↑-inj inj)) d (⊢↑ (⊢↑ ⊢ϕ))
       ≼bbᵣ = subst (λ z → _ ∶ z ≼ _) (sym (brₛ↑↑ ⊢ϕ γbb)) ≼bb
-      γr , p1 , p2 = descend-abs2 inj (⊢ren-ϕ⇔ ⊢ϕ) 𝟙
-                       ((` zero) ∥ (` suc zero))
-                       ((` zero) ∥ (` suc zero))
-                       γbb γ₀ refl ⊆-refl ≼bbᵣ
+      γr , p1 , p2 = descend-abs² inj (⊢ren-ϕ⇔ ⊢ϕ) 𝟙 γ₀ ((` zero) ∥ (` suc zero)) γbb ⊆-refl ≼bbᵣ
       out≼ = ≼-trans (subst (λ z → _ ∶ z ≼ γ₀) (brₛ ⊢ϕ γr) p2) γ₀≼γ
       uc′ = 𝐂.allCx-⋯⁻¹ (𝐂.⇔-preserves[ reverseImplication ] ⦃ 𝐂.Kₛ ⦄ Γ₁ (⊢ren-ϕ⇔ ⊢ϕ)) (allCx-strengthen p2 uc)
   in γr , out≼ , T-Conv (≃-sym V≃) ℙ≤ϵ (T-AbsRec uc′ a-unr (T-Weaken p1 pbb))
@@ -147,21 +144,22 @@ brₛ↑↑ ⊢ϕ γ = sym (𝐂.conv-⋯ᵣₛ γ) ■ 𝐂.⋯-cong γ (lift-d
       γ₁′ , ≼₁ , x′ = ⊢⋯⁻¹ inj x ⊢ϕ
       γ₂b , ≼₂ , y′ = ⊢⋯⁻¹ {e = e₂} {ϕ = ρ ↑ᵣ} (↑-inj inj) y (⊢↑ ⊢ϕ)
       ≼₂ᵣ = subst (λ z → _ ∶ z ≼ _) (sym (brₛ↑ ⊢ϕ γ₂b)) ≼₂
-      γr , p1 , p2 = descend-abs inj (⊢ren-ϕ⇔ ⊢ϕ) p/s γ₂b γ₂ ≼₂ᵣ
+      γr , p1 , p2 = descend-abs inj (⊢ren-ϕ⇔ ⊢ϕ) p/s γ₂ γ₂b ≼₂ᵣ
       out≼ = subst (λ z → _ ∶ z ≼ _) (sym (join-⋯ p/s γ₁′ γr))
                (≼-trans (≼-join p/s ≼₁ (subst (λ z → _ ∶ z ≼ γ₂) (brₛ ⊢ϕ γr) p2)) ≤)
   in join p/s γ₁′ γr , out≼ , T-Let p/s x′ (T-Weaken p1 y′)
-⊢⋯⁻¹ {e = `let⊗ e₁ `in e₂} {ϕ = ρ} inj p ⊢ϕ =
+⊢⋯⁻¹ {Γ₂ = Γ₂} {e = `let⊗ e₁ `in e₂} {ϕ = ρ} inj p ⊢ϕ =
   let p/s , d , γ₁ , γ₂ , T₁ , T₂ , ≤ , x , y = inv-`let⊗ p
       γ₁′ , ≼₁ , x′ = ⊢⋯⁻¹ inj x ⊢ϕ
       γbb , ≼₂ , y′ = ⊢⋯⁻¹ {e = e₂} {ϕ = ρ ↑ᵣ ↑ᵣ}
                         (↑-inj (↑-inj inj)) y (⊢↑ (⊢↑ ⊢ϕ))
       ≼₂ᵣ = subst (λ z → _ ∶ z ≼ _) (sym (brₛ↑↑ ⊢ϕ γbb)) ≼₂
-      γr , p1 , p2 = descend-abs2 inj (⊢ren-ϕ⇔ ⊢ϕ) p/s
-                       (join d (` zero) (` suc zero)) (join d (` zero) (` suc zero))
-                       γbb γ₂
-                       (join-⋯ d {ϕ = ρ 𝐂.↑ᵣ 𝐂.↑ᵣ} (` zero) (` suc zero))
-                       (dom-join-⊆ d (` zero) (` suc zero)) ≼₂ᵣ
+      γr , p1 , p2 = descend-abs² inj (⊢ren-ϕ⇔ ⊢ϕ) p/s
+                       γ₂
+                       (join d (` zero) (` suc zero))
+                       γbb
+                       (⊆-reflexive (cong dom (join-⋯ d (` zero) (` suc zero)) ■ dom-join d (` zero) (` suc zero)))
+                       (subst₂ (T₁ ∷ T₂ ∷ Γ₂ ∶_≼_) refl (cong₂ (join p/s) (sym (join-⋯ d (` zero) (` suc zero))) refl) ≼₂ᵣ)
       out≼ = subst (λ z → _ ∶ z ≼ _) (sym (join-⋯ p/s γ₁′ γr))
                (≼-trans (≼-join p/s ≼₁ (subst (λ z → _ ∶ z ≼ γ₂) (brₛ ⊢ϕ γr) p2)) ≤)
   in join p/s γ₁′ γr , out≼ , T-LetPair p/s x′ (T-Weaken p1 y′)
@@ -179,9 +177,9 @@ brₛ↑↑ ⊢ϕ γ = sym (𝐂.conv-⋯ᵣₛ γ) ■ 𝐂.⋯-cong γ (lift-d
       Ximg : ∀ {sy} → sy ∈ (dom (γₐ 𝐂.⋯ (ρ 𝐂.↑ᵣ)) ∪ dom (γᵦ 𝐂.⋯ (ρ 𝐂.↑ᵣ))) → sy ∈img ρ 𝐂.↑ᵣ
       Ximg {sy} sy∈ = [ 𝐂.∈dom⋯⇒∈img γₐ {ρ 𝐂.↑ᵣ} , 𝐂.∈dom⋯⇒∈img γᵦ {ρ 𝐂.↑ᵣ} ]′
                         (x∈p∪q⁻ (dom (γₐ 𝐂.⋯ (ρ 𝐂.↑ᵣ))) (dom (γᵦ 𝐂.⋯ (ρ 𝐂.↑ᵣ))) sy∈)
-      γr , p1ₐ , p2 = descend-absX inj (⊢ren-ϕ⇔ ⊢ϕ) p/s γₐ γ₂
+      γr , p1ₐ , p2 = descend-abs-⊆ inj (⊢ren-ϕ⇔ ⊢ϕ) p/s γ₂ γₐ
                         (dom (γₐ 𝐂.⋯ (ρ 𝐂.↑ᵣ)) ∪ dom (γᵦ 𝐂.⋯ (ρ 𝐂.↑ᵣ))) Ximg (p⊆p∪q _) ≼ₐᵣ
-      _ , p1ᵦ , _ = descend-absX inj (⊢ren-ϕ⇔ ⊢ϕ) p/s γᵦ γ₂
+      _ , p1ᵦ , _ = descend-abs-⊆ inj (⊢ren-ϕ⇔ ⊢ϕ) p/s γ₂ γᵦ
                         (dom (γₐ 𝐂.⋯ (ρ 𝐂.↑ᵣ)) ∪ dom (γᵦ 𝐂.⋯ (ρ 𝐂.↑ᵣ))) Ximg (q⊆p∪q _ _) ≼ᵦᵣ
       out≼ = subst (λ z → _ ∶ z ≼ _) (sym (join-⋯ p/s γ₁′ γr))
                (≼-trans (≼-join p/s ≼₁ (subst (λ z → _ ∶ z ≼ γ₂) (brₛ ⊢ϕ γr) p2)) ≤)

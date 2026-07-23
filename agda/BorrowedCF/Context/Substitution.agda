@@ -331,7 +331,7 @@ y ∈img ρ = ∃[ x ] ρ x ≡ y
 ∈dom⋯⇒∈img (α ∥ β) y∈ = [ ∈dom⋯⇒∈img α , ∈dom⋯⇒∈img β ]′ (x∈p∪q⁻ _ _ y∈)
 ∈dom⋯⇒∈img (α ; β) y∈ = [ ∈dom⋯⇒∈img α , ∈dom⋯⇒∈img β ]′ (x∈p∪q⁻ _ _ y∈)
 
-⋯-preimage : {ρ : m →ᵣ n} (γ : Struct n) → (∀ {y} → y ∈ dom γ → y ∈img ρ) → ∃[ γ′ ] γ′ ⋯ ρ ≡ γ
+⋯-preimage : (γ : Struct n) {ρ : m →ᵣ n} → (∀ {y} → y ∈ dom γ → y ∈img ρ) → ∃[ γ′ ] γ′ ⋯ ρ ≡ γ
 ⋯-preimage []       f = [] , refl
 ⋯-preimage (` y)    f = let x , eq = f (x∈⁅x⁆ y) in ` x , cong `_ eq
 ⋯-preimage (α ∥ β)  f =

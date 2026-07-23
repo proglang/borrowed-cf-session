@@ -1,5 +1,8 @@
 module BorrowedCF.Context.Join where
 
+import Data.Fin.Subset as S
+import Data.Fin.Subset.Properties as S
+
 open import BorrowedCF.Prelude
 open import BorrowedCF.Types
 open import BorrowedCF.Context.Base
@@ -92,6 +95,12 @@ record Join (A : Set) : Set where
   ... | 𝟙 = refl
   ... | L = refl
   ... | R = refl
+
+  dom-join : ∀ a (α β : Struct n) → dom (join a α β) ≡ dom α S.∪ dom β
+  dom-join a α β with joinDir a
+  ... | 𝟙 = refl
+  ... | L = refl
+  ... | R = S.∪-comm _ _
 
 {-
   module _ where
