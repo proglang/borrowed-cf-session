@@ -152,7 +152,7 @@ UB-cong-≡ : (B : TP.BindGroup) (cc : UChan n) {f g : (sum B →ₛ syncs B + n
 UB-cong-≡ [] cc h = h λ()
 UB-cong-≡ (b ∷ []) cc h = h _
 UB-cong-≡ (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) h =
-  cong (UP.φ ϕ[ b ]) (UB-cong-≡ B _ (λ σ → cong (subst UP.Proc (sym (+-suc (syncs B) _))) (h _)))
+  cong (UP.φ ϕ[ b ] (` x)) (UB-cong-≡ B _ (λ σ → cong (subst UP.Proc (sym (+-suc (syncs B) _))) (h _)))
 
 ------------------------------------------------------------------------
 -- U-cong : the translation depends on its substitution only pointwise.
@@ -225,7 +225,7 @@ UB-nat (b ∷ []) (e₁ , x , e₂) θ {f} {f′} h =
   h (Ub[ b + 0 ] (e₁ , x , e₂))
   ■ cong f′ (funext (λ i → Ub-nat (b + 0) (e₁ , x , e₂) θ i))
 UB-nat {n} {n′} (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) θ {f} {f′} h =
-  cong (UP.φ ϕ[ b ])
+  cong (UP.φ ϕ[ b ] (` θ x))
     (UB-nat B (` 0F , suc x , e₂ ⋯ weakenᵣ) (θ ↑) {f = gL} {f′ = gR} contH
      ■ cong (λ cc → UB[ B ] cc gR) ccEq)
   where
