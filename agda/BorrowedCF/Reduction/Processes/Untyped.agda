@@ -87,28 +87,31 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
       ─→ₚ
     ν (⟪ F [ 𝓒[ * × 0F × e ] ]* ⟫ ∥ P)
 
-  RU-Close : ∀ (F₁ F₂ : Frame* n) {e₁ e₁′ e₂ e₂′} →
-    ν ( ⟪ (F₁ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ‼) ·¹ 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
-      ∥ ⟪ (F₂ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ⁇) ·¹ 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫ )
+  RU-Close : ∀ {k} (Φ : Φ* (2 + n) k) (F₁ F₂ : Frame* n) {e₁ e₁′ e₂ e₂′ : Tm k} →
+    ν ( plugΦ Φ (
+        ⟪ (F₁ ⋯ᶠ* (weaken* ⦃ Kᵣ ⦄ 2 ·ₖ wkΦ Φ)) [ K (`end ‼) ·¹ 𝓒[ e₁ × wkΦ Φ 0F × e₁′ ] ]* ⟫
+      ∥ ⟪ (F₂ ⋯ᶠ* (weaken* ⦃ Kᵣ ⦄ 2 ·ₖ wkΦ Φ)) [ K (`end ⁇) ·¹ 𝓒[ e₂ × wkΦ Φ 1F × e₂′ ] ]* ⟫ ) )
       ─→ₚ
     ⟪ F₁ [ * ]* ⟫ ∥ ⟪ F₂ [ * ]* ⟫
 
-  RU-Com : ∀ (F₁ F₂ : Frame* (2 + n)) (V : Value e) {e₁ e₁′ e₂ e₂′} →
-    ν (⟪ F₁ [ K `send ·¹ (e ⊗ 𝓒[ e₁ × 0F × e₁′ ]) ]* ⟫
-      ∥ ( ⟪ F₂ [ K `recv ·¹ 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫ ∥ P ) )
+  RU-Com : ∀ {k} (Φ : Φ* (2 + n) k) (F₁ F₂ : Frame* k) {e : Tm k} (V : Value e)
+             {e₁ e₁′ e₂ e₂′ : Tm k} {P : Proc k} →
+    ν ( plugΦ Φ ( ⟪ F₁ [ K `send ·¹ (e ⊗ 𝓒[ e₁ × wkΦ Φ 0F × e₁′ ]) ]* ⟫
+      ∥ ( ⟪ F₂ [ K `recv ·¹ 𝓒[ e₂ × wkΦ Φ 1F × e₂′ ] ]* ⟫ ∥ P ) ) )
       ─→ₚ
-    ν ( ⟪ F₁ [ * ]* ⟫ ∥ ( ⟪ F₂ [ e ]* ⟫ ∥ P ) )
+    ν ( plugΦ Φ ( ⟪ F₁ [ * ]* ⟫ ∥ ( ⟪ F₂ [ e ]* ⟫ ∥ P ) ) )
 
-  RU-Choice : ∀ (F₁ F₂ : Frame* (2 + n)) k {e₁ e₁′ e₂ e₂′} →
-    ν ( ⟪ F₁ [ K (`select k) ·¹ 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
-      ∥ ( ⟪ F₂ [ K `branch ·¹ 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫
+  RU-Choice : ∀ {k′} (Φ : Φ* (2 + n) k′) (F₁ F₂ : Frame* k′) k
+                {e₁ e₁′ e₂ e₂′ : Tm k′} {P : Proc k′} →
+    ν ( plugΦ Φ ( ⟪ F₁ [ K (`select k) ·¹ 𝓒[ e₁ × wkΦ Φ 0F × e₁′ ] ]* ⟫
+      ∥ ( ⟪ F₂ [ K `branch ·¹ 𝓒[ e₂ × wkΦ Φ 1F × e₂′ ] ]* ⟫
       ∥ P
-    ))
+    ) ) )
       ─→ₚ
-    ν ( ⟪ F₁ [ 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
-      ∥ ( ⟪ F₂ [ `inj k 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫
+    ν ( plugΦ Φ ( ⟪ F₁ [ 𝓒[ e₁ × wkΦ Φ 0F × e₁′ ] ]* ⟫
+      ∥ ( ⟪ F₂ [ `inj k 𝓒[ e₂ × wkΦ Φ 1F × e₂′ ] ]* ⟫
       ∥ P
-    ))
+    ) ) )
 
   RU-Par :
     P ─→ₚ P′ →
