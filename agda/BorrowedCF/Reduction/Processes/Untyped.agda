@@ -72,10 +72,10 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
       ⟫ ∥ (P ⋯ₚ weakenᵣ)
     ))
 
-  RU-Drop : (F : Frame* (1 + n)) {x : 𝔽 n} {c : Tm n} →
-    φ drop c (⟪ F [ K `drop ·¹ 𝓒[ * × suc x × ` 0F ] ]* ⟫ ∥ P)
+  RU-Drop : ∀ {k} (Φ : Φ* (1 + n) k) (F : Frame* k) {x : 𝔽 n} {c : Tm n} {P : Proc k} →
+    φ drop c ( plugΦ Φ ( ⟪ F [ K `drop ·¹ 𝓒[ * × wkΦ Φ (suc x) × ` wkΦ Φ 0F ] ]* ⟫ ∥ P ) )
       ─→ₚ
-    φ acq c (⟪ F [ * ]* ⟫ ∥ P)
+    φ acq c ( plugΦ Φ ( ⟪ F [ * ]* ⟫ ∥ P ) )
 
   RU-Discard : (F : Frame* n) (V : Value e) →
     ⟪ F [ K `discard ·¹ e ]* ⟫ ─→ₚ ⟪ F [ * ]* ⟫
