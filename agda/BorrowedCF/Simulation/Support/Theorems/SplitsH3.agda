@@ -34,6 +34,45 @@ open import BorrowedCF.Simulation.Support.FrameRename
   using (⋯ᶠ*-cong; ⋯ᶠ*-fuse; F-σ⋯)
 
 open import BorrowedCF.Simulation.Support.Theorems.SplitsH2 public
+open import BorrowedCF.Simulation.Support.Theorems.ComHelpers1
+  using (canonₛ-nat; subst-≋; subst-⋯ₚ-cod; subst-flip; weaken*~↑ʳ)
+open import BorrowedCF.Simulation.Support.Theorems.PhiTel
+  using (Btel; Bφ)
+open import BorrowedCF.Simulation.Support.Theorems.ComHelpers2
+  using ( φ-past-Bφ-c; subst-φ; subst-Bφ-c; Bφ-cons; Bφ-⋯-c; Bφ-cong-c
+        ; mapᶜ-id; plugΦ-cong )
+open import BorrowedCF.Reduction.Processes.Untyped
+  using (Φ*; []φ; _◂_; plugΦ; wkΦ)
+
+-- ===== channel-carrying engine plumbing (linked-φ) =====
+
+-- `Btel` (hence `Bφ`'s telescope) reads only the handle var of its `UChan`;
+-- every recursion discards e1/e2 (passes `` ` 0F ``/`wk e2`) and the cells carry
+-- only `` ` x ``.  So the telescope is irrelevant to e1/e2.
+Btel-hdi : ∀ {n} (B : BindGroup) (e1 e1′ e2 e2′ : Tm n) (x : 𝔽 n) →
+           Btel B (e1 , x , e2) ≡ Btel B (e1′ , x , e2′)
+Btel-hdi []          e1 e1′ e2 e2′ x = refl
+Btel-hdi (b ∷ [])    e1 e1′ e2 e2′ x = refl
+Btel-hdi {n} (b ∷ c ∷ B) e1 e1′ e2 e2′ x =
+  cong (λ t → (ϕ[ b ] , ` x) ◂ subst (Φ* (1 + n)) (+-suc (syncs (c ∷ B)) n) t)
+       (Btel-hdi (c ∷ B) (` 0F) (` 0F) (wk e2) (wk e2′) (suc x))
+
+Bφ-hdi : ∀ {n} (B : BindGroup) (e1 e1′ e2 e2′ : Tm n) (x : 𝔽 n)
+         (P : U.Proc (syncs B + n)) →
+         Bφ B (e1 , x , e2) P ≡ Bφ B (e1′ , x , e2′) P
+Bφ-hdi B e1 e1′ e2 e2′ x P = cong (λ t → plugΦ t P) (Btel-hdi B e1 e1′ e2 e2′ x)
+
+-- descent of a channel through a prefix of L.length B₁ blocks (mirrors Btel).
+cc↓ : ∀ {n} (B₁ : BindGroup) → UChan n → UChan (L.length B₁ + n)
+cc↓ []          cc          = cc
+cc↓ {n} (b ∷ B₁') (e1 , x , e2) =
+  subst UChan (+-suc (L.length B₁') n) (cc↓ B₁' (` 0F , suc x , wk e2))
+
+-- renaming through a subst₂-retyped domain/codomain (channel-agnostic).
+cast-⋯2 : ∀ {a a′ b b′} (p : a ≡ a′) (q : b ≡ b′) (Y : U.Proc a) (ρ : a′ →ᵣ b) →
+          Y U.⋯ₚ subst₂ _→ᵣ_ (sym p) q ρ
+          ≡ subst U.Proc q (subst U.Proc p Y U.⋯ₚ ρ)
+cast-⋯2 refl refl Y ρ = refl
 
 drwk-lo : ∀ (B₁ : T.BindGroup) (b₁ : ℕ) (B₂ : T.BindGroup) (j : 𝔽 (sum (B₁ ++ suc b₁ ∷ B₂))) →
           Fin.toℕ j Nat.< sum B₁ → Fin.toℕ (drwk B₁ b₁ B₂ j) ≡ Fin.toℕ j
@@ -602,31 +641,34 @@ sw-cast B₁ {b₁} {B₂} {a} =
 
 -- Prefix fold: applies one φ-binder per B₁-block, with the leaf at the bottom.
 -- (Distinct from Bφ, which drops the last block; here EVERY block is a binder.)
-Pfx : ∀ {n} (B₁ : BindGroup) → U.Proc (L.length B₁ + n) → U.Proc n
-Pfx []        X = X
-Pfx {n} (b ∷ B₁') X =
-  U.φ ϕ[ b ] (Pfx B₁' (subst U.Proc (sym (+-suc (L.length B₁') n)) X))
+Pfx : ∀ {n} (B₁ : BindGroup) → UChan n → U.Proc (L.length B₁ + n) → U.Proc n
+Pfx []        cc            X = X
+Pfx {n} (b ∷ B₁') (e1 , x , e2) X =
+  U.φ ϕ[ b ] (` x)
+    (Pfx B₁' (` 0F , suc x , wk e2) (subst U.Proc (sym (+-suc (L.length B₁') n)) X))
 
-Pfx-cong : ∀ {n} (B₁ : BindGroup) {X Y : U.Proc (L.length B₁ + n)} →
-           X U.≋ Y → Pfx {n} B₁ X U.≋ Pfx B₁ Y
+Pfx-cong : ∀ {n} (B₁ : BindGroup) {cc : UChan n} {X Y : U.Proc (L.length B₁ + n)} →
+           X U.≋ Y → Pfx {n} B₁ cc X U.≋ Pfx B₁ cc Y
 Pfx-cong []        xy = xy
-Pfx-cong {n} (b ∷ B₁') xy =
+Pfx-cong {n} (b ∷ B₁') {e1 , x , e2} xy =
   U.φ-cong (Pfx-cong B₁' (subst-≋ (sym (+-suc (L.length B₁') n)) xy))
 
-subst-Pfx : ∀ {n n′} (e : n ≡ n′) (B₁ : BindGroup) (X : U.Proc (L.length B₁ + n)) →
-            subst U.Proc e (Pfx {n} B₁ X)
-            ≡ Pfx {n′} B₁ (subst U.Proc (cong (L.length B₁ +_) e) X)
-subst-Pfx refl B₁ X = refl
+subst-Pfx : ∀ {n n′} (e : n ≡ n′) (B₁ : BindGroup) (cc : UChan n) (X : U.Proc (L.length B₁ + n)) →
+            subst U.Proc e (Pfx {n} B₁ cc X)
+            ≡ Pfx {n′} B₁ (subst UChan e cc) (subst U.Proc (cong (L.length B₁ +_) e) X)
+subst-Pfx refl B₁ cc X = refl
 
 -- ⋯ₚ lifts through Pfx by ↑* (L.length B₁) over the prefix binders.
-Pfx-⋯ : ∀ {n n′} (B₁ : BindGroup) (X : U.Proc (L.length B₁ + n)) (ρ : n →ᵣ n′) →
-        Pfx {n} B₁ X U.⋯ₚ ρ ≡ Pfx {n′} B₁ (X U.⋯ₚ (ρ ↑* L.length B₁))
-Pfx-⋯ []        X ρ = refl
-Pfx-⋯ {n} {n′} (b ∷ B₁') X ρ =
-  cong (U.φ ϕ[ b ])
-    ( Pfx-⋯ B₁' (subst U.Proc (sym (+-suc (L.length B₁') n)) X) (ρ ↑)
-    ■ cong (Pfx B₁') bodyeq )
+Pfx-⋯ : ∀ {n n′} (B₁ : BindGroup) (cc : UChan n) (X : U.Proc (L.length B₁ + n)) (ρ : n →ᵣ n′) →
+        Pfx {n} B₁ cc X U.⋯ₚ ρ ≡ Pfx {n′} B₁ (mapᶜ ρ cc) (X U.⋯ₚ (ρ ↑* L.length B₁))
+Pfx-⋯ []        cc            X ρ = refl
+Pfx-⋯ {n} {n′} (b ∷ B₁') (e1 , x , e2) X ρ =
+  cong (U.φ ϕ[ b ] (` ρ x))
+    ( Pfx-⋯ B₁' (` 0F , suc x , wk e2) (subst U.Proc (sym (+-suc (L.length B₁') n)) X) (ρ ↑)
+    ■ cong₂ (λ cc′ Y → Pfx B₁' cc′ Y) channelEq bodyeq )
   where
+    channelEq : mapᶜ (ρ ↑) (` 0F , suc x , wk e2) ≡ (` 0F , suc (ρ x) , wk (e2 ⋯ ρ))
+    channelEq = cong (λ t → (` 0F , suc (ρ x) , t)) (sym (⋯-↑-wk e2 ρ))
     sB = L.length B₁'
     Θ : (sB + suc n) →ᵣ (sB + suc n′)
     Θ = (ρ ↑) ↑* sB
@@ -654,55 +696,59 @@ peel-eq B₁ c D′ {a} =
   ■ +-assoc (L.length B₁) (syncs (c ∷ D′)) a
   ■ comm3 (L.length B₁) (syncs (c ∷ D′)) a
 
-Bφ-peel : ∀ (B₁ : BindGroup) (c : ℕ) (D′ : BindGroup) {a : ℕ}
+sss-U : ∀ {A : Set} {F : A → Set} {p q : A} (e : p ≡ q) {w : F p} →
+        subst F (sym e) (subst F e w) ≡ w
+sss-U refl = refl
+
+Bφ-peel : ∀ (B₁ : BindGroup) {a : ℕ} (cc : UChan a) (c : ℕ) (D′ : BindGroup)
           (Z : U.Proc (syncs (B₁ ++ c ∷ D′) + a)) →
-          Bφ (B₁ ++ c ∷ D′) Z
-          ≡ Pfx B₁ (Bφ (c ∷ D′) (subst U.Proc (peel-eq B₁ c D′ {a}) Z))
-Bφ-peel []        c D′ {a} Z =
-  cong (Bφ (c ∷ D′)) (sym (cong (λ e → subst U.Proc e Z) (uipℕ (peel-eq [] c D′ {a}) refl)))
-Bφ-peel (b ∷ [])       c D′ {a} Z =
-  cong (U.φ ϕ[ b ])
-    ( Bφ-peel [] c D′ {suc a} (subst U.Proc (sym (+-suc sT a)) Z)
-    ■ cong (Pfx [])
-        ( cong (Bφ (c ∷ D′)) bodyeq
-        ■ sym (subst-Bφ (sym (+-suc (L.length ([] {A = ℕ})) a)) (c ∷ D′)
-                 (subst U.Proc (peel-eq (b ∷ []) c D′ {a}) Z)) ) )
+          Bφ (B₁ ++ c ∷ D′) cc Z
+          ≡ Pfx B₁ cc (Bφ (c ∷ D′) (cc↓ B₁ cc) (subst U.Proc (peel-eq B₁ c D′ {a}) Z))
+Bφ-peel []        {a} cc c D′ Z =
+  cong (Bφ (c ∷ D′) cc) (sym (cong (λ e → subst U.Proc e Z) (uipℕ (peel-eq [] c D′ {a}) refl)))
+Bφ-peel (b ∷ []) {a} (e1 , xh , e2) c D′ Z =
+    Bφ-cons b c D′ e1 e2 xh Z
+  ■ cong (U.φ ϕ[ b ] (` xh)) (cong (Bφ (c ∷ D′) (` 0F , suc xh , wk e2)) bodyeq)
   where
     sT = syncs ([] ++ c ∷ D′)
-    bodyeq : subst U.Proc (peel-eq [] c D′ {suc a})
-               (subst U.Proc (sym (+-suc sT a)) Z)
-             ≡ subst U.Proc (cong (syncs (c ∷ D′) +_) (sym (+-suc (L.length ([] {A = ℕ})) a)))
-                 (subst U.Proc (peel-eq (b ∷ []) c D′ {a}) Z)
-    bodyeq = ss-U (sym (+-suc sT a)) (peel-eq [] c D′ {suc a}) {t = Z}
-           ■ cong (λ e → subst U.Proc e Z) (uipℕ _ _)
-           ■ sym (ss-U (peel-eq (b ∷ []) c D′ {a})
-                       (cong (syncs (c ∷ D′) +_) (sym (+-suc (L.length ([] {A = ℕ})) a))) {t = Z})
-Bφ-peel (b ∷ x ∷ B₁'') c D′ {a} Z =
-  cong (U.φ ϕ[ b ])
-    ( Bφ-peel (x ∷ B₁'') c D′ {suc a} (subst U.Proc (sym (+-suc sT a)) Z)
-    ■ cong (Pfx (x ∷ B₁''))
-        ( cong (Bφ (c ∷ D′)) bodyeq
-        ■ sym (subst-Bφ (sym (+-suc (L.length (x ∷ B₁'')) a)) (c ∷ D′)
-                 (subst U.Proc (peel-eq (b ∷ x ∷ B₁'') c D′ {a}) Z)) ) )
+    bodyeq : subst U.Proc (sym (+-suc sT a)) Z ≡ subst U.Proc (peel-eq (b ∷ []) c D′ {a}) Z
+    bodyeq = cong (λ e → subst U.Proc e Z) (uipℕ (sym (+-suc sT a)) (peel-eq (b ∷ []) c D′ {a}))
+Bφ-peel (b ∷ d ∷ B₁'') {a} (e1 , xh , e2) c D′ Z =
+    Bφ-cons b d (B₁'' ++ c ∷ D′) e1 e2 xh Z
+  ■ cong (U.φ ϕ[ b ] (` xh))
+      ( Bφ-peel (d ∷ B₁'') (` 0F , suc xh , wk e2) c D′ (subst U.Proc (sym (+-suc sT a)) Z)
+      ■ cong (Pfx (d ∷ B₁'') (` 0F , suc xh , wk e2))
+          ( cong (Bφ (c ∷ D′) (cc↓ (d ∷ B₁'') (` 0F , suc xh , wk e2))) bodyeq
+          ■ sym ( subst-Bφ-c (sym (+-suc L' a)) (c ∷ D′)
+                    (cc↓ (b ∷ d ∷ B₁'') (e1 , xh , e2))
+                    (subst U.Proc (peel-eq (b ∷ d ∷ B₁'') c D′ {a}) Z)
+                ■ cong (λ cc′ → Bφ (c ∷ D′) cc′
+                          (subst U.Proc (cong (syncs (c ∷ D′) +_) (sym (+-suc L' a)))
+                            (subst U.Proc (peel-eq (b ∷ d ∷ B₁'') c D′ {a}) Z)))
+                       (sss-U (+-suc L' a)) ) ) )
   where
-    sT = syncs ((x ∷ B₁'') ++ c ∷ D′)
-    bodyeq : subst U.Proc (peel-eq (x ∷ B₁'') c D′ {suc a})
+    sT = syncs ((d ∷ B₁'') ++ c ∷ D′)
+    L' = L.length (d ∷ B₁'')
+    bodyeq : subst U.Proc (peel-eq (d ∷ B₁'') c D′ {suc a})
                (subst U.Proc (sym (+-suc sT a)) Z)
-             ≡ subst U.Proc (cong (syncs (c ∷ D′) +_) (sym (+-suc (L.length (x ∷ B₁'')) a)))
-                 (subst U.Proc (peel-eq (b ∷ x ∷ B₁'') c D′ {a}) Z)
-    bodyeq = ss-U (sym (+-suc sT a)) (peel-eq (x ∷ B₁'') c D′ {suc a}) {t = Z}
+             ≡ subst U.Proc (cong (syncs (c ∷ D′) +_) (sym (+-suc L' a)))
+                 (subst U.Proc (peel-eq (b ∷ d ∷ B₁'') c D′ {a}) Z)
+    bodyeq = ss-U (sym (+-suc sT a)) (peel-eq (d ∷ B₁'') c D′ {suc a}) {t = Z}
            ■ cong (λ e → subst U.Proc e Z) (uipℕ _ _)
-           ■ sym (ss-U (peel-eq (b ∷ x ∷ B₁'') c D′ {a})
-                       (cong (syncs (c ∷ D′) +_) (sym (+-suc (L.length (x ∷ B₁'')) a))) {t = Z})
+           ■ sym (ss-U (peel-eq (b ∷ d ∷ B₁'') c D′ {a})
+                       (cong (syncs (c ∷ D′) +_) (sym (+-suc L' a))) {t = Z})
 
--- Pull a single φ binder OUT of a Bφ B block (reverse of φ-past-Bφ).
-Bφ-φ-comm : (B : BindGroup) (z : U.Flag) {n : ℕ} (Y : U.Proc (1 + (syncs B + n))) →
-            Bφ B (U.φ z Y) U.≋
-            U.φ z (Bφ B (Y U.⋯ₚ assocSwapᵣ 1 (syncs B)))
-Bφ-φ-comm B z {n} Y =
+-- Pull a single φ binder OUT of a Bφ B block (reverse of φ-past-Bφ-c).
+-- Gate-safe (φ-past-φ): the crossed block's channel is `mapᶜ weaken` of ambient,
+-- so every cell is suc-headed and no φ-comm′ crosses a linked binder.
+Bφ-φ-comm : (B : BindGroup) (z : U.Flag) {n : ℕ} (c_z : Tm n) (cc₀ : UChan n)
+            (Y : U.Proc (1 + (syncs B + n))) →
+            Bφ B cc₀ (U.φ z (c_z ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)) Y) U.≋
+            U.φ z c_z (Bφ B (mapᶜ (weaken ⦃ Kᵣ ⦄) cc₀) (Y U.⋯ₚ assocSwapᵣ 1 (syncs B)))
+Bφ-φ-comm B z {n} c_z cc₀ Y =
      Eq*.symmetric _
-       ( φ-past-Bφ B z (Y U.⋯ₚ assocSwapᵣ 1 (syncs B))
-       ◅◅ Bφ-cong B (U.φ-cong (≡→≋ bodyid)) )
+       ( φ-past-Bφ-c B z c_z cc₀ (Y U.⋯ₚ assocSwapᵣ 1 (syncs B))
+       ◅◅ Bφ-cong-c B cc₀ (U.φ-cong (≡→≋ bodyid)) )
   where
     bodyid : (Y U.⋯ₚ assocSwapᵣ 1 (syncs B)) U.⋯ₚ assocSwapᵣ (syncs B) 1 ≡ Y
     bodyid = U.fusionₚ Y (assocSwapᵣ 1 (syncs B)) (assocSwapᵣ (syncs B) 1)
@@ -711,55 +757,87 @@ Bφ-φ-comm B z {n} Y =
 -- The inserted φ-drop binder descends to the leaf.  Non-recursive: peel B₁ as a
 -- Pfx prefix, push the (1-block) φ-drop down past Bφ (suc b₁ ∷ B₂) to the leaf
 -- via φ-past-Bφ, then re-peel.  The ↑* L.length B₁ on the swap comes from Pfx-⋯.
-Brwk-slide : ∀ (B₁ : BindGroup) {b₁ : ℕ} {B₂ : BindGroup} {a : ℕ}
+--
+-- RSPLIT-BLOCKED (linked-φ, case-2): this is the rsplit φ-drop slide.  Its
+-- channel-carrying statement needs a *channel* on the sliding drop (U.φ now
+-- carries one), and WHICH channel the inserted drop guards is exactly what the
+-- deferred RU-RSplit telescoping defines.  The slide itself is gate-safe (the
+-- drop crosses only suc-headed Bφ (suc b₁ ∷ B₂) cells; route via φ-past-Bφ-c +
+-- Bφ-hdi handle-irrelevance), so this is NOT mathematically blocked — it is
+-- coupled to the RU-RSplit design + Splits.agda's fire-in-place RSplit port and
+-- must be co-sequenced with them (per the multi-agent case-2 protocol), not
+-- ported in isolation with an arbitrary drop channel.  Left channel-free below.
+wk≡suc : ∀ {p} (v : 𝔽 p) → weaken ⦃ Kᵣ ⦄ v ≡ suc v
+wk≡suc v = weaken*~↑ʳ 1 v
+
+Brwk-slide : ∀ (B₁ : BindGroup) {b₁ : ℕ} {B₂ : BindGroup} {a : ℕ} (cc : UChan a)
              (Z : U.Proc (syncs (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + a)) →
-             Bφ (B₁ ++ 1 ∷ suc b₁ ∷ B₂) Z
-             U.≋ Bφ (B₁ ++ suc b₁ ∷ B₂)
-                   (U.φ U.drop (subst U.Proc (cong (_+ a) (syncs-rwk B₁) ■ sym (+-suc (syncs (B₁ ++ suc b₁ ∷ B₂)) a)) Z
-                                 U.⋯ₚ sw-cast B₁ {b₁} {B₂} {a}))
-Brwk-slide B₁ {b₁} {B₂} {a} Z =
-     ≡→≋ (Bφ-peel B₁ 1 (suc b₁ ∷ B₂) {a} Z)
-  ◅◅ Pfx-cong B₁ (φ-past-Bφ (suc b₁ ∷ B₂) U.drop {L.length B₁ + a} bodyW)
-  ◅◅ ≡→≋
-       ( cong (Pfx B₁) (cong (Bφ (suc b₁ ∷ B₂)) reconcile)
-       ■ sym (Bφ-peel B₁ (suc b₁) B₂ {a}
-                (U.φ U.drop (subst U.Proc (cong (_+ a) (syncs-rwk B₁) ■ sym (+-suc (syncs (B₁ ++ suc b₁ ∷ B₂)) a)) Z
-                              U.⋯ₚ sw-cast B₁ {b₁} {B₂} {a}))) )
+             Bφ (B₁ ++ 1 ∷ suc b₁ ∷ B₂) cc Z
+             U.≋ Bφ (B₁ ++ suc b₁ ∷ B₂) cc
+                   (U.φ U.drop
+                      (subst Tm (sym (peel-eq B₁ (suc b₁) B₂ {a}))
+                         ((` proj₁ (proj₂ (cc↓ B₁ cc))) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs (suc b₁ ∷ B₂))))
+                      (subst U.Proc (cong (_+ a) (syncs-rwk B₁) ■ sym (+-suc (syncs (B₁ ++ suc b₁ ∷ B₂)) a)) Z
+                        U.⋯ₚ sw-cast B₁ {b₁} {B₂} {a}))
+Brwk-slide B₁ {b₁} {B₂} {a} cc Z =
+     ≡→≋ (Bφ-peel B₁ cc 1 (suc b₁ ∷ B₂) Z)
+  ◅◅ Pfx-cong B₁ {cc} step
+  ◅◅ ≡→≋ (sym (Bφ-peel B₁ cc (suc b₁) B₂ RHSleaf))
   where
+    hcc = cc↓ B₁ cc
+    e1c = proj₁ hcc
+    hc  = proj₁ (proj₂ hcc)
+    e2c = proj₂ (proj₂ hcc)
     sD = syncs (suc b₁ ∷ B₂)
+    cD : Tm (syncs (B₁ ++ suc b₁ ∷ B₂) + a)
+    cD = subst Tm (sym (peel-eq B₁ (suc b₁) B₂ {a})) ((` hc) ⋯ weaken* ⦃ Kᵣ ⦄ sD)
+    leafZ : U.Proc (suc (syncs (B₁ ++ suc b₁ ∷ B₂) + a))
+    leafZ = subst U.Proc (cong (_+ a) (syncs-rwk B₁) ■ sym (+-suc (syncs (B₁ ++ suc b₁ ∷ B₂)) a)) Z
+              U.⋯ₚ sw-cast B₁ {b₁} {B₂} {a}
+    RHSleaf : U.Proc (syncs (B₁ ++ suc b₁ ∷ B₂) + a)
+    RHSleaf = U.φ U.drop cD leafZ
     W0 : U.Proc (syncs (1 ∷ suc b₁ ∷ B₂) + (L.length B₁ + a))
     W0 = subst U.Proc (peel-eq B₁ 1 (suc b₁ ∷ B₂) {a}) Z
     bodyW : U.Proc (sD + suc (L.length B₁ + a))
     bodyW = subst U.Proc (sym (+-suc sD (L.length B₁ + a))) W0
-    reconcile : U.φ U.drop (bodyW U.⋯ₚ assocSwapᵣ sD 1 {L.length B₁ + a})
-                ≡ subst U.Proc (peel-eq B₁ (suc b₁) B₂ {a})
-                    (U.φ U.drop (subst U.Proc (cong (_+ a) (syncs-rwk B₁) ■ sym (+-suc (syncs (B₁ ++ suc b₁ ∷ B₂)) a)) Z
-                                  U.⋯ₚ sw-cast B₁ {b₁} {B₂} {a}))
+    raw : (sD + (1 + (L.length B₁ + a))) →ᵣ (1 + (sD + (L.length B₁ + a)))
+    raw = assocSwapᵣ sD 1 {L.length B₁ + a}
+    EQ : syncs (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + a ≡ syncs (B₁ ++ suc b₁ ∷ B₂) + suc a
+    EQ = cong (_+ a) (syncs-rwk B₁) ■ sym (+-suc (syncs (B₁ ++ suc b₁ ∷ B₂)) a)
+    rhs≡ : subst U.Proc EQ Z U.⋯ₚ sw-cast B₁ {b₁} {B₂} {a}
+           ≡ subst U.Proc (sw-cod B₁ {b₁} {B₂} {a})
+               (subst U.Proc (EQ ■ sw-dom B₁ {b₁} {B₂} {a}) Z U.⋯ₚ raw)
+    rhs≡ = cast-⋯2 (sw-dom B₁ {b₁} {B₂} {a}) (sw-cod B₁ {b₁} {B₂} {a}) (subst U.Proc EQ Z) raw
+         ■ cong (λ w → subst U.Proc (sw-cod B₁ {b₁} {B₂} {a}) (w U.⋯ₚ raw))
+             (ss-U EQ (sw-dom B₁ {b₁} {B₂} {a}) {t = Z})
+    bodyW≡ : bodyW ≡ subst U.Proc (EQ ■ sw-dom B₁ {b₁} {B₂} {a}) Z
+    bodyW≡ = ss-U (peel-eq B₁ 1 (suc b₁ ∷ B₂) {a}) (sym (+-suc sD (L.length B₁ + a))) {t = Z}
+           ■ cong (λ e → subst U.Proc e Z) (uipℕ _ (EQ ■ sw-dom B₁ {b₁} {B₂} {a}))
+    reconcileBody : bodyW U.⋯ₚ raw
+                    ≡ subst U.Proc (cong suc (peel-eq B₁ (suc b₁) B₂ {a})) leafZ
+    reconcileBody =
+        cong (U._⋯ₚ raw) bodyW≡
+      ■ sym ( cong (subst U.Proc (cong suc (peel-eq B₁ (suc b₁) B₂ {a}))) rhs≡
+            ■ ss-U (sw-cod B₁ {b₁} {B₂} {a}) (cong suc (peel-eq B₁ (suc b₁) B₂ {a}))
+                   {t = subst U.Proc (EQ ■ sw-dom B₁ {b₁} {B₂} {a}) Z U.⋯ₚ raw}
+            ■ cong (λ e → subst U.Proc e (subst U.Proc (EQ ■ sw-dom B₁ {b₁} {B₂} {a}) Z U.⋯ₚ raw)) (uipℕ _ refl) )
+    reconcile : U.φ U.drop ((` hc) ⋯ weaken* ⦃ Kᵣ ⦄ sD) (bodyW U.⋯ₚ raw)
+                ≡ subst U.Proc (peel-eq B₁ (suc b₁) B₂ {a}) RHSleaf
     reconcile =
-        cong (U.φ U.drop) reconcileBody
-      ■ sym (subst-φ (peel-eq B₁ (suc b₁) B₂ {a})
-               (subst U.Proc (cong (_+ a) (syncs-rwk B₁) ■ sym (+-suc (syncs (B₁ ++ suc b₁ ∷ B₂)) a)) Z
-                 U.⋯ₚ sw-cast B₁ {b₁} {B₂} {a}))
-      where
-        raw : (sD + (1 + (L.length B₁ + a))) →ᵣ (1 + (sD + (L.length B₁ + a)))
-        raw = assocSwapᵣ sD 1 {L.length B₁ + a}
-        EQ : syncs (B₁ ++ 1 ∷ suc b₁ ∷ B₂) + a ≡ syncs (B₁ ++ suc b₁ ∷ B₂) + suc a
-        EQ = cong (_+ a) (syncs-rwk B₁) ■ sym (+-suc (syncs (B₁ ++ suc b₁ ∷ B₂)) a)
-        -- RHS body: subst EQ Z ⋯ sw-cast = subst (sw-cod) ((subst (EQ ■ sw-dom) Z) ⋯ raw).
-        rhs≡ : subst U.Proc EQ Z U.⋯ₚ sw-cast B₁ {b₁} {B₂} {a}
-               ≡ subst U.Proc (sw-cod B₁ {b₁} {B₂} {a})
-                   (subst U.Proc (EQ ■ sw-dom B₁ {b₁} {B₂} {a}) Z U.⋯ₚ raw)
-        rhs≡ = cast-⋯2 (sw-dom B₁ {b₁} {B₂} {a}) (sw-cod B₁ {b₁} {B₂} {a}) (subst U.Proc EQ Z) raw
-             ■ cong (λ w → subst U.Proc (sw-cod B₁ {b₁} {B₂} {a}) (w U.⋯ₚ raw))
-                 (ss-U EQ (sw-dom B₁ {b₁} {B₂} {a}) {t = Z})
-        -- LHS body: bodyW = subst (EQ ■ sw-dom) Z (same coercion, by UIP).
-        bodyW≡ : bodyW ≡ subst U.Proc (EQ ■ sw-dom B₁ {b₁} {B₂} {a}) Z
-        bodyW≡ = ss-U (peel-eq B₁ 1 (suc b₁ ∷ B₂) {a}) (sym (+-suc sD (L.length B₁ + a))) {t = Z}
-               ■ cong (λ e → subst U.Proc e Z) (uipℕ _ (EQ ■ sw-dom B₁ {b₁} {B₂} {a}))
-        reconcileBody =
-            cong (U._⋯ₚ raw) bodyW≡
-          ■ sym ( cong (subst U.Proc (cong suc (peel-eq B₁ (suc b₁) B₂ {a}))) rhs≡
-                ■ ss-U (sw-cod B₁ {b₁} {B₂} {a}) (cong suc (peel-eq B₁ (suc b₁) B₂ {a}))
-                       {t = subst U.Proc (EQ ■ sw-dom B₁ {b₁} {B₂} {a}) Z U.⋯ₚ raw}
-                ■ cong (λ e → subst U.Proc e (subst U.Proc (EQ ■ sw-dom B₁ {b₁} {B₂} {a}) Z U.⋯ₚ raw)) (uipℕ _ refl) )
+        cong (U.φ U.drop ((` hc) ⋯ weaken* ⦃ Kᵣ ⦄ sD)) reconcileBody
+      ■ cong (λ c → U.φ U.drop c (subst U.Proc (cong suc (peel-eq B₁ (suc b₁) B₂ {a})) leafZ))
+             (sym (subst-subst-sym-local (peel-eq B₁ (suc b₁) B₂ {a})))
+      ■ sym (subst-φ (peel-eq B₁ (suc b₁) B₂ {a}) {z = U.drop} {c = cD} leafZ)
+    blockfix : Bφ (suc b₁ ∷ B₂) (` 0F , suc hc , wk e2c) bodyW
+               ≡ Bφ (suc b₁ ∷ B₂) (mapᶜ (weaken ⦃ Kᵣ ⦄) (K `unit , hc , K `unit)) bodyW
+    blockfix = Bφ-hdi (suc b₁ ∷ B₂) (` 0F) (K `unit) (wk e2c) (K `unit) (suc hc) bodyW
+             ■ cong (λ v → Bφ (suc b₁ ∷ B₂) (K `unit , v , K `unit) bodyW) (sym (wk≡suc hc))
+    step : Bφ (1 ∷ suc b₁ ∷ B₂) hcc W0
+           U.≋ Bφ (suc b₁ ∷ B₂) hcc (subst U.Proc (peel-eq B₁ (suc b₁) B₂ {a}) RHSleaf)
+    step = ≡→≋ (Bφ-cons 1 (suc b₁) B₂ e1c e2c hc W0
+                 ■ cong (U.φ U.drop (` hc)) blockfix)
+         ◅◅ φ-past-Bφ-c (suc b₁ ∷ B₂) U.drop (` hc) (K `unit , hc , K `unit) bodyW
+         ◅◅ ≡→≋ ( Bφ-hdi (suc b₁ ∷ B₂) (K `unit) e1c (K `unit) e2c hc
+                    (U.φ U.drop ((` hc) ⋯ weaken* ⦃ Kᵣ ⦄ sD) (bodyW U.⋯ₚ raw))
+                  ■ cong (Bφ (suc b₁ ∷ B₂) hcc) reconcile )
 
