@@ -79,12 +79,12 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
   RU-Discard : (F : Frame* n) (V : Value e) →
     ⟪ F [ K `discard ·¹ e ]* ⟫ ─→ₚ ⟪ F [ * ]* ⟫
 
-  RU-Acquire : (F : Frame* (2 + n)) {c : Tm (2 + n)} →
-    ν (φ acq c (
-      ⟪ (F ⋯ᶠ* weakenᵣ) [ K `acq ·¹ 𝓒[ ` 0F × 1F × wk e ] ]* ⟫ ∥ (P ⋯ₚ weakenᵣ)
-    ))
+  RU-Acquire : ∀ {k} (Φ : Φ* (2 + n) k) (F : Frame* k) {c : Tm k} {e : Tm k} {P : Proc k} →
+    ν ( plugΦ Φ ( φ acq c (
+      ⟪ (F ⋯ᶠ* weakenᵣ) [ K `acq ·¹ 𝓒[ ` 0F × weakenᵣ (wkΦ Φ 0F) × wk e ] ]* ⟫ ∥ (P ⋯ₚ weakenᵣ)
+    ) ) )
       ─→ₚ
-    ν (⟪ F [ 𝓒[ * × 0F × e ] ]* ⟫ ∥ P)
+    ν ( plugΦ Φ ( ⟪ F [ 𝓒[ * × wkΦ Φ 0F × e ] ]* ⟫ ∥ P ) )
 
   RU-Close : ∀ {k} (Φ : Φ* (2 + n) k) (F₁ F₂ : Frame* n) {e₁ e₁′ e₂ e₂′ : Tm k} →
     ν ( plugΦ Φ (
