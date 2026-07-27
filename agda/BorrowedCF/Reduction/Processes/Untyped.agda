@@ -60,17 +60,16 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
       ─→ₚ
     ν ( plugΦ Φ ( ⟪ F [ 𝓒[ e₁ × wkΦ Φ 0F × * ] ⊗ 𝓒[ * × wkΦ Φ 0F × e₂ ] ]* ⟫ ∥ P ) )
 
-  RU-RSplit : (F : Frame* (2 + n)) →
-    ν (⟪ F [ K (`rsplit s) ·¹ 𝓒[ e₁ × 0F × e₂ ] ]* ⟫ ∥ P)
+  RU-RSplit : ∀ {k} (Φ : Φ* (2 + n) k) (F : Frame* k) {e₁ e₂ : Tm k} {P : Proc k} →
+    ν ( plugΦ Φ ( ⟪ F [ K (`rsplit s) ·¹ 𝓒[ e₁ × wkΦ Φ 0F × e₂ ] ]* ⟫ ∥ P ) )
       ─→ₚ
-    ν (φ drop (` 0F) (
+    ν ( plugΦ Φ ( φ drop (` wkΦ Φ 0F) (
       ⟪ (F ⋯ᶠ* weakenᵣ) [
-           𝓒[ wk e₁ × 1F × ` 0F ]
+           𝓒[ wk e₁ × weakenᵣ (wkΦ Φ 0F) × ` 0F ]
              ⊗
-           𝓒[ ` 0F × 1F × wk e₂ ]
+           𝓒[ ` 0F × weakenᵣ (wkΦ Φ 0F) × wk e₂ ]
         ]*
-      ⟫ ∥ (P ⋯ₚ weakenᵣ)
-    ))
+      ⟫ ∥ (P ⋯ₚ weakenᵣ) ) ) )
 
   RU-Drop : ∀ {k} (Φ : Φ* (1 + n) k) (F : Frame* k) {x : 𝔽 n} {c : Tm n} {P : Proc k} →
     φ drop c ( plugΦ Φ ( ⟪ F [ K `drop ·¹ 𝓒[ * × wkΦ Φ (suc x) × ` wkΦ Φ 0F ] ]* ⟫ ∥ P ) )
