@@ -38,6 +38,34 @@ open +-*-Solver using (solve; _:=_; _:+_; con)
 
 open import BorrowedCF.Simulation.Support.Theorems.SplitsLQ public
 
+open import BorrowedCF.Simulation.Support.Theorems.PhiTel
+  using ( Btel; Bφ; UB-flatΦ; Uν-flatΦ; plugΦ-subst; plugΦ-++; _++Φ_
+        ; widthΦ; toℕ-wkΦ; widthΦ-Btel; widthΦ-subst; widthΦ-++ )
+open import BorrowedCF.Reduction.Processes.Untyped
+  using (Φ*; []φ; _◂_; plugΦ; wkΦ; 𝓒[_×_×_])
+open import BorrowedCF.Simulation.Support.Theorems.ComHelpers2
+  using ( Bφ-lift-step; plugΦ-cong; Bφ-cong-c; subst-Bφ-c )
+
+subst-Kunit : ∀ {a b} (eq : a ≡ b) → subst Tm eq (K `unit) ≡ K `unit
+subst-Kunit refl = refl
+
+subst-`Ff : (h : ℕ → ℕ) {x y : ℕ} (eq : x ≡ y) (w : 𝔽 (h x)) →
+            subst (λ j → Tm (h j)) eq (` w) ≡ ` subst (λ j → 𝔽 (h j)) eq w
+subst-`Ff h refl w = refl
+
+toℕ-subst𝔽f : (h : ℕ → ℕ) {x y : ℕ} (eq : x ≡ y) (w : 𝔽 (h x)) →
+              Fin.toℕ (subst (λ j → 𝔽 (h j)) eq w) ≡ Fin.toℕ w
+toℕ-subst𝔽f h refl w = refl
+
+subst-*f : (h : ℕ → ℕ) {x y : ℕ} (eq : x ≡ y) →
+           subst (λ j → Tm (h j)) eq (K `unit) ≡ K `unit
+subst-*f h refl = refl
+
+subst-chan-wk1 : ∀ {M} {s s′ : ℕ} (e : s ≡ s′) (w : 𝔽 M) →
+  subst UChan (cong (_+ M) e) (K `unit , weaken* ⦃ Kᵣ ⦄ s w , K `unit)
+  ≡ (K `unit , weaken* ⦃ Kᵣ ⦄ s′ w , K `unit)
+subst-chan-wk1 refl w = refl
+
 subst-∥f : (h : ℕ → ℕ) {x y : ℕ} (eq : x ≡ y) (P Q : U.Proc (h x)) →
            subst (λ z → U.Proc (h z)) eq (P U.∥ Q)
            ≡ subst (λ z → U.Proc (h z)) eq P U.∥ subst (λ z → U.Proc (h z)) eq Q
@@ -69,40 +97,62 @@ ss-U refl refl = refl
 
 -- Bφ on the grown bind group equals Bφ on the ungrown one (the flag-list shapes
 -- match; only the domain scope shifts by syncs-lwk).  Induction on B₁.
-Bφ-lwk : ∀ (B₁ : BindGroup) {q b₁ : ℕ} {B₂ : BindGroup} {a : ℕ}
-         (Y : U.Proc (syncs (B₁ ++ (q + suc b₁) ∷ B₂) + a)) →
-         Bφ (B₁ ++ (q + suc b₁) ∷ B₂) Y
-         ≡ Bφ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) (subst U.Proc (cong (_+ a) (syncs-lwkq B₁)) Y)
-Bφ-lwk []        {q} {b₁} {[]}      Y = refl
-Bφ-lwk []        {q} {b₁} {b' ∷ B'} Y =
-  cong (λ f → U.φ f _)
-    (cong ϕ[_] (Nat.+-suc q b₁) ■ sym (cong ϕ[_] (Nat.+-suc q (suc b₁))))
-Bφ-lwk (a ∷ [])      {q} {b₁} {B₂} {aa} Y =
-  cong (U.φ ϕ[ a ])
-    ( Bφ-lwk [] {q} {b₁} {B₂} (subst U.Proc (sym (+-suc (syncs ([] ++ (q + suc b₁) ∷ B₂)) aa)) Y)
-    ■ cong (Bφ ([] ++ (q + suc (suc b₁)) ∷ B₂)) bodyeq )
+ϕ-drop-eq : ∀ (q b₁ : ℕ) → ϕ[ q + suc b₁ ] ≡ ϕ[ q + suc (suc b₁) ]
+ϕ-drop-eq q b₁ = cong ϕ[_] (Nat.+-suc q b₁) ■ sym (cong ϕ[_] (Nat.+-suc q (suc b₁)))
+
+Bφ-lwk : ∀ (B₁ : BindGroup) {n} (cc : UChan n) {q b₁ : ℕ} {B₂ : BindGroup}
+         (Y : U.Proc (syncs (B₁ ++ (q + suc b₁) ∷ B₂) + n)) →
+         Bφ (B₁ ++ (q + suc b₁) ∷ B₂) cc Y
+         ≡ Bφ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) cc
+             (subst U.Proc (cong (_+ n) (syncs-lwkq B₁)) Y)
+Bφ-lwk []        cc            {q} {b₁} {[]}      Y = refl
+Bφ-lwk []        {n = n} (e1 , x , e2) {q} {b₁} {b' ∷ B'} Y =
+  cong (λ f → U.φ f (` x)
+          (plugΦ (subst (Φ* (1 + n)) (+-suc (syncs (b' ∷ B')) n)
+                    (Btel (b' ∷ B') (` 0F , suc x , wk e2))) Y))
+       (ϕ-drop-eq q b₁)
+Bφ-lwk (a ∷ [])      {n = n} (e1 , x , e2) {q} {b₁} {B₂} Y =
+    cong (U.φ ϕ[ a ] (` x))
+      (plugΦ-subst (+-suc (syncs ([] ++ (q + suc b₁) ∷ B₂)) n)
+         (Btel ([] ++ (q + suc b₁) ∷ B₂) (` 0F , suc x , wk e2)) Y)
+  ■ cong (U.φ ϕ[ a ] (` x))
+      ( Bφ-lwk [] (` 0F , suc x , wk e2) {q} {b₁} {B₂}
+          (subst U.Proc (sym (+-suc (syncs ([] ++ (q + suc b₁) ∷ B₂)) n)) Y)
+      ■ cong (Bφ ([] ++ (q + suc (suc b₁)) ∷ B₂) (` 0F , suc x , wk e2)) bodyeq )
+  ■ cong (U.φ ϕ[ a ] (` x))
+      (sym (plugΦ-subst (+-suc (syncs ([] ++ (q + suc (suc b₁)) ∷ B₂)) n)
+             (Btel ([] ++ (q + suc (suc b₁)) ∷ B₂) (` 0F , suc x , wk e2))
+             (subst U.Proc (cong (_+ n) (syncs-lwkq (a ∷ []) {q} {b₁} {B₂})) Y)))
   where
-    aa-eq = cong (_+ aa) (syncs-lwkq (a ∷ []) {q} {b₁} {B₂})
-    bodyeq : subst U.Proc (cong (_+ suc aa) (syncs-lwkq [] {q} {b₁} {B₂}))
-               (subst U.Proc (sym (+-suc (syncs ([] ++ (q + suc b₁) ∷ B₂)) aa)) Y)
-             ≡ subst U.Proc (sym (+-suc (syncs ([] ++ (q + suc (suc b₁)) ∷ B₂)) aa))
+    aa-eq = cong (_+ n) (syncs-lwkq (a ∷ []) {q} {b₁} {B₂})
+    bodyeq : subst U.Proc (cong (_+ suc n) (syncs-lwkq [] {q} {b₁} {B₂}))
+               (subst U.Proc (sym (+-suc (syncs ([] ++ (q + suc b₁) ∷ B₂)) n)) Y)
+             ≡ subst U.Proc (sym (+-suc (syncs ([] ++ (q + suc (suc b₁)) ∷ B₂)) n))
                  (subst U.Proc aa-eq Y)
-    bodyeq = ss-U (sym (+-suc (syncs ([] ++ (q + suc b₁) ∷ B₂)) aa)) (cong (_+ suc aa) (syncs-lwkq [] {q} {b₁} {B₂})) {t = Y}
+    bodyeq = ss-U (sym (+-suc (syncs ([] ++ (q + suc b₁) ∷ B₂)) n)) (cong (_+ suc n) (syncs-lwkq [] {q} {b₁} {B₂})) {t = Y}
            ■ cong (λ e → subst U.Proc e Y) (uipℕ _ _)
-           ■ sym (ss-U aa-eq (sym (+-suc (syncs ([] ++ (q + suc (suc b₁)) ∷ B₂)) aa)) {t = Y})
-Bφ-lwk (a ∷ d ∷ B₁″) {q} {b₁} {B₂} {aa} Y =
-  cong (U.φ ϕ[ a ])
-    ( Bφ-lwk (d ∷ B₁″) {q} {b₁} {B₂} (subst U.Proc (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) aa)) Y)
-    ■ cong (Bφ ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) bodyeq )
+           ■ sym (ss-U aa-eq (sym (+-suc (syncs ([] ++ (q + suc (suc b₁)) ∷ B₂)) n)) {t = Y})
+Bφ-lwk (a ∷ d ∷ B₁″) {n = n} (e1 , x , e2) {q} {b₁} {B₂} Y =
+    cong (U.φ ϕ[ a ] (` x))
+      (plugΦ-subst (+-suc (syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) n)
+         (Btel ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂) (` 0F , suc x , wk e2)) Y)
+  ■ cong (U.φ ϕ[ a ] (` x))
+      ( Bφ-lwk (d ∷ B₁″) (` 0F , suc x , wk e2) {q} {b₁} {B₂}
+          (subst U.Proc (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) n)) Y)
+      ■ cong (Bφ ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂) (` 0F , suc x , wk e2)) bodyeq )
+  ■ cong (U.φ ϕ[ a ] (` x))
+      (sym (plugΦ-subst (+-suc (syncs ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) n)
+             (Btel ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂) (` 0F , suc x , wk e2))
+             (subst U.Proc (cong (_+ n) (syncs-lwkq (a ∷ d ∷ B₁″) {q} {b₁} {B₂})) Y)))
   where
-    aa-eq = cong (_+ aa) (syncs-lwkq (a ∷ d ∷ B₁″) {q} {b₁} {B₂})
-    bodyeq : subst U.Proc (cong (_+ suc aa) (syncs-lwkq (d ∷ B₁″) {q} {b₁} {B₂}))
-               (subst U.Proc (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) aa)) Y)
-             ≡ subst U.Proc (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) aa))
+    aa-eq = cong (_+ n) (syncs-lwkq (a ∷ d ∷ B₁″) {q} {b₁} {B₂})
+    bodyeq : subst U.Proc (cong (_+ suc n) (syncs-lwkq (d ∷ B₁″) {q} {b₁} {B₂}))
+               (subst U.Proc (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) n)) Y)
+             ≡ subst U.Proc (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) n))
                  (subst U.Proc aa-eq Y)
-    bodyeq = ss-U (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) aa)) (cong (_+ suc aa) (syncs-lwkq (d ∷ B₁″) {q} {b₁} {B₂})) {t = Y}
+    bodyeq = ss-U (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc b₁) ∷ B₂)) n)) (cong (_+ suc n) (syncs-lwkq (d ∷ B₁″) {q} {b₁} {B₂})) {t = Y}
            ■ cong (λ e → subst U.Proc e Y) (uipℕ _ _)
-           ■ sym (ss-U aa-eq (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) aa)) {t = Y})
+           ■ sym (ss-U aa-eq (sym (+-suc (syncs ((d ∷ B₁″) ++ (q + suc (suc b₁)) ∷ B₂)) n)) {t = Y})
 
 subst-wkB : ∀ (sB : ℕ) {a b N} (eq : a ≡ b) (t : Tm (a + N)) →
             subst (λ j → Tm (sB + (j + N))) eq (t ⋯ weaken* ⦃ Kᵣ ⦄ sB)
@@ -572,7 +622,7 @@ U-lsplit-step : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → Cha
               (T.⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.atk (q ↑ʳ 0F)) ⊗ (` 𝐒.atk (q ↑ʳ 1F)) ]* ⟫ T.∥ (P T.⋯ₚ 𝐒.lwk)) ] σ)
 U-lsplit-step {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
   with lsplit-confine Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁} {s = s} {E = E} {P = P} ⊢P
-... | k , ρ⁻ , ρ⁻-skip , E₀ , Eeq , P₀ , Peq = UR.RU-Struct front (Bφ-lift-step C₁ (Bφ-lift-step B leaf-fire)) back
+... | k , ρ⁻ , ρ⁻-skip , E₀ , Eeq , P₀ , Peq = UR.RU-Struct front fire back
   where
     module 𝐒 = SplitRenamings B₁ B₂ (sum B)
     C₁ C₁′ : BindGroup
@@ -586,7 +636,11 @@ U-lsplit-step {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b
     sA  = syncs C₁
     sA′ = syncs C₁′
     sB  = syncs B
-    τ : sum C₁ + sum B + m →ₛ syncs B + (syncs C₁ + (2 + n))
+    cc₁ : UChan (2 + n)
+    cc₁ = (K `unit , 0F , K `unit)
+    cc₂ : UChan (sA + (2 + n))
+    cc₂ = (K `unit , weaken* ⦃ Kᵣ ⦄ sA 1F , K `unit)
+    τ : sum C₁ + sum B + m →ₛ sB + (sA + (2 + n))
     τ = leafσ σ C₁ B
     Vτ : VSub τ
     Vτ = ++ₛ-VSub
@@ -598,149 +652,116 @@ U-lsplit-step {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b
                      (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`))
                      (weaken* ⦃ Kᵣ ⦄ sA) (λ _ → V-`))
                      (weaken* ⦃ Kᵣ ⦄ sB) (λ _ → V-`))
-    ρ₁ : (sB + (sA + (2 + n))) →ᵣ (sB + (2 + (sA + n)))
-    ρ₁ = assocSwapᵣ sA 2 ↑* sB
-    ρ₂ : (sB + (2 + (sA + n))) →ᵣ (2 + (sB + (sA + n)))
-    ρ₂ = assocSwapᵣ sB 2
-    rn : Tm (sB + (sA + (2 + n))) → Tm (2 + (sB + (sA + n)))
-    rn t = (t ⋯ ρ₁) ⋯ ρ₂
-    push : ∀ {kk} → U.Proc (sB + (sA + (2 + kk))) → U.Proc (2 + (sB + (sA + kk)))
-    push {kk} X = (X U.⋯ₚ (assocSwapᵣ sA 2 ↑* sB)) U.⋯ₚ assocSwapᵣ sB 2
-    XL : U.Proc (sB + (sA + (2 + n)))
-    XL = U[ QL ] τ
-    ν↓ : ∀ (X : U.Proc (sB + (sA + (2 + n)))) →
-         U.ν (Bφ C₁ (Bφ B X)) U.≋ Bφ C₁ (Bφ B (U.ν (push X)))
-    ν↓ X =
-         ν-past-Bφ C₁ (Bφ B X)
-      ◅◅ Bφ-cong C₁ (U.ν-cong (≡→≋ (Bφ-⋯ B X (assocSwapᵣ sA 2))))
-      ◅◅ Bφ-cong C₁ (ν-past-Bφ B (X U.⋯ₚ (assocSwapᵣ sA 2 ↑* sB)))
-    front : U[ T.ν C₁ B QL ] σ U.≋ Bφ C₁ (Bφ B (U.ν (push XL)))
-    front = ≡→≋ (Uν-flat σ C₁ B QL) ◅◅ ν↓ XL
+    Φ_C₁ : Φ* (2 + n) (sA + (2 + n))
+    Φ_C₁ = Btel C₁ cc₁
+    Φ_B : Φ* (sA + (2 + n)) (sB + (sA + (2 + n)))
+    Φ_B = Btel B cc₂
+    Φfull : Φ* (2 + n) (sB + (sA + (2 + n)))
+    Φfull = Φ_C₁ ++Φ Φ_B
+    Fᶠ : Frame* (sB + (sA + (2 + n)))
+    Fᶠ = frame*-⋯ E τ Vτ
+    resid : U.Proc (sB + (sA + (2 + n)))
+    resid = U[ P ] τ
+    leafL : U.Proc (sB + (sA + (2 + n)))
+    leafL = U[ QL ] τ
+    hc = canonₛ-handleq B₁ (K `unit) 0F (K `unit) q b₁ B₂
+    e₁L e₂L : Tm (sB + (sA + (2 + n)))
+    e₁L = proj₁ hc ⋯ weaken* ⦃ Kᵣ ⦄ sB
+    e₂L = proj₁ (proj₂ hc) ⋯ weaken* ⦃ Kᵣ ⦄ sB
+    mid : U.Proc n
+    mid = U.ν (plugΦ Φfull leafL)
+    slotL0 slotR0 : Tm (sB + (sA + (2 + n)))
+    slotL0 = 𝓒[ e₁L × wkΦ Φfull 0F × * ]
+    slotR0 = 𝓒[ * × wkΦ Φfull 0F × e₂L ]
+    body : U.Proc (sB + (sA + (2 + n)))
+    body = U.⟪ Fᶠ [ slotL0 ⊗ slotR0 ]* ⟫ U.∥ resid
+    fired : U.Proc n
+    fired = U.ν (plugΦ Φfull body)
     castpos : 𝔽 (sum C₁)
     castpos = Fin.cast (sym (sum-++ B₁ ((q + suc b₁) ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
-    -- the lsplit handle translated at the leaf.
-    hc = canonₛ-handleq B₁ (K `unit) 0F (K `unit) q b₁ B₂
-    cc : Tm (2 + (sB + (sA + n)))
-    cc = rn (τ (𝐒.atk (q ↑ʳ 0F)))
-    -- τ (inj 0F) = canonₛ C₁ cc1 castpos ⋯ weaken* sB
     τinj0 : τ (𝐒.atk (q ↑ʳ 0F)) ≡ canonₛ C₁ (K `unit , 0F , K `unit) castpos ⋯ weaken* ⦃ Kᵣ ⦄ sB
     τinj0 =
         cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁ + sum B) (castpos ↑ˡ sum B) m)
       ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁) castpos (sum B))
-    ccTriple : cc ≡ ((proj₁ hc ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁ ⋯ ρ₂) ⊗ (` 0F))
-                    ⊗ (proj₁ (proj₂ hc) ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁ ⋯ ρ₂)
-    ccTriple =
-        cong rn (τinj0 ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) (proj₁ (proj₂ (proj₂ (proj₂ hc)))))
-      ■ cong (λ z → ((proj₁ hc ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁ ⋯ ρ₂) ⊗ (` z))
-                    ⊗ (proj₁ (proj₂ hc) ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁ ⋯ ρ₂))
-          (Fin.toℕ-injective (assocPush-junc sA sB 0 (weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hc)))) jvtoℕ (Nat.s≤s Nat.z≤n)))
+    wr : widthΦ Φfull ≡ sA + sB
+    wr = widthΦ-++ Φ_C₁ Φ_B ■ cong₂ _+_ (widthΦ-Btel C₁ cc₁) (widthΦ-Btel B cc₂)
+    junc≡ : weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hc))) ≡ wkΦ Φfull 0F
+    junc≡ = Fin.toℕ-injective (toℕL ■ sym toℕR)
       where
-        jvtoℕ : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hc)))) ≡ sB + (sA + 0)
-        jvtoℕ = toℕ-weaken*ᵣ sB (proj₁ (proj₂ (proj₂ hc))) ■ cong (sB +_) (proj₂ (proj₂ (proj₂ (proj₂ hc))))
-    Fr : Frame* (2 + (sB + (sA + n)))
-    Fr = (frame*-⋯ E τ Vτ ⋯ᶠ* ρ₁) ⋯ᶠ* ρ₂
-    RP : U.Proc (2 + (sB + (sA + n)))
-    RP = (U[ P ] τ U.⋯ₚ ρ₁) U.⋯ₚ ρ₂
-    threadEq : (Ef : Frame* (sum C₁ + sum B + m)) (p : Tm (sum C₁ + sum B + m)) →
-               (U[ T.⟪ Ef [ p ]* ⟫ ] τ U.⋯ₚ ρ₁) U.⋯ₚ ρ₂
-               ≡ U.⟪ ((frame*-⋯ Ef τ Vτ ⋯ᶠ* ρ₁) ⋯ᶠ* ρ₂) [ rn (p ⋯ τ) ]* ⟫
-    threadEq Ef p = cong U.⟪_⟫
-      ( cong (λ t → (t ⋯ ρ₁) ⋯ ρ₂) (frame-plug* Ef τ Vτ)
-      ■ cong (_⋯ ρ₂) (frame-plug*ᵣ (frame*-⋯ Ef τ Vτ) ρ₁)
-      ■ frame-plug*ᵣ (frame*-⋯ Ef τ Vτ ⋯ᶠ* ρ₁) ρ₂ )
-    YL≡ : push XL ≡ U.⟪ Fr [ K (`lsplit s) ·¹ cc ]* ⟫ U.∥ RP
-    YL≡ = cong₂ U._∥_
-            (threadEq E (K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F))))
-            refl
-    ccA ccC : Tm (2 + (sB + (sA + n)))
-    ccA = proj₁ hc ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁ ⋯ ρ₂
-    ccC = proj₁ (proj₂ hc) ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁ ⋯ ρ₂
-    ccL0 ccR0 : Tm (2 + (sB + (sA + n)))
-    ccL0 = ((ccA ⊗ (` 0F)) ⊗ *)
-    ccR0 = ((* ⊗ (` 0F)) ⊗ ccC)
-    redexL : U.Proc (2 + (sB + (sA + n)))
-    redexL = U.⟪ Fr [ K (`lsplit s) ·¹ cc ]* ⟫ U.∥ RP
-    contractumR : U.Proc (2 + (sB + (sA + n)))
-    contractumR = U.⟪ Fr [ ccL0 ⊗ ccR0 ]* ⟫ U.∥ RP
-    lsplitStep : U.ν redexL UR.─→ₚ U.ν contractumR
-    lsplitStep = subst (λ z → U.ν (U.⟪ Fr [ K (`lsplit s) ·¹ z ]* ⟫ U.∥ RP)
-                              UR.─→ₚ U.ν contractumR)
-                   (sym ccTriple) (UR.RU-LSplit {e₁ = ccA} {e₂ = ccC} Fr)
-    leaf-fire : U.ν (push XL) UR.─→ₚ U.ν contractumR
-    leaf-fire = UR.RU-Struct (U.ν-cong (≡→≋ YL≡)) lsplitStep ε
-    fire : Bφ C₁ (Bφ B (U.ν (push XL))) UR─→ₚ* Bφ C₁ (Bφ B (U.ν contractumR))
-    fire = Bφ-lift-step C₁ (Bφ-lift-step B leaf-fire) ◅ ε
-    τ′ : sum C₁′ + sum B + m →ₛ syncs B + (syncs C₁′ + (2 + n))
-    τ′ = leafσ σ C₁′ B
-    Vτ′ : VSub τ′
-    Vτ′ = ++ₛ-VSub
-           (++ₛ-VSub
-             (λ i → value-⋯ (VSub-canonₛ C₁′ (K `unit , 0F , K `unit) (V-K , V-K) i)
-                       (weaken* ⦃ Kᵣ ⦄ sB) (λ _ → V-`))
-             (VSub-canonₛ B (K `unit , weaken* ⦃ Kᵣ ⦄ sA′ 1F , K `unit) (V-K , V-K)))
-           (λ i → value-⋯ (value-⋯ (value-⋯ (Vσ i)
-                     (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`))
-                     (weaken* ⦃ Kᵣ ⦄ sA′) (λ _ → V-`))
-                     (weaken* ⦃ Kᵣ ⦄ sB) (λ _ → V-`))
-    XR′ : U.Proc (sB + (sA′ + (2 + n)))
-    XR′ = U[ QR ] τ′
-    pushR : ∀ {kk} → U.Proc (sB + (sA′ + (2 + kk))) → U.Proc (2 + (sB + (sA′ + kk)))
-    pushR {kk} X = (X U.⋯ₚ (assocSwapᵣ sA′ 2 ↑* sB)) U.⋯ₚ assocSwapᵣ sB 2
-    ν↓′ : ∀ (X : U.Proc (sB + (sA′ + (2 + n)))) →
-          U.ν (Bφ C₁′ (Bφ B X)) U.≋ Bφ C₁′ (Bφ B (U.ν (pushR X)))
-    ν↓′ X =
-         ν-past-Bφ C₁′ (Bφ B X)
-      ◅◅ Bφ-cong C₁′ (U.ν-cong (≡→≋ (Bφ-⋯ B X (assocSwapᵣ sA′ 2))))
-      ◅◅ Bφ-cong C₁′ (ν-past-Bφ B (X U.⋯ₚ (assocSwapᵣ sA′ 2 ↑* sB)))
-    rhs : U[ T.ν C₁′ B QR ] σ U.≋ Bφ C₁′ (Bφ B (U.ν (pushR XR′)))
-    rhs = ≡→≋ (Uν-flat σ C₁′ B QR) ◅◅ ν↓′ XR′
-    e1 : sA ≡ sA′
-    e1 = syncs-lwkq B₁
-    -- the transported contractum at the leaf must match pushR XR′.
-    eqP : (2 + (sB + (sA + n))) ≡ (2 + (sB + (sA′ + n)))
-    eqP = cong (2 +_) (cong (sB +_) (cong (_+ n) e1))
-    pushR-thread : U.Proc (2 + (sB + (sA′ + n)))
-    pushR-thread = (U[ T.⟪ E ⋯ᶠ* 𝐒.lwk [ (` 𝐒.atk (q ↑ʳ 0F)) ⊗ (` 𝐒.atk (q ↑ʳ 1F)) ]* ⟫ ] τ′ U.⋯ₚ (assocSwapᵣ sA′ 2 ↑* sB)) U.⋯ₚ assocSwapᵣ sB 2
-    pushR-P : U.Proc (2 + (sB + (sA′ + n)))
-    pushR-P = (U[ P T.⋯ₚ 𝐒.lwk ] τ′ U.⋯ₚ (assocSwapᵣ sA′ 2 ↑* sB)) U.⋯ₚ assocSwapᵣ sB 2
-    ρ₁′ : (sB + (sA′ + (2 + n))) →ᵣ (sB + (2 + (sA′ + n)))
-    ρ₁′ = assocSwapᵣ sA′ 2 ↑* sB
-    ρ₂′ : (sB + (2 + (sA′ + n))) →ᵣ (2 + (sB + (sA′ + n)))
-    ρ₂′ = assocSwapᵣ sB 2
-    rn′ : Tm (sB + (sA′ + (2 + n))) → Tm (2 + (sB + (sA′ + n)))
-    rn′ t = (t ⋯ ρ₁′) ⋯ ρ₂′
-    Fr′ : Frame* (2 + (sB + (sA′ + n)))
-    Fr′ = (frame*-⋯ (E ⋯ᶠ* 𝐒.lwk) τ′ Vτ′ ⋯ᶠ* ρ₁′) ⋯ᶠ* ρ₂′
-    threadEq′ : (Ef : Frame* (sum C₁′ + sum B + m)) (p : Tm (sum C₁′ + sum B + m)) →
-                (U[ T.⟪ Ef [ p ]* ⟫ ] τ′ U.⋯ₚ ρ₁′) U.⋯ₚ ρ₂′
-                ≡ U.⟪ ((frame*-⋯ Ef τ′ Vτ′ ⋯ᶠ* ρ₁′) ⋯ᶠ* ρ₂′) [ rn′ (p ⋯ τ′) ]* ⟫
-    threadEq′ Ef p = cong U.⟪_⟫
-      ( cong (λ t → (t ⋯ ρ₁′) ⋯ ρ₂′) (frame-plug* Ef τ′ Vτ′)
-      ■ cong (_⋯ ρ₂′) (frame-plug*ᵣ (frame*-⋯ Ef τ′ Vτ′) ρ₁′)
-      ■ frame-plug*ᵣ (frame*-⋯ Ef τ′ Vτ′ ⋯ᶠ* ρ₁′) ρ₂′ )
-    pushR-threadEq : pushR-thread ≡ U.⟪ Fr′ [ rn′ (τ′ (𝐒.atk (q ↑ʳ 0F))) ⊗ rn′ (τ′ (𝐒.atk (q ↑ʳ 1F))) ]* ⟫
-    pushR-threadEq = threadEq′ (E ⋯ᶠ* 𝐒.lwk) ((` 𝐒.atk (q ↑ʳ 0F)) ⊗ (` 𝐒.atk (q ↑ʳ 1F)))
-    -- the grown handle (inj 0F in C₁′), pushed, has junction 0F: same chanTriple shape as cc.
-    hc′ = canonₛ-handleq B₁ {N = 2 + n} (K `unit) 0F (K `unit) q (suc b₁) B₂
-    castpos′ : 𝔽 (sum C₁′)
-    castpos′ = Fin.cast (sym (sum-++ B₁ ((q + suc (suc b₁)) ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
-    τ′inj0 : τ′ (𝐒.atk (q ↑ʳ 0F)) ≡ canonₛ C₁′ (K `unit , 0F , K `unit) castpos′ ⋯ weaken* ⦃ Kᵣ ⦄ sB
-    τ′inj0 =
-        cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′ + sum B) (castpos′ ↑ˡ sum B) m)
-      ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′) castpos′ (sum B))
-    ccEqR : subst U.Proc eqP (U.⟪ Fr [ ccL0 ⊗ ccR0 ]* ⟫) ≡ pushR-thread
-    ccEqR =
-        cong (λ pf → subst U.Proc pf (U.⟪ Fr [ ccL0 ⊗ ccR0 ]* ⟫)) (uipℕ eqP eqPh)
-      ■ substP-∘ hF e1 (U.⟪ Fr [ ccL0 ⊗ ccR0 ]* ⟫)
-      ■ subst-⟪⟫f hF e1 (Fr [ ccL0 ⊗ ccR0 ]*)
-      ■ cong U.⟪_⟫ (subst-frame-plug hF e1 Fr (ccL0 ⊗ ccR0))
-      ■ cong U.⟪_⟫ (cong₂ _[_]* frameTransport bodyTransport)
-      ■ sym pushR-threadEq
+        toℕL : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hc)))) ≡ sB + sA
+        toℕL = toℕ-weaken*ᵣ sB (proj₁ (proj₂ (proj₂ hc)))
+             ■ cong (sB +_) (proj₂ (proj₂ (proj₂ (proj₂ hc))) ■ Nat.+-identityʳ sA)
+        toℕR : Fin.toℕ (wkΦ Φfull 0F) ≡ sB + sA
+        toℕR = toℕ-wkΦ Φfull 0F ■ Nat.+-identityʳ (widthΦ Φfull) ■ wr ■ Nat.+-comm sA sB
+    leafσ-atk : τ (𝐒.atk (q ↑ʳ 0F)) ≡ 𝓒[ e₁L × wkΦ Φfull 0F × e₂L ]
+    leafσ-atk = τinj0
+              ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) (proj₁ (proj₂ (proj₂ (proj₂ hc))))
+              ■ cong (λ z → (e₁L ⊗ (` z)) ⊗ e₂L) junc≡
+    redShapeEq : (E [ K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]*) ⋯ τ
+                 ≡ Fᶠ [ K (`lsplit s) ·¹ 𝓒[ e₁L × wkΦ Φfull 0F × e₂L ] ]*
+    redShapeEq = frame-plug* E τ Vτ
+               ■ cong (λ z → Fᶠ [ K (`lsplit s) ·¹ z ]*) leafσ-atk
+    leafL-shape : leafL ≡ U.⟪ Fᶠ [ K (`lsplit s) ·¹ 𝓒[ e₁L × wkΦ Φfull 0F × e₂L ] ]* ⟫ U.∥ resid
+    leafL-shape = cong (λ z → U.⟪ z ⟫ U.∥ resid) redShapeEq
+    front : U[ T.ν C₁ B QL ] σ U.≋ mid
+    front = ≡→≋ ( Uν-flatΦ σ C₁ B QL ■ cong U.ν (sym (plugΦ-++ Φ_C₁ Φ_B leafL)) )
+    fire : mid UR.─→ₚ fired
+    fire = subst (λ z → U.ν (plugΦ Φfull z) UR.─→ₚ fired) (sym leafL-shape)
+                 (UR.RU-LSplit Φfull Fᶠ {e₁ = e₁L} {e₂ = e₂L} {P = resid})
+    back : fired U.≋ U[ T.ν C₁′ B QR ] σ
+    back = ≡→≋
+      ( cong U.ν (plugΦ-++ Φ_C₁ Φ_B body)
+      ■ cong U.ν (Bφ-lwk B₁ cc₁ {q} {b₁} {B₂} (Bφ B cc₂ body))
+      ■ cong (λ z → U.ν (Bφ C₁′ cc₁ z)) bodyReconcile
+      ■ sym (Uν-flatΦ σ C₁′ B QR) )
       where
-        hF : ℕ → ℕ
-        hF j = 2 + (sB + (j + n))
-        eqPh : (2 + (sB + (sA + n))) ≡ (2 + (sB + (sA′ + n)))
-        eqPh = cong hF e1
+        e1 : sA ≡ sA′
+        e1 = syncs-lwkq B₁
+        esA : sA + (2 + n) ≡ sA′ + (2 + n)
+        esA = cong (_+ (2 + n)) e1
+        cc₂′ : UChan (sA′ + (2 + n))
+        cc₂′ = (K `unit , weaken* ⦃ Kᵣ ⦄ sA′ 1F , K `unit)
+        τ′ : sum C₁′ + sum B + m →ₛ sB + (sA′ + (2 + n))
+        τ′ = leafσ σ C₁′ B
+        Vτ′ : VSub τ′
+        Vτ′ = ++ₛ-VSub
+                (++ₛ-VSub
+                  (λ i → value-⋯ (VSub-canonₛ C₁′ (K `unit , 0F , K `unit) (V-K , V-K) i)
+                            (weaken* ⦃ Kᵣ ⦄ sB) (λ _ → V-`))
+                  (VSub-canonₛ B (K `unit , weaken* ⦃ Kᵣ ⦄ sA′ 1F , K `unit) (V-K , V-K)))
+                (λ i → value-⋯ (value-⋯ (value-⋯ (Vσ i)
+                          (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`))
+                          (weaken* ⦃ Kᵣ ⦄ sA′) (λ _ → V-`))
+                          (weaken* ⦃ Kᵣ ⦄ sB) (λ _ → V-`))
+        residR : U.Proc (sB + (sA′ + (2 + n)))
+        residR = U[ P T.⋯ₚ 𝐒.lwk ] τ′
+        Fᶠ′ : Frame* (sB + (sA′ + (2 + n)))
+        Fᶠ′ = frame*-⋯ (E ⋯ᶠ* 𝐒.lwk) τ′ Vτ′
+        hc′ = canonₛ-handleq B₁ {N = 2 + n} (K `unit) 0F (K `unit) q (suc b₁) B₂
+        hb1 = canonₛ-handleq-b1 B₁ {N = 2 + n} (K `unit) 0F (K `unit) q b₁ B₂
+        castpos′ : 𝔽 (sum C₁′)
+        castpos′ = Fin.cast (sym (sum-++ B₁ ((q + suc (suc b₁)) ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
+        castpos1′ : 𝔽 (sum C₁′)
+        castpos1′ = Fin.cast (sym (sum-++ B₁ ((q + suc (suc b₁)) ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 1F) ↑ˡ sum B₂))
+        τ′inj0 : τ′ (𝐒.atk (q ↑ʳ 0F)) ≡ canonₛ C₁′ (K `unit , 0F , K `unit) castpos′ ⋯ weaken* ⦃ Kᵣ ⦄ sB
+        τ′inj0 =
+            cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′ + sum B) (castpos′ ↑ˡ sum B) m)
+          ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′) castpos′ (sum B))
+        τ′inj1 : τ′ (𝐒.atk (q ↑ʳ 1F)) ≡ canonₛ C₁′ (K `unit , 0F , K `unit) castpos1′ ⋯ weaken* ⦃ Kᵣ ⦄ sB
+        τ′inj1 =
+            cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′ + sum B) (castpos1′ ↑ˡ sum B) m)
+          ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′) castpos1′ (sum B))
+        L-inv : subst Tm (cong (_+ (2 + n)) e1) (proj₁ hc) ≡ proj₁ hc′
+        L-inv = handle-L-lwkq B₁ (K `unit) 0F (K `unit) q b₁ B₂
+        R0-* : proj₁ (proj₂ hc′) ≡ *
+        R0-* = handle-R0-*q B₁ (K `unit) 0F (K `unit) q b₁ B₂
+        R-corr : subst Tm (cong (_+ (2 + n)) e1) (proj₁ (proj₂ hc)) ≡ proj₁ (proj₂ hb1)
+        R-corr = handle-R-lwkq B₁ (K `unit) 0F (K `unit) q b₁ B₂
+        L0-* : proj₁ hb1 ≡ *
+        L0-* = handle-b1-L-*q B₁ (K `unit) 0F (K `unit) q b₁ B₂
+        substσ-app : (h : ℕ → ℕ) {x yy : ℕ} (eq : x ≡ yy) {aa : ℕ} (ϱ : aa →ₛ h x) (i : 𝔽 aa) →
+                     subst (λ j → aa →ₛ h j) eq ϱ i ≡ subst (λ j → Tm (h j)) eq (ϱ i)
+        substσ-app h refl ϱ i = refl
         frameLeafeq : subst (λ j → Frame* (sB + (j + (2 + n)))) e1 (frame*-⋯ E τ Vτ)
                       ≡ frame*-⋯ (E ⋯ᶠ* 𝐒.lwk) τ′ Vτ′
         frameLeafeq =
@@ -756,149 +777,90 @@ U-lsplit-step {m} {n} σ Vσ Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b
           ■ sym (F-⋯f*-fuse E₀ (·ₖ-VSubᵣ 𝐒.lwk Vτ′) (·ₖ-VSubᵣ ρ⁻ (·ₖ-VSubᵣ 𝐒.lwk Vτ′)))
           ■ cong (λ EE → frame*-⋯ EE (𝐒.lwk ·ₖ τ′) (·ₖ-VSubᵣ 𝐒.lwk Vτ′)) (sym Eeq)
           ■ sym (F-⋯f*-fuse E Vτ′ (·ₖ-VSubᵣ 𝐒.lwk Vτ′))
-          where
-            substσ-app : (h : ℕ → ℕ) {x yy : ℕ} (eq : x ≡ yy) {aa : ℕ} (ϱ : aa →ₛ h x) (i : 𝔽 aa) →
-                         subst (λ j → aa →ₛ h j) eq ϱ i ≡ subst (λ j → Tm (h j)) eq (ϱ i)
-            substσ-app h refl ϱ i = refl
-        frameTransport : subst (λ j → Frame* (hF j)) e1 Fr ≡ Fr′
-        frameTransport =
-            transport-⋯f* (λ j → sB + (2 + (j + n))) hF (λ j → assocSwapᵣ sB 2 {j + n}) e1 (frame*-⋯ E τ Vτ ⋯ᶠ* ρ₁)
-          ■ cong (λ z → z ⋯ᶠ* assocSwapᵣ sB 2 {sA′ + n})
-              ( transport-⋯f* (λ j → sB + (j + (2 + n))) (λ j → sB + (2 + (j + n))) (λ j → assocSwapᵣ j 2 {n} ↑* sB) e1 (frame*-⋯ E τ Vτ)
-              ■ cong (λ z → z ⋯ᶠ* (assocSwapᵣ sA′ 2 {n} ↑* sB)) frameLeafeq )
-        castpos1′ : 𝔽 (sum C₁′)
-        castpos1′ = Fin.cast (sym (sum-++ B₁ ((q + suc (suc b₁)) ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 1F) ↑ˡ sum B₂))
-        τ′inj1 : τ′ (𝐒.atk (q ↑ʳ 1F)) ≡ canonₛ C₁′ (K `unit , 0F , K `unit) castpos1′ ⋯ weaken* {{ Kᵣ }} sB
-        τ′inj1 =
-            cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′ + sum B) (castpos1′ ↑ˡ sum B) m)
-          ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁′) castpos1′ (sum B))
-        -- grown handle borrow-1 triple (left slot *, right slot = grown borrow-1 R-slot).
-        hb1 = canonₛ-handleq-b1 B₁ {N = 2 + n} (K `unit) 0F (K `unit) q b₁ B₂
-        -- pushed grown borrow-0 triple: right slot is * (grown width ≥ 2).
-        hc′triple : rn′ (τ′ (𝐒.atk (q ↑ʳ 0F)))
-                    ≡ ((proj₁ hc′ ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) ⊗ (` 0F))
-                      ⊗ (proj₁ (proj₂ hc′) ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′)
-        hc′triple =
-            cong rn′ (τ′inj0 ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) (proj₁ (proj₂ (proj₂ (proj₂ hc′)))))
-          ■ cong (λ z → ((proj₁ hc′ ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) ⊗ (` z))
-                        ⊗ (proj₁ (proj₂ hc′) ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′))
-              (Fin.toℕ-injective (assocPush-junc sA′ sB 0 (weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hc′)))) jvtoℕ′ (Nat.s≤s Nat.z≤n)))
-          where
-            jvtoℕ′ : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hc′)))) ≡ sB + (sA′ + 0)
-            jvtoℕ′ = toℕ-weaken*ᵣ sB (proj₁ (proj₂ (proj₂ hc′))) ■ cong (sB +_) (proj₂ (proj₂ (proj₂ (proj₂ hc′))))
-        -- pushed grown borrow-1 triple.
-        hc′triple1 : rn′ (τ′ (𝐒.atk (q ↑ʳ 1F)))
-                     ≡ ((proj₁ hb1 ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) ⊗ (` 0F))
-                       ⊗ (proj₁ (proj₂ hb1) ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′)
-        hc′triple1 =
-            cong rn′ (τ′inj1 ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) (proj₁ (proj₂ (proj₂ (proj₂ hb1)))))
-          ■ cong (λ z → ((proj₁ hb1 ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) ⊗ (` z))
-                        ⊗ (proj₁ (proj₂ hb1) ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′))
-              (Fin.toℕ-injective (assocPush-junc sA′ sB 0 (weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hb1)))) jv1toℕ (Nat.s≤s Nat.z≤n)))
-          where
-            jv1toℕ : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hb1)))) ≡ sB + (sA′ + 0)
-            jv1toℕ = toℕ-weaken*ᵣ sB (proj₁ (proj₂ (proj₂ hb1))) ■ cong (sB +_) (proj₂ (proj₂ (proj₂ (proj₂ hb1))))
-        -- slot correspondences under handle growth.
-        L-inv : subst Tm (cong (_+ (2 + n)) e1) (proj₁ hc) ≡ proj₁ hc′
-        L-inv = handle-L-lwkq B₁ (K `unit) 0F (K `unit) q b₁ B₂
-        R0-* : proj₁ (proj₂ hc′) ≡ *
-        R0-* = handle-R0-*q B₁ (K `unit) 0F (K `unit) q b₁ B₂
-        R-corr : subst Tm (cong (_+ (2 + n)) e1) (proj₁ (proj₂ hc)) ≡ proj₁ (proj₂ hb1)
-        R-corr = handle-R-lwkq B₁ (K `unit) 0F (K `unit) q b₁ B₂
-        L0-* : proj₁ hb1 ≡ *
-        L0-* = handle-b1-L-*q B₁ (K `unit) 0F (K `unit) q b₁ B₂
-        -- push a single ungrown slot (with its wk sB) forward to the grown side.
-        pushSlot : (t : Tm (sA + (2 + n))) {t′ : Tm (sA′ + (2 + n))}
+        Pleafeq : subst (λ j → U.Proc (sB + (j + (2 + n)))) e1 (U[ P ] τ) ≡ residR
+        Pleafeq =
+            U-cod-transport P (λ j → sB + (j + (2 + n))) e1 τ
+          ■ cong (λ p → U[ p ] (subst (λ j → (sum C₁ + sum B + m) →ₛ (sB + (j + (2 + n)))) e1 τ)) Peq
+          ■ U-⋯ₚ P₀
+          ■ U-cong P₀ (λ y → substσ-app (λ j → sB + (j + (2 + n))) e1 τ (ρ⁻ y)
+                           ■ leafσ-lwk-id σ B₁ B₂ B q b₁ (ρ⁻ y) (ρ⁻-skip y))
+          ■ sym (U-⋯ₚ P₀)
+          ■ cong (λ p → U[ p ] (𝐒.lwk ·ₖ τ′)) (sym Peq)
+          ■ sym (U-⋯ₚ P)
+        leafSlot : (t : Tm (sA + (2 + n))) {t′ : Tm (sA′ + (2 + n))}
                    → subst Tm (cong (_+ (2 + n)) e1) t ≡ t′
-                   → subst (λ j → Tm (hF j)) e1 (t ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁ ⋯ ρ₂)
-                     ≡ (t′ ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′)
-        pushSlot t {t′} et =
-            transport-⋯t (λ j → sB + (2 + (j + n))) hF (λ j → assocSwapᵣ sB 2 {j + n}) e1 (t ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁)
-          ■ cong (_⋯ assocSwapᵣ sB 2 {sA′ + n})
-              ( transport-⋯t (λ j → sB + (j + (2 + n))) (λ j → sB + (2 + (j + n))) (λ j → assocSwapᵣ j 2 {n} ↑* sB) e1 (t ⋯ weaken* ⦃ Kᵣ ⦄ sB)
-              ■ cong (_⋯ (assocSwapᵣ sA′ 2 {n} ↑* sB))
-                  ( subst-wkB sB e1 t
-                  ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) (sym (subst-cong+ e1 t) ■ et) ) )
-        pushJunc : subst (λ j → Tm (hF j)) e1 (` 0F) ≡ (` 0F)
-        pushJunc = go e1
-          where go : ∀ {s′} (eq : sA ≡ s′) → subst (λ j → Tm (2 + (sB + (j + n)))) eq (` 0F) ≡ (` 0F)
-                go refl = refl
-        pushKunit : subst (λ j → Tm (hF j)) e1 * ≡ *
-        pushKunit = go e1
-          where go : ∀ {s′} (eq : sA ≡ s′) → subst (λ j → Tm (2 + (sB + (j + n)))) eq * ≡ *
-                go refl = refl
-        bodyTransport : subst (λ j → Tm (hF j)) e1 (ccL0 ⊗ ccR0)
-                        ≡ rn′ (τ′ (𝐒.atk (q ↑ʳ 0F))) ⊗ rn′ (τ′ (𝐒.atk (q ↑ʳ 1F)))
-        bodyTransport =
-            subst-⊗f hF e1 ccL0 ccR0
+                   → subst (λ j → Tm (sB + (j + (2 + n)))) e1 (t ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+                     ≡ (t′ ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+        leafSlot t {t′} et = subst-wkB sB e1 t
+                           ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) (sym (subst-cong+ e1 t) ■ et)
+        juncEqTo : ∀ (jv : 𝔽 (sA′ + (2 + n))) → Fin.toℕ jv ≡ sA′ + 0 →
+                   subst (λ j → Tm (sB + (j + (2 + n)))) e1 (` wkΦ Φfull 0F)
+                   ≡ (` weaken* ⦃ Kᵣ ⦄ sB jv)
+        juncEqTo jv jvto =
+            subst-`Ff (λ j → sB + (j + (2 + n))) e1 (wkΦ Φfull 0F)
+          ■ cong `_ (Fin.toℕ-injective
+              ( toℕ-subst𝔽f (λ j → sB + (j + (2 + n))) e1 (wkΦ Φfull 0F)
+              ■ toℕ-wkΦ Φfull 0F ■ Nat.+-identityʳ (widthΦ Φfull) ■ wr
+              ■ cong (_+ sB) e1 ■ Nat.+-comm sA′ sB
+              ■ sym (toℕ-weaken*ᵣ sB jv ■ cong (sB +_) (jvto ■ Nat.+-identityʳ sA′)) ))
+        juncEq0 : subst (λ j → Tm (sB + (j + (2 + n)))) e1 (` wkΦ Φfull 0F)
+                  ≡ (` weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hc′))))
+        juncEq0 = juncEqTo (proj₁ (proj₂ (proj₂ hc′))) (proj₂ (proj₂ (proj₂ (proj₂ hc′))))
+        juncEq1 : subst (λ j → Tm (sB + (j + (2 + n)))) e1 (` wkΦ Φfull 0F)
+                  ≡ (` weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hb1))))
+        juncEq1 = juncEqTo (proj₁ (proj₂ (proj₂ hb1))) (proj₂ (proj₂ (proj₂ (proj₂ hb1))))
+        τ′inj0-shape : τ′ (𝐒.atk (q ↑ʳ 0F))
+                     ≡ ((proj₁ hc′ ⋯ weaken* ⦃ Kᵣ ⦄ sB) ⊗ (` weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hc′))))) ⊗ *
+        τ′inj0-shape = τ′inj0
+                     ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) (proj₁ (proj₂ (proj₂ (proj₂ hc′))))
+                     ■ cong (λ z → ((proj₁ hc′ ⋯ weaken* ⦃ Kᵣ ⦄ sB) ⊗ (` weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hc′))))) ⊗ z)
+                         (cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) R0-*)
+        τ′inj1-shape : τ′ (𝐒.atk (q ↑ʳ 1F))
+                     ≡ (* ⊗ (` weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hb1))))) ⊗ (proj₁ (proj₂ hb1) ⋯ weaken* ⦃ Kᵣ ⦄ sB)
+        τ′inj1-shape = τ′inj1
+                     ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) (proj₁ (proj₂ (proj₂ (proj₂ hb1))))
+                     ■ cong (λ z → (z ⊗ (` weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hb1))))) ⊗ (proj₁ (proj₂ hb1) ⋯ weaken* ⦃ Kᵣ ⦄ sB))
+                         (cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) L0-*)
+        slot0 : subst (λ j → Tm (sB + (j + (2 + n)))) e1 slotL0 ≡ τ′ (𝐒.atk (q ↑ʳ 0F))
+        slot0 =
+            subst-⊗f (λ j → sB + (j + (2 + n))) e1 (e₁L ⊗ (` wkΦ Φfull 0F)) *
           ■ cong₂ _⊗_
-              ( subst-⊗f hF e1 (ccA ⊗ (` 0F)) *
-              ■ cong₂ _⊗_ (subst-⊗f hF e1 ccA (` 0F) ■ cong₂ _⊗_ (pushSlot (proj₁ hc) L-inv) pushJunc)
-                          pushKunit
-              ■ sym hc′triple₀ )
-              ( subst-⊗f hF e1 (* ⊗ (` 0F)) ccC
-              ■ cong₂ _⊗_ (subst-⊗f hF e1 * (` 0F) ■ cong₂ _⊗_ pushKunit pushJunc)
-                          (pushSlot (proj₁ (proj₂ hc)) R-corr)
-              ■ sym hc′triple1₀ )
-          where
-            -- grown borrow-0 triple with right slot rewritten to *.
-            hc′triple₀ : rn′ (τ′ (𝐒.atk (q ↑ʳ 0F)))
-                         ≡ ((proj₁ hc′ ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) ⊗ (` 0F)) ⊗ *
-            hc′triple₀ = hc′triple
-              ■ cong (λ z → ((proj₁ hc′ ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) ⊗ (` 0F)) ⊗ z)
-                  (cong (λ w → w ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) R0-*)
-            -- grown borrow-1 triple with left slot rewritten to *.
-            hc′triple1₀ : rn′ (τ′ (𝐒.atk (q ↑ʳ 1F)))
-                          ≡ ((* ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) ⊗ (` 0F))
-                            ⊗ (proj₁ (proj₂ hb1) ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′)
-            hc′triple1₀ = hc′triple1
-              ■ cong (λ z → ((z ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′) ⊗ (` 0F))
-                            ⊗ (proj₁ (proj₂ hb1) ⋯ weaken* ⦃ Kᵣ ⦄ sB ⋯ ρ₁′ ⋯ ρ₂′))
-                  L0-*
-    redexRec : subst U.Proc eqP (U.⟪ Fr [ ccL0 ⊗ ccR0 ]* ⟫) ≡ pushR-thread
-    redexRec = ccEqR
-    ρ₂F : (j : ℕ) → (sB + (2 + (j + n))) →ᵣ (2 + (sB + (j + n)))
-    ρ₂F j = assocSwapᵣ sB 2 {j + n}
-    ρ₁F : (j : ℕ) → (sB + (j + (2 + n))) →ᵣ (sB + (2 + (j + n)))
-    ρ₁F j = assocSwapᵣ j 2 {n} ↑* sB
-    Pleafeq : subst (λ j → U.Proc (sB + (j + (2 + n)))) e1 (U[ P ] τ) ≡ U[ P T.⋯ₚ 𝐒.lwk ] τ′
-    Pleafeq =
-        U-cod-transport P (λ j → sB + (j + (2 + n))) e1 τ
-      ■ cong (λ p → U[ p ] (subst (λ j → (sum C₁ + sum B + m) →ₛ (sB + (j + (2 + n)))) e1 τ)) Peq
-      ■ U-⋯ₚ P₀
-      ■ U-cong P₀ (λ y → substσ-app (λ j → sB + (j + (2 + n))) e1 τ (ρ⁻ y)
-                       ■ leafσ-lwk-id σ B₁ B₂ B q b₁ (ρ⁻ y) (ρ⁻-skip y))
-      ■ sym (U-⋯ₚ P₀)
-      ■ cong (λ p → U[ p ] (𝐒.lwk ·ₖ τ′)) (sym Peq)
-      ■ sym (U-⋯ₚ P)
-      where
-        substσ-app : (h : ℕ → ℕ) {x yy : ℕ} (eq : x ≡ yy) {aa : ℕ} (ρ : aa →ₛ h x) (i : 𝔽 aa) →
-                     subst (λ j → aa →ₛ h j) eq ρ i ≡ subst (λ j → Tm (h j)) eq (ρ i)
-        substσ-app h refl ρ i = refl
-    eqP′ : (2 + (sB + (sA + n))) ≡ (2 + (sB + (sA′ + n)))
-    eqP′ = cong (λ j → 2 + (sB + (j + n))) e1
-    PrestRec : subst U.Proc eqP RP ≡ pushR-P
-    PrestRec =
-        cong (λ pf → subst U.Proc pf RP) (uipℕ eqP eqP′)
-      ■ substP-∘ (λ j → 2 + (sB + (j + n))) e1 RP
-      ■ transport-⋯ₚ (λ j → sB + (2 + (j + n))) (λ j → 2 + (sB + (j + n))) ρ₂F e1 (U[ P ] τ U.⋯ₚ ρ₁)
-      ■ cong (λ z → z U.⋯ₚ ρ₂F sA′)
-          ( transport-⋯ₚ (λ j → sB + (j + (2 + n))) (λ j → sB + (2 + (j + n))) ρ₁F e1 (U[ P ] τ)
-          ■ cong (λ z → z U.⋯ₚ ρ₁F sA′) Pleafeq )
-    bodyReconcile : subst U.Proc eqP contractumR
-                    U.≋ pushR XR′
-    bodyReconcile = ≡→≋
-      ( subst-∥f (λ z → z) eqP (U.⟪ Fr [ ccL0 ⊗ ccR0 ]* ⟫) RP
-      ■ cong₂ U._∥_ redexRec PrestRec )
-    middleReconcile : Bφ C₁ (Bφ B (U.ν contractumR)) U.≋ Bφ C₁′ (Bφ B (U.ν (pushR XR′)))
-    middleReconcile =
-         ≡→≋ (Bφ-lwk B₁ {q} {b₁} {B₂} {a = n} (Bφ B (U.ν contractumR)))
-      ◅◅ Bφ-cong C₁′
-           ( ≡→≋ ( subst-Bφ (cong (_+ n) e1) B (U.ν contractumR)
-                 ■ cong (Bφ B) (subst-ν (cong (sB +_) (cong (_+ n) e1)) contractumR) )
-           ◅◅ Bφ-cong B (U.ν-cong bodyReconcile) )
-    back : Bφ C₁ (Bφ B (U.ν contractumR)) U.≋ U[ T.ν C₁′ B QR ] σ
-    back = middleReconcile ◅◅ Eq*.symmetric _ rhs
+              ( subst-⊗f (λ j → sB + (j + (2 + n))) e1 e₁L (` wkΦ Φfull 0F)
+              ■ cong₂ _⊗_ (leafSlot (proj₁ hc) L-inv) juncEq0 )
+              (subst-*f (λ j → sB + (j + (2 + n))) e1)
+          ■ sym τ′inj0-shape
+        slot1 : subst (λ j → Tm (sB + (j + (2 + n)))) e1 slotR0 ≡ τ′ (𝐒.atk (q ↑ʳ 1F))
+        slot1 =
+            subst-⊗f (λ j → sB + (j + (2 + n))) e1 (* ⊗ (` wkΦ Φfull 0F)) e₂L
+          ■ cong₂ _⊗_
+              ( subst-⊗f (λ j → sB + (j + (2 + n))) e1 * (` wkΦ Φfull 0F)
+              ■ cong₂ _⊗_ (subst-*f (λ j → sB + (j + (2 + n))) e1) juncEq1 )
+              (leafSlot (proj₁ (proj₂ hc)) R-corr)
+          ■ sym τ′inj1-shape
+        slots : subst (λ j → Tm (sB + (j + (2 + n)))) e1 (slotL0 ⊗ slotR0)
+                ≡ τ′ (𝐒.atk (q ↑ʳ 0F)) ⊗ τ′ (𝐒.atk (q ↑ʳ 1F))
+        slots = subst-⊗f (λ j → sB + (j + (2 + n))) e1 slotL0 slotR0
+              ■ cong₂ _⊗_ slot0 slot1
+        bodyRshape : U[ QR ] τ′
+                     ≡ U.⟪ Fᶠ′ [ τ′ (𝐒.atk (q ↑ʳ 0F)) ⊗ τ′ (𝐒.atk (q ↑ʳ 1F)) ]* ⟫ U.∥ residR
+        bodyRshape = cong (λ z → U.⟪ z ⟫ U.∥ residR)
+                       (frame-plug* (E ⋯ᶠ* 𝐒.lwk) τ′ Vτ′)
+        leafReconcile′ : subst (λ j → U.Proc (sB + (j + (2 + n)))) e1 body ≡ U[ QR ] τ′
+        leafReconcile′ =
+            subst-∥f (λ j → sB + (j + (2 + n))) e1 (U.⟪ Fᶠ [ slotL0 ⊗ slotR0 ]* ⟫) resid
+          ■ cong₂ U._∥_
+              ( subst-⟪⟫f (λ j → sB + (j + (2 + n))) e1 (Fᶠ [ slotL0 ⊗ slotR0 ]*)
+              ■ cong U.⟪_⟫ ( subst-frame-plug (λ j → sB + (j + (2 + n))) e1 Fᶠ (slotL0 ⊗ slotR0)
+                            ■ cong₂ _[_]* frameLeafeq slots ) )
+              Pleafeq
+          ■ sym bodyRshape
+        bodyReconcile : subst U.Proc esA (Bφ B cc₂ body) ≡ Bφ B cc₂′ (U[ QR ] τ′)
+        bodyReconcile =
+            subst-Bφ-c esA B cc₂ body
+          ■ cong₂ (Bφ B) (subst-chan-wk1 e1 1F)
+              ( cong (λ p → subst U.Proc p body) (uipℕ (cong (sB +_) esA) (cong (λ j → sB + (j + (2 + n))) e1))
+              ■ substP-∘ (λ j → sB + (j + (2 + n))) e1 body
+              ■ leafReconcile′ )
 
 
 -- ============================================================================
