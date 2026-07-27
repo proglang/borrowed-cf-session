@@ -5,7 +5,7 @@ import BorrowedCF.Processes.Typed   as T
 import BorrowedCF.Processes.Untyped as U
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
 open import BorrowedCF.Simulation.Support.TranslationProperties
-  using (UB-nat; Ub-nat; Ub-V; mapᶜ; varΘ; U-cong; U-⋯ₚ; ++ₛ-⋯; liftCast; subst₂→; chanTriple-mapᶜ)
+  using (UB-nat; Ub-nat; Ub-V; mapᶜ; mapᶜ-fusion; varΘ; U-cong; U-⋯ₚ; ++ₛ-⋯; liftCast; subst₂→; chanTriple-mapᶜ)
   renaming ( subst-⋯ₚ-dom to TP-subst-⋯ₚ-dom
            ; subst₂-cancel to subst₂-cancel-local
            ; subst-⋯-cod to subst-⋯-cod-local
@@ -39,47 +39,421 @@ open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; �
 open import BorrowedCF.Simulation.Support.Frames using (frame-plug*; frame*-⋯; frame-plug₁; ++ₛ-VSub)
 open import BorrowedCF.Simulation.Support.TranslationProperties using (VChan; chanTriple-V; Value-subst)
 open import BorrowedCF.Simulation.Support.Theorems.ComHelpers1 public
+open import BorrowedCF.Simulation.Support.Theorems.PhiTel
+  using ( Btel; Bφ; canonₛ; leafσ; Uν-flatΦ; plugΦ-subst ) public
+open import BorrowedCF.Reduction.Processes.Untyped using (Φ*; []φ; _◂_; plugΦ)
 
--- The remaining ν-reordering lemmas reduce — via the flattening Uν-flat above —
--- to the φ-binder BLOCK-TRANSPOSE engine plus a leaf-substitution reconcile:
+------------------------------------------------------------------------
+-- Channel-carrying φ-telescope engine (linked-φ design).
 --
---   Bφ B₁ (Bφ B₂ X) ≋ Bφ B₂ (Bφ B₁ (X ⋯ₚ assocSwapᵣ (syncs B₁) (syncs B₂)))
---
--- proved by induction over the φ-blocks with U.φ-comm′ (each step contributes an
--- assocSwapᵣ 1 1 on the body, accumulated by the renaming laws R2/R2'), followed
--- by U.ν-swap′ / U.ν-comm′ on the two data channels and the canonₛ-naturality
--- reconciliation of the leaf U[ P ] (leafσ …) (via U-⋯ₚ + U-cong + canonₛ-nat).
--- This is exactly the old BlockSwap+BlockPermutation+NuSwap/NuComm engine
--- (~760 ln there); against the simpler new translation the φ-blocks carry no
--- flag cells, so only the binder permutation + leaf reconcile remain.
--- The infrastructure (Uν-flat, leafσ, Bφ, Bφ-cong, UB-flat, canonₛ) is in place.
+-- `U-ν-swap` (image of a typed ν-swap) is a CONGRUENCE / block move: the two
+-- flattened nests (via `Uν-flatΦ`) differ by swapping the B₁-block and the
+-- B₂-block of the channel-carrying φ-telescope.  The block swap is realised by
+-- the gate-safe untyped `φ-comm′` (a φ past a φ — never a φ past a ν) plus the
+-- `ν-swap′` on the two data channels, and the leaf substitution is reconciled
+-- by the channel-agnostic `subEq-gen` re-exported from ComHelpers1.
+------------------------------------------------------------------------
+
+-- congruence of plugΦ in its body.
+plugΦ-cong : ∀ {a b} (Φ : Φ* a b) {P Q : U.Proc b} → P U.≋ Q → plugΦ Φ P U.≋ plugΦ Φ Q
+plugΦ-cong []φ            pq = pq
+plugΦ-cong ((f , c) ◂ Φ)  pq = U.φ-cong (plugΦ-cong Φ pq)
+
+-- congruence of Bφ in its body.
+Bφ-cong-c : ∀ {n} (B : BindGroup) (cc : UChan n) {P Q : U.Proc (syncs B + n)} →
+            P U.≋ Q → Bφ B cc P U.≋ Bφ B cc Q
+Bφ-cong-c B cc pq = plugΦ-cong (Btel B cc) pq
+
+-- one-cell unfolding of Bφ on a non-singleton head.
+Bφ-cons : ∀ {n} (b c : ℕ) (B : BindGroup) (e1 e2 : Tm n) (x : 𝔽 n)
+          (P : U.Proc (syncs (b ∷ c ∷ B) + n)) →
+          Bφ (b ∷ c ∷ B) (e1 , x , e2) P
+          ≡ U.φ ϕ[ b ] (` x)
+              (Bφ (c ∷ B) (` 0F , suc x , wk e2)
+                (subst U.Proc (sym (+-suc (syncs (c ∷ B)) n)) P))
+Bφ-cons {n} b c B e1 e2 x P =
+  cong (U.φ ϕ[ b ] (` x))
+    (plugΦ-subst (+-suc (syncs (c ∷ B)) n) (Btel (c ∷ B) (` 0F , suc x , wk e2)) P)
+
+-- naturality of Bφ under target renaming (channel-carrying `Bφ-⋯`).
+Bφ-⋯-c : ∀ {n n′} (B : BindGroup) (cc : UChan n) (P : U.Proc (syncs B + n)) (ρ : n →ᵣ n′) →
+         Bφ B cc P U.⋯ₚ ρ ≡ Bφ B (mapᶜ ρ cc) (P U.⋯ₚ (ρ ↑* syncs B))
+Bφ-⋯-c []            cc            P ρ = refl
+Bφ-⋯-c (b ∷ [])      cc            P ρ = refl
+Bφ-⋯-c {n} {n′} (b ∷ c ∷ B) (e1 , x , e2) P ρ =
+    cong (U._⋯ₚ ρ) (Bφ-cons b c B e1 e2 x P)
+  ■ cong (U.φ ϕ[ b ] (` ρ x))
+      ( Bφ-⋯-c (c ∷ B) (` 0F , suc x , wk e2) (subst U.Proc (sym (+-suc sCB n)) P) (ρ ↑)
+      ■ cong₂ (λ cc′ Q → Bφ (c ∷ B) cc′ Q) channelEq bodyEq )
+  ■ sym (Bφ-cons b c B (e1 ⋯ ρ) (e2 ⋯ ρ) (ρ x) (P U.⋯ₚ (ρ ↑* suc sCB)))
+  where
+    sCB = syncs (c ∷ B)
+    channelEq : mapᶜ (ρ ↑) (` 0F , suc x , wk e2)
+                ≡ (` 0F , suc (ρ x) , wk (e2 ⋯ ρ))
+    channelEq = cong (λ t → (` 0F , suc (ρ x) , t)) (sym (⋯-↑-wk e2 ρ))
+    Θ : (sCB + suc n) →ᵣ (sCB + suc n′)
+    Θ = (ρ ↑) ↑* sCB
+    Θ⁺eq : subst (λ z → z →ᵣ (sCB + suc n′)) (+-suc sCB n) Θ
+           ≡ subst (λ z → suc (sCB + n) →ᵣ z) (sym (+-suc sCB n′)) (ρ ↑* suc sCB)
+    Θ⁺eq = subst-flip (+-suc sCB n′) (sym (subst₂→ (+-suc sCB n) (+-suc sCB n′) Θ) ■ liftCast sCB ρ)
+    bodyEq : (subst U.Proc (sym (+-suc sCB n)) P) U.⋯ₚ ((ρ ↑) ↑* sCB)
+             ≡ subst U.Proc (sym (+-suc sCB n′)) (P U.⋯ₚ (ρ ↑* suc sCB))
+    bodyEq =
+        TP-subst-⋯ₚ-dom (+-suc sCB n) P Θ
+      ■ cong (P U.⋯ₚ_) Θ⁺eq
+      ■ subst-⋯ₚ-cod (sym (+-suc sCB n′)) P (ρ ↑* suc sCB)
+
+weaken*1≡suc : ∀ {p} (x : 𝔽 p) → weaken* ⦃ Kᵣ ⦄ 1 x ≡ suc x
+weaken*1≡suc x = weaken*~↑ʳ 1 x
+
+-- φ-comm′ presented with the crossed cell's channel in suc-headed form.
+φ-comm-c : ∀ {n} (f₁ f₂ : U.Flag) (c : Tm n) (v : 𝔽 n) (P : U.Proc (2 + n)) →
+   U.φ f₁ c (U.φ f₂ (` suc v) P)
+     U.≋ U.φ f₂ (` v) (U.φ f₁ (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (P U.⋯ₚ assocSwapᵣ 1 1))
+φ-comm-c {n} f₁ f₂ c v P =
+  subst (λ w → U.φ f₁ c (U.φ f₂ (` w) P)
+                 U.≋ U.φ f₂ (` v) (U.φ f₁ (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (P U.⋯ₚ assocSwapᵣ 1 1)))
+        (weaken*1≡suc v)
+        (Eq*.return U.φ-comm′)
+
+-- subst over U.Proc commutes through a φ-binder.
+subst-φ : ∀ {a b} (eq : a ≡ b) {z : U.Flag} {c : Tm a} (Q : U.Proc (suc a)) →
+          subst U.Proc eq (U.φ z c Q)
+          ≡ U.φ z (subst Tm eq c) (subst U.Proc (cong suc eq) Q)
+subst-φ refl Q = refl
+
+-- transport a renaming through substs on both ends (Proc).
+substⱼ-⋯ : ∀ {a a′ b b′} (p : a ≡ a′) (q : b ≡ b′) (X : U.Proc a′)
+           (ρ : a →ᵣ b) (ρ′ : a′ →ᵣ b′) →
+           (∀ x → ρ x ≡ subst 𝔽 (sym q) (ρ′ (subst 𝔽 p x))) →
+           subst U.Proc (sym p) X U.⋯ₚ ρ ≡ subst U.Proc (sym q) (X U.⋯ₚ ρ′)
+substⱼ-⋯ refl refl X ρ ρ′ h = U.⋯ₚ-cong X h
+
+-- transport a renaming through substs on both ends (Tm).
+substⱼ-⋯ₜ : ∀ {a a′ b b′} (p : a ≡ a′) (q : b ≡ b′) (t : Tm a′)
+            (ρ : a →ᵣ b) (ρ′ : a′ →ᵣ b′) →
+            (∀ x → ρ x ≡ subst 𝔽 (sym q) (ρ′ (subst 𝔽 p x))) →
+            subst Tm (sym p) t ⋯ ρ ≡ subst Tm (sym q) (t ⋯ ρ′)
+substⱼ-⋯ₜ refl refl t ρ ρ′ h = ⋯-cong t h
+
+toℕ-subst𝔽ᶜ : ∀ {a c} (e : a ≡ c) (y : 𝔽 a) → Fin.toℕ (subst 𝔽 e y) ≡ Fin.toℕ y
+toℕ-subst𝔽ᶜ refl y = refl
+
+cast≡subst : ∀ {a c} (e : a ≡ c) (y : 𝔽 a) → Fin.cast e y ≡ subst 𝔽 e y
+cast≡subst refl y = Fin.cast-is-id refl y
+
+assoc11-0 : ∀ {p} → assocSwapᵣ 1 1 {p} 0F ≡ 1F
+assoc11-0 {p} = Fin.toℕ-injective (toℕ-assoc-lt 1 1 {p} 0F (Nat.s≤s Nat.z≤n))
+
+assoc11-ss : ∀ {p} (w : 𝔽 p) → assocSwapᵣ 1 1 (suc (suc w)) ≡ suc (suc w)
+assoc11-ss {p} w = Fin.toℕ-injective (toℕ-assoc-ge 1 1 {p} (suc (suc w)) (Nat.s≤s (Nat.s≤s Nat.z≤n)))
+
+wkwk-assoc11 : ∀ {p} (t : Tm p) → wk (wk t) ⋯ assocSwapᵣ 1 1 ≡ wk (wk t)
+wkwk-assoc11 t =
+    cong (_⋯ assocSwapᵣ 1 1) (fusion t weaken weaken)
+  ■ fusion t (weaken ·ₖ weaken) (assocSwapᵣ 1 1)
+  ■ ⋯-cong t (λ x → assoc11-ss x)
+  ■ sym (fusion t weaken weaken)
+
+-- Push a single φ cell (flag f_z, channel c_z) past a whole `Bφ B` block whose
+-- channels are `mapᶜ weaken` of ambient (so every cell avoids f_z's binder,
+-- keeping every `φ-comm′` gate-safe).  Channel-carrying `φ-past-Bφ`.
+φ-past-Bφ-c : ∀ {n} (B : BindGroup) (f_z : U.Flag) (c_z : Tm n) (cc₀ : UChan n)
+              (X : U.Proc (syncs B + suc n)) →
+   U.φ f_z c_z (Bφ B (mapᶜ (weaken ⦃ Kᵣ ⦄) cc₀) X)
+     U.≋ Bφ B cc₀ (U.φ f_z (c_z ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B)) (X U.⋯ₚ assocSwapᵣ (syncs B) 1))
+φ-past-Bφ-c []            f_z c_z cc₀ X =
+  ≡→≋ (cong₂ (U.φ f_z) (sym (⋯-id c_z (λ _ → refl)))
+              (sym (local-⋯ₚ-id X assocSwap-01)))
+φ-past-Bφ-c (b ∷ [])      f_z c_z cc₀ X =
+  ≡→≋ (cong₂ (U.φ f_z) (sym (⋯-id c_z (λ _ → refl)))
+              (sym (local-⋯ₚ-id X assocSwap-01)))
+φ-past-Bφ-c {n} (b ∷ c ∷ B₀) f_z c_z (g1 , w , g2) X =
+     ≡→≋ (cong (U.φ f_z c_z) (Bφ-cons {suc n} b c B₀ (wk g1) (wk g2) (suc w) X))
+  ◅◅ φ-comm-c f_z ϕ[ b ] c_z w (Bφ (c ∷ B₀) cc'' W)
+  ◅◅ U.φ-cong
+       ( U.φ-cong (≡→≋ (Bφ-⋯-c (c ∷ B₀) cc'' W (assocSwapᵣ 1 1)))
+       ◅◅ U.φ-cong (≡→≋ (cong (λ cc → Bφ (c ∷ B₀) cc (W U.⋯ₚ (assocSwapᵣ 1 1 ↑* sCB))) ccstep))
+       ◅◅ φ-past-Bφ-c (c ∷ B₀) f_z (c_z ⋯ weaken* ⦃ Kᵣ ⦄ 1) (` 0F , suc w , wk g2)
+            (W U.⋯ₚ (assocSwapᵣ 1 1 ↑* sCB))
+       ◅◅ Bφ-cong-c (c ∷ B₀) (` 0F , suc w , wk g2) (≡→≋ bodyren) )
+  ◅◅ ≡→≋ (sym (Bφ-cons b c B₀ g1 g2 w
+                (U.φ f_z (c_z ⋯ weaken* ⦃ Kᵣ ⦄ (suc sCB)) (X U.⋯ₚ assocSwapᵣ (suc sCB) 1))))
+  where
+    sCB = syncs (c ∷ B₀)
+    cc'' : UChan (suc (suc n))
+    cc'' = (` 0F , suc (suc w) , wk (wk g2))
+    W : U.Proc (sCB + suc (suc n))
+    W = subst U.Proc (sym (+-suc sCB (suc n))) X
+    -- after the head swap, the tail block channels are `mapᶜ weaken` of the
+    -- recursion triple.
+    ccstep : mapᶜ (assocSwapᵣ 1 1) cc'' ≡ mapᶜ (weaken ⦃ Kᵣ ⦄) (` 0F , suc w , wk g2)
+    ccstep = cong₂ _,_ (cong `_ assoc11-0) (cong₂ _,_ (assoc11-ss w) (wkwk-assoc11 g2))
+    -- body / f_z-channel reconcile through the tail block's binders.
+    ρ₁ : (sCB + suc (suc n)) →ᵣ suc (sCB + suc n)
+    ρ₁ = (assocSwapᵣ 1 1 {n} ↑* sCB) ·ₖ assocSwapᵣ sCB 1 {suc n}
+    ptwise : ∀ x → ρ₁ x ≡ subst 𝔽 (cong suc (sym (+-suc sCB n)))
+                          (assocSwapᵣ (suc sCB) 1 {n} (subst 𝔽 (+-suc sCB (suc n)) x))
+    ptwise x = Fin.toℕ-injective
+      ( toℕ-R3 sCB x
+      ■ cong (λ y → Fin.toℕ (assocSwapᵣ (suc sCB) 1 y)) (cast≡subst (+-suc sCB (suc n)) x)
+      ■ sym (toℕ-subst𝔽ᶜ (cong suc (sym (+-suc sCB n)))
+               (assocSwapᵣ (suc sCB) 1 (subst 𝔽 (+-suc sCB (suc n)) x))) )
+    qq : suc (suc (sCB + n)) ≡ suc (sCB + suc n)
+    qq = cong suc (sym (+-suc sCB n))
+    chanren : (c_z ⋯ weaken* ⦃ Kᵣ ⦄ 1) ⋯ weaken* ⦃ Kᵣ ⦄ sCB
+              ≡ subst Tm (sym (+-suc sCB n)) (c_z ⋯ weaken* ⦃ Kᵣ ⦄ (suc sCB))
+    chanren =
+        fusion c_z (weaken* ⦃ Kᵣ ⦄ 1) (weaken* ⦃ Kᵣ ⦄ sCB)
+      ■ ⋯-cong c_z wkchan
+      ■ subst-⋯-cod-local (sym (+-suc sCB n)) c_z (weaken* ⦃ Kᵣ ⦄ (suc sCB))
+      where
+        wkchan : weaken* ⦃ Kᵣ ⦄ 1 ·ₖ weaken* ⦃ Kᵣ ⦄ sCB
+                 ≗ subst (λ z → n →ᵣ z) (sym (+-suc sCB n)) (weaken* ⦃ Kᵣ ⦄ (suc sCB))
+        wkchan y =
+            cong (weaken* ⦃ Kᵣ ⦄ sCB) (weaken*~↑ʳ 1 y)
+          ■ weaken*~↑ʳ sCB (suc y)
+          ■ subst-flip (+-suc sCB n) (↑ʳ-suc sCB y)
+          ■ cong (subst 𝔽 (sym (+-suc sCB n))) (sym (weaken*~↑ʳ (suc sCB) y))
+          ■ sym (subst-ren-cod (sym (+-suc sCB n)) (weaken* ⦃ Kᵣ ⦄ (suc sCB)) y)
+    bodyren : U.φ f_z ((c_z ⋯ weaken* ⦃ Kᵣ ⦄ 1) ⋯ weaken* ⦃ Kᵣ ⦄ sCB)
+                ((W U.⋯ₚ (assocSwapᵣ 1 1 ↑* sCB)) U.⋯ₚ assocSwapᵣ sCB 1)
+              ≡ subst U.Proc (sym (+-suc sCB n))
+                  (U.φ f_z (c_z ⋯ weaken* ⦃ Kᵣ ⦄ (suc sCB)) (X U.⋯ₚ assocSwapᵣ (suc sCB) 1))
+    bodyren =
+        cong₂ (U.φ f_z) chanren bodyProc
+      ■ sym (subst-φ (sym (+-suc sCB n)) (X U.⋯ₚ assocSwapᵣ (suc sCB) 1))
+      where
+        bodyProc : (W U.⋯ₚ (assocSwapᵣ 1 1 ↑* sCB)) U.⋯ₚ assocSwapᵣ sCB 1
+                   ≡ subst U.Proc (cong suc (sym (+-suc sCB n)))
+                       (X U.⋯ₚ assocSwapᵣ (suc sCB) 1)
+        bodyProc =
+            U.fusionₚ W (assocSwapᵣ 1 1 ↑* sCB) (assocSwapᵣ sCB 1)
+          ■ substⱼ-⋯ (+-suc sCB (suc n)) (sym qq) X ρ₁ (assocSwapᵣ (suc sCB) 1)
+              (λ x → ptwise x ■ cong (λ e → subst 𝔽 e (assocSwapᵣ (suc sCB) 1 (subst 𝔽 (+-suc sCB (suc n)) x)))
+                                   (≡-irrelevant qq (sym (sym qq))))
+          ■ cong (λ e → subst U.Proc e (X U.⋯ₚ assocSwapᵣ (suc sCB) 1))
+              (≡-irrelevant (sym (sym qq)) qq)
+
+-- subst over U.Proc commutes through a whole `Bφ B` block (channel-carrying).
+subst-Bφ-c : ∀ {a a′} (e : a ≡ a′) (B : BindGroup) (cc : UChan a) (Y : U.Proc (syncs B + a)) →
+             subst U.Proc e (Bφ B cc Y)
+             ≡ Bφ B (subst UChan e cc) (subst U.Proc (cong (syncs B +_) e) Y)
+subst-Bφ-c refl B cc Y = refl
+
+mapᶜ-id : ∀ {a} (cc : UChan a) → mapᶜ (idₖ ⦃ Kᵣ ⦄) cc ≡ cc
+mapᶜ-id (e1 , x , e2) = cong₂ _,_ (⋯-id e1 (λ _ → refl)) (cong₂ _,_ refl (⋯-id e2 (λ _ → refl)))
+
+subst-UChan-triple : ∀ {p q} (e : p ≡ q) (a c : Tm p) (y : 𝔽 p) →
+                     subst UChan e (a , y , c) ≡ (subst Tm e a , subst 𝔽 e y , subst Tm e c)
+subst-UChan-triple refl a c y = refl
+
+-- a `weaken` followed by `weaken* k` equals `weaken* (suc k)` (modulo +-suc), 𝔽.
+wk-then-wk*-F : ∀ {p} k (y : 𝔽 p) →
+                weaken* ⦃ Kᵣ ⦄ k (weaken ⦃ Kᵣ ⦄ y)
+                ≡ subst 𝔽 (sym (+-suc k p)) (weaken* ⦃ Kᵣ ⦄ (suc k) y)
+wk-then-wk*-F {p} k y = Fin.toℕ-injective
+  ( toℕ-weaken*ᵣ k (weaken ⦃ Kᵣ ⦄ y)
+  ■ Nat.+-suc k (Fin.toℕ y)
+  ■ sym (toℕ-subst𝔽ᶜ (sym (+-suc k p)) (weaken* ⦃ Kᵣ ⦄ (suc k) y)
+       ■ toℕ-weaken*ᵣ (suc k) y) )
+
+-- Tm analogue.
+wk-then-wk* : ∀ {p} k (t : Tm p) →
+              (t ⋯ weaken ⦃ Kᵣ ⦄) ⋯ weaken* ⦃ Kᵣ ⦄ k
+              ≡ subst Tm (sym (+-suc k p)) (t ⋯ weaken* ⦃ Kᵣ ⦄ (suc k))
+wk-then-wk* {p} k t =
+    fusion t (weaken ⦃ Kᵣ ⦄) (weaken* ⦃ Kᵣ ⦄ k)
+  ■ ⋯-cong t wkc
+  ■ subst-⋯-cod-local (sym (+-suc k p)) t (weaken* ⦃ Kᵣ ⦄ (suc k))
+  where
+    wkc : weaken ⦃ Kᵣ ⦄ ·ₖ weaken* ⦃ Kᵣ ⦄ k
+          ≗ subst (λ z → p →ᵣ z) (sym (+-suc k p)) (weaken* ⦃ Kᵣ ⦄ (suc k))
+    wkc y = wk-then-wk*-F k y ■ sym (subst-ren-cod (sym (+-suc k p)) (weaken* ⦃ Kᵣ ⦄ (suc k)) y)
+
+-- channel transport for the transpose recursion.
+cc-shift-gen : ∀ {p} k (a c : Tm p) (y : 𝔽 p) →
+  subst UChan (sym (+-suc k p)) (mapᶜ (weaken* ⦃ Kᵣ ⦄ (suc k)) (a , y , c))
+  ≡ mapᶜ (weaken* ⦃ Kᵣ ⦄ k) (mapᶜ (weaken ⦃ Kᵣ ⦄) (a , y , c))
+cc-shift-gen {p} k a c y =
+    subst-UChan-triple (sym (+-suc k p)) (a ⋯ weaken* ⦃ Kᵣ ⦄ (suc k))
+      (c ⋯ weaken* ⦃ Kᵣ ⦄ (suc k)) (weaken* ⦃ Kᵣ ⦄ (suc k) y)
+  ■ cong₂ _,_ (sym (wk-then-wk* k a))
+      (cong₂ _,_ (sym (wk-then-wk*-F k y)) (sym (wk-then-wk* k c)))
+
+-- Channel-carrying block transpose: swap two `Bφ` blocks past each other,
+-- accumulating an `assocSwap` on the body.  The B₂-block channels are carried as
+-- `mapᶜ (weaken* (syncs B₁)) cc₂` (weakened past B₁'s cells); after the swap they
+-- descend to `cc₂` and B₁'s become `mapᶜ (weaken* (syncs B₂)) cc₁`.
+Bφ-transposeΦ : (B₁ B₂ : BindGroup) {n : ℕ} (cc₁ cc₂ : UChan n)
+                (X : U.Proc (syncs B₂ + (syncs B₁ + n))) →
+   Bφ B₁ cc₁ (Bφ B₂ (mapᶜ (weaken* ⦃ Kᵣ ⦄ (syncs B₁)) cc₂) X)
+     U.≋ Bφ B₂ cc₂ (Bφ B₁ (mapᶜ (weaken* ⦃ Kᵣ ⦄ (syncs B₂)) cc₁)
+                       (X U.⋯ₚ assocSwapᵣ (syncs B₂) (syncs B₁)))
+Bφ-transposeΦ []            B₂ cc₁ cc₂ X =
+  ≡→≋ (cong₂ (Bφ B₂) (mapᶜ-id cc₂) (sym (local-⋯ₚ-id X (R-base-b0 (syncs B₂)))))
+Bφ-transposeΦ (b ∷ [])      B₂ cc₁ cc₂ X =
+  ≡→≋ (cong₂ (Bφ B₂) (mapᶜ-id cc₂) (sym (local-⋯ₚ-id X (R-base-b0 (syncs B₂)))))
+Bφ-transposeΦ (b ∷ c ∷ B₁₀) B₂ {n} (g1 , u , g2) (a , y , c₀) X =
+     ≡→≋ step1
+  ◅◅ U.φ-cong (Bφ-transposeΦ (c ∷ B₁₀) B₂ (` 0F , suc u , wk g2) (mapᶜ (weaken ⦃ Kᵣ ⦄) (a , y , c₀)) X₁)
+  ◅◅ φ-past-Bφ-c B₂ ϕ[ b ] (` u) (a , y , c₀)
+       (Bφ (c ∷ B₁₀) (mapᶜ (weaken* ⦃ Kᵣ ⦄ sB₂) (` 0F , suc u , wk g2)) (X₁ U.⋯ₚ assocSwapᵣ sB₂ sA'))
+  ◅◅ Bφ-cong-c B₂ (a , y , c₀)
+       (U.φ-cong (≡→≋ (Bφ-⋯-c (c ∷ B₁₀) (mapᶜ (weaken* ⦃ Kᵣ ⦄ sB₂) (` 0F , suc u , wk g2))
+                        (X₁ U.⋯ₚ assocSwapᵣ sB₂ sA') (assocSwapᵣ sB₂ 1))))
+  ◅◅ Bφ-cong-c B₂ (a , y , c₀) (≡→≋ reconcile)
+  where
+    sA' = syncs (c ∷ B₁₀)
+    sB₂ = syncs B₂
+    pc = cong (sB₂ +_) (+-suc sA' n)
+    X₁ : U.Proc (sB₂ + (sA' + suc n))
+    X₁ = subst U.Proc (cong (sB₂ +_) (sym (+-suc sA' n))) X
+    X₁≡ : X₁ ≡ subst U.Proc (sym pc) X
+    X₁≡ = cong (λ e → subst U.Proc e X) (≡-irrelevant (cong (sB₂ +_) (sym (+-suc sA' n))) (sym pc))
+    cc-shift : subst UChan (sym (+-suc sA' n)) (mapᶜ (weaken* ⦃ Kᵣ ⦄ (suc sA')) (a , y , c₀))
+               ≡ mapᶜ (weaken* ⦃ Kᵣ ⦄ sA') (mapᶜ (weaken ⦃ Kᵣ ⦄) (a , y , c₀))
+    cc-shift = cc-shift-gen sA' a c₀ y
+    step1 : Bφ (b ∷ c ∷ B₁₀) (g1 , u , g2)
+              (Bφ B₂ (mapᶜ (weaken* ⦃ Kᵣ ⦄ (suc sA')) (a , y , c₀)) X)
+            ≡ U.φ ϕ[ b ] (` u)
+                (Bφ (c ∷ B₁₀) (` 0F , suc u , wk g2)
+                  (Bφ B₂ (mapᶜ (weaken* ⦃ Kᵣ ⦄ sA') (mapᶜ (weaken ⦃ Kᵣ ⦄) (a , y , c₀))) X₁))
+    step1 =
+        Bφ-cons b c B₁₀ g1 g2 u (Bφ B₂ (mapᶜ (weaken* ⦃ Kᵣ ⦄ (suc sA')) (a , y , c₀)) X)
+      ■ cong (U.φ ϕ[ b ] (` u))
+          (cong (Bφ (c ∷ B₁₀) (` 0F , suc u , wk g2))
+            ( subst-Bφ-c (sym (+-suc sA' n)) B₂ (mapᶜ (weaken* ⦃ Kᵣ ⦄ (suc sA')) (a , y , c₀)) X
+            ■ cong (λ cc → Bφ B₂ cc X₁) cc-shift))
+    -- body reconcile (channel-free, ported verbatim from AcqH2.Bφ-transpose)
+    ρ₂ : (sB₂ + (sA' + suc n)) →ᵣ sA' + (1 + (sB₂ + n))
+    ρ₂ = assocSwapᵣ sB₂ sA' ·ₖ (assocSwapᵣ sB₂ 1 ↑* sA')
+    ptwise : ∀ x → ρ₂ x ≡ subst 𝔽 (sym (+-suc sA' (sB₂ + n)))
+                         (assocSwapᵣ sB₂ (suc sA') (subst 𝔽 pc x))
+    ptwise x = Fin.toℕ-injective
+      ( toℕ-R4 sB₂ sA' x
+      ■ cong (λ w → Fin.toℕ (assocSwapᵣ sB₂ (suc sA') w)) (cast≡subst pc x)
+      ■ sym (toℕ-subst𝔽ᶜ (sym (+-suc sA' (sB₂ + n)))
+               (assocSwapᵣ sB₂ (suc sA') (subst 𝔽 pc x))) )
+    bodyEq : (X₁ U.⋯ₚ assocSwapᵣ sB₂ sA') U.⋯ₚ (assocSwapᵣ sB₂ 1 ↑* sA')
+             ≡ subst U.Proc (sym (+-suc sA' (sB₂ + n))) (X U.⋯ₚ assocSwapᵣ sB₂ (suc sA'))
+    bodyEq =
+        cong (λ z → (z U.⋯ₚ assocSwapᵣ sB₂ sA') U.⋯ₚ (assocSwapᵣ sB₂ 1 ↑* sA')) X₁≡
+      ■ U.fusionₚ (subst U.Proc (sym pc) X) (assocSwapᵣ sB₂ sA') (assocSwapᵣ sB₂ 1 ↑* sA')
+      ■ substⱼ-⋯ pc (+-suc sA' (sB₂ + n)) X ρ₂ (assocSwapᵣ sB₂ (suc sA')) ptwise
+    -- inner channel reconcile: the tail block channel descends to `0F`.
+    Rc : (suc n) →ᵣ suc (sB₂ + n)
+    Rc = weaken* ⦃ Kᵣ ⦄ sB₂ ·ₖ assocSwapᵣ sB₂ 1 {n}
+    chanfin-gen : ∀ (x : 𝔽 n) → Rc (suc x) ≡ suc (weaken* ⦃ Kᵣ ⦄ sB₂ x)
+    chanfin-gen x = Fin.toℕ-injective
+      ( toℕ-assoc-ge sB₂ 1 (weaken* ⦃ Kᵣ ⦄ sB₂ (suc x)) ge
+      ■ toℕ-weaken*ᵣ sB₂ (suc x)
+      ■ Nat.+-suc sB₂ (Fin.toℕ x)
+      ■ sym (cong suc (toℕ-weaken*ᵣ sB₂ x)) )
+      where
+        ge : sB₂ + 1 Nat.≤ Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sB₂ (suc x))
+        ge = subst (sB₂ + 1 Nat.≤_) (sym (toℕ-weaken*ᵣ sB₂ (suc x)))
+               (Nat.+-monoʳ-≤ sB₂ (Nat.s≤s Nat.z≤n))
+    inner-cc : mapᶜ (assocSwapᵣ sB₂ 1) (mapᶜ (weaken* ⦃ Kᵣ ⦄ sB₂) (` 0F , suc u , wk g2))
+               ≡ (` 0F , suc (weaken* ⦃ Kᵣ ⦄ sB₂ u) , wk (g2 ⋯ weaken* ⦃ Kᵣ ⦄ sB₂))
+    inner-cc =
+        mapᶜ-fusion (weaken* ⦃ Kᵣ ⦄ sB₂) (assocSwapᵣ sB₂ 1) (` 0F , suc u , wk g2)
+      ■ cong₂ _,_ (cong `_ e1fin) (cong₂ _,_ (chanfin-gen u) e2fin)
+      where
+        e1fin : Rc 0F ≡ 0F
+        e1fin = Fin.toℕ-injective
+          ( toℕ-assoc-mid sB₂ 1 {n} (weaken* ⦃ Kᵣ ⦄ sB₂ (Fin.zero {n = n})) ge lt
+          ■ cong (Nat._∸ sB₂) w0 ■ Nat.n∸n≡0 sB₂ )
+          where
+            w0 : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sB₂ (Fin.zero {n = n})) ≡ sB₂
+            w0 = toℕ-weaken*ᵣ sB₂ (Fin.zero {n = n}) ■ Nat.+-identityʳ sB₂
+            ge : sB₂ Nat.≤ Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sB₂ (Fin.zero {n = n}))
+            ge = subst (sB₂ Nat.≤_) (sym w0) Nat.≤-refl
+            lt : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sB₂ (Fin.zero {n = n})) Nat.< sB₂ + 1
+            lt = subst (Nat._< sB₂ + 1) (sym w0) (Nat.≤-reflexive (sym (Nat.+-comm sB₂ 1)))
+        e2fin : wk g2 ⋯ Rc ≡ wk (g2 ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+        e2fin =
+            fusion g2 (weaken ⦃ Kᵣ ⦄) Rc
+          ■ ⋯-cong g2 (λ x → chanfin-gen x)
+          ■ sym (fusion g2 (weaken* ⦃ Kᵣ ⦄ sB₂) (weaken ⦃ Kᵣ ⦄))
+    reconcile : U.φ ϕ[ b ] ((` u) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+                  (Bφ (c ∷ B₁₀) (mapᶜ (assocSwapᵣ sB₂ 1) (mapᶜ (weaken* ⦃ Kᵣ ⦄ sB₂) (` 0F , suc u , wk g2)))
+                    ((X₁ U.⋯ₚ assocSwapᵣ sB₂ sA') U.⋯ₚ (assocSwapᵣ sB₂ 1 ↑* sA')))
+                ≡ Bφ (b ∷ c ∷ B₁₀) (mapᶜ (weaken* ⦃ Kᵣ ⦄ sB₂) (g1 , u , g2))
+                    (X U.⋯ₚ assocSwapᵣ sB₂ (suc sA'))
+    reconcile =
+        cong (U.φ ϕ[ b ] ((` u) ⋯ weaken* ⦃ Kᵣ ⦄ sB₂))
+          (cong₂ (Bφ (c ∷ B₁₀)) inner-cc bodyEq)
+      ■ sym (Bφ-cons b c B₁₀ (g1 ⋯ weaken* ⦃ Kᵣ ⦄ sB₂) (g2 ⋯ weaken* ⦃ Kᵣ ⦄ sB₂)
+               (weaken* ⦃ Kᵣ ⦄ sB₂ u) (X U.⋯ₚ assocSwapᵣ sB₂ (suc sA')))
 
 U-ν-swap : (σ : m →ₛ n) {B₁ B₂ : BindGroup} {P : T.Proc (sum B₁ + sum B₂ + m)} →
            U[ T.ν B₁ B₂ P ] σ U.≋ U[ T.ν B₂ B₁ (P T.⋯ₚ swapᵣ (sum B₁) (sum B₂)) ] σ
 U-ν-swap {m = m} {n = n} σ {B₁} {B₂} {P} =
-     ≡→≋ (Uν-flat σ B₁ B₂ P)
-  ◅◅ U.ν-cong (Bφ-transpose B₁ B₂ (U[ P ] (leafσ σ B₁ B₂)))
+     ≡→≋ (Uν-flatΦ σ B₁ B₂ P)
+  ◅◅ U.ν-cong (Bφ-transposeΦ B₁ B₂ (K `unit , 0F , K `unit) (K `unit , 1F , K `unit) Lf)
   ◅◅ Eq*.return U.ν-swap′
-  ◅◅ U.ν-cong (≡→≋ (Bφ-⋯ B₂ (Bφ B₁ Xs) (swapᵣ 1 1)))
-  ◅◅ U.ν-cong (Bφ-cong B₂ (≡→≋ (Bφ-⋯ B₁ Xs (swapᵣ 1 1 ↑* sB₂))))
-  ◅◅ U.ν-cong (Bφ-cong B₂ (Bφ-cong B₁ (≡→≋ leafEq)))
-  ◅◅ ≡→≋ (sym (Uν-flat σ B₂ B₁ (P T.⋯ₚ swapᵣ (sum B₁) (sum B₂))))
+  ◅◅ U.ν-cong (≡→≋ pushEq)
+  ◅◅ ≡→≋ (sym (Uν-flatΦ σ B₂ B₁ (P T.⋯ₚ swapᵣ (sum B₁) (sum B₂))))
   where
     sB₁ = syncs B₁
     sB₂ = syncs B₂
-    Xs : U.Proc (sB₁ + (sB₂ + (2 + n)))
-    Xs = U[ P ] (leafσ σ B₁ B₂) U.⋯ₚ assocSwapᵣ sB₂ sB₁
-    leafEq : (Xs U.⋯ₚ ((swapᵣ 1 1 ↑* sB₂) ↑* sB₁))
+    Lf : U.Proc (sB₂ + (sB₁ + (2 + n)))
+    Lf = U[ P ] (leafσ σ B₁ B₂)
+    INNER : U.Proc (sB₂ + (2 + n))
+    INNER = Bφ B₁ (mapᶜ (weaken* ⦃ Kᵣ ⦄ sB₂) (K `unit , 0F , K `unit)) (Lf U.⋯ₚ assocSwapᵣ sB₂ sB₁)
+    -- swapᵣ 1 1 sends 1F ↦ 0F.
+    swap11-1 : swapᵣ 1 1 {n} (Fin.suc (Fin.zero {n = n})) ≡ Fin.zero {n = suc n}
+    swap11-1 = Fin.toℕ-injective
+      (toℕ-swapᵣ-mid 1 1 (Fin.suc (Fin.zero {n = n})) (Nat.s≤s Nat.z≤n) (Nat.s≤s (Nat.s≤s Nat.z≤n)))
+    ccB₂eq : mapᶜ (swapᵣ 1 1) (K `unit , 1F , K `unit) ≡ (K `unit , 0F , K `unit)
+    ccB₂eq = cong (λ z → (K `unit , z , K `unit)) swap11-1
+    -- swapᵣ 1 1 lifted past sB₂ sends (weaken* sB₂ 0F) ↦ (weaken* sB₂ 1F).
+    chanUp : (swapᵣ 1 1 {n} ↑* sB₂) (weaken* ⦃ Kᵣ ⦄ sB₂ (Fin.zero {n = suc n}))
+             ≡ weaken* ⦃ Kᵣ ⦄ sB₂ (Fin.suc (Fin.zero {n = n}))
+    chanUp = Fin.toℕ-injective
+      ( toℕ-↑*-ge (swapᵣ 1 1 {n}) sB₂ (weaken* ⦃ Kᵣ ⦄ sB₂ (Fin.zero {n = suc n})) q
+      ■ cong (sB₂ +_) ( cong (λ z → Fin.toℕ (swapᵣ 1 1 z)) red≡0
+                      ■ toℕ-swapᵣ-lt 1 1 (Fin.zero {n = suc n}) (Nat.s≤s Nat.z≤n) )
+      ■ sym (toℕ-weaken*ᵣ sB₂ (Fin.suc (Fin.zero {n = n}))) )
+      where
+        q : sB₂ Nat.≤ Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sB₂ (Fin.zero {n = suc n}))
+        q = subst (sB₂ Nat.≤_) (sym (toℕ-weaken*ᵣ sB₂ (Fin.zero {n = suc n})))
+              (Nat.≤-reflexive (sym (Nat.+-identityʳ sB₂)))
+        red≡0 : Fin.reduce≥ (weaken* ⦃ Kᵣ ⦄ sB₂ (Fin.zero {n = suc n})) q ≡ Fin.zero {n = suc n}
+        red≡0 = Fin.toℕ-injective
+          (toℕ-reduce≥ (weaken* ⦃ Kᵣ ⦄ sB₂ (Fin.zero {n = suc n})) q
+           ■ cong (Nat._∸ sB₂) (toℕ-weaken*ᵣ sB₂ (Fin.zero {n = suc n}) ■ Nat.+-identityʳ sB₂)
+           ■ Nat.n∸n≡0 sB₂)
+    ccB₁eq : mapᶜ (swapᵣ 1 1 ↑* sB₂) (mapᶜ (weaken* ⦃ Kᵣ ⦄ sB₂) (K `unit , 0F , K `unit))
+             ≡ (K `unit , weaken* ⦃ Kᵣ ⦄ sB₂ 1F , K `unit)
+    ccB₁eq = mapᶜ-fusion (weaken* ⦃ Kᵣ ⦄ sB₂) (swapᵣ 1 1 ↑* sB₂) (K `unit , 0F , K `unit)
+           ■ cong (λ z → (K `unit , z , K `unit)) chanUp
+    subEq : (leafσ σ B₁ B₂ ·ₖ assocSwapᵣ sB₂ sB₁) ·ₖ ((swapᵣ 1 1 ↑* sB₂) ↑* sB₁)
+            ≗ swapᵣ (sum B₁) (sum B₂) ·ₖ leafσ σ B₂ B₁
+    subEq = subEq-gen σ B₁ B₂
+    leafEq : (Lf U.⋯ₚ assocSwapᵣ sB₂ sB₁) U.⋯ₚ ((swapᵣ 1 1 ↑* sB₂) ↑* sB₁)
              ≡ U[ P T.⋯ₚ swapᵣ (sum B₁) (sum B₂) ] (leafσ σ B₂ B₁)
     leafEq =
         cong (U._⋯ₚ ((swapᵣ 1 1 ↑* sB₂) ↑* sB₁)) (local-U-σ⋯ P)
       ■ local-U-σ⋯ P
       ■ U-cong P subEq
       ■ sym (U-⋯ₚ P)
-      where
-        subEq : (leafσ σ B₁ B₂ ·ₖ assocSwapᵣ sB₂ sB₁) ·ₖ ((swapᵣ 1 1 ↑* sB₂) ↑* sB₁)
-                ≗ swapᵣ (sum B₁) (sum B₂) ·ₖ leafσ σ B₂ B₁
-        subEq = subEq-gen σ B₁ B₂
+    innerEq : INNER U.⋯ₚ (swapᵣ 1 1 ↑* sB₂)
+              ≡ Bφ B₁ (K `unit , weaken* ⦃ Kᵣ ⦄ sB₂ 1F , K `unit)
+                  (U[ P T.⋯ₚ swapᵣ (sum B₁) (sum B₂) ] (leafσ σ B₂ B₁))
+    innerEq =
+        Bφ-⋯-c B₁ (mapᶜ (weaken* ⦃ Kᵣ ⦄ sB₂) (K `unit , 0F , K `unit))
+          (Lf U.⋯ₚ assocSwapᵣ sB₂ sB₁) (swapᵣ 1 1 ↑* sB₂)
+      ■ cong₂ (Bφ B₁) ccB₁eq leafEq
+    pushEq : (Bφ B₂ (K `unit , 1F , K `unit) INNER) U.⋯ₚ swapᵣ 1 1
+             ≡ Bφ B₂ (K `unit , 0F , K `unit)
+                 (Bφ B₁ (K `unit , weaken* ⦃ Kᵣ ⦄ sB₂ 1F , K `unit)
+                   (U[ P T.⋯ₚ swapᵣ (sum B₁) (sum B₂) ] (leafσ σ B₂ B₁)))
+    pushEq =
+        Bφ-⋯-c B₂ (K `unit , 1F , K `unit) INNER (swapᵣ 1 1)
+      ■ cong (λ cc → Bφ B₂ cc (INNER U.⋯ₚ (swapᵣ 1 1 ↑* sB₂))) ccB₂eq
+      ■ cong (Bφ B₂ (K `unit , 0F , K `unit)) innerEq
 
 -- a toℕ-fixing renaming stays toℕ-fixing after lifting past k inert binders.
 lift-fix-ge : ∀ {a a′} (ρ : a →ᵣ a′) (k T : ℕ) →
@@ -133,7 +507,7 @@ lift-fix-ge ρ k T h z ge =
                                := u :+ (con 2 :+ (v :+ con 2))) refl sB2 sB1
               where open +-*-Solver
 
--- the inner L₃ = (assocSwapᵣ sA1 2 ↑* sA2) ·ₖ assocSwapᵣ sA2 2 fixes toℕ ≥ sA2+(sA1+2).
+-- the inner Lf₃ = (assocSwapᵣ sA1 2 ↑* sA2) ·ₖ assocSwapᵣ sA2 2 fixes toℕ ≥ sA2+(sA1+2).
 ωL3-fix-ge : ∀ {p} (sA1 sA2 : ℕ) (y : 𝔽 (sA2 + (sA1 + (2 + p)))) → sA2 + (sA1 + 2) Nat.≤ Fin.toℕ y →
              Fin.toℕ (((assocSwapᵣ sA1 2 {p} ↑* sA2) ·ₖ assocSwapᵣ sA2 2 {sA1 + p}) y) ≡ Fin.toℕ y
 ωL3-fix-ge {p} sA1 sA2 y ge =
@@ -374,14 +748,16 @@ wrapNE front s₀ (t ◅ ts) back = UR.RU-Struct front s₀ ε ◅ wrapNE ε t t
 ≋-wrap-⊎ front ε        back = inj₂ (front ◅◅ back)
 ≋-wrap-⊎ front (s ◅ ss) back = inj₁ (wrapNE front s ss back)
 
-Bφ-lift-step : (B : BindGroup) {n : ℕ} {P Q : U.Proc (syncs B + n)} →
-               P UR.─→ₚ Q → Bφ {n} B P UR.─→ₚ Bφ B Q
+Bφ-lift-step : (B : BindGroup) {n : ℕ} {cc : UChan n} {P Q : U.Proc (syncs B + n)} →
+               P UR.─→ₚ Q → Bφ B cc P UR.─→ₚ Bφ B cc Q
 Bφ-lift-step []            r = r
 Bφ-lift-step (b ∷ [])      r = r
-Bφ-lift-step (b ∷ B@(_ ∷ _)) {n} r =
-  UR.RU-Sync (Bφ-lift-step B (subst-→ₚ (sym (+-suc (syncs B) n)) r))
+Bφ-lift-step (b ∷ c ∷ B) {n} {e1 , x , e2} {P} {Q} r =
+  subst₂ UR._─→ₚ_ (sym (Bφ-cons b c B e1 e2 x P)) (sym (Bφ-cons b c B e1 e2 x Q))
+    (UR.RU-Sync (Bφ-lift-step (c ∷ B) {cc = ` 0F , suc x , wk e2}
+                  (subst-→ₚ (sym (+-suc (syncs (c ∷ B)) n)) r)))
   where
-    subst-→ₚ : ∀ {a c} (eq : a ≡ c) {P Q : U.Proc a} → P UR.─→ₚ Q →
+    subst-→ₚ : ∀ {a d} (eq : a ≡ d) {P Q : U.Proc a} → P UR.─→ₚ Q →
                subst U.Proc eq P UR.─→ₚ subst U.Proc eq Q
     subst-→ₚ refl r = r
 
