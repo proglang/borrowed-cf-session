@@ -1,7 +1,9 @@
 -- | Reconcile equality for the telescoped backward R-LSplit: the RU-LSplit
 --   reduct `fired` equals `U[ ν C₁′ B QR ] σ`.  Extracted (duplicated) from the
---   forward SplitsH2.U-lsplit-step `back`/`bodyReconcile` chain; imports SplitsH2's
---   publics.  Zero forward-risk (append-only new module).
+--   forward SplitsH2.U-lsplit-step front-half + `back` chain; imports SplitsH2's
+--   publics.  Zero forward-risk (append-only new module).  Also exposes the
+--   front-half (fired, leafσ-atk, e₁L, e₂L, Fᶠ = frame*-⋯ E τ Vτ, τ, Vτ, Φfull)
+--   the backward reflect pins Q against.
 module BorrowedCF.Simulation.Backward.SplitReconcile where
 
 open import BorrowedCF.Terms using (module SplitRenamings)
@@ -52,7 +54,7 @@ open import BorrowedCF.Simulation.Support.Theorems.ComHelpers2
   using ( Bφ-lift-step; plugΦ-cong; Bφ-cong-c; subst-Bφ-c )
 open import BorrowedCF.Simulation.Support.Theorems.SplitsH2
 
-module _ {m n} (σ : m →ₛ n) (Vσ : VSub σ) {B₁ B₂ B : BindGroup} {q b₁ : ℕ} {s : 𝕊 0}
+module _ {m n} (σ : m →ₛ n) (Vσ : VSub σ) (B₁ B₂ B : BindGroup) (q b₁ : ℕ) (s : 𝕊 0)
          (E : Frame* (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m))
          (P : T.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + m)) where
   private module 𝐒 = SplitRenamings B₁ B₂ (sum B)
@@ -93,10 +95,14 @@ module _ {m n} (σ : m →ₛ n) (Vσ : VSub σ) {B₁ B₂ B : BindGroup} {q b�
   Fᶠ = frame*-⋯ E τ Vτ
   resid : U.Proc (sB + (sA + (2 + n)))
   resid = U[ P ] τ
+  leafL : U.Proc (sB + (sA + (2 + n)))
+  leafL = U[ QL ] τ
   hc = canonₛ-handleq B₁ {N = 2 + n} (K `unit) 0F (K `unit) q b₁ B₂
   e₁L e₂L : Tm (sB + (sA + (2 + n)))
   e₁L = proj₁ hc ⋯ weaken* ⦃ Kᵣ ⦄ sB
   e₂L = proj₁ (proj₂ hc) ⋯ weaken* ⦃ Kᵣ ⦄ sB
+  mid : U.Proc n
+  mid = U.ν (plugΦ Φfull leafL)
   slotL0 slotR0 : Tm (sB + (sA + (2 + n)))
   slotL0 = 𝓒[ e₁L × wkΦ Φfull 0F × * ]
   slotR0 = 𝓒[ * × wkΦ Φfull 0F × e₂L ]
@@ -104,8 +110,32 @@ module _ {m n} (σ : m →ₛ n) (Vσ : VSub σ) {B₁ B₂ B : BindGroup} {q b�
   body = U.⟪ Fᶠ [ slotL0 ⊗ slotR0 ]* ⟫ U.∥ resid
   fired : U.Proc n
   fired = U.ν (plugΦ Φfull body)
+  castpos : 𝔽 (sum C₁)
+  castpos = Fin.cast (sym (sum-++ B₁ ((q + suc b₁) ∷ B₂))) (sum B₁ ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
+  τinj0 : τ (𝐒.atk (q ↑ʳ 0F)) ≡ canonₛ C₁ (K `unit , 0F , K `unit) castpos ⋯ weaken* ⦃ Kᵣ ⦄ sB
+  τinj0 =
+      cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁ + sum B) (castpos ↑ˡ sum B) m)
+    ■ cong [ _ , _ ]′ (Fin.splitAt-↑ˡ (sum C₁) castpos (sum B))
   wr : widthΦ Φfull ≡ sA + sB
   wr = widthΦ-++ Φ_C₁ Φ_B ■ cong₂ _+_ (widthΦ-Btel C₁ cc₁) (widthΦ-Btel B cc₂)
+  junc≡ : weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hc))) ≡ wkΦ Φfull 0F
+  junc≡ = Fin.toℕ-injective (toℕL ■ sym toℕR)
+    where
+      toℕL : Fin.toℕ (weaken* ⦃ Kᵣ ⦄ sB (proj₁ (proj₂ (proj₂ hc)))) ≡ sB + sA
+      toℕL = toℕ-weaken*ᵣ sB (proj₁ (proj₂ (proj₂ hc)))
+           ■ cong (sB +_) (proj₂ (proj₂ (proj₂ (proj₂ hc))) ■ Nat.+-identityʳ sA)
+      toℕR : Fin.toℕ (wkΦ Φfull 0F) ≡ sB + sA
+      toℕR = toℕ-wkΦ Φfull 0F ■ Nat.+-identityʳ (widthΦ Φfull) ■ wr ■ Nat.+-comm sA sB
+  leafσ-atk : τ (𝐒.atk (q ↑ʳ 0F)) ≡ 𝓒[ e₁L × wkΦ Φfull 0F × e₂L ]
+  leafσ-atk = τinj0
+            ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ sB) (proj₁ (proj₂ (proj₂ (proj₂ hc))))
+            ■ cong (λ z → (e₁L ⊗ (` z)) ⊗ e₂L) junc≡
+  redShapeEq : (E [ K (`lsplit s) ·¹ (` 𝐒.atk (q ↑ʳ 0F)) ]*) ⋯ τ
+               ≡ Fᶠ [ K (`lsplit s) ·¹ 𝓒[ e₁L × wkΦ Φfull 0F × e₂L ] ]*
+  redShapeEq = frame-plug* E τ Vτ
+             ■ cong (λ z → Fᶠ [ K (`lsplit s) ·¹ z ]*) leafσ-atk
+  leafL-shape : leafL ≡ U.⟪ Fᶠ [ K (`lsplit s) ·¹ 𝓒[ e₁L × wkΦ Φfull 0F × e₂L ] ]* ⟫ U.∥ resid
+  leafL-shape = cong (λ z → U.⟪ z ⟫ U.∥ resid) redShapeEq
 
   lsplit-back : ∀ {Γ : Ctx m} {γ : Struct m} → ChanCx Γ
               → Γ ; γ ⊢ₚ T.ν C₁ B QL → fired ≡ U[ T.ν C₁′ B QR ] σ
