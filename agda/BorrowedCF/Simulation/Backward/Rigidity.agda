@@ -22,6 +22,10 @@ open import BorrowedCF.Simulation.Support.BlockPerm
         ; toℕ-assoc-lt; toℕ-assoc-mid; toℕ-assoc-ge
         ; toℕ-weaken*ᵣ )
 
+open import Data.Nat.ListAction using (sum)
+open import BorrowedCF.Processes.Translation using (U[_]; UB[_]; Ub[_]; syncs)
+import BorrowedCF.Processes.Typed as 𝐓
+
 open Nat.Variables
 open Fin.Patterns
 
@@ -219,3 +223,45 @@ grounded-¬φHead (φ f c P) (chanvar x () , _)
 
 image-stays-¬φHead : (P Q : Proc n) → Grounded P → P ≋ Q → ¬ φHead Q
 image-stays-¬φHead P Q gP r = grounded-¬φHead Q (gr r gP)
+
+------------------------------------------------------------------------
+-- U-Grounded: every translation image is Grounded.  Each φ-cell UB[_]
+-- emits guards `` ` x `` with x an internally-bound handle (0F / 1F under
+-- the ν, shifted up as the φ-nest grows), so the whole image is Grounded.
+------------------------------------------------------------------------
+
+subst-Grounded : ∀ {a b} (t : ℕ) (eq : a ≡ b) (X : Proc a) →
+                 Grounded′ t X → Grounded′ t (subst Proc eq X)
+subst-Grounded t refl X g = g
+
+Grounded-thr : ∀ {n} {a b : ℕ} → a ≡ b → (X : Proc n) → Grounded′ a X → Grounded′ b X
+Grounded-thr refl X g = g
+
+UB-Grounded : ∀ {n} (t : ℕ) (B : 𝐓.BindGroup) {e₁ : Tm n} (x : 𝔽 n) {e₂ : Tm n}
+              (f : (sum B →ₛ syncs B + n) → Proc (syncs B + n)) →
+              Fin.toℕ x Nat.< t →
+              ((σ : sum B →ₛ syncs B + n) → Grounded′ (syncs B + t) (f σ)) →
+              Grounded′ t (UB[ B ] (e₁ , x , e₂) f)
+UB-Grounded t []              x f px hf = hf λ()
+UB-Grounded t (b ∷ [])        x f px hf = hf (Ub[ b + 0 ] (_ , x , _))
+UB-Grounded {n} t (b ∷ B@(_ ∷ _)) {e₁ = e₁} x f px hf =
+    chanvar x px
+  , UB-Grounded (1 + t) B (Fin.suc x) _ (Nat.s≤s px)
+      (λ σ →
+        let σ″ : sum (b ∷ B) →ₛ syncs (b ∷ B) + n
+            σ″ = λ y → subst Tm (+-suc (syncs B) n)
+                         ([ Ub[ b ] (wk e₁ , Fin.suc x , ` 0F) ·ₖ weaken* (syncs B)
+                          , σ ]′ (splitAt b y))
+        in Grounded-thr (sym (+-suc (syncs B) t))
+             (subst Proc (sym (+-suc (syncs B) n)) (f σ″))
+             (subst-Grounded (suc (syncs B + t)) (sym (+-suc (syncs B) n)) (f σ″) (hf σ″)))
+
+U-Grounded : ∀ {m n} (t : ℕ) (P : 𝐓.Proc m) (σ : m →ₛ n) → Grounded′ t (U[ P ] σ)
+U-Grounded t 𝐓.⟪ e ⟫    σ = tt
+U-Grounded t (P 𝐓.∥ Q)  σ = U-Grounded t P σ , U-Grounded t Q σ
+U-Grounded t (𝐓.ν B₁ B₂ P) σ =
+  UB-Grounded (2 + t) B₁ 0F _ (Nat.s≤s Nat.z≤n)
+    (λ σ₁ → UB-Grounded (syncs B₁ + (2 + t)) B₂ (weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F) _
+              (subst (Nat._< syncs B₁ + (2 + t)) (sym (toℕ-weaken*ᵣ (syncs B₁) 1F))
+                     (Nat.+-monoʳ-< (syncs B₁) (Nat.s≤s (Nat.s≤s Nat.z≤n))))
+              (λ σ₂ → U-Grounded (syncs B₂ + (syncs B₁ + (2 + t))) P _))
