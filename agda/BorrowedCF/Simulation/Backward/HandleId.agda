@@ -21,7 +21,8 @@ open TP using (BindGroup)
 open import BorrowedCF.Reduction.Base using (Value; V-`; V-K; V-λ; V-⊗; V-⊕; value-⋯; VSub)
 open import BorrowedCF.Simulation.Support.ReverseInv using (⊗-inj)
 open import BorrowedCF.Processes.Translation using (Ub[_]; syncs; UChan)
-open import BorrowedCF.Simulation.Support.Theorems.SplitsH1 using (canonₛ; leafσ)
+open import BorrowedCF.Simulation.Support.Theorems.SplitsH1 using (canonₛ; leafσ; VSub-canonₛ)
+open import BorrowedCF.Simulation.Support.TranslationProperties using (VChan)
 open import BorrowedCF.Simulation.Support.Theorems.SplitsLQ using (Ub-triple; canonₛ-handleq)
 open import BorrowedCF.Simulation.Support.BlockPerm using (toℕ-weaken*ᵣ)
 
@@ -244,3 +245,86 @@ handleId-block1 {m} {n} BL BR σ Vσ x {e₁} {e₂} {w} wtoℕ argeq
          ■ cong Fin.toℕ (splitAt-inj₁ (sum BL) (sum BR) z seqi)
          ■ toℕ-↑ˡ j (sum BR)
          ■ jtoℕ
+
+------------------------------------------------------------------------
+-- Block-2 (channel-1) dual: recv / branch / close-⁇.  The redex borrows the
+-- SECOND endpoint, presented with middle junction toℕ = suc (sBL + sBR); the
+-- handle lives in BR, so we decompose BR instead.
+------------------------------------------------------------------------
+
+handleId-block2 : ∀ {m n} (BL BR : BindGroup) (σ : m →ₛ n) (Vσ : VSub σ)
+  (x : 𝔽 (sum BL + sum BR + m))
+  {e₁ e₂ : Tm (syncs BR + (syncs BL + (2 + n)))} {w : 𝔽 (syncs BR + (syncs BL + (2 + n)))}
+  → Fin.toℕ w ≡ suc (syncs BL + syncs BR)
+  → ((e₁ ⊗ (` w)) ⊗ e₂) ≡ leafσ σ BL BR x
+  → Σ[ B₁ ∈ BindGroup ] Σ[ B₂ ∈ BindGroup ] Σ[ q ∈ ℕ ] Σ[ b₁ ∈ ℕ ]
+      (BR ≡ B₁ ++ (q + suc b₁) ∷ B₂)
+      × (Fin.toℕ x ≡ sum BL + (sum B₁ + q))
+handleId-block2 {m} {n} BL BR σ Vσ x {e₁} {e₂} {w} wtoℕ argeq
+  with Fin.splitAt (sum BL + sum BR) x in seqo
+... | inj₂ u = ⊥-elim (n≢n+suc (syncs BR + syncs BL) (Fin.toℕ w₂) contraeq)
+  where
+    T₁ = σ u ⋯ weaken* ⦃ Kᵣ ⦄ 2
+    T₀ = T₁ ⋯ weaken* ⦃ Kᵣ ⦄ (syncs BL)
+    V₁ : Value T₁
+    V₁ = value-⋯ (Vσ u) (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`)
+    V₀ : Value T₀
+    V₀ = value-⋯ V₁ (weaken* ⦃ Kᵣ ⦄ (syncs BL)) (λ _ → V-`)
+    tailimg : T₀ ⋯ weaken* ⦃ Kᵣ ⦄ (syncs BR) ≡ (e₁ ⊗ (` w)) ⊗ e₂
+    tailimg = sym argeq
+    peel0 = val-mid1 T₀ V₀ (syncs BR) tailimg
+    w₀  = proj₁ peel0
+    T₀≡ = proj₁ (proj₂ (proj₂ (proj₂ peel0)))
+    weq0 : w ≡ weaken* ⦃ Kᵣ ⦄ (syncs BR) w₀
+    weq0 = proj₂ (proj₂ (proj₂ (proj₂ peel0)))
+    peel1 = val-mid1 T₁ V₁ (syncs BL) T₀≡
+    w₁  = proj₁ peel1
+    T₁≡ = proj₁ (proj₂ (proj₂ (proj₂ peel1)))
+    weq1 : w₀ ≡ weaken* ⦃ Kᵣ ⦄ (syncs BL) w₁
+    weq1 = proj₂ (proj₂ (proj₂ (proj₂ peel1)))
+    peel2 = val-mid1 (σ u) (Vσ u) 2 T₁≡
+    w₂  = proj₁ peel2
+    weq2 : w₁ ≡ weaken* ⦃ Kᵣ ⦄ 2 w₂
+    weq2 = proj₂ (proj₂ (proj₂ (proj₂ peel2)))
+    wval : Fin.toℕ w ≡ syncs BR + (syncs BL + suc (suc (Fin.toℕ w₂)))
+    wval = cong Fin.toℕ weq0 ■ toℕ-weaken*ᵣ (syncs BR) w₀
+         ■ cong (syncs BR +_)
+             ( cong Fin.toℕ weq1 ■ toℕ-weaken*ᵣ (syncs BL) w₁
+             ■ cong (syncs BL +_) (cong Fin.toℕ weq2 ■ toℕ-weaken*ᵣ 2 w₂) )
+    -- suc (sBL+sBR) ≡ sBR+(sBL+suc(suc w₂)); strip a suc to get n ≡ n + suc w₂.
+    contraeq : syncs BR + syncs BL ≡ (syncs BR + syncs BL) + suc (Fin.toℕ w₂)
+    contraeq = Nat.suc-injective
+      ( cong suc (sym (+-comm (syncs BL) (syncs BR))) ■ sym wtoℕ ■ wval
+      ■ sym (+-assoc (syncs BR) (syncs BL) (suc (suc (Fin.toℕ w₂))))
+      ■ +-suc (syncs BR + syncs BL) (suc (Fin.toℕ w₂)) )
+... | inj₁ z
+  with Fin.splitAt (sum BL) z in seqi
+...   | inj₁ j = ⊥-elim (n≢n+suc (syncs BR + syncs BL) 0 contraeq)
+  where
+    Vcbl : Value (canonₛ BL (K `unit , 0F , K `unit) j)
+    Vcbl = VSub-canonₛ BL (K `unit , 0F , K `unit) (V-K , V-K) j
+    peel = val-mid1 (canonₛ BL (K `unit , 0F , K `unit) j) Vcbl (syncs BR) (sym argeq)
+    w₀   = proj₁ peel
+    cbl≡ = proj₁ (proj₂ (proj₂ (proj₂ peel)))
+    weq0 : w ≡ weaken* ⦃ Kᵣ ⦄ (syncs BR) w₀
+    weq0 = proj₂ (proj₂ (proj₂ (proj₂ peel)))
+    midtoℕ : Fin.toℕ w₀ ≡ syncs BL + 0
+    midtoℕ = canonₛ-mid-toℕ BL (K `unit) 0F (K `unit) j cbl≡
+    -- toℕ w = sBR + sBL, but hyp = suc (sBL+sBR): the false n ≡ n + suc 0.
+    derived : Fin.toℕ w ≡ syncs BR + syncs BL
+    derived = cong Fin.toℕ weq0 ■ toℕ-weaken*ᵣ (syncs BR) w₀
+            ■ cong (syncs BR +_) (midtoℕ ■ +-identityʳ (syncs BL))
+    contraeq : syncs BR + syncs BL ≡ (syncs BR + syncs BL) + suc 0
+    contraeq = sym derived ■ wtoℕ ■ cong suc (+-comm (syncs BL) (syncs BR))
+             ■ sym (+-suc (syncs BR + syncs BL) 0 ■ cong suc (+-identityʳ (syncs BR + syncs BL)))
+...   | inj₂ kk
+  with B₁ , w′ , B₂ , o , BR≡ , kktoℕ ← block-decomp BR kk
+  with b₁ , weq ← blk-as-handle w′ o =
+  B₁ , B₂ , Fin.toℕ o , b₁ , (BR≡ ■ cong (λ ww → B₁ ++ ww ∷ B₂) weq) , xtoℕ
+  where
+    xtoℕ : Fin.toℕ x ≡ sum BL + (sum B₁ + Fin.toℕ o)
+    xtoℕ = cong Fin.toℕ (splitAt-inj₁ (sum BL + sum BR) m x seqo)
+         ■ toℕ-↑ˡ z m
+         ■ cong Fin.toℕ (splitAt-inj₂ (sum BL) (sum BR) z seqi)
+         ■ toℕ-↑ʳ (sum BL) kk
+         ■ cong (sum BL +_) kktoℕ
