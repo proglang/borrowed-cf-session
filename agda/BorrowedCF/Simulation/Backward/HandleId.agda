@@ -328,3 +328,16 @@ handleId-block2 {m} {n} BL BR σ Vσ x {e₁} {e₂} {w} wtoℕ argeq
          ■ cong Fin.toℕ (splitAt-inj₂ (sum BL) (sum BR) z seqi)
          ■ toℕ-↑ʳ (sum BL) kk
          ■ cong (sum BL +_) kktoℕ
+
+------------------------------------------------------------------------
+-- fin-split: a block width `k` split at position `z` as `toℕ z + suc b₁′`.
+-- Pure Fin/Nat arithmetic (moved here from Backward.LSplit so RSplit can
+-- import it without depending on LSplit).
+------------------------------------------------------------------------
+
+fin-split : (k : ℕ) (z : 𝔽 (k + 0)) → Σ[ b₁′ ∈ ℕ ] (k ≡ Fin.toℕ z + suc b₁′)
+fin-split k z = k Nat.∸ suc (Fin.toℕ z) , sym (+-suc q (k Nat.∸ suc q) ■ m+[n∸m]≡n q<k)
+  where
+    q = Fin.toℕ z
+    q<k : suc q Nat.≤ k
+    q<k = subst (suc q Nat.≤_) (+-identityʳ k) (toℕ<n z)
