@@ -18,6 +18,12 @@ open import BorrowedCF.Types.Equivalence using (_≃_; ≃-⟨⟩⁻¹)
 open import BorrowedCF.Types.AtomHead using (msg;≄acq;)
 open import BorrowedCF.Reduction.Base using (chanCx-lookup)
 open import Data.Nat.ListAction using (sum)
+open import Data.List using (_++_)
+open import Data.List.Relation.Unary.All using (_∷_)
+open import Data.Nat.Base using (NonZero)
+open import BorrowedCF.Simulation.Support.Confine using (+≡0)
+open TP using (⊢ᴮ_)
+open import Data.Fin.Properties using (toℕ-injective)
 
 open Fin.Patterns
 
@@ -34,3 +40,26 @@ acq-front-suc-⊥ {G = g ∷ G′} C lk
   where
     s₀≃msg = ≃-⟨⟩⁻¹ (subst (_≃ ⟨ msg _ _ ⟩) g≡ lk)
     C′ = subst (\ h → BindCtx (acq ; _) _ (h ∷ G′)) g≡ C
+
+xto0 : ∀ {N} (x : 𝔽 (suc N)) → Fin.toℕ x ≡ 0 → x ≡ 0F
+xto0 x tx = toℕ-injective tx
+
+-- The [0] case, EXPLICIT shape: front channel of the first (suc b₁) block sits
+-- under a cons-acq wrapper, so it is acq-headed; clash with the msg send.
+front-zero-⊥ : ∀ {b₁ B₂ˢ G} → BindCtx (s ; end p) (0 ∷ suc b₁ ∷ B₂ˢ) G
+  → lookup G 0F ≃ ⟨ msg pm T ⟩ → ⊥
+front-zero-⊥ (cons-acq C′) lk = acq-front-suc-⊥ C′ lk
+front-zero-⊥ (cons-ret/acq s₁ s≃ (nil (_ ; ())) restC) lk
+
+-- The consumed handle pinned to the front of `B₁ˢ ++ suc b₁ ∷ B₂ˢ` (`sum B₁ˢ ≡ 0`)
+-- forces `B₁ˢ ≡ []` (no leading pending-acq zero-block): a nonzero-leading B₁ˢ is
+-- ruled out by `sum`, a >=2 B₁ˢ by well-formedness, a single [0] by front-zero-⊥.
+front-block-nonzero : ∀ (B₁ˢ B₂ˢ : BindGroup) (b₁ : ℕ) {G₁ : Ctx (sum (B₁ˢ ++ suc b₁ ∷ B₂ˢ))}
+  → BindCtx (s ; end p) (B₁ˢ ++ suc b₁ ∷ B₂ˢ) G₁ → sum B₁ˢ ≡ 0 → ⊢ᴮ (B₁ˢ ++ suc b₁ ∷ B₂ˢ)
+  → (x : 𝔽 (sum (B₁ˢ ++ suc b₁ ∷ B₂ˢ))) → Fin.toℕ x ≡ 0 → lookup G₁ x ≃ ⟨ msg pm T ⟩ → B₁ˢ ≡ []
+front-block-nonzero [] B₂ˢ b₁ C sum0 wf x tx lk = refl
+front-block-nonzero (suc w ∷ rest) B₂ˢ b₁ C () wf x tx lk
+front-block-nonzero (0 ∷ []) B₂ˢ b₁ C sum0 wf x tx lk
+  rewrite xto0 x tx = ⊥-elim (front-zero-⊥ C lk)
+front-block-nonzero (0 ∷ w′ ∷ rest′) B₂ˢ b₁ C sum0 (nzw′ ∷ _) x tx lk =
+  ⊥-elim (Nat.<-irrefl refl (subst (0 Nat.<_) (proj₁ (+≡0 sum0)) (Nat.>-nonZero⁻¹ w′ ⦃ nzw′ ⦄)))
