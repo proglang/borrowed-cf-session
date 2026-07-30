@@ -149,7 +149,7 @@ structNSeq (suc m) = ` zero ; 𝐂.wk (structNSeq m)
 
 structBinder : (B : BindGroup) → Struct (sum B)
 structBinder [] = []
-structBinder (b ∷ B) = (structNSeq b 𝐂.⋯ᵣ 𝐂.wkʳ (sum B)) ∥ (structBinder B 𝐂.⋯ᵣ 𝐂.wkˡ b)
+structBinder (b ∷ B) = (structNSeq b 𝐂.⋯ᵣ 𝐂.wkʳ (sum B)) ; (structBinder B 𝐂.⋯ᵣ 𝐂.wkˡ b)
 
 data BindCtx′ (s : 𝕊 0) : Ctx n → Set where
   nil : Skips s → BindCtx′ s []
