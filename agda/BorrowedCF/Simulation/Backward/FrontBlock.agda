@@ -12,7 +12,7 @@ module BorrowedCF.Simulation.Backward.FrontBlock where
 open import BorrowedCF.Simulation.Base
 import BorrowedCF.Processes.Typed as TP
 open TP using ( BindGroup; BindCtx; BindCtx′; last; cons; cons-acq; cons-ret/acq; nil
-              ; bindCtx-inv-msg; bindCtx⇒chanCtx )
+              ; bindCtx-inv-msg; bindCtx⇒chanCtx; bindCtx-B≢[] )
 open import BorrowedCF.Types.Syntax using (𝕊; msg; acq; end; _;_; Pol; 𝕋)
 open import BorrowedCF.Types.Equivalence using (_≃_; ≃-⟨⟩⁻¹)
 open import BorrowedCF.Types.AtomHead using (msg;≄acq;)
@@ -63,3 +63,36 @@ front-block-nonzero (0 ∷ []) B₂ˢ b₁ C sum0 wf x tx lk
   rewrite xto0 x tx = ⊥-elim (front-zero-⊥ C lk)
 front-block-nonzero (0 ∷ w′ ∷ rest′) B₂ˢ b₁ C sum0 (nzw′ ∷ _) x tx lk =
   ⊥-elim (Nat.<-irrefl refl (subst (0 Nat.<_) (proj₁ (+≡0 sum0)) (Nat.>-nonZero⁻¹ w′ ⦃ nzw′ ⦄)))
+
+------------------------------------------------------------------------
+-- Pin-free version.  The front block is nonzero (no leading pending-acq
+-- `cons-acq` block) purely from the msg-typed front handle (`lookup G 0F ≃
+-- msg`), with NO `sum B₁ˢ ≡ 0` confinement/`before`-ordering pin.  Leading
+-- zero-blocks are peeled by `cons-acq`, each accumulating an `acq ;` prefix
+-- onto the session; the first nonzero block's front leaf is then acq-headed,
+-- clashing with the msg send via `acq-front-suc-⊥` (StartsKind rigidity).
+------------------------------------------------------------------------
+
+-- Front leaf of an acq-headed bind-ctx (arbitrary leading-zero nesting) is
+-- never msg.
+front-acq-⊥ : ∀ {s′} (B : BindGroup) {G : Ctx (sum B)} (x : 𝔽 (sum B))
+  → BindCtx (acq ; s′) B G → Fin.toℕ x ≡ 0 → lookup G x ≃ ⟨ msg pm T ⟩ → ⊥
+front-acq-⊥ (suc n ∷ B′) x C tx lk
+  rewrite xto0 x tx = acq-front-suc-⊥ C lk
+front-acq-⊥ (0 ∷ B′) x (cons-acq C) tx lk = front-acq-⊥ B′ x C tx lk
+front-acq-⊥ (0 ∷ B′) x (cons-ret/acq s₁ s≃ (nil (_ ; ())) restC) tx lk
+front-acq-⊥ (0 ∷ []) x (last (nil (() ; _))) tx lk
+
+-- BL's front block is nonzero: no leading `cons-acq`, proved directly from the
+-- msg-typed front handle (the `New` protocol makes the block `msg`-headed),
+-- with NO ordering / `before` / confinement pin.  This is exactly what
+-- `front-block-nonzero` obtained from its `sum B₁ˢ ≡ 0` precondition, now
+-- discharged structurally.
+front-block-nonzero′ : ∀ {B G} → BindCtx (s ; end p) B G
+  → (x : 𝔽 (sum B)) → Fin.toℕ x ≡ 0 → lookup G x ≃ ⟨ msg pm T ⟩
+  → ∃[ b ] ∃[ B′ ] B ≡ suc b ∷ B′
+front-block-nonzero′ {B = suc b ∷ B′} C x tx lk = b , B′ , refl
+front-block-nonzero′ {B = 0 ∷ B′} (cons-acq C) x tx lk = ⊥-elim (front-acq-⊥ B′ x C tx lk)
+front-block-nonzero′ {B = 0 ∷ B′} (cons-ret/acq s₁ s≃ (nil (_ ; ())) restC) x tx lk
+front-block-nonzero′ {B = 0 ∷ []} (last (nil (_ ; ()))) x tx lk
+front-block-nonzero′ {B = []} C x tx lk = ⊥-elim (bindCtx-B≢[] C)
