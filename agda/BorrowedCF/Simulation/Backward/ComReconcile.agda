@@ -13,20 +13,32 @@ module BorrowedCF.Simulation.Backward.ComReconcile where
 open import BorrowedCF.Simulation.Support.Base
 import BorrowedCF.Processes.Typed   as T
 import BorrowedCF.Processes.Untyped as U
+import Relation.Binary.Construct.Closure.Equivalence as Eq*
+open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (_◅◅_)
 open T using (BindGroup)
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat.Solver using (module +-*-Solver)
 open import Data.Nat.Properties using (+-assoc; +-identityʳ)
 open import BorrowedCF.Simulation.Support.BlockPerm
   using (toℕ-weaken*ᵣ; toℕ-reduce≥; toℕ-↑*-ge; toℕ-↑*-lt)
-open import BorrowedCF.Simulation.Support.Theorems.PhiTel using (canonₛ; leafσ)
+open import BorrowedCF.Simulation.Support.Theorems.PhiTel
+  using (canonₛ; leafσ; Btel; Bφ; Uν-flatΦ; plugΦ-++; _++Φ_)
 open import BorrowedCF.Simulation.Support.Theorems.ComHelpers1
   using (syncs-cons-irrel; canonₛ-suc-shift; leafσ-tail; leafσ-A₁; leafσ-B₁)
-open import BorrowedCF.Processes.Translation using (syncs)
+open import BorrowedCF.Simulation.Support.Theorems.ComHelpers2
+  using (plugΦ-cong; subst-Bφ-c)
+open import BorrowedCF.Simulation.Support.Theorems.Com
+  using (Bφ-head; subst-chan-wk1; frame-plug*ᵣ)
+open import BorrowedCF.Simulation.Support.Frames using (frame-plug*; frame*-⋯; ++ₛ-VSub)
+open import BorrowedCF.Simulation.Support.TranslationProperties using (U-⋯ₚ; U-cong; ≡→≋)
+open import BorrowedCF.Simulation.Support.Theorems.SplitsH1 using (VSub-canonₛ)
+open import BorrowedCF.Reduction.Base using (value-⋯; V-K; V-`)
+open import BorrowedCF.Processes.Translation using (syncs; UChan; ϕ[_])
+open import BorrowedCF.Reduction.Processes.Untyped using (Φ*; plugΦ; wkΦ; 𝓒[_×_×_])
 
 open Fin.Patterns
 
-module _ {m n : ℕ} (σ : m →ₛ n) (b₁ b₂ : ℕ) (B₁ B₂ : BindGroup) where
+module _ {m n : ℕ} (σ : m →ₛ n) (Vσ : VSub σ) (b₁ b₂ : ℕ) (B₁ B₂ : BindGroup) where
 
   private
     a₀ᵂ c₀ᵂ : ℕ
@@ -55,6 +67,24 @@ module _ {m n : ℕ} (σ : m →ₛ n) (b₁ b₂ : ℕ) (B₁ B₂ : BindGroup)
   sB≡ = syncs-cons-irrel b₂ (suc b₂) B₂
   eqAB : syncs (b₂ ∷ B₂) + (syncs (b₁ ∷ B₁) + (2 + n)) ≡ sB + (sA + (2 + n))
   eqAB = cong₂ (λ u v → u + (v + (2 + n))) sB≡ sA≡
+
+  cc₁ : UChan (2 + n)
+  cc₁ = (K `unit , 0F , K `unit)
+  cc₂ : UChan (sA + (2 + n))
+  cc₂ = (K `unit , weaken* ⦃ Kᵣ ⦄ sA 1F , K `unit)
+  Φrest : Φ* (2 + n) (sB + (sA + (2 + n)))
+  Φrest = Btel B₁′ cc₁ ++Φ Btel B₂′ cc₂
+
+  Vτ : VSub τ
+  Vτ = ++ₛ-VSub
+         (++ₛ-VSub
+           (λ i → value-⋯ (VSub-canonₛ B₁′ (K `unit , 0F , K `unit) (V-K , V-K) i)
+                     (weaken* ⦃ Kᵣ ⦄ sB) (λ _ → V-`))
+           (VSub-canonₛ B₂′ (K `unit , weaken* ⦃ Kᵣ ⦄ sA 1F , K `unit) (V-K , V-K)))
+         (λ i → value-⋯ (value-⋯ (value-⋯ (Vσ i)
+                   (weaken* ⦃ Kᵣ ⦄ 2) (λ _ → V-`))
+                   (weaken* ⦃ Kᵣ ⦄ sA) (λ _ → V-`))
+                   (weaken* ⦃ Kᵣ ⦄ sB) (λ _ → V-`))
 
   private
     wkₚ-step : (x : 𝔽 (a₀ᵂ + c₀ᵂ + m)) →
@@ -229,3 +259,93 @@ module _ {m n : ℕ} (σ : m →ₛ n) (b₁ b₂ : ℕ) (B₁ B₂ : BindGroup)
                                         subst (λ z → Tm (z + (syncs (b₁ ∷ B₁) + (2 + n)))) e t
                                         ≡ subst Tm (cong₂ (λ u v → u + (v + (2 + n))) e refl) t
                           subst-fn-≡′ refl t = refl
+
+  -- The full backward reconcile: the RU-Com RHS leaf (fired frames, at the
+  -- combined φ-telescope) is ≋ to the translation of the typed contractum.
+  com-back : (ϕ₁ : ϕ[ b₁ ] ≡ ϕ[ suc b₁ ]) (ϕ₂ : ϕ[ b₂ ] ≡ ϕ[ suc b₂ ])
+             (E₁ E₂ : Frame* (sum (b₁ ∷ B₁) + sum (b₂ ∷ B₂) + m))
+             (e : Tm (sum (b₁ ∷ B₁) + sum (b₂ ∷ B₂) + m))
+             (P : T.Proc (sum (b₁ ∷ B₁) + sum (b₂ ∷ B₂) + m)) →
+    U.ν (plugΦ Φrest ( U.⟪ frame*-⋯ (E₁ ⋯ᶠ* wkρ) τ Vτ [ * ]* ⟫
+         U.∥ ( U.⟪ frame*-⋯ (E₂ ⋯ᶠ* wkρ) τ Vτ [ ((e ⋯ wkρ) ⋯ τ) ]* ⟫
+         U.∥ U[ P T.⋯ₚ wkρ ] τ ) ))
+      U.≋ U[ T.ν (b₁ ∷ B₁) (b₂ ∷ B₂) ((T.⟪ E₁ [ K `unit ]* ⟫ T.∥ T.⟪ E₂ [ e ]* ⟫) T.∥ P) ] σ
+  com-back ϕ₁ ϕ₂ E₁ E₂ e P = back
+    where
+      EE₁ EE₂ : Frame* (sum B₁′ + sum B₂′ + m)
+      EE₁ = E₁ ⋯ᶠ* wkρ
+      EE₂ = E₂ ⋯ᶠ* wkρ
+      ee : Tm (sum B₁′ + sum B₂′ + m)
+      ee = e ⋯ wkρ
+      PP : T.Proc (sum B₁′ + sum B₂′ + m)
+      PP = P T.⋯ₚ wkρ
+      F₁ F₂ : Frame* (sB + (sA + (2 + n)))
+      F₁ = frame*-⋯ EE₁ τ Vτ
+      F₂ = frame*-⋯ EE₂ τ Vτ
+      eM : Tm (sB + (sA + (2 + n)))
+      eM = ee ⋯ τ
+      RP : U.Proc (sB + (sA + (2 + n)))
+      RP = U[ PP ] τ
+      QR : T.Proc (sum (b₁ ∷ B₁) + sum (b₂ ∷ B₂) + m)
+      QR = (T.⟪ E₁ [ K `unit ]* ⟫ T.∥ T.⟪ E₂ [ e ]* ⟫) T.∥ P
+      QL' : T.Proc (sum B₁′ + sum B₂′ + m)
+      QL' = (T.⟪ EE₁ [ K `unit ]* ⟫ T.∥ T.⟪ EE₂ [ ee ]* ⟫) T.∥ PP
+      WR : U.Proc (sB + (sA + (2 + n)))
+      WR = U[ QL' ] τ
+      cc₂' : UChan (syncs (b₁ ∷ B₁) + (2 + n))
+      cc₂' = (K `unit , weaken* ⦃ Kᵣ ⦄ (syncs (b₁ ∷ B₁)) 1F , K `unit)
+
+      QL'≡ : QL' ≡ QR T.⋯ₚ wkρ
+      QL'≡ = cong₂ T._∥_
+               (cong₂ T._∥_ (cong T.⟪_⟫ (sym (frame-plug*ᵣ E₁ wkρ)))
+                            (cong T.⟪_⟫ (sym (frame-plug*ᵣ E₂ wkρ))))
+               refl
+
+      U-subst-cod : ∀ {c d} (eq : c ≡ d) (Q : T.Proc (sum (b₁ ∷ B₁) + sum (b₂ ∷ B₂) + m))
+                    (ρ : sum (b₁ ∷ B₁) + sum (b₂ ∷ B₂) + m →ₛ c) →
+                    subst U.Proc eq (U[ Q ] ρ) ≡ U[ Q ] (subst (λ z → sum (b₁ ∷ B₁) + sum (b₂ ∷ B₂) + m →ₛ z) eq ρ)
+      U-subst-cod refl Q ρ = refl
+
+      WR≡XR : WR ≡ subst U.Proc eqAB (U[ QR ] τR)
+      WR≡XR = cong (λ Q → U[ Q ] τ) QL'≡ ■ U-⋯ₚ QR ■ U-cong QR wkρ-leafσ ■ sym (U-subst-cod eqAB QR τR)
+
+      leftEq : (U.⟪ F₁ [ * ]* ⟫ U.∥ U.⟪ F₂ [ eM ]* ⟫) U.∥ RP ≡ WR
+      leftEq = cong₂ U._∥_
+                 (cong₂ U._∥_ (cong U.⟪_⟫ (sym (frame-plug* EE₁ τ Vτ)))
+                              (cong U.⟪_⟫ (sym (frame-plug* EE₂ τ Vτ))))
+                 refl
+
+      bridgeBlocks : Bφ B₁′ cc₁ (Bφ B₂′ cc₂ (subst U.Proc eqAB (U[ QR ] τR)))
+                   ≡ Bφ (b₁ ∷ B₁) cc₁ (Bφ (b₂ ∷ B₂) cc₂' (U[ QR ] τR))
+      bridgeBlocks =
+          cong (Bφ B₁′ cc₁) innerBridge
+        ■ sym (Bφ-head b₁ (suc b₁) ϕ₁ B₁ cc₁ (Bφ (b₂ ∷ B₂) cc₂' (U[ QR ] τR)))
+        where
+          X : U.Proc (syncs (b₂ ∷ B₂) + (syncs (b₁ ∷ B₁) + (2 + n)))
+          X = U[ QR ] τR
+          eA : syncs (b₁ ∷ B₁) + (2 + n) ≡ sA + (2 + n)
+          eA = cong (_+ (2 + n)) sA≡
+          leaf-final : subst U.Proc (cong (_+ (sA + (2 + n))) sB≡)
+                         (subst U.Proc (cong (syncs (b₂ ∷ B₂) +_) eA) X)
+                       ≡ subst U.Proc eqAB X
+          leaf-final =
+              subst-subst (cong (syncs (b₂ ∷ B₂) +_) eA) {cong (_+ (sA + (2 + n))) sB≡} {X}
+            ■ cong (λ e → subst U.Proc e X) (≡-irrelevant _ eqAB)
+          innerBridge : Bφ B₂′ cc₂ (subst U.Proc eqAB X)
+                      ≡ subst U.Proc eA (Bφ (b₂ ∷ B₂) cc₂' X)
+          innerBridge =
+            sym ( subst-Bφ-c eA (b₂ ∷ B₂) cc₂' X
+                ■ Bφ-head b₂ (suc b₂) ϕ₂ B₂ (subst UChan eA cc₂')
+                    (subst U.Proc (cong (syncs (b₂ ∷ B₂) +_) eA) X)
+                ■ cong₂ (Bφ B₂′) (subst-chan-wk1 sA≡ 1F) leaf-final )
+
+      flatBridge : U.ν (plugΦ Φrest WR) ≡ U[ T.ν (b₁ ∷ B₁) (b₂ ∷ B₂) QR ] σ
+      flatBridge =
+          cong U.ν ( plugΦ-++ (Btel B₁′ cc₁) (Btel B₂′ cc₂) WR
+                   ■ cong (Bφ B₁′ cc₁) (cong (Bφ B₂′ cc₂) WR≡XR)
+                   ■ bridgeBlocks )
+        ■ sym (Uν-flatΦ σ (b₁ ∷ B₁) (b₂ ∷ B₂) QR)
+
+      back : U.ν (plugΦ Φrest ( U.⟪ F₁ [ * ]* ⟫ U.∥ ( U.⟪ F₂ [ eM ]* ⟫ U.∥ RP ) ))
+             U.≋ U[ T.ν (b₁ ∷ B₁) (b₂ ∷ B₂) QR ] σ
+      back = U.ν-cong (plugΦ-cong Φrest (U.∥-assoc ◅◅ ≡→≋ leftEq)) ◅◅ ≡→≋ flatBridge
