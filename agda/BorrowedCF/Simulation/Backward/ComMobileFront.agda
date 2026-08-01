@@ -1,29 +1,30 @@
--- | mobile-front-msg-; (verdict A, at the BIND-CONTEXT level) — CALIBRATED.
+-- | Mobile front vs. verdict A, at the BIND-CONTEXT level — CALIBRATED.
 --
---   The requested UNRESTRICTED statement
---       New s → BindCtx s BL Γ → (front slot 0 Mobile) → (any msg channel x) → ;
---   is machine-checked FALSE here (`refutes-unrestricted`, EXIT 0): exactly the
+--   The UNRESTRICTED statement
+--       New s → BindCtx s BL Γ → (front slot 0 Mobile) → (any msg channel x) → ⊥
+--   is machine-checked FALSE here (`refutes-unrestricted`, exit 0): exactly the
 --   `ComSeparatedCex` phenomenon.  A New ν session `s = msg` admits, via a leading
---   `cons-acq` marker followed by a `cons-ret/acq` borrow, a MOBILE front handle
+--   `cons-acq` marker then a `cons-ret/acq` borrow, a MOBILE front handle
 --   `acq;ret` (Bounded through the structural borrow-return `ret`, NOT through s)
 --   with a genuinely LIVE `msg` channel in a LATER block.  So the flat
 --   bind-context judgement does not, by itself, co-locate the com.
 --
 --   What IS true and provable (this module's exports): a Mobile front at slot 0
---   over a New ν session FORCES a leading `cons-acq` zero-block, i.e. a pending
---   (dropped, not-yet-reacquired) borrow — `mobile-front⇒lead0`.  Equivalently,
---   whenever the send block is a real handle block (nonzero leading width, no
---   leading `cons-acq` — which `FrontBlock.front-block-nonzero′` already yields
---   from a msg-typed front), the front is NOT Mobile: `mobile-front-;` /
---   `mobile-front-msg-;`.  The remaining separated com can therefore only sit
---   behind a pending-acq marker, which `R-Acq` (untyped mirror `RU-Acquire`)
---   resolves first — matching `ComBackwardFails`'s verdict A.
+--   over a bind context whose ν ambient is `NoAcq` (in particular a New ν, or a
+--   New-capped `s ; end p`) FORCES a leading `cons-acq` zero-block, i.e. a
+--   pending (dropped, not-yet-reacquired) borrow — `mobile-front⇒lead0`.
+--   Equivalently, whenever the send block is a real handle block (nonzero leading
+--   width, no leading `cons-acq` — which `FrontBlock.front-block-nonzero′` yields
+--   from a msg-typed front), the front is NOT Mobile: `mobile-front-⊥` /
+--   `mobile-front-msg-⊥` (and the `s ; end p` wrapper `mobile-front-end-⊥`).
+--   The remaining separated com can therefore only sit behind a pending-acq
+--   marker, which `R-Acq` (untyped mirror `RU-Acquire`) resolves first — matching
+--   `ComBackwardFails`'s verdict A.
 --
---   The proof needs no left-cancellation and no HasT: a New ambient is `NoAcq`
---   (CloseVacuityProbe), a NoAcq front is never Mobile (`¬mobile-noAcq`), and the
---   only slot-0 blocks over a New ν whose ambient is NOT acq-prefixed are the
---   `last` block (ambient `s`) and the `cons-ret/acq` block (ambient `s₁;ret`,
---   `s₁` a NoAcq factor of `s`).
+--   The proof needs no left-cancellation and no HasT: a NoAcq ambient's slot-0
+--   handle is NoAcq (its front factor of a `last` block, or of the `cons-ret/acq`
+--   block `s₁ ; ret` whose `s₁` is a NoAcq factor of the ambient), and a NoAcq
+--   session is never Mobile (`CloseVacuityProbe.¬mobile-noAcq`).
 module BorrowedCF.Simulation.Backward.ComMobileFront where
 
 open import BorrowedCF.Prelude
@@ -35,7 +36,7 @@ open import BorrowedCF.Context using (Ctx)
 open import BorrowedCF.Processes.Typed
   using (BindGroup; BindCtx; BindCtx′; last; cons; cons-acq; cons-ret/acq; nil)
 open import BorrowedCF.Simulation.Support.CloseVacuityProbe
-  using (NoAcq; new⇒noAcq; noAcq-;-fst; noAcq-≃; ¬mobile-noAcq)
+  using (NoAcq; new⇒noAcq; new-end⇒noAcq; noAcq-;-fst; noAcq-≃; ¬mobile-noAcq)
 open import Data.Nat.ListAction using (sum)
 open import Data.List using (List; []; _∷_)
 open import Data.Fin.Properties using (toℕ-injective)
@@ -44,7 +45,7 @@ open Fin.Patterns
 
 private variable
   ℓ : ℕ
-  sν Aˢ : 𝕊 0
+  Aˢ : 𝕊 0
   BL B′ : BindGroup
   Γ : Ctx ℓ
 
@@ -59,29 +60,29 @@ xto0 f tf = toℕ-injective tf
 -- The front of a single block whose ambient Aˢ is NoAcq is never Mobile.
 ------------------------------------------------------------------------
 
-front-cons-; : NoAcq Aˢ → BindCtx′ Aˢ Γ → (f : 𝔽 ℓ) → Fin.toℕ f ≡ 0
+front-cons-⊥ : NoAcq Aˢ → BindCtx′ Aˢ Γ → (f : 𝔽 ℓ) → Fin.toℕ f ≡ 0
   → Mobile (lookup Γ f) → ⊥
-front-cons-; NA (nil _) ()
-front-cons-; NA (cons t₁ t₂ ¬sk eq _) f tf mob rewrite xto0 f tf =
+front-cons-⊥ NA (nil _) ()
+front-cons-⊥ NA (cons t₁ t₂ ¬sk eq _) f tf mob rewrite xto0 f tf =
   ¬mobile-noAcq (noAcq-;-fst (noAcq-≃ (≃-sym eq) NA)) mob
 
 ------------------------------------------------------------------------
--- A Mobile front (slot 0) over a New ν session forces a leading cons-acq
+-- A Mobile front (slot 0) over a NoAcq ν ambient forces a leading cons-acq
 -- zero-block (a pending, not-yet-reacquired borrow).
 ------------------------------------------------------------------------
 
-mobile-front⇒lead0 : New sν → BindCtx sν BL Γ
+mobile-front⇒lead0 : NoAcq Aˢ → BindCtx Aˢ BL Γ
   → (f : 𝔽 (sum BL)) → Fin.toℕ f ≡ 0 → Mobile (lookup Γ f)
   → ∃[ B″ ] BL ≡ 0 ∷ B″
-mobile-front⇒lead0 N (last bc) f tf mob =
-  ⊥-elim (front-cons-; (new⇒noAcq N) bc f tf mob)
-mobile-front⇒lead0 N (cons-ret/acq s₁ s≃ (nil (_ ; ())) rest) f tf mob
-mobile-front⇒lead0 N (cons-ret/acq s₁ s≃ (cons t₁ t₂ ¬sk eq _) rest) f tf mob rewrite xto0 f tf =
+mobile-front⇒lead0 NA (last bc) f tf mob =
+  ⊥-elim (front-cons-⊥ NA bc f tf mob)
+mobile-front⇒lead0 NA (cons-ret/acq s₁ s≃ (nil (_ ; ())) rest) f tf mob
+mobile-front⇒lead0 NA (cons-ret/acq s₁ s≃ (cons t₁ t₂ ¬sk eq _) rest) f tf mob rewrite xto0 f tf =
   ⊥-elim (¬mobile-noAcq
     (noAcq-;-fst (noAcq-≃ (≃-sym eq)
-      (NoAcq._;_ (noAcq-;-fst (noAcq-≃ (≃-sym s≃) (new⇒noAcq N))) NoAcq.ret)))
+      (NoAcq._;_ (noAcq-;-fst (noAcq-≃ (≃-sym s≃) NA)) NoAcq.ret)))
     mob)
-mobile-front⇒lead0 N (cons-acq rest) f tf mob = _ , refl
+mobile-front⇒lead0 NA (cons-acq rest) f tf mob = _ , refl
 
 ------------------------------------------------------------------------
 -- Corollaries: with a real (nonzero-leading) send block, the front is
@@ -89,15 +90,21 @@ mobile-front⇒lead0 N (cons-acq rest) f tf mob = _ , refl
 -- Mobile hypothesis alone is absurd.
 ------------------------------------------------------------------------
 
-mobile-front-; : New sν → BindCtx sν BL Γ → (∀ B″ → ¬ (BL ≡ 0 ∷ B″))
+mobile-front-⊥ : NoAcq Aˢ → BindCtx Aˢ BL Γ → (∀ B″ → ¬ (BL ≡ 0 ∷ B″))
   → (f : 𝔽 (sum BL)) → Fin.toℕ f ≡ 0 → Mobile (lookup Γ f) → ⊥
-mobile-front-; N C ¬lead f tf mob with mobile-front⇒lead0 N C f tf mob
+mobile-front-⊥ NA C ¬lead f tf mob with mobile-front⇒lead0 NA C f tf mob
 ... | B″ , eq = ¬lead B″ eq
 
-mobile-front-msg-; : New sν → BindCtx sν BL Γ → (∀ B″ → ¬ (BL ≡ 0 ∷ B″))
+mobile-front-msg-⊥ : NoAcq Aˢ → BindCtx Aˢ BL Γ → (∀ B″ → ¬ (BL ≡ 0 ∷ B″))
   → (f : 𝔽 (sum BL)) → Fin.toℕ f ≡ 0 → Mobile (lookup Γ f)
   → (x : 𝔽 (sum BL)) → ∀ {Tᵐ} → lookup Γ x ≃ ⟨ msg ‼ Tᵐ ⟩ → ⊥
-mobile-front-msg-; N C ¬lead f tf mob x eq = mobile-front-; N C ¬lead f tf mob
+mobile-front-msg-⊥ NA C ¬lead f tf mob x eq = mobile-front-⊥ NA C ¬lead f tf mob
+
+-- Drop-in for a New-capped ν session `s ; end p` (the com ν shape).
+mobile-front-end-⊥ : ∀ {s : 𝕊 0} {p} → New s → BindCtx (s ; end p) BL Γ
+  → (∀ B″ → ¬ (BL ≡ 0 ∷ B″))
+  → (f : 𝔽 (sum BL)) → Fin.toℕ f ≡ 0 → Mobile (lookup Γ f) → ⊥
+mobile-front-end-⊥ N = mobile-front-⊥ (new-end⇒noAcq N)
 
 ------------------------------------------------------------------------
 -- The unrestricted statement (no leading-block hypothesis) is FALSE.
