@@ -42,10 +42,11 @@ open import BorrowedCF.Types.Syntax
 open import BorrowedCF.Types.Equivalence
 open import BorrowedCF.Types.AtomUnsnoc using (atom-;-unsnoc)
 import BorrowedCF.Types.Predicates as P
-open P using (New; Mobile; Bounded; skips⊥bounded; ≃-bounded)
+open P using (New; Mobile; Bounded; ≃-bounded)
 open import BorrowedCF.Context using (Ctx)
 open import BorrowedCF.Processes.Typed using (BindCtx′)
 open BindCtx′
+open import BorrowedCF.Types.ContainsEnd using (HasT; seqˡ; seqʳ; bounded⇒hasT; new⇒¬hasT; ≃-hasT)
 
 ------------------------------------------------------------------------
 -- ROOT: a session is never simultaneously New and Bounded.
@@ -69,59 +70,54 @@ mobile⇒¬new : {s : 𝕊 zero} -> Mobile ⟨ s ⟩ -> ¬ (New s)
 mobile⇒¬new mob Ns = new∧bounded⇒⊥ Ns (mobile⇒bounded mob)
 
 ------------------------------------------------------------------------
--- Small absurdities used by the unsnoc cascade.
+-- ¬ HasT acq (acq is not a terminal atom) and the Skips-; projection.
 ------------------------------------------------------------------------
 
-notB-acq : ¬ (Bounded (acq {zero}))
-notB-acq ()
+not-hasT-acq : ¬ HasT (acq {zero})
+not-hasT-acq ()
 
-notB-acqmsg : ¬ (Bounded (acq {zero} ; msg ‼ `⊤))
-notB-acqmsg (P._;₁_ () _)
-notB-acqmsg (P.-;₂_ ())
-
-skips-;-projl : {s1 s2 : 𝕊 zero} -> Skips (s1 ; s2) -> Skips s1
-skips-;-projl (sk ; _) = sk
+skips-projl : {s1 s2 : 𝕊 zero} → Skips (s1 ; s2) → Skips s1
+skips-projl (sk ; _) = sk
 
 ------------------------------------------------------------------------
--- MOB-WHOLE (canonical com session `msg `⊤`).  A mobile front over the
--- New-ν borrower block `acq ; (msg `⊤ ; end p)` leaves only `Skips`
--- behind it.  Proof: peel trailing atoms with `atom-;-unsnoc`; every
--- deeper branch forces the front `≃ acq` / `≃ acq;msg` / `Skips` — each
--- contradicts `Bounded s_a`.  No leading-atom cancellation is used.
+-- bad : the ends lemma (ContainsEnd) in action.  A Bounded prefix cannot
+-- equal an acq-headed New continuation: HasT (from Bounded) transports
+-- across ≃ to HasT (acq ; New), whose only witnesses are the (empty)
+-- HasT acq or the (New-forbidden) HasT s.  No leading-atom cancellation.
 ------------------------------------------------------------------------
 
-whole-aux : {sa sb : 𝕊 zero} {p : Pol} ->
-  Bounded sa ->
-  (sa ; sb) ≃ ((acq ; (msg ‼ `⊤)) ; end p) ->
+bad : {sa sbp s : 𝕊 zero} → Bounded sa → New s → sa ; sbp ≃ acq ; s → ⊥
+bad Bsa Ns eq with ≃-hasT eq (seqˡ (bounded⇒hasT Bsa))
+... | seqˡ ()
+... | seqʳ h = new⇒¬hasT Ns h
+
+------------------------------------------------------------------------
+-- MOB-WHOLE, GENERAL New s.  A mobile front over the New-ν borrower
+-- block `acq ; (s ; end p)` leaves only `Skips` behind it: unsnoc the
+-- trailing `end`; the residual `sa ; sbp ≃ acq ; s` is killed by `bad`.
+------------------------------------------------------------------------
+
+mob-front-whole : {sa sb s : 𝕊 zero} {p : Pol} →
+  Mobile ⟨ sa ⟩ → New s →
+  (sa ; sb) ≃ (acq ; (s ; end p)) →
   Skips sb
-whole-aux Bsa e with atom-;-unsnoc end e
+mob-front-whole mob Ns eq with atom-;-unsnoc end (≃-trans eq (≃-sym ≃-assoc-;))
 ... | inj₁ Sk = Sk
-... | inj₂ (_ , e2 , _) with atom-;-unsnoc msg e2
-...   | inj₁ Sk' = ⊥-elim (notB-acqmsg (≃-bounded (≃-trans (≃-sym (≃-skipsʳ Sk')) e2) Bsa))
-...   | inj₂ (_ , e3 , _) with atom-;-unsnoc acq (≃-trans e3 (≃-sym ≃-skipˡ))
-...     | inj₁ Sk'' = ⊥-elim (notB-acq (≃-bounded (≃-trans (≃-sym (≃-skipsʳ Sk'')) e3) Bsa))
-...     | inj₂ (_ , e4 , _) = ⊥-elim (skips⊥bounded (skips-;-projl (≃-skips (≃-sym e4) skip)) Bsa)
-
-mob-front-whole : {sa sb : 𝕊 zero} {p : Pol} ->
-  Mobile ⟨ sa ⟩ ->
-  (sa ; sb) ≃ (acq ; (msg ‼ `⊤ ; end p)) ->
-  Skips sb
-mob-front-whole mob eq =
-  whole-aux (mobile⇒bounded mob) (≃-trans eq (≃-sym ≃-assoc-;))
+... | inj₂ (_ , e2 , _) = ⊥-elim (bad (mobile⇒bounded mob) Ns e2)
 
 ------------------------------------------------------------------------
--- DECISIVE: the `BindCtx′` block a separated-firing com would require is
--- UNINHABITED.  For the New-ν borrower block `acq ; (msg `⊤ ; end p)`,
--- no split has a MOBILE front channel `⟨sa⟩` with a LIVE (`¬ Skips`)
--- channel `⟨sb⟩` strictly behind it.  Hence the well-typed source of a
--- separated com cannot be typed: construction fails at step (1).
+-- DECISIVE, GENERAL: the `BindCtx′` block a separated-firing com would
+-- require is UNINHABITED for ANY New ν session `s`.  No split of the
+-- borrower block `acq ; (s ; end p)` has a MOBILE front channel `⟨sa⟩`
+-- with a LIVE (`¬ Skips`) channel `⟨sb⟩` strictly behind it.  Hence the
+-- well-typed source of a separated com cannot be typed (step 1 fails).
 ------------------------------------------------------------------------
 
 sep-block-impossible :
-  {k : ℕ} {sa sb : 𝕊 zero} {p : Pol} {G : Ctx k} ->
-  Mobile ⟨ sa ⟩ ->
-  ¬ (Skips sb) ->
-  ¬ (BindCtx′ (acq ; (msg ‼ `⊤ ; end p)) (⟨ sa ⟩ ∷ ⟨ sb ⟩ ∷ G))
-sep-block-impossible mob notSb (cons _ s2 _ split (cons _ s3 _ split2 _)) =
-  notSb (skips-;-projl
-    (mob-front-whole mob (≃-trans (≃-; ≃-refl split2) split)))
+  {k : ℕ} {sa sb s : 𝕊 zero} {p : Pol} {G : Ctx k} →
+  Mobile ⟨ sa ⟩ → New s →
+  ¬ (Skips sb) →
+  ¬ (BindCtx′ (acq ; (s ; end p)) (⟨ sa ⟩ ∷ ⟨ sb ⟩ ∷ G))
+sep-block-impossible mob Ns notSb (cons _ s2 _ split (cons _ s3 _ split2 _)) =
+  notSb (skips-projl
+    (mob-front-whole mob Ns (≃-trans (≃-; ≃-refl split2) split)))
