@@ -35,7 +35,7 @@ open P using (New; Mobile; Bounded)
 open import BorrowedCF.Types.AtomUnsnoc using (atom-;-unsnoc)
 open import BorrowedCF.Types.ContainsEnd using (HasT; seqˡ; seqʳ; bounded⇒hasT; new⇒¬hasT; ≃-hasT)
 open import BorrowedCF.Types.AtomHead using (msg;≄acq;; atomKind≢⇒≄-;ˡ)
-open import BorrowedCF.Context using (Ctx)
+open import BorrowedCF.Context using (Ctx; _⸴*_)
 open import BorrowedCF.Processes.Typed
   using (BindGroup; BindCtx; BindCtx′; last; cons; cons-acq; cons-ret/acq; nil; bindCtx-B≢[])
 open import Data.Nat.ListAction using (sum)
@@ -43,6 +43,13 @@ open import Data.List using (List; []; _∷_; _++_)
 open import BorrowedCF.Simulation.Backward.ComSepNoMsg
   using (NoMsg; noMsg-acq; noMsg-≃; noMsg-;-snd; bindCtx-noMsg-not-msg; _;_; skip)
 import Data.Vec.Properties as VP
+open import Data.Nat.ListAction.Properties using (sum-++)
+open import Data.Vec.Properties using (lookup-++ʳ)
+open import Data.Fin.Properties using (toℕ-↑ˡ; toℕ-↑ʳ; splitAt⁻¹-↑ˡ; splitAt⁻¹-↑ʳ; toℕ-injective; toℕ<n)
+open import Data.Fin using (splitAt)
+open import Data.Nat.ListAction.Properties using (sum-++)
+open import Data.Vec.Properties using (cast-is-id)
+open import Data.List using (length)
 open import Data.Fin.Base using (_↑ʳ_; _↑ˡ_)
 open import BorrowedCF.Processes.Typed using (bindCtx-inv-cons)
 open Fin.Patterns
@@ -269,3 +276,57 @@ inv-step-retacq (inj₁ (mkAIA {Q} {pol} nhQ eq)) split
 inv-step-retacq (inj₂ nm) split = inj₂ (noMsg-acq-seq (noMsg-;-snd (noMsg-≃ (≃-sym split) nm)))
 
 -- ↑ʳ distributes over + on the ℕ index.
+
+
+------------------------------------------------------------------------
+-- descend : peel the leading `B₁` markers (maintaining Inv), returning the
+-- handle-block sub-context Γh with a toℕ-based lookup reconciliation.
+------------------------------------------------------------------------
+
+0<len++ : ∀ (B₁ : BindGroup) (hb : ℕ) (B₂ : BindGroup) → 0 Nat.< length (B₁ ++ hb ∷ B₂)
+0<len++ []       hb B₂ = Nat.s≤s Nat.z≤n
+0<len++ (b ∷ B₁) hb B₂ = Nat.s≤s Nat.z≤n
+
+descend : ∀ {s} (B₁ : BindGroup) (hb : ℕ) (B₂ : BindGroup)
+    {Γ : Ctx (sum (B₁ ++ hb ∷ B₂))} → Inv s
+  → BindCtx s (B₁ ++ hb ∷ B₂) Γ
+  → Σ[ Γh ∈ Ctx (sum (hb ∷ B₂)) ] Σ[ sh ∈ 𝕊 0 ]
+      Inv sh × BindCtx sh (hb ∷ B₂) Γh
+      × (∀ (p : 𝔽 (sum (B₁ ++ hb ∷ B₂))) (k : 𝔽 (sum (hb ∷ B₂)))
+          → Fin.toℕ p ≡ sum B₁ + Fin.toℕ k → lookup Γ p ≡ lookup Γh k)
+descend {s} [] hb B₂ {Γ} inv C =
+  Γ , s , inv , C , λ p k tp → cong (lookup Γ) (toℕ-injective tp)
+descend (b ∷ B₁) hb B₂ {Γ} inv C
+  with bindCtx-inv-cons {B = B₁ ++ hb ∷ B₂} (0<len++ B₁ hb B₂) C
+... | inj₂ (refl , C') = descend B₁ hb B₂ (inv-step-acq inv) C'
+... | inj₁ (s₁ , s₂ , Γ₁' , Γ₂' , split , refl , _ , C') =
+      let Γh , sh , inv-h , C-h , rec = descend B₁ hb B₂ (inv-step-retacq inv split) C'
+      in Γh , sh , inv-h , C-h , recon Γh rec
+  where
+    recon : (Γh : Ctx (sum (hb ∷ B₂)))
+      → (∀ (p' : 𝔽 (sum (B₁ ++ hb ∷ B₂))) (k : 𝔽 (sum (hb ∷ B₂)))
+          → Fin.toℕ p' ≡ sum B₁ + Fin.toℕ k → lookup Γ₂' p' ≡ lookup Γh k)
+      → (p : 𝔽 (sum ((b ∷ B₁) ++ hb ∷ B₂))) (k : 𝔽 (sum (hb ∷ B₂)))
+      → Fin.toℕ p ≡ sum (b ∷ B₁) + Fin.toℕ k → lookup (Γ₁' ⸴* Γ₂') p ≡ lookup Γh k
+    recon Γh rec p k tp with splitAt b p in seq
+    ... | inj₁ j = ⊥-elim (Nat.<-irrefl refl (Nat.≤-<-trans b≤p p<b))
+      where
+        p≡j : j ↑ˡ _ ≡ p
+        p≡j = splitAt⁻¹-↑ˡ seq
+        tj : Fin.toℕ p ≡ Fin.toℕ j
+        tj = sym (cong Fin.toℕ p≡j) ■ toℕ-↑ˡ j _
+        p<b : Fin.toℕ p Nat.< b
+        p<b = subst (Nat._< b) (sym tj) (toℕ<n j)
+        b≤p : b Nat.≤ Fin.toℕ p
+        b≤p = subst (b Nat.≤_) (sym tp)
+                (Nat.≤-trans (Nat.m≤m+n b (sum B₁ + Fin.toℕ k))
+                  (Nat.≤-reflexive (sym (Nat.+-assoc b (sum B₁) (Fin.toℕ k)))))
+    ... | inj₂ p'' =
+          cong (lookup (Γ₁' ⸴* Γ₂')) (sym (splitAt⁻¹-↑ʳ seq))
+            ■ lookup-++ʳ Γ₁' Γ₂' p'' ■ rec p'' k tp''
+      where
+        p≡ : b ↑ʳ p'' ≡ p
+        p≡ = splitAt⁻¹-↑ʳ seq
+        tp'' : Fin.toℕ p'' ≡ sum B₁ + Fin.toℕ k
+        tp'' = Nat.+-cancelˡ-≡ b _ _
+                 (sym (toℕ-↑ʳ b p'') ■ cong Fin.toℕ p≡ ■ tp ■ Nat.+-assoc b (sum B₁) (Fin.toℕ k))
