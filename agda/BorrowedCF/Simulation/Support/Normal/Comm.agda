@@ -70,10 +70,10 @@ comm (tν t) es N =
     (~-trans (~-νNF (comm t es (renNF N _ (weaken* ⦃ Kᵣ ⦄ 2))))
              (≡→~ (combine-ν N (mkNF t es))))
 
-comm (tφ f t) es N =
-  ~-trans (combine-extrudeˡ-φ f (mkNF t es) N)
-    (~-trans (~-φNF (comm t es (renNF N _ (weaken* ⦃ Kᵣ ⦄ 1))))
-             (≡→~ (combine-φ f N (mkNF t es))))
+comm (tφ f c t) es N =
+  ~-trans (combine-extrudeˡ-φ f c (mkNF t es) N)
+    (~-trans (~-φNF c (comm t es (renNF N _ (weaken* ⦃ Kᵣ ⦄ 1))))
+             (≡→~ (combine-φ f c N (mkNF t es))))
 
 combine-comm : ∀ {n} (N₁ N₂ : NF n) → combine N₁ N₂ ~ combine N₂ N₁
 combine-comm N₁ N₂ = comm (tel N₁) (thr N₁) N₂
