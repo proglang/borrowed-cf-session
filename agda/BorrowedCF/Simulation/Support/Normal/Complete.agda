@@ -14,6 +14,7 @@ open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Processes.Untyped
 open import BorrowedCF.Simulation.Support.Normal.Form
+open import BorrowedCF.Simulation.Support.Normal.Rename using (renTel; liftRen; plug-⋯ₚ)
 open import BorrowedCF.Simulation.Support.Normal.Equiv
 open import BorrowedCF.Simulation.Support.Normal.Prenex using (≡→≋; ≋-sym; plug-cong)
 open import BorrowedCF.Simulation.Support.Normal.Flat using (pars-↭)
@@ -29,18 +30,13 @@ open Nat.Variables
 -- Plugging under a scope ENDOmorphism.
 ------------------------------------------------------------------------
 
-plug-⋯ₚ-endo : ∀ {n k} (t : Tel n k) (ξ : n →ᵣ n) (X : Proc k) →
-               plug t X ⋯ₚ ξ ≡ plug t (X ⋯ₚ liftId t ξ)
-plug-⋯ₚ-endo []       ξ X = refl
-plug-⋯ₚ-endo (tν t)   ξ X = cong ν     (plug-⋯ₚ-endo t (ξ ↑* 2) X)
-plug-⋯ₚ-endo (tφ f t) ξ X = cong (φ f) (plug-⋯ₚ-endo t (ξ ↑)   X)
-
 -- The shape every transposition case has: a ≋′ generator whose right-hand side
--- renames the body, re-expressed on the thread list.
+-- renames the body — which under linked-φ RENAMES the telescope's channels
+-- (`renTel t ξ`), exactly as the ~-generator's RHS records.
 transp : ∀ {n k} (t : Tel n k) (ξ : n →ᵣ n) (es : List (Tm k)) →
-         plug t (pars es) ⋯ₚ ξ ≡ plug t (pars (map (_⋯ liftId t ξ) es))
+         plug t (pars es) ⋯ₚ ξ ≡ plug (renTel t ξ) (pars (map (_⋯ liftRen t ξ) es))
 transp t ξ es =
-  plug-⋯ₚ-endo t ξ (pars es) ■ cong (plug t) (pars-⋯ₚ es (liftId t ξ))
+  plug-⋯ₚ t ξ (pars es) ■ cong (plug (renTel t ξ)) (pars-⋯ₚ es (liftRen t ξ))
 
 ------------------------------------------------------------------------
 -- Completeness.
@@ -50,43 +46,46 @@ transp t ξ es =
 
 ~₁⇒≋ (perm-ν1 s t es) =
   ≡→≋ (plug-++ᵗ s (tν t) (pars es))
-    ◅◅ plug-cong s (ν-cong-swap)
-    ◅◅ ≡→≋ (sym (plug-++ᵗ s (tν t) (pars (map (_⋯ liftId t (swapᵣ 1 1)) es))))
+    ◅◅ plug-cong s ν-cong-swap
+    ◅◅ ≡→≋ (sym (plug-++ᵗ s (tν (renTel t (swapᵣ 1 1)))
+                   (pars (map (_⋯ liftRen t (swapᵣ 1 1)) es))))
   where
     ν-cong-swap : ν (plug t (pars es))
-                    ≋ ν (plug t (pars (map (_⋯ liftId t (swapᵣ 1 1)) es)))
+                    ≋ ν (plug (renTel t (swapᵣ 1 1)) (pars (map (_⋯ liftRen t (swapᵣ 1 1)) es)))
     ν-cong-swap = Eq*.return ν-swap′ ◅◅ ≡→≋ (cong ν (transp t (swapᵣ 1 1) es))
 
 ~₁⇒≋ (perm-νν s t es) =
   ≡→≋ (plug-++ᵗ s (tν (tν t)) (pars es))
     ◅◅ plug-cong s step
-    ◅◅ ≡→≋ (sym (plug-++ᵗ s (tν (tν t)) (pars (map (_⋯ liftId t (assocSwapᵣ 2 2)) es))))
+    ◅◅ ≡→≋ (sym (plug-++ᵗ s (tν (tν (renTel t (assocSwapᵣ 2 2))))
+                   (pars (map (_⋯ liftRen t (assocSwapᵣ 2 2)) es))))
   where
     step : ν (ν (plug t (pars es)))
-             ≋ ν (ν (plug t (pars (map (_⋯ liftId t (assocSwapᵣ 2 2)) es))))
+             ≋ ν (ν (plug (renTel t (assocSwapᵣ 2 2)) (pars (map (_⋯ liftRen t (assocSwapᵣ 2 2)) es))))
     step = Eq*.return ν-comm′ ◅◅ ≡→≋ (cong (λ z → ν (ν z)) (transp t (assocSwapᵣ 2 2) es))
 
-~₁⇒≋ (perm-φφ s x y t es) =
-  ≡→≋ (plug-++ᵗ s (tφ x (tφ y t)) (pars es))
+~₁⇒≋ (perm-φφ s x y c d t es) =
+  ≡→≋ (plug-++ᵗ s (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t)) (pars es))
     ◅◅ plug-cong s step
-    ◅◅ ≡→≋ (sym (plug-++ᵗ s (tφ y (tφ x t))
-                   (pars (map (_⋯ liftId t (assocSwapᵣ 1 1)) es))))
+    ◅◅ ≡→≋ (sym (plug-++ᵗ s (tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t (assocSwapᵣ 1 1))))
+                   (pars (map (_⋯ liftRen t (assocSwapᵣ 1 1)) es))))
   where
-    step : φ x (φ y (plug t (pars es)))
-             ≋ φ y (φ x (plug t (pars (map (_⋯ liftId t (assocSwapᵣ 1 1)) es))))
+    step : φ x c (φ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) (plug t (pars es)))
+             ≋ φ y d (φ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1)
+                        (plug (renTel t (assocSwapᵣ 1 1)) (pars (map (_⋯ liftRen t (assocSwapᵣ 1 1)) es))))
     step = Eq*.return φ-comm′
-             ◅◅ ≡→≋ (cong (λ z → φ y (φ x z)) (transp t (assocSwapᵣ 1 1) es))
+             ◅◅ ≡→≋ (cong (λ z → φ y d (φ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) z)) (transp t (assocSwapᵣ 1 1) es))
 
-~₁⇒≋ (perm-νφ s x t es) =
-  ≡→≋ (plug-++ᵗ s (tν (tφ x t)) (pars es))
+~₁⇒≋ (perm-νφ s x c t es) =
+  ≡→≋ (plug-++ᵗ s (tν (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 2) t)) (pars es))
     ◅◅ plug-cong s step
-    ◅◅ ≡→≋ (sym (plug-++ᵗ s (tφ x (tν t))
-                   (pars (map (_⋯ liftId t (assocSwapᵣ 1 2)) es))))
+    ◅◅ ≡→≋ (sym (plug-++ᵗ s (tφ x c (tν (renTel t (assocSwapᵣ 1 2))))
+                   (pars (map (_⋯ liftRen t (assocSwapᵣ 1 2)) es))))
   where
-    step : ν (φ x (plug t (pars es)))
-             ≋ φ x (ν (plug t (pars (map (_⋯ liftId t (assocSwapᵣ 1 2)) es))))
+    step : ν (φ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 2) (plug t (pars es)))
+             ≋ φ x c (ν (plug (renTel t (assocSwapᵣ 1 2)) (pars (map (_⋯ liftRen t (assocSwapᵣ 1 2)) es))))
     step = Eq*.return νφ-comm′
-             ◅◅ ≡→≋ (cong (λ z → φ x (ν z)) (transp t (assocSwapᵣ 1 2) es))
+             ◅◅ ≡→≋ (cong (λ z → φ x c (ν z)) (transp t (assocSwapᵣ 1 2) es))
 
 ~₁⇒≋ (perm-thr t p)  = plug-cong t (pars-↭ p)
 ~₁⇒≋ (unit-del t es) = plug-cong t (Eq*.return ∥-unit′)
