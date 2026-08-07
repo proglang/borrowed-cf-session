@@ -61,9 +61,9 @@ subst-sym-■ A refl refl x = refl
 -- body's.  Every image statement below is an instance of this.
 nf-plug : ∀ {n k} (t : Tel n k) (X : Proc k) →
           nf (plug t X) ≡ mkNF (t ++ᵗ tel (nf X)) (thr (nf X))
-nf-plug []       X = refl
-nf-plug (tν t)   X = cong νNF     (nf-plug t X)
-nf-plug (tφ f t) X = cong (φNF f) (nf-plug t X)
+nf-plug []         X = refl
+nf-plug (tν t)     X = cong νNF       (nf-plug t X)
+nf-plug (tφ f c t) X = cong (φNF f c) (nf-plug t X)
 
 ------------------------------------------------------------------------
 -- The φ-nest a bind group emits.
@@ -78,10 +78,12 @@ syncsScope (_ ∷ [])        n = n
 syncsScope (_ ∷ B@(_ ∷ _)) n = syncsScope B (suc n)
 
 -- The nest itself: one `tφ ϕ[ b ]` per NON-LAST element, outermost first.
-φTelᵣ : (B : 𝐓.BindGroup) (n : ℕ) → Tel n (syncsScope B n)
-φTelᵣ []              n = []
-φTelᵣ (_ ∷ [])        n = []
-φTelᵣ (b ∷ B@(_ ∷ _)) n = tφ ϕ[ b ] (φTelᵣ B (suc n))
+-- Linked-φ: each cell carries the channel `UB[_]` emits, namely `` ` x `` from
+-- the running `UChan`.
+φTelᵣ : (B : 𝐓.BindGroup) {n : ℕ} (c : UChan n) → Tel n (syncsScope B n)
+φTelᵣ []              c             = []
+φTelᵣ (_ ∷ [])        c             = []
+φTelᵣ (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) = tφ ϕ[ b ] (` x) (φTelᵣ B (` 0F , suc x , wk e₂))
 
 -- The single index equality of the module.  Its cons case is literally the
 -- `+-suc` that `UB[_]` transports along, which is why `UB-plug` can discharge
@@ -91,8 +93,8 @@ scope≡ []              n = refl
 scope≡ (_ ∷ [])        n = refl
 scope≡ (_ ∷ B@(_ ∷ _)) n = scope≡ B (suc n) ■ +-suc (syncs B) n
 
-φTel : (B : 𝐓.BindGroup) (n : ℕ) → Tel n (syncs B + n)
-φTel B n = subst (Tel n) (scope≡ B n) (φTelᵣ B n)
+φTel : (B : 𝐓.BindGroup) {n : ℕ} (c : UChan n) → Tel n (syncs B + n)
+φTel B {n} c = subst (Tel n) (scope≡ B n) (φTelᵣ B c)
 
 ------------------------------------------------------------------------
 -- The substitution a bind group feeds to its continuation.
@@ -113,18 +115,18 @@ scope≡ (_ ∷ B@(_ ∷ _)) n = scope≡ B (suc n) ■ +-suc (syncs B) n
 -- `f`.  Parametricity in `f` is what makes the two nests of a `ν`-node compose.
 UB-plug : ∀ {n} (B : 𝐓.BindGroup) (c : UChan n)
           (f : (sum B →ₛ syncs B + n) → Proc (syncs B + n)) →
-          UB[ B ] c f ≡ plug (φTel B n) (f (σB B c))
+          UB[ B ] c f ≡ plug (φTel B c) (f (σB B c))
 UB-plug []       c f = cong f (funext (λ ()))
 UB-plug (b ∷ []) c f = refl
 UB-plug {n} (b ∷ B@(_ ∷ _)) c@(e₁ , x , e₂) f =
-  cong (φ ϕ[ b ])
+  cong (φ ϕ[ b ] (` x))
     ( UB-plug B (` 0F , suc x , wk e₂) _
-    ■ plug-subst (scope≡ B (suc n)) (φTelᵣ B (suc n)) _
-    ■ cong (plug (φTelᵣ B (suc n)))
+    ■ plug-subst (scope≡ B (suc n)) (φTelᵣ B (` 0F , suc x , wk e₂)) _
+    ■ cong (plug (φTelᵣ B (` 0F , suc x , wk e₂)))
         (sym (subst-sym-■ Proc (scope≡ B (suc n)) (+-suc (syncs B) n)
                 (f (σB (b ∷ B) c)))) )
   ■ sym (plug-subst (scope≡ B (suc n) ■ +-suc (syncs B) n)
-           (tφ ϕ[ b ] (φTelᵣ B (suc n))) (f (σB (b ∷ B) c)))
+           (tφ ϕ[ b ] (` x) (φTelᵣ B (` 0F , suc x , wk e₂))) (f (σB (b ∷ B) c)))
 
 ------------------------------------------------------------------------
 -- The image normal form: threads and parallel composition.
@@ -166,7 +168,7 @@ module νImage {m n : ℕ} (B₁ B₂ : 𝐓.BindGroup) (σ : m →ₛ n) where
      ++ₛ (λ i → σ i ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₁) ⋯ weaken* ⦃ Kᵣ ⦄ (syncs B₂))
 
   tel′ : Tel n s₂
-  tel′ = tν (φTel B₁ (2 + n) ++ᵗ φTel B₂ s₁)
+  tel′ = tν (φTel B₁ (* , 0F , *) ++ᵗ φTel B₂ (* , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , *))
 
 -- The characterisation.  Read off: slot 0 of the telescope is the `ν` of this
 -- node, the next `syncs B₁ + syncs B₂` slots are its bind groups' φ cells (with
@@ -181,9 +183,9 @@ nf-U-ν {m} {n} B₁ B₂ P σ =
   cong νNF
     ( cong nf
         ( UB-plug B₁ (* , 0F , *) _
-        ■ cong (plug (φTel B₁ (2 + n))) (UB-plug B₂ (* , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , *) _)
-        ■ sym (plug-++ᵗ (φTel B₁ (2 + n)) (φTel B₂ s₁) (U[ P ] σ′)) )
-    ■ nf-plug (φTel B₁ (2 + n) ++ᵗ φTel B₂ s₁) (U[ P ] σ′) )
+        ■ cong (plug (φTel B₁ (* , 0F , *))) (UB-plug B₂ (* , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , *) _)
+        ■ sym (plug-++ᵗ (φTel B₁ (* , 0F , *)) (φTel B₂ (* , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , *)) (U[ P ] σ′)) )
+    ■ nf-plug (φTel B₁ (* , 0F , *) ++ᵗ φTel B₂ (* , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , *)) (U[ P ] σ′) )
   where open νImage B₁ B₂ σ
 
 ------------------------------------------------------------------------
@@ -199,9 +201,9 @@ data Slot : Set where
   sφ : Flag → Slot
 
 shape : ∀ {n k} → Tel n k → List Slot
-shape []       = []
-shape (tν t)   = sν   ∷ shape t
-shape (tφ f t) = sφ f ∷ shape t
+shape []         = []
+shape (tν t)     = sν   ∷ shape t
+shape (tφ f c t) = sφ f ∷ shape t
 
 shape-subst : ∀ {n k k′} (eq : k ≡ k′) (t : Tel n k) →
               shape (subst (Tel n) eq t) ≡ shape t
@@ -209,9 +211,9 @@ shape-subst refl t = refl
 
 shape-++ᵗ : ∀ {n k j} (t : Tel n k) (s : Tel k j) →
             shape (t ++ᵗ s) ≡ shape t ++ shape s
-shape-++ᵗ []       s = refl
-shape-++ᵗ (tν t)   s = cong (sν   ∷_) (shape-++ᵗ t s)
-shape-++ᵗ (tφ f t) s = cong (sφ f ∷_) (shape-++ᵗ t s)
+shape-++ᵗ []         s = refl
+shape-++ᵗ (tν t)     s = cong (sν   ∷_) (shape-++ᵗ t s)
+shape-++ᵗ (tφ f c t) s = cong (sφ f ∷_) (shape-++ᵗ t s)
 
 -- The flags a bind group contributes: one per non-last element, `ϕ[_]` of it.
 syncFlags : 𝐓.BindGroup → List Flag
@@ -226,23 +228,23 @@ syncFlags-length (_ ∷ B@(_ ∷ _)) = cong suc (syncFlags-length B)
 
 -- A bind group's nest is φ-only, with exactly those flags: no ν ever hides in
 -- it, which is what lets the ν slots be counted against the source's ν-nodes.
-shape-φTelᵣ : ∀ (B : 𝐓.BindGroup) (n : ℕ) →
-              shape (φTelᵣ B n) ≡ map sφ (syncFlags B)
-shape-φTelᵣ []              n = refl
-shape-φTelᵣ (_ ∷ [])        n = refl
-shape-φTelᵣ (b ∷ B@(_ ∷ _)) n = cong (sφ ϕ[ b ] ∷_) (shape-φTelᵣ B (suc n))
+shape-φTelᵣ : ∀ (B : 𝐓.BindGroup) {n : ℕ} (c : UChan n) →
+              shape (φTelᵣ B c) ≡ map sφ (syncFlags B)
+shape-φTelᵣ []              c             = refl
+shape-φTelᵣ (_ ∷ [])        c             = refl
+shape-φTelᵣ (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) = cong (sφ ϕ[ b ] ∷_) (shape-φTelᵣ B (` 0F , suc x , wk e₂))
 
-shape-φTel : ∀ (B : 𝐓.BindGroup) (n : ℕ) →
-             shape (φTel B n) ≡ map sφ (syncFlags B)
-shape-φTel B n = shape-subst (scope≡ B n) (φTelᵣ B n) ■ shape-φTelᵣ B n
+shape-φTel : ∀ (B : 𝐓.BindGroup) {n : ℕ} (c : UChan n) →
+             shape (φTel B c) ≡ map sφ (syncFlags B)
+shape-φTel B {n} c = shape-subst (scope≡ B n) (φTelᵣ B c) ■ shape-φTelᵣ B c
 
 -- Re-basing preserves the shape, so `combine`'s telescope is the two shapes
 -- concatenated — with the RIGHT operand outermost, which is where `combine`
 -- puts it.
-shape-renTel : ∀ {n k} (t : Tel n k) (a : ℕ) → shape (renTel t a) ≡ shape t
-shape-renTel []       a = refl
-shape-renTel (tν t)   a = cong (sν   ∷_) (shape-renTel t (2 + a))
-shape-renTel (tφ f t) a = cong (sφ f ∷_) (shape-renTel t (1 + a))
+shape-renTel : ∀ {n k n′} (t : Tel n k) (ρ : n →ᵣ n′) → shape (renTel t ρ) ≡ shape t
+shape-renTel []         ρ = refl
+shape-renTel (tν t)     ρ = cong (sν   ∷_) (shape-renTel t (ρ ↑* 2))
+shape-renTel (tφ f c t) ρ = cong (sφ f ∷_) (shape-renTel t (ρ ↑))
 
 shape-U-thr : ∀ {m n} (e : Tm m) (σ : m →ₛ n) →
               shape (tel (nf (U[ 𝐓.⟪ e ⟫ ] σ))) ≡ []
@@ -253,9 +255,9 @@ shape-U-par : ∀ {m n} (P Q : 𝐓.Proc m) (σ : m →ₛ n) →
                 ≡ shape (tel (nf (U[ Q ] σ))) ++ shape (tel (nf (U[ P ] σ)))
 shape-U-par P Q σ =
   shape-++ᵗ (tel (nf (U[ Q ] σ)))
-            (renTel (tel (nf (U[ P ] σ))) (inner (nf (U[ Q ] σ))))
+            (renTel (tel (nf (U[ P ] σ))) (wkTel (tel (nf (U[ Q ] σ)))))
     ■ cong (shape (tel (nf (U[ Q ] σ))) ++_)
-        (shape-renTel (tel (nf (U[ P ] σ))) (inner (nf (U[ Q ] σ))))
+        (shape-renTel (tel (nf (U[ P ] σ))) (wkTel (tel (nf (U[ Q ] σ)))))
 
 -- The thread list is neither shortened nor extended by the translation: at a ∥
 -- both sides' threads survive, only renamed into the shared inner scope.
@@ -277,10 +279,15 @@ shape-U-ν : ∀ {m n} (B₁ B₂ : 𝐓.BindGroup) (P : 𝐓.Proc (sum B₁ + s
 shape-U-ν {m} {n} B₁ B₂ P σ =
   cong (λ N → shape (tel N)) (nf-U-ν B₁ B₂ P σ)
     ■ cong (sν ∷_)
-        ( shape-++ᵗ (φTel B₁ (2 + n) ++ᵗ φTel B₂ s₁) (tel (nf (U[ P ] σ′)))
+        ( shape-++ᵗ (φTel B₁ c₁ ++ᵗ φTel B₂ c₂) (tel (nf (U[ P ] σ′)))
         ■ cong (_++ shape (tel (nf (U[ P ] σ′))))
-            ( shape-++ᵗ (φTel B₁ (2 + n)) (φTel B₂ s₁)
-            ■ cong₂ _++_ (shape-φTel B₁ (2 + n)) (shape-φTel B₂ s₁) )
+            ( shape-++ᵗ (φTel B₁ c₁) (φTel B₂ c₂)
+            ■ cong₂ _++_ (shape-φTel B₁ c₁) (shape-φTel B₂ c₂) )
         ■ L.++-assoc (map sφ (syncFlags B₁)) (map sφ (syncFlags B₂))
                      (shape (tel (nf (U[ P ] σ′)))) )
-  where open νImage B₁ B₂ σ
+  where
+    open νImage B₁ B₂ σ
+    c₁ : UChan (2 + n)
+    c₁ = (* , 0F , *)
+    c₂ : UChan s₁
+    c₂ = (* , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , *)
