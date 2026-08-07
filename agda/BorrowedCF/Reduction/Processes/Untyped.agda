@@ -86,10 +86,14 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
       ─→ₚ
     ν ( plugΦ Φ ( ⟪ F [ 𝓒[ * × wkΦ Φ 0F × e ] ]* ⟫ ∥ P ) )
 
-  RU-Close : ∀ {k} (Φ : Φ* (2 + n) k) (F₁ F₂ : Frame* n) {e₁ e₁′ e₂ e₂′ : Tm k} →
-    ν ( plugΦ Φ (
-        ⟪ (F₁ ⋯ᶠ* (weaken* ⦃ Kᵣ ⦄ 2 ·ₖ wkΦ Φ)) [ K (`end ‼) ·¹ 𝓒[ e₁ × wkΦ Φ 0F × e₁′ ] ]* ⟫
-      ∥ ⟪ (F₂ ⋯ᶠ* (weaken* ⦃ Kᵣ ⦄ 2 ·ₖ wkΦ Φ)) [ K (`end ⁇) ·¹ 𝓒[ e₂ × wkΦ Φ 1F × e₂′ ] ]* ⟫ ) )
+  -- TIGHTENED (design decision, 2026-08): close fires ONLY at the empty
+  -- φ-telescope ([]φ), matching R-Close's `ν [1][1]`.  A close under an
+  -- outstanding φ-nest (unresolved borrows) is NOT a redex — mirroring that a
+  -- typed close cannot fire with outstanding borrows.  This restores the
+  -- bisimulation: a multi-block close (syncs > 0) is stuck on BOTH sides.
+  RU-Close : (F₁ F₂ : Frame* n) {e₁ e₁′ e₂ e₂′ : Tm (2 + n)} →
+    ν ( ⟪ (F₁ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ‼) ·¹ 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
+      ∥ ⟪ (F₂ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ⁇) ·¹ 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫ )
       ─→ₚ
     ⟪ F₁ [ * ]* ⟫ ∥ ⟪ F₂ [ * ]* ⟫
 
