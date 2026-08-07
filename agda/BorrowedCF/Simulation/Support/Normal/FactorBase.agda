@@ -32,7 +32,7 @@ open import BorrowedCF.Simulation.Support.Normal.Shift
 open import BorrowedCF.Simulation.Support.Normal.Endo
   using (liftId-id; renTel-idᵗ; liftId-liftRen)
 open import BorrowedCF.Simulation.Support.Normal.Bubble
-  using (bubν; bubφ; bubbleν; bubbleφ; map-⋯-cong; map-⋯-id; ≡→~; aswap-21-12;
+  using (bubν; bubφ; bubbleν; bubbleφ; bubν-wkTel; bubφ-wkTel; map-⋯-cong; map-⋯-id; ≡→~; aswap-21-12;
          aswap12-lift; liftId-subst; liftId-renTel-cong; innerOf-substⁱ;
          renTel-substⁱ; liftRen-substⁱ; telMidᴺ; liftMid)
 open import BorrowedCF.Simulation.Support.Normal.Witness
@@ -284,6 +284,39 @@ bubφ-inv (tφ f c s) x =
   cong (bubφ s) ( liftId-· (shift1 s) (assocSwapᵣ 1 1) (assocSwapᵣ 1 1) (bubφ⁻ s x)
                 ■ liftId-id (shift1 s) (λ y → aswap-11-inv y) (bubφ⁻ s x) )
     ■ bubφ-inv s x
+
+-- The reverse composites (`bubν⁻ ∘ bubν = id`, `bubφ⁻ ∘ bubφ = id`), and the
+-- consequence the run-drag needs: weakening through `s` then bubbling inward is
+-- weakening through the shifted `s` (inverse of `bubν-wkTel` / `bubφ-wkTel`).
+bubν-inv′ : ∀ {n j} (s : Tel n j) (x : 𝔽 (2 + j)) → bubν⁻ s (bubν s x) ≡ x
+bubν-inv′ []         x = refl
+bubν-inv′ (tν s)     x =
+  cong (liftId (shift2 s) (assocSwapᵣ 2 2)) (bubν-inv′ s (liftId (shift2 s) (assocSwapᵣ 2 2) x))
+    ■ liftId-· (shift2 s) (assocSwapᵣ 2 2) (assocSwapᵣ 2 2) x
+    ■ liftId-id (shift2 s) (λ y → aswap-22-inv y) x
+bubν-inv′ (tφ f c s) x =
+  cong (liftId (shift2 s) (assocSwapᵣ 2 1)) (bubν-inv′ s (liftId (shift2 s) (assocSwapᵣ 1 2) x))
+    ■ liftId-· (shift2 s) (assocSwapᵣ 1 2) (assocSwapᵣ 2 1) x
+    ■ liftId-id (shift2 s) (λ y → aswap-12-21 y) x
+
+bubφ-inv′ : ∀ {n j} (s : Tel n j) (x : 𝔽 (1 + j)) → bubφ⁻ s (bubφ s x) ≡ x
+bubφ-inv′ []         x = refl
+bubφ-inv′ (tν s)     x =
+  cong (liftId (shift1 s) (assocSwapᵣ 1 2)) (bubφ-inv′ s (liftId (shift1 s) (assocSwapᵣ 2 1) x))
+    ■ liftId-· (shift1 s) (assocSwapᵣ 2 1) (assocSwapᵣ 1 2) x
+    ■ liftId-id (shift1 s) (λ y → aswap-21-12 y) x
+bubφ-inv′ (tφ f c s) x =
+  cong (liftId (shift1 s) (assocSwapᵣ 1 1)) (bubφ-inv′ s (liftId (shift1 s) (assocSwapᵣ 1 1) x))
+    ■ liftId-· (shift1 s) (assocSwapᵣ 1 1) (assocSwapᵣ 1 1) x
+    ■ liftId-id (shift1 s) (λ y → aswap-11-inv y) x
+
+wkν-lemma : ∀ {p j} (S : Tel p j) (x : 𝔽 (2 + p)) →
+            bubν⁻ S ((wkTel S ↑* 2) x) ≡ wkTel (shift2 S) x
+wkν-lemma S x = cong (bubν⁻ S) (sym (bubν-wkTel S x)) ■ bubν-inv′ S (wkTel (shift2 S) x)
+
+wkφ-lemma : ∀ {p j} (S : Tel p j) (x : 𝔽 (1 + p)) →
+            bubφ⁻ S ((wkTel S ↑) x) ≡ wkTel (shift1 S) x
+wkφ-lemma S x = cong (bubφ⁻ S) (sym (bubφ-wkTel S x)) ■ bubφ-inv′ S (wkTel (shift1 S) x)
 
 ------------------------------------------------------------------------
 -- The `~ᵩ` bubble: a ν travelling through a RUN needs only `perm-νφ`.
