@@ -29,7 +29,7 @@ open import BorrowedCF.Simulation.Support.Normal.CongL using (combine-congˡ)
 open import BorrowedCF.Simulation.Support.Normal.Comm   using (combine-comm)
 open import BorrowedCF.Simulation.Support.Normal.Bubble using (combine-ν; combine-φ)
 open import BorrowedCF.Simulation.Support.Normal.Nat
-  using (NF-≡; nf-nat; innerOf-renTel; innerOf-++ᵗ; renTel-renTel; renTel-++ᵗ;
+  using (NF-≡; nf-nat; innerOf-renTel; innerOf-++ᵗ; renTel-renTel; renTel-++ᵗ; renTel-cong;
          wkTel-renTel; wkTel-nat; liftRen-·; liftRen-++ᵗ; liftRen-cong;
          subst-++ᵗ; subst-++; subst-■; subst-wkTel;
          map-fuse; map-⋯-subst; map-++ᴸ)
@@ -77,29 +77,37 @@ combine-assoc (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) (mkNF {j₃} t�
     j₂₃ = innerOf t₂ j₃
 
     T₁₂ : Tel _ (innerOf t₁ j₂)
-    T₁₂ = t₂ ++ᵗ renTel t₁ j₂
+    T₁₂ = t₂ ++ᵗ renTel t₁ (wkTel t₂)
 
     T₂₃ : Tel _ j₂₃
-    T₂₃ = t₃ ++ᵗ renTel t₂ j₃
+    T₂₃ = t₃ ++ᵗ renTel t₂ (wkTel t₃)
 
-    e₁ : innerOf T₁₂ j₃ ≡ innerOf (renTel t₁ j₂) j₂₃
-    e₁ = innerOf-++ᵗ t₂ (renTel t₁ j₂) j₃
+    -- the middle-renaming reconciliation: weaken past t₂ then lift, versus weaken
+    -- past the whole `T₂₃`; the naturality of `wkTel` is what makes them meet.
+    wkT23 : ∀ x → (wkTel t₂ ·ₖ liftRen t₂ (wkTel t₃)) x ≡ wkTel T₂₃ x
+    wkT23 x = sym (wkTel-++ᵗ t₃ (renTel t₂ (wkTel t₃)) x ■ wkTel-nat t₂ (wkTel t₃) x)
 
-    e₂ : innerOf (renTel t₁ j₂) j₂₃ ≡ innerOf t₁ j₂₃
-    e₂ = innerOf-renTel t₁ j₂ j₂₃
+    e₁ : innerOf T₁₂ j₃ ≡ innerOf (renTel t₁ (wkTel t₂)) j₂₃
+    e₁ = innerOf-++ᵗ t₂ (renTel t₁ (wkTel t₂)) j₃
+
+    e₂ : innerOf (renTel t₁ (wkTel t₂)) j₂₃ ≡ innerOf t₁ j₂₃
+    e₂ = innerOf-renTel t₁ (wkTel t₂) j₂₃
 
     e : innerOf T₁₂ j₃ ≡ innerOf t₁ j₂₃
     e = e₁ ■ e₂
 
-    telEq : subst (Tel _) e (t₃ ++ᵗ renTel T₁₂ j₃)
-              ≡ T₂₃ ++ᵗ renTel t₁ j₂₃
-    telEq = subst-++ᵗ t₃ e (renTel T₁₂ j₃)
+    telEq : subst (Tel _) e (t₃ ++ᵗ renTel T₁₂ (wkTel t₃))
+              ≡ T₂₃ ++ᵗ renTel t₁ (wkTel T₂₃)
+    telEq = subst-++ᵗ t₃ e (renTel T₁₂ (wkTel t₃))
               ■ cong (t₃ ++ᵗ_)
-                  ( subst-■ (Tel j₃) e₁ e₂ (renTel T₁₂ j₃)
-                  ■ cong (subst (Tel j₃) e₂) (renTel-++ᵗ t₂ (renTel t₁ j₂) j₃)
-                  ■ subst-++ᵗ (renTel t₂ j₃) e₂ (renTel (renTel t₁ j₂) j₂₃)
-                  ■ cong (renTel t₂ j₃ ++ᵗ_) (renTel-renTel t₁ j₂ j₂₃) )
-              ■ sym (++ᵗ-assoc t₃ (renTel t₂ j₃) (renTel t₁ j₂₃))
+                  ( subst-■ (Tel j₃) e₁ e₂ (renTel T₁₂ (wkTel t₃))
+                  ■ cong (subst (Tel j₃) e₂) (renTel-++ᵗ t₂ (renTel t₁ (wkTel t₂)) (wkTel t₃))
+                  ■ subst-++ᵗ (renTel t₂ (wkTel t₃)) e₂
+                      (renTel (renTel t₁ (wkTel t₂)) (liftRen t₂ (wkTel t₃)))
+                  ■ cong (renTel t₂ (wkTel t₃) ++ᵗ_)
+                      ( renTel-renTel t₁ (wkTel t₂) (liftRen t₂ (wkTel t₃))
+                      ■ renTel-cong t₁ wkT23 ) )
+              ■ sym (++ᵗ-assoc t₃ (renTel t₂ (wkTel t₃)) (renTel t₁ (wkTel T₂₃)))
 
     -- es₁ : both routes weaken through t₂ and then through t₃.
     r₁ : ∀ x → subst 𝔽 e
@@ -107,64 +115,66 @@ combine-assoc (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) (mkNF {j₃} t�
                  ≡ liftRen t₁ (wkTel T₂₃) x
     r₁ x = subst-■ 𝔽 e₁ e₂ _
              ■ cong (subst 𝔽 e₂)
-                 (liftRen-++ᵗ t₂ (renTel t₁ j₂) (wkTel t₃) (liftRen t₁ (wkTel t₂) x))
+                 (liftRen-++ᵗ t₂ (renTel t₁ (wkTel t₂)) (wkTel t₃) (liftRen t₁ (wkTel t₂) x))
              ■ liftRen-· t₁ (wkTel t₂) (liftRen t₂ (wkTel t₃)) x
-             ■ liftRen-cong t₁
-                 (λ y → sym (wkTel-++ᵗ t₃ (renTel t₂ j₃) y ■ wkTel-nat t₂ (wkTel t₃) y)) x
+             ■ liftRen-cong t₁ wkT23 x
 
     -- es₂ : the middle argument crosses t₁'s re-basing.
     r₂ : ∀ x → subst 𝔽 e
-                 ((wkTel (renTel t₁ j₂) ·ₖ liftRen T₁₂ (wkTel t₃)) x)
-                 ≡ (liftRen t₂ (wkTel t₃) ·ₖ wkTel (renTel t₁ j₂₃)) x
+                 ((wkTel (renTel t₁ (wkTel t₂)) ·ₖ liftRen T₁₂ (wkTel t₃)) x)
+                 ≡ (liftRen t₂ (wkTel t₃) ·ₖ wkTel (renTel t₁ (wkTel T₂₃))) x
     r₂ x = subst-■ 𝔽 e₁ e₂ _
              ■ cong (subst 𝔽 e₂)
-                 ( liftRen-++ᵗ t₂ (renTel t₁ j₂) (wkTel t₃) (wkTel (renTel t₁ j₂) x)
-                 ■ sym (wkTel-nat (renTel t₁ j₂) (liftRen t₂ (wkTel t₃)) x) )
-             ■ wkTel-renTel t₁ j₂ j₂₃ (liftRen t₂ (wkTel t₃) x)
+                 ( liftRen-++ᵗ t₂ (renTel t₁ (wkTel t₂)) (wkTel t₃) (wkTel (renTel t₁ (wkTel t₂)) x)
+                 ■ sym (wkTel-nat (renTel t₁ (wkTel t₂)) (liftRen t₂ (wkTel t₃)) x) )
+             ■ wkTel-renTel t₁ (wkTel t₂) (liftRen t₂ (wkTel t₃)) (liftRen t₂ (wkTel t₃) x)
+             ■ cong (λ T → wkTel T (liftRen t₂ (wkTel t₃) x)) (renTel-cong t₁ wkT23)
 
     -- es₃ : pure weakening on both routes.
-    r₃ : ∀ x → subst 𝔽 e (wkTel (renTel T₁₂ j₃) x)
-                 ≡ (wkTel (renTel t₂ j₃) ·ₖ wkTel (renTel t₁ j₂₃)) x
+    r₃ : ∀ x → subst 𝔽 e (wkTel (renTel T₁₂ (wkTel t₃)) x)
+                 ≡ (wkTel (renTel t₂ (wkTel t₃)) ·ₖ wkTel (renTel t₁ (wkTel T₂₃))) x
     r₃ x = subst-■ 𝔽 e₁ e₂ _
              ■ cong (subst 𝔽 e₂)
-                 ( subst-wkTel e₁ (renTel T₁₂ j₃) x
-                 ■ cong (λ T → wkTel T x) (renTel-++ᵗ t₂ (renTel t₁ j₂) j₃)
-                 ■ wkTel-++ᵗ (renTel t₂ j₃) (renTel (renTel t₁ j₂) j₂₃) x )
-             ■ wkTel-renTel t₁ j₂ j₂₃ (wkTel (renTel t₂ j₃) x)
+                 ( subst-wkTel e₁ (renTel T₁₂ (wkTel t₃)) x
+                 ■ cong (λ T → wkTel T x) (renTel-++ᵗ t₂ (renTel t₁ (wkTel t₂)) (wkTel t₃))
+                 ■ wkTel-++ᵗ (renTel t₂ (wkTel t₃))
+                     (renTel (renTel t₁ (wkTel t₂)) (liftRen t₂ (wkTel t₃))) x )
+             ■ wkTel-renTel t₁ (wkTel t₂) (liftRen t₂ (wkTel t₃)) (wkTel (renTel t₂ (wkTel t₃)) x)
+             ■ cong (λ T → wkTel T (wkTel (renTel t₂ (wkTel t₃)) x)) (renTel-cong t₁ wkT23)
 
     thrEq : subst (λ j → List (Tm j)) e
               ( map (_⋯ liftRen T₁₂ (wkTel t₃))
                     ( map (_⋯ liftRen t₁ (wkTel t₂)) es₁
-                   ++ map (_⋯ wkTel (renTel t₁ j₂)) es₂ )
-             ++ map (_⋯ wkTel (renTel T₁₂ j₃)) es₃ )
+                   ++ map (_⋯ wkTel (renTel t₁ (wkTel t₂))) es₂ )
+             ++ map (_⋯ wkTel (renTel T₁₂ (wkTel t₃))) es₃ )
               ≡ map (_⋯ liftRen t₁ (wkTel T₂₃)) es₁
-             ++ map (_⋯ wkTel (renTel t₁ j₂₃))
+             ++ map (_⋯ wkTel (renTel t₁ (wkTel T₂₃)))
                     ( map (_⋯ liftRen t₂ (wkTel t₃)) es₂
-                   ++ map (_⋯ wkTel (renTel t₂ j₃)) es₃ )
+                   ++ map (_⋯ wkTel (renTel t₂ (wkTel t₃))) es₃ )
     thrEq =
       cong (subst (λ j → List (Tm j)) e)
-        (cong (_++ map (_⋯ wkTel (renTel T₁₂ j₃)) es₃)
+        (cong (_++ map (_⋯ wkTel (renTel T₁₂ (wkTel t₃))) es₃)
           ( map-++ᴸ (liftRen T₁₂ (wkTel t₃))
               (map (_⋯ liftRen t₁ (wkTel t₂)) es₁)
-              (map (_⋯ wkTel (renTel t₁ j₂)) es₂)
+              (map (_⋯ wkTel (renTel t₁ (wkTel t₂))) es₂)
           ■ cong₂ _++_ (map-fuse (liftRen t₁ (wkTel t₂)) (liftRen T₁₂ (wkTel t₃)) es₁)
-                       (map-fuse (wkTel (renTel t₁ j₂)) (liftRen T₁₂ (wkTel t₃)) es₂) ))
+                       (map-fuse (wkTel (renTel t₁ (wkTel t₂))) (liftRen T₁₂ (wkTel t₃)) es₂) ))
         ■ cong (subst (λ j → List (Tm j)) e)
             (++-assoc (map (_⋯ (liftRen t₁ (wkTel t₂) ·ₖ liftRen T₁₂ (wkTel t₃))) es₁)
-                      (map (_⋯ (wkTel (renTel t₁ j₂) ·ₖ liftRen T₁₂ (wkTel t₃))) es₂)
-                      (map (_⋯ wkTel (renTel T₁₂ j₃)) es₃))
+                      (map (_⋯ (wkTel (renTel t₁ (wkTel t₂)) ·ₖ liftRen T₁₂ (wkTel t₃))) es₂)
+                      (map (_⋯ wkTel (renTel T₁₂ (wkTel t₃))) es₃))
         ■ subst-++ e _ _
         ■ cong₂ _++_ (map-⋯-subst e r₁ es₁)
                      ( subst-++ e _ _
                      ■ cong₂ _++_ (map-⋯-subst e r₂ es₂) (map-⋯-subst e r₃ es₃)
-                     ■ sym ( map-++ᴸ (wkTel (renTel t₁ j₂₃))
+                     ■ sym ( map-++ᴸ (wkTel (renTel t₁ (wkTel T₂₃)))
                                (map (_⋯ liftRen t₂ (wkTel t₃)) es₂)
-                               (map (_⋯ wkTel (renTel t₂ j₃)) es₃)
+                               (map (_⋯ wkTel (renTel t₂ (wkTel t₃))) es₃)
                            ■ cong₂ _++_
                                (map-fuse (liftRen t₂ (wkTel t₃))
-                                         (wkTel (renTel t₁ j₂₃)) es₂)
-                               (map-fuse (wkTel (renTel t₂ j₃))
-                                         (wkTel (renTel t₁ j₂₃)) es₃) ) )
+                                         (wkTel (renTel t₁ (wkTel T₂₃))) es₂)
+                               (map-fuse (wkTel (renTel t₂ (wkTel t₃)))
+                                         (wkTel (renTel t₁ (wkTel T₂₃))) es₃) ) )
 
 ------------------------------------------------------------------------
 -- Soundness.
@@ -183,16 +193,17 @@ combine-assoc (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) (mkNF {j₃} t�
   ~-trans (Eq*.return (perm-νν [] (tel (nf P)) (thr (nf P))))
           (≡→~ (sym (cong (λ N → νNF (νNF N)) (nf-endo P (assocSwapᵣ 2 2)))))
 
-≋′⇒~ (φ-comm′ {P = P} {x} {y}) =
-  ~-trans (Eq*.return (perm-φφ [] x y (tel (nf P)) (thr (nf P))))
-          (≡→~ (sym (cong (λ N → φNF y (φNF x N)) (nf-endo P (assocSwapᵣ 1 1)))))
+≋′⇒~ (φ-comm′ {P = P} {x} {y} {c} {d}) =
+  ~-trans (Eq*.return (perm-φφ [] x y c d (tel (nf P)) (thr (nf P))))
+          (≡→~ (sym (cong (λ N → φNF y d (φNF x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) N))
+                          (nf-endo P (assocSwapᵣ 1 1)))))
 
-≋′⇒~ (νφ-comm′ {P = P} {x}) =
-  ~-trans (Eq*.return (perm-νφ [] x (tel (nf P)) (thr (nf P))))
-          (≡→~ (sym (cong (λ N → φNF x (νNF N)) (nf-endo P (assocSwapᵣ 1 2)))))
+≋′⇒~ (νφ-comm′ {x} {c} {P}) =
+  ~-trans (Eq*.return (perm-νφ [] x c (tel (nf P)) (thr (nf P))))
+          (≡→~ (sym (cong (λ N → φNF x c (νNF N)) (nf-endo P (assocSwapᵣ 1 2)))))
 
 ≋′⇒~ (ν-cong′ c) = ~-νNF (≋′⇒~ c)
-≋′⇒~ (φ-cong′ c) = ~-φNF (≋′⇒~ c)
+≋′⇒~ (φ-cong′ {c = ch} d) = ~-φNF ch (≋′⇒~ d)
 
 ≋′⇒~ (∥-comm′ {P = P} {Q = Q}) = combine-comm (nf P) (nf Q)
 ≋′⇒~ (∥-assoc′ {P₁ = P₁} {P₂} {P₃}) =
@@ -201,9 +212,9 @@ combine-assoc (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) (mkNF {j₃} t�
   ≡→~ ( sym (combine-ν (nf P) (nf Q))
       ■ cong (λ N → νNF (combine N (nf Q))) (sym (nf-nat P (weaken* ⦃ Kᵣ ⦄ 2))) )
 
-≋′⇒~ (φ-ext′ {P = P} {Q = Q} {x}) =
-  ≡→~ ( sym (combine-φ x (nf P) (nf Q))
-      ■ cong (λ N → φNF x (combine N (nf Q))) (sym (nf-nat P (weaken* ⦃ Kᵣ ⦄ 1))) )
+≋′⇒~ (φ-ext′ {P = P} {Q = Q} {x} {c}) =
+  ≡→~ ( sym (combine-φ x c (nf P) (nf Q))
+      ■ cong (λ N → φNF x c (combine N (nf Q))) (sym (nf-nat P (weaken* ⦃ Kᵣ ⦄ 1))) )
 ≋′⇒~ (∥-cong′ {Q = Q} c) = combine-congˡ (nf Q) (≋′⇒~ c)
 
 -- The equivalence closure, one link at a time.  `Eq*.gmap` does not apply: a
