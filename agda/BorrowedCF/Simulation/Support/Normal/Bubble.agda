@@ -318,6 +318,15 @@ telMidᴺ : ∀ {n m m′ c d} (p : m ≡ m′) (A : Tel n m) (u : Tel c d)
             ≡ subst (Tel n) p A ++ᵗ renTel u ρ′
 telMidᴺ refl A u hρ = cong (A ++ᵗ_) (renTel-cong u hρ)
 
+-- `liftRen` after `liftId` composes the two renamings (for the νφ undo).
+liftId-then-liftRen : ∀ {c d c′} (t : Tel c d) (ρ : c →ᵣ c) (σ : c →ᵣ c′) (y : 𝔽 d) →
+                      liftRen t σ (liftId t ρ y) ≡ liftRen t (ρ ·ₖ σ) y
+liftId-then-liftRen []         ρ σ y = refl
+liftId-then-liftRen (tν t)     ρ σ y =
+  liftId-then-liftRen t (ρ ↑* 2) (σ ↑* 2) y ■ liftRen-cong t (λ w → sym (dist-↑*-· 2 ρ σ w)) y
+liftId-then-liftRen (tφ _ _ t) ρ σ y =
+  liftId-then-liftRen t (ρ ↑) (σ ↑) y ■ liftRen-cong t (λ w → sym (dist-↑-· ρ σ w)) y
+
 -- Moving an inner-index transport out of a `wkTel ∘ renTel`, by J.
 wkMidᴺ : ∀ {c d m m′} (p : m ≡ m′) (t : Tel c d)
          {ρ : c →ᵣ m} {ρ′ : c →ᵣ m′} (hρ : ∀ w → subst 𝔽 p (ρ w) ≡ ρ′ w) (y : 𝔽 m) →
@@ -636,7 +645,130 @@ bubbleφ {n} {j} f c (tφ g d s) u es =
                    (map-fuse (liftRen u (liftId (shift1 s) (assocSwapᵣ 1 1)))
                              (liftRen u-rec (bubφ s)) es)
             ■ map-⋯-subst eqCinner (liftRen-· u (liftId (shift1 s) (assocSwapᵣ 1 1)) (bubφ s)) es )
-bubbleφ f c (tν s) u es = ?
+bubbleφ {n} {j} {k} f c (tν s) u es =
+  ~-trans (≡→~ eqPre)
+    (~-trans (~-sym (Eq*.return (perm-νφ [] f c (shift1 s ++ᵗ u-rec) es-rec)))
+      (~-trans (~-νNF (bubbleφ f (c ⋯ weaken* ⦃ Kᵣ ⦄ 2) s u-rec es-rec)) (≡→~ eqC)))
+  where
+    u-rec : Tel (1 + j) (innerOf u (1 + j))
+    u-rec = renTel u (liftId (shift1 s) (assocSwapᵣ 2 1))
+    es-rec : List (Tm (innerOf u (1 + j)))
+    es-rec = map (_⋯ liftRen u (liftId (shift1 s) (assocSwapᵣ 2 1))) es
+    eqPre : mkNF (tφ f c (shift1 (tν s) ++ᵗ u)) es
+              ≡ mkNF (tφ f c (tν (renTel (shift1 s ++ᵗ u-rec) (assocSwapᵣ 1 2))))
+                     (map (_⋯ liftRen (shift1 s ++ᵗ u-rec) (assocSwapᵣ 1 2)) es-rec)
+    eqPre = eqA₀ ■ sym eqA₁rev
+      where
+        α : (1 + j) →ᵣ 1 + j
+        α = liftId (shift1 s) (assocSwapᵣ 2 1)
+        wν : n →ᵣ 1 + n
+        wν = weaken* ⦃ Kᵣ ⦄ 1
+        sh1 : innerOf s (1 + (2 + n)) ≡ 1 + j
+        sh1 = shift1-innerOf s
+        Y : Tel (1 + (2 + n)) (1 + j)
+        Y = subst (Tel (1 + (2 + n))) sh1 (renTel s (wν ↑* 2))
+        ri : innerOf (shift1 s) (1 + (2 + n)) ≡ 1 + j
+        ri = renTel-id (shift1 s)
+        w1s : (2 + n) →ᵣ 1 + (2 + n)
+        w1s = weaken* ⦃ Kᵣ ⦄ 1
+        a₀φ : innerOf (shift1 s) (1 + (2 + n)) ≡ innerOf (renTel s w1s) (1 + (2 + n))
+        a₀φ = innerOf-substⁱ sh1 (renTel s w1s) (1 + (2 + n))
+        b₀φ : innerOf (renTel s w1s) (1 + (2 + n)) ≡ innerOf s (1 + (2 + n))
+        b₀φ = innerOf-renTel s w1s (1 + (2 + n))
+        P1φ : subst (Tel (1 + (2 + n))) ri (renTel (shift1 s) (assocSwapᵣ 1 2)) ≡ Y
+        P1φ = cong (λ p → subst (Tel (1 + (2 + n))) p (renTel (shift1 s) (assocSwapᵣ 1 2)))
+                   (≡-irrelevant ri (a₀φ ■ b₀φ ■ sh1))
+                ■ subst-■ (Tel (1 + (2 + n))) a₀φ (b₀φ ■ sh1) (renTel (shift1 s) (assocSwapᵣ 1 2))
+                ■ cong (subst (Tel (1 + (2 + n))) (b₀φ ■ sh1))
+                       (renTel-substⁱ sh1 (renTel s w1s) (assocSwapᵣ 1 2))
+                ■ subst-■ (Tel (1 + (2 + n))) b₀φ sh1 (renTel (renTel s w1s) (assocSwapᵣ 1 2))
+                ■ cong (subst (Tel (1 + (2 + n))) sh1) (renTel-renTel s w1s (assocSwapᵣ 1 2))
+                ■ cong (subst (Tel (1 + (2 + n))) sh1) (renTel-cong s aswap12-wk)
+        ρ′ : (1 + j) →ᵣ 1 + j
+        ρ′ = λ y → subst 𝔽 ri (liftRen (shift1 s) (assocSwapᵣ 1 2) y)
+        invLift : ∀ y → subst 𝔽 ri (liftRen (shift1 s) (assocSwapᵣ 1 2) (α y)) ≡ y
+        invLift y = liftId-liftRen (shift1 s) (assocSwapᵣ 1 2) (α y)
+                      ■ liftId-· (shift1 s) (assocSwapᵣ 2 1) (assocSwapᵣ 1 2) y
+                      ■ liftId-cong (shift1 s) aswap-21-12 y
+                      ■ liftId-id (shift1 s) (λ _ → refl) y
+        invComp : (α ·ₖ ρ′) ≗ idₖ ⦃ Kᵣ ⦄
+        invComp y = invLift y
+        q₁ : innerOf (shift1 s ++ᵗ u-rec) (1 + (2 + n))
+               ≡ innerOf u-rec (innerOf (shift1 s) (1 + (2 + n)))
+        q₁ = innerOf-++ᵗ (shift1 s) u-rec (1 + (2 + n))
+        riEq : innerOf u-rec (innerOf (shift1 s) (1 + (2 + n))) ≡ innerOf u-rec (1 + j)
+        riEq = cong (innerOf u-rec) ri
+        cinEq : innerOf u-rec (1 + j) ≡ innerOf u (1 + j)
+        cinEq = innerOf-renTel u α (1 + j)
+        ee : innerOf (shift1 s ++ᵗ u-rec) (1 + (2 + n)) ≡ k
+        ee = q₁ ■ riEq ■ cinEq ■ renTel-id u
+        uReconcile : subst (Tel (1 + j)) (cinEq ■ renTel-id u) (renTel u-rec ρ′) ≡ u
+        uReconcile = subst-■ (Tel (1 + j)) cinEq (renTel-id u) (renTel u-rec ρ′)
+                       ■ cong (subst (Tel (1 + j)) (renTel-id u))
+                              (renTel-renTel u α ρ′ ■ renTel-cong u invComp)
+                       ■ renTel-idᵗ u
+        telCore′ : subst (Tel (1 + (2 + n))) ee (renTel (shift1 s ++ᵗ u-rec) (assocSwapᵣ 1 2))
+                     ≡ Y ++ᵗ u
+        telCore′ =
+          subst-■ (Tel (1 + (2 + n))) q₁ (riEq ■ cinEq ■ renTel-id u)
+                  (renTel (shift1 s ++ᵗ u-rec) (assocSwapᵣ 1 2))
+            ■ cong (subst (Tel (1 + (2 + n))) (riEq ■ cinEq ■ renTel-id u))
+                   (renTel-++ᵗ (shift1 s) u-rec (assocSwapᵣ 1 2))
+            ■ subst-■ (Tel (1 + (2 + n))) riEq (cinEq ■ renTel-id u)
+                   (renTel (shift1 s) (assocSwapᵣ 1 2) ++ᵗ renTel u-rec (liftRen (shift1 s) (assocSwapᵣ 1 2)))
+            ■ cong (subst (Tel (1 + (2 + n))) (cinEq ■ renTel-id u))
+                   (telMidᴺ ri (renTel (shift1 s) (assocSwapᵣ 1 2)) u-rec (λ y → refl))
+            ■ subst-++ᵗ (subst (Tel (1 + (2 + n))) ri (renTel (shift1 s) (assocSwapᵣ 1 2)))
+                        (cinEq ■ renTel-id u) (renTel u-rec ρ′)
+            ■ cong₂ _++ᵗ_ P1φ uReconcile
+        thrInv : ∀ x → subst 𝔽 ee
+                         ((liftRen u α ·ₖ liftRen (shift1 s ++ᵗ u-rec) (assocSwapᵣ 1 2)) x)
+                         ≡ idₖ ⦃ Kᵣ ⦄ x
+        thrInv x =
+          subst-■ 𝔽 q₁ (riEq ■ cinEq ■ renTel-id u)
+                  (liftRen (shift1 s ++ᵗ u-rec) (assocSwapᵣ 1 2) (liftRen u α x))
+            ■ cong (subst 𝔽 (riEq ■ cinEq ■ renTel-id u))
+                   (liftRen-++ᵗ (shift1 s) u-rec (assocSwapᵣ 1 2) (liftRen u α x))
+            ■ subst-■ 𝔽 riEq (cinEq ■ renTel-id u)
+                   (liftRen u-rec (liftRen (shift1 s) (assocSwapᵣ 1 2)) (liftRen u α x))
+            ■ cong (subst 𝔽 (cinEq ■ renTel-id u))
+                   (liftMid ri u-rec (λ y → refl) (liftRen u α x))
+            ■ subst-■ 𝔽 cinEq (renTel-id u) (liftRen u-rec ρ′ (liftRen u α x))
+            ■ cong (subst 𝔽 (renTel-id u)) (liftRen-· u α ρ′ x ■ liftRen-cong u invComp x)
+            ■ liftId-liftRen u (idₖ ⦃ Kᵣ ⦄) x
+            ■ liftId-id u (λ _ → refl) x
+        eqA₀ : mkNF (tφ f c (shift1 (tν s) ++ᵗ u)) es
+                 ≡ mkNF (tφ f c (tν (Y ++ᵗ u))) es
+        eqA₀ = cong (λ T → mkNF (tφ f c (T ++ᵗ u)) es) (subst-tν sh1 (renTel s (wν ↑* 2)))
+        eqA₁rev : mkNF (tφ f c (tν (renTel (shift1 s ++ᵗ u-rec) (assocSwapᵣ 1 2))))
+                       (map (_⋯ liftRen (shift1 s ++ᵗ u-rec) (assocSwapᵣ 1 2)) es-rec)
+                    ≡ mkNF (tφ f c (tν (Y ++ᵗ u))) es
+        eqA₁rev = NF-≡ ee
+                    ( subst-tφ ee f c (tν (renTel (shift1 s ++ᵗ u-rec) (assocSwapᵣ 1 2)))
+                    ■ cong (tφ f c) ( subst-tν ee (renTel (shift1 s ++ᵗ u-rec) (assocSwapᵣ 1 2))
+                                    ■ cong tν telCore′ ) )
+                    ( cong (subst (λ z → List (Tm z)) ee)
+                           (map-fuse (liftRen u α)
+                                     (liftRen (shift1 s ++ᵗ u-rec) (assocSwapᵣ 1 2)) es)
+                    ■ map-⋯-subst ee thrInv es
+                    ■ map-⋯-id (λ _ → refl) es )
+    eqCinner : innerOf (renTel u (liftId (shift1 s) (assocSwapᵣ 2 1))) (1 + j) ≡ innerOf u (1 + j)
+    eqCinner = innerOf-renTel u (liftId (shift1 s) (assocSwapᵣ 2 1)) (1 + j)
+    deepReconC : subst (Tel (1 + j)) eqCinner (renTel u-rec (bubφ s)) ≡ renTel u (bubφ (tν s))
+    deepReconC = renTel-renTel u (liftId (shift1 s) (assocSwapᵣ 2 1)) (bubφ s)
+    eqC : mkNF (tν (s ++ᵗ tφ f ((c ⋯ weaken* ⦃ Kᵣ ⦄ 2) ⋯ wkTel s) (renTel u-rec (bubφ s))))
+               (map (_⋯ liftRen u-rec (bubφ s)) es-rec)
+            ≡ mkNF (tν s ++ᵗ tφ f (c ⋯ wkTel (tν s)) (renTel u (bubφ (tν s))))
+                   (map (_⋯ liftRen u (bubφ (tν s))) es)
+    eqC = NF-≡ eqCinner
+            ( subst-tν eqCinner (s ++ᵗ tφ f ((c ⋯ weaken* ⦃ Kᵣ ⦄ 2) ⋯ wkTel s) (renTel u-rec (bubφ s)))
+            ■ cong tν ( subst-++ᵗ s eqCinner (tφ f ((c ⋯ weaken* ⦃ Kᵣ ⦄ 2) ⋯ wkTel s) (renTel u-rec (bubφ s)))
+                      ■ cong (s ++ᵗ_) ( subst-tφ eqCinner f ((c ⋯ weaken* ⦃ Kᵣ ⦄ 2) ⋯ wkTel s) (renTel u-rec (bubφ s))
+                                      ■ cong₂ (tφ f) (fusion c (weaken* ⦃ Kᵣ ⦄ 2) (wkTel s)) deepReconC ) ) )
+            ( cong (subst (λ z → List (Tm z)) eqCinner)
+                   (map-fuse (liftRen u (liftId (shift1 s) (assocSwapᵣ 2 1)))
+                             (liftRen u-rec (bubφ s)) es)
+            ■ map-⋯-subst eqCinner (liftRen-· u (liftId (shift1 s) (assocSwapᵣ 2 1)) (bubφ s)) es )
 
 ------------------------------------------------------------------------
 -- Shape congruences and `wkTel ∘ shift·` bridges (linked-φ).
