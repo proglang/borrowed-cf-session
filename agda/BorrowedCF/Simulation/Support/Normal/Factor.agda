@@ -37,9 +37,14 @@ open import BorrowedCF.Terms
 open import BorrowedCF.Processes.Untyped
 open import BorrowedCF.Simulation.Support.Normal.Form
 open import BorrowedCF.Simulation.Support.Normal.Equiv
+open import BorrowedCF.Simulation.Support.Normal.Rename using (renTel; liftRen; renTel-id; innerOf)
 open import BorrowedCF.Simulation.Support.Normal.Shift using (shift2; shift1; liftId-cong)
-open import BorrowedCF.Simulation.Support.Normal.Bubble using (map-⋯-id; map-⋯-cong; ≡→~)
-open import BorrowedCF.Simulation.Support.Normal.Nat using (map-fuse)
+open import BorrowedCF.Simulation.Support.Normal.Bubble
+  using (map-⋯-id; map-⋯-cong; ≡→~; wkTel-shift1-tν; wkTel-shift1-tφ; wkTel-shift2-tν; wkTel-shift2-tφ; telMidᴺ)
+open import BorrowedCF.Simulation.Support.Normal.Endo using (liftId-liftRen)
+open import BorrowedCF.Simulation.Support.Normal.Nat
+  using (map-fuse; subst-tν; subst-tφ; subst-++ᵗ; subst-■; NF-≡; renTel-++ᵗ; innerOf-++ᵗ;
+         map-⋯-subst; innerOf-renTel)
 open import BorrowedCF.Simulation.Support.Normal.FactorBase
 
 open import Data.List using (List; []; _∷_; map)
@@ -57,49 +62,224 @@ open Nat.Variables
 
 prefixNF : ∀ {n j} → Tel n j → NF j → NF n
 prefixNF []       N = N
-prefixNF (tν s)   N = νNF (prefixNF s N)
-prefixNF (tφ f s) N = φNF f (prefixNF s N)
+prefixNF (tν s)     N = νNF (prefixNF s N)
+prefixNF (tφ f c s) N = φNF f c (prefixNF s N)
 
 prefixNF-++ᵗ : ∀ {n j} (s : Tel n j) (N : NF j) →
                prefixNF s N ≡ mkNF (s ++ᵗ tel N) (thr N)
 prefixNF-++ᵗ []       N = refl
-prefixNF-++ᵗ (tν s)   N = cong νNF     (prefixNF-++ᵗ s N)
-prefixNF-++ᵗ (tφ f s) N = cong (φNF _) (prefixNF-++ᵗ s N)
+prefixNF-++ᵗ (tν s)     N = cong νNF       (prefixNF-++ᵗ s N)
+prefixNF-++ᵗ (tφ f c s) N = cong (φNF f c) (prefixNF-++ᵗ s N)
 
 ~-prefix : ∀ {n j} (s : Tel n j) {N₁ N₂ : NF j} → N₁ ~ N₂ →
            prefixNF s N₁ ~ prefixNF s N₂
 ~-prefix []       c = c
-~-prefix (tν s)   c = ~-νNF (~-prefix s c)
-~-prefix (tφ f s) c = ~-φNF (~-prefix s c)
+~-prefix (tν s)     c = ~-νNF (~-prefix s c)
+~-prefix (tφ f cc s) c = ~-φNF cc (~-prefix s c)
 
 ------------------------------------------------------------------------
 -- Dragging a run outward past a telescope.
 ------------------------------------------------------------------------
 
--- `dragTel S w t` is the telescope after the run `r` (witnessed by `w`),
--- sitting between `S` and `t`, has travelled out past `S` cell by cell:
--- the run's flags end up in front (in order), `S` re-based underneath.
--- Defining it by recursion on the RUN keeps every index structural.
-dragTel : ∀ {p j m k} (S : Tel p j) {r : Tel j m} (w : Run r) (t : Tel m k) → Tel p k
-dragTel S rnil             t = S ++ᵗ t
-dragTel S (rφ {f = f} w)   t = tφ f (dragTel (shift1 S) w t)
+-- Naturality: `wkTel(shift1 Q) ∘ weaken*1 = weaken*1 ∘ wkTel Q`.
+private
+  wcomm : ∀ {p} (z : 𝔽 p) → weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 1 z) ≡ weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 2 z)
+  wcomm z = refl
 
--- The composite renaming: one `bubφ⁻` bubble per run cell, each lifted
--- over what is inside it.
-dragRen : ∀ {p j m k} (S : Tel p j) {r : Tel j m} (w : Run r) (t : Tel m k) → k →ᵣ k
-dragRen S rnil           t = idₖ ⦃ Kᵣ ⦄
-dragRen S (rφ {r = r} w) t = liftId (r ++ᵗ t) (bubφ⁻ S) ·ₖ dragRen (shift1 S) w t
+  wkTν : ∀ {p j} (s : Tel (2 + p) j) (z : 𝔽 p) → wkTel s (weaken* ⦃ Kᵣ ⦄ 2 z) ≡ wkTel (tν s) z
+  wkTν s z = refl
 
-drag-sound : ∀ {p j m k} (S : Tel p j) {r : Tel j m} (w : Run r) (t : Tel m k)
-             (es : List (Tm k)) →
-             mkNF (S ++ᵗ (r ++ᵗ t)) es ~ mkNF (dragTel S w t) (map (_⋯ dragRen S w t) es)
-drag-sound S rnil t es =
+  wkTφ : ∀ {p j} (f : Flag) (c : Tm p) (s : Tel (1 + p) j) (z : 𝔽 p) →
+         wkTel s (weaken* ⦃ Kᵣ ⦄ 1 z) ≡ wkTel (tφ f c s) z
+  wkTφ f c s z = refl
+
+N1 : ∀ {p j} (Q : Tel p j) (z : 𝔽 p) →
+     wkTel (shift1 Q) (weaken* ⦃ Kᵣ ⦄ 1 z) ≡ weaken* ⦃ Kᵣ ⦄ 1 (wkTel Q z)
+N1 []         z = refl
+N1 (tν s)     z =
+  wkTel-shift1-tν s (weaken* ⦃ Kᵣ ⦄ 1 z)
+    ■ cong (wkTel (shift1 s)) (wcomm z)
+    ■ N1 s (weaken* ⦃ Kᵣ ⦄ 2 z)
+    ■ cong (weaken* ⦃ Kᵣ ⦄ 1) (wkTν s z)
+N1 (tφ f c s) z =
+  wkTel-shift1-tφ f c s (weaken* ⦃ Kᵣ ⦄ 1 z)
+    ■ cong (wkTel (shift1 s)) refl
+    ■ N1 s (weaken* ⦃ Kᵣ ⦄ 1 z)
+    ■ cong (weaken* ⦃ Kᵣ ⦄ 1) (wkTφ f c s z)
+
+N2 : ∀ {n n′} (ρ : n →ᵣ n′) (v : 𝔽 n) → (ρ ↑) (weaken* ⦃ Kᵣ ⦄ 1 v) ≡ weaken* ⦃ Kᵣ ⦄ 1 (ρ v)
+N2 ρ v = sym (↑*-wk ρ 1 v)
+
+private
+  wcomm2 : ∀ {p} (z : 𝔽 p) → weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 2 z) ≡ weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 1 z)
+  wcomm2 z = refl
+
+N1ν : ∀ {p j} (Q : Tel p j) (z : 𝔽 p) →
+      wkTel (shift2 Q) (weaken* ⦃ Kᵣ ⦄ 2 z) ≡ weaken* ⦃ Kᵣ ⦄ 2 (wkTel Q z)
+N1ν []         z = refl
+N1ν (tν s)     z =
+  wkTel-shift2-tν s (weaken* ⦃ Kᵣ ⦄ 2 z)
+    ■ N1ν s (weaken* ⦃ Kᵣ ⦄ 2 z)
+    ■ cong (weaken* ⦃ Kᵣ ⦄ 2) (wkTν s z)
+N1ν (tφ f c s) z =
+  wkTel-shift2-tφ f c s (weaken* ⦃ Kᵣ ⦄ 2 z)
+    ■ cong (wkTel (shift2 s)) (wcomm2 z)
+    ■ N1ν s (weaken* ⦃ Kᵣ ⦄ 1 z)
+    ■ cong (weaken* ⦃ Kᵣ ⦄ 2) (wkTφ f c s z)
+
+N2ν : ∀ {n n′} (ρ : n →ᵣ n′) (v : 𝔽 n) →
+      (ρ ↑* 2) (weaken* ⦃ Kᵣ ⦄ 2 v) ≡ weaken* ⦃ Kᵣ ⦄ 2 (ρ v)
+N2ν ρ v = sym (↑*-wk ρ 2 v)
+
+FIXν : ∀ {p j} (S : Tel p j) (y : 𝔽 p) →
+       bubν⁻ S (wkTel (shift2 S) (weaken* ⦃ Kᵣ ⦄ 2 y)) ≡ wkTel (shift2 S) (weaken* ⦃ Kᵣ ⦄ 2 y)
+FIXν S y =
+  cong (bubν⁻ S) (N1ν S y ■ N2ν (wkTel S) y) ■ wkν-lemma S (weaken* ⦃ Kᵣ ⦄ 2 y)
+
+-- Front-tagged runs.  Linked-φ: a run's φ-cell channels must be weaken-IMAGES
+-- of a base-`b` term via an embedding `ω` (front-independent of the run's own
+-- binders — a borrow's channel points to its block's ν, never to a sibling
+-- borrow).  `FRun b ω S w` witnesses that `w`'s cell channels are `(cf ⋯ ω) ⋯
+-- wkTel Sᵢ` with `cf : Tm b` fixed at the ORIGINAL base.
+data FRun (b : ℕ) : ∀ {p j m} → (b →ᵣ p) → (S : Tel p j) {r : Tel j m} → Run r → Set where
+  frnil : ∀ {p j} (ω : b →ᵣ p) (S : Tel p j) → FRun b ω S (rnil {j})
+  frφ   : ∀ {p j m f} (ω : b →ᵣ p) (S : Tel p j) (cf : Tm b) {r : Tel (1 + j) m} {w : Run r} →
+          FRun b (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (shift1 S) w →
+          FRun b ω S (rφ {f = f} {c = (cf ⋯ ω) ⋯ wkTel S} w)
+
+-- Renaming a run.
+runRen : ∀ {n k n′} {r : Tel n k} → Run r → (ρ : n →ᵣ n′) → Run (renTel r ρ)
+runRen rnil   ρ = rnil
+runRen (rφ w) ρ = rφ (runRen w (ρ ↑))
+
+-- `bubφ⁻ S` fixes the weaken-images of `wkTel(shift1 S)`.
+FIX : ∀ {p j} (S : Tel p j) (y : 𝔽 p) →
+      bubφ⁻ S (wkTel (shift1 S) (weaken* ⦃ Kᵣ ⦄ 1 y)) ≡ wkTel (shift1 S) (weaken* ⦃ Kᵣ ⦄ 1 y)
+FIX S y =
+  cong (bubφ⁻ S) (N1 S y ■ N2 (wkTel S) y) ■ wkφ-lemma S (weaken* ⦃ Kᵣ ⦄ 1 y)
+
+-- A renaming that fixes front-channels transfers the FRun witness.
+frunFix : ∀ {b p j m} (ω : b →ᵣ p) (Q : Tel p j) (ρ : j →ᵣ j) {r : Tel j m} {w : Run r} →
+          (∀ x → ρ (wkTel Q (ω x)) ≡ wkTel Q (ω x)) →
+          FRun b ω Q w → FRun b ω Q (runRen w ρ)
+frunFix ω Q ρ fix (frnil _ _) = frnil ω Q
+frunFix {b} ω Q ρ fix (frφ {f = f} _ _ cf {r = r'} {w = w'} fw) =
+  subst (λ c → FRun b ω Q (rφ {f = f} {c = c} (runRen w' (ρ ↑))))
+        chanEq
+        (frφ ω Q cf (frunFix (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (shift1 Q) (ρ ↑) fix' fw))
+  where
+    chanEq : (cf ⋯ ω) ⋯ wkTel Q ≡ ((cf ⋯ ω) ⋯ wkTel Q) ⋯ ρ
+    chanEq =
+      sym ( cong (_⋯ ρ) (fusion cf ω (wkTel Q))
+          ■ fusion cf (ω ·ₖ wkTel Q) ρ
+          ■ ⋯-cong cf (λ x → fix x)
+          ■ sym (fusion cf ω (wkTel Q)) )
+    fix' : ∀ x → (ρ ↑) (wkTel (shift1 Q) ((ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) x))
+                   ≡ wkTel (shift1 Q) ((ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) x)
+    fix' x =
+      cong (ρ ↑) (N1 Q (ω x)) ■ N2 ρ (wkTel Q (ω x))
+        ■ cong (weaken* ⦃ Kᵣ ⦄ 1) (fix x) ■ sym (N1 Q (ω x))
+
+-- Rename a run by `bubφ⁻ S`, keeping the (front-independent) witness.
+frunBub : ∀ {b p j m} (ζ : b →ᵣ p) (S : Tel p j) {r : Tel (1 + j) m} {w : Run r} →
+          FRun b (ζ ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (shift1 S) w →
+          FRun b (ζ ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (shift1 S) (runRen w (bubφ⁻ S))
+frunBub ζ S fw = frunFix (ζ ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (shift1 S) (bubφ⁻ S) (λ x → FIX S (ζ x)) fw
+
+-- Endo tail renaming (kept at scope `Tel m k` / `k →ᵣ k`).
+tailRen : ∀ {n m} (r : Tel n m) (ρ : n →ᵣ n) → m →ᵣ m
+tailRen r ρ x = subst 𝔽 (renTel-id r) (liftRen r ρ x)
+
+retail : ∀ {m k} (t : Tel m k) (ρ : m →ᵣ m) → Tel m k
+retail t ρ = subst (Tel _) (renTel-id t) (renTel t ρ)
+
+-- `dragTel ω S fw t` is the telescope after the run `r` (witnessed by `fw`)
+-- has travelled out past `S` cell by cell (flags in front, tail re-based).
+dragTel : ∀ {b p j m k} (ω : b →ᵣ p) (S : Tel p j) {r : Tel j m} {w : Run r}
+          (fw : FRun b ω S w) (t : Tel m k) → Tel p k
+dragTel ω S (frnil _ _)                     t = S ++ᵗ t
+dragTel ω S (frφ {f = f} _ _ cf {r = r} fw) t =
+  tφ f (cf ⋯ ω) (dragTel (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (shift1 S) fw (retail t (tailRen r (bubφ⁻ S))))
+
+dragRen : ∀ {b p j m k} (ω : b →ᵣ p) (S : Tel p j) {r : Tel j m} {w : Run r}
+          (fw : FRun b ω S w) (t : Tel m k) → k →ᵣ k
+dragRen ω S (frnil _ _)             t = idₖ ⦃ Kᵣ ⦄
+dragRen ω S (frφ _ _ cf {r = r} fw) t =
+  liftId (r ++ᵗ t) (bubφ⁻ S) ·ₖ dragRen (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (shift1 S) fw (retail t (tailRen r (bubφ⁻ S)))
+
+-- A fixing renaming leaves a front-independent run unchanged.
+private
+  chanFix : ∀ {b p j} (ω : b →ᵣ p) (Q : Tel p j) (ρ : j →ᵣ j) (cf : Tm b) →
+            (∀ x → ρ (wkTel Q (ω x)) ≡ wkTel Q (ω x)) →
+            ((cf ⋯ ω) ⋯ wkTel Q) ⋯ ρ ≡ (cf ⋯ ω) ⋯ wkTel Q
+  chanFix ω Q ρ cf fix =
+    cong (_⋯ ρ) (fusion cf ω (wkTel Q))
+      ■ fusion cf (ω ·ₖ wkTel Q) ρ
+      ■ ⋯-cong cf (λ x → fix x)
+      ■ sym (fusion cf ω (wkTel Q))
+
+  fixShift : ∀ {b p j} (ω : b →ᵣ p) (Q : Tel p j) (ρ : j →ᵣ j) →
+             (∀ x → ρ (wkTel Q (ω x)) ≡ wkTel Q (ω x)) →
+             ∀ x → (ρ ↑) (wkTel (shift1 Q) ((ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) x))
+                     ≡ wkTel (shift1 Q) ((ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) x)
+  fixShift ω Q ρ fix x =
+    cong (ρ ↑) (N1 Q (ω x)) ■ N2 ρ (wkTel Q (ω x))
+      ■ cong (weaken* ⦃ Kᵣ ⦄ 1) (fix x) ■ sym (N1 Q (ω x))
+
+runFixed : ∀ {b p j m} (ω : b →ᵣ p) (Q : Tel p j) (ρ : j →ᵣ j) {r : Tel j m} {w : Run r} →
+           (∀ x → ρ (wkTel Q (ω x)) ≡ wkTel Q (ω x)) →
+           FRun b ω Q w → subst (Tel j) (renTel-id r) (renTel r ρ) ≡ r
+runFixed ω Q ρ fix (frnil _ _) = refl
+runFixed {b} ω Q ρ fix (frφ {f = f} _ _ cf {r = r'} {w = w'} fw) =
+  subst-tφ (renTel-id r') f (((cf ⋯ ω) ⋯ wkTel Q) ⋯ ρ) (renTel r' (ρ ↑))
+    ■ cong₂ (tφ f) (chanFix ω Q ρ cf fix)
+                   (runFixed (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (shift1 Q) (ρ ↑) (fixShift ω Q ρ fix) fw)
+
+drag-sound : ∀ {b p j m k} (ω : b →ᵣ p) (S : Tel p j) {r : Tel j m} {w : Run r}
+             (fw : FRun b ω S w) (t : Tel m k) (es : List (Tm k)) →
+             mkNF (S ++ᵗ (r ++ᵗ t)) es ~ mkNF (dragTel ω S fw t) (map (_⋯ dragRen ω S fw t) es)
+drag-sound ω S (frnil _ _) t es =
   ≡→~ (cong (mkNF (S ++ᵗ t)) (sym (map-⋯-id (λ _ → refl) es)))
-drag-sound S (rφ {f = f} {r = r} w) t es =
-  ~-trans (bubbleφ⁻ f S (r ++ᵗ t) es)
-    (~-trans (~-φNF (drag-sound (shift1 S) w t (map (_⋯ liftId (r ++ᵗ t) (bubφ⁻ S)) es)))
-             (≡→~ (cong (mkNF (tφ f (dragTel (shift1 S) w t)))
-                        (map-fuse (liftId (r ++ᵗ t) (bubφ⁻ S)) (dragRen (shift1 S) w t) es))))
+drag-sound {b} {p} {j} ω S (frφ {f = f} _ _ cf {r = r} fw) t es =
+  ~-trans (bubbleφ⁻ f (cf ⋯ ω) S (r ++ᵗ t) es)
+    (~-trans (≡→~ eqA)
+      (~-trans (~-φNF (cf ⋯ ω)
+                  (drag-sound (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (shift1 S) fw
+                              (retail t (tailRen r (bubφ⁻ S)))
+                              (map (_⋯ liftId (r ++ᵗ t) (bubφ⁻ S)) es)))
+               (≡→~ (cong (mkNF (dragTel ω S (frφ ω S cf fw) t))
+                          (map-fuse (liftId (r ++ᵗ t) (bubφ⁻ S))
+                                    (dragRen (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (shift1 S) fw
+                                             (retail t (tailRen r (bubφ⁻ S)))) es)))))
+  where
+    telReconcile : subst (Tel (1 + j)) (renTel-id (r ++ᵗ t)) (renTel (r ++ᵗ t) (bubφ⁻ S))
+                     ≡ r ++ᵗ retail t (tailRen r (bubφ⁻ S))
+    telReconcile =
+      cong (λ e → subst (Tel (1 + j)) e (renTel (r ++ᵗ t) (bubφ⁻ S)))
+           (≡-irrelevant (renTel-id (r ++ᵗ t))
+             (innerOf-++ᵗ r t (1 + j) ■ (cong (innerOf t) (renTel-id r) ■ renTel-id t)))
+        ■ subst-■ (Tel (1 + j)) (innerOf-++ᵗ r t (1 + j))
+            (cong (innerOf t) (renTel-id r) ■ renTel-id t) (renTel (r ++ᵗ t) (bubφ⁻ S))
+        ■ cong (subst (Tel (1 + j)) (cong (innerOf t) (renTel-id r) ■ renTel-id t))
+               (renTel-++ᵗ r t (bubφ⁻ S))
+        ■ subst-■ (Tel (1 + j)) (cong (innerOf t) (renTel-id r)) (renTel-id t)
+            (renTel r (bubφ⁻ S) ++ᵗ renTel t (liftRen r (bubφ⁻ S)))
+        ■ cong (subst (Tel (1 + j)) (renTel-id t))
+               ( telMidᴺ (renTel-id r) (renTel r (bubφ⁻ S)) t (λ y → refl)
+               ■ cong (_++ᵗ renTel t (tailRen r (bubφ⁻ S)))
+                      (runFixed (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (shift1 S) (bubφ⁻ S) (λ x → FIX S (ω x)) fw) )
+        ■ subst-++ᵗ r (renTel-id t) (renTel t (tailRen r (bubφ⁻ S)))
+
+    eqA : mkNF (tφ f (cf ⋯ ω) (shift1 S ++ᵗ renTel (r ++ᵗ t) (bubφ⁻ S)))
+               (map (_⋯ liftRen (r ++ᵗ t) (bubφ⁻ S)) es)
+            ≡ mkNF (tφ f (cf ⋯ ω) (shift1 S ++ᵗ (r ++ᵗ retail t (tailRen r (bubφ⁻ S)))))
+                   (map (_⋯ liftId (r ++ᵗ t) (bubφ⁻ S)) es)
+    eqA = NF-≡ (renTel-id (r ++ᵗ t))
+            ( subst-tφ (renTel-id (r ++ᵗ t)) f (cf ⋯ ω) (shift1 S ++ᵗ renTel (r ++ᵗ t) (bubφ⁻ S))
+            ■ cong (tφ f (cf ⋯ ω))
+                   ( subst-++ᵗ (shift1 S) (renTel-id (r ++ᵗ t)) (renTel (r ++ᵗ t) (bubφ⁻ S))
+                   ■ cong (shift1 S ++ᵗ_) telReconcile ) )
+            ( map-⋯-subst (renTel-id (r ++ᵗ t)) (λ x → liftId-liftRen (r ++ᵗ t) (bubφ⁻ S) x) es )
 
 ------------------------------------------------------------------------
 -- The adjacent-block transposition, Bubble-style.
@@ -109,25 +289,62 @@ drag-sound S (rφ {f = f} {r = r} w) t es =
 -- tail `t`: the second block travels OUT past the first — first its ν
 -- (`bubν⁻ (tν a)`), then its run (`dragRen`).  The result telescope is
 -- `tν rb′ ++ᵗ tν a′ ++ᵗ t` computed structurally by `dragTel`.
-bswapTel : ∀ {n i m k} (a : Tel (2 + n) i) {rb : Tel (2 + i) m} (w : Run rb)
-           (t : Tel m k) → Tel n k
-bswapTel a w t = tν (dragTel (tν (shift2 a)) w t)
+bswapTel : ∀ {b n i m k} (a : Tel (2 + n) i) {rb : Tel (2 + i) m} {wb : Run rb}
+           (ζ : b →ᵣ n) (fw : FRun b (ζ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (shift2 (tν a)) wb) (t : Tel m k) → Tel n k
+bswapTel a {rb} ζ fw t =
+  tν (dragTel (ζ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (shift2 (tν a)) fw (retail t (tailRen rb (bubν⁻ (tν a)))))
 
-bswapRen : ∀ {n i m k} (a : Tel (2 + n) i) {rb : Tel (2 + i) m} (w : Run rb)
-           (t : Tel m k) → k →ᵣ k
-bswapRen a {rb} w t = liftId (rb ++ᵗ t) (bubν⁻ (tν a)) ·ₖ dragRen (tν (shift2 a)) w t
+bswapRen : ∀ {b n i m k} (a : Tel (2 + n) i) {rb : Tel (2 + i) m} {wb : Run rb}
+           (ζ : b →ᵣ n) (fw : FRun b (ζ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (shift2 (tν a)) wb) (t : Tel m k) → k →ᵣ k
+bswapRen a {rb} ζ fw t =
+  liftId (rb ++ᵗ t) (bubν⁻ (tν a))
+    ·ₖ dragRen (ζ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (shift2 (tν a)) fw (retail t (tailRen rb (bubν⁻ (tν a))))
 
-bswap-sound : ∀ {n i m k} (a : Tel (2 + n) i) {rb : Tel (2 + i) m} (w : Run rb)
+bswap-sound : ∀ {b n i m k} (a : Tel (2 + n) i) {rb : Tel (2 + i) m} {wb : Run rb}
+              (ζ : b →ᵣ n) (fw : FRun b (ζ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (shift2 (tν a)) wb)
               (t : Tel m k) (es : List (Tm k)) →
               mkNF (tν (a ++ᵗ tν (rb ++ᵗ t))) es
-                ~ mkNF (bswapTel a w t) (map (_⋯ bswapRen a w t) es)
-bswap-sound a {rb} w t es =
+                ~ mkNF (bswapTel a ζ fw t) (map (_⋯ bswapRen a ζ fw t) es)
+bswap-sound {b} {n} {i} a {rb} ζ fw t es =
   ~-trans (bubbleν⁻ (tν a) (rb ++ᵗ t) es)
-    (~-trans (~-νNF (drag-sound (tν (shift2 a)) w t
-                                (map (_⋯ liftId (rb ++ᵗ t) (bubν⁻ (tν a))) es)))
-             (≡→~ (cong (mkNF (bswapTel a w t))
-                        (map-fuse (liftId (rb ++ᵗ t) (bubν⁻ (tν a)))
-                                  (dragRen (tν (shift2 a)) w t) es))))
+    (~-trans (≡→~ eqAν)
+      (~-trans (~-νNF (drag-sound (ζ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (shift2 (tν a)) fw
+                                  (retail t (tailRen rb (bubν⁻ (tν a))))
+                                  (map (_⋯ liftId (rb ++ᵗ t) (bubν⁻ (tν a))) es)))
+               (≡→~ (cong (mkNF (bswapTel a ζ fw t))
+                          (map-fuse (liftId (rb ++ᵗ t) (bubν⁻ (tν a)))
+                                    (dragRen (ζ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (shift2 (tν a)) fw
+                                             (retail t (tailRen rb (bubν⁻ (tν a))))) es)))))
+  where
+    telReconcileν : subst (Tel (2 + i)) (renTel-id (rb ++ᵗ t)) (renTel (rb ++ᵗ t) (bubν⁻ (tν a)))
+                      ≡ rb ++ᵗ retail t (tailRen rb (bubν⁻ (tν a)))
+    telReconcileν =
+      cong (λ e → subst (Tel (2 + i)) e (renTel (rb ++ᵗ t) (bubν⁻ (tν a))))
+           (≡-irrelevant (renTel-id (rb ++ᵗ t))
+             (innerOf-++ᵗ rb t (2 + i) ■ (cong (innerOf t) (renTel-id rb) ■ renTel-id t)))
+        ■ subst-■ (Tel (2 + i)) (innerOf-++ᵗ rb t (2 + i))
+            (cong (innerOf t) (renTel-id rb) ■ renTel-id t) (renTel (rb ++ᵗ t) (bubν⁻ (tν a)))
+        ■ cong (subst (Tel (2 + i)) (cong (innerOf t) (renTel-id rb) ■ renTel-id t))
+               (renTel-++ᵗ rb t (bubν⁻ (tν a)))
+        ■ subst-■ (Tel (2 + i)) (cong (innerOf t) (renTel-id rb)) (renTel-id t)
+            (renTel rb (bubν⁻ (tν a)) ++ᵗ renTel t (liftRen rb (bubν⁻ (tν a))))
+        ■ cong (subst (Tel (2 + i)) (renTel-id t))
+               ( telMidᴺ (renTel-id rb) (renTel rb (bubν⁻ (tν a))) t (λ y → refl)
+               ■ cong (_++ᵗ renTel t (tailRen rb (bubν⁻ (tν a))))
+                      (runFixed (ζ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (shift2 (tν a)) (bubν⁻ (tν a))
+                                (λ x → FIXν (tν a) (ζ x)) fw) )
+        ■ subst-++ᵗ rb (renTel-id t) (renTel t (tailRen rb (bubν⁻ (tν a))))
+
+    eqAν : mkNF (tν (shift2 (tν a) ++ᵗ renTel (rb ++ᵗ t) (bubν⁻ (tν a))))
+                (map (_⋯ liftRen (rb ++ᵗ t) (bubν⁻ (tν a))) es)
+             ≡ mkNF (tν (shift2 (tν a) ++ᵗ (rb ++ᵗ retail t (tailRen rb (bubν⁻ (tν a))))))
+                    (map (_⋯ liftId (rb ++ᵗ t) (bubν⁻ (tν a))) es)
+    eqAν = NF-≡ (renTel-id (rb ++ᵗ t))
+             ( subst-tν (renTel-id (rb ++ᵗ t)) (shift2 (tν a) ++ᵗ renTel (rb ++ᵗ t) (bubν⁻ (tν a)))
+             ■ cong tν
+                    ( subst-++ᵗ (shift2 (tν a)) (renTel-id (rb ++ᵗ t)) (renTel (rb ++ᵗ t) (bubν⁻ (tν a)))
+                    ■ cong (shift2 (tν a) ++ᵗ_) telReconcileν ) )
+             ( map-⋯-subst (renTel-id (rb ++ᵗ t)) (λ x → liftId-liftRen (rb ++ᵗ t) (bubν⁻ (tν a)) x) es )
 
 ------------------------------------------------------------------------
 -- Block-level moves.
@@ -137,11 +354,14 @@ data _~ᵇ₁_ {n} : NF n → NF n → Set where
 
   -- swap the two names bound by a single ν  (= perm-ν1)
   ν1ᵇ : ∀ {j k} (s : Tel n j) (t : Tel (2 + j) k) (es : List (Tm k)) →
-    mkNF (s ++ᵗ tν t) es ~ᵇ₁ mkNF (s ++ᵗ tν t) (map (_⋯ liftId t (swapᵣ 1 1)) es)
+    mkNF (s ++ᵗ tν t) es
+      ~ᵇ₁ mkNF (s ++ᵗ tν (renTel t (swapᵣ 1 1))) (map (_⋯ liftRen t (swapᵣ 1 1)) es)
 
   -- transpose two adjacent φ cells — always within one run  (= perm-φφ)
-  φφᵇ : ∀ {j k} (s : Tel n j) (x y : Flag) (t : Tel (1 + (1 + j)) k) (es : List (Tm k)) →
-    mkNF (s ++ᵗ tφ x (tφ y t)) es ~ᵇ₁ mkNF (s ++ᵗ tφ y (tφ x t)) (map (_⋯ liftId t (assocSwapᵣ 1 1)) es)
+  φφᵇ : ∀ {j k} (s : Tel n j) (x y : Flag) (c d : Tm j) (t : Tel (1 + (1 + j)) k) (es : List (Tm k)) →
+    mkNF (s ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t)) es
+      ~ᵇ₁ mkNF (s ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t (assocSwapᵣ 1 1))))
+                (map (_⋯ liftRen t (assocSwapᵣ 1 1)) es)
 
   -- permute the threads
   thrᵇ : ∀ {k} (t : Tel n k) {es es′ : List (Tm k)} →
@@ -154,11 +374,12 @@ data _~ᵇ₁_ {n} : NF n → NF n → Set where
   -- transpose two adjacent blocks.  `ra`/`w` witness that both runs are
   -- φ-only and `bt` that `t` does not start with a φ — so `rb` really is
   -- the whole run of the second block and blocks travel intact.
-  bswpᵇ : ∀ {j i m k} (s : Tel n j) {a : Tel (2 + j) i} (ra : Run a)
-          {rb : Tel (2 + i) m} (w : Run rb) {t : Tel m k} (bt : Block t)
-          (es : List (Tm k)) →
+  bswpᵇ : ∀ {b j i m k} (s : Tel n j) {a : Tel (2 + j) i} (ra : Run a)
+          {rb : Tel (2 + i) m} {wb : Run rb} (ζ : b →ᵣ j)
+          (fw : FRun b (ζ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (shift2 (tν a)) wb)
+          {t : Tel m k} (bt : Block t) (es : List (Tm k)) →
     mkNF (s ++ᵗ tν (a ++ᵗ tν (rb ++ᵗ t))) es
-      ~ᵇ₁ mkNF (s ++ᵗ bswapTel a w t) (map (_⋯ bswapRen a w t) es)
+      ~ᵇ₁ mkNF (s ++ᵗ bswapTel a ζ fw t) (map (_⋯ bswapRen a ζ fw t) es)
 
 infix 4 _~ᵇ_
 
@@ -182,14 +403,14 @@ _~ᵇ_ = EqClosure _~ᵇ₁_
 ------------------------------------------------------------------------
 
 ~ᵇ₁⇒~ : ∀ {n} {N₁ N₂ : NF n} → N₁ ~ᵇ₁ N₂ → N₁ ~ N₂
-~ᵇ₁⇒~ (ν1ᵇ s t es)     = Eq*.return (perm-ν1 s t es)
-~ᵇ₁⇒~ (φφᵇ s x y t es) = Eq*.return (perm-φφ s x y t es)
-~ᵇ₁⇒~ (thrᵇ t p)       = Eq*.return (perm-thr t p)
-~ᵇ₁⇒~ (delᵇ t es)      = Eq*.return (unit-del t es)
-~ᵇ₁⇒~ (bswpᵇ s {a} ra {rb} w {t} bt es) =
+~ᵇ₁⇒~ (ν1ᵇ s t es)       = Eq*.return (perm-ν1 s t es)
+~ᵇ₁⇒~ (φφᵇ s x y c d t es) = Eq*.return (perm-φφ s x y c d t es)
+~ᵇ₁⇒~ (thrᵇ t p)         = Eq*.return (perm-thr t p)
+~ᵇ₁⇒~ (delᵇ t es)        = Eq*.return (unit-del t es)
+~ᵇ₁⇒~ (bswpᵇ s {a} ra {rb} ζ fw {t} bt es) =
   ~-trans (≡→~ (sym (prefixNF-++ᵗ s (mkNF (tν (a ++ᵗ tν (rb ++ᵗ t))) es))))
-    (~-trans (~-prefix s (bswap-sound a w t es))
-             (≡→~ (prefixNF-++ᵗ s (mkNF (bswapTel a w t) (map (_⋯ bswapRen a w t) es)))))
+    (~-trans (~-prefix s (bswap-sound a ζ fw t es))
+             (≡→~ (prefixNF-++ᵗ s (mkNF (bswapTel a ζ fw t) (map (_⋯ bswapRen a ζ fw t) es)))))
 
 ~ᵇ⇒~ : ∀ {n} {N₁ N₂ : NF n} → N₁ ~ᵇ N₂ → N₁ ~ N₂
 ~ᵇ⇒~ ε           = ~-refl
@@ -200,25 +421,25 @@ _~ᵇ_ = EqClosure _~ᵇ₁_
 -- Block moves preserve block form, in both directions.
 ------------------------------------------------------------------------
 
-Block-++ᵗ : ∀ {n j k} (s : Tel n j) {X₁ X₂ : Tel j k} →
+Block-++ᵗ : ∀ {n j k₁ k₂} (s : Tel n j) {X₁ : Tel j k₁} {X₂ : Tel j k₂} →
             (Block X₁ → Block X₂) → Block (s ++ᵗ X₁) → Block (s ++ᵗ X₂)
-Block-++ᵗ []       h b = h b
-Block-++ᵗ (tν s)   h b = bν
-Block-++ᵗ (tφ f s) h ()
+Block-++ᵗ []         h b = h b
+Block-++ᵗ (tν s)     h b = bν
+Block-++ᵗ (tφ f c s) h ()
 
 ~ᵇ₁-Block : ∀ {n} {N₁ N₂ : NF n} → N₁ ~ᵇ₁ N₂ → Block (tel N₁) → Block (tel N₂)
-~ᵇ₁-Block (ν1ᵇ s t es)      b = b
-~ᵇ₁-Block (φφᵇ s x y t es)  b = Block-++ᵗ s (λ ()) b
-~ᵇ₁-Block (thrᵇ t p)        b = b
-~ᵇ₁-Block (delᵇ t es)       b = b
-~ᵇ₁-Block (bswpᵇ s _ _ _ _) b = Block-++ᵗ s (λ _ → bν) b
+~ᵇ₁-Block (ν1ᵇ s t es)        b = Block-++ᵗ s (λ _ → bν) b
+~ᵇ₁-Block (φφᵇ s x y c d t es) b = Block-++ᵗ s (λ ()) b
+~ᵇ₁-Block (thrᵇ t p)          b = b
+~ᵇ₁-Block (delᵇ t es)         b = b
+~ᵇ₁-Block (bswpᵇ s _ _ _ _ _) b = Block-++ᵗ s (λ _ → bν) b
 
 ~ᵇ₁-Block⁻ : ∀ {n} {N₁ N₂ : NF n} → N₁ ~ᵇ₁ N₂ → Block (tel N₂) → Block (tel N₁)
-~ᵇ₁-Block⁻ (ν1ᵇ s t es)      b = b
-~ᵇ₁-Block⁻ (φφᵇ s x y t es)  b = Block-++ᵗ s (λ ()) b
-~ᵇ₁-Block⁻ (thrᵇ t p)        b = b
-~ᵇ₁-Block⁻ (delᵇ t es)       b = b
-~ᵇ₁-Block⁻ (bswpᵇ s _ _ _ _) b = Block-++ᵗ s (λ _ → bν) b
+~ᵇ₁-Block⁻ (ν1ᵇ s t es)        b = Block-++ᵗ s (λ _ → bν) b
+~ᵇ₁-Block⁻ (φφᵇ s x y c d t es) b = Block-++ᵗ s (λ ()) b
+~ᵇ₁-Block⁻ (thrᵇ t p)          b = b
+~ᵇ₁-Block⁻ (delᵇ t es)         b = b
+~ᵇ₁-Block⁻ (bswpᵇ s _ _ _ _ _) b = Block-++ᵗ s (λ _ → bν) b
 
 ~ᵇ-Block : ∀ {n} {N₁ N₂ : NF n} → N₁ ~ᵇ N₂ → Block (tel N₁) → Block (tel N₂)
 ~ᵇ-Block ε           b = b
@@ -299,26 +520,30 @@ private
   +≡0ʳ (suc m) n ()
 
 φfree-Block : ∀ {n k} (t : Tel n k) → φcountᵗ t ≡ 0 → Block t
-φfree-Block []       _ = bnil
-φfree-Block (tν t)   _ = bν
-φfree-Block (tφ f t) ()
+φfree-Block []         _ = bnil
+φfree-Block (tν t)     _ = bν
+φfree-Block (tφ f c t) ()
 
 ~₁-φfree⇒~ᵇ : ∀ {n} {N₁ N₂ : NF n} → φcountᵗ (tel N₁) ≡ 0 → N₁ ~₁ N₂ → N₁ ~ᵇ N₂
 ~₁-φfree⇒~ᵇ z (perm-ν1 s t es) = Eq*.return (ν1ᵇ s t es)
-~₁-φfree⇒~ᵇ z (perm-νν s t es) =
-  ~ᵇ-trans (Eq*.return (bswpᵇ s rnil rnil bt es))
-           (≡→~ᵇ (cong (mkNF (s ++ᵗ tν (tν t))) (map-⋯-cong fix es)))
+~₁-φfree⇒~ᵇ {n} z (perm-νν {j} {k} s t es) =
+  ~ᵇ-trans (Eq*.return (bswpᵇ s {a = []} rnil {rb = []} (idₖ ⦃ Kᵣ ⦄)
+                          (frnil (idₖ ⦃ Kᵣ ⦄ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (shift2 (tν []))) {t = t} bt es))
+           (≡→~ᵇ (sym (NF-≡ (renTel-id t)
+                    ( subst-++ᵗ s (renTel-id t) (tν (tν (renTel t (assocSwapᵣ 2 2))))
+                    ■ cong (s ++ᵗ_)
+                        ( subst-tν (renTel-id t) (tν (renTel t (assocSwapᵣ 2 2)))
+                        ■ cong tν (subst-tν (renTel-id t) (renTel t (assocSwapᵣ 2 2))) ) )
+                    (map-⋯-subst (renTel-id t) (λ x → liftId-liftRen t (assocSwapᵣ 2 2) x) es))))
   where
     bt : Block t
     bt = φfree-Block t (+≡0ʳ (φcountᵗ s) (φcountᵗ t)
                              (sym (φcountᵗ-++ᵗ s (tν (tν t))) ■ z))
-
-    fix : ∀ x → bswapRen [] rnil t x ≡ liftId t (assocSwapᵣ 2 2) x
-    fix x = liftId-cong t (λ y → refl) x
-~₁-φfree⇒~ᵇ z (perm-φφ s x y t es) =
-  noφ (φcountᵗ s) (suc (φcountᵗ t)) (sym (φcountᵗ-++ᵗ s (tφ x (tφ y t))) ■ z)
-~₁-φfree⇒~ᵇ z (perm-νφ s x t es) =
-  noφ (φcountᵗ s) (φcountᵗ t) (sym (φcountᵗ-++ᵗ s (tν (tφ x t))) ■ z)
+~₁-φfree⇒~ᵇ z (perm-φφ s x y c d t es) =
+  noφ (φcountᵗ s) (suc (φcountᵗ t))
+      (sym (φcountᵗ-++ᵗ s (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t))) ■ z)
+~₁-φfree⇒~ᵇ z (perm-νφ s x c t es) =
+  noφ (φcountᵗ s) (φcountᵗ t) (sym (φcountᵗ-++ᵗ s (tν (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 2) t))) ■ z)
 ~₁-φfree⇒~ᵇ z (perm-thr t p)  = Eq*.return (thrᵇ t p)
 ~₁-φfree⇒~ᵇ z (unit-del t es) = Eq*.return (delᵇ t es)
 
