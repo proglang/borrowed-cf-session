@@ -18,9 +18,11 @@ open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Processes.Untyped
 open import BorrowedCF.Simulation.Support.Normal.Form
+open import BorrowedCF.Simulation.Support.Normal.Rename using (renTel; liftRen)
 open import BorrowedCF.Simulation.Support.Normal.Equiv
 open import BorrowedCF.Simulation.Support.Normal.Endo using (wkTel-++ᵗ)
 open import BorrowedCF.Simulation.Support.Normal.Shift using (liftId-wkTel)
+open import BorrowedCF.Simulation.Support.Normal.Nat using (wkTel-nat)
 open import BorrowedCF.Simulation.Support.Normal.CongL using (swap11-wk; aswap-wk)
 open import BorrowedCF.Simulation.Support.Normal.Norm using (nf)
 open import BorrowedCF.Simulation.Support.Normal.Sound using (≋⇒~)
@@ -85,41 +87,42 @@ ambwitness-trans {N₁ = mkNF t₁ es₁} {N₂ = mkNF t₂ es₂} {N₃ = mkNF 
 ~₁-ambwitness : ∀ {n} {N₁ N₂ : NF n} → N₁ ~₁ N₂ → AmbWitness N₁ N₂
 ~₁-ambwitness (perm-ν1 s t es) = mkA (~₁-witness (perm-ν1 s t es)) fix
   where
-    fix : ∀ y → liftId t (swapᵣ 1 1) (wkTel (s ++ᵗ tν t) y) ≡ wkTel (s ++ᵗ tν t) y
-    fix y = cong (liftId t (swapᵣ 1 1)) (wkTel-++ᵗ s (tν t) y)
-              ■ liftId-wkTel t (swapᵣ 1 1) (weaken* ⦃ Kᵣ ⦄ 2 (wkTel s y))
-              ■ cong (wkTel t) (swap11-wk (wkTel s y))
-              ■ sym (wkTel-++ᵗ s (tν t) y)
+    ξ = swapᵣ 1 1
+    fix : ∀ y → liftRen t ξ (wkTel (s ++ᵗ tν t) y) ≡ wkTel (s ++ᵗ tν (renTel t ξ)) y
+    fix y = cong (liftRen t ξ) (wkTel-++ᵗ s (tν t) y)
+              ■ sym (wkTel-nat t ξ (weaken* ⦃ Kᵣ ⦄ 2 (wkTel s y)))
+              ■ cong (wkTel (renTel t ξ)) (swap11-wk (wkTel s y))
+              ■ sym (wkTel-++ᵗ s (tν (renTel t ξ)) y)
 
 ~₁-ambwitness (perm-νν s t es) = mkA (~₁-witness (perm-νν s t es)) fix
   where
-    fix : ∀ y → liftId t (assocSwapᵣ 2 2) (wkTel (s ++ᵗ tν (tν t)) y)
-                  ≡ wkTel (s ++ᵗ tν (tν t)) y
-    fix y = cong (liftId t (assocSwapᵣ 2 2)) (wkTel-++ᵗ s (tν (tν t)) y)
-              ■ liftId-wkTel t (assocSwapᵣ 2 2)
-                  (weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 2 (wkTel s y)))
-              ■ cong (wkTel t) (aswap-wk 2 2 (wkTel s y))
-              ■ sym (wkTel-++ᵗ s (tν (tν t)) y)
+    ξ = assocSwapᵣ 2 2
+    fix : ∀ y → liftRen t ξ (wkTel (s ++ᵗ tν (tν t)) y)
+                  ≡ wkTel (s ++ᵗ tν (tν (renTel t ξ))) y
+    fix y = cong (liftRen t ξ) (wkTel-++ᵗ s (tν (tν t)) y)
+              ■ sym (wkTel-nat t ξ (weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 2 (wkTel s y))))
+              ■ cong (wkTel (renTel t ξ)) (aswap-wk 2 2 (wkTel s y))
+              ■ sym (wkTel-++ᵗ s (tν (tν (renTel t ξ))) y)
 
-~₁-ambwitness (perm-φφ s x y t es) = mkA (~₁-witness (perm-φφ s x y t es)) fix
+~₁-ambwitness (perm-φφ s x y c d t es) = mkA (~₁-witness (perm-φφ s x y c d t es)) fix
   where
-    fix : ∀ z → liftId t (assocSwapᵣ 1 1) (wkTel (s ++ᵗ tφ x (tφ y t)) z)
-                  ≡ wkTel (s ++ᵗ tφ y (tφ x t)) z
-    fix z = cong (liftId t (assocSwapᵣ 1 1)) (wkTel-++ᵗ s (tφ x (tφ y t)) z)
-              ■ liftId-wkTel t (assocSwapᵣ 1 1)
-                  (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 1 (wkTel s z)))
-              ■ cong (wkTel t) (aswap-wk 1 1 (wkTel s z))
-              ■ sym (wkTel-++ᵗ s (tφ y (tφ x t)) z)
+    ξ = assocSwapᵣ 1 1
+    fix : ∀ z → liftRen t ξ (wkTel (s ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t)) z)
+                  ≡ wkTel (s ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t ξ))) z
+    fix z = cong (liftRen t ξ) (wkTel-++ᵗ s (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t)) z)
+              ■ sym (wkTel-nat t ξ (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 1 (wkTel s z))))
+              ■ cong (wkTel (renTel t ξ)) (aswap-wk 1 1 (wkTel s z))
+              ■ sym (wkTel-++ᵗ s (tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t ξ))) z)
 
-~₁-ambwitness (perm-νφ s x t es) = mkA (~₁-witness (perm-νφ s x t es)) fix
+~₁-ambwitness (perm-νφ s x c t es) = mkA (~₁-witness (perm-νφ s x c t es)) fix
   where
-    fix : ∀ z → liftId t (assocSwapᵣ 1 2) (wkTel (s ++ᵗ tν (tφ x t)) z)
-                  ≡ wkTel (s ++ᵗ tφ x (tν t)) z
-    fix z = cong (liftId t (assocSwapᵣ 1 2)) (wkTel-++ᵗ s (tν (tφ x t)) z)
-              ■ liftId-wkTel t (assocSwapᵣ 1 2)
-                  (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 2 (wkTel s z)))
-              ■ cong (wkTel t) (aswap-wk 1 2 (wkTel s z))
-              ■ sym (wkTel-++ᵗ s (tφ x (tν t)) z)
+    ξ = assocSwapᵣ 1 2
+    fix : ∀ z → liftRen t ξ (wkTel (s ++ᵗ tν (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 2) t)) z)
+                  ≡ wkTel (s ++ᵗ tφ x c (tν (renTel t ξ))) z
+    fix z = cong (liftRen t ξ) (wkTel-++ᵗ s (tν (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 2) t)) z)
+              ■ sym (wkTel-nat t ξ (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 2 (wkTel s z))))
+              ■ cong (wkTel (renTel t ξ)) (aswap-wk 1 2 (wkTel s z))
+              ■ sym (wkTel-++ᵗ s (tφ x c (tν (renTel t ξ))) z)
 
 ~₁-ambwitness (perm-thr t p)  = mkA (~₁-witness (perm-thr t p))  (λ _ → refl)
 ~₁-ambwitness (unit-del t es) = mkA (~₁-witness (unit-del t es)) (λ _ → refl)
