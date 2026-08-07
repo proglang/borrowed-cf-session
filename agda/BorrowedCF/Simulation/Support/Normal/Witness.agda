@@ -23,8 +23,9 @@ open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Processes.Untyped
 open import BorrowedCF.Simulation.Support.Normal.Form
+open import BorrowedCF.Simulation.Support.Normal.Rename using (renTel; liftRen; renTel-id)
 open import BorrowedCF.Simulation.Support.Normal.Equiv
-open import BorrowedCF.Simulation.Support.Normal.Endo using (liftId-id)
+open import BorrowedCF.Simulation.Support.Normal.Endo using (liftId-id; liftId-liftRen)
 open import BorrowedCF.Simulation.Support.Normal.Shift using (liftId-·)
 open import BorrowedCF.Simulation.Support.Normal.Flat using (live; live*)
 open import BorrowedCF.Simulation.Support.Normal.Bubble using (map-⋯-id; aswap-21-12)
@@ -189,38 +190,48 @@ aswap-12-21 (suc (suc (suc x)))   = refl
 -- For the four transpositions the thread lists are LITERALLY `map (_⋯ fwd)` of
 -- each other, so `thrs` is reflexivity; all the content is in the inverse laws,
 -- and `liftId-·`/`liftId-id` lift the pointwise `Fin` facts under the telescope.
+-- Linked-φ: the generators RENAME the body by `liftRen t ξ` (fwd) and change
+-- the inner scope, so the witness's inverse re-bases back with `liftId t ξ⁻¹`
+-- under the `renTel-id t` transport.  `liftId-liftRen` (Endo) is what reconciles
+-- the two lifts; the pointwise `Fin` inverse laws do the rest.
+wInv₁ : ∀ {n k} (t : Tel n k) (ξ₁ ξ₂ : n →ᵣ n) → (∀ x → ξ₂ (ξ₁ x) ≡ x) →
+        ∀ x → liftId t ξ₂ (subst 𝔽 (renTel-id t) (liftRen t ξ₁ x)) ≡ x
+wInv₁ t ξ₁ ξ₂ h x =
+  cong (liftId t ξ₂) (liftId-liftRen t ξ₁ x) ■ liftId-· t ξ₁ ξ₂ x ■ liftId-id t h x
+
+wInv₂ : ∀ {n k} (t : Tel n k) (ξ₁ ξ₂ : n →ᵣ n) → (∀ x → ξ₁ (ξ₂ x) ≡ x) →
+        ∀ y → liftRen t ξ₁ (liftId t ξ₂ (subst 𝔽 (renTel-id t) y)) ≡ y
+wInv₂ t ξ₁ ξ₂ h y =
+  sym (subst-sym-subst (renTel-id t))
+    ■ cong (subst 𝔽 (sym (renTel-id t))) H
+    ■ subst-sym-subst (renTel-id t)
+  where
+    H : subst 𝔽 (renTel-id t) (liftRen t ξ₁ (liftId t ξ₂ (subst 𝔽 (renTel-id t) y)))
+          ≡ subst 𝔽 (renTel-id t) y
+    H = liftId-liftRen t ξ₁ (liftId t ξ₂ (subst 𝔽 (renTel-id t) y))
+          ■ liftId-· t ξ₂ ξ₁ (subst 𝔽 (renTel-id t) y)
+          ■ liftId-id t h (subst 𝔽 (renTel-id t) y)
+
 ~₁-witness : ∀ {n} {N₁ N₂ : NF n} → N₁ ~₁ N₂ → Witness N₁ N₂
 ~₁-witness (perm-ν1 s t es) =
-  mkW (liftId t (swapᵣ 1 1)) (liftId t (swapᵣ 1 1)) inv inv ↭-refl
-  where
-    inv : ∀ x → liftId t (swapᵣ 1 1) (liftId t (swapᵣ 1 1) x) ≡ x
-    inv x = liftId-· t (swapᵣ 1 1) (swapᵣ 1 1) x
-              ■ liftId-id t (λ y → swap-11-inv y) x
+  mkW (liftRen t (swapᵣ 1 1)) (λ y → liftId t (swapᵣ 1 1) (subst 𝔽 (renTel-id t) y))
+      (wInv₁ t (swapᵣ 1 1) (swapᵣ 1 1) (λ x → swap-11-inv x))
+      (wInv₂ t (swapᵣ 1 1) (swapᵣ 1 1) (λ x → swap-11-inv x)) ↭-refl
 
 ~₁-witness (perm-νν s t es) =
-  mkW (liftId t (assocSwapᵣ 2 2)) (liftId t (assocSwapᵣ 2 2)) inv inv ↭-refl
-  where
-    inv : ∀ x → liftId t (assocSwapᵣ 2 2) (liftId t (assocSwapᵣ 2 2) x) ≡ x
-    inv x = liftId-· t (assocSwapᵣ 2 2) (assocSwapᵣ 2 2) x
-              ■ liftId-id t (λ y → aswap-22-inv y) x
+  mkW (liftRen t (assocSwapᵣ 2 2)) (λ y → liftId t (assocSwapᵣ 2 2) (subst 𝔽 (renTel-id t) y))
+      (wInv₁ t (assocSwapᵣ 2 2) (assocSwapᵣ 2 2) (λ x → aswap-22-inv x))
+      (wInv₂ t (assocSwapᵣ 2 2) (assocSwapᵣ 2 2) (λ x → aswap-22-inv x)) ↭-refl
 
-~₁-witness (perm-φφ s x y t es) =
-  mkW (liftId t (assocSwapᵣ 1 1)) (liftId t (assocSwapᵣ 1 1)) inv inv ↭-refl
-  where
-    inv : ∀ z → liftId t (assocSwapᵣ 1 1) (liftId t (assocSwapᵣ 1 1) z) ≡ z
-    inv z = liftId-· t (assocSwapᵣ 1 1) (assocSwapᵣ 1 1) z
-              ■ liftId-id t (λ w → aswap-11-inv w) z
+~₁-witness (perm-φφ s x y c d t es) =
+  mkW (liftRen t (assocSwapᵣ 1 1)) (λ z → liftId t (assocSwapᵣ 1 1) (subst 𝔽 (renTel-id t) z))
+      (wInv₁ t (assocSwapᵣ 1 1) (assocSwapᵣ 1 1) (λ w → aswap-11-inv w))
+      (wInv₂ t (assocSwapᵣ 1 1) (assocSwapᵣ 1 1) (λ w → aswap-11-inv w)) ↭-refl
 
-~₁-witness (perm-νφ s x t es) =
-  mkW (liftId t (assocSwapᵣ 1 2)) (liftId t (assocSwapᵣ 2 1)) inv₁′ inv₂′ ↭-refl
-  where
-    inv₁′ : ∀ z → liftId t (assocSwapᵣ 2 1) (liftId t (assocSwapᵣ 1 2) z) ≡ z
-    inv₁′ z = liftId-· t (assocSwapᵣ 1 2) (assocSwapᵣ 2 1) z
-                ■ liftId-id t (λ w → aswap-12-21 w) z
-
-    inv₂′ : ∀ z → liftId t (assocSwapᵣ 1 2) (liftId t (assocSwapᵣ 2 1) z) ≡ z
-    inv₂′ z = liftId-· t (assocSwapᵣ 2 1) (assocSwapᵣ 1 2) z
-                ■ liftId-id t (λ w → aswap-21-12 w) z
+~₁-witness (perm-νφ s x c t es) =
+  mkW (liftRen t (assocSwapᵣ 1 2)) (λ z → liftId t (assocSwapᵣ 2 1) (subst 𝔽 (renTel-id t) z))
+      (wInv₁ t (assocSwapᵣ 1 2) (assocSwapᵣ 2 1) (λ w → aswap-12-21 w))
+      (wInv₂ t (assocSwapᵣ 1 2) (assocSwapᵣ 2 1) (λ w → aswap-21-12 w)) ↭-refl
 
 ~₁-witness (perm-thr t {es} {es′} p) =
   mkW idₖ idₖ (λ _ → refl) (λ _ → refl)

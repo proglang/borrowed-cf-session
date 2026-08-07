@@ -55,7 +55,7 @@ nf-plug []       es =
     (~-trans (Eq*.return (perm-thr [] (++-comm es (K `unit ∷ []))))
              (Eq*.return (unit-del [] es)))
 nf-plug (tν t)   es = ~-νNF     (nf-plug t es)
-nf-plug (tφ f t) es = ~-φNF {f = f} (nf-plug t es)
+nf-plug (tφ f c t) es = ~-φNF {f = f} c (nf-plug t es)
 
 nf-⌈⌉ : ∀ {n} (N : NF n) → nf ⌈ N ⌉ ~ N
 nf-⌈⌉ (mkNF t es) = nf-plug t es
