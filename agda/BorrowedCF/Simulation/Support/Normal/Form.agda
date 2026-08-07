@@ -29,34 +29,36 @@ open Nat.Variables
 
 -- `Tel n k` : a nest of ν/φ binders that turns a body in scope k into a
 -- process in scope n.  Outermost binder first.
+-- Linked-φ: a `tφ` binder records the channel `c : Tm n` it guards (in the
+-- OUTER scope n, exactly as the `φ` process constructor does).
 data Tel : ℕ → ℕ → Set where
   []  : ∀ {n} → Tel n n
   tν  : ∀ {n k} → Tel (2 + n) k → Tel n k
-  tφ  : ∀ {n k} → Flag → Tel (1 + n) k → Tel n k
+  tφ  : ∀ {n k} → Flag → (c : Tm n) → Tel (1 + n) k → Tel n k
 
 plug : ∀ {n k} → Tel n k → Proc k → Proc n
-plug []       X = X
-plug (tν t)   X = ν (plug t X)
-plug (tφ f t) X = φ f (plug t X)
+plug []         X = X
+plug (tν t)     X = ν (plug t X)
+plug (tφ f c t) X = φ f c (plug t X)
 
 -- The weakening a telescope induces on its base scope.
 wkTel : ∀ {n k} → Tel n k → n →ᵣ k
-wkTel []         = idₖ
-wkTel (tν t)     = weaken* ⦃ Kᵣ ⦄ 2 ·ₖ wkTel t
-wkTel (tφ _ t)   = weaken* ⦃ Kᵣ ⦄ 1 ·ₖ wkTel t
+wkTel []           = idₖ
+wkTel (tν t)       = weaken* ⦃ Kᵣ ⦄ 2 ·ₖ wkTel t
+wkTel (tφ _ _ t)   = weaken* ⦃ Kᵣ ⦄ 1 ·ₖ wkTel t
 
 infixr 5 _++ᵗ_
 
 _++ᵗ_ : ∀ {n k j} → Tel n k → Tel k j → Tel n j
-[]       ++ᵗ s = s
-tν t     ++ᵗ s = tν (t ++ᵗ s)
-tφ f t   ++ᵗ s = tφ f (t ++ᵗ s)
+[]         ++ᵗ s = s
+tν t       ++ᵗ s = tν (t ++ᵗ s)
+tφ f c t   ++ᵗ s = tφ f c (t ++ᵗ s)
 
 plug-++ᵗ : ∀ {n k j} (t : Tel n k) (s : Tel k j) (X : Proc j) →
            plug (t ++ᵗ s) X ≡ plug t (plug s X)
-plug-++ᵗ []       s X = refl
-plug-++ᵗ (tν t)   s X = cong ν     (plug-++ᵗ t s X)
-plug-++ᵗ (tφ f t) s X = cong (φ f) (plug-++ᵗ t s X)
+plug-++ᵗ []         s X = refl
+plug-++ᵗ (tν t)     s X = cong ν       (plug-++ᵗ t s X)
+plug-++ᵗ (tφ f c t) s X = cong (φ f c) (plug-++ᵗ t s X)
 
 ------------------------------------------------------------------------
 -- Flat thread lists.
@@ -92,13 +94,13 @@ open NF public
 ------------------------------------------------------------------------
 
 size : ∀ {n} → Proc n → ℕ
-size ⟪ _ ⟫   = 1
-size (P ∥ Q) = suc (size P + size Q)
-size (ν P)   = suc (size P)
-size (φ _ P) = suc (size P)
+size ⟪ _ ⟫     = 1
+size (P ∥ Q)   = suc (size P + size Q)
+size (ν P)     = suc (size P)
+size (φ _ _ P) = suc (size P)
 
 size-⋯ₚ : ∀ {n m} (P : Proc n) (ρ : n →ᵣ m) → size (P ⋯ₚ ρ) ≡ size P
-size-⋯ₚ ⟪ _ ⟫   ρ = refl
-size-⋯ₚ (P ∥ Q) ρ = cong suc (cong₂ _+_ (size-⋯ₚ P ρ) (size-⋯ₚ Q ρ))
-size-⋯ₚ (ν P)   ρ = cong suc (size-⋯ₚ P (ρ ↑* 2))
-size-⋯ₚ (φ _ P) ρ = cong suc (size-⋯ₚ P (ρ ↑))
+size-⋯ₚ ⟪ _ ⟫     ρ = refl
+size-⋯ₚ (P ∥ Q)   ρ = cong suc (cong₂ _+_ (size-⋯ₚ P ρ) (size-⋯ₚ Q ρ))
+size-⋯ₚ (ν P)     ρ = cong suc (size-⋯ₚ P (ρ ↑* 2))
+size-⋯ₚ (φ _ _ P) ρ = cong suc (size-⋯ₚ P (ρ ↑))

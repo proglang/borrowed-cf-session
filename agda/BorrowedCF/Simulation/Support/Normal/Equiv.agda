@@ -45,9 +45,9 @@ open Nat.Variables
 -- Unlike `Rename.liftRen`, this keeps the inner scope FIXED, so it needs no
 -- transport.  That is exactly why the four transpositions above are usable.
 liftId : ∀ {n k} (t : Tel n k) → (n →ᵣ n) → k →ᵣ k
-liftId []       ρ = ρ
-liftId (tν t)   ρ = liftId t (ρ ↑* 2)
-liftId (tφ _ t) ρ = liftId t (ρ ↑)
+liftId []         ρ = ρ
+liftId (tν t)     ρ = liftId t (ρ ↑* 2)
+liftId (tφ _ _ t) ρ = liftId t (ρ ↑)
 
 ------------------------------------------------------------------------
 -- One-step generators.
@@ -63,13 +63,19 @@ data _~₁_ {n} : NF n → NF n → Set where
   perm-νν : ∀ {j k} (s : Tel n j) (t : Tel (2 + (2 + j)) k) (es : List (Tm k)) →
     mkNF (s ++ᵗ tν (tν t)) es ~₁ mkNF (s ++ᵗ tν (tν t)) (map (_⋯ liftId t (assocSwapᵣ 2 2)) es)
 
-  -- transpose two adjacent φ cells (the flags travel with them)
-  perm-φφ : ∀ {j k} (s : Tel n j) (x y : Flag) (t : Tel (1 + (1 + j)) k) (es : List (Tm k)) →
-    mkNF (s ++ᵗ tφ x (tφ y t)) es ~₁ mkNF (s ++ᵗ tφ y (tφ x t)) (map (_⋯ liftId t (assocSwapᵣ 1 1)) es)
+  -- transpose two adjacent φ cells — GATED (linked-φ, mirrors φ-comm′): the
+  -- inner channel must be `d ⋯ weaken 1` (independent of the outer cell's bound
+  -- var); the channels swap and re-weaken exactly as in φ-comm′.
+  perm-φφ : ∀ {j k} (s : Tel n j) (x y : Flag) (c d : Tm j) (t : Tel (1 + (1 + j)) k) (es : List (Tm k)) →
+    mkNF (s ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t)) es
+      ~₁ mkNF (s ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) t)) (map (_⋯ liftId t (assocSwapᵣ 1 1)) es)
 
-  -- pull a φ cell out of a ν  (the νφ-comm escape, at the normal-form level)
-  perm-νφ : ∀ {j k} (s : Tel n j) (x : Flag) (t : Tel (1 + (2 + j)) k) (es : List (Tm k)) →
-    mkNF (s ++ᵗ tν (tφ x t)) es ~₁ mkNF (s ++ᵗ tφ x (tν t)) (map (_⋯ liftId t (assocSwapᵣ 1 2)) es)
+  -- pull a φ cell out of a ν — GATED (linked-φ, mirrors νφ-comm′): only a φ
+  -- whose channel is `c ⋯ weaken 2` (NOT the ν's own pair — the φ→ν link is
+  -- absent) may escape.
+  perm-νφ : ∀ {j k} (s : Tel n j) (x : Flag) (c : Tm j) (t : Tel (1 + (2 + j)) k) (es : List (Tm k)) →
+    mkNF (s ++ᵗ tν (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 2) t)) es
+      ~₁ mkNF (s ++ᵗ tφ x c (tν t)) (map (_⋯ liftId t (assocSwapᵣ 1 2)) es)
 
   -- permute the threads
   perm-thr : ∀ {k} (t : Tel n k) {es es′ : List (Tm k)} →
@@ -100,27 +106,27 @@ _~_ = EqClosure _~₁_
 νNF : ∀ {n} → NF (2 + n) → NF n
 νNF (mkNF t es) = mkNF (tν t) es
 
-φNF : ∀ {n} → Flag → NF (1 + n) → NF n
-φNF f (mkNF t es) = mkNF (tφ f t) es
+φNF : ∀ {n} → Flag → (c : Tm n) → NF (1 + n) → NF n
+φNF f c (mkNF t es) = mkNF (tφ f c t) es
 
 ~₁-νNF : ∀ {n} {N₁ N₂ : NF (2 + n)} → N₁ ~₁ N₂ → νNF N₁ ~₁ νNF N₂
-~₁-νNF (perm-ν1 s t es)       = perm-ν1 (tν s) t es
-~₁-νNF (perm-νν s t es)       = perm-νν (tν s) t es
-~₁-νNF (perm-φφ s x y t es)   = perm-φφ (tν s) x y t es
-~₁-νNF (perm-νφ s x t es)     = perm-νφ (tν s) x t es
-~₁-νNF (perm-thr t p)         = perm-thr (tν t) p
-~₁-νNF (unit-del t es)        = unit-del (tν t) es
+~₁-νNF (perm-ν1 s t es)         = perm-ν1 (tν s) t es
+~₁-νNF (perm-νν s t es)         = perm-νν (tν s) t es
+~₁-νNF (perm-φφ s x y c d t es) = perm-φφ (tν s) x y c d t es
+~₁-νNF (perm-νφ s x c t es)     = perm-νφ (tν s) x c t es
+~₁-νNF (perm-thr t p)           = perm-thr (tν t) p
+~₁-νNF (unit-del t es)          = unit-del (tν t) es
 
-~₁-φNF : ∀ {n} {f} {N₁ N₂ : NF (1 + n)} → N₁ ~₁ N₂ → φNF f N₁ ~₁ φNF f N₂
-~₁-φNF (perm-ν1 s t es)       = perm-ν1 (tφ _ s) t es
-~₁-φNF (perm-νν s t es)       = perm-νν (tφ _ s) t es
-~₁-φNF (perm-φφ s x y t es)   = perm-φφ (tφ _ s) x y t es
-~₁-φNF (perm-νφ s x t es)     = perm-νφ (tφ _ s) x t es
-~₁-φNF (perm-thr t p)         = perm-thr (tφ _ t) p
-~₁-φNF (unit-del t es)        = unit-del (tφ _ t) es
+~₁-φNF : ∀ {n} {f} (cc : Tm n) {N₁ N₂ : NF (1 + n)} → N₁ ~₁ N₂ → φNF f cc N₁ ~₁ φNF f cc N₂
+~₁-φNF cc (perm-ν1 s t es)         = perm-ν1 (tφ _ cc s) t es
+~₁-φNF cc (perm-νν s t es)         = perm-νν (tφ _ cc s) t es
+~₁-φNF cc (perm-φφ s x y c d t es) = perm-φφ (tφ _ cc s) x y c d t es
+~₁-φNF cc (perm-νφ s x c t es)     = perm-νφ (tφ _ cc s) x c t es
+~₁-φNF cc (perm-thr t p)           = perm-thr (tφ _ cc t) p
+~₁-φNF cc (unit-del t es)          = unit-del (tφ _ cc t) es
 
 ~-νNF : ∀ {n} {N₁ N₂ : NF (2 + n)} → N₁ ~ N₂ → νNF N₁ ~ νNF N₂
 ~-νNF = Eq*.gmap νNF ~₁-νNF
 
-~-φNF : ∀ {n} {f} {N₁ N₂ : NF (1 + n)} → N₁ ~ N₂ → φNF f N₁ ~ φNF f N₂
-~-φNF {f = f} = Eq*.gmap (φNF f) ~₁-φNF
+~-φNF : ∀ {n} {f} (cc : Tm n) {N₁ N₂ : NF (1 + n)} → N₁ ~ N₂ → φNF f cc N₁ ~ φNF f cc N₂
+~-φNF {f = f} cc = Eq*.gmap (φNF f cc) (~₁-φNF cc)

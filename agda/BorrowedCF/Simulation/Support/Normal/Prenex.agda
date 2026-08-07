@@ -38,7 +38,7 @@ open Nat.Variables
 ⋯ₚ-idᵣ ⟪ e ⟫   eq = cong ⟪_⟫ (⋯-id e eq)
 ⋯ₚ-idᵣ (P ∥ Q) eq = cong₂ _∥_ (⋯ₚ-idᵣ P eq) (⋯ₚ-idᵣ Q eq)
 ⋯ₚ-idᵣ (ν P)   eq = cong ν     (⋯ₚ-idᵣ P (id↑* 2 eq))
-⋯ₚ-idᵣ (φ x P) eq = cong (φ x) (⋯ₚ-idᵣ P (id↑ eq))
+⋯ₚ-idᵣ (φ x c P) eq = cong₂ (φ x) (⋯-id c eq) (⋯ₚ-idᵣ P (id↑ eq))
 
 ------------------------------------------------------------------------
 -- Congruence and extrusion along a telescope.
@@ -47,7 +47,7 @@ open Nat.Variables
 plug-cong : ∀ {n k} (t : Tel n k) {X Y : Proc k} → X ≋ Y → plug t X ≋ plug t Y
 plug-cong []       c = c
 plug-cong (tν t)   c = ν-cong (plug-cong t c)
-plug-cong (tφ f t) c = φ-cong (plug-cong t c)
+plug-cong (tφ f ch t) c = φ-cong (plug-cong t c)
 
 -- Scope extrusion along a whole telescope.
 tel-ext : ∀ {n k} (t : Tel n k) (A : Proc k) (Q : Proc n) →
@@ -57,7 +57,7 @@ tel-ext (tν t)   A Q =
   Eq*.return ν-ext′
     ◅◅ ν-cong (tel-ext t A (Q ⋯ₚ weaken* ⦃ Kᵣ ⦄ 2)
                  ◅◅ plug-cong t (≡→≋ (cong (_∥ A) (fusionₚ Q _ _))))
-tel-ext (tφ f t) A Q =
+tel-ext (tφ f ch t) A Q =
   Eq*.return φ-ext′
     ◅◅ φ-cong (tel-ext t A (Q ⋯ₚ weaken* ⦃ Kᵣ ⦄ 1)
                  ◅◅ plug-cong t (≡→≋ (cong (_∥ A) (fusionₚ Q _ _))))
@@ -83,8 +83,8 @@ prenex-acc : ∀ {n} (P : Proc n) → Acc _<_ (size P) → Σ[ N ∈ NF n ] P �
 prenex-acc ⟪ e ⟫ _ = mkNF [] (e ∷ []) , ≋-sym ∥-unitʳ
 prenex-acc (ν P) (acc rs)
   with mkNF t es , c ← prenex-acc P (rs ≤-refl) = mkNF (tν t) es , ν-cong c
-prenex-acc (φ f P) (acc rs)
-  with mkNF t es , c ← prenex-acc P (rs ≤-refl) = mkNF (tφ f t) es , φ-cong c
+prenex-acc (φ f ch P) (acc rs)
+  with mkNF t es , c ← prenex-acc P (rs ≤-refl) = mkNF (tφ f ch t) es , φ-cong c
 prenex-acc (P ∥ Q) (acc rs)
   with mkNF t₂ es₂ , c₂ ← prenex-acc Q (rs (Nat.s≤s (m≤n+m (size Q) (size P))))
   with mkNF t₁ es₁ , c₁ ←
