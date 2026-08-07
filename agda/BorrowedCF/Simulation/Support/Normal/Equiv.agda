@@ -30,6 +30,7 @@ open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Processes.Untyped
 open import BorrowedCF.Simulation.Support.Normal.Form
+open import BorrowedCF.Simulation.Support.Normal.Rename using (renTel; liftRen)
 
 open import Data.List using (List; []; _∷_; map)
 open import Data.List.Relation.Binary.Permutation.Propositional using (_↭_)
@@ -55,27 +56,33 @@ liftId (tφ _ _ t) ρ = liftId t (ρ ↑)
 
 data _~₁_ {n} : NF n → NF n → Set where
 
-  -- swap the two names bound by a single ν
+  -- swap the two names bound by a single ν.  Under linked-φ the swap RENAMES
+  -- the deep telescope's φ-channels too (renTel), exactly as nf-endo produces —
+  -- keeping ν-linked φ's tracked (else a ν-linked φ's channel-swap is invisible
+  -- to ~, which is unsound).  Threads by liftRen (the same lifted renaming).
   perm-ν1 : ∀ {j k} (s : Tel n j) (t : Tel (2 + j) k) (es : List (Tm k)) →
-    mkNF (s ++ᵗ tν t) es ~₁ mkNF (s ++ᵗ tν t) (map (_⋯ liftId t (swapᵣ 1 1)) es)
+    mkNF (s ++ᵗ tν t) es
+      ~₁ mkNF (s ++ᵗ tν (renTel t (swapᵣ 1 1))) (map (_⋯ liftRen t (swapᵣ 1 1)) es)
 
   -- transpose two adjacent ν binders
   perm-νν : ∀ {j k} (s : Tel n j) (t : Tel (2 + (2 + j)) k) (es : List (Tm k)) →
-    mkNF (s ++ᵗ tν (tν t)) es ~₁ mkNF (s ++ᵗ tν (tν t)) (map (_⋯ liftId t (assocSwapᵣ 2 2)) es)
+    mkNF (s ++ᵗ tν (tν t)) es
+      ~₁ mkNF (s ++ᵗ tν (tν (renTel t (assocSwapᵣ 2 2)))) (map (_⋯ liftRen t (assocSwapᵣ 2 2)) es)
 
   -- transpose two adjacent φ cells — GATED (linked-φ, mirrors φ-comm′): the
   -- inner channel must be `d ⋯ weaken 1` (independent of the outer cell's bound
-  -- var); the channels swap and re-weaken exactly as in φ-comm′.
+  -- var); the channels swap and re-weaken exactly as in φ-comm′, and the deep
+  -- telescope is renamed (renTel) by the same assocSwap.
   perm-φφ : ∀ {j k} (s : Tel n j) (x y : Flag) (c d : Tm j) (t : Tel (1 + (1 + j)) k) (es : List (Tm k)) →
     mkNF (s ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t)) es
-      ~₁ mkNF (s ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) t)) (map (_⋯ liftId t (assocSwapᵣ 1 1)) es)
+      ~₁ mkNF (s ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t (assocSwapᵣ 1 1)))) (map (_⋯ liftRen t (assocSwapᵣ 1 1)) es)
 
   -- pull a φ cell out of a ν — GATED (linked-φ, mirrors νφ-comm′): only a φ
   -- whose channel is `c ⋯ weaken 2` (NOT the ν's own pair — the φ→ν link is
-  -- absent) may escape.
+  -- absent) may escape; the deep telescope is renamed (renTel) by assocSwap 1 2.
   perm-νφ : ∀ {j k} (s : Tel n j) (x : Flag) (c : Tm j) (t : Tel (1 + (2 + j)) k) (es : List (Tm k)) →
     mkNF (s ++ᵗ tν (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 2) t)) es
-      ~₁ mkNF (s ++ᵗ tφ x c (tν t)) (map (_⋯ liftId t (assocSwapᵣ 1 2)) es)
+      ~₁ mkNF (s ++ᵗ tφ x c (tν (renTel t (assocSwapᵣ 1 2)))) (map (_⋯ liftRen t (assocSwapᵣ 1 2)) es)
 
   -- permute the threads
   perm-thr : ∀ {k} (t : Tel n k) {es es′ : List (Tm k)} →
