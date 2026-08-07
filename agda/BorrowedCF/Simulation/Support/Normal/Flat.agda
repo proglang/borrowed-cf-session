@@ -55,7 +55,7 @@ threads : ∀ {n} → Proc n → List (Tm n)
 threads ⟪ e ⟫   = live e
 threads (P ∥ Q) = threads P ++ threads Q
 threads (ν _)   = []
-threads (φ _ _) = []
+threads (φ _ _ _) = []
 
 ------------------------------------------------------------------------
 -- The binder-free fragment.
@@ -81,7 +81,7 @@ flat? (P ∥ Q) νe φe =
   fpar (flat? P (m+n≡0⇒m≡0 (νcount P) νe) (m+n≡0⇒m≡0 (φcount P) φe))
        (flat? Q (m+n≡0⇒n≡0 (νcount P) νe) (m+n≡0⇒n≡0 (φcount P) φe))
 flat? (ν P)   () _
-flat? (φ f P) _  ()
+flat? (φ f c P) _  ()
 
 ------------------------------------------------------------------------
 -- Soundness: ≋ preserves the live-thread multiset on the fragment.
