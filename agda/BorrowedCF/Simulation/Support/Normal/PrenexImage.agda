@@ -32,6 +32,7 @@ import BorrowedCF.Processes.Typed as 𝐓
 open import Data.List using (List; []; _∷_; _++_; map)
 
 open Nat.Variables
+open Fin.Patterns
 
 ------------------------------------------------------------------------
 -- The image block telescope.
@@ -50,7 +51,7 @@ BScope (tνᵗ B₁ B₂ t) n = BScope t (syncs B₂ + (syncs B₁ + (2 + n)))
 BTel : ∀ {a b} (t : TTel a b) (n : ℕ) → Tel n (BScope t n)
 BTel []ᵗ           n = []
 BTel (tνᵗ B₁ B₂ t) n =
-  tν (φTel B₁ (2 + n) ++ᵗ φTel B₂ (syncs B₁ + (2 + n)))
+  tν (φTel B₁ (* , 0F , *) ++ᵗ φTel B₂ (* , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , *))
     ++ᵗ BTel t (syncs B₂ + (syncs B₁ + (2 + n)))
 
 -- The substitution accumulated down the telescope: each layer feeds its body
@@ -107,13 +108,13 @@ BShape (tνᵗ B₁ B₂ t) = blockShape B₁ B₂ ++ BShape t
 shape-prenex-image : ∀ {a b} (t : TTel a b) (n : ℕ) → shape (BTel t n) ≡ BShape t
 shape-prenex-image []ᵗ           n = refl
 shape-prenex-image (tνᵗ B₁ B₂ t) n =
-  shape-++ᵗ (tν (φTel B₁ (2 + n) ++ᵗ φTel B₂ (syncs B₁ + (2 + n))))
+  shape-++ᵗ (tν (φTel B₁ (* , 0F , *) ++ᵗ φTel B₂ (* , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , *)))
             (BTel t (syncs B₂ + (syncs B₁ + (2 + n))))
     ■ cong₂ _++_
         (cong (sν ∷_)
-          ( shape-++ᵗ (φTel B₁ (2 + n)) (φTel B₂ (syncs B₁ + (2 + n)))
-          ■ cong₂ _++_ (shape-φTel B₁ (2 + n))
-                       (shape-φTel B₂ (syncs B₁ + (2 + n))) ))
+          ( shape-++ᵗ (φTel B₁ (* , 0F , *)) (φTel B₂ (* , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , *))
+          ■ cong₂ _++_ (shape-φTel B₁ (* , 0F , *))
+                       (shape-φTel B₂ (* , weaken* ⦃ Kᵣ ⦄ (syncs B₁) 1F , *)) ))
         (shape-prenex-image t (syncs B₂ + (syncs B₁ + (2 + n))))
 
 ------------------------------------------------------------------------
