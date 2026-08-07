@@ -26,10 +26,11 @@ open import BorrowedCF.Simulation.Support.Normal.Rename
 open import BorrowedCF.Simulation.Support.Normal.Norm using (combine)
 open import BorrowedCF.Simulation.Support.Normal.Equiv
 open import BorrowedCF.Simulation.Support.Normal.Endo using (++ᵗ-assoc; wkTel-++ᵗ)
-open import BorrowedCF.Simulation.Support.Normal.Shift using (liftId-wkTel)
 open import BorrowedCF.Simulation.Support.Normal.Nat
   using (NF-≡; innerOf-++ᵗ; renTel-++ᵗ; liftRen-++ᵗ; subst-++ᵗ; subst-++;
-         subst-wkTel; map-fuse; map-++ᴸ; map-⋯-subst)
+         subst-wkTel; map-fuse; map-++ᴸ; map-⋯-subst;
+         innerOf-renTel; renTel-renTel; renTel-cong; liftRen-·; liftRen-cong;
+         wkTel-renTel; wkTel-nat; subst-tν; subst-tφ; joinSubst)
 
 open import Data.List using (List; []; _∷_; _++_; map)
 open import Data.List.Relation.Binary.Permutation.Propositional.Properties
@@ -73,55 +74,36 @@ map-⋯-cong h (e ∷ es) = cong₂ _∷_ (⋯-cong e h) (map-⋯-cong h es)
 combine-split : ∀ {n j₂ j k} (t₂ : Tel n j₂) (es₂ : List (Tm j₂))
                   (s : Tel n j) (w : Tel j k) (es : List (Tm k)) →
   combine (mkNF (s ++ᵗ w) es) (mkNF t₂ es₂)
-    ≡ mkNF ((t₂ ++ᵗ renTel s j₂) ++ᵗ renTel w (innerOf s j₂))
+    ≡ mkNF ((t₂ ++ᵗ renTel s (wkTel t₂)) ++ᵗ renTel w (liftRen s (wkTel t₂)))
            ( map (_⋯ liftRen w (liftRen s (wkTel t₂))) es
-          ++ map (_⋯ (wkTel (renTel s j₂) ·ₖ wkTel (renTel w (innerOf s j₂)))) es₂ )
+          ++ map (_⋯ (wkTel (renTel s (wkTel t₂)) ·ₖ wkTel (renTel w (liftRen s (wkTel t₂))))) es₂ )
 combine-split {n} {j₂} t₂ es₂ s w es = NF-≡ e telEq thrEq
   where
     e : innerOf (s ++ᵗ w) j₂ ≡ innerOf w (innerOf s j₂)
     e = innerOf-++ᵗ s w j₂
 
-    telEq : subst (Tel n) e (t₂ ++ᵗ renTel (s ++ᵗ w) j₂)
-              ≡ (t₂ ++ᵗ renTel s j₂) ++ᵗ renTel w (innerOf s j₂)
-    telEq = subst-++ᵗ t₂ e (renTel (s ++ᵗ w) j₂)
-              ■ cong (t₂ ++ᵗ_) (renTel-++ᵗ s w j₂)
-              ■ sym (++ᵗ-assoc t₂ (renTel s j₂) (renTel w (innerOf s j₂)))
+    telEq : subst (Tel n) e (t₂ ++ᵗ renTel (s ++ᵗ w) (wkTel t₂))
+              ≡ (t₂ ++ᵗ renTel s (wkTel t₂)) ++ᵗ renTel w (liftRen s (wkTel t₂))
+    telEq = subst-++ᵗ t₂ e (renTel (s ++ᵗ w) (wkTel t₂))
+              ■ cong (t₂ ++ᵗ_) (renTel-++ᵗ s w (wkTel t₂))
+              ■ sym (++ᵗ-assoc t₂ (renTel s (wkTel t₂)) (renTel w (liftRen s (wkTel t₂))))
 
     h₁ : ∀ x → subst 𝔽 e (liftRen (s ++ᵗ w) (wkTel t₂) x)
                  ≡ liftRen w (liftRen s (wkTel t₂)) x
     h₁ = liftRen-++ᵗ s w (wkTel t₂)
 
-    h₂ : ∀ y → subst 𝔽 e (wkTel (renTel (s ++ᵗ w) j₂) y)
-                 ≡ (wkTel (renTel s j₂) ·ₖ wkTel (renTel w (innerOf s j₂))) y
-    h₂ y = subst-wkTel e (renTel (s ++ᵗ w) j₂) y
-             ■ cong (λ T → wkTel T y) (renTel-++ᵗ s w j₂)
-             ■ wkTel-++ᵗ (renTel s j₂) (renTel w (innerOf s j₂)) y
+    h₂ : ∀ y → subst 𝔽 e (wkTel (renTel (s ++ᵗ w) (wkTel t₂)) y)
+                 ≡ (wkTel (renTel s (wkTel t₂)) ·ₖ wkTel (renTel w (liftRen s (wkTel t₂)))) y
+    h₂ y = subst-wkTel e (renTel (s ++ᵗ w) (wkTel t₂)) y
+             ■ cong (λ T → wkTel T y) (renTel-++ᵗ s w (wkTel t₂))
+             ■ wkTel-++ᵗ (renTel s (wkTel t₂)) (renTel w (liftRen s (wkTel t₂))) y
 
     thrEq : subst (λ i → List (Tm i)) e
               ( map (_⋯ liftRen (s ++ᵗ w) (wkTel t₂)) es
-             ++ map (_⋯ wkTel (renTel (s ++ᵗ w) j₂)) es₂ )
+             ++ map (_⋯ wkTel (renTel (s ++ᵗ w) (wkTel t₂))) es₂ )
               ≡ map (_⋯ liftRen w (liftRen s (wkTel t₂))) es
-             ++ map (_⋯ (wkTel (renTel s j₂) ·ₖ wkTel (renTel w (innerOf s j₂)))) es₂
+             ++ map (_⋯ (wkTel (renTel s (wkTel t₂)) ·ₖ wkTel (renTel w (liftRen s (wkTel t₂))))) es₂
     thrEq = subst-++ e _ _ ■ cong₂ _++_ (map-⋯-subst e h₁ es) (map-⋯-subst e h₂ es₂)
-
-------------------------------------------------------------------------
--- A transposition survives re-basing.
-------------------------------------------------------------------------
-
--- `liftId` keeps the inner scope fixed and `liftRen` re-bases it; pushing a
--- transposition through a re-basing is therefore a statement about the two
--- meeting, and it reduces to the SAME statement one binder in.
-liftId-liftRen-nat : ∀ {n k n′} (t : Tel n k) (ρ ρ′ : n →ᵣ n′)
-                       (ξ : n →ᵣ n) (ξ′ : n′ →ᵣ n′) → ρ ·ₖ ξ′ ≗ ξ ·ₖ ρ′ →
-                     ∀ x → liftId (renTel t n′) ξ′ (liftRen t ρ x)
-                             ≡ liftRen t ρ′ (liftId t ξ x)
-liftId-liftRen-nat []       ρ ρ′ ξ ξ′ h x = h x
-liftId-liftRen-nat (tν t)   ρ ρ′ ξ ξ′ h x =
-  liftId-liftRen-nat t (ρ ↑* 2) (ρ′ ↑* 2) (ξ ↑* 2) (ξ′ ↑* 2)
-    (λ y → sym (dist-↑*-· 2 ρ ξ′ y) ■ (h ~↑* 2) y ■ dist-↑*-· 2 ξ ρ′ y) x
-liftId-liftRen-nat (tφ f t) ρ ρ′ ξ ξ′ h x =
-  liftId-liftRen-nat t (ρ ↑) (ρ′ ↑) (ξ ↑) (ξ′ ↑)
-    (λ y → sym (dist-↑-· ρ ξ′ y) ■ (h ~↑) y ■ dist-↑-· ξ ρ′ y) x
 
 ------------------------------------------------------------------------
 -- A transposition fixes what was weakened in past it.
@@ -151,25 +133,27 @@ aswap-wk a b z =
 
 -- Everything the four transposition cases have in common, with the image
 -- generator taken as a hypothesis: all that is left of the generator here is
--- that it rewrites the whole thread list by `ζ`, and the two facts above say
--- what `ζ` does to `combine`'s two thread blocks.
-transp-core : ∀ {n i j k j₂} (Tₛ : Tel n i) (W W′ : Tel i k)
-                (ζ : k →ᵣ k) (σ σ′ : j →ᵣ k) (ξ : j →ᵣ j)
-                (es : List (Tm j)) (κ : j₂ →ᵣ i) (es₂ : List (Tm j₂)) →
+-- that it rewrites the whole thread list by `ζ`.  Under linked-φ `ζ` re-bases
+-- the inner scope (`W` and `W′` sit at propositionally-equal but distinct
+-- scopes `k`/`k′`), which is why `ζ : k →ᵣ k′`; the two `combine`-thread blocks
+-- come out as `map (_⋯ (σ ·ₖ ζ))` / `map (_⋯ (κ ·ₖ wkTel W′))`, and each case
+-- reconciles those against `combine`'s image with a `NF-≡` transport.
+transp-core : ∀ {n i j k k′ j₂} (Tₛ : Tel n i) (W : Tel i k) (W′ : Tel i k′)
+                (ζ : k →ᵣ k′) (σ : j →ᵣ k) (κ : j₂ →ᵣ i)
+                (es : List (Tm j)) (es₂ : List (Tm j₂)) →
               (∀ (L : List (Tm k)) →
                  mkNF (Tₛ ++ᵗ W) L ~₁ mkNF (Tₛ ++ᵗ W′) (map (_⋯ ζ) L)) →
-              σ ·ₖ ζ ≗ ξ ·ₖ σ′ →
               (∀ y → ζ (wkTel W y) ≡ wkTel W′ y) →
-              mkNF (Tₛ ++ᵗ W)  (map (_⋯ σ)  es                  ++ map (_⋯ (κ ·ₖ wkTel W))  es₂)
-                ~ mkNF (Tₛ ++ᵗ W′) (map (_⋯ σ′) (map (_⋯ ξ) es) ++ map (_⋯ (κ ·ₖ wkTel W′)) es₂)
-transp-core Tₛ W W′ ζ σ σ′ ξ es κ es₂ gen natσ fix =
+              mkNF (Tₛ ++ᵗ W)  (map (_⋯ σ)       es ++ map (_⋯ (κ ·ₖ wkTel W))  es₂)
+                ~ mkNF (Tₛ ++ᵗ W′) (map (_⋯ (σ ·ₖ ζ)) es ++ map (_⋯ (κ ·ₖ wkTel W′)) es₂)
+transp-core Tₛ W W′ ζ σ κ es es₂ gen fix =
   ~-trans (Eq*.return (gen _)) (≡→~ (cong (mkNF (Tₛ ++ᵗ W′)) eq))
   where
     eq : map (_⋯ ζ) (map (_⋯ σ) es ++ map (_⋯ (κ ·ₖ wkTel W)) es₂)
-           ≡ map (_⋯ σ′) (map (_⋯ ξ) es) ++ map (_⋯ (κ ·ₖ wkTel W′)) es₂
+           ≡ map (_⋯ (σ ·ₖ ζ)) es ++ map (_⋯ (κ ·ₖ wkTel W′)) es₂
     eq = map-++ᴸ ζ (map (_⋯ σ) es) (map (_⋯ (κ ·ₖ wkTel W)) es₂)
            ■ cong₂ _++_
-               (map-fuse σ ζ es ■ map-⋯-cong natσ es ■ sym (map-fuse ξ σ′ es))
+               (map-fuse σ ζ es)
                (map-fuse (κ ·ₖ wkTel W) ζ es₂ ■ map-⋯-cong (λ y → fix (κ y)) es₂)
 
 ------------------------------------------------------------------------
@@ -186,144 +170,390 @@ combine-cong₁ (mkNF t₂ es₂) (unit-del t es) = Eq*.return (unit-del _ _)
 
 combine-cong₁ {n} (mkNF {j₂} t₂ es₂) (perm-ν1 {j} {k} s t es) =
   ~-trans (≡→~ (combine-split t₂ es₂ s (tν t) es))
-    (~-trans (transp-core Tₛ (tν u) (tν u) (liftId u (swapᵣ 1 1)) σ σ ξ
-                es (wkTel (renTel s j₂)) es₂ (perm-ν1 Tₛ u) natσ fix)
-      (≡→~ (sym (combine-split t₂ es₂ s (tν t) (map (_⋯ ξ) es)))))
+    (~-trans (transp-core Tₛ (tν u) (tν (renTel u sw)) (liftRen u sw) σ κ es es₂
+                (perm-ν1 Tₛ u) fix)
+      (≡→~ finalEq))
   where
     i : ℕ
     i = innerOf s j₂
 
     Tₛ : Tel n i
-    Tₛ = t₂ ++ᵗ renTel s j₂
+    Tₛ = t₂ ++ᵗ renTel s (wkTel t₂)
 
     τ : j →ᵣ i
     τ = liftRen s (wkTel t₂)
 
+    κ : j₂ →ᵣ i
+    κ = wkTel (renTel s (wkTel t₂))
+
+    sw : (2 + i) →ᵣ (2 + i)
+    sw = swapᵣ 1 1
+
+    sw′ : (2 + j) →ᵣ (2 + j)
+    sw′ = swapᵣ 1 1
+
     u : Tel (2 + i) (innerOf t (2 + i))
-    u = renTel t (2 + i)
+    u = renTel t (τ ↑* 2)
 
     σ : k →ᵣ innerOf t (2 + i)
     σ = liftRen t (τ ↑* 2)
 
-    ξ : k →ᵣ k
-    ξ = liftId t (swapᵣ 1 1)
+    v : Tel (2 + i) (innerOf (renTel t sw′) (2 + i))
+    v = renTel (renTel t sw′) (τ ↑* 2)
 
-    natσ : σ ·ₖ liftId u (swapᵣ 1 1) ≗ ξ ·ₖ σ
-    natσ = liftId-liftRen-nat t (τ ↑* 2) (τ ↑* 2) (swapᵣ 1 1) (swapᵣ 1 1)
-             (λ y → sym (dist-↑*-swap 1 1 τ y))
+    fix : ∀ y → liftRen u sw (wkTel (tν u) y) ≡ wkTel (tν (renTel u sw)) y
+    fix y = sym (wkTel-nat u sw (weaken* ⦃ Kᵣ ⦄ 2 y))
+              ■ cong (wkTel (renTel u sw)) (swap11-wk y)
 
-    fix : ∀ y → liftId u (swapᵣ 1 1) (wkTel (tν u) y) ≡ wkTel (tν u) y
-    fix y = liftId-wkTel u (swapᵣ 1 1) (weaken* ⦃ Kᵣ ⦄ 2 y)
-              ■ cong (wkTel u) (swap11-wk y)
+    -- the two inner scopes `combine`'s image and the fired generator produce
+    p : innerOf (renTel t (τ ↑* 2)) (2 + i) ≡ innerOf t (2 + i)
+    p = innerOf-renTel t (τ ↑* 2) (2 + i)
+
+    q : innerOf (renTel t sw′) (2 + i) ≡ innerOf t (2 + i)
+    q = innerOf-renTel t sw′ (2 + i)
+
+    e : innerOf (renTel t (τ ↑* 2)) (2 + i) ≡ innerOf (renTel t sw′) (2 + i)
+    e = p ■ sym q
+
+    comm : (τ ↑* 2) ·ₖ sw ≗ sw′ ·ₖ (τ ↑* 2)
+    comm z = sym (dist-↑*-swap 1 1 τ z)
+
+    telEq : subst (Tel (2 + i)) e (renTel u sw) ≡ v
+    telEq = joinSubst (Tel (2 + i)) p q (renTel u sw) v
+              (renTel-renTel t (τ ↑* 2) sw
+                 ■ renTel-cong t comm
+                 ■ sym (renTel-renTel t sw′ (τ ↑* 2)))
+
+    thr₁ : ∀ z → subst 𝔽 e ((σ ·ₖ liftRen u sw) z)
+                   ≡ (liftRen t sw′ ·ₖ liftRen (renTel t sw′) (τ ↑* 2)) z
+    thr₁ z = joinSubst 𝔽 p q _ _
+               (liftRen-· t (τ ↑* 2) sw z
+                  ■ liftRen-cong t comm z
+                  ■ sym (liftRen-· t sw′ (τ ↑* 2) z))
+
+    thr₂ : ∀ y → subst 𝔽 e ((κ ·ₖ wkTel (tν (renTel u sw))) y)
+                   ≡ (κ ·ₖ wkTel (tν v)) y
+    thr₂ y = joinSubst 𝔽 p q _ _
+               (wkTel-renTel t (τ ↑* 2) sw (weaken* ⦃ Kᵣ ⦄ 2 (κ y))
+                  ■ cong (λ T → wkTel T (weaken* ⦃ Kᵣ ⦄ 2 (κ y))) (renTel-cong t comm)
+                  ■ sym (wkTel-renTel t sw′ (τ ↑* 2) (weaken* ⦃ Kᵣ ⦄ 2 (κ y))))
+
+    finalEq :
+      mkNF (Tₛ ++ᵗ tν (renTel u sw))
+           (map (_⋯ (σ ·ₖ liftRen u sw)) es ++ map (_⋯ (κ ·ₖ wkTel (tν (renTel u sw)))) es₂)
+        ≡ combine (mkNF (s ++ᵗ tν (renTel t sw′)) (map (_⋯ liftRen t sw′) es)) (mkNF t₂ es₂)
+    finalEq =
+      NF-≡ e
+        (subst-++ᵗ Tₛ e (tν (renTel u sw))
+           ■ cong (Tₛ ++ᵗ_) (subst-tν e (renTel u sw) ■ cong tν telEq))
+        (subst-++ e _ _
+           ■ cong₂ _++_
+               (map-⋯-subst e thr₁ es
+                  ■ sym (map-fuse (liftRen t sw′) (liftRen (renTel t sw′) (τ ↑* 2)) es))
+               (map-⋯-subst e thr₂ es₂))
+      ■ sym (combine-split t₂ es₂ s (tν (renTel t sw′)) (map (_⋯ liftRen t sw′) es))
 
 combine-cong₁ {n} (mkNF {j₂} t₂ es₂) (perm-νν {j} {k} s t es) =
   ~-trans (≡→~ (combine-split t₂ es₂ s (tν (tν t)) es))
-    (~-trans (transp-core Tₛ (tν (tν u)) (tν (tν u)) (liftId u (assocSwapᵣ 2 2)) σ σ ξ
-                es (wkTel (renTel s j₂)) es₂ (perm-νν Tₛ u) natσ fix)
-      (≡→~ (sym (combine-split t₂ es₂ s (tν (tν t)) (map (_⋯ ξ) es)))))
+    (~-trans (transp-core Tₛ (tν (tν u)) (tν (tν (renTel u sw))) (liftRen u sw) σ κ es es₂
+                (perm-νν Tₛ u) fix)
+      (≡→~ finalEq))
   where
     i : ℕ
     i = innerOf s j₂
 
     Tₛ : Tel n i
-    Tₛ = t₂ ++ᵗ renTel s j₂
+    Tₛ = t₂ ++ᵗ renTel s (wkTel t₂)
 
     τ : j →ᵣ i
     τ = liftRen s (wkTel t₂)
 
+    κ : j₂ →ᵣ i
+    κ = wkTel (renTel s (wkTel t₂))
+
+    sw : (2 + (2 + i)) →ᵣ (2 + (2 + i))
+    sw = assocSwapᵣ 2 2
+
+    sw′ : (2 + (2 + j)) →ᵣ (2 + (2 + j))
+    sw′ = assocSwapᵣ 2 2
+
     u : Tel (2 + (2 + i)) (innerOf t (2 + (2 + i)))
-    u = renTel t (2 + (2 + i))
+    u = renTel t (τ ↑* 2 ↑* 2)
 
     σ : k →ᵣ innerOf t (2 + (2 + i))
     σ = liftRen t (τ ↑* 2 ↑* 2)
 
-    ξ : k →ᵣ k
-    ξ = liftId t (assocSwapᵣ 2 2)
+    v : Tel (2 + (2 + i)) (innerOf (renTel t sw′) (2 + (2 + i)))
+    v = renTel (renTel t sw′) (τ ↑* 2 ↑* 2)
 
-    natσ : σ ·ₖ liftId u (assocSwapᵣ 2 2) ≗ ξ ·ₖ σ
-    natσ = liftId-liftRen-nat t (τ ↑* 2 ↑* 2) (τ ↑* 2 ↑* 2)
-             (assocSwapᵣ 2 2) (assocSwapᵣ 2 2)
-             (λ y → sym (dist-↑*-assocSwap 2 2 τ y))
+    fix : ∀ y → liftRen u sw (wkTel (tν (tν u)) y) ≡ wkTel (tν (tν (renTel u sw))) y
+    fix y = sym (wkTel-nat u sw (weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 2 y)))
+              ■ cong (wkTel (renTel u sw)) (aswap-wk 2 2 y)
 
-    fix : ∀ y → liftId u (assocSwapᵣ 2 2) (wkTel (tν (tν u)) y) ≡ wkTel (tν (tν u)) y
-    fix y = liftId-wkTel u (assocSwapᵣ 2 2)
-              (weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 2 y))
-              ■ cong (wkTel u) (aswap-wk 2 2 y)
+    p : innerOf (renTel t (τ ↑* 2 ↑* 2)) (2 + (2 + i)) ≡ innerOf t (2 + (2 + i))
+    p = innerOf-renTel t (τ ↑* 2 ↑* 2) (2 + (2 + i))
 
-combine-cong₁ {n} (mkNF {j₂} t₂ es₂) (perm-φφ {j} {k} s x y t es) =
-  ~-trans (≡→~ (combine-split t₂ es₂ s (tφ x (tφ y t)) es))
-    (~-trans (transp-core Tₛ (tφ x (tφ y u)) (tφ y (tφ x u))
-                (liftId u (assocSwapᵣ 1 1)) σ σ ξ
-                es (wkTel (renTel s j₂)) es₂ (perm-φφ Tₛ x y u) natσ fix)
-      (≡→~ (sym (combine-split t₂ es₂ s (tφ y (tφ x t)) (map (_⋯ ξ) es)))))
+    q : innerOf (renTel t sw′) (2 + (2 + i)) ≡ innerOf t (2 + (2 + i))
+    q = innerOf-renTel t sw′ (2 + (2 + i))
+
+    e : innerOf (renTel t (τ ↑* 2 ↑* 2)) (2 + (2 + i)) ≡ innerOf (renTel t sw′) (2 + (2 + i))
+    e = p ■ sym q
+
+    comm : (τ ↑* 2 ↑* 2) ·ₖ sw ≗ sw′ ·ₖ (τ ↑* 2 ↑* 2)
+    comm z = sym (dist-↑*-assocSwap 2 2 τ z)
+
+    telEq : subst (Tel (2 + (2 + i))) e (renTel u sw) ≡ v
+    telEq = joinSubst (Tel (2 + (2 + i))) p q (renTel u sw) v
+              (renTel-renTel t (τ ↑* 2 ↑* 2) sw
+                 ■ renTel-cong t comm
+                 ■ sym (renTel-renTel t sw′ (τ ↑* 2 ↑* 2)))
+
+    thr₁ : ∀ z → subst 𝔽 e ((σ ·ₖ liftRen u sw) z)
+                   ≡ (liftRen t sw′ ·ₖ liftRen (renTel t sw′) (τ ↑* 2 ↑* 2)) z
+    thr₁ z = joinSubst 𝔽 p q _ _
+               (liftRen-· t (τ ↑* 2 ↑* 2) sw z
+                  ■ liftRen-cong t comm z
+                  ■ sym (liftRen-· t sw′ (τ ↑* 2 ↑* 2) z))
+
+    thr₂ : ∀ y → subst 𝔽 e ((κ ·ₖ wkTel (tν (tν (renTel u sw)))) y)
+                   ≡ (κ ·ₖ wkTel (tν (tν v))) y
+    thr₂ y = joinSubst 𝔽 p q _ _
+               (wkTel-renTel t (τ ↑* 2 ↑* 2) sw (weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 2 (κ y)))
+                  ■ cong (λ T → wkTel T (weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 2 (κ y)))) (renTel-cong t comm)
+                  ■ sym (wkTel-renTel t sw′ (τ ↑* 2 ↑* 2) (weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 2 (κ y)))))
+
+    finalEq :
+      mkNF (Tₛ ++ᵗ tν (tν (renTel u sw)))
+           (map (_⋯ (σ ·ₖ liftRen u sw)) es ++ map (_⋯ (κ ·ₖ wkTel (tν (tν (renTel u sw))))) es₂)
+        ≡ combine (mkNF (s ++ᵗ tν (tν (renTel t sw′))) (map (_⋯ liftRen t sw′) es)) (mkNF t₂ es₂)
+    finalEq =
+      NF-≡ e
+        (subst-++ᵗ Tₛ e (tν (tν (renTel u sw)))
+           ■ cong (Tₛ ++ᵗ_)
+               (subst-tν e (tν (renTel u sw))
+                  ■ cong tν (subst-tν e (renTel u sw) ■ cong tν telEq)))
+        (subst-++ e _ _
+           ■ cong₂ _++_
+               (map-⋯-subst e thr₁ es
+                  ■ sym (map-fuse (liftRen t sw′) (liftRen (renTel t sw′) (τ ↑* 2 ↑* 2)) es))
+               (map-⋯-subst e thr₂ es₂))
+      ■ sym (combine-split t₂ es₂ s (tν (tν (renTel t sw′))) (map (_⋯ liftRen t sw′) es))
+
+combine-cong₁ {n} (mkNF {j₂} t₂ es₂) (perm-φφ {j} {k} s x y c d t es) =
+  ~-trans (≡→~ (combine-split t₂ es₂ s (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t)) es ■ wRw))
+    (~-trans (transp-core Tₛ Wg W′ (liftRen U sw) σ κ es es₂
+                (perm-φφ Tₛ x y (c ⋯ τ) (d ⋯ τ) U) fix)
+      (≡→~ finalEq))
   where
     i : ℕ
     i = innerOf s j₂
 
     Tₛ : Tel n i
-    Tₛ = t₂ ++ᵗ renTel s j₂
+    Tₛ = t₂ ++ᵗ renTel s (wkTel t₂)
 
     τ : j →ᵣ i
     τ = liftRen s (wkTel t₂)
 
-    u : Tel (1 + (1 + i)) (innerOf t (1 + (1 + i)))
-    u = renTel t (1 + (1 + i))
+    κ : j₂ →ᵣ i
+    κ = wkTel (renTel s (wkTel t₂))
+
+    sw : (1 + (1 + i)) →ᵣ (1 + (1 + i))
+    sw = assocSwapᵣ 1 1
+
+    sw′ : (1 + (1 + j)) →ᵣ (1 + (1 + j))
+    sw′ = assocSwapᵣ 1 1
+
+    U : Tel (1 + (1 + i)) (innerOf t (1 + (1 + i)))
+    U = renTel t (τ ↑ ↑)
 
     σ : k →ᵣ innerOf t (1 + (1 + i))
     σ = liftRen t (τ ↑ ↑)
 
-    ξ : k →ᵣ k
-    ξ = liftId t (assocSwapᵣ 1 1)
+    -- the channel-weakening naturality that lets the fired cell re-form
+    chanNat : ∀ (e : Tm j) →
+              e ⋯ weaken* ⦃ Kᵣ ⦄ 1 ⋯ (τ ↑) ≡ e ⋯ τ ⋯ weaken* ⦃ Kᵣ ⦄ 1
+    chanNat e = fusion e (weaken* ⦃ Kᵣ ⦄ 1) (τ ↑)
+                  ■ ⋯-cong e (λ z → sym (↑*-wk τ 1 z))
+                  ■ sym (fusion e τ (weaken* ⦃ Kᵣ ⦄ 1))
 
-    natσ : σ ·ₖ liftId u (assocSwapᵣ 1 1) ≗ ξ ·ₖ σ
-    natσ = liftId-liftRen-nat t (τ ↑ ↑) (τ ↑ ↑)
-             (assocSwapᵣ 1 1) (assocSwapᵣ 1 1)
-             (λ z → sym (dist-↑*-assocSwap 1 1 τ z))
+    Wg : Tel i (innerOf t (1 + (1 + i)))
+    Wg = tφ x (c ⋯ τ) (tφ y (d ⋯ τ ⋯ weaken* ⦃ Kᵣ ⦄ 1) U)
 
-    fix : ∀ z → liftId u (assocSwapᵣ 1 1) (wkTel (tφ x (tφ y u)) z)
-                  ≡ wkTel (tφ y (tφ x u)) z
-    fix z = liftId-wkTel u (assocSwapᵣ 1 1)
-              (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 1 z))
-              ■ cong (wkTel u) (aswap-wk 1 1 z)
+    W′ : Tel i (innerOf (renTel t (τ ↑ ↑)) (1 + (1 + i)))
+    W′ = tφ y (d ⋯ τ) (tφ x (c ⋯ τ ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel U sw))
 
-combine-cong₁ {n} (mkNF {j₂} t₂ es₂) (perm-νφ {j} {k} s x t es) =
-  ~-trans (≡→~ (combine-split t₂ es₂ s (tν (tφ x t)) es))
-    (~-trans (transp-core Tₛ (tν (tφ x u)) (tφ x (tν u))
-                (liftId u (assocSwapᵣ 1 2)) σ σ′ ξ
-                es (wkTel (renTel s j₂)) es₂ (perm-νφ Tₛ x u) natσ fix)
-      (≡→~ (sym (combine-split t₂ es₂ s (tφ x (tν t)) (map (_⋯ ξ) es)))))
+    wRw : mkNF (Tₛ ++ᵗ tφ x (c ⋯ τ) (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1 ⋯ (τ ↑)) U))
+               (map (_⋯ σ) es ++ map (_⋯ (κ ·ₖ wkTel (tφ x (c ⋯ τ) (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1 ⋯ (τ ↑)) U)))) es₂)
+        ≡ mkNF (Tₛ ++ᵗ Wg) (map (_⋯ σ) es ++ map (_⋯ (κ ·ₖ wkTel Wg)) es₂)
+    wRw = cong (λ W → mkNF (Tₛ ++ᵗ W) (map (_⋯ σ) es ++ map (_⋯ (κ ·ₖ wkTel W)) es₂))
+               (cong (λ ch → tφ x (c ⋯ τ) (tφ y ch U)) (chanNat d))
+
+    fix : ∀ z → liftRen U sw (wkTel Wg z) ≡ wkTel W′ z
+    fix z = sym (wkTel-nat U sw (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 1 z)))
+              ■ cong (wkTel (renTel U sw)) (aswap-wk 1 1 z)
+
+    p : innerOf (renTel t (τ ↑ ↑)) (1 + (1 + i)) ≡ innerOf t (1 + (1 + i))
+    p = innerOf-renTel t (τ ↑ ↑) (1 + (1 + i))
+
+    q : innerOf (renTel t sw′) (1 + (1 + i)) ≡ innerOf t (1 + (1 + i))
+    q = innerOf-renTel t sw′ (1 + (1 + i))
+
+    e : innerOf (renTel t (τ ↑ ↑)) (1 + (1 + i)) ≡ innerOf (renTel t sw′) (1 + (1 + i))
+    e = p ■ sym q
+
+    comm : (τ ↑ ↑) ·ₖ sw ≗ sw′ ·ₖ (τ ↑ ↑)
+    comm z = sym (dist-↑*-assocSwap 1 1 τ z)
+
+    v : Tel (1 + (1 + i)) (innerOf (renTel t sw′) (1 + (1 + i)))
+    v = renTel (renTel t sw′) (τ ↑ ↑)
+
+    telEq : subst (Tel (1 + (1 + i))) e (renTel U sw) ≡ v
+    telEq = joinSubst (Tel (1 + (1 + i))) p q (renTel U sw) v
+              (renTel-renTel t (τ ↑ ↑) sw
+                 ■ renTel-cong t comm
+                 ■ sym (renTel-renTel t sw′ (τ ↑ ↑)))
+
+    thr₁ : ∀ z → subst 𝔽 e ((σ ·ₖ liftRen U sw) z)
+                   ≡ (liftRen t sw′ ·ₖ liftRen (renTel t sw′) (τ ↑ ↑)) z
+    thr₁ z = joinSubst 𝔽 p q _ _
+               (liftRen-· t (τ ↑ ↑) sw z
+                  ■ liftRen-cong t comm z
+                  ■ sym (liftRen-· t sw′ (τ ↑ ↑) z))
+
+    thr₂ : ∀ z → subst 𝔽 e ((κ ·ₖ wkTel W′) z)
+                   ≡ (κ ·ₖ wkTel (tφ y (d ⋯ τ) (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1 ⋯ (τ ↑)) v))) z
+    thr₂ z = joinSubst 𝔽 p q _ _
+               (wkTel-renTel t (τ ↑ ↑) sw (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 1 (κ z)))
+                  ■ cong (λ T → wkTel T (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 1 (κ z)))) (renTel-cong t comm)
+                  ■ sym (wkTel-renTel t sw′ (τ ↑ ↑) (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 1 (κ z)))))
+
+    finalEq :
+      mkNF (Tₛ ++ᵗ W′)
+           (map (_⋯ (σ ·ₖ liftRen U sw)) es ++ map (_⋯ (κ ·ₖ wkTel W′)) es₂)
+        ≡ combine (mkNF (s ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t sw′)))
+                        (map (_⋯ liftRen t sw′) es))
+                  (mkNF t₂ es₂)
+    finalEq =
+      NF-≡ e
+        (subst-++ᵗ Tₛ e W′
+           ■ cong (Tₛ ++ᵗ_)
+               (subst-tφ e y (d ⋯ τ) (tφ x (c ⋯ τ ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel U sw))
+                  ■ cong (tφ y (d ⋯ τ))
+                      (subst-tφ e x (c ⋯ τ ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel U sw)
+                         ■ cong₂ (tφ x) (sym (chanNat c)) telEq)))
+        (subst-++ e _ _
+           ■ cong₂ _++_
+               (map-⋯-subst e thr₁ es
+                  ■ sym (map-fuse (liftRen t sw′) (liftRen (renTel t sw′) (τ ↑ ↑)) es))
+               (map-⋯-subst e thr₂ es₂))
+      ■ sym (combine-split t₂ es₂ s (tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t sw′)))
+               (map (_⋯ liftRen t sw′) es))
+
+combine-cong₁ {n} (mkNF {j₂} t₂ es₂) (perm-νφ {j} {k} s x c t es) =
+  ~-trans (≡→~ (combine-split t₂ es₂ s (tν (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 2) t)) es ■ wRw))
+    (~-trans (transp-core Tₛ Wg W′ (liftRen U sw) σ κ es es₂
+                (perm-νφ Tₛ x (c ⋯ τ) U) fix)
+      (≡→~ finalEq))
   where
     i : ℕ
     i = innerOf s j₂
 
     Tₛ : Tel n i
-    Tₛ = t₂ ++ᵗ renTel s j₂
+    Tₛ = t₂ ++ᵗ renTel s (wkTel t₂)
 
     τ : j →ᵣ i
     τ = liftRen s (wkTel t₂)
 
-    u : Tel (1 + (2 + i)) (innerOf t (1 + (2 + i)))
-    u = renTel t (1 + (2 + i))
+    κ : j₂ →ᵣ i
+    κ = wkTel (renTel s (wkTel t₂))
+
+    sw : (1 + (2 + i)) →ᵣ (2 + (1 + i))
+    sw = assocSwapᵣ 1 2
+
+    sw′ : (1 + (2 + j)) →ᵣ (2 + (1 + j))
+    sw′ = assocSwapᵣ 1 2
+
+    U : Tel (1 + (2 + i)) (innerOf t (1 + (2 + i)))
+    U = renTel t (τ ↑* 2 ↑)
 
     σ : k →ᵣ innerOf t (1 + (2 + i))
     σ = liftRen t (τ ↑* 2 ↑)
 
-    σ′ : k →ᵣ innerOf t (1 + (2 + i))
-    σ′ = liftRen t (τ ↑ ↑* 2)
+    chanNat2 : ∀ (e : Tm j) →
+               e ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ (τ ↑* 2) ≡ e ⋯ τ ⋯ weaken* ⦃ Kᵣ ⦄ 2
+    chanNat2 e = fusion e (weaken* ⦃ Kᵣ ⦄ 2) (τ ↑* 2)
+                   ■ ⋯-cong e (λ z → sym (↑*-wk τ 2 z))
+                   ■ sym (fusion e τ (weaken* ⦃ Kᵣ ⦄ 2))
 
-    ξ : k →ᵣ k
-    ξ = liftId t (assocSwapᵣ 1 2)
+    Wg : Tel i (innerOf t (1 + (2 + i)))
+    Wg = tν (tφ x (c ⋯ τ ⋯ weaken* ⦃ Kᵣ ⦄ 2) U)
 
-    natσ : σ ·ₖ liftId u (assocSwapᵣ 1 2) ≗ ξ ·ₖ σ′
-    natσ = liftId-liftRen-nat t (τ ↑* 2 ↑) (τ ↑ ↑* 2)
-             (assocSwapᵣ 1 2) (assocSwapᵣ 1 2)
-             (λ z → sym (dist-↑*-assocSwap 1 2 τ z))
+    W′ : Tel i (innerOf (renTel t (τ ↑* 2 ↑)) (2 + (1 + i)))
+    W′ = tφ x (c ⋯ τ) (tν (renTel U sw))
 
-    fix : ∀ z → liftId u (assocSwapᵣ 1 2) (wkTel (tν (tφ x u)) z)
-                  ≡ wkTel (tφ x (tν u)) z
-    fix z = liftId-wkTel u (assocSwapᵣ 1 2)
-              (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 2 z))
-              ■ cong (wkTel u) (aswap-wk 1 2 z)
+    wRw : mkNF (Tₛ ++ᵗ tν (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ (τ ↑* 2)) U))
+               (map (_⋯ σ) es ++ map (_⋯ (κ ·ₖ wkTel (tν (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 2 ⋯ (τ ↑* 2)) U)))) es₂)
+        ≡ mkNF (Tₛ ++ᵗ Wg) (map (_⋯ σ) es ++ map (_⋯ (κ ·ₖ wkTel Wg)) es₂)
+    wRw = cong (λ W → mkNF (Tₛ ++ᵗ W) (map (_⋯ σ) es ++ map (_⋯ (κ ·ₖ wkTel W)) es₂))
+               (cong (λ ch → tν (tφ x ch U)) (chanNat2 c))
+
+    fix : ∀ z → liftRen U sw (wkTel Wg z) ≡ wkTel W′ z
+    fix z = sym (wkTel-nat U sw (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 2 z)))
+              ■ cong (wkTel (renTel U sw)) (aswap-wk 1 2 z)
+
+    p : innerOf (renTel t (τ ↑* 2 ↑)) (2 + (1 + i)) ≡ innerOf t (2 + (1 + i))
+    p = innerOf-renTel t (τ ↑* 2 ↑) (2 + (1 + i))
+
+    q : innerOf (renTel t sw′) (2 + (1 + i)) ≡ innerOf t (2 + (1 + i))
+    q = innerOf-renTel t sw′ (2 + (1 + i))
+
+    e : innerOf (renTel t (τ ↑* 2 ↑)) (2 + (1 + i)) ≡ innerOf (renTel t sw′) (2 + (1 + i))
+    e = p ■ sym q
+
+    comm : (τ ↑* 2 ↑) ·ₖ sw ≗ sw′ ·ₖ (τ ↑ ↑* 2)
+    comm z = sym (dist-↑*-assocSwap 1 2 τ z)
+
+    v : Tel (2 + (1 + i)) (innerOf (renTel t sw′) (2 + (1 + i)))
+    v = renTel (renTel t sw′) (τ ↑ ↑* 2)
+
+    telEq : subst (Tel (2 + (1 + i))) e (renTel U sw) ≡ v
+    telEq = joinSubst (Tel (2 + (1 + i))) p q (renTel U sw) v
+              (renTel-renTel t (τ ↑* 2 ↑) sw
+                 ■ renTel-cong t comm
+                 ■ sym (renTel-renTel t sw′ (τ ↑ ↑* 2)))
+
+    thr₁ : ∀ z → subst 𝔽 e ((σ ·ₖ liftRen U sw) z)
+                   ≡ (liftRen t sw′ ·ₖ liftRen (renTel t sw′) (τ ↑ ↑* 2)) z
+    thr₁ z = joinSubst 𝔽 p q _ _
+               (liftRen-· t (τ ↑* 2 ↑) sw z
+                  ■ liftRen-cong t comm z
+                  ■ sym (liftRen-· t sw′ (τ ↑ ↑* 2) z))
+
+    thr₂ : ∀ z → subst 𝔽 e ((κ ·ₖ wkTel W′) z)
+                   ≡ (κ ·ₖ wkTel (tφ x (c ⋯ τ) (tν v))) z
+    thr₂ z = joinSubst 𝔽 p q _ _
+               (wkTel-renTel t (τ ↑* 2 ↑) sw (weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 1 (κ z)))
+                  ■ cong (λ T → wkTel T (weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 1 (κ z)))) (renTel-cong t comm)
+                  ■ sym (wkTel-renTel t sw′ (τ ↑ ↑* 2) (weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 1 (κ z)))))
+
+    finalEq :
+      mkNF (Tₛ ++ᵗ W′)
+           (map (_⋯ (σ ·ₖ liftRen U sw)) es ++ map (_⋯ (κ ·ₖ wkTel W′)) es₂)
+        ≡ combine (mkNF (s ++ᵗ tφ x c (tν (renTel t sw′)))
+                        (map (_⋯ liftRen t sw′) es))
+                  (mkNF t₂ es₂)
+    finalEq =
+      NF-≡ e
+        (subst-++ᵗ Tₛ e W′
+           ■ cong (Tₛ ++ᵗ_)
+               (subst-tφ e x (c ⋯ τ) (tν (renTel U sw))
+                  ■ cong (tφ x (c ⋯ τ)) (subst-tν e (renTel U sw) ■ cong tν telEq)))
+        (subst-++ e _ _
+           ■ cong₂ _++_
+               (map-⋯-subst e thr₁ es
+                  ■ sym (map-fuse (liftRen t sw′) (liftRen (renTel t sw′) (τ ↑ ↑* 2)) es))
+               (map-⋯-subst e thr₂ es₂))
+      ■ sym (combine-split t₂ es₂ s (tφ x c (tν (renTel t sw′))) (map (_⋯ liftRen t sw′) es))
 
 ------------------------------------------------------------------------
 -- The congruence.
