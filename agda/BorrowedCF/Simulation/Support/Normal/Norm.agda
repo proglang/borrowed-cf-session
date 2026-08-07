@@ -38,9 +38,9 @@ open Nat.Variables
 -- NOT recursive — that is what makes `nf` structural.
 combine : ∀ {n} → NF n → NF n → NF n
 combine {n} (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) =
-  mkNF (t₂ ++ᵗ renTel t₁ j₂)
-       ( map (_⋯ liftRen t₁ (wkTel t₂))    es₁
-      ++ map (_⋯ wkTel (renTel t₁ j₂))     es₂ )
+  mkNF (t₂ ++ᵗ renTel t₁ (wkTel t₂))
+       ( map (_⋯ liftRen t₁ (wkTel t₂))         es₁
+      ++ map (_⋯ wkTel (renTel t₁ (wkTel t₂)))  es₂ )
 
 ------------------------------------------------------------------------
 -- The structural normaliser.
@@ -50,7 +50,7 @@ nf : ∀ {n} → Proc n → NF n
 nf ⟪ e ⟫   = mkNF [] (e ∷ [])
 nf (P ∥ Q) = combine (nf P) (nf Q)
 nf (ν P)   = mkNF (tν   (tel (nf P))) (thr (nf P))
-nf (φ f P) = mkNF (tφ f (tel (nf P))) (thr (nf P))
+nf (φ f c P) = mkNF (tφ f c (tel (nf P))) (thr (nf P))
 
 ------------------------------------------------------------------------
 -- It is a normaliser: every process is ≋ to the plugging of its normal form.
@@ -59,17 +59,17 @@ nf (φ f P) = mkNF (tφ f (tel (nf P))) (thr (nf P))
 nf-sound : ∀ {n} (P : Proc n) → P ≋ ⌈ nf P ⌉
 nf-sound ⟪ e ⟫   = ≋-sym ∥-unitʳ
 nf-sound (ν P)   = ν-cong (nf-sound P)
-nf-sound (φ f P) = φ-cong (nf-sound P)
+nf-sound (φ f c P) = φ-cong (nf-sound P)
 nf-sound (P ∥ Q) with nf P | nf Q | nf-sound P | nf-sound Q
 ... | mkNF {j₁} t₁ es₁ | mkNF {j₂} t₂ es₂ | cP | cQ =
   ∥-cong cP cQ
     ◅◅ tel-ext t₂ (pars es₂) (plug t₁ (pars es₁))
     ◅◅ plug-cong t₂
          ( ≡→≋ (cong (_∥ pars es₂) (plug-⋯ₚ t₁ (wkTel t₂) (pars es₁)))
-        ◅◅ tel-extˡ (renTel t₁ j₂) (pars es₁ ⋯ₚ liftRen t₁ (wkTel t₂)) (pars es₂)
-        ◅◅ plug-cong (renTel t₁ j₂)
+        ◅◅ tel-extˡ (renTel t₁ (wkTel t₂)) (pars es₁ ⋯ₚ liftRen t₁ (wkTel t₂)) (pars es₂)
+        ◅◅ plug-cong (renTel t₁ (wkTel t₂))
              ( ≡→≋ (cong₂ _∥_ (pars-⋯ₚ es₁ (liftRen t₁ (wkTel t₂)))
-                              (pars-⋯ₚ es₂ (wkTel (renTel t₁ j₂))))
+                              (pars-⋯ₚ es₂ (wkTel (renTel t₁ (wkTel t₂)))))
             ◅◅ pars-++ (map (_⋯ liftRen t₁ (wkTel t₂)) es₁)
-                       (map (_⋯ wkTel (renTel t₁ j₂))  es₂) ) )
-    ◅◅ ≡→≋ (sym (plug-++ᵗ t₂ (renTel t₁ j₂) _))
+                       (map (_⋯ wkTel (renTel t₁ (wkTel t₂)))  es₂) ) )
+    ◅◅ ≡→≋ (sym (plug-++ᵗ t₂ (renTel t₁ (wkTel t₂)) _))

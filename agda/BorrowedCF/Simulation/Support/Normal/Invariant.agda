@@ -34,25 +34,25 @@ open Nat.Variables
 νcount ⟪ _ ⟫   = 0
 νcount (P ∥ Q) = νcount P + νcount Q
 νcount (ν P)   = suc (νcount P)
-νcount (φ _ P) = νcount P
+νcount (φ _ _ P) = νcount P
 
 φcount : ∀ {n} → Proc n → ℕ
 φcount ⟪ _ ⟫   = 0
 φcount (P ∥ Q) = φcount P + φcount Q
 φcount (ν P)   = φcount P
-φcount (φ _ P) = suc (φcount P)
+φcount (φ _ _ P) = suc (φcount P)
 
 νcount-⋯ₚ : ∀ {n m} (P : Proc n) (ρ : n →ᵣ m) → νcount (P ⋯ₚ ρ) ≡ νcount P
 νcount-⋯ₚ ⟪ _ ⟫   ρ = refl
 νcount-⋯ₚ (P ∥ Q) ρ = cong₂ _+_ (νcount-⋯ₚ P ρ) (νcount-⋯ₚ Q ρ)
 νcount-⋯ₚ (ν P)   ρ = cong suc (νcount-⋯ₚ P (ρ ↑* 2))
-νcount-⋯ₚ (φ _ P) ρ = νcount-⋯ₚ P (ρ ↑)
+νcount-⋯ₚ (φ _ _ P) ρ = νcount-⋯ₚ P (ρ ↑)
 
 φcount-⋯ₚ : ∀ {n m} (P : Proc n) (ρ : n →ᵣ m) → φcount (P ⋯ₚ ρ) ≡ φcount P
 φcount-⋯ₚ ⟪ _ ⟫   ρ = refl
 φcount-⋯ₚ (P ∥ Q) ρ = cong₂ _+_ (φcount-⋯ₚ P ρ) (φcount-⋯ₚ Q ρ)
 φcount-⋯ₚ (ν P)   ρ = φcount-⋯ₚ P (ρ ↑* 2)
-φcount-⋯ₚ (φ _ P) ρ = cong suc (φcount-⋯ₚ P (ρ ↑))
+φcount-⋯ₚ (φ _ _ P) ρ = cong suc (φcount-⋯ₚ P (ρ ↑))
 
 ------------------------------------------------------------------------
 -- Every generator preserves them.
@@ -135,13 +135,13 @@ thrcount : ∀ {n} → Proc n → ℕ
 thrcount ⟪ e ⟫   = tcount e
 thrcount (P ∥ Q) = thrcount P + thrcount Q
 thrcount (ν P)   = thrcount P
-thrcount (φ _ P) = thrcount P
+thrcount (φ _ _ P) = thrcount P
 
 thrcount-⋯ₚ : ∀ {n m} (P : Proc n) (ρ : n →ᵣ m) → thrcount (P ⋯ₚ ρ) ≡ thrcount P
 thrcount-⋯ₚ ⟪ e ⟫   ρ = tcount-⋯ e ρ
 thrcount-⋯ₚ (P ∥ Q) ρ = cong₂ _+_ (thrcount-⋯ₚ P ρ) (thrcount-⋯ₚ Q ρ)
 thrcount-⋯ₚ (ν P)   ρ = thrcount-⋯ₚ P (ρ ↑* 2)
-thrcount-⋯ₚ (φ _ P) ρ = thrcount-⋯ₚ P (ρ ↑)
+thrcount-⋯ₚ (φ _ _ P) ρ = thrcount-⋯ₚ P (ρ ↑)
 
 ≋′-thrcount : ∀ {n} {P Q : Proc n} → P ≋′ Q → thrcount P ≡ thrcount Q
 ≋′-thrcount (∥-comm′ {P = P} {Q}) = Nat.+-comm (thrcount P) (thrcount Q)

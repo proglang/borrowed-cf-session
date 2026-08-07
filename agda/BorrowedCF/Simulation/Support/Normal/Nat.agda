@@ -30,18 +30,18 @@ open Nat.Variables
 ------------------------------------------------------------------------
 
 -- Re-basing does not change the shape, hence does not change `innerOf`.
-innerOf-renTel : ∀ {n k} (t : Tel n k) (a b : ℕ) →
-                 innerOf (renTel t a) b ≡ innerOf t b
-innerOf-renTel []       a b = refl
-innerOf-renTel (tν t)   a b = innerOf-renTel t (2 + a) (2 + b)
-innerOf-renTel (tφ f t) a b = innerOf-renTel t (1 + a) (1 + b)
+innerOf-renTel : ∀ {n k n′} (t : Tel n k) (ρ : n →ᵣ n′) (b : ℕ) →
+                 innerOf (renTel t ρ) b ≡ innerOf t b
+innerOf-renTel []         ρ b = refl
+innerOf-renTel (tν t)     ρ b = innerOf-renTel t (ρ ↑* 2) (2 + b)
+innerOf-renTel (tφ f c t) ρ b = innerOf-renTel t (ρ ↑)   (1 + b)
 
 -- Concatenation of telescopes composes `innerOf`.
 innerOf-++ᵗ : ∀ {n k j} (t : Tel n k) (s : Tel k j) (b : ℕ) →
               innerOf (t ++ᵗ s) b ≡ innerOf s (innerOf t b)
-innerOf-++ᵗ []       s b = refl
-innerOf-++ᵗ (tν t)   s b = innerOf-++ᵗ t s (2 + b)
-innerOf-++ᵗ (tφ f t) s b = innerOf-++ᵗ t s (1 + b)
+innerOf-++ᵗ []         s b = refl
+innerOf-++ᵗ (tν t)     s b = innerOf-++ᵗ t s (2 + b)
+innerOf-++ᵗ (tφ f c t) s b = innerOf-++ᵗ t s (1 + b)
 
 -- A telescope re-based at its own outer scope keeps its inner scope.
 innerOf-id : ∀ {n k} (t : Tel n k) → innerOf t n ≡ k
@@ -70,36 +70,46 @@ subst-tν : ∀ {n k k′} (eq : k ≡ k′) (X : Tel (2 + n) k) →
            subst (Tel n) eq (tν X) ≡ tν (subst (Tel (2 + n)) eq X)
 subst-tν refl X = refl
 
-subst-tφ : ∀ {n k k′} (eq : k ≡ k′) (f : Flag) (X : Tel (1 + n) k) →
-           subst (Tel n) eq (tφ f X) ≡ tφ f (subst (Tel (1 + n)) eq X)
-subst-tφ refl f X = refl
+subst-tφ : ∀ {n k k′} (eq : k ≡ k′) (f : Flag) (c : Tm n) (X : Tel (1 + n) k) →
+           subst (Tel n) eq (tφ f c X) ≡ tφ f c (subst (Tel (1 + n)) eq X)
+subst-tφ refl f c X = refl
 
 ------------------------------------------------------------------------
 -- A.  Re-basing is idempotent: only the SHAPE of a telescope survives it.
 ------------------------------------------------------------------------
 
-renTel-renTel : ∀ {n k} (t : Tel n k) (a b : ℕ) →
-                subst (Tel b) (innerOf-renTel t a b) (renTel (renTel t a) b) ≡ renTel t b
-renTel-renTel []       a b = refl
-renTel-renTel (tν t)   a b =
-  subst-tν (innerOf-renTel t (2 + a) (2 + b)) _
-    ■ cong tν (renTel-renTel t (2 + a) (2 + b))
-renTel-renTel (tφ f t) a b =
-  subst-tφ (innerOf-renTel t (1 + a) (1 + b)) f _
-    ■ cong (tφ f) (renTel-renTel t (1 + a) (1 + b))
+-- Re-basing respects pointwise-equal renamings (needed because a tφ now carries
+-- a channel term that renaming acts on).
+renTel-cong : ∀ {n k n′} (t : Tel n k) {ρ σ : n →ᵣ n′} → ρ ≗ σ → renTel t ρ ≡ renTel t σ
+renTel-cong []         eq = refl
+renTel-cong (tν t)     eq = cong tν (renTel-cong t (eq ~↑* 2))
+renTel-cong (tφ f c t) eq = cong₂ (tφ f) (⋯-cong c eq) (renTel-cong t (eq ~↑))
+
+renTel-renTel : ∀ {n k n′ n″} (t : Tel n k) (ρ : n →ᵣ n′) (σ : n′ →ᵣ n″) →
+                subst (Tel n″) (innerOf-renTel t ρ n″) (renTel (renTel t ρ) σ) ≡ renTel t (ρ ·ₖ σ)
+renTel-renTel []         ρ σ = refl
+renTel-renTel (tν t)     ρ σ =
+  subst-tν (innerOf-renTel t (ρ ↑* 2) _) _
+    ■ cong tν (renTel-renTel t (ρ ↑* 2) (σ ↑* 2)
+                 ■ renTel-cong t (λ y → sym (dist-↑*-· 2 ρ σ y)))
+renTel-renTel (tφ f c t) ρ σ =
+  subst-tφ (innerOf-renTel t (ρ ↑) _) f (c ⋯ ρ ⋯ σ) _
+    ■ cong₂ (tφ f) (fusion c ρ σ)
+                   (renTel-renTel t (ρ ↑) (σ ↑)
+                      ■ renTel-cong t (λ y → sym (dist-↑-· ρ σ y)))
 
 ------------------------------------------------------------------------
 -- B.  Re-basing distributes over concatenation.
 ------------------------------------------------------------------------
 
-renTel-++ᵗ : ∀ {n k j} (t : Tel n k) (s : Tel k j) (b : ℕ) →
-             subst (Tel b) (innerOf-++ᵗ t s b) (renTel (t ++ᵗ s) b)
-               ≡ renTel t b ++ᵗ renTel s (innerOf t b)
-renTel-++ᵗ []       s b = refl
-renTel-++ᵗ (tν t)   s b =
-  subst-tν (innerOf-++ᵗ t s (2 + b)) _ ■ cong tν (renTel-++ᵗ t s (2 + b))
-renTel-++ᵗ (tφ f t) s b =
-  subst-tφ (innerOf-++ᵗ t s (1 + b)) f _ ■ cong (tφ f) (renTel-++ᵗ t s (1 + b))
+renTel-++ᵗ : ∀ {n k j n′} (t : Tel n k) (s : Tel k j) (ρ : n →ᵣ n′) →
+             subst (Tel n′) (innerOf-++ᵗ t s n′) (renTel (t ++ᵗ s) ρ)
+               ≡ renTel t ρ ++ᵗ renTel s (liftRen t ρ)
+renTel-++ᵗ []         s ρ = refl
+renTel-++ᵗ (tν t)     s ρ =
+  subst-tν (innerOf-++ᵗ t s _) _ ■ cong tν (renTel-++ᵗ t s (ρ ↑* 2))
+renTel-++ᵗ (tφ f c t) s ρ =
+  subst-tφ (innerOf-++ᵗ t s _) f (c ⋯ ρ) _ ■ cong (tφ f (c ⋯ ρ)) (renTel-++ᵗ t s (ρ ↑))
 
 ------------------------------------------------------------------------
 -- C.  The matching facts for the lifted renamings, pointwise on variables.
@@ -107,28 +117,28 @@ renTel-++ᵗ (tφ f t) s b =
 
 liftRen-cong : ∀ {n k n′} (t : Tel n k) {ρ₁ ρ₂ : n →ᵣ n′} →
                ρ₁ ≗ ρ₂ → liftRen t ρ₁ ≗ liftRen t ρ₂
-liftRen-cong []       eq = eq
-liftRen-cong (tν t)   eq = liftRen-cong t (eq ~↑* 2)
-liftRen-cong (tφ f t) eq = liftRen-cong t (eq ~↑)
+liftRen-cong []         eq = eq
+liftRen-cong (tν t)     eq = liftRen-cong t (eq ~↑* 2)
+liftRen-cong (tφ f c t) eq = liftRen-cong t (eq ~↑)
 
 -- Lifting along a concatenation is lifting twice.
 liftRen-++ᵗ : ∀ {n k j n′} (t : Tel n k) (s : Tel k j) (ρ : n →ᵣ n′) (x : 𝔽 j) →
               subst 𝔽 (innerOf-++ᵗ t s n′) (liftRen (t ++ᵗ s) ρ x)
                 ≡ liftRen s (liftRen t ρ) x
-liftRen-++ᵗ []       s ρ x = refl
-liftRen-++ᵗ (tν t)   s ρ x = liftRen-++ᵗ t s (ρ ↑* 2) x
-liftRen-++ᵗ (tφ f t) s ρ x = liftRen-++ᵗ t s (ρ ↑)   x
+liftRen-++ᵗ []         s ρ x = refl
+liftRen-++ᵗ (tν t)     s ρ x = liftRen-++ᵗ t s (ρ ↑* 2) x
+liftRen-++ᵗ (tφ f c t) s ρ x = liftRen-++ᵗ t s (ρ ↑)   x
 
 -- Lifting composes: re-basing the telescope is exactly what lets the two lifts
 -- meet.
 liftRen-· : ∀ {n k n′ a} (t : Tel n k) (ρ : n →ᵣ n′) (σ : n′ →ᵣ a) (x : 𝔽 k) →
-            subst 𝔽 (innerOf-renTel t n′ a) (liftRen (renTel t n′) σ (liftRen t ρ x))
+            subst 𝔽 (innerOf-renTel t ρ a) (liftRen (renTel t ρ) σ (liftRen t ρ x))
               ≡ liftRen t (ρ ·ₖ σ) x
-liftRen-· []       ρ σ x = refl
-liftRen-· (tν t)   ρ σ x =
+liftRen-· []         ρ σ x = refl
+liftRen-· (tν t)     ρ σ x =
   liftRen-· t (ρ ↑* 2) (σ ↑* 2) x
     ■ liftRen-cong t (λ y → sym (dist-↑*-· 2 ρ σ y)) x
-liftRen-· (tφ f t) ρ σ x =
+liftRen-· (tφ f c t) ρ σ x =
   liftRen-· t (ρ ↑) (σ ↑) x
     ■ liftRen-cong t (λ y → sym (dist-↑-· ρ σ y)) x
 
@@ -140,12 +150,12 @@ liftRen-· (tφ f t) ρ σ x =
 -- transport in it: the two ways of getting from the outer scope into the inner
 -- one — weaken through `t`, then rename — agree.
 wkTel-nat : ∀ {n k n′} (t : Tel n k) (ρ : n →ᵣ n′) (x : 𝔽 n) →
-            wkTel (renTel t n′) (ρ x) ≡ liftRen t ρ (wkTel t x)
-wkTel-nat []       ρ x = refl
-wkTel-nat (tν t)   ρ x =
-  cong (wkTel (renTel t _)) (↑*-wk ρ 2 x) ■ wkTel-nat t (ρ ↑* 2) (weaken* ⦃ Kᵣ ⦄ 2 x)
-wkTel-nat (tφ f t) ρ x =
-  cong (wkTel (renTel t _)) (↑*-wk ρ 1 x) ■ wkTel-nat t (ρ ↑)   (weaken* ⦃ Kᵣ ⦄ 1 x)
+            wkTel (renTel t ρ) (ρ x) ≡ liftRen t ρ (wkTel t x)
+wkTel-nat []         ρ x = refl
+wkTel-nat (tν t)     ρ x =
+  cong (wkTel (renTel t (ρ ↑* 2))) (↑*-wk ρ 2 x) ■ wkTel-nat t (ρ ↑* 2) (weaken* ⦃ Kᵣ ⦄ 2 x)
+wkTel-nat (tφ f c t) ρ x =
+  cong (wkTel (renTel t (ρ ↑)))   (↑*-wk ρ 1 x) ■ wkTel-nat t (ρ ↑)   (weaken* ⦃ Kᵣ ⦄ 1 x)
 
 ------------------------------------------------------------------------
 -- Transport plumbing.
@@ -171,12 +181,12 @@ subst-wkTel : ∀ {n k k′} (eq : k ≡ k′) (t : Tel n k) (x : 𝔽 n) →
 subst-wkTel refl t x = refl
 
 -- A + D packaged: re-basing twice weakens like re-basing once.
-wkTel-renTel : ∀ {n k} (t : Tel n k) (a b : ℕ) (x : 𝔽 b) →
-               subst 𝔽 (innerOf-renTel t a b) (wkTel (renTel (renTel t a) b) x)
-                 ≡ wkTel (renTel t b) x
-wkTel-renTel t a b x =
-  subst-wkTel (innerOf-renTel t a b) (renTel (renTel t a) b) x
-    ■ cong (λ T → wkTel T x) (renTel-renTel t a b)
+wkTel-renTel : ∀ {n k n′ n″} (t : Tel n k) (ρ : n →ᵣ n′) (σ : n′ →ᵣ n″) (x : 𝔽 n″) →
+               subst 𝔽 (innerOf-renTel t ρ n″) (wkTel (renTel (renTel t ρ) σ) x)
+                 ≡ wkTel (renTel t (ρ ·ₖ σ)) x
+wkTel-renTel t ρ σ x =
+  subst-wkTel (innerOf-renTel t ρ _) (renTel (renTel t ρ) σ) x
+    ■ cong (λ T → wkTel T x) (renTel-renTel t ρ σ)
 
 subst-++ : ∀ {k k′} (eq : k ≡ k′) (xs ys : List (Tm k)) →
            subst (λ j → List (Tm j)) eq (xs ++ ys)
@@ -217,115 +227,122 @@ Combine-nat = ∀ {n n′} (N₁ N₂ : NF n) (ρ : n →ᵣ n′) →
 -- common mid-point (`joinSubst`) rather than transporting one into the other.
 combine-nat : Combine-nat
 combine-nat {n} {n′} (mkNF {j₁} t₁ es₁) (mkNF {j₂} t₂ es₂) ρ =
-  NF-≡ (p ■ sym q)
-       (joinSubst (Tel n′) p q
-          (renTel t₂ n′ ++ᵗ renTel (renTel t₁ n′) j₂′)
-          (renTel (t₂ ++ᵗ renTel t₁ j₂) n′)
+  NF-≡ (pL ■ sym pR)
+       (joinSubst (Tel n′) pL pR
+          (renTel t₂ ρ ++ᵗ renTel (renTel t₁ ρ) (wkTel (renTel t₂ ρ)))
+          (renTel (t₂ ++ᵗ renTel t₁ (wkTel t₂)) ρ)
           (telL ■ sym telR))
-       (joinSubst (λ j → List (Tm j)) p q
-          ( map (_⋯ liftRen (renTel t₁ n′) (wkTel (renTel t₂ n′)))
+       (joinSubst (λ j → List (Tm j)) pL pR
+          ( map (_⋯ liftRen (renTel t₁ ρ) (wkTel (renTel t₂ ρ)))
                 (map (_⋯ liftRen t₁ ρ) es₁)
-         ++ map (_⋯ wkTel (renTel (renTel t₁ n′) j₂′))
+         ++ map (_⋯ wkTel (renTel (renTel t₁ ρ) (wkTel (renTel t₂ ρ))))
                 (map (_⋯ liftRen t₂ ρ) es₂) )
-          ( map (_⋯ liftRen (t₂ ++ᵗ renTel t₁ j₂) ρ)
+          ( map (_⋯ liftRen (t₂ ++ᵗ renTel t₁ (wkTel t₂)) ρ)
                 ( map (_⋯ liftRen t₁ (wkTel t₂)) es₁
-               ++ map (_⋯ wkTel (renTel t₁ j₂)) es₂ ) )
+               ++ map (_⋯ wkTel (renTel t₁ (wkTel t₂))) es₂ ) )
           (thrL ■ sym thrR))
   where
-    j₂′ : ℕ
-    j₂′ = innerOf t₂ n′
+    J₂ : ℕ
+    J₂ = innerOf t₂ n′
 
-    p : innerOf (renTel t₁ n′) j₂′ ≡ innerOf t₁ j₂′
-    p = innerOf-renTel t₁ n′ j₂′
+    pL : innerOf (renTel t₁ ρ) J₂ ≡ innerOf t₁ J₂
+    pL = innerOf-renTel t₁ ρ J₂
 
-    q₁ : innerOf (t₂ ++ᵗ renTel t₁ j₂) n′ ≡ innerOf (renTel t₁ j₂) j₂′
-    q₁ = innerOf-++ᵗ t₂ (renTel t₁ j₂) n′
+    q₁ : innerOf (t₂ ++ᵗ renTel t₁ (wkTel t₂)) n′ ≡ innerOf (renTel t₁ (wkTel t₂)) J₂
+    q₁ = innerOf-++ᵗ t₂ (renTel t₁ (wkTel t₂)) n′
 
-    q₂ : innerOf (renTel t₁ j₂) j₂′ ≡ innerOf t₁ j₂′
-    q₂ = innerOf-renTel t₁ j₂ j₂′
+    q₂ : innerOf (renTel t₁ (wkTel t₂)) J₂ ≡ innerOf t₁ J₂
+    q₂ = innerOf-renTel t₁ (wkTel t₂) J₂
 
-    q : innerOf (t₂ ++ᵗ renTel t₁ j₂) n′ ≡ innerOf t₁ j₂′
-    q = q₁ ■ q₂
+    pR : innerOf (t₂ ++ᵗ renTel t₁ (wkTel t₂)) n′ ≡ innerOf t₁ J₂
+    pR = q₁ ■ q₂
 
-    μ₁ : j₁ →ᵣ innerOf t₁ j₂′
-    μ₁ = liftRen t₁ (ρ ·ₖ wkTel (renTel t₂ n′))
+    -- the mid-point renamings
+    ν₀ : n →ᵣ J₂
+    ν₀ = wkTel t₂ ·ₖ liftRen t₂ ρ
 
-    μ₂ : j₂ →ᵣ innerOf t₁ j₂′
-    μ₂ = liftRen t₂ ρ ·ₖ wkTel (renTel t₁ j₂′)
+    μ₁ : j₁ →ᵣ innerOf t₁ J₂
+    μ₁ = liftRen t₁ ν₀
 
-    telL : subst (Tel n′) p (renTel t₂ n′ ++ᵗ renTel (renTel t₁ n′) j₂′)
-             ≡ renTel t₂ n′ ++ᵗ renTel t₁ j₂′
-    telL = subst-++ᵗ (renTel t₂ n′) p (renTel (renTel t₁ n′) j₂′)
-             ■ cong (renTel t₂ n′ ++ᵗ_) (renTel-renTel t₁ n′ j₂′)
+    μ₂ : j₂ →ᵣ innerOf t₁ J₂
+    μ₂ = liftRen t₂ ρ ·ₖ wkTel (renTel t₁ ν₀)
 
-    telR : subst (Tel n′) q (renTel (t₂ ++ᵗ renTel t₁ j₂) n′)
-             ≡ renTel t₂ n′ ++ᵗ renTel t₁ j₂′
+    telL : subst (Tel n′) pL (renTel t₂ ρ ++ᵗ renTel (renTel t₁ ρ) (wkTel (renTel t₂ ρ)))
+             ≡ renTel t₂ ρ ++ᵗ renTel t₁ ν₀
+    telL = subst-++ᵗ (renTel t₂ ρ) pL (renTel (renTel t₁ ρ) (wkTel (renTel t₂ ρ)))
+             ■ cong (renTel t₂ ρ ++ᵗ_)
+                    (renTel-renTel t₁ ρ (wkTel (renTel t₂ ρ))
+                       ■ renTel-cong t₁ (wkTel-nat t₂ ρ))
+
+    telR : subst (Tel n′) pR (renTel (t₂ ++ᵗ renTel t₁ (wkTel t₂)) ρ)
+             ≡ renTel t₂ ρ ++ᵗ renTel t₁ ν₀
     telR = subst-■ (Tel n′) q₁ q₂ _
-             ■ cong (subst (Tel n′) q₂) (renTel-++ᵗ t₂ (renTel t₁ j₂) n′)
-             ■ subst-++ᵗ (renTel t₂ n′) q₂ (renTel (renTel t₁ j₂) j₂′)
-             ■ cong (renTel t₂ n′ ++ᵗ_) (renTel-renTel t₁ j₂ j₂′)
+             ■ cong (subst (Tel n′) q₂) (renTel-++ᵗ t₂ (renTel t₁ (wkTel t₂)) ρ)
+             ■ subst-++ᵗ (renTel t₂ ρ) q₂ (renTel (renTel t₁ (wkTel t₂)) (liftRen t₂ ρ))
+             ■ cong (renTel t₂ ρ ++ᵗ_) (renTel-renTel t₁ (wkTel t₂) (liftRen t₂ ρ))
 
-    h₁ : ∀ x → subst 𝔽 p
-                 ((liftRen t₁ ρ ·ₖ liftRen (renTel t₁ n′) (wkTel (renTel t₂ n′))) x)
+    h₁ : ∀ x → subst 𝔽 pL
+                 ((liftRen t₁ ρ ·ₖ liftRen (renTel t₁ ρ) (wkTel (renTel t₂ ρ))) x)
                  ≡ μ₁ x
-    h₁ = liftRen-· t₁ ρ (wkTel (renTel t₂ n′))
+    h₁ x = liftRen-· t₁ ρ (wkTel (renTel t₂ ρ)) x
+             ■ liftRen-cong t₁ (wkTel-nat t₂ ρ) x
 
-    h₂ : ∀ x → subst 𝔽 p
-                 ((liftRen t₂ ρ ·ₖ wkTel (renTel (renTel t₁ n′) j₂′)) x)
+    h₂ : ∀ x → subst 𝔽 pL
+                 ((liftRen t₂ ρ ·ₖ wkTel (renTel (renTel t₁ ρ) (wkTel (renTel t₂ ρ)))) x)
                  ≡ μ₂ x
-    h₂ x = wkTel-renTel t₁ n′ j₂′ (liftRen t₂ ρ x)
+    h₂ x = wkTel-renTel t₁ ρ (wkTel (renTel t₂ ρ)) (liftRen t₂ ρ x)
+             ■ cong (λ T → wkTel T (liftRen t₂ ρ x)) (renTel-cong t₁ (wkTel-nat t₂ ρ))
 
-    thrL : subst (λ j → List (Tm j)) p
-             ( map (_⋯ liftRen (renTel t₁ n′) (wkTel (renTel t₂ n′)))
+    thrL : subst (λ j → List (Tm j)) pL
+             ( map (_⋯ liftRen (renTel t₁ ρ) (wkTel (renTel t₂ ρ)))
                    (map (_⋯ liftRen t₁ ρ) es₁)
-            ++ map (_⋯ wkTel (renTel (renTel t₁ n′) j₂′))
+            ++ map (_⋯ wkTel (renTel (renTel t₁ ρ) (wkTel (renTel t₂ ρ))))
                    (map (_⋯ liftRen t₂ ρ) es₂) )
              ≡ map (_⋯ μ₁) es₁ ++ map (_⋯ μ₂) es₂
-    thrL = cong (subst (λ j → List (Tm j)) p)
+    thrL = cong (subst (λ j → List (Tm j)) pL)
                 (cong₂ _++_ (map-fuse (liftRen t₁ ρ) _ es₁)
                             (map-fuse (liftRen t₂ ρ) _ es₂))
-             ■ subst-++ p _ _
-             ■ cong₂ _++_ (map-⋯-subst p h₁ es₁) (map-⋯-subst p h₂ es₂)
+             ■ subst-++ pL _ _
+             ■ cong₂ _++_ (map-⋯-subst pL h₁ es₁) (map-⋯-subst pL h₂ es₂)
 
-    g₁ : ∀ x → subst 𝔽 q
-                 ((liftRen t₁ (wkTel t₂) ·ₖ liftRen (t₂ ++ᵗ renTel t₁ j₂) ρ) x)
+    g₁ : ∀ x → subst 𝔽 pR
+                 ((liftRen t₁ (wkTel t₂) ·ₖ liftRen (t₂ ++ᵗ renTel t₁ (wkTel t₂)) ρ) x)
                  ≡ μ₁ x
     g₁ x = subst-■ 𝔽 q₁ q₂ _
              ■ cong (subst 𝔽 q₂)
-                 (liftRen-++ᵗ t₂ (renTel t₁ j₂) ρ (liftRen t₁ (wkTel t₂) x))
+                 (liftRen-++ᵗ t₂ (renTel t₁ (wkTel t₂)) ρ (liftRen t₁ (wkTel t₂) x))
              ■ liftRen-· t₁ (wkTel t₂) (liftRen t₂ ρ) x
-             ■ liftRen-cong t₁ (λ y → sym (wkTel-nat t₂ ρ y)) x
 
-    g₂ : ∀ x → subst 𝔽 q
-                 ((wkTel (renTel t₁ j₂) ·ₖ liftRen (t₂ ++ᵗ renTel t₁ j₂) ρ) x)
+    g₂ : ∀ x → subst 𝔽 pR
+                 ((wkTel (renTel t₁ (wkTel t₂)) ·ₖ liftRen (t₂ ++ᵗ renTel t₁ (wkTel t₂)) ρ) x)
                  ≡ μ₂ x
     g₂ x = subst-■ 𝔽 q₁ q₂ _
              ■ cong (subst 𝔽 q₂)
-                 ( liftRen-++ᵗ t₂ (renTel t₁ j₂) ρ (wkTel (renTel t₁ j₂) x)
-                 ■ sym (wkTel-nat (renTel t₁ j₂) (liftRen t₂ ρ) x) )
-             ■ wkTel-renTel t₁ j₂ j₂′ (liftRen t₂ ρ x)
+                 ( liftRen-++ᵗ t₂ (renTel t₁ (wkTel t₂)) ρ (wkTel (renTel t₁ (wkTel t₂)) x)
+                 ■ sym (wkTel-nat (renTel t₁ (wkTel t₂)) (liftRen t₂ ρ) x) )
+             ■ wkTel-renTel t₁ (wkTel t₂) (liftRen t₂ ρ) (liftRen t₂ ρ x)
 
-    thrR : subst (λ j → List (Tm j)) q
-             ( map (_⋯ liftRen (t₂ ++ᵗ renTel t₁ j₂) ρ)
+    thrR : subst (λ j → List (Tm j)) pR
+             ( map (_⋯ liftRen (t₂ ++ᵗ renTel t₁ (wkTel t₂)) ρ)
                    ( map (_⋯ liftRen t₁ (wkTel t₂)) es₁
-                  ++ map (_⋯ wkTel (renTel t₁ j₂)) es₂ ) )
+                  ++ map (_⋯ wkTel (renTel t₁ (wkTel t₂))) es₂ ) )
              ≡ map (_⋯ μ₁) es₁ ++ map (_⋯ μ₂) es₂
-    thrR = cong (subst (λ j → List (Tm j)) q)
-                ( map-++ᴸ (liftRen (t₂ ++ᵗ renTel t₁ j₂) ρ)
+    thrR = cong (subst (λ j → List (Tm j)) pR)
+                ( map-++ᴸ (liftRen (t₂ ++ᵗ renTel t₁ (wkTel t₂)) ρ)
                     (map (_⋯ liftRen t₁ (wkTel t₂)) es₁)
-                    (map (_⋯ wkTel (renTel t₁ j₂)) es₂)
+                    (map (_⋯ wkTel (renTel t₁ (wkTel t₂))) es₂)
                 ■ cong₂ _++_
                     (map-fuse (liftRen t₁ (wkTel t₂))
-                              (liftRen (t₂ ++ᵗ renTel t₁ j₂) ρ) es₁)
-                    (map-fuse (wkTel (renTel t₁ j₂))
-                              (liftRen (t₂ ++ᵗ renTel t₁ j₂) ρ) es₂) )
-             ■ subst-++ q _ _
-             ■ cong₂ _++_ (map-⋯-subst q g₁ es₁) (map-⋯-subst q g₂ es₂)
+                              (liftRen (t₂ ++ᵗ renTel t₁ (wkTel t₂)) ρ) es₁)
+                    (map-fuse (wkTel (renTel t₁ (wkTel t₂)))
+                              (liftRen (t₂ ++ᵗ renTel t₁ (wkTel t₂)) ρ) es₂) )
+             ■ subst-++ pR _ _
+             ■ cong₂ _++_ (map-⋯-subst pR g₁ es₁) (map-⋯-subst pR g₂ es₂)
 
 nf-nat : ∀ {n n′} (P : Proc n) (ρ : n →ᵣ n′) → nf (P ⋯ₚ ρ) ≡ renNF (nf P) n′ ρ
 nf-nat ⟪ e ⟫   ρ = refl
 nf-nat (ν P)   ρ = cong νNF     (nf-nat P (ρ ↑* 2))
-nf-nat (φ f P) ρ = cong (φNF f) (nf-nat P (ρ ↑))
+nf-nat (φ f c P) ρ = cong (φNF f (c ⋯ ρ)) (nf-nat P (ρ ↑))
 nf-nat (P ∥ Q) ρ =
   cong₂ combine (nf-nat P ρ) (nf-nat Q ρ) ■ combine-nat (nf P) (nf Q) ρ
 
