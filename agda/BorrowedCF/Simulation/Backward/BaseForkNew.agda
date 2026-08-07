@@ -139,7 +139,7 @@ base-new-≋ :
   → UP.⟪ F [ K (`new s) ·¹ * ]* ⟫ ≋ U[ P ] σ
   → Σ[ P′ ∈ TP.Proc m ]
       (Star TR._─→ₚ_ P P′ ×
-       UP.ν (UP.φ UP.acq (UP.φ UP.acq UP.⟪
+       UP.ν (UP.φ UP.acq (` 0F) (UP.φ UP.acq (` 2F) UP.⟪
           (F ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [ tL ]* ⟫))
          ≈ U[ P′ ] σ)
 base-new-≋ σ Vσ Γ-S {P = TP.⟪ e₀ ⟫} ⊢P {s = s} {F = F} c =
