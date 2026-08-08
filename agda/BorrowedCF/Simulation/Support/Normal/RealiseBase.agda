@@ -22,17 +22,20 @@ open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Processes.Typed
 open import BorrowedCF.Processes.Untyped using (Flag)
+open import BorrowedCF.Processes.Translation using (UChan)
 open import BorrowedCF.Simulation.Support.TypedPrenex
 open import BorrowedCF.Simulation.Support.Normal.Form
   using (Tel; []; tν; tφ; _++ᵗ_; NF; mkNF; tel; thr; inner)
 open import BorrowedCF.Simulation.Support.Normal.Image
-  using (Slot; sν; sφ; shape; shape-subst; shape-++ᵗ; φTel; φTelᵣ; scope≡;
+  using (Slot; sν; sφ; shape; shape-subst; shape-++ᵗ; shape-renTel; φTel; φTelᵣ; scope≡;
          syncFlags; shape-φTel)
-open import BorrowedCF.Simulation.Support.Normal.Shift using (shift1; shift2)
+open import BorrowedCF.Simulation.Support.Normal.Shift
+  using (shift1; shift2; shift1-innerOf; shift2-innerOf)
+open import BorrowedCF.Simulation.Support.Normal.Rename using (renTel; renTel-id)
 open import BorrowedCF.Simulation.Support.Normal.FactorBase
-  using (Run; rnil; rφ; Block; bnil; bν)
+  using (Run; rnil; rφ; Block; bnil; bν; bubφ⁻; bubν⁻)
 open import BorrowedCF.Simulation.Support.Normal.Factor
-  using (dragTel; bswapTel)
+  using (dragTel; bswapTel; FRun; frnil; frφ; retail; tailRen)
 open import BorrowedCF.Simulation.Support.Normal.PrenexImage
   using (BTel; BScope; Bσ; BShape; blockShape; shape-prenex-image)
 
@@ -44,6 +47,7 @@ open import Data.Product using (Σ; Σ-syntax; _×_; _,_; proj₁; proj₂)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (ε; _◅◅_)
 
 open Nat.Variables
+open Fin.Patterns
 
 ------------------------------------------------------------------------
 -- The typed move layer.
@@ -141,20 +145,20 @@ map-sφ-++ (x ∷ xs) ys = cong (sφ x ∷_) (map-sφ-++ xs ys)
 -- A telescope is determined by its base scope and its shape.
 ------------------------------------------------------------------------
 
+-- SHAPE-ONLY: under linked-φ two same-shape telescopes may carry different
+-- channels, so shape fixes only the base scope (`k₁ ≡ k₂`); the telescope
+-- equality is recovered by the consumer via FIT channel-coherence.
 shape-det : ∀ {n k₁ k₂} (t₁ : Tel n k₁) (t₂ : Tel n k₂) →
-            shape t₁ ≡ shape t₂ →
-            Σ[ eq ∈ k₁ ≡ k₂ ] subst (Tel n) eq t₁ ≡ t₂
-shape-det []        []        _  = refl , refl
-shape-det []        (tν t₂)   ()
-shape-det []        (tφ f t₂) ()
-shape-det (tν t₁)   []        ()
-shape-det (tν t₁)   (tφ f t₂) ()
-shape-det (tφ f t₁) []        ()
-shape-det (tφ f t₁) (tν t₂)   ()
-shape-det (tν t₁)   (tν t₂)   eq with shape-det t₁ t₂ (L.∷-injectiveʳ eq)
-... | refl , refl = refl , refl
-shape-det (tφ f t₁) (tφ g t₂) eq with shape-det t₁ t₂ (L.∷-injectiveʳ eq)
-... | refl , refl = refl , cong (λ h → tφ h t₁) (sφ-inj (L.∷-injectiveˡ eq))
+            shape t₁ ≡ shape t₂ → k₁ ≡ k₂
+shape-det []          []          _  = refl
+shape-det []          (tν t₂)     ()
+shape-det []          (tφ f c t₂) ()
+shape-det (tν t₁)     []          ()
+shape-det (tν t₁)     (tφ f c t₂) ()
+shape-det (tφ f c t₁) []          ()
+shape-det (tφ f c t₁) (tν t₂)     ()
+shape-det (tν t₁)     (tν t₂)     eq = shape-det t₁ t₂ (L.∷-injectiveʳ eq)
+shape-det (tφ f c t₁) (tφ g d t₂) eq = shape-det t₁ t₂ (L.∷-injectiveʳ eq)
 
 ------------------------------------------------------------------------
 -- Runs: flags, uniqueness, closure properties.
@@ -181,13 +185,13 @@ Run-++ᵗ : ∀ {n k j} {r₁ : Tel n k} {r₂ : Tel k j} →
 Run-++ᵗ rnil     w₂ = w₂
 Run-++ᵗ (rφ w₁) w₂ = rφ (Run-++ᵗ w₁ w₂)
 
-Run-φTelᵣ : ∀ (B : BindGroup) (n : ℕ) → Run (φTelᵣ B n)
-Run-φTelᵣ []              n = rnil
-Run-φTelᵣ (_ ∷ [])        n = rnil
-Run-φTelᵣ (b ∷ B@(_ ∷ _)) n = rφ (Run-φTelᵣ B (suc n))
+Run-φTelᵣ : ∀ (B : BindGroup) {n : ℕ} (c : UChan n) → Run (φTelᵣ B c)
+Run-φTelᵣ []              c             = rnil
+Run-φTelᵣ (_ ∷ [])        c             = rnil
+Run-φTelᵣ (b ∷ B@(_ ∷ _)) (e₁ , x , e₂) = rφ (Run-φTelᵣ B (` 0F , suc x , wk e₂))
 
-Run-φTel : ∀ (B : BindGroup) (n : ℕ) → Run (φTel B n)
-Run-φTel B n = run-subst (scope≡ B n) (Run-φTelᵣ B n)
+Run-φTel : ∀ (B : BindGroup) {n : ℕ} (c : UChan n) → Run (φTel B c)
+Run-φTel B {n} c = run-subst (scope≡ B n) (Run-φTelᵣ B c)
 
 Block-BTel : ∀ {a b} (t : TTel a b) (n : ℕ) → Block (BTel t n)
 Block-BTel []ᵗ           n = bnil
@@ -198,32 +202,39 @@ Block-BTel (tνᵗ B₁ B₂ t) n = bν
 ------------------------------------------------------------------------
 
 shape-shift1 : ∀ {n j} (s : Tel n j) → shape (shift1 s) ≡ shape s
-shape-shift1 []       = refl
-shape-shift1 (tν s)   = cong (sν   ∷_) (shape-shift1 s)
-shape-shift1 (tφ f s) = cong (sφ f ∷_) (shape-shift1 s)
+shape-shift1 s = shape-subst (shift1-innerOf s) (renTel s (weaken* ⦃ Kᵣ ⦄ 1))
+                   ■ shape-renTel s (weaken* ⦃ Kᵣ ⦄ 1)
 
 shape-shift2 : ∀ {n j} (s : Tel n j) → shape (shift2 s) ≡ shape s
-shape-shift2 []       = refl
-shape-shift2 (tν s)   = cong (sν   ∷_) (shape-shift2 s)
-shape-shift2 (tφ f s) = cong (sφ f ∷_) (shape-shift2 s)
+shape-shift2 s = shape-subst (shift2-innerOf s) (renTel s (weaken* ⦃ Kᵣ ⦄ 2))
+                   ■ shape-renTel s (weaken* ⦃ Kᵣ ⦄ 2)
 
-shape-dragTel : ∀ {p j m k} (S : Tel p j) {r : Tel j m} (w : Run r)
-                (t : Tel m k) →
-                shape (dragTel S w t) ≡ map sφ (runFlags w) ++ (shape S ++ shape t)
-shape-dragTel S rnil t = shape-++ᵗ S t
-shape-dragTel S (rφ {f = f} w) t =
+-- Retail (subst∘renTel) preserves shape.
+shape-retail : ∀ {m k} (t : Tel m k) (ρ : m →ᵣ m) → shape (retail t ρ) ≡ shape t
+shape-retail t ρ = shape-subst (renTel-id t) (renTel t ρ) ■ shape-renTel t ρ
+
+shape-dragTel : ∀ {b p j m k} (ω : b →ᵣ p) (S : Tel p j) {r : Tel j m} {w : Run r}
+                (fw : FRun b ω S w) (t : Tel m k) →
+                shape (dragTel ω S fw t) ≡ map sφ (runFlags w) ++ (shape S ++ shape t)
+shape-dragTel ω S (frnil _ _) t = shape-++ᵗ S t
+shape-dragTel ω S (frφ {f = f} _ _ cf {r = r} {w = w} fw) t =
   cong (sφ f ∷_)
-    ( shape-dragTel (shift1 S) w t
-    ■ cong (λ z → map sφ (runFlags w) ++ (z ++ shape t)) (shape-shift1 S) )
+    ( shape-dragTel (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (shift1 S) fw
+                    (retail t (tailRen r (bubφ⁻ S)))
+    ■ cong₂ (λ zs z → map sφ (runFlags w) ++ (zs ++ z))
+            (shape-shift1 S) (shape-retail t (tailRen r (bubφ⁻ S))) )
 
-shape-bswapTel : ∀ {n i m k} (a : Tel (2 + n) i) {rb : Tel (2 + i) m}
-                 (w : Run rb) (t : Tel m k) →
-                 shape (bswapTel a w t)
-                   ≡ sν ∷ (map sφ (runFlags w) ++ (sν ∷ (shape a ++ shape t)))
-shape-bswapTel a w t =
+shape-bswapTel : ∀ {b n i m k} (a : Tel (2 + n) i) {rb : Tel (2 + i) m} {wb : Run rb}
+                 (ζ : b →ᵣ n) (fw : FRun b (ζ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (shift2 (tν a)) wb)
+                 (t : Tel m k) →
+                 shape (bswapTel a ζ fw t)
+                   ≡ sν ∷ (map sφ (runFlags wb) ++ (sν ∷ (shape a ++ shape t)))
+shape-bswapTel a {rb} {wb} ζ fw t =
   cong (sν ∷_)
-    ( shape-dragTel (tν (shift2 a)) w t
-    ■ cong (λ z → map sφ (runFlags w) ++ (sν ∷ (z ++ shape t))) (shape-shift2 a) )
+    ( shape-dragTel (ζ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (shift2 (tν a)) fw
+                    (retail t (tailRen rb (bubν⁻ (tν a))))
+    ■ cong₂ (λ zs z → map sφ (runFlags wb) ++ (zs ++ z))
+            (shape-shift2 (tν a)) (shape-retail t (tailRen rb (bubν⁻ (tν a)))) )
 
 ------------------------------------------------------------------------
 -- BShape under concatenation and telescope renaming.
