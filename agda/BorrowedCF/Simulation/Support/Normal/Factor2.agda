@@ -651,6 +651,49 @@ private
   buildW′ (tφ f cc dg) x y c d e₃ (rφ w)         = rφ (buildW′ dg x y c d e₃ w)
   buildW′ (tν dg)      x y c d e₃ ()
 
+  -- The leaf renaming `Φ = liftRen e₃ aswap11 ↑* 2` commutes through a single
+  -- run-cell conjugation of `gapρ`, reconciling the window-swapped tail `dg ++ᵗ W′`
+  -- with the original `dg ++ᵗ W` (LLcomm at the deep window, since aswap11 commutes
+  -- with the `↑*2`-lifted prefix endo pointwise).
+  gapComm : ∀ {n′ j i} (dg : Tel n′ j) (x y : Flag) (c d : Tm j)
+              (e₃ : Tel (2 + j) i) (SW : n′ →ᵣ n′) (u : 𝔽 (2 + i)) →
+            (liftId (dg ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel e₃ (assocSwapᵣ 1 1)))) SW ↑* 2)
+              ((liftRen e₃ (assocSwapᵣ 1 1) ↑* 2) u)
+              ≡ (liftRen e₃ (assocSwapᵣ 1 1) ↑* 2)
+                ((liftId (dg ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) e₃)) SW ↑* 2) u)
+  gapComm dg x y c d e₃ SW u =
+      ((λ z → liftId-++ᵗ dg (tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel e₃ (assocSwapᵣ 1 1)))) SW z) ~↑* 2)
+        ((liftRen e₃ (assocSwapᵣ 1 1) ↑* 2) u)
+    ■ sym (LLcomm e₃ (liftId dg SW ↑* 2) (assocSwapᵣ 1 1) (liftId dg SW ↑* 2)
+             (λ z → comm-↑²-aswap11-gen (liftId dg SW) z) u)
+    ■ cong (liftRen e₃ (assocSwapᵣ 1 1) ↑* 2)
+           (((λ z → sym (liftId-++ᵗ dg (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) e₃)) SW z)) ~↑* 2) u)
+
+  -- `gapρ` of the window-swapped, run-rebuilt gap commutes with the leaf swap `Φ`.
+  -- BESPOKE induction on the run prefix `dg`; the two window cells peel in swapped
+  -- order (W peels x-then-y, W′ peels y-then-x), which supplies the transposition
+  -- reconciling the leaf against `assocSwapᵣ 2 2`.
+  F : ∀ {n′ j i} (dg : Tel (2 + n′) j) (x y : Flag) (c d : Tm j) (e₃ : Tel (2 + j) i)
+        (w : Run (dg ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) e₃))) (z : 𝔽 (2 + i)) →
+      gapρ (dg ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel e₃ (assocSwapᵣ 1 1))))
+           (buildW′ dg x y c d e₃ w)
+           ((liftRen e₃ (assocSwapᵣ 1 1) ↑* 2) z)
+        ≡ (liftRen e₃ (assocSwapᵣ 1 1) ↑* 2)
+           (gapρ (dg ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) e₃)) w z)
+  F [] x y c d e₃ (rφ (rφ we₃)) z = {!Fbase!}
+  F (tφ f cc dg) x y c d e₃ (rφ w) z =
+      cong (liftId (dg ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel e₃ (assocSwapᵣ 1 1)))) (assocSwapᵣ 2 1) ↑* 2)
+           (cong (gapρ (dg ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel e₃ (assocSwapᵣ 1 1))))
+                       (buildW′ dg x y c d e₃ w))
+                 (gapComm dg x y c d e₃ (assocSwapᵣ 1 2) z))
+    ■ cong (liftId (dg ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel e₃ (assocSwapᵣ 1 1)))) (assocSwapᵣ 2 1) ↑* 2)
+           (F dg x y c d e₃ w
+              ((liftId (dg ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) e₃)) (assocSwapᵣ 1 2) ↑* 2) z))
+    ■ gapComm dg x y c d e₃ (assocSwapᵣ 2 1)
+        (gapρ (dg ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) e₃)) w
+              ((liftId (dg ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) e₃)) (assocSwapᵣ 1 2) ↑* 2) z))
+  F (tν dg) x y c d e₃ () z
+
 pushφφ : ∀ {n j k} {N : NF n} (s₂ : Tel n j) (x y : Flag) (c d : Tm j)
          (t₂ : Tel (2 + j) k) (es₂ : List (Tm k)) →
          Res N (mkNF (s₂ ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t₂)) es₂) →
