@@ -36,7 +36,8 @@ open import BorrowedCF.Simulation.Support.Normal.Witness
   using (aswap-11-inv; aswap-12-21; aswap-22-inv; swap-11-inv)
 open import BorrowedCF.Simulation.Support.Normal.Endo using (liftId-id; ++ᵗ-idʳ; ++ᵗ-assoc; liftId-liftRen; renTel-idᵗ)
 open import BorrowedCF.Simulation.Support.Normal.Bubble
-  using (map-⋯-cong; map-⋯-id; ≡→~; telMidᴺ; wkTel-shift2-tν)
+  using (map-⋯-cong; map-⋯-id; ≡→~; telMidᴺ; wkTel-shift2-tν;
+         liftMid; liftRen-substⁱ; innerOf-substⁱ; renTel-substⁱ; liftId-subst)
 open import BorrowedCF.Simulation.Support.Normal.Rename using (renTel; liftRen; renTel-id; innerOf)
 open import BorrowedCF.Simulation.Support.Normal.Nat
   using (map-fuse; NF-≡; subst-tν; subst-tφ; subst-++ᵗ; subst-■; renTel-++ᵗ; liftRen-++ᵗ; innerOf-++ᵗ;
