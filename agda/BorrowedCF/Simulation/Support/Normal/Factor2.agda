@@ -156,6 +156,45 @@ subst-symˡ : ∀ {A : Set} {P : A → Set} {x y} (e : x ≡ y) (p : P x) →
              subst P (sym e) (subst P e p) ≡ p
 subst-symˡ refl p = refl
 
+-- Pushing a leaf-scope transport of a list out through a `map (_⋯ σ)`.
+map-⋯-substTm : ∀ {a b k} (e : k ≡ a) (σ : a →ᵣ b) (xs : List (Tm k)) →
+                map (_⋯ σ) (subst (λ z → List (Tm z)) e xs)
+                  ≡ map (_⋯ (λ y → σ (subst 𝔽 e y))) xs
+map-⋯-substTm refl σ xs = refl
+
+-- swapᵣ 1 1 and assocSwapᵣ 1 1 agree pointwise.
+swap11≗aswap11 : ∀ {m} (z : 𝔽 (2 + m)) → swapᵣ 1 1 z ≡ assocSwapᵣ 1 1 z
+swap11≗aswap11 zero          = refl
+swap11≗aswap11 (suc zero)    = refl
+swap11≗aswap11 (suc (suc z)) = refl
+
+comm-↑²-aswap11-gen : ∀ {m m′} (ρ : m →ᵣ m′) (z : 𝔽 (2 + m)) →
+                      assocSwapᵣ 1 1 ((ρ ↑* 2) z) ≡ (ρ ↑* 2) (assocSwapᵣ 1 1 z)
+comm-↑²-aswap11-gen ρ zero          = refl
+comm-↑²-aswap11-gen ρ (suc zero)    = refl
+comm-↑²-aswap11-gen ρ (suc (suc z)) = refl
+
+-- aswap-11 and a lifted endo commute on a telescope / on threads.
+aswap-comm-tel : ∀ {p p′ k} (ρ : p →ᵣ p′) (t : Tel (2 + p) k) →
+                 subst (Tel (2 + p′)) (innerOf-renTel t (assocSwapᵣ 1 1) (2 + p′))
+                       (renTel (renTel t (assocSwapᵣ 1 1)) (ρ ↑* 2))
+                   ≡ subst (Tel (2 + p′)) (innerOf-renTel t (ρ ↑* 2) (2 + p′))
+                           (renTel (renTel t (ρ ↑* 2)) (assocSwapᵣ 1 1))
+aswap-comm-tel ρ t =
+  renTel-renTel t (assocSwapᵣ 1 1) (ρ ↑* 2)
+    ■ renTel-cong t (λ z → sym (comm-↑²-aswap11-gen ρ z))
+    ■ sym (renTel-renTel t (ρ ↑* 2) (assocSwapᵣ 1 1))
+
+aswap-comm-thr : ∀ {p p′ k} (ρ : p →ᵣ p′) (t : Tel (2 + p) k) (x : 𝔽 k) →
+                 subst 𝔽 (innerOf-renTel t (assocSwapᵣ 1 1) (2 + p′))
+                       (liftRen (renTel t (assocSwapᵣ 1 1)) (ρ ↑* 2) (liftRen t (assocSwapᵣ 1 1) x))
+                   ≡ subst 𝔽 (innerOf-renTel t (ρ ↑* 2) (2 + p′))
+                           (liftRen (renTel t (ρ ↑* 2)) (assocSwapᵣ 1 1) (liftRen t (ρ ↑* 2) x))
+aswap-comm-thr ρ t x =
+  liftRen-· t (assocSwapᵣ 1 1) (ρ ↑* 2) x
+    ■ liftRen-cong t (λ z → sym (comm-↑²-aswap11-gen ρ z)) x
+    ■ sym (liftRen-· t (ρ ↑* 2) (assocSwapᵣ 1 1) x)
+
 -- FIT is invariant under a leaf-scope transport of its telescope.
 FIT-leaf-subst : ∀ {b n k₁ k₂} (ω : b →ᵣ n) (e : k₁ ≡ k₂) (X : Tel n k₁) →
                  FIT ω X → FIT ω (subst (Tel n) e X)
@@ -549,7 +588,87 @@ pushφφ {n = n} {j = j} s₂ x y c d t₂ es₂ (flipᴿ {j = j₁} {k = k} s t
     reshapeM-NF : mkNF (s ++ᵗ tν (renTel t′ (swapᵣ 1 1))) (map (_⋯ liftRen t′ (swapᵣ 1 1)) esFired)
                     ≡ mkNF (s₂ ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t₂ (assocSwapᵣ 1 1))))
                            (map (_⋯ liftRen t₂ (assocSwapᵣ 1 1)) es₂)
-    reshapeM-NF = {!reshapeM!}
+    Lwin : Tel j (innerOf t₂ (2 + j))
+    Lwin = tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t₂ (assocSwapᵣ 1 1)))
+    mkΦ : (ss : Tel n j) (ee : List (Tm (innerOf t (2 + j₁)))) → NF n
+    mkΦ ss ee = mkNF (ss ++ᵗ Lwin) (map (_⋯ liftRen t₂ (assocSwapᵣ 1 1)) ee)
+    eM : innerOf t′ (2 + j₁) ≡ innerOf t₂ (2 + j)
+    eM = renTel-id t′ ■ renTel-id t₂′ ■ cong (λ z → innerOf t₂ (2 + z)) (renTel-id dg)
+    deepM : subst (Tel (2 + j₁)) eM (renTel t′ (swapᵣ 1 1)) ≡ dg ++ᵗ Lwin
+    σ″ : innerOf dg (2 + j₁) →ᵣ innerOf dg″ (2 + j₁)
+    σ″ = liftRen dg″ (swapᵣ 1 1)
+    pL : innerOf dg″ (2 + j₁) ≡ j
+    pL = innerOf-renTel dg (swapᵣ 1 1) (2 + j₁) ■ renTel-id dg
+    ρ′ : innerOf dg (2 + j₁) →ᵣ j
+    ρ′ y = subst 𝔽 pL (σ″ y)
+    collapse : ∀ y → ρ′ (σ y) ≡ y
+    collapse y = invThr dg (swapᵣ 1 1) (λ z → swap-11-inv z) y
+    g1 : d′ ⋯ ρ′ ≡ d
+    g1 = fusion d σ ρ′ ■ ⋯-id d (λ y → collapse y)
+    g2 : (c′ ⋯ weaken* ⦃ Kᵣ ⦄ 1) ⋯ (ρ′ ↑) ≡ c ⋯ weaken* ⦃ Kᵣ ⦄ 1
+    g2 = gate-pres c′ ρ′ ■ cong (_⋯ weaken* ⦃ Kᵣ ⦄ 1) (fusion c σ ρ′ ■ ⋯-id c (λ y → collapse y))
+    LEAF : innerOf firWin j ≡ innerOf t₂ (2 + j)
+    LEAF = cong (innerOf firWin) (sym (renTel-id dg)) ■ renTel-id firWin ■ renTel-id t₂′
+         ■ cong (λ z → innerOf t₂ (2 + z)) (renTel-id dg)
+    gpt : ∀ z → ((σ ↑* 2) ·ₖ (assocSwapᵣ 1 1 ·ₖ (ρ′ ↑* 2))) z ≡ assocSwapᵣ 1 1 z
+    gpt z = cong (ρ′ ↑* 2) (comm-↑²-aswap11-gen σ z)
+          ■ sym (dist-↑*-· 2 σ ρ′ (assocSwapᵣ 1 1 z))
+          ■ id↑* 2 (λ w → collapse w) (assocSwapᵣ 1 1 z)
+    g3 : subst (Tel (2 + j)) LEAF (renTel (renTel t₂′ (assocSwapᵣ 1 1)) (ρ′ ↑* 2)) ≡ renTel t₂ (assocSwapᵣ 1 1)
+    g3 = cong (λ e → subst (Tel (2 + j)) e (renTel (renTel t₂′ (assocSwapᵣ 1 1)) (ρ′ ↑* 2)))
+              (≡-irrelevant LEAF (innerOf-renTel t₂′ (assocSwapᵣ 1 1) (2 + j)
+                                  ■ innerOf-renTel t₂ (σ ↑* 2) (2 + j)))
+       ■ subst-■ (Tel (2 + j)) (innerOf-renTel t₂′ (assocSwapᵣ 1 1) (2 + j))
+                 (innerOf-renTel t₂ (σ ↑* 2) (2 + j))
+                 (renTel (renTel t₂′ (assocSwapᵣ 1 1)) (ρ′ ↑* 2))
+       ■ cong (subst (Tel (2 + j)) (innerOf-renTel t₂ (σ ↑* 2) (2 + j)))
+              (renTel-renTel t₂′ (assocSwapᵣ 1 1) (ρ′ ↑* 2))
+       ■ renTel-renTel t₂ (σ ↑* 2) (assocSwapᵣ 1 1 ·ₖ (ρ′ ↑* 2))
+       ■ renTel-cong t₂ (λ z → gpt z)
+    tailLwin : subst (Tel j) LEAF (renTel firWin ρ′) ≡ Lwin
+    tailLwin = subst-tφ LEAF y (d′ ⋯ ρ′) _
+             ■ cong (tφ y (d′ ⋯ ρ′))
+                    (subst-tφ LEAF x ((c′ ⋯ weaken* ⦃ Kᵣ ⦄ 1) ⋯ (ρ′ ↑)) _
+                     ■ cong (tφ x ((c′ ⋯ weaken* ⦃ Kᵣ ⦄ 1) ⋯ (ρ′ ↑))) g3)
+             ■ cong₂ (tφ y) g1 (cong₂ (tφ x) g2 refl)
+    SCOPE : innerOf t′ (2 + j₁) ≡ innerOf t₂ (2 + j)
+    SCOPE = innerOf-++ᵗ dg″ firWin (2 + j₁) ■ cong (innerOf firWin) pL ■ LEAF
+    E2 : subst (Tel (2 + j₁)) (cong (innerOf firWin) pL)
+             (renTel dg″ (swapᵣ 1 1) ++ᵗ renTel firWin σ″)
+           ≡ dg ++ᵗ renTel firWin ρ′
+    E2 = telMidᴺ pL (renTel dg″ (swapᵣ 1 1)) firWin (λ y → refl)
+       ■ cong (_++ᵗ renTel firWin ρ′) (invTel dg (swapᵣ 1 1) (λ z → swap-11-inv z))
+    E3 : subst (Tel (2 + j₁)) LEAF (dg ++ᵗ renTel firWin ρ′) ≡ dg ++ᵗ Lwin
+    E3 = subst-++ᵗ dg LEAF (renTel firWin ρ′) ■ cong (dg ++ᵗ_) tailLwin
+    deepM =
+      cong (λ e → subst (Tel (2 + j₁)) e (renTel t′ (swapᵣ 1 1))) (≡-irrelevant eM SCOPE)
+      ■ subst-■ (Tel (2 + j₁)) (innerOf-++ᵗ dg″ firWin (2 + j₁)) (cong (innerOf firWin) pL ■ LEAF)
+                (renTel t′ (swapᵣ 1 1))
+      ■ cong (subst (Tel (2 + j₁)) (cong (innerOf firWin) pL ■ LEAF))
+             (renTel-++ᵗ dg″ firWin (swapᵣ 1 1))
+      ■ subst-■ (Tel (2 + j₁)) (cong (innerOf firWin) pL) LEAF
+                (renTel dg″ (swapᵣ 1 1) ++ᵗ renTel firWin σ″)
+      ■ cong (subst (Tel (2 + j₁)) LEAF) E2
+      ■ E3
+    telM : subst (Tel n) eM (s ++ᵗ tν (renTel t′ (swapᵣ 1 1))) ≡ (s ++ᵗ tν dg) ++ᵗ Lwin
+    telM = subst-++ᵗ s eM (tν (renTel t′ (swapᵣ 1 1)))
+         ■ cong (s ++ᵗ_) (subst-tν eM (renTel t′ (swapᵣ 1 1)) ■ cong tν deepM)
+         ■ sym (++ᵗ-assoc s (tν dg) Lwin)
+    thrM : subst (λ z → List (Tm z)) eM (map (_⋯ liftRen t′ (swapᵣ 1 1)) esFired)
+             ≡ map (_⋯ liftRen t₂ (assocSwapᵣ 1 1)) (map (_⋯ liftRen t (swapᵣ 1 1)) esˢ)
+    hPt : ∀ y →
+          subst 𝔽 eM ((liftRen t₂′ (assocSwapᵣ 1 1) ·ₖ liftRen t′ (swapᵣ 1 1))
+                        (subst 𝔽 (sym kEqk) y))
+            ≡ (liftRen t (swapᵣ 1 1) ·ₖ liftRen t₂ (assocSwapᵣ 1 1)) y
+    hPt y = {!hPt!}
+    thrM = cong (subst (λ z → List (Tm z)) eM)
+                (map-fuse (liftRen t₂′ (assocSwapᵣ 1 1)) (liftRen t′ (swapᵣ 1 1)) esˢ″)
+         ■ cong (subst (λ z → List (Tm z)) eM)
+                (map-⋯-substTm (sym kEqk)
+                   (liftRen t₂′ (assocSwapᵣ 1 1) ·ₖ liftRen t′ (swapᵣ 1 1)) esˢ)
+         ■ map-⋯-subst eM hPt esˢ
+         ■ sym (map-fuse (liftRen t (swapᵣ 1 1)) (liftRen t₂ (assocSwapᵣ 1 1)) esˢ)
+    reshapeM-NF = NF-≡ eM telM thrM ■ sym (cong₂ mkΦ p eqE)
 pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
   with cmpᵗ s (tν (a ++ᵗ tν (renTel t (gapρ a w)))) s₂ (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t₂)) (sym eqTᵗ)
 ... | cmpʳ dgap p q = {!cmpʳ-swap!}
