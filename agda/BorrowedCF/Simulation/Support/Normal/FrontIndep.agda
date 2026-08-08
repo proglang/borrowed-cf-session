@@ -341,3 +341,33 @@ FIT-pres : ∀ {n} {N M : NF n} → N ~ M →
 FIT-pres ε           fit = fit
 FIT-pres (fwd g ◅ c) fit = FIT-pres c (FIT-pres₁ g fit)
 FIT-pres (bwd g ◅ c) fit = FIT-pres c (FIT-pres₁⁻ g fit)
+
+------------------------------------------------------------------------
+-- The general projection FIT → FInner (arbitrary outer run `a`).
+------------------------------------------------------------------------
+
+-- `wkTel (shift2 (tν a)) = weaken*2 ∘ wkTel a` (own-ν after the outer block).
+wkS2tν-gen : ∀ {n j} (a : Tel (2 + n) j) (y : 𝔽 (2 + n)) →
+             wkTel (shift2 (tν a)) y ≡ weaken* ⦃ Kᵣ ⦄ 2 (wkTel a y)
+wkS2tν-gen a y = wkTel-shift2-tν a y ■ N1ν a y
+
+fit→FInner : ∀ {n j i k} (s : Tel n j) (a : Tel (2 + j) i) (t : Tel (2 + i) k) →
+             FIT (idₖ ⦃ Kᵣ ⦄) (s ++ᵗ tν (a ++ᵗ tν t)) → FInner a t
+fit→FInner {n} s a t fit =
+  n , wkTel s ,
+  fitFRun (wkTel s ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (shift2 (tν a)) (wrun (splitRun t)) fitRun
+  where
+    ω0 : _ →ᵣ _
+    ω0 = (((idₖ ⦃ Kᵣ ⦄ ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ wkTel a) ·ₖ weaken* ⦃ Kᵣ ⦄ 2
+    fit-at : FIT ((idₖ ⦃ Kᵣ ⦄ ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (a ++ᵗ tν t)
+    fit-at = FIT-++ᵗ (idₖ ⦃ Kᵣ ⦄) s (tν (a ++ᵗ tν t)) fit
+    fit-t : FIT ω0 t
+    fit-t = FIT-++ᵗ ((idₖ ⦃ Kᵣ ⦄ ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) a (tν t) fit-at
+    fit-rr : FIT ω0 (run (splitRun t) ++ᵗ rest (splitRun t))
+    fit-rr = subst (FIT ω0) (splits (splitRun t)) fit-t
+    fit-run : FIT ω0 (run (splitRun t))
+    fit-run = FIT-prefix ω0 (run (splitRun t)) (rest (splitRun t)) fit-rr
+    fitRun : FIT ((wkTel s ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ wkTel (shift2 (tν a)))
+                 (run (splitRun t))
+    fitRun = FIT-cong (λ z → sym (wkS2tν-gen a (weaken* ⦃ Kᵣ ⦄ 2 (wkTel s z))))
+                      (run (splitRun t)) fit-run
