@@ -1813,7 +1813,157 @@ pushφφ {n = n} {j = j} s₂ x y c d t₂ es₂ (swapᴿ {j = j₁} {i = i} s {
     reshapeM-NF = NF-≡ eM telM thrM ■ sym (cong₂ mkΦ p̂ eqE)
 pushφφ {n = n} {j = j} s₂ x y c d t₂ es₂ (swapᴿ {j = j₁} {i = i} s {a} w t {T = T} {es = esˢ} eqT eqTᵗ eqE fit)
   | cmpˡ (tν dg) p q
-  | cmpʳ (tφ x′ c′ (tφ y′ d′ e₃)) p′ q′ = {!subcase-i-run!}
+  | cmpʳ (tφ x′ c′ (tφ y′ d′ e₃)) p′ q′
+    with tφ-inj₁ q′ | tφ-inj-c q′ | tφ-inj₁ (tφ-inj₂ q′) | tφ-inj-c (tφ-inj₂ q′) | tφ-inj₂ (tφ-inj₂ q′)
+...  | refl | refl | refl | refl | refl =
+       φφRHS , cleg ,
+       subst (Res φφRHS) reshapeM-NF
+         (swapᴿ s {a = a′} w′ t′ {T = ŝ′ ++ᵗ tν t′} {es = esFired}
+           (++ᵗ-assoc s (tν a′) (tν t′))
+           (++ᵗ-assoc s (tν a′) (tν (renTel t′ (gapρ a′ w′))))
+           refl fit′)
+  where
+    Φ = liftRen e₃ (assocSwapᵣ 1 1) ↑* 2
+    t′ = renTel t Φ
+    a′ = dg ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel e₃ (assocSwapᵣ 1 1)))
+    w′ = buildW′ dg x y c d e₃ (subst Run p′ w)
+    ŝ′ = s ++ᵗ tν a′
+    κ : innerOf (e₃ ++ᵗ tν t) (2 + j) ≡ innerOf t (2 + innerOf e₃ (2 + j))
+    κ = innerOf-++ᵗ e₃ (tν t) (2 + j)
+    esFired : List (Tm (innerOf t (2 + innerOf e₃ (2 + j))))
+    esFired = subst (λ z → List (Tm z)) κ
+                (map (_⋯ liftRen (e₃ ++ᵗ tν t) (assocSwapᵣ 1 1)) esˢ)
+    φφRHS : NF n
+    φφRHS = mkNF (ŝ′ ++ᵗ tν t′) esFired
+    W₁ = tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) e₃)
+    V₁ = tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel e₃ (assocSwapᵣ 1 1)))
+    srcTelEq : T ≡ (s ++ᵗ tν dg) ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) (e₃ ++ᵗ tν t))
+    srcTelEq = eqT
+             ■ cong (λ z → s ++ᵗ tν (z ++ᵗ tν t)) p′
+             ■ cong (λ z → s ++ᵗ tν z) (++ᵗ-assoc dg W₁ (tν t))
+             ■ sym (++ᵗ-assoc s (tν dg) (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) (e₃ ++ᵗ tν t))))
+    TGT = (s ++ᵗ tν dg) ++ᵗ
+            tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (e₃ ++ᵗ tν t) (assocSwapᵣ 1 1)))
+    leafκ : subst (Tel (2 + j)) κ (renTel (e₃ ++ᵗ tν t) (assocSwapᵣ 1 1))
+              ≡ renTel e₃ (assocSwapᵣ 1 1) ++ᵗ tν t′
+    leafκ = renTel-++ᵗ e₃ (tν t) (assocSwapᵣ 1 1)
+    telκ : subst (Tel n) κ TGT ≡ ŝ′ ++ᵗ tν t′
+    telκ = subst-++ᵗ (s ++ᵗ tν dg) κ
+             (tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (e₃ ++ᵗ tν t) (assocSwapᵣ 1 1))))
+         ■ cong ((s ++ᵗ tν dg) ++ᵗ_)
+             ( subst-tφ κ y d _
+             ■ cong (tφ y d)
+                 ( subst-tφ κ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) _
+                 ■ cong (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1)) leafκ ) )
+         ■ sym (++ᵗ-assoc (s ++ᵗ tν dg) V₁ (tν t′))
+         ■ cong (_++ᵗ tν t′) (++ᵗ-assoc s (tν dg) V₁)
+    cleg : mkNF T esˢ ~ᵩ φφRHS
+    cleg = ~ᵩ-trans (≡→~ᵩ (cong (λ z → mkNF z esˢ) srcTelEq))
+             (~ᵩ-trans (Eq*.return (φφᵩ (s ++ᵗ tν dg) x y c d (e₃ ++ᵗ tν t) esˢ))
+                       (≡→~ᵩ (NF-≡ κ telκ refl)))
+    fit′ : FIT (idₖ ⦃ Kᵣ ⦄) (ŝ′ ++ᵗ tν t′)
+    fit′ = subst (FIT (idₖ ⦃ Kᵣ ⦄)) telκ
+             (FIT-leaf-subst (idₖ ⦃ Kᵣ ⦄) κ TGT
+                (FIT-pres-φφ (idₖ ⦃ Kᵣ ⦄) (s ++ᵗ tν dg) x y c d (e₃ ++ᵗ tν t)
+                   (subst (FIT (idₖ ⦃ Kᵣ ⦄)) srcTelEq fit)))
+    tG = renTel t (gapρ a w)
+    gcast : ∀ {a₂ : Tel (2 + j₁) i} (eq : a ≡ a₂) (w₀ : Run a) →
+            gapρ a₂ (subst Run eq w₀) ≡ gapρ a w₀
+    gcast refl w₀ = refl
+    Fz : ∀ (z : 𝔽 (2 + i)) → gapρ a′ w′ (Φ z) ≡ Φ (gapρ a w z)
+    Fz z = F dg x y c d e₃ (subst Run p′ w) z
+         ■ cong (λ f → Φ (f z)) (gcast p′ w)
+    deepLeaf-tel :
+      subst (Tel (2 + innerOf e₃ (2 + j))) (innerOf-renTel t Φ (2 + innerOf e₃ (2 + j)))
+            (renTel (renTel t Φ) (gapρ a′ w′))
+        ≡ subst (Tel (2 + innerOf e₃ (2 + j))) (innerOf-renTel t (gapρ a w) (2 + innerOf e₃ (2 + j)))
+            (renTel (renTel t (gapρ a w)) Φ)
+    deepLeaf-tel = renTel-renTel t Φ (gapρ a′ w′)
+                 ■ renTel-cong t (λ z → Fz z)
+                 ■ sym (renTel-renTel t (gapρ a w) Φ)
+    deepLeaf-thr : ∀ x₀ →
+      subst 𝔽 (innerOf-renTel t Φ (2 + innerOf e₃ (2 + j)))
+            (liftRen (renTel t Φ) (gapρ a′ w′) (liftRen t Φ x₀))
+        ≡ subst 𝔽 (innerOf-renTel t (gapρ a w) (2 + innerOf e₃ (2 + j)))
+            (liftRen (renTel t (gapρ a w)) Φ (liftRen t (gapρ a w) x₀))
+    deepLeaf-thr x₀ = liftRen-· t Φ (gapρ a′ w′) x₀
+                    ■ liftRen-cong t (λ z → Fz z) x₀
+                    ■ sym (liftRen-· t (gapρ a w) Φ x₀)
+    mkΦ : (ss : Tel n j) (ee : List (Tm (innerOf t (2 + i)))) → NF n
+    mkΦ ss ee = mkNF (ss ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (e₃ ++ᵗ tν tG) (assocSwapᵣ 1 1))))
+                     (map (_⋯ liftRen (e₃ ++ᵗ tν tG) (assocSwapᵣ 1 1)) ee)
+    eM : innerOf (renTel t Φ) (2 + innerOf e₃ (2 + j)) ≡ innerOf (e₃ ++ᵗ tν tG) (2 + j)
+    eM = innerOf-renTel t Φ (2 + innerOf e₃ (2 + j))
+       ■ sym (innerOf-renTel t (gapρ a w) (2 + innerOf e₃ (2 + j)))
+       ■ sym (innerOf-++ᵗ e₃ (tν tG) (2 + j))
+    α₁ = innerOf-renTel t Φ (2 + innerOf e₃ (2 + j))
+    α₂ = innerOf-renTel t (gapρ a w) (2 + innerOf e₃ (2 + j))
+    κ₂ = innerOf-++ᵗ e₃ (tν tG) (2 + j)
+    leafκ-tG : subst (Tel (2 + j)) κ₂ (renTel (e₃ ++ᵗ tν tG) (assocSwapᵣ 1 1))
+                 ≡ renTel e₃ (assocSwapᵣ 1 1) ++ᵗ tν (renTel tG Φ)
+    leafκ-tG = renTel-++ᵗ e₃ (tν tG) (assocSwapᵣ 1 1)
+    telκ-tG : subst (Tel n) κ₂
+                ((s ++ᵗ tν dg) ++ᵗ
+                  tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (e₃ ++ᵗ tν tG) (assocSwapᵣ 1 1))))
+                ≡ ŝ′ ++ᵗ tν (renTel tG Φ)
+    telκ-tG = subst-++ᵗ (s ++ᵗ tν dg) κ₂
+                (tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (e₃ ++ᵗ tν tG) (assocSwapᵣ 1 1))))
+            ■ cong ((s ++ᵗ tν dg) ++ᵗ_)
+                ( subst-tφ κ₂ y d _
+                ■ cong (tφ y d)
+                    ( subst-tφ κ₂ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) _
+                    ■ cong (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1)) leafκ-tG ) )
+            ■ sym (++ᵗ-assoc (s ++ᵗ tν dg) V₁ (tν (renTel tG Φ)))
+            ■ cong (_++ᵗ tν (renTel tG Φ)) (++ᵗ-assoc s (tν dg) V₁)
+    telM : subst (Tel n) eM (ŝ′ ++ᵗ tν (renTel t′ (gapρ a′ w′)))
+             ≡ (s ++ᵗ tν dg) ++ᵗ
+                 tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (e₃ ++ᵗ tν tG) (assocSwapᵣ 1 1)))
+    telM = subst-■ (Tel n) α₁ (sym α₂ ■ sym κ₂) (ŝ′ ++ᵗ tν (renTel t′ (gapρ a′ w′)))
+         ■ subst-■ (Tel n) (sym α₂) (sym κ₂)
+             (subst (Tel n) α₁ (ŝ′ ++ᵗ tν (renTel t′ (gapρ a′ w′))))
+         ■ cong (subst (Tel n) (sym κ₂))
+             ( cong (subst (Tel n) (sym α₂))
+                 ( subst-++ᵗ ŝ′ α₁ (tν (renTel t′ (gapρ a′ w′)))
+                 ■ cong (ŝ′ ++ᵗ_) (subst-tν α₁ (renTel t′ (gapρ a′ w′))) )
+             ■ subst-++ᵗ ŝ′ (sym α₂)
+                 (tν (subst (Tel (2 + innerOf e₃ (2 + j))) α₁ (renTel t′ (gapρ a′ w′))))
+             ■ cong (ŝ′ ++ᵗ_)
+                 ( subst-tν (sym α₂)
+                     (subst (Tel (2 + innerOf e₃ (2 + j))) α₁ (renTel t′ (gapρ a′ w′)))
+                 ■ cong tν
+                     ( cong (subst (Tel (2 + innerOf e₃ (2 + j))) (sym α₂)) deepLeaf-tel
+                     ■ subst-symˡ α₂ (renTel (renTel t (gapρ a w)) Φ) ) ) )
+         ■ sym (subst-swap κ₂ telκ-tG)
+    hThr : ∀ x →
+      subst 𝔽 eM (liftRen t′ (gapρ a′ w′) (subst 𝔽 κ (liftRen (e₃ ++ᵗ tν t) (assocSwapᵣ 1 1) x)))
+        ≡ liftRen (e₃ ++ᵗ tν tG) (assocSwapᵣ 1 1) (liftRen t (gapρ a w) x)
+    hThr x =
+        cong (λ w → subst 𝔽 eM (liftRen t′ (gapρ a′ w′) w))
+             (liftRen-++ᵗ e₃ (tν t) (assocSwapᵣ 1 1) x)
+      ■ cong (subst 𝔽 eM) (subst-swap α₁ (liftRen-· t Φ (gapρ a′ w′) x))
+      ■ sym (subst-■ 𝔽 (sym α₁) eM (liftRen t (Φ ·ₖ gapρ a′ w′) x))
+      ■ cong (λ e → subst 𝔽 e (liftRen t (Φ ·ₖ gapρ a′ w′) x))
+             (≡-irrelevant (sym α₁ ■ eM) (sym α₂ ■ sym κ₂))
+      ■ subst-■ 𝔽 (sym α₂) (sym κ₂) (liftRen t (Φ ·ₖ gapρ a′ w′) x)
+      ■ cong (λ w → subst 𝔽 (sym κ₂) (subst 𝔽 (sym α₂) w))
+             (liftRen-cong t (λ z → Fz z) x)
+      ■ cong (subst 𝔽 (sym κ₂)) (sym (subst-swap α₂ (liftRen-· t (gapρ a w) Φ x)))
+      ■ sym (subst-swap κ₂ (liftRen-++ᵗ e₃ (tν tG) (assocSwapᵣ 1 1) (liftRen t (gapρ a w) x)))
+    thrM : subst (λ z → List (Tm z)) eM (map (_⋯ liftRen t′ (gapρ a′ w′)) esFired)
+             ≡ map (_⋯ liftRen (e₃ ++ᵗ tν tG) (assocSwapᵣ 1 1)) (map (_⋯ liftRen t (gapρ a w)) esˢ)
+    thrM = cong (subst (λ z → List (Tm z)) eM)
+                ( map-⋯-substTm κ (liftRen t′ (gapρ a′ w′))
+                    (map (_⋯ liftRen (e₃ ++ᵗ tν t) (assocSwapᵣ 1 1)) esˢ)
+                ■ map-fuse (liftRen (e₃ ++ᵗ tν t) (assocSwapᵣ 1 1))
+                    (λ y → liftRen t′ (gapρ a′ w′) (subst 𝔽 κ y)) esˢ )
+         ■ map-⋯-subst eM hThr esˢ
+         ■ sym (map-fuse (liftRen t (gapρ a w)) (liftRen (e₃ ++ᵗ tν tG) (assocSwapᵣ 1 1)) esˢ)
+    reshapeM-NF : mkNF (ŝ′ ++ᵗ tν (renTel t′ (gapρ a′ w′)))
+                       (map (_⋯ liftRen t′ (gapρ a′ w′)) esFired)
+                    ≡ mkNF (s₂ ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1)
+                             (renTel (e₃ ++ᵗ tν (renTel t (gapρ a w))) (assocSwapᵣ 1 1))))
+                           (map (_⋯ liftRen (e₃ ++ᵗ tν (renTel t (gapρ a w))) (assocSwapᵣ 1 1)) es₂)
+    reshapeM-NF = NF-≡ eM telM thrM ■ sym (cong₂ mkΦ p eqE)
 pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
   | cmpˡ (tν dg) p q
   | cmpʳ (tφ x′ c′ []) p′ q′ with tφ-inj₂ q′
