@@ -191,6 +191,17 @@ aswap-nat : ∀ {a b} (e : 2 + a ≡ 2 + b) (x : 𝔽 (2 + a)) →
             assocSwapᵣ 1 1 (subst 𝔽 e x) ≡ subst 𝔽 e (assocSwapᵣ 1 1 x)
 aswap-nat refl x = refl
 
+-- Collapse three nested 𝔽-substs into a single one (endpoints determine the path).
+subst3≡ : ∀ {a b c d} (p : a ≡ b) (q : b ≡ c) (r : c ≡ d) (w : a ≡ d) (x : 𝔽 a) →
+          subst 𝔽 r (subst 𝔽 q (subst 𝔽 p x)) ≡ subst 𝔽 w x
+subst3≡ refl refl refl w x = cong (λ e → subst 𝔽 e x) (≡-irrelevant refl w)
+
+-- Six nested 𝔽-substs whose composite is a loop collapse to the identity.
+subst6-id : ∀ {a b c d e f} (p₁ : a ≡ b) (p₂ : b ≡ c) (p₃ : c ≡ d) (p₄ : d ≡ e)
+            (p₅ : e ≡ f) (p₆ : f ≡ a) (x : 𝔽 a) →
+            subst 𝔽 p₆ (subst 𝔽 p₅ (subst 𝔽 p₄ (subst 𝔽 p₃ (subst 𝔽 p₂ (subst 𝔽 p₁ x))))) ≡ x
+subst6-id refl refl refl refl refl p₆ x = cong (λ e → subst 𝔽 e x) (≡-irrelevant p₆ refl)
+
 -- Crossing a renTel scope-shift under `liftRen`: the baked ρ (a pure ambient
 -- transport) is absorbed into leaf-scope substs, and the applied renaming σ
 -- realigns from the shifted scope q back to the base scope n.
@@ -818,7 +829,12 @@ pushφφ {n = n} {j = j} s₂ x y c d t₂ es₂ (flipᴿ {j = j₁} {k = k} s t
           subst 𝔽 eM ((liftRen t₂′ (assocSwapᵣ 1 1) ·ₖ liftRen t′ (swapᵣ 1 1))
                         (subst 𝔽 (sym kEqk) y))
             ≡ (liftRen t (swapᵣ 1 1) ·ₖ liftRen t₂ (assocSwapᵣ 1 1)) y
-    hPt y = {!hPt!}
+    hPt y =
+        cong (subst 𝔽 eM) LHScoreExp
+      ■ cong (λ w → subst 𝔽 eM (subst 𝔽 (sym qq1) (subst 𝔽 (sym qq2) w)))
+             (A3toX ■ cong (subst 𝔽 pp3) Xexp)
+      ■ mergeCollapse
+      ■ sym (cong (liftRen t₂ (assocSwapᵣ 1 1)) hZ)
       where
         V : 𝔽 (innerOf t₂ (2 + innerOf dg (2 + j₁)))
         V = subst 𝔽 (sym kEqk) y
@@ -882,6 +898,41 @@ pushφφ {n = n} {j = j} s₂ x y c d t₂ es₂ (flipᴿ {j = j₁} {k = k} s t
                                        ■ sym (cong (innerOf t₂) eG) ■ renTel-id t₂) z₀))
         gApp = glueG2 eG eG t₂ (σ ↑* 2) (σ″ ↑* 2) heκ (assocSwapᵣ 1 1) (assocSwapᵣ 1 1)
                       (aswap-nat eG) z₀
+        pp3 : innerOf (renTel t₂′ (σ″ ↑* 2)) (2 + innerOf dg″ (2 + j₁))
+               ≡ innerOf t₂′ (2 + innerOf dg″ (2 + j₁))
+        pp3 = innerOf-renTel t₂′ (σ″ ↑* 2) (2 + innerOf dg″ (2 + j₁))
+        QQ : innerOf (renTel (renTel t₂ (σ ↑* 2)) (σ″ ↑* 2)) (2 + innerOf dg″ (2 + j₁))
+               ≡ innerOf t₂ (2 + innerOf dg″ (2 + j₁))
+        QQ = innerOf-renTel (renTel t₂ (σ ↑* 2)) (σ″ ↑* 2) (2 + innerOf dg″ (2 + j₁))
+           ■ innerOf-renTel t₂ (σ ↑* 2) (2 + innerOf dg″ (2 + j₁))
+        W₂ : innerOf t₂′ (2 + innerOf dg″ (2 + j₁)) ≡ innerOf t (2 + j₁)
+        W₂ = innerOf-renTel t₂ (σ ↑* 2) (2 + innerOf dg″ (2 + j₁))
+           ■ sym (cong (innerOf t₂) eG) ■ renTel-id t₂
+        RHSg : 𝔽 (innerOf t₂ (2 + innerOf dg″ (2 + j₁)))
+        RHSg = subst 𝔽 (cong (innerOf t₂) eG)
+                     (liftRen t₂ (assocSwapᵣ 1 1) (subst 𝔽 W₂ z₀))
+        LHScoreExp : liftRen t′ (swapᵣ 1 1) (liftRen t₂′ (assocSwapᵣ 1 1) V)
+                       ≡ subst 𝔽 (sym qq1) (subst 𝔽 (sym qq2) (liftRen t₂′ (assocSwapᵣ 1 1 ·ₖ (σ″ ↑* 2)) V))
+        LHScoreExp = sym (subst-symˡ qq1 _)
+                   ■ cong (subst 𝔽 (sym qq1)) (sym (subst-symˡ qq2 _))
+                   ■ cong (λ w → subst 𝔽 (sym qq1) (subst 𝔽 (sym qq2) w)) redA
+        A3toX : liftRen t₂′ (assocSwapᵣ 1 1 ·ₖ (σ″ ↑* 2)) V
+                  ≡ subst 𝔽 pp3 (liftRen (renTel (renTel t₂ (σ ↑* 2)) (σ″ ↑* 2)) (assocSwapᵣ 1 1) z₀)
+        A3toX = liftRen-cong t₂′ (λ z → sym (comm-↑²-aswap11-gen σ″ z)) V
+              ■ sym (liftRen-· t₂′ (σ″ ↑* 2) (assocSwapᵣ 1 1) V)
+        Xexp : liftRen (renTel (renTel t₂ (σ ↑* 2)) (σ″ ↑* 2)) (assocSwapᵣ 1 1) z₀
+                 ≡ subst 𝔽 (sym QQ) RHSg
+        Xexp = sym (subst-symˡ QQ _) ■ cong (subst 𝔽 (sym QQ)) gApp
+        hZ : liftRen t (swapᵣ 1 1) y ≡ subst 𝔽 W₂ z₀
+        hZ = wRed
+           ■ subst3≡ (sym (innerOf-++ᵗ dg″ srcWin (2 + j₁))) (sym (cong gT deepEq))
+                     (innerOf-substⁱ (sym kEqk) t (2 + j₁)) W₂ z₀
+        mergeCollapse : subst 𝔽 eM (subst 𝔽 (sym qq1) (subst 𝔽 (sym qq2)
+                          (subst 𝔽 pp3 (subst 𝔽 (sym QQ) RHSg))))
+                          ≡ liftRen t₂ (assocSwapᵣ 1 1) (subst 𝔽 W₂ z₀)
+        mergeCollapse =
+          subst6-id (cong (innerOf t₂) eG) (sym QQ) pp3 (sym qq2) (sym qq1) eM
+                    (liftRen t₂ (assocSwapᵣ 1 1) (subst 𝔽 W₂ z₀))
     thrM = cong (subst (λ z → List (Tm z)) eM)
                 (map-fuse (liftRen t₂′ (assocSwapᵣ 1 1)) (liftRen t′ (swapᵣ 1 1)) esˢ″)
          ■ cong (subst (λ z → List (Tm z)) eM)
