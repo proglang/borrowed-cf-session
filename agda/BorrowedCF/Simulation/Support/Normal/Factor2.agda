@@ -522,9 +522,20 @@ push⁻ r (delᵩ T es₃)            = pushIns T es₃ r
 -- Discharging a residue against a block form.
 ------------------------------------------------------------------------
 
+Block-swaptel : ∀ {n j k k′} (s : Tel n j) (X : Tel (2 + j) k) (Y : Tel (2 + j) k′) →
+                Block (s ++ᵗ tν X) → Block (s ++ᵗ tν Y)
+Block-swaptel []         X Y bν = bν
+Block-swaptel (tν s)     X Y bν = bν
+Block-swaptel (tφ f c s) X Y ()
+
 realise : ∀ {n} {N M : NF n} → Res N M → Block (tel M) →
           Σ[ M′ ∈ NF n ] Block (tel M′) × (N ~ᵩ M′) × (M′ ~ᵇ M)
-realise r bM = {!!}
+realise (flipᴿ s t {es = esˢ} refl refl refl fit) bM =
+  mkNF (s ++ᵗ tν t) esˢ ,
+  Block-swaptel s (renTel t (swapᵣ 1 1)) t bM ,
+  ~ᵩ-refl ,
+  Eq*.return (ν1ᵇ s t esˢ)
+realise (swapᴿ s {a} w t {es = esˢ} refl refl refl fit) bM = {!swapᴿ!}
 
 ------------------------------------------------------------------------
 -- Pushing a residue down a `~ᵩ` chain, and the theorem.
