@@ -432,6 +432,34 @@ gapρ-comm-pt (tφ f c a′) (rφ w′) ρ x =
            (LLcomm a′ (assocSwapᵣ 1 2) (ρ ↑* 3) (assocSwapᵣ 1 2)
                    (λ z → sym (comm-↑³-aswap12-gen ρ z)) x)
 
+-- Telescope / thread level packaging of `gapρ-comm-pt` (aswap-comm twins).
+gapρ-comm-tel : ∀ {j j′ i k} (a : Tel (2 + j) i) (w : Run a) (ρ : j →ᵣ j′) (t : Tel (2 + i) k) →
+  subst (Tel (2 + innerOf a (2 + j′))) (innerOf-renTel t (gapρ a w) (2 + innerOf a (2 + j′)))
+        (renTel (renTel t (gapρ a w)) (liftRen a (ρ ↑* 2) ↑* 2))
+    ≡ subst (Tel (2 + innerOf a (2 + j′)))
+            (innerOf-renTel t (liftRen a (ρ ↑* 2) ↑* 2) (2 + innerOf a (2 + j′)))
+            (renTel (renTel t (liftRen a (ρ ↑* 2) ↑* 2))
+                    (gapρ (renTel a (ρ ↑* 2)) (runRen w (ρ ↑* 2))))
+gapρ-comm-tel a w ρ t =
+  renTel-renTel t (gapρ a w) (liftRen a (ρ ↑* 2) ↑* 2)
+    ■ renTel-cong t (λ z → gapρ-comm-pt a w ρ z)
+    ■ sym (renTel-renTel t (liftRen a (ρ ↑* 2) ↑* 2)
+                         (gapρ (renTel a (ρ ↑* 2)) (runRen w (ρ ↑* 2))))
+
+gapρ-comm-thr : ∀ {j j′ i k} (a : Tel (2 + j) i) (w : Run a) (ρ : j →ᵣ j′) (t : Tel (2 + i) k)
+                (x : 𝔽 k) →
+  subst 𝔽 (innerOf-renTel t (gapρ a w) (2 + innerOf a (2 + j′)))
+        (liftRen (renTel t (gapρ a w)) (liftRen a (ρ ↑* 2) ↑* 2) (liftRen t (gapρ a w) x))
+    ≡ subst 𝔽 (innerOf-renTel t (liftRen a (ρ ↑* 2) ↑* 2) (2 + innerOf a (2 + j′)))
+            (liftRen (renTel t (liftRen a (ρ ↑* 2) ↑* 2))
+                     (gapρ (renTel a (ρ ↑* 2)) (runRen w (ρ ↑* 2)))
+                     (liftRen t (liftRen a (ρ ↑* 2) ↑* 2) x))
+gapρ-comm-thr a w ρ t x =
+  liftRen-· t (gapρ a w) (liftRen a (ρ ↑* 2) ↑* 2) x
+    ■ liftRen-cong t (λ z → gapρ-comm-pt a w ρ z) x
+    ■ sym (liftRen-· t (liftRen a (ρ ↑* 2) ↑* 2)
+                     (gapρ (renTel a (ρ ↑* 2)) (runRen w (ρ ↑* 2))) x)
+
 -- FIT is invariant under a leaf-scope transport of its telescope.
 FIT-leaf-subst : ∀ {b n k₁ k₂} (ω : b →ᵣ n) (e : k₁ ≡ k₂) (X : Tel n k₁) →
                  FIT ω X → FIT ω (subst (Tel n) e X)
