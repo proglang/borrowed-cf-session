@@ -1227,8 +1227,20 @@ pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE f
 pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
   | cmpˡ (tν dg) p q
     with cmpᵗ a (tν (renTel t (gapρ a w))) dg (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t₂)) (tν-inj q)
-...   | cmpˡ e p′ q′ = {!subcase-ii-deepleaf!}
-...   | cmpʳ e p′ q′ = {!subcase-i-run!}
+...   | cmpˡ [] p′ ()
+...   | cmpˡ (tφ f′ c′ e′) p′ ()
+...   | cmpˡ (tν e′) p′ q′ = {!subcase-ii-deepleaf!}
+...   | cmpʳ [] p′ ()
+...   | cmpʳ (tν e′) p′ ()
+...   | cmpʳ (tφ x′ c′ (tφ y′ d′ e₃)) p′ q′ = {!subcase-i-run!}
+pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
+  | cmpˡ (tν dg) p q
+  | cmpʳ (tφ x′ c′ []) p′ q′ with tφ-inj₂ q′
+... | ()
+pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
+  | cmpˡ (tν dg) p q
+  | cmpʳ (tφ x′ c′ (tν e′)) p′ q′ with tφ-inj₂ q′
+... | ()
 
 pushνφ : ∀ {n j k} {N : NF n} (s₂ : Tel n j) (x : Flag) (c : Tm j)
          (t₂ : Tel (1 + (2 + j)) k) (es₂ : List (Tm k)) →
