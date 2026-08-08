@@ -157,6 +157,22 @@ subst-symˡ : ∀ {A : Set} {P : A → Set} {x y} (e : x ≡ y) (p : P x) →
              subst P (sym e) (subst P e p) ≡ p
 subst-symˡ refl p = refl
 
+-- `liftRen` ignores the renaming baked into a `renTel` (leaf renaming is
+-- shape-only); twin of `liftId-renTel-cong` at the liftRen level.
+liftRen-ig : ∀ {n m m′ k} (t : Tel n k) (ρ₀ ρ₁ : n →ᵣ m) (σ : m →ᵣ m′)
+             (x : 𝔽 (innerOf t m)) →
+             subst 𝔽 (innerOf-renTel t ρ₀ m′) (liftRen (renTel t ρ₀) σ x)
+               ≡ subst 𝔽 (innerOf-renTel t ρ₁ m′) (liftRen (renTel t ρ₁) σ x)
+liftRen-ig []         ρ₀ ρ₁ σ x = refl
+liftRen-ig (tν s)     ρ₀ ρ₁ σ x = liftRen-ig s (ρ₀ ↑* 2) (ρ₁ ↑* 2) (σ ↑* 2) x
+liftRen-ig (tφ f c s) ρ₀ ρ₁ σ x = liftRen-ig s (ρ₀ ↑)   (ρ₁ ↑)   (σ ↑)   x
+
+-- Renaming a telescope by a pure ambient transport is a transport.
+renTel-coe : ∀ {n m k} (e : n ≡ m) (t : Tel n k) →
+             renTel t (λ x → subst 𝔽 e x)
+               ≡ subst (λ z → Tel z (innerOf t z)) e (subst (Tel n) (sym (renTel-id t)) t)
+renTel-coe refl t = sym (subst-symˡ (renTel-id t) _) ■ cong (subst (Tel _) (sym (renTel-id t))) (renTel-idᵗ t)
+
 -- Pushing a leaf-scope transport of a list out through a `map (_⋯ σ)`.
 map-⋯-substTm : ∀ {a b k} (e : k ≡ a) (σ : a →ᵣ b) (xs : List (Tm k)) →
                 map (_⋯ σ) (subst (λ z → List (Tm z)) e xs)
