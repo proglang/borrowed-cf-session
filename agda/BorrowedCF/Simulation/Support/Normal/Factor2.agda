@@ -170,6 +170,16 @@ gate-pres d σ =
     ■ ⋯-cong d (λ x → N2 σ x)
     ■ sym (fusion d σ (weaken* ⦃ Kᵣ ⦄ 1))
 
+-- Dependent cong: transport a dependent function's value along an equation.
+substf : ∀ {A : Set} {P : A → Set} (f : (x : A) → P x) {a b} (e : a ≡ b) →
+         subst P e (f a) ≡ f b
+substf f refl = refl
+
+-- Re-index a subst through a function of the index.
+subst-reix : ∀ {A B : Set} {P : B → Set} (g : A → B) {a b} (e : a ≡ b) (x : P (g a)) →
+             subst (λ z → P (g z)) e x ≡ subst P (cong g e) x
+subst-reix g refl x = refl
+
 ------------------------------------------------------------------------
 -- Renaming reflects the spent unit (needed by `pushDel`).
 ------------------------------------------------------------------------
@@ -457,7 +467,89 @@ pushφφ s₂ x y c d t₂ es₂ (flipᴿ s t {T = T} {es = esˢ} eqT eqTᵗ eqE
                        (map (_⋯ liftRen (dgap₂ ++ᵗ tν (renTel t (swapᵣ 1 1))) aswap11) es₂)
     reshapeM-NF = bridge ■ sym reshapeM-aux
 pushφφ s₂ x y c d t₂ es₂ (flipᴿ s t {T = T} {es = esˢ} eqT eqTᵗ eqE fit)
-  | cmpˡ dgap p q = {!cmpˡ-flip!}
+  | cmpˡ [] p ()
+pushφφ s₂ x y c d t₂ es₂ (flipᴿ s t {T = T} {es = esˢ} eqT eqTᵗ eqE fit)
+  | cmpˡ (tφ f′ c′ dg) p ()
+pushφφ {n = n} {j = j} s₂ x y c d t₂ es₂ (flipᴿ {j = j₁} {k = k} s t {T = T} {es = esˢ} eqT eqTᵗ eqE fit)
+  | cmpˡ (tν dg) p q =
+      φφRHS , cleg ,
+      subst (Res φφRHS) reshapeM-NF (flipᴿ s t′ refl refl refl fit′)
+  where
+    q1 : renTel t (swapᵣ 1 1) ≡ dg ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t₂)
+    q1 = tν-inj q
+    σ : j →ᵣ innerOf dg (2 + j₁)
+    σ = liftRen dg (swapᵣ 1 1)
+    dg″ : Tel (2 + j₁) (innerOf dg (2 + j₁))
+    dg″ = renTel dg (swapᵣ 1 1)
+    c′ d′ : Tm (innerOf dg (2 + j₁))
+    c′ = c ⋯ σ
+    d′ = d ⋯ σ
+    t₂′ : Tel (2 + innerOf dg (2 + j₁)) (innerOf t₂ (2 + innerOf dg (2 + j₁)))
+    t₂′ = renTel t₂ (σ ↑* 2)
+    φφwin : Tel j (innerOf t (2 + j₁))
+    φφwin = tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t₂)
+    srcWin : Tel (innerOf dg (2 + j₁)) (innerOf t₂ (2 + innerOf dg (2 + j₁)))
+    srcWin = tφ x c′ (tφ y (d′ ⋯ weaken* ⦃ Kᵣ ⦄ 1) t₂′)
+    firWin : Tel (innerOf dg (2 + j₁)) (innerOf t₂′ (2 + innerOf dg (2 + j₁)))
+    firWin = tφ y d′ (tφ x (c′ ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t₂′ (assocSwapᵣ 1 1)))
+    t′ : Tel (2 + j₁) (innerOf t₂′ (2 + innerOf dg (2 + j₁)))
+    t′ = dg″ ++ᵗ firWin
+    kEq : innerOf t₂ (2 + innerOf dg (2 + j₁)) ≡ innerOf t (2 + j₁)
+    kEq = cong (λ z → innerOf t₂ (2 + z)) (renTel-id dg) ■ renTel-id t₂
+    kEqk = kEq ■ renTel-id t
+    esˢ″ : List (Tm (innerOf t₂ (2 + innerOf dg (2 + j₁))))
+    esˢ″ = subst (λ z → List (Tm z)) (sym kEqk) esˢ
+    esFired : List (Tm (innerOf t₂′ (2 + innerOf dg (2 + j₁))))
+    esFired = map (_⋯ liftRen t₂′ (assocSwapᵣ 1 1)) esˢ″
+    φφRHS : NF n
+    φφRHS = mkNF (s ++ᵗ tν t′) esFired
+    -- source telescope reconstruction (undo the ν-flip on `t`)
+    winEq : renTel φφwin σ ≡ srcWin
+    winEq = cong (λ g → tφ x (c ⋯ σ) (tφ y g (renTel t₂ (σ ↑* 2)))) (gate-pres d σ)
+    einv = innerOf-renTel t (swapᵣ 1 1) (2 + j₁) ■ renTel-id t
+    invT = invTel t (swapᵣ 1 1) (λ z → swap-11-inv z)
+    cInner : innerOf (renTel t (swapᵣ 1 1)) (2 + j₁) ≡ innerOf (dg ++ᵗ φφwin) (2 + j₁)
+    cInner = cong (λ Z → innerOf Z (2 + j₁)) q1
+    A₀ : subst (Tel (2 + j₁)) cInner (renTel (renTel t (swapᵣ 1 1)) (swapᵣ 1 1))
+           ≡ renTel (dg ++ᵗ φφwin) (swapᵣ 1 1)
+    A₀ = sym (subst-reix (λ Z → innerOf Z (2 + j₁)) q1 (renTel (renTel t (swapᵣ 1 1)) (swapᵣ 1 1)))
+           ■ substf (λ Z → renTel Z (swapᵣ 1 1)) q1
+    deepRev : subst (Tel (2 + j₁)) kEqk (dg″ ++ᵗ srcWin) ≡ t
+    deepRev =
+      cong (subst (Tel (2 + j₁)) kEqk) (cong (dg″ ++ᵗ_) (sym winEq))
+        ■ cong (subst (Tel (2 + j₁)) kEqk) (sym (renTel-++ᵗ dg φφwin (swapᵣ 1 1)))
+        ■ sym (subst-■ (Tel (2 + j₁)) (innerOf-++ᵗ dg φφwin (2 + j₁)) kEqk
+                       (renTel (dg ++ᵗ φφwin) (swapᵣ 1 1)))
+        ■ cong (subst (Tel (2 + j₁)) (innerOf-++ᵗ dg φφwin (2 + j₁) ■ kEqk)) (sym A₀)
+        ■ sym (subst-■ (Tel (2 + j₁)) cInner (innerOf-++ᵗ dg φφwin (2 + j₁) ■ kEqk)
+                       (renTel (renTel t (swapᵣ 1 1)) (swapᵣ 1 1)))
+        ■ cong (λ e → subst (Tel (2 + j₁)) e (renTel (renTel t (swapᵣ 1 1)) (swapᵣ 1 1)))
+               (≡-irrelevant (cInner ■ (innerOf-++ᵗ dg φφwin (2 + j₁) ■ kEqk)) einv)
+        ■ invT
+    deepEq : subst (Tel (2 + j₁)) (sym kEqk) t ≡ dg″ ++ᵗ srcWin
+    deepEq = cong (subst (Tel (2 + j₁)) (sym kEqk)) (sym deepRev)
+               ■ subst-symˡ kEqk (dg″ ++ᵗ srcWin)
+    srcTelEq : subst (Tel n) (sym kEqk) (s ++ᵗ tν t) ≡ s ++ᵗ tν (dg″ ++ᵗ srcWin)
+    srcTelEq = subst-++ᵗ s (sym kEqk) (tν t)
+                 ■ cong (s ++ᵗ_) (subst-tν (sym kEqk) t ■ cong tν deepEq)
+    srcEq : mkNF (s ++ᵗ tν t) esˢ ≡ mkNF (s ++ᵗ tν (dg″ ++ᵗ srcWin)) esˢ″
+    srcEq = NF-≡ (sym kEqk) srcTelEq refl
+    cleg : mkNF T esˢ ~ᵩ φφRHS
+    cleg = ~ᵩ-trans (≡→~ᵩ (cong (λ z → mkNF z esˢ) eqT ■ srcEq
+                              ■ cong (λ z → mkNF z esˢ″) (sym (++ᵗ-assoc s (tν dg″) srcWin))))
+             (~ᵩ-trans (Eq*.return (φφᵩ (s ++ᵗ tν dg″) x y c′ d′ t₂′ esˢ″))
+                       (≡→~ᵩ (cong (λ z → mkNF z esFired) (++ᵗ-assoc s (tν dg″) firWin))))
+    fit′ : FIT (idₖ ⦃ Kᵣ ⦄) (s ++ᵗ tν t′)
+    fit′ = subst (FIT (idₖ ⦃ Kᵣ ⦄)) (++ᵗ-assoc s (tν dg″) firWin)
+             (FIT-pres-φφ (idₖ ⦃ Kᵣ ⦄) (s ++ᵗ tν dg″) x y c′ d′ t₂′
+                (subst (FIT (idₖ ⦃ Kᵣ ⦄)) (sym (++ᵗ-assoc s (tν dg″) srcWin))
+                   (subst (FIT (idₖ ⦃ Kᵣ ⦄)) srcTelEq
+                      (FIT-leaf-subst (idₖ ⦃ Kᵣ ⦄) (sym kEqk) (s ++ᵗ tν t)
+                         (subst (FIT (idₖ ⦃ Kᵣ ⦄)) eqT fit)))))
+    reshapeM-NF : mkNF (s ++ᵗ tν (renTel t′ (swapᵣ 1 1))) (map (_⋯ liftRen t′ (swapᵣ 1 1)) esFired)
+                    ≡ mkNF (s₂ ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t₂ (assocSwapᵣ 1 1))))
+                           (map (_⋯ liftRen t₂ (assocSwapᵣ 1 1)) es₂)
+    reshapeM-NF = {!reshapeM!}
 pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
   with cmpᵗ s (tν (a ++ᵗ tν (renTel t (gapρ a w)))) s₂ (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t₂)) (sym eqTᵗ)
 ... | cmpʳ dgap p q = {!cmpʳ-swap!}
