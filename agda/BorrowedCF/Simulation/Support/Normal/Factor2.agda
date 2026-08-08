@@ -643,6 +643,14 @@ pushIns T es₂ (swapᴿ s {a} w t {es = es} refl refl refl fit) =
   ~ᵩ-sym (Eq*.return (delᵩ (s ++ᵗ tν (a ++ᵗ tν t)) es)) ,
   swapᴿ s w t {es = K `unit ∷ es} refl refl refl fit
 
+private
+  buildW′ : ∀ {n′ j i} (dg : Tel n′ j) (x y : Flag) (c d : Tm j) (e₃ : Tel (2 + j) i) →
+            Run (dg ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) e₃)) →
+            Run (dg ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel e₃ (assocSwapᵣ 1 1))))
+  buildW′ []           x y c d e₃ (rφ (rφ we₃)) = rφ (rφ (runRen we₃ (assocSwapᵣ 1 1)))
+  buildW′ (tφ f cc dg) x y c d e₃ (rφ w)         = rφ (buildW′ dg x y c d e₃ w)
+  buildW′ (tν dg)      x y c d e₃ ()
+
 pushφφ : ∀ {n j k} {N : NF n} (s₂ : Tel n j) (x y : Flag) (c d : Tm j)
          (t₂ : Tel (2 + j) k) (es₂ : List (Tm k)) →
          Res N (mkNF (s₂ ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t₂)) es₂) →
