@@ -460,6 +460,39 @@ gapρ-comm-thr a w ρ t x =
     ■ sym (liftRen-· t (liftRen a (ρ ↑* 2) ↑* 2)
                      (gapρ (renTel a (ρ ↑* 2)) (runRen w (ρ ↑* 2))) x)
 
+-- Two `↑* 2`-lifted leaf endos over the same telescope commute whenever their
+-- base renamings commute pointwise.
+liftId-commAmb : ∀ {n k} (t : Tel n k) (ρ₁ ρ₂ : n →ᵣ n)
+                 (h : ∀ y → ρ₁ (ρ₂ y) ≡ ρ₂ (ρ₁ y)) (x : 𝔽 (2 + k)) →
+                 (liftId t ρ₁ ↑* 2) ((liftId t ρ₂ ↑* 2) x)
+                   ≡ (liftId t ρ₂ ↑* 2) ((liftId t ρ₁ ↑* 2) x)
+liftId-commAmb t ρ₁ ρ₂ h x =
+    sym (dist-↑*-· 2 (liftId t ρ₂) (liftId t ρ₁) x)
+  ■ (commPw ~↑* 2) x
+  ■ dist-↑*-· 2 (liftId t ρ₁) (liftId t ρ₂) x
+  where
+    commPw : (liftId t ρ₂ ·ₖ liftId t ρ₁) ≗ (liftId t ρ₁ ·ₖ liftId t ρ₂)
+    commPw z = liftId-· t ρ₂ ρ₁ z
+             ■ liftId-cong t (λ y → h y) z
+             ■ sym (liftId-· t ρ₁ ρ₂ z)
+
+-- `gapρ a w` commutes with any leaf endo `liftId a (σ ↑* 2) ↑* 2` whose base
+-- renaming fixes the innermost ν pair (guaranteed by the `σ ↑* 2` shape).  The
+-- two window conjugations commute with `σ ↑* 3` (aswap12/21-gen) and the base
+-- with `σ ↑* 4` (gcomm22); the run cell recurses on `σ ↑ᵣ`.
+gapρ-comm-amb : ∀ {j i} (a : Tel (2 + j) i) (w : Run a) (σ : j →ᵣ j) (x : 𝔽 (2 + i)) →
+  gapρ a w ((liftId a (σ ↑* 2) ↑* 2) x) ≡ (liftId a (σ ↑* 2) ↑* 2) (gapρ a w x)
+gapρ-comm-amb []          rnil    σ x = gcomm22 σ x
+gapρ-comm-amb (tφ f c a′) (rφ w′) σ x =
+    cong (λ u → (liftId a′ (assocSwapᵣ 2 1) ↑* 2) (gapρ a′ w′ u))
+         (liftId-commAmb a′ (assocSwapᵣ 1 2) ((σ ↑ᵣ) ↑* 2)
+                         (λ y → comm-↑³-aswap12-gen σ y) x)
+  ■ cong (liftId a′ (assocSwapᵣ 2 1) ↑* 2)
+         (gapρ-comm-amb a′ w′ (σ ↑ᵣ) ((liftId a′ (assocSwapᵣ 1 2) ↑* 2) x))
+  ■ liftId-commAmb a′ (assocSwapᵣ 2 1) ((σ ↑ᵣ) ↑* 2)
+                   (λ y → comm-↑³-aswap21-gen σ y)
+                   (gapρ a′ w′ ((liftId a′ (assocSwapᵣ 1 2) ↑* 2) x))
+
 -- FIT is invariant under a leaf-scope transport of its telescope.
 FIT-leaf-subst : ∀ {b n k₁ k₂} (ω : b →ᵣ n) (e : k₁ ≡ k₂) (X : Tel n k₁) →
                  FIT ω X → FIT ω (subst (Tel n) e X)
