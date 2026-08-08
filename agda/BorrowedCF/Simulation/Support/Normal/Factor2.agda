@@ -1044,8 +1044,57 @@ pushφφ {n = n} {j = j} s₂ x y c d t₂ es₂ (flipᴿ {j = j₁} {k = k} s t
     reshapeM-NF = NF-≡ eM telM thrM ■ sym (cong₂ mkΦ p eqE)
 pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
   with cmpᵗ s (tν (a ++ᵗ tν (renTel t (gapρ a w)))) s₂ (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t₂)) (sym eqTᵗ)
-... | cmpʳ dgap p q = {!cmpʳ-swap!}
-... | cmpˡ dgap p q = {!cmpˡ-swap!}
+... | cmpʳ [] p ()
+... | cmpʳ (tν dg) p ()
+... | cmpʳ (tφ x′ c′ []) p q with tφ-inj₂ q
+...   | ()
+pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
+  | cmpʳ (tφ x′ c′ (tν dg)) p q with tφ-inj₂ q
+...   | ()
+pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
+  | cmpʳ (tφ x′ c′ (tφ y′ d″ dgap₂)) p q
+    with tφ-inj₁ q | tφ-inj-c q | tφ-inj₁ (tφ-inj₂ q) | tφ-inj-c (tφ-inj₂ q) | tφ-inj₂ (tφ-inj₂ q)
+...   | refl | refl | refl | refl | refl =
+        φφRHS , cleg ,
+        subst (λ b → Res φφRHS b) reshapeM-NF
+          (subst (λ a₀ → Res a₀ swapTarget) reshapeN-NF
+             (swapᴿ s′ {aN} wN tN {es = esN′} refl refl refl fit′))
+  where
+    aswap11 : _ →ᵣ _
+    aswap11 = assocSwapᵣ 1 1
+    mv : _ →ᵣ _
+    mv = liftRen dgap₂ aswap11
+    s′ : Tel _ _
+    s′ = s₂ ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel dgap₂ aswap11))
+    aN : Tel _ _
+    aN = renTel a (mv ↑* 2)
+    wN : Run aN
+    wN = runRen w (mv ↑* 2)
+    tN : Tel (2 + _) _
+    tN = renTel t (liftRen a (mv ↑* 2) ↑* 2)
+    Dwin : Tel _ _
+    Dwin = tν (a ++ᵗ tν t)
+    esN′ : List (Tm _)
+    esN′ = map (_⋯ liftRen t (liftRen a (mv ↑* 2) ↑* 2)) esˢ
+    φφRHS : NF _
+    φφRHS = mkNF (s₂ ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (dgap₂ ++ᵗ Dwin) aswap11)))
+                 (map (_⋯ liftRen (dgap₂ ++ᵗ Dwin) aswap11) esˢ)
+    swapTarget : NF _
+    swapTarget = mkNF (s′ ++ᵗ tν (aN ++ᵗ tν (renTel tN (gapρ aN wN))))
+                      (map (_⋯ liftRen tN (gapρ aN wN)) esN′)
+    cleg : mkNF _ esˢ ~ᵩ φφRHS
+    cleg = {!cleg!}
+    reshapeN-NF : mkNF (s′ ++ᵗ tν (aN ++ᵗ tν tN)) esN′ ≡ φφRHS
+    reshapeN-NF = {!reshapeN!}
+    fit′ : FIT (idₖ ⦃ Kᵣ ⦄) (s′ ++ᵗ tν (aN ++ᵗ tν tN))
+    fit′ = {!fit′!}
+    reshapeM-NF : swapTarget ≡
+                  mkNF (s₂ ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1)
+                          (renTel (dgap₂ ++ᵗ tν (a ++ᵗ tν (renTel t (gapρ a w)))) aswap11)))
+                       (map (_⋯ liftRen (dgap₂ ++ᵗ tν (a ++ᵗ tν (renTel t (gapρ a w)))) aswap11) es₂)
+    reshapeM-NF = {!reshapeM!}
+pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
+  | cmpˡ dgap p q = {!cmpˡ-swap!}
 
 pushνφ : ∀ {n j k} {N : NF n} (s₂ : Tel n j) (x : Flag) (c : Tm j)
          (t₂ : Tel (1 + (2 + j)) k) (es₂ : List (Tm k)) →
