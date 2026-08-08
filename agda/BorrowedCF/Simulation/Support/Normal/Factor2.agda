@@ -533,6 +533,97 @@ gapρ-renTel-cong (tφ f c a′) (rφ w′) ρ v =
     e2 = cong (2 +_) (renTel-id a′)
     W = (liftId (renTel a′ (ρ ↑ᵣ)) (assocSwapᵣ 1 2) ↑* 2) (subst 𝔽 (sym e2) v)
 
+-- Fusing / congruence / cancellation of `↑* 2`-lifted leaf endos.
+private
+  Lfuse : ∀ {j i} (t : Tel (2 + j) i) (τ σ : (2 + j) →ᵣ (2 + j)) (u : 𝔽 (2 + i)) →
+          (liftId t σ ↑* 2) ((liftId t τ ↑* 2) u) ≡ (liftId t (τ ·ₖ σ) ↑* 2) u
+  Lfuse t τ σ u = sym (dist-↑*-· 2 (liftId t τ) (liftId t σ) u)
+                ■ ((λ y → liftId-· t τ σ y) ~↑* 2) u
+
+  Lcong : ∀ {j i} (t : Tel (2 + j) i) {β β′ : (2 + j) →ᵣ (2 + j)} → β ≗ β′ → (u : 𝔽 (2 + i)) →
+          (liftId t β ↑* 2) u ≡ (liftId t β′ ↑* 2) u
+  Lcong t hβ u = ((λ y → liftId-cong t hβ y) ~↑* 2) u
+
+  Lid : ∀ {j i} (t : Tel (2 + j) i) {β : (2 + j) →ᵣ (2 + j)} → β ≗ idₖ ⦃ Kᵣ ⦄ → (u : 𝔽 (2 + i)) →
+        (liftId t β ↑* 2) u ≡ u
+  Lid t hβ u = id↑* 2 (λ y → liftId-id t hβ y) u
+
+-- `M ∘ S = S ∘ M` where `M` is the peel composite around `gapρ` and `S` is the
+-- head-φ swap `liftId t (assocSwapᵣ 1 1) ↑* 2`.  The two conjugating leaf bundles
+-- are mutually inverse, so `S` crosses `gapρ` by a single `gapρ-comm-amb`.
+private
+  Mcomm : ∀ {m i} (t : Tel (2 + (2 + m)) i) (w : Run t) (z : 𝔽 (2 + i)) →
+    (liftId t (assocSwapᵣ 2 1 ↑ᵣ) ↑* 2)
+      ((liftId t (assocSwapᵣ 2 1) ↑* 2)
+        (gapρ t w
+          ((liftId t (assocSwapᵣ 1 2) ↑* 2)
+            ((liftId t (assocSwapᵣ 1 2 ↑ᵣ) ↑* 2)
+              ((liftId t (assocSwapᵣ 1 1) ↑* 2) z)))))
+      ≡ (liftId t (assocSwapᵣ 1 1) ↑* 2)
+          ((liftId t (assocSwapᵣ 2 1 ↑ᵣ) ↑* 2)
+            ((liftId t (assocSwapᵣ 2 1) ↑* 2)
+              (gapρ t w
+                ((liftId t (assocSwapᵣ 1 2) ↑* 2)
+                  ((liftId t (assocSwapᵣ 1 2 ↑ᵣ) ↑* 2) z)))))
+  Mcomm t w z =
+      Lfuse t (assocSwapᵣ 2 1) (assocSwapᵣ 2 1 ↑ᵣ) (Gzz)
+    ■ cong (λ X → (liftId t γL ↑* 2) (gapρ t w X)) (Lfuse t (assocSwapᵣ 1 2 ↑ᵣ) (assocSwapᵣ 1 2) (LaZ))
+    ■ cong (λ z0 → (liftId t γL ↑* 2)
+                     (gapρ t w ((liftId t δR ↑* 2) ((liftId t (assocSwapᵣ 1 1) ↑* 2) z0))))
+           (sym (INV z))
+    ■ cong (λ Y → (liftId t γL ↑* 2) (gapρ t w Y)) (KFUSE (LδRz))
+    ■ cong (liftId t γL ↑* 2) (gapρ-comm-amb t w (assocSwapᵣ 1 1) (LδRz))
+    ■ ABKFUSE (gapρ t w LδRz)
+    ■ cong (λ Y → (liftId t (assocSwapᵣ 1 1) ↑* 2) ((liftId t γL ↑* 2) (gapρ t w Y)))
+           (sym (Lfuse t (assocSwapᵣ 1 2 ↑ᵣ) (assocSwapᵣ 1 2) z))
+    ■ cong (liftId t (assocSwapᵣ 1 1) ↑* 2)
+           (sym (Lfuse t (assocSwapᵣ 2 1) (assocSwapᵣ 2 1 ↑ᵣ) (gapρ t w LcdZ)))
+    where
+      γL = assocSwapᵣ 2 1 ·ₖ (assocSwapᵣ 2 1 ↑ᵣ)
+      δR = (assocSwapᵣ 1 2 ↑ᵣ) ·ₖ assocSwapᵣ 1 2
+      LaZ  = (liftId t (assocSwapᵣ 1 1) ↑* 2) z
+      LcdZ = (liftId t (assocSwapᵣ 1 2) ↑* 2) ((liftId t (assocSwapᵣ 1 2 ↑ᵣ) ↑* 2) z)
+      LδRz = (liftId t δR ↑* 2) z
+      Gzz  = gapρ t w ((liftId t (assocSwapᵣ 1 2) ↑* 2)
+                        ((liftId t (assocSwapᵣ 1 2 ↑ᵣ) ↑* 2) LaZ))
+
+      b-inv : (δR ·ₖ γL) ≗ idₖ ⦃ Kᵣ ⦄
+      b-inv zero = refl
+      b-inv (suc zero) = refl
+      b-inv (suc (suc zero)) = refl
+      b-inv (suc (suc (suc zero))) = refl
+      b-inv (suc (suc (suc (suc x)))) = refl
+
+      b-k : ((γL ·ₖ assocSwapᵣ 1 1) ·ₖ δR) ≗ (assocSwapᵣ 1 1 ↑* 2)
+      b-k zero = refl
+      b-k (suc zero) = refl
+      b-k (suc (suc zero)) = refl
+      b-k (suc (suc (suc zero))) = refl
+      b-k (suc (suc (suc (suc x)))) = refl
+
+      b-abk : ((assocSwapᵣ 1 1 ↑* 2) ·ₖ γL) ≗ (γL ·ₖ assocSwapᵣ 1 1)
+      b-abk zero = refl
+      b-abk (suc zero) = refl
+      b-abk (suc (suc zero)) = refl
+      b-abk (suc (suc (suc zero))) = refl
+      b-abk (suc (suc (suc (suc x)))) = refl
+
+      INV : ∀ z0 → (liftId t γL ↑* 2) ((liftId t δR ↑* 2) z0) ≡ z0
+      INV z0 = Lfuse t δR γL z0 ■ Lid t b-inv z0
+
+      KFUSE : ∀ u → (liftId t δR ↑* 2)
+                      ((liftId t (assocSwapᵣ 1 1) ↑* 2) ((liftId t γL ↑* 2) u))
+                    ≡ (liftId t (assocSwapᵣ 1 1 ↑* 2) ↑* 2) u
+      KFUSE u = cong (liftId t δR ↑* 2) (Lfuse t γL (assocSwapᵣ 1 1) u)
+              ■ Lfuse t (γL ·ₖ assocSwapᵣ 1 1) δR u
+              ■ Lcong t b-k u
+
+      ABKFUSE : ∀ v → (liftId t γL ↑* 2) ((liftId t (assocSwapᵣ 1 1 ↑* 2) ↑* 2) v)
+                      ≡ (liftId t (assocSwapᵣ 1 1) ↑* 2) ((liftId t γL ↑* 2) v)
+      ABKFUSE v = Lfuse t (assocSwapᵣ 1 1 ↑* 2) γL v
+                ■ Lcong t b-abk v
+                ■ sym (Lfuse t γL (assocSwapᵣ 1 1) v)
+
 -- FIT is invariant under a leaf-scope transport of its telescope.
 FIT-leaf-subst : ∀ {b n k₁ k₂} (ω : b →ᵣ n) (e : k₁ ≡ k₂) (X : Tel n k₁) →
                  FIT ω X → FIT ω (subst (Tel n) e X)
