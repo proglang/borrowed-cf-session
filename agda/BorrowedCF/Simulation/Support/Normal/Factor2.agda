@@ -624,6 +624,23 @@ private
                 ■ Lcong t b-abk v
                 ■ sym (Lfuse t γL (assocSwapᵣ 1 1) v)
 
+-- `subst` by an equality path is injective.
+subst-inj : ∀ {A : Set} {P : A → Set} {x y} (e : x ≡ y) {a b : P x} →
+            subst P e a ≡ subst P e b → a ≡ b
+subst-inj refl q = q
+
+-- `↑* 2` transports a one-sided (codomain-only) `subst`-conjugation.
+lift-cod-↑*2 : ∀ {n m} (e : n ≡ m) (f : m →ᵣ n) (g : m →ᵣ m) →
+               (∀ x → subst 𝔽 e (f x) ≡ g x) → ∀ z →
+               subst 𝔽 (cong (2 +_) e) ((f ↑* 2) z) ≡ (g ↑* 2) z
+lift-cod-↑*2 refl f g h z = (h ~↑* 2) z
+
+-- `↑* 2` form of `liftId-liftRen`: `liftRen t ρ ↑* 2` is `liftId t ρ ↑* 2`
+-- after the leaf transport.
+liftId-liftRen2 : ∀ {n k} (t : Tel n k) (ρ : n →ᵣ n) (z : 𝔽 (2 + k)) →
+                  subst 𝔽 (cong (2 +_) (renTel-id t)) ((liftRen t ρ ↑* 2) z) ≡ (liftId t ρ ↑* 2) z
+liftId-liftRen2 t ρ = lift-cod-↑*2 (renTel-id t) (liftRen t ρ) (liftId t ρ) (liftId-liftRen t ρ)
+
 -- FIT is invariant under a leaf-scope transport of its telescope.
 FIT-leaf-subst : ∀ {b n k₁ k₂} (ω : b →ᵣ n) (e : k₁ ≡ k₂) (X : Tel n k₁) →
                  FIT ω X → FIT ω (subst (Tel n) e X)
@@ -857,14 +874,66 @@ private
                 (gapρ e₃ we₃
                   ((liftId e₃ (assocSwapᵣ 1 2) ↑* 2)
                     ((liftId e₃ (assocSwapᵣ 1 2 ↑ᵣ) ↑* 2) z)))))
-  Fbase .([]) rnil zero = refl
-  Fbase .([]) rnil (suc zero) = refl
-  Fbase .([]) rnil (suc (suc zero)) = refl
-  Fbase .([]) rnil (suc (suc (suc zero))) = refl
-  Fbase .([]) rnil (suc (suc (suc (suc zero)))) = refl
-  Fbase .([]) rnil (suc (suc (suc (suc (suc zero))))) = refl
-  Fbase .([]) rnil (suc (suc (suc (suc (suc (suc z)))))) = refl
-  Fbase .(tφ _ _ _) (rφ w₀) z = {!Fbase-rφ!}
+  Fbase e₃ we₃ z =
+    subst-inj {P = 𝔽} E (conv-LHS ■ Mcomm e₃ we₃ z ■ sym conv-RHS)
+    where
+      E = cong (2 +_) (renTel-id e₃)
+      ê = renTel e₃ (assocSwapᵣ 1 1)
+      Sz = (liftRen e₃ (assocSwapᵣ 1 1) ↑* 2) z
+      U4 = (liftId ê (assocSwapᵣ 1 2 ↑ᵣ) ↑* 2) Sz
+      U3 = (liftId ê (assocSwapᵣ 1 2) ↑* 2) U4
+      U2 = gapρ ê (runRen we₃ (assocSwapᵣ 1 1)) U3
+      U1 = (liftId ê (assocSwapᵣ 2 1) ↑* 2) U2
+      pushGê : ∀ u → subst 𝔽 E (gapρ ê (runRen we₃ (assocSwapᵣ 1 1)) u)
+                     ≡ gapρ e₃ we₃ (subst 𝔽 E u)
+      pushGê u =
+          cong (λ v → subst 𝔽 E (gapρ ê (runRen we₃ (assocSwapᵣ 1 1)) v))
+               (sym (subst-symˡ E u))
+        ■ gapρ-renTel-cong e₃ we₃ (assocSwapᵣ 1 1) (subst 𝔽 E u)
+      conv-LHS : subst 𝔽 E
+                   ((liftId ê (assocSwapᵣ 2 1 ↑ᵣ) ↑* 2)
+                     ((liftId ê (assocSwapᵣ 2 1) ↑* 2)
+                       (gapρ ê (runRen we₃ (assocSwapᵣ 1 1))
+                         ((liftId ê (assocSwapᵣ 1 2) ↑* 2)
+                           ((liftId ê (assocSwapᵣ 1 2 ↑ᵣ) ↑* 2) Sz)))))
+                 ≡ (liftId e₃ (assocSwapᵣ 2 1 ↑ᵣ) ↑* 2)
+                     ((liftId e₃ (assocSwapᵣ 2 1) ↑* 2)
+                       (gapρ e₃ we₃
+                         ((liftId e₃ (assocSwapᵣ 1 2) ↑* 2)
+                           ((liftId e₃ (assocSwapᵣ 1 2 ↑ᵣ) ↑* 2)
+                             ((liftId e₃ (assocSwapᵣ 1 1) ↑* 2) z)))))
+      conv-LHS =
+          liftId-renTel-nat2 e₃ (assocSwapᵣ 1 1) (assocSwapᵣ 2 1 ↑ᵣ) U1
+        ■ cong (liftId e₃ (assocSwapᵣ 2 1 ↑ᵣ) ↑* 2)
+            ( liftId-renTel-nat2 e₃ (assocSwapᵣ 1 1) (assocSwapᵣ 2 1) U2
+            ■ cong (liftId e₃ (assocSwapᵣ 2 1) ↑* 2)
+                ( pushGê U3
+                ■ cong (gapρ e₃ we₃)
+                    ( liftId-renTel-nat2 e₃ (assocSwapᵣ 1 1) (assocSwapᵣ 1 2) U4
+                    ■ cong (liftId e₃ (assocSwapᵣ 1 2) ↑* 2)
+                        ( liftId-renTel-nat2 e₃ (assocSwapᵣ 1 1) (assocSwapᵣ 1 2 ↑ᵣ) Sz
+                        ■ cong (liftId e₃ (assocSwapᵣ 1 2 ↑ᵣ) ↑* 2)
+                               (liftId-liftRen2 e₃ (assocSwapᵣ 1 1) z) ))))
+      conv-RHS : subst 𝔽 E
+                   ((liftRen e₃ (assocSwapᵣ 1 1) ↑* 2)
+                     ((liftId e₃ (assocSwapᵣ 2 1 ↑ᵣ) ↑* 2)
+                       ((liftId e₃ (assocSwapᵣ 2 1) ↑* 2)
+                         (gapρ e₃ we₃
+                           ((liftId e₃ (assocSwapᵣ 1 2) ↑* 2)
+                             ((liftId e₃ (assocSwapᵣ 1 2 ↑ᵣ) ↑* 2) z))))))
+                 ≡ (liftId e₃ (assocSwapᵣ 1 1) ↑* 2)
+                     ((liftId e₃ (assocSwapᵣ 2 1 ↑ᵣ) ↑* 2)
+                       ((liftId e₃ (assocSwapᵣ 2 1) ↑* 2)
+                         (gapρ e₃ we₃
+                           ((liftId e₃ (assocSwapᵣ 1 2) ↑* 2)
+                             ((liftId e₃ (assocSwapᵣ 1 2 ↑ᵣ) ↑* 2) z)))))
+      conv-RHS =
+        liftId-liftRen2 e₃ (assocSwapᵣ 1 1)
+          ((liftId e₃ (assocSwapᵣ 2 1 ↑ᵣ) ↑* 2)
+            ((liftId e₃ (assocSwapᵣ 2 1) ↑* 2)
+              (gapρ e₃ we₃
+                ((liftId e₃ (assocSwapᵣ 1 2) ↑* 2)
+                  ((liftId e₃ (assocSwapᵣ 1 2 ↑ᵣ) ↑* 2) z)))))
 
   F [] x y c d e₃ (rφ (rφ we₃)) z = Fbase e₃ we₃ z
   F (tφ f cc dg) x y c d e₃ (rφ w) z =
