@@ -27,6 +27,7 @@ open import BorrowedCF.Simulation.Support.Normal.Factor
 open import BorrowedCF.Simulation.Support.Normal.Endo using (++ᵗ-idʳ)
 open import BorrowedCF.Simulation.Support.Normal.Shift using (shift2; shift1)
 open import BorrowedCF.Simulation.Support.Normal.Bubble using (wkTel-shift2-tν)
+open import BorrowedCF.Simulation.Support.Normal.Rename using (renTel)
 
 open import Data.Product using (Σ; Σ-syntax; _×_; _,_; proj₁; proj₂)
 
@@ -133,3 +134,57 @@ fit→FInner-seed {n} s t fit =
                  (run (splitRun t))
     fitRun = FIT-cong (λ z → sym (wkS2tν[] (weaken* ⦃ Kᵣ ⦄ 2 (wkTel s z))))
                       (run (splitRun t)) fit-run
+
+------------------------------------------------------------------------
+-- FIT preservation under telescope renaming (the core of ~-preservation).
+------------------------------------------------------------------------
+
+-- Renaming the channels by `σ` preserves front-independence, provided the
+-- new ambient weakening `ω′` factors the old one through `σ` (`ω′ = ω ·ₖ σ`).
+FIT-renTel : ∀ {b p p′ k} (ω : b →ᵣ p) (ω′ : b →ᵣ p′) (σ : p →ᵣ p′) →
+             (∀ x → ω′ x ≡ σ (ω x)) →
+             (t : Tel p k) → FIT ω t → FIT ω′ (renTel t σ)
+FIT-renTel ω ω′ σ h []         fit = fit
+FIT-renTel ω ω′ σ h (tφ f c t) ((cf , ceq) , rest) =
+  (cf , ( cong (_⋯ σ) ceq ■ fusion cf ω σ ■ ⋯-cong cf (λ x → sym (h x)) )) ,
+  FIT-renTel (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (ω′ ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (σ ↑)
+             (λ x → cong (weaken* ⦃ Kᵣ ⦄ 1) (h x) ■ sym (N2 σ (ω x))) t rest
+FIT-renTel ω ω′ σ h (tν t) fit =
+  FIT-renTel (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (ω′ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (σ ↑* 2)
+             (λ x → cong (weaken* ⦃ Kᵣ ⦄ 2) (h x) ■ sym (N2ν σ (ω x))) t fit
+
+-- Swaps fix names weakened in past them (ambient channels avoid local ν's).
+private
+  swap11-fix2 : ∀ {p} (y : 𝔽 p) →
+                swapᵣ 1 1 (weaken* ⦃ Kᵣ ⦄ 2 y) ≡ weaken* ⦃ Kᵣ ⦄ 2 y
+  swap11-fix2 y = refl
+
+  aswap22-fix4 : ∀ {p} (y : 𝔽 p) →
+                 assocSwapᵣ 2 2 (weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 2 y))
+                   ≡ weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 2 y)
+  aswap22-fix4 y = refl
+
+-- Transform FIT at the SUFFIX under a shared prefix `s` (front cells kept).
+FIT-cong++ : ∀ {b n p k k′} (ω : b →ᵣ n) (s : Tel n p) {X : Tel p k} {X′ : Tel p k′} →
+             (FIT (ω ·ₖ wkTel s) X → FIT (ω ·ₖ wkTel s) X′) →
+             FIT ω (s ++ᵗ X) → FIT ω (s ++ᵗ X′)
+FIT-cong++ ω []         f fit                  = f fit
+FIT-cong++ ω (tν s)     f fit                  = FIT-cong++ (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 2) s f fit
+FIT-cong++ ω (tφ g c s) f ((cf , ceq) , rest)  =
+  (cf , ceq) , FIT-cong++ (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) s f rest
+
+-- Preservation for the two pure ν-reindexing generators (tail renamed only).
+FIT-pres-ν1 : ∀ {b n p k} (ω : b →ᵣ n) (s : Tel n p) (t : Tel (2 + p) k) →
+              FIT ω (s ++ᵗ tν t) → FIT ω (s ++ᵗ tν (renTel t (swapᵣ 1 1)))
+FIT-pres-ν1 ω s t = FIT-cong++ ω s
+  (FIT-renTel ((ω ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2)
+              ((ω ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (swapᵣ 1 1)
+              (λ x → sym (swap11-fix2 ((ω ·ₖ wkTel s) x))) t)
+
+FIT-pres-νν : ∀ {b n p k} (ω : b →ᵣ n) (s : Tel n p) (t : Tel (2 + (2 + p)) k) →
+              FIT ω (s ++ᵗ tν (tν t)) →
+              FIT ω (s ++ᵗ tν (tν (renTel t (assocSwapᵣ 2 2))))
+FIT-pres-νν ω s t = FIT-cong++ ω s
+  (FIT-renTel (((ω ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ weaken* ⦃ Kᵣ ⦄ 2)
+              (((ω ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (assocSwapᵣ 2 2)
+              (λ x → sym (aswap22-fix4 ((ω ·ₖ wkTel s) x))) t)
