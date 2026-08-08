@@ -39,7 +39,7 @@ open import BorrowedCF.Processes.Untyped
 open import BorrowedCF.Simulation.Support.Normal.Form
 open import BorrowedCF.Simulation.Support.Normal.Equiv
 open import BorrowedCF.Simulation.Support.Normal.Shift
-  using (liftId-·; liftId-++ᵗ; liftId-cong)
+  using (liftId-·; liftId-++ᵗ; liftId-cong; liftId-wkTel)
 open import BorrowedCF.Simulation.Support.Normal.Endo using (liftId-id; ++ᵗ-assoc)
 open import BorrowedCF.Simulation.Support.Normal.Bubble
   using (map-⋯-cong; map-⋯-id; aswap-21-12)
@@ -51,6 +51,9 @@ open import BorrowedCF.Simulation.Support.Normal.Nat
          map-⋯-subst; liftRen-·; liftRen-cong)
 open import BorrowedCF.Simulation.Support.Normal.Endo using (renTel-idᵗ; liftId-liftRen)
 open import BorrowedCF.Simulation.Support.Normal.FactorBase
+open import BorrowedCF.Simulation.Support.Normal.Factor using (N2ν)
+open import BorrowedCF.Simulation.Support.Normal.FrontIndep
+  using (FIT; FIT-cong++; FIT-renTel; FIT-pres-ν1)
 
 open import Data.List using (List; []; _∷_; map)
 open import Data.List.Relation.Binary.Permutation.Propositional using (_↭_; ↭-sym)
@@ -137,6 +140,74 @@ gapρ-invol (tφ f c a′) (rφ w) x =
     ■ cong (liftId a′ (assocSwapᵣ 2 1) ↑* 2)
            (gapρ-invol a′ w ((liftId a′ (assocSwapᵣ 1 2) ↑* 2) x))
     ■ peel-inv₂ a′ x
+
+------------------------------------------------------------------------
+-- `gapρ` fixes ambient channels (front-independence transport).
+------------------------------------------------------------------------
+
+-- The gap transposition permutes only the two ν pairs (and the run cells
+-- between them); a channel weakened past BOTH pairs (`weaken*2 ∘ wkTel a ∘
+-- weaken*2`) lands in the fixed top region.  These are the `refl` facts the
+-- swaps fix names weakened in past them (cf. FrontIndep.aswap-fixes).
+private
+  aswap12-wkfix : ∀ {m} (z : 𝔽 m) →
+                  assocSwapᵣ 1 2 (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 2 z))
+                    ≡ weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 2 z)
+  aswap12-wkfix z = refl
+
+  aswap21-wkfix : ∀ {m} (z : 𝔽 m) →
+                  assocSwapᵣ 2 1 (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 2 z))
+                    ≡ weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 2 z)
+  aswap21-wkfix z = refl
+
+  aswap22-wkfix : ∀ {m} (z : 𝔽 m) →
+                  assocSwapᵣ 2 2 (weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 2 z))
+                    ≡ weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 2 z)
+  aswap22-wkfix z = refl
+
+gapρ-fix : ∀ {j i} (a : Tel (2 + j) i) (w : Run a) (z : 𝔽 j) →
+           gapρ a w (weaken* ⦃ Kᵣ ⦄ 2 (wkTel a (weaken* ⦃ Kᵣ ⦄ 2 z)))
+             ≡ weaken* ⦃ Kᵣ ⦄ 2 (wkTel a (weaken* ⦃ Kᵣ ⦄ 2 z))
+gapρ-fix []          rnil   z = aswap22-wkfix z
+gapρ-fix (tφ f c a′) (rφ w′) z =
+  cong (λ u → (liftId a′ (assocSwapᵣ 2 1) ↑* 2) (gapρ a′ w′ u)) Pfix
+    ■ cong (liftId a′ (assocSwapᵣ 2 1) ↑* 2) (gapρ-fix a′ w′ (weaken* ⦃ Kᵣ ⦄ 1 z))
+    ■ Rfix
+  where
+    v0 : 𝔽 _
+    v0 = wkTel (tφ f c a′) (weaken* ⦃ Kᵣ ⦄ 2 z)
+
+    Pfix : (liftId a′ (assocSwapᵣ 1 2) ↑* 2) (weaken* ⦃ Kᵣ ⦄ 2 v0)
+             ≡ weaken* ⦃ Kᵣ ⦄ 2 v0
+    Pfix = N2ν (liftId a′ (assocSwapᵣ 1 2)) v0
+             ■ cong (weaken* ⦃ Kᵣ ⦄ 2)
+                    ( liftId-wkTel a′ (assocSwapᵣ 1 2) (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 2 z))
+                    ■ cong (wkTel a′) (aswap12-wkfix z) )
+
+    Rfix : (liftId a′ (assocSwapᵣ 2 1) ↑* 2) (weaken* ⦃ Kᵣ ⦄ 2 v0)
+             ≡ weaken* ⦃ Kᵣ ⦄ 2 v0
+    Rfix = N2ν (liftId a′ (assocSwapᵣ 2 1)) v0
+             ■ cong (weaken* ⦃ Kᵣ ⦄ 2)
+                    ( liftId-wkTel a′ (assocSwapᵣ 2 1) (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 2 z))
+                    ■ cong (wkTel a′) (aswap21-wkfix z) )
+
+-- FIT preservation for the gap transposition: rename the innermost tail of
+-- `s ++ᵗ tν (a ++ᵗ tν t)` by `gapρ a w`, keeping front-independence.  The
+-- ambient channels at `t` are weakened past both ν pairs, so `gapρ` fixes
+-- them (`gapρ-fix`).
+FIT-pres-gap : ∀ {b n p i k} (ω : b →ᵣ n) (s : Tel n p) (a : Tel (2 + p) i)
+               (w : Run a) (t : Tel (2 + i) k) →
+               FIT ω (s ++ᵗ tν (a ++ᵗ tν t)) →
+               FIT ω (s ++ᵗ tν (a ++ᵗ tν (renTel t (gapρ a w))))
+FIT-pres-gap ω s a w t =
+  FIT-cong++ ω s
+    (FIT-cong++ ((ω ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) a
+       (FIT-renTel
+          ((((ω ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ wkTel a) ·ₖ weaken* ⦃ Kᵣ ⦄ 2)
+          ((((ω ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ wkTel a) ·ₖ weaken* ⦃ Kᵣ ⦄ 2)
+          (gapρ a w)
+          (λ x → sym (gapρ-fix a w ((ω ·ₖ wkTel s) x)))
+          t))
 
 ------------------------------------------------------------------------
 -- Pointwise commutations: head block swaps vs far-lifted endos.
@@ -229,7 +300,7 @@ data Res {n} : NF n → NF n → Set where
   -- Linked-φ: the codomain carries the ν-reindexing `renTel t (swapᵣ 1 1)`.
   flipᴿ : ∀ {j k} (s : Tel n j) (t : Tel (2 + j) k)
           {T : Tel n k} {es : List (Tm k)} →
-          T ≡ s ++ᵗ tν t →
+          T ≡ s ++ᵗ tν t → FIT (idₖ ⦃ Kᵣ ⦄) T →
           Res (mkNF T es)
               (mkNF (s ++ᵗ tν (renTel t (swapᵣ 1 1))) (map (_⋯ liftRen t (swapᵣ 1 1)) es))
 
@@ -237,18 +308,18 @@ data Res {n} : NF n → NF n → Set where
   -- (= perm-νν at `a = []`, and its conjugates under φ moves otherwise).
   swapᴿ : ∀ {j i k} (s : Tel n j) {a : Tel (2 + j) i} (w : Run a)
           (t : Tel (2 + i) k) {T : Tel n k} {es : List (Tm k)} →
-          T ≡ s ++ᵗ tν (a ++ᵗ tν t) →
+          T ≡ s ++ᵗ tν (a ++ᵗ tν t) → FIT (idₖ ⦃ Kᵣ ⦄) T →
           Res (mkNF T es)
               (mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel t (gapρ a w)))) (map (_⋯ liftRen t (gapρ a w)) es))
 
 -- The seeds: the two banned `~₁` generators are residues, verbatim.
-res-seed : ∀ {n} {N K : NF n} → N ~₁ K → (N ~ᵩ₁ K) ⊎ Res N K
-res-seed (perm-ν1 s t es)       = inj₂ (flipᴿ s t refl)
-res-seed (perm-νν s t es)       = inj₂ (swapᴿ s rnil t refl)
-res-seed (perm-φφ s x y c d t es) = inj₁ (φφᵩ s x y c d t es)
-res-seed (perm-νφ s x c t es)   = inj₁ (νφᵩ s x c t es)
-res-seed (perm-thr t p)         = inj₁ (thrᵩ t p)
-res-seed (unit-del t es)        = inj₁ (delᵩ t es)
+res-seed : ∀ {n} {N K : NF n} → FIT (idₖ ⦃ Kᵣ ⦄) (tel N) → N ~₁ K → (N ~ᵩ₁ K) ⊎ Res N K
+res-seed fit (perm-ν1 s t es)       = inj₂ (flipᴿ s t refl fit)
+res-seed fit (perm-νν s t es)       = inj₂ (swapᴿ s rnil t refl fit)
+res-seed fit (perm-φφ s x y c d t es) = inj₁ (φφᵩ s x y c d t es)
+res-seed fit (perm-νφ s x c t es)   = inj₁ (νφᵩ s x c t es)
+res-seed fit (perm-thr t p)         = inj₁ (thrᵩ t p)
+res-seed fit (unit-del t es)        = inj₁ (delᵩ t es)
 
 -- Both residue renamings are involutions, so `Res` is symmetric.
 flip-undo : ∀ {j k} (t : Tel (2 + j) k) (es : List (Tm k)) →
@@ -284,7 +355,7 @@ private
       ■ liftId-id t (λ _ → refl) x
 
 res-sym : ∀ {n} {N K : NF n} → Res N K → Res K N
-res-sym (flipᴿ {j} s t {es = es} refl) =
+res-sym (flipᴿ {j} s t {es = es} refl fit) =
   subst (Res (mkNF (s ++ᵗ tν (renTel t (swapᵣ 1 1))) (map (_⋯ liftRen t (swapᵣ 1 1)) es)))
         ( NF-≡ (innerOf-renTel t (swapᵣ 1 1) (2 + j) ■ renTel-id t)
             ( subst-++ᵗ s (innerOf-renTel t (swapᵣ 1 1) (2 + j) ■ renTel-id t)
@@ -298,8 +369,9 @@ res-sym (flipᴿ {j} s t {es = es} refl) =
             ■ map-⋯-subst (innerOf-renTel t (swapᵣ 1 1) (2 + j) ■ renTel-id t)
                           (λ x → νReconThr t (swapᵣ 1 1) (λ y → swap-11-inv y) x) es
             ■ map-⋯-id (λ _ → refl) es ) )
-        (flipᴿ s (renTel t (swapᵣ 1 1)) {es = map (_⋯ liftRen t (swapᵣ 1 1)) es} refl)
-res-sym (swapᴿ {j} {i} s {a} w t {es = es} refl) =
+        (flipᴿ s (renTel t (swapᵣ 1 1)) {es = map (_⋯ liftRen t (swapᵣ 1 1)) es} refl
+               (FIT-pres-ν1 (idₖ ⦃ Kᵣ ⦄) s t fit))
+res-sym (swapᴿ {j} {i} s {a} w t {es = es} refl fit) =
   subst (Res (mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel t (gapρ a w)))) (map (_⋯ liftRen t (gapρ a w)) es)))
         ( NF-≡ (innerOf-renTel t (gapρ a w) (2 + i) ■ renTel-id t)
             ( subst-++ᵗ s (innerOf-renTel t (gapρ a w) (2 + i) ■ renTel-id t)
@@ -318,7 +390,8 @@ res-sym (swapᴿ {j} {i} s {a} w t {es = es} refl) =
             ■ map-⋯-subst (innerOf-renTel t (gapρ a w) (2 + i) ■ renTel-id t)
                           (λ x → νReconThr t (gapρ a w) (λ y → gapρ-invol a w y) x) es
             ■ map-⋯-id (λ _ → refl) es ) )
-        (swapᴿ s w (renTel t (gapρ a w)) {es = map (_⋯ liftRen t (gapρ a w)) es} refl)
+        (swapᴿ s w (renTel t (gapρ a w)) {es = map (_⋯ liftRen t (gapρ a w)) es} refl
+               (FIT-pres-gap (idₖ ⦃ Kᵣ ⦄) s a w t fit))
 
 -- The single-step commutation `push`/`push⁻` (a residue crosses one `~ᵩ`
 -- step, conjugated) lives in Normal.Factor2, so that this module stays
