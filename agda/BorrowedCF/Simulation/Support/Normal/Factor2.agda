@@ -263,6 +263,11 @@ subst-reix : ∀ {A B : Set} {P : B → Set} (g : A → B) {a b} (e : a ≡ b) (
              subst (λ z → P (g z)) e x ≡ subst P (cong g e) x
 subst-reix g refl x = refl
 
+-- Move a `subst` across an equation.
+subst-swap : ∀ {A : Set} {P : A → Set} {x y} (e : x ≡ y) {a : P x} {b : P y} →
+             subst P e a ≡ b → a ≡ subst P (sym e) b
+subst-swap refl q = q
+
 ------------------------------------------------------------------------
 -- Renaming reflects the spent unit (needed by `pushDel`).
 ------------------------------------------------------------------------
@@ -705,6 +710,53 @@ pushφφ {n = n} {j = j} s₂ x y c d t₂ es₂ (flipᴿ {j = j₁} {k = k} s t
                         (subst 𝔽 (sym kEqk) y))
             ≡ (liftRen t (swapᵣ 1 1) ·ₖ liftRen t₂ (assocSwapᵣ 1 1)) y
     hPt y = {!hPt!}
+      where
+        V : 𝔽 (innerOf t₂ (2 + innerOf dg (2 + j₁)))
+        V = subst 𝔽 (sym kEqk) y
+        z₀ : 𝔽 (innerOf t₂′ (2 + innerOf dg″ (2 + j₁)))
+        z₀ = liftRen t₂′ (σ″ ↑* 2) V
+        qq1 : innerOf (dg″ ++ᵗ firWin) (2 + j₁) ≡ innerOf firWin (innerOf dg″ (2 + j₁))
+        qq1 = innerOf-++ᵗ dg″ firWin (2 + j₁)
+        qq2 : innerOf (renTel t₂′ (assocSwapᵣ 1 1)) (2 + innerOf dg″ (2 + j₁))
+               ≡ innerOf t₂′ (2 + innerOf dg″ (2 + j₁))
+        qq2 = innerOf-renTel t₂′ (assocSwapᵣ 1 1) (2 + innerOf dg″ (2 + j₁))
+        -- LHS core reduces to A3 = liftRen t₂′ (aswap11 ·ₖ σ″↑*2) V
+        redA : subst 𝔽 qq2 (subst 𝔽 qq1 (liftRen t′ (swapᵣ 1 1) (liftRen t₂′ (assocSwapᵣ 1 1) V)))
+                 ≡ liftRen t₂′ (assocSwapᵣ 1 1 ·ₖ (σ″ ↑* 2)) V
+        redA = cong (subst 𝔽 qq2) (liftRen-++ᵗ dg″ firWin (swapᵣ 1 1) (liftRen t₂′ (assocSwapᵣ 1 1) V))
+             ■ liftRen-· t₂′ (assocSwapᵣ 1 1) (σ″ ↑* 2) V
+        -- RHS: reduce liftRen t (swap11) y to the σ″-window form.
+        gT : Tel (2 + j₁) (innerOf t₂ (2 + innerOf dg (2 + j₁))) → ℕ
+        gT T = innerOf T (2 + j₁)
+        wa : subst 𝔽 (innerOf-substⁱ (sym kEqk) t (2 + j₁))
+               (liftRen (subst (Tel (2 + j₁)) (sym kEqk) t) (swapᵣ 1 1) V)
+               ≡ liftRen t (swapᵣ 1 1) y
+        wa = liftRen-substⁱ (sym kEqk) t (swapᵣ 1 1) V
+           ■ cong (liftRen t (swapᵣ 1 1)) (subst-symˡ (sym kEqk) y)
+        wb : subst 𝔽 (cong gT deepEq)
+               (liftRen (subst (Tel (2 + j₁)) (sym kEqk) t) (swapᵣ 1 1) V)
+               ≡ liftRen (dg″ ++ᵗ srcWin) (swapᵣ 1 1) V
+        wb = sym (subst-reix gT deepEq (liftRen (subst (Tel (2 + j₁)) (sym kEqk) t) (swapᵣ 1 1) V))
+           ■ substf (λ T → liftRen T (swapᵣ 1 1) V) deepEq
+        wc : subst 𝔽 (innerOf-++ᵗ dg″ srcWin (2 + j₁))
+               (liftRen (dg″ ++ᵗ srcWin) (swapᵣ 1 1) V) ≡ liftRen t₂′ (σ″ ↑* 2) V
+        wc = liftRen-++ᵗ dg″ srcWin (swapᵣ 1 1) V
+        wc' : liftRen (dg″ ++ᵗ srcWin) (swapᵣ 1 1) V
+                ≡ subst 𝔽 (sym (innerOf-++ᵗ dg″ srcWin (2 + j₁))) (liftRen t₂′ (σ″ ↑* 2) V)
+        wc' = sym (subst-symˡ (innerOf-++ᵗ dg″ srcWin (2 + j₁)) (liftRen (dg″ ++ᵗ srcWin) (swapᵣ 1 1) V))
+            ■ cong (subst 𝔽 (sym (innerOf-++ᵗ dg″ srcWin (2 + j₁)))) wc
+        wb' : liftRen (subst (Tel (2 + j₁)) (sym kEqk) t) (swapᵣ 1 1) V
+                ≡ subst 𝔽 (sym (cong gT deepEq)) (liftRen (dg″ ++ᵗ srcWin) (swapᵣ 1 1) V)
+        wb' = sym (subst-symˡ (cong gT deepEq) (liftRen (subst (Tel (2 + j₁)) (sym kEqk) t) (swapᵣ 1 1) V))
+            ■ cong (subst 𝔽 (sym (cong gT deepEq))) wb
+        wRed : liftRen t (swapᵣ 1 1) y
+                 ≡ subst 𝔽 (innerOf-substⁱ (sym kEqk) t (2 + j₁))
+                     (subst 𝔽 (sym (cong gT deepEq))
+                       (subst 𝔽 (sym (innerOf-++ᵗ dg″ srcWin (2 + j₁)))
+                         (liftRen t₂′ (σ″ ↑* 2) V)))
+        wRed = sym wa
+             ■ cong (subst 𝔽 (innerOf-substⁱ (sym kEqk) t (2 + j₁)))
+                    (wb' ■ cong (subst 𝔽 (sym (cong gT deepEq))) wc')
     thrM = cong (subst (λ z → List (Tm z)) eM)
                 (map-fuse (liftRen t₂′ (assocSwapᵣ 1 1)) (liftRen t′ (swapᵣ 1 1)) esˢ″)
          ■ cong (subst (λ z → List (Tm z)) eM)
