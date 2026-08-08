@@ -1221,7 +1221,14 @@ pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {T = T} {es = esˢ} eqT eqT�
                        (map (_⋯ liftRen (dgap₂ ++ᵗ tν (a ++ᵗ tν (renTel t (gapρ a w)))) aswap11) es₂)
     reshapeM-NF = bridge ■ reshapeM-aux
 pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
-  | cmpˡ dgap p q = {!cmpˡ-swap!}
+  | cmpˡ [] p ()
+pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
+  | cmpˡ (tφ f′ c′ dg) p ()
+pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
+  | cmpˡ (tν dg) p q
+    with cmpᵗ a (tν (renTel t (gapρ a w))) dg (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t₂)) (tν-inj q)
+...   | cmpˡ e p′ q′ = {!subcase-ii-deepleaf!}
+...   | cmpʳ e p′ q′ = {!subcase-i-run!}
 
 pushνφ : ∀ {n j k} {N : NF n} (s₂ : Tel n j) (x : Flag) (c : Tm j)
          (t₂ : Tel (1 + (2 + j)) k) (es₂ : List (Tm k)) →
