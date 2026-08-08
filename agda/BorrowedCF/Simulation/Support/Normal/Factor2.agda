@@ -161,6 +161,15 @@ FIT-leaf-subst : ∀ {b n k₁ k₂} (ω : b →ᵣ n) (e : k₁ ≡ k₂) (X : 
                  FIT ω X → FIT ω (subst (Tel n) e X)
 FIT-leaf-subst ω refl X fit = fit
 
+-- Gate preservation: pushing a weakened gate through a lifted renaming
+-- commutes the weakening past the renaming (pure ⋯-fusion / N2).
+gate-pres : ∀ {j j′} (d : Tm j) (σ : j →ᵣ j′) →
+            (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) ⋯ (σ ↑) ≡ (d ⋯ σ) ⋯ weaken* ⦃ Kᵣ ⦄ 1
+gate-pres d σ =
+  fusion d (weaken* ⦃ Kᵣ ⦄ 1) (σ ↑)
+    ■ ⋯-cong d (λ x → N2 σ x)
+    ■ sym (fusion d σ (weaken* ⦃ Kᵣ ⦄ 1))
+
 ------------------------------------------------------------------------
 -- Renaming reflects the spent unit (needed by `pushDel`).
 ------------------------------------------------------------------------
