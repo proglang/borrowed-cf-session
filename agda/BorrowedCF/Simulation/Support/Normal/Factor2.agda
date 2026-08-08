@@ -680,7 +680,29 @@ private
            ((liftRen e₃ (assocSwapᵣ 1 1) ↑* 2) z)
         ≡ (liftRen e₃ (assocSwapᵣ 1 1) ↑* 2)
            (gapρ (dg ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) e₃)) w z)
-  F [] x y c d e₃ (rφ (rφ we₃)) z = {!Fbase!}
+  Fbase : ∀ {m k} (e₃ : Tel (2 + (2 + m)) k) (we₃ : Run e₃) (z : 𝔽 (2 + k)) →
+      (liftId (renTel e₃ (assocSwapᵣ 1 1)) (assocSwapᵣ 2 1 ↑ᵣ) ↑* 2)
+        ((liftId (renTel e₃ (assocSwapᵣ 1 1)) (assocSwapᵣ 2 1) ↑* 2)
+          (gapρ (renTel e₃ (assocSwapᵣ 1 1)) (runRen we₃ (assocSwapᵣ 1 1))
+            ((liftId (renTel e₃ (assocSwapᵣ 1 1)) (assocSwapᵣ 1 2) ↑* 2)
+              ((liftId (renTel e₃ (assocSwapᵣ 1 1)) (assocSwapᵣ 1 2 ↑ᵣ) ↑* 2)
+                ((liftRen e₃ (assocSwapᵣ 1 1) ↑* 2) z)))))
+        ≡ (liftRen e₃ (assocSwapᵣ 1 1) ↑* 2)
+            ((liftId e₃ (assocSwapᵣ 2 1 ↑ᵣ) ↑* 2)
+              ((liftId e₃ (assocSwapᵣ 2 1) ↑* 2)
+                (gapρ e₃ we₃
+                  ((liftId e₃ (assocSwapᵣ 1 2) ↑* 2)
+                    ((liftId e₃ (assocSwapᵣ 1 2 ↑ᵣ) ↑* 2) z)))))
+  Fbase .([]) rnil zero = refl
+  Fbase .([]) rnil (suc zero) = refl
+  Fbase .([]) rnil (suc (suc zero)) = refl
+  Fbase .([]) rnil (suc (suc (suc zero))) = refl
+  Fbase .([]) rnil (suc (suc (suc (suc zero)))) = refl
+  Fbase .([]) rnil (suc (suc (suc (suc (suc zero))))) = refl
+  Fbase .([]) rnil (suc (suc (suc (suc (suc (suc z)))))) = refl
+  Fbase .(tφ _ _ _) (rφ w₀) z = {!Fbase-rφ!}
+
+  F [] x y c d e₃ (rφ (rφ we₃)) z = Fbase e₃ we₃ z
   F (tφ f cc dg) x y c d e₃ (rφ w) z =
       cong (liftId (dg ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel e₃ (assocSwapᵣ 1 1)))) (assocSwapᵣ 2 1) ↑* 2)
            (cong (gapρ (dg ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel e₃ (assocSwapᵣ 1 1))))
