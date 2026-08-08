@@ -493,6 +493,46 @@ gapρ-comm-amb (tφ f c a′) (rφ w′) σ x =
                    (λ y → comm-↑³-aswap21-gen σ y)
                    (gapρ a′ w′ ((liftId a′ (assocSwapᵣ 1 2) ↑* 2) x))
 
+-- `↑* 2` transports a `subst`-conjugation.
+conj-↑*2 : ∀ {n m} (e : n ≡ m) (f : n →ᵣ n) (g : m →ᵣ m) →
+           (∀ u → subst 𝔽 e (f u) ≡ g (subst 𝔽 e u)) → ∀ v →
+           subst 𝔽 (cong (2 +_) e) ((f ↑* 2) v) ≡ (g ↑* 2) (subst 𝔽 (cong (2 +_) e) v)
+conj-↑*2 refl f g h v = (h ~↑* 2) v
+
+-- `liftId (renTel t ρ)` is `liftId t` up to the leaf transport (shape-only).
+liftId-renTel-nat : ∀ {n k} (t : Tel n k) (ρ σ : n →ᵣ n) (v : 𝔽 (innerOf t n)) →
+   subst 𝔽 (renTel-id t) (liftId (renTel t ρ) σ v) ≡ liftId t σ (subst 𝔽 (renTel-id t) v)
+liftId-renTel-nat []         ρ σ v = refl
+liftId-renTel-nat (tν t)     ρ σ v = liftId-renTel-nat t (ρ ↑* 2) (σ ↑* 2) v
+liftId-renTel-nat (tφ f c t) ρ σ v = liftId-renTel-nat t (ρ ↑ᵣ)   (σ ↑ᵣ)   v
+
+liftId-renTel-nat2 : ∀ {n k} (t : Tel n k) (ρ σ : n →ᵣ n) (v : 𝔽 (2 + innerOf t n)) →
+   subst 𝔽 (cong (2 +_) (renTel-id t)) ((liftId (renTel t ρ) σ ↑* 2) v)
+     ≡ (liftId t σ ↑* 2) (subst 𝔽 (cong (2 +_) (renTel-id t)) v)
+liftId-renTel-nat2 t ρ σ =
+  conj-↑*2 (renTel-id t) (liftId (renTel t ρ) σ) (liftId t σ) (liftId-renTel-nat t ρ σ)
+
+-- `gapρ` only depends on a telescope's shape: renaming the telescope (and the
+-- run) by `ρ` leaves `gapρ` unchanged, up to the leaf transport `renTel-id`.
+gapρ-renTel-cong : ∀ {j i} (a : Tel (2 + j) i) (w : Run a) (ρ : (2 + j) →ᵣ (2 + j)) (v : 𝔽 (2 + i)) →
+   subst 𝔽 (cong (2 +_) (renTel-id a))
+         (gapρ (renTel a ρ) (runRen w ρ) (subst 𝔽 (sym (cong (2 +_) (renTel-id a))) v))
+     ≡ gapρ a w v
+gapρ-renTel-cong []          rnil    ρ v = refl
+gapρ-renTel-cong (tφ f c a′) (rφ w′) ρ v =
+    liftId-renTel-nat2 a′ (ρ ↑ᵣ) (assocSwapᵣ 2 1)
+      (gapρ (renTel a′ (ρ ↑ᵣ)) (runRen w′ (ρ ↑ᵣ)) W)
+  ■ cong (liftId a′ (assocSwapᵣ 2 1) ↑* 2)
+      ( cong (λ u → subst 𝔽 e2 (gapρ (renTel a′ (ρ ↑ᵣ)) (runRen w′ (ρ ↑ᵣ)) u))
+             (sym (subst-symˡ e2 W))
+      ■ gapρ-renTel-cong a′ w′ (ρ ↑ᵣ) (subst 𝔽 e2 W)
+      ■ cong (gapρ a′ w′)
+          ( liftId-renTel-nat2 a′ (ρ ↑ᵣ) (assocSwapᵣ 1 2) (subst 𝔽 (sym e2) v)
+          ■ cong (liftId a′ (assocSwapᵣ 1 2) ↑* 2) (subst-symʳ e2 v) ) )
+  where
+    e2 = cong (2 +_) (renTel-id a′)
+    W = (liftId (renTel a′ (ρ ↑ᵣ)) (assocSwapᵣ 1 2) ↑* 2) (subst 𝔽 (sym e2) v)
+
 -- FIT is invariant under a leaf-scope transport of its telescope.
 FIT-leaf-subst : ∀ {b n k₁ k₂} (ω : b →ᵣ n) (e : k₁ ≡ k₂) (X : Tel n k₁) →
                  FIT ω X → FIT ω (subst (Tel n) e X)
