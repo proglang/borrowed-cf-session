@@ -186,6 +186,11 @@ subst-symʳ : ∀ {A : Set} {P : A → Set} {x y} (e : x ≡ y) (v : P y) →
              subst P e (subst P (sym e) v) ≡ v
 subst-symʳ refl v = refl
 
+-- `assocSwapᵣ 1 1` is natural under a scope transport (J-trivial).
+aswap-nat : ∀ {a b} (e : 2 + a ≡ 2 + b) (x : 𝔽 (2 + a)) →
+            assocSwapᵣ 1 1 (subst 𝔽 e x) ≡ subst 𝔽 e (assocSwapᵣ 1 1 x)
+aswap-nat refl x = refl
+
 -- Crossing a renTel scope-shift under `liftRen`: the baked ρ (a pure ambient
 -- transport) is absorbed into leaf-scope substs, and the applied renaming σ
 -- realigns from the shifted scope q back to the base scope n.
@@ -861,6 +866,22 @@ pushφφ {n = n} {j = j} s₂ x y c d t₂ es₂ (flipᴿ {j = j₁} {k = k} s t
         wRed = sym wa
              ■ cong (subst 𝔽 (innerOf-substⁱ (sym kEqk) t (2 + j₁)))
                     (wb' ■ cong (subst 𝔽 (sym (cong gT deepEq))) wc')
+        -- Glue via glueG2: cross the σ↑*2 / σ″↑*2 double renTel to bare t₂.
+        eG : 2 + j ≡ 2 + innerOf dg″ (2 + j₁)
+        eG = cong (λ z → 2 + z) (sym pL)
+        σσ″ : ∀ w → (σ ·ₖ σ″) w ≡ subst 𝔽 (sym pL) w
+        σσ″ w = sym (subst-symˡ pL ((σ ·ₖ σ″) w)) ■ cong (subst 𝔽 (sym pL)) (collapse w)
+        heκ : ∀ x → (σ″ ↑* 2) ((σ ↑* 2) x) ≡ subst 𝔽 eG x
+        heκ x = sym (dist-↑*-· 2 σ σ″ x) ■ (σσ″ ~↑* 2) x ■ ↑*2-substᵃ (sym pL) x
+        gApp : subst 𝔽 (innerOf-renTel (renTel t₂ (σ ↑* 2)) (σ″ ↑* 2) (2 + innerOf dg″ (2 + j₁))
+                        ■ innerOf-renTel t₂ (σ ↑* 2) (2 + innerOf dg″ (2 + j₁)))
+                     (liftRen (renTel (renTel t₂ (σ ↑* 2)) (σ″ ↑* 2)) (assocSwapᵣ 1 1) z₀)
+                 ≡ subst 𝔽 (cong (innerOf t₂) eG)
+                          (liftRen t₂ (assocSwapᵣ 1 1)
+                            (subst 𝔽 (innerOf-renTel t₂ (σ ↑* 2) (2 + innerOf dg″ (2 + j₁))
+                                       ■ sym (cong (innerOf t₂) eG) ■ renTel-id t₂) z₀))
+        gApp = glueG2 eG eG t₂ (σ ↑* 2) (σ″ ↑* 2) heκ (assocSwapᵣ 1 1) (assocSwapᵣ 1 1)
+                      (aswap-nat eG) z₀
     thrM = cong (subst (λ z → List (Tm z)) eM)
                 (map-fuse (liftRen t₂′ (assocSwapᵣ 1 1)) (liftRen t′ (swapᵣ 1 1)) esˢ″)
          ■ cong (subst (λ z → List (Tm z)) eM)
