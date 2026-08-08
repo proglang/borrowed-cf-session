@@ -34,7 +34,7 @@ open import BorrowedCF.Simulation.Support.Normal.Equiv
 open import BorrowedCF.Simulation.Support.Normal.Shift using (shift2; shift1; liftId-·; liftId-++ᵗ; liftId-cong)
 open import BorrowedCF.Simulation.Support.Normal.Witness
   using (aswap-11-inv; aswap-12-21; aswap-22-inv; swap-11-inv)
-open import BorrowedCF.Simulation.Support.Normal.Endo using (liftId-id; ++ᵗ-idʳ; ++ᵗ-assoc; liftId-liftRen)
+open import BorrowedCF.Simulation.Support.Normal.Endo using (liftId-id; ++ᵗ-idʳ; ++ᵗ-assoc; liftId-liftRen; renTel-idᵗ)
 open import BorrowedCF.Simulation.Support.Normal.Bubble
   using (map-⋯-cong; map-⋯-id; ≡→~; telMidᴺ; wkTel-shift2-tν)
 open import BorrowedCF.Simulation.Support.Normal.Rename using (renTel; liftRen; renTel-id; innerOf)
@@ -194,22 +194,126 @@ unit-⋯⁻¹ (`case e `of⟨ e₁ ; e₂ ⟩) ρ ()
 -- Pushing a residue past one `~ᵩ` step.
 ------------------------------------------------------------------------
 
+private
+  ↭-substᵗ : ∀ {k k′} (e : k ≡ k′) {xs ys : List (Tm k)} → xs ↭ ys →
+             subst (λ z → List (Tm z)) e xs ↭ subst (λ z → List (Tm z)) e ys
+  ↭-substᵗ refl q = q
+
+  endo-undo : ∀ {j k} (t : Tel (2 + j) k) (ρ : (2 + j) →ᵣ (2 + j)) →
+              (∀ z → ρ (ρ z) ≡ z) → (es : List (Tm k)) →
+              map (_⋯ liftId t ρ) (map (_⋯ liftId t ρ) es) ≡ es
+  endo-undo t ρ inv es =
+    map-fuse (liftId t ρ) (liftId t ρ) es
+      ■ map-⋯-id (λ x → liftId-· t ρ ρ x ■ liftId-id t (λ y → inv y) x) es
+
+  -- Conjugating a codomain thread-permutation to the source of a residue
+  -- with an involutive endo renaming `ρ` on its ν-scope.
+  conjThr : ∀ {j k₀} (ρ : (2 + j) →ᵣ (2 + j)) → (∀ z → ρ (ρ z) ≡ z) →
+            (t : Tel (2 + j) k₀) (es : List (Tm k₀))
+            (es₂ : List (Tm (innerOf t (2 + j)))) →
+            map (_⋯ liftRen t ρ) es ↭ es₂ →
+            Σ[ es_src ∈ List (Tm k₀) ]
+              (es ↭ es_src) × (es₂ ≡ map (_⋯ liftRen t ρ) es_src)
+  conjThr {j} ρ inv t es es₂ p = es_src , perm , eqE′
+    where
+      eid : innerOf t (2 + j) ≡ _
+      eid = renTel-id t
+      es₂₀ : List (Tm _)
+      es₂₀ = subst (λ z → List (Tm z)) eid es₂
+      es_src : List (Tm _)
+      es_src = map (_⋯ liftId t ρ) es₂₀
+      es₁₀ : List (Tm _)
+      es₁₀ = map (_⋯ liftId t ρ) es
+      fact0 : es₁₀ ≡ subst (λ z → List (Tm z)) eid (map (_⋯ liftRen t ρ) es)
+      fact0 = sym (map-⋯-subst eid (λ x → liftId-liftRen t ρ x) es)
+      q : es₁₀ ↭ es₂₀
+      q = ↭-trans (↭-reflexive fact0) (↭-substᵗ eid p)
+      perm : es ↭ es_src
+      perm = ↭-trans (↭-reflexive (sym (endo-undo t ρ inv es)))
+                     (map⁺ (_⋯ liftId t ρ) q)
+      κ : _ →ᵣ _
+      κ = liftId t ρ ·ₖ liftRen t ρ
+      bridgeR : ∀ y → liftRen t ρ y ≡ subst 𝔽 (sym eid) (liftId t ρ y)
+      bridgeR y = sym (subst-symˡ eid (liftRen t ρ y))
+                    ■ cong (subst 𝔽 (sym eid)) (liftId-liftRen t ρ y)
+      hh : ∀ x → subst 𝔽 (sym eid) x ≡ κ x
+      hh x = sym ( bridgeR (liftId t ρ x)
+                 ■ cong (subst 𝔽 (sym eid)) (liftId-· t ρ ρ x ■ liftId-id t (λ y → inv y) x) )
+      step : map (_⋯ κ) es₂₀ ≡ es₂
+      step = sym ( sym (subst-symˡ eid es₂)
+                 ■ cong (subst (λ z → List (Tm z)) (sym eid))
+                        (sym (map-⋯-id (λ _ → refl) es₂₀))
+                 ■ map-⋯-subst (sym eid) hh es₂₀ )
+      eqE′ : es₂ ≡ map (_⋯ liftRen t ρ) es_src
+      eqE′ = sym (map-fuse (liftId t ρ) (liftRen t ρ) es₂₀ ■ step)
+
+  -- Double-renaming of an involution collapses (telescope + threads); clones
+  -- of Slots.res-sym's νReconTel/νReconThr for an arbitrary involutive endo.
+  invTel : ∀ {p k} (t : Tel p k) (ρ : p →ᵣ p) → (∀ x → ρ (ρ x) ≡ x) →
+           subst (Tel p) (innerOf-renTel t ρ p ■ renTel-id t) (renTel (renTel t ρ) ρ) ≡ t
+  invTel t ρ inv =
+    subst-■ (Tel _) (innerOf-renTel t ρ _) (renTel-id t) (renTel (renTel t ρ) ρ)
+      ■ cong (subst (Tel _) (renTel-id t)) (renTel-renTel t ρ ρ ■ renTel-cong t (λ x → inv x))
+      ■ renTel-idᵗ t
+
+  invThr : ∀ {p k} (t : Tel p k) (ρ : p →ᵣ p) → (∀ x → ρ (ρ x) ≡ x) → (x : 𝔽 k) →
+           subst 𝔽 (innerOf-renTel t ρ p ■ renTel-id t) (liftRen (renTel t ρ) ρ (liftRen t ρ x)) ≡ x
+  invThr t ρ inv x =
+    subst-■ 𝔽 (innerOf-renTel t ρ _) (renTel-id t) (liftRen (renTel t ρ) ρ (liftRen t ρ x))
+      ■ cong (subst 𝔽 (renTel-id t)) (liftRen-· t ρ ρ x ■ liftRen-cong t (λ y → inv y) x)
+      ■ liftId-liftRen t (idₖ ⦃ Kᵣ ⦄) x
+      ■ liftId-id t (λ _ → refl) x
+
 -- A `~ᵩ` step that does not touch the telescope crosses a residue by
 -- conjugation with the residue's (involutive) renaming.
 pushThr : ∀ {n k} {N : NF n} (T : Tel n k) (es₁ es₂ : List (Tm k)) → es₁ ↭ es₂ →
           Res N (mkNF T es₁) →
           Σ[ N′ ∈ NF n ] (N ~ᵩ N′) × Res N′ (mkNF T es₂)
-pushThr T es₁ es₂ p r = {!!}
+pushThr T es₁ es₂ p (flipᴿ s t {es = es} refl refl refl fit)
+  with conjThr (swapᵣ 1 1) (λ z → swap-11-inv z) t es es₂ p
+... | es_src , perm , eqE′ =
+      mkNF (s ++ᵗ tν t) es_src , Eq*.return (thrᵩ (s ++ᵗ tν t) perm) ,
+      flipᴿ s t {es = es_src} refl refl eqE′ fit
+pushThr T es₁ es₂ p (swapᴿ s {a} w t {es = es} refl refl refl fit)
+  with conjThr (gapρ a w) (λ z → gapρ-invol a w z) t es es₂ p
+... | es_src , perm , eqE′ =
+      mkNF (s ++ᵗ tν (a ++ᵗ tν t)) es_src ,
+      Eq*.return (thrᵩ (s ++ᵗ tν (a ++ᵗ tν t)) perm) ,
+      swapᴿ s w t {es = es_src} refl refl eqE′ fit
 
 pushDel : ∀ {n k} {N : NF n} (T : Tel n k) (es₂ : List (Tm k)) →
           Res N (mkNF T (K `unit ∷ es₂)) →
           Σ[ N′ ∈ NF n ] (N ~ᵩ N′) × Res N′ (mkNF T es₂)
-pushDel T es₂ r = {!!}
+pushDel T es₂ (flipᴿ s t {es = []} refl refl () fit)
+pushDel T es₂ (flipᴿ s t {es = e₀ ∷ es_rest} refl refl eqE fit) =
+  mkNF (s ++ᵗ tν t) es_rest ,
+  ~ᵩ-trans (≡→~ᵩ (cong (λ h → mkNF (s ++ᵗ tν t) (h ∷ es_rest)) e0unit))
+           (Eq*.return (delᵩ (s ++ᵗ tν t) es_rest)) ,
+  flipᴿ s t {es = es_rest} refl refl (∷-injectiveʳ eqE) fit
+  where
+    e0unit : e₀ ≡ K `unit
+    e0unit = unit-⋯⁻¹ e₀ (liftRen t (swapᵣ 1 1)) (sym (∷-injectiveˡ eqE))
+pushDel T es₂ (swapᴿ s {a} w t {es = []} refl refl () fit)
+pushDel T es₂ (swapᴿ s {a} w t {es = e₀ ∷ es_rest} refl refl eqE fit) =
+  mkNF (s ++ᵗ tν (a ++ᵗ tν t)) es_rest ,
+  ~ᵩ-trans (≡→~ᵩ (cong (λ h → mkNF (s ++ᵗ tν (a ++ᵗ tν t)) (h ∷ es_rest)) e0unit))
+           (Eq*.return (delᵩ (s ++ᵗ tν (a ++ᵗ tν t)) es_rest)) ,
+  swapᴿ s w t {es = es_rest} refl refl (∷-injectiveʳ eqE) fit
+  where
+    e0unit : e₀ ≡ K `unit
+    e0unit = unit-⋯⁻¹ e₀ (liftRen t (gapρ a w)) (sym (∷-injectiveˡ eqE))
 
 pushIns : ∀ {n k} {N : NF n} (T : Tel n k) (es₂ : List (Tm k)) →
           Res N (mkNF T es₂) →
           Σ[ N′ ∈ NF n ] (N ~ᵩ N′) × Res N′ (mkNF T (K `unit ∷ es₂))
-pushIns T es₂ r = {!!}
+pushIns T es₂ (flipᴿ s t {es = es} refl refl refl fit) =
+  mkNF (s ++ᵗ tν t) (K `unit ∷ es) ,
+  ~ᵩ-sym (Eq*.return (delᵩ (s ++ᵗ tν t) es)) ,
+  flipᴿ s t {es = K `unit ∷ es} refl refl refl fit
+pushIns T es₂ (swapᴿ s {a} w t {es = es} refl refl refl fit) =
+  mkNF (s ++ᵗ tν (a ++ᵗ tν t)) (K `unit ∷ es) ,
+  ~ᵩ-sym (Eq*.return (delᵩ (s ++ᵗ tν (a ++ᵗ tν t)) es)) ,
+  swapᴿ s w t {es = K `unit ∷ es} refl refl refl fit
 
 pushφφ : ∀ {n j k} {N : NF n} (s₂ : Tel n j) (x y : Flag) (c d : Tm j)
          (t₂ : Tel (2 + j) k) (es₂ : List (Tm k)) →
@@ -382,7 +486,34 @@ push r (delᵩ T es₂)            = pushDel T es₂ r
 
 push⁻ : ∀ {n} {N K L : NF n} → Res N K → L ~ᵩ₁ K →
         Σ[ N′ ∈ NF n ] (N ~ᵩ N′) × Res N′ L
-push⁻ r (φφᵩ s₂ x y c d t₂ es₃) = {!!}
+push⁻ r (φφᵩ s₂ x y c d t₂ es₃)
+  with pushφφ s₂ y x d c (renTel t₂ (assocSwapᵣ 1 1))
+                (map (_⋯ liftRen t₂ (assocSwapᵣ 1 1)) es₃) r
+... | N′ , cN , r′ = N′ , cN , subst (Res N′) reshapeL r′
+  where
+    ρ⁰ : _ →ᵣ _
+    ρ⁰ = assocSwapᵣ 1 1
+    kE : innerOf (renTel t₂ ρ⁰) (2 + _) ≡ _
+    kE = innerOf-renTel t₂ ρ⁰ (2 + _) ■ renTel-id t₂
+    telEq : subst (Tel _) kE
+              (s₂ ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (renTel t₂ ρ⁰) ρ⁰)))
+              ≡ s₂ ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t₂)
+    telEq = subst-++ᵗ s₂ kE (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (renTel t₂ ρ⁰) ρ⁰)))
+          ■ cong (s₂ ++ᵗ_)
+              ( subst-tφ kE x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (renTel t₂ ρ⁰) ρ⁰))
+              ■ cong (tφ x c)
+                  ( subst-tφ kE y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (renTel t₂ ρ⁰) ρ⁰)
+                  ■ cong (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1)) (invTel t₂ ρ⁰ (λ z → aswap-11-inv z)) ) )
+    thrEq : subst (λ z → List (Tm z)) kE
+              (map (_⋯ liftRen (renTel t₂ ρ⁰) ρ⁰) (map (_⋯ liftRen t₂ ρ⁰) es₃)) ≡ es₃
+    thrEq = cong (subst (λ z → List (Tm z)) kE)
+                 (map-fuse (liftRen t₂ ρ⁰) (liftRen (renTel t₂ ρ⁰) ρ⁰) es₃)
+          ■ map-⋯-subst kE (λ z → invThr t₂ ρ⁰ (λ w → aswap-11-inv w) z) es₃
+          ■ map-⋯-id (λ _ → refl) es₃
+    reshapeL : mkNF (s₂ ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (renTel t₂ ρ⁰) ρ⁰)))
+                    (map (_⋯ liftRen (renTel t₂ ρ⁰) ρ⁰) (map (_⋯ liftRen t₂ ρ⁰) es₃))
+                 ≡ mkNF (s₂ ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t₂)) es₃
+    reshapeL = NF-≡ kE telEq thrEq
 push⁻ r (νφᵩ s₂ x c t₂ es₃)     = pushνφ⁻ s₂ x c t₂ es₃ r
 push⁻ r (thrᵩ T {es₁} {es₂} p)  = pushThr T es₂ es₁ (↭-sym p) r
 push⁻ r (delᵩ T es₃)            = pushIns T es₃ r
