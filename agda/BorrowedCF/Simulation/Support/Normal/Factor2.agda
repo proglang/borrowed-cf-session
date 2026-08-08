@@ -178,6 +178,62 @@ renTel-coe refl t = sym (subst-symˡ (renTel-id t) _) ■ cong (subst (Tel _) (s
              ((λ z → subst 𝔽 e z) ↑* 2) x ≡ subst 𝔽 (cong (λ z → 2 + z) e) x
 ↑*2-substᵃ refl x = id↑* 2 (λ z → refl) x
 
+↑-substᵃ : ∀ {n m} (e : n ≡ m) (x : 𝔽 (1 + n)) →
+           ((λ z → subst 𝔽 e z) ↑) x ≡ subst 𝔽 (cong (λ z → 1 + z) e) x
+↑-substᵃ refl x = id↑ (λ z → refl) x
+
+subst-symʳ : ∀ {A : Set} {P : A → Set} {x y} (e : x ≡ y) (v : P y) →
+             subst P e (subst P (sym e) v) ≡ v
+subst-symʳ refl v = refl
+
+-- Crossing a renTel scope-shift under `liftRen`: the baked ρ (a pure ambient
+-- transport) is absorbed into leaf-scope substs, and the applied renaming σ
+-- realigns from the shifted scope q back to the base scope n.
+glueG : ∀ {n q m₁ m₂ k} (e : n ≡ q) (eN : m₁ ≡ m₂) (t : Tel n k)
+        (ρ : n →ᵣ q) (he : ∀ x → ρ x ≡ subst 𝔽 e x)
+        (σj : n →ᵣ m₁) (σq : q →ᵣ m₂) (hσ : ∀ x → σq (subst 𝔽 e x) ≡ subst 𝔽 eN (σj x))
+        (v : 𝔽 (innerOf t q)) →
+        subst 𝔽 (innerOf-renTel t ρ m₂) (liftRen (renTel t ρ) σq v)
+          ≡ subst 𝔽 (cong (innerOf t) eN)
+                   (liftRen t σj (subst 𝔽 (sym (cong (innerOf t) e) ■ renTel-id t) v))
+glueG {n = n} e eN [] ρ he σj σq hσ v =
+  cong σq (sym (subst-symʳ e v)) ■ hσ (subst 𝔽 (sym e) v)
+    ■ cong (λ p → subst 𝔽 p (σj (subst 𝔽 (sym e) v))) (≡-irrelevant eN (cong (innerOf ([] {n})) eN))
+    ■ cong (λ p → subst 𝔽 (cong (innerOf ([] {n})) eN) (σj (subst 𝔽 p v)))
+           (≡-irrelevant (sym e) (sym (cong (innerOf ([] {n})) e) ■ renTel-id ([] {n})))
+glueG e eN (tν t) ρ he σj σq hσ v =
+  glueG (cong (λ z → 2 + z) e) (cong (λ z → 2 + z) eN) t (ρ ↑* 2) he' (σj ↑* 2) (σq ↑* 2) hσ' v
+    ■ cong₂ (λ p₁ p₂ → subst 𝔽 p₁ (liftRen t (σj ↑* 2) (subst 𝔽 p₂ v)))
+            (≡-irrelevant (cong (innerOf t) (cong (λ z → 2 + z) eN)) (cong (innerOf (tν t)) eN))
+            (≡-irrelevant (sym (cong (innerOf t) (cong (λ z → 2 + z) e)) ■ renTel-id t)
+                          (sym (cong (innerOf (tν t)) e) ■ renTel-id (tν t)))
+  where
+    he' : ∀ x → (ρ ↑* 2) x ≡ subst 𝔽 (cong (λ z → 2 + z) e) x
+    he' x = (he ~↑* 2) x ■ ↑*2-substᵃ e x
+    hσ' : ∀ x → (σq ↑* 2) (subst 𝔽 (cong (λ z → 2 + z) e) x)
+                  ≡ subst 𝔽 (cong (λ z → 2 + z) eN) ((σj ↑* 2) x)
+    hσ' x = cong (σq ↑* 2) (sym (↑*2-substᵃ e x))
+          ■ sym (dist-↑*-· 2 (λ z → subst 𝔽 e z) σq x)
+          ■ (hσ ~↑* 2) x
+          ■ dist-↑*-· 2 σj (λ z → subst 𝔽 eN z) x
+          ■ ↑*2-substᵃ eN ((σj ↑* 2) x)
+glueG e eN (tφ f c t) ρ he σj σq hσ v =
+  glueG (cong (λ z → 1 + z) e) (cong (λ z → 1 + z) eN) t (ρ ↑) he' (σj ↑) (σq ↑) hσ' v
+    ■ cong₂ (λ p₁ p₂ → subst 𝔽 p₁ (liftRen t (σj ↑) (subst 𝔽 p₂ v)))
+            (≡-irrelevant (cong (innerOf t) (cong (λ z → 1 + z) eN)) (cong (innerOf (tφ f c t)) eN))
+            (≡-irrelevant (sym (cong (innerOf t) (cong (λ z → 1 + z) e)) ■ renTel-id t)
+                          (sym (cong (innerOf (tφ f c t)) e) ■ renTel-id (tφ f c t)))
+  where
+    he' : ∀ x → (ρ ↑) x ≡ subst 𝔽 (cong (λ z → 1 + z) e) x
+    he' x = (he ~↑) x ■ ↑-substᵃ e x
+    hσ' : ∀ x → (σq ↑) (subst 𝔽 (cong (λ z → 1 + z) e) x)
+                  ≡ subst 𝔽 (cong (λ z → 1 + z) eN) ((σj ↑) x)
+    hσ' x = cong (σq ↑) (sym (↑-substᵃ e x))
+          ■ sym (dist-↑-· (λ z → subst 𝔽 e z) σq x)
+          ■ (hσ ~↑) x
+          ■ dist-↑-· σj (λ z → subst 𝔽 eN z) x
+          ■ ↑-substᵃ eN ((σj ↑) x)
+
 -- `liftRen` through a telescope carried along a pure ambient scope-transport
 -- (J-trivial: the transport collapses on the refl-index).
 -- `liftRen (renTel t ρ) σ` reads only the shape of `t` (endo ρ drops, up to the
