@@ -29,7 +29,12 @@ open import BorrowedCF.Simulation.Support.Normal.Shift using (shift2; shift1)
 open import BorrowedCF.Simulation.Support.Normal.Bubble using (wkTel-shift2-tν)
 open import BorrowedCF.Simulation.Support.Normal.Rename using (renTel)
 open import BorrowedCF.Simulation.Support.Normal.TmRenInj using (⋯ᵣ-inj)
-open import BorrowedCF.FinKits using (wk*-inj)
+open import BorrowedCF.Simulation.Support.Normal.Equiv
+open import BorrowedCF.Simulation.Support.Normal.Witness
+  using (swap-11-inv; aswap-22-inv; aswap-11-inv; aswap-12-21)
+open import BorrowedCF.FinKits using (Inj; wk*-inj; ↑-inj; ↑*-inj)
+open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (ε; _◅_)
+open import Relation.Binary.Construct.Closure.Symmetric using (fwd; bwd)
 
 open import Data.Product using (Σ; Σ-syntax; _×_; _,_; proj₁; proj₂)
 
@@ -236,3 +241,103 @@ FIT-pres-νφ {b} {n} {p} ω s x c t = FIT-cong++ ω s local
       FIT-renTel ((ρ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ weaken* ⦃ Kᵣ ⦄ 1)
                  ((ρ ·ₖ weaken* ⦃ Kᵣ ⦄ 1) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (assocSwapᵣ 1 2)
                  (λ z → sym (aswap12-reorder (ρ z))) t rest
+
+------------------------------------------------------------------------
+-- Reverse preservation (for the bwd steps of a `~` chain).
+------------------------------------------------------------------------
+
+private
+  linv-inj : ∀ {p q} (τ : q →ᵣ p) (σ : p →ᵣ q) → (∀ x → τ (σ x) ≡ x) → Inj σ
+  linv-inj τ σ h {x} {y} eq = sym (h x) ■ cong τ eq ■ h y
+
+-- Inverse of FIT-renTel: strip a channel renaming by an INJECTIVE `σ`.
+FIT-renTel⁻ : ∀ {b p p′ k} (ω : b →ᵣ p) (ω′ : b →ᵣ p′) (σ : p →ᵣ p′) → Inj σ →
+              (∀ x → ω′ x ≡ σ (ω x)) →
+              (t : Tel p k) → FIT ω′ (renTel t σ) → FIT ω t
+FIT-renTel⁻ ω ω′ σ iσ h []         fit = fit
+FIT-renTel⁻ ω ω′ σ iσ h (tφ f c t) ((cf , ceq) , rest) =
+  (cf , ⋯ᵣ-inj iσ (ceq ■ ⋯-cong cf (λ x → h x) ■ sym (fusion cf ω σ))) ,
+  FIT-renTel⁻ (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (ω′ ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (σ ↑) (↑-inj iσ)
+              (λ x → cong (weaken* ⦃ Kᵣ ⦄ 1) (h x) ■ sym (N2 σ (ω x))) t rest
+FIT-renTel⁻ ω ω′ σ iσ h (tν t) fit =
+  FIT-renTel⁻ (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (ω′ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (σ ↑* 2) (↑*-inj 2 iσ)
+              (λ x → cong (weaken* ⦃ Kᵣ ⦄ 2) (h x) ■ sym (N2ν σ (ω x))) t fit
+
+FIT-pres-ν1⁻ : ∀ {b n p k} (ω : b →ᵣ n) (s : Tel n p) (t : Tel (2 + p) k) →
+               FIT ω (s ++ᵗ tν (renTel t (swapᵣ 1 1))) → FIT ω (s ++ᵗ tν t)
+FIT-pres-ν1⁻ {b} {n} {p} ω s t = FIT-cong++ ω s
+  (FIT-renTel⁻ ((ω ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2)
+               ((ω ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (swapᵣ 1 1)
+               (linv-inj (swapᵣ 1 1) (swapᵣ 1 1) swap-11-inv)
+               (λ x → sym (swap11-fix2 ((ω ·ₖ wkTel s) x))) t)
+
+FIT-pres-νν⁻ : ∀ {b n p k} (ω : b →ᵣ n) (s : Tel n p) (t : Tel (2 + (2 + p)) k) →
+               FIT ω (s ++ᵗ tν (tν (renTel t (assocSwapᵣ 2 2)))) → FIT ω (s ++ᵗ tν (tν t))
+FIT-pres-νν⁻ {b} {n} {p} ω s t = FIT-cong++ ω s
+  (FIT-renTel⁻ (((ω ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ weaken* ⦃ Kᵣ ⦄ 2)
+               (((ω ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (assocSwapᵣ 2 2)
+               (linv-inj (assocSwapᵣ 2 2) (assocSwapᵣ 2 2) aswap-22-inv)
+               (λ x → sym (aswap22-fix4 ((ω ·ₖ wkTel s) x))) t)
+
+FIT-pres-φφ⁻ : ∀ {b n p k} (ω : b →ᵣ n) (s : Tel n p) (x y : Flag) (c d : Tm p)
+               (t : Tel (1 + (1 + p)) k) →
+               FIT ω (s ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t (assocSwapᵣ 1 1)))) →
+               FIT ω (s ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t))
+FIT-pres-φφ⁻ {b} {n} {p} ω s x y c d t = FIT-cong++ ω s local
+  where
+    ρ : b →ᵣ p
+    ρ = ω ·ₖ wkTel s
+    local : FIT ρ (tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t (assocSwapᵣ 1 1)))) →
+            FIT ρ (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t))
+    local ((cf-d , deq-d) , ((cf-c , ceq-c) , rest)) =
+      (cf-c , ⋯ᵣ-inj (wk*-inj 1) (ceq-c ■ sym (fusion cf-c ρ (weaken* ⦃ Kᵣ ⦄ 1)))) ,
+      ( (cf-d , (cong (_⋯ weaken* ⦃ Kᵣ ⦄ 1) deq-d ■ fusion cf-d ρ (weaken* ⦃ Kᵣ ⦄ 1))) ,
+        FIT-renTel⁻ ((ρ ·ₖ weaken* ⦃ Kᵣ ⦄ 1) ·ₖ weaken* ⦃ Kᵣ ⦄ 1)
+                    ((ρ ·ₖ weaken* ⦃ Kᵣ ⦄ 1) ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (assocSwapᵣ 1 1)
+                    (linv-inj (assocSwapᵣ 1 1) (assocSwapᵣ 1 1) aswap-11-inv)
+                    (λ z → sym (aswap11-fix2 (ρ z))) t rest )
+
+FIT-pres-νφ⁻ : ∀ {b n p k} (ω : b →ᵣ n) (s : Tel n p) (x : Flag) (c : Tm p)
+               (t : Tel (1 + (2 + p)) k) →
+               FIT ω (s ++ᵗ tφ x c (tν (renTel t (assocSwapᵣ 1 2)))) →
+               FIT ω (s ++ᵗ tν (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 2) t))
+FIT-pres-νφ⁻ {b} {n} {p} ω s x c t = FIT-cong++ ω s local
+  where
+    ρ : b →ᵣ p
+    ρ = ω ·ₖ wkTel s
+    local : FIT ρ (tφ x c (tν (renTel t (assocSwapᵣ 1 2)))) →
+            FIT ρ (tν (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 2) t))
+    local ((cf , ceq) , rest) =
+      (cf , (cong (_⋯ weaken* ⦃ Kᵣ ⦄ 2) ceq ■ fusion cf ρ (weaken* ⦃ Kᵣ ⦄ 2))) ,
+      FIT-renTel⁻ ((ρ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ weaken* ⦃ Kᵣ ⦄ 1)
+                  ((ρ ·ₖ weaken* ⦃ Kᵣ ⦄ 1) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (assocSwapᵣ 1 2)
+                  (linv-inj (assocSwapᵣ 2 1) (assocSwapᵣ 1 2) aswap-12-21)
+                  (λ z → sym (aswap12-reorder (ρ z))) t rest
+
+------------------------------------------------------------------------
+-- FIT preservation along a `~` chain.
+------------------------------------------------------------------------
+
+FIT-pres₁ : ∀ {n} {N₁ N₂ : NF n} → N₁ ~₁ N₂ →
+            FIT (idₖ ⦃ Kᵣ ⦄) (tel N₁) → FIT (idₖ ⦃ Kᵣ ⦄) (tel N₂)
+FIT-pres₁ (perm-ν1 s t es)         = FIT-pres-ν1 (idₖ ⦃ Kᵣ ⦄) s t
+FIT-pres₁ (perm-νν s t es)         = FIT-pres-νν (idₖ ⦃ Kᵣ ⦄) s t
+FIT-pres₁ (perm-φφ s x y c d t es) = FIT-pres-φφ (idₖ ⦃ Kᵣ ⦄) s x y c d t
+FIT-pres₁ (perm-νφ s x c t es)     = FIT-pres-νφ (idₖ ⦃ Kᵣ ⦄) s x c t
+FIT-pres₁ (perm-thr t p)           = λ fit → fit
+FIT-pres₁ (unit-del t es)          = λ fit → fit
+
+FIT-pres₁⁻ : ∀ {n} {N₁ N₂ : NF n} → N₁ ~₁ N₂ →
+             FIT (idₖ ⦃ Kᵣ ⦄) (tel N₂) → FIT (idₖ ⦃ Kᵣ ⦄) (tel N₁)
+FIT-pres₁⁻ (perm-ν1 s t es)         = FIT-pres-ν1⁻ (idₖ ⦃ Kᵣ ⦄) s t
+FIT-pres₁⁻ (perm-νν s t es)         = FIT-pres-νν⁻ (idₖ ⦃ Kᵣ ⦄) s t
+FIT-pres₁⁻ (perm-φφ s x y c d t es) = FIT-pres-φφ⁻ (idₖ ⦃ Kᵣ ⦄) s x y c d t
+FIT-pres₁⁻ (perm-νφ s x c t es)     = FIT-pres-νφ⁻ (idₖ ⦃ Kᵣ ⦄) s x c t
+FIT-pres₁⁻ (perm-thr t p)           = λ fit → fit
+FIT-pres₁⁻ (unit-del t es)          = λ fit → fit
+
+FIT-pres : ∀ {n} {N M : NF n} → N ~ M →
+           FIT (idₖ ⦃ Kᵣ ⦄) (tel N) → FIT (idₖ ⦃ Kᵣ ⦄) (tel M)
+FIT-pres ε           fit = fit
+FIT-pres (fwd g ◅ c) fit = FIT-pres c (FIT-pres₁ g fit)
+FIT-pres (bwd g ◅ c) fit = FIT-pres c (FIT-pres₁⁻ g fit)
