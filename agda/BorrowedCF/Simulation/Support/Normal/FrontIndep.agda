@@ -28,6 +28,8 @@ open import BorrowedCF.Simulation.Support.Normal.Endo using (++ᵗ-idʳ)
 open import BorrowedCF.Simulation.Support.Normal.Shift using (shift2; shift1)
 open import BorrowedCF.Simulation.Support.Normal.Bubble using (wkTel-shift2-tν)
 open import BorrowedCF.Simulation.Support.Normal.Rename using (renTel)
+open import BorrowedCF.Simulation.Support.Normal.TmRenInj using (⋯ᵣ-inj)
+open import BorrowedCF.FinKits using (wk*-inj)
 
 open import Data.Product using (Σ; Σ-syntax; _×_; _,_; proj₁; proj₂)
 
@@ -188,3 +190,49 @@ FIT-pres-νν ω s t = FIT-cong++ ω s
   (FIT-renTel (((ω ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ weaken* ⦃ Kᵣ ⦄ 2)
               (((ω ·ₖ wkTel s) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (assocSwapᵣ 2 2)
               (λ x → sym (aswap22-fix4 ((ω ·ₖ wkTel s) x))) t)
+
+-- Fix lemmas for the structural movers (swaps fix names weakened past them).
+private
+  aswap11-fix2 : ∀ {p} (y : 𝔽 p) →
+                 assocSwapᵣ 1 1 (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 1 y))
+                   ≡ weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 1 y)
+  aswap11-fix2 y = refl
+
+  aswap12-reorder : ∀ {p} (y : 𝔽 p) →
+                    assocSwapᵣ 1 2 (weaken* ⦃ Kᵣ ⦄ 1 (weaken* ⦃ Kᵣ ⦄ 2 y))
+                      ≡ weaken* ⦃ Kᵣ ⦄ 2 (weaken* ⦃ Kᵣ ⦄ 1 y)
+  aswap12-reorder y = refl
+
+-- Preservation for the two structural movers (φφ, νφ).
+FIT-pres-φφ : ∀ {b n p k} (ω : b →ᵣ n) (s : Tel n p) (x y : Flag) (c d : Tm p)
+              (t : Tel (1 + (1 + p)) k) →
+              FIT ω (s ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t)) →
+              FIT ω (s ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t (assocSwapᵣ 1 1))))
+FIT-pres-φφ {b} {n} {p} ω s x y c d t = FIT-cong++ ω s local
+  where
+    ρ : b →ᵣ p
+    ρ = ω ·ₖ wkTel s
+    local : FIT ρ (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) t)) →
+            FIT ρ (tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel t (assocSwapᵣ 1 1))))
+    local ((cf-c , ceq-c) , ((cf-d , deq-d) , rest)) =
+      (cf-d , ⋯ᵣ-inj (wk*-inj 1) (deq-d ■ sym (fusion cf-d ρ (weaken* ⦃ Kᵣ ⦄ 1)))) ,
+      ( (cf-c , (cong (_⋯ weaken* ⦃ Kᵣ ⦄ 1) ceq-c ■ fusion cf-c ρ (weaken* ⦃ Kᵣ ⦄ 1))) ,
+        FIT-renTel ((ρ ·ₖ weaken* ⦃ Kᵣ ⦄ 1) ·ₖ weaken* ⦃ Kᵣ ⦄ 1)
+                   ((ρ ·ₖ weaken* ⦃ Kᵣ ⦄ 1) ·ₖ weaken* ⦃ Kᵣ ⦄ 1) (assocSwapᵣ 1 1)
+                   (λ z → sym (aswap11-fix2 (ρ z))) t rest )
+
+FIT-pres-νφ : ∀ {b n p k} (ω : b →ᵣ n) (s : Tel n p) (x : Flag) (c : Tm p)
+              (t : Tel (1 + (2 + p)) k) →
+              FIT ω (s ++ᵗ tν (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 2) t)) →
+              FIT ω (s ++ᵗ tφ x c (tν (renTel t (assocSwapᵣ 1 2))))
+FIT-pres-νφ {b} {n} {p} ω s x c t = FIT-cong++ ω s local
+  where
+    ρ : b →ᵣ p
+    ρ = ω ·ₖ wkTel s
+    local : FIT ρ (tν (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 2) t)) →
+            FIT ρ (tφ x c (tν (renTel t (assocSwapᵣ 1 2))))
+    local ((cf , ceq) , rest) =
+      (cf , ⋯ᵣ-inj (wk*-inj 2) (ceq ■ sym (fusion cf ρ (weaken* ⦃ Kᵣ ⦄ 2)))) ,
+      FIT-renTel ((ρ ·ₖ weaken* ⦃ Kᵣ ⦄ 2) ·ₖ weaken* ⦃ Kᵣ ⦄ 1)
+                 ((ρ ·ₖ weaken* ⦃ Kᵣ ⦄ 1) ·ₖ weaken* ⦃ Kᵣ ⦄ 2) (assocSwapᵣ 1 2)
+                 (λ z → sym (aswap12-reorder (ρ z))) t rest
