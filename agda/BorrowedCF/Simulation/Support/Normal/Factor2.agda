@@ -141,6 +141,21 @@ swap-comm-tel ρ t =
     ■ renTel-cong t (λ z → sym (comm-↑²-swap11-gen ρ z))
     ■ sym (renTel-renTel t (ρ ↑* 2) (swapᵣ 1 1))
 
+-- The thread-level twin of `swap-comm-tel` (via `liftRen-·`).
+swap-comm-thr : ∀ {p p′ k} (ρ : p →ᵣ p′) (t : Tel (2 + p) k) (x : 𝔽 k) →
+                subst 𝔽 (innerOf-renTel t (swapᵣ 1 1) (2 + p′))
+                      (liftRen (renTel t (swapᵣ 1 1)) (ρ ↑* 2) (liftRen t (swapᵣ 1 1) x))
+                  ≡ subst 𝔽 (innerOf-renTel t (ρ ↑* 2) (2 + p′))
+                          (liftRen (renTel t (ρ ↑* 2)) (swapᵣ 1 1) (liftRen t (ρ ↑* 2) x))
+swap-comm-thr ρ t x =
+  liftRen-· t (swapᵣ 1 1) (ρ ↑* 2) x
+    ■ liftRen-cong t (λ z → sym (comm-↑²-swap11-gen ρ z)) x
+    ■ sym (liftRen-· t (ρ ↑* 2) (swapᵣ 1 1) x)
+
+subst-symˡ : ∀ {A : Set} {P : A → Set} {x y} (e : x ≡ y) (p : P x) →
+             subst P (sym e) (subst P e p) ≡ p
+subst-symˡ refl p = refl
+
 -- FIT is invariant under a leaf-scope transport of its telescope.
 FIT-leaf-subst : ∀ {b n k₁ k₂} (ω : b →ᵣ n) (e : k₁ ≡ k₂) (X : Tel n k₁) →
                  FIT ω X → FIT ω (subst (Tel n) e X)
@@ -263,11 +278,71 @@ pushφφ s₂ x y c d t₂ es₂ (flipᴿ s t {T = T} {es = esˢ} eqT eqTᵗ eqE
                  (FIT-leaf-subst (idₖ ⦃ Kᵣ ⦄) kEqN
                     (s₂ ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (dgap₂ ++ᵗ tν t) aswap11)))
                     fitφφ)
+    t″ : Tel (2 + _) _
+    t″ = renTel (renTel t (swapᵣ 1 1)) (liftRen dgap₂ aswap11 ↑* 2)
+    esM″ : List (Tm _)
+    esM″ = map (_⋯ liftRen (tν (renTel t (swapᵣ 1 1))) (liftRen dgap₂ aswap11)) es₂
+    αB : innerOf (renTel t (swapᵣ 1 1)) (2 + _) ≡ _
+    αB = innerOf-renTel t (swapᵣ 1 1) (2 + _)
+    βB : innerOf (renTel t (liftRen dgap₂ aswap11 ↑* 2)) (2 + _) ≡ _
+    βB = innerOf-renTel t (liftRen dgap₂ aswap11 ↑* 2) (2 + _)
+    kEqB : _ ≡ _
+    kEqB = βB ■ sym αB
+    kEqM : innerOf (dgap₂ ++ᵗ tν (renTel t (swapᵣ 1 1))) (2 + _) ≡ _
+    kEqM = innerOf-++ᵗ dgap₂ (tν (renTel t (swapᵣ 1 1))) (2 + _)
+    telEqM : subst (Tel _) kEqM
+               (s₂ ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1)
+                  (renTel (dgap₂ ++ᵗ tν (renTel t (swapᵣ 1 1))) aswap11)))
+               ≡ s′ ++ᵗ tν t″
+    telEqM = subst-++ᵗ s₂ kEqM (tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1)
+                  (renTel (dgap₂ ++ᵗ tν (renTel t (swapᵣ 1 1))) aswap11)))
+           ■ cong (s₂ ++ᵗ_)
+               ( subst-tφ kEqM y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1)
+                    (renTel (dgap₂ ++ᵗ tν (renTel t (swapᵣ 1 1))) aswap11))
+               ■ cong (tφ y d)
+                   ( subst-tφ kEqM x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1)
+                        (renTel (dgap₂ ++ᵗ tν (renTel t (swapᵣ 1 1))) aswap11)
+                   ■ cong (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1))
+                          (renTel-++ᵗ dgap₂ (tν (renTel t (swapᵣ 1 1))) aswap11) ) )
+           ■ sym (++ᵗ-assoc s₂ (tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel dgap₂ aswap11))) (tν t″))
+    thrEqM : subst (λ z → List (Tm z)) kEqM
+               (map (_⋯ liftRen (dgap₂ ++ᵗ tν (renTel t (swapᵣ 1 1))) aswap11) es₂) ≡ esM″
+    thrEqM = map-⋯-subst kEqM (λ x₀ → liftRen-++ᵗ dgap₂ (tν (renTel t (swapᵣ 1 1))) aswap11 x₀) es₂
+    reshapeM-aux : mkNF (s₂ ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1)
+                          (renTel (dgap₂ ++ᵗ tν (renTel t (swapᵣ 1 1))) aswap11)))
+                       (map (_⋯ liftRen (dgap₂ ++ᵗ tν (renTel t (swapᵣ 1 1))) aswap11) es₂)
+                     ≡ mkNF (s′ ++ᵗ tν t″) esM″
+    reshapeM-aux = NF-≡ kEqM telEqM thrEqM
+    deepTelB : subst (Tel _) kEqB (renTel t′ (swapᵣ 1 1)) ≡ t″
+    deepTelB = subst-■ (Tel _) βB (sym αB) (renTel t′ (swapᵣ 1 1))
+             ■ cong (subst (Tel _) (sym αB)) (sym (swap-comm-tel (liftRen dgap₂ aswap11) t))
+             ■ subst-symˡ αB t″
+    telEqB : subst (Tel _) kEqB (s′ ++ᵗ tν (renTel t′ (swapᵣ 1 1))) ≡ s′ ++ᵗ tν t″
+    telEqB = subst-++ᵗ s′ kEqB (tν (renTel t′ (swapᵣ 1 1)))
+           ■ cong (s′ ++ᵗ_) (subst-tν kEqB (renTel t′ (swapᵣ 1 1)) ■ cong tν deepTelB)
+    pointwiseB : ∀ x₀ →
+                 subst 𝔽 kEqB (liftRen t′ (swapᵣ 1 1) (liftRen (tν t) (liftRen dgap₂ aswap11) x₀))
+                   ≡ liftRen (tν (renTel t (swapᵣ 1 1))) (liftRen dgap₂ aswap11) (liftRen t (swapᵣ 1 1) x₀)
+    pointwiseB x₀ =
+      subst-■ 𝔽 βB (sym αB)
+        (liftRen t′ (swapᵣ 1 1) (liftRen (tν t) (liftRen dgap₂ aswap11) x₀))
+      ■ cong (subst 𝔽 (sym αB)) (sym (swap-comm-thr (liftRen dgap₂ aswap11) t x₀))
+      ■ subst-symˡ αB (liftRen (renTel t (swapᵣ 1 1)) (liftRen dgap₂ aswap11 ↑* 2)
+                               (liftRen t (swapᵣ 1 1) x₀))
+    thrEqB : subst (λ z → List (Tm z)) kEqB (map (_⋯ liftRen t′ (swapᵣ 1 1)) esN′) ≡ esM″
+    thrEqB = cong (subst (λ z → List (Tm z)) kEqB)
+                  (map-fuse (liftRen (tν t) (liftRen dgap₂ aswap11)) (liftRen t′ (swapᵣ 1 1)) esˢ)
+           ■ map-⋯-subst kEqB pointwiseB esˢ
+           ■ sym (map-fuse (liftRen t (swapᵣ 1 1))
+                           (liftRen (tν (renTel t (swapᵣ 1 1))) (liftRen dgap₂ aswap11)) esˢ)
+           ■ cong (map (_⋯ liftRen (tν (renTel t (swapᵣ 1 1))) (liftRen dgap₂ aswap11))) (sym eqE)
+    bridge : flipTarget ≡ mkNF (s′ ++ᵗ tν t″) esM″
+    bridge = NF-≡ kEqB telEqB thrEqB
     reshapeM-NF : flipTarget ≡
                   mkNF (s₂ ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1)
                           (renTel (dgap₂ ++ᵗ tν (renTel t (swapᵣ 1 1))) aswap11)))
                        (map (_⋯ liftRen (dgap₂ ++ᵗ tν (renTel t (swapᵣ 1 1))) aswap11) es₂)
-    reshapeM-NF = {!reshapeM!}
+    reshapeM-NF = bridge ■ sym reshapeM-aux
 pushφφ s₂ x y c d t₂ es₂ (flipᴿ s t {T = T} {es = esˢ} eqT eqTᵗ eqE fit)
   | cmpˡ dgap p q = {!cmpˡ-flip!}
 pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
