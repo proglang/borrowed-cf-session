@@ -1051,7 +1051,7 @@ pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE f
 pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
   | cmpʳ (tφ x′ c′ (tν dg)) p q with tφ-inj₂ q
 ...   | ()
-pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE fit)
+pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {T = T} {es = esˢ} eqT eqTᵗ eqE fit)
   | cmpʳ (tφ x′ c′ (tφ y′ d″ dgap₂)) p q
     with tφ-inj₁ q | tφ-inj-c q | tφ-inj₁ (tφ-inj₂ q) | tφ-inj-c (tφ-inj₂ q) | tφ-inj₂ (tφ-inj₂ q)
 ...   | refl | refl | refl | refl | refl =
@@ -1082,10 +1082,47 @@ pushφφ s₂ x y c d t₂ es₂ (swapᴿ s {a} w t {es = esˢ} eqT eqTᵗ eqE f
     swapTarget : NF _
     swapTarget = mkNF (s′ ++ᵗ tν (aN ++ᵗ tν (renTel tN (gapρ aN wN))))
                       (map (_⋯ liftRen tN (gapρ aN wN)) esN′)
-    cleg : mkNF _ esˢ ~ᵩ φφRHS
-    cleg = {!cleg!}
+    chain : T ≡ s₂ ++ᵗ tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) (dgap₂ ++ᵗ Dwin))
+    chain = eqT ■ cong (_++ᵗ Dwin) p
+                ■ ++ᵗ-assoc s₂ (tφ x c (tφ y (d ⋯ weaken* ⦃ Kᵣ ⦄ 1) dgap₂)) Dwin
+    cleg : mkNF T esˢ ~ᵩ φφRHS
+    cleg = ~ᵩ-trans (≡→~ᵩ (cong (λ z → mkNF z esˢ) chain))
+                    (Eq*.return (φφᵩ s₂ x y c d (dgap₂ ++ᵗ Dwin) esˢ))
+    kA : innerOf (dgap₂ ++ᵗ Dwin) _ ≡ innerOf Dwin (innerOf dgap₂ _)
+    kA = innerOf-++ᵗ dgap₂ Dwin _
+    kB : innerOf Dwin (innerOf dgap₂ _) ≡ innerOf t (2 + innerOf a (2 + innerOf dgap₂ _))
+    kB = innerOf-++ᵗ a (tν t) (2 + innerOf dgap₂ _)
+    kEqN : innerOf (dgap₂ ++ᵗ Dwin) _ ≡ innerOf t (2 + innerOf a (2 + innerOf dgap₂ _))
+    kEqN = kA ■ kB
+    INNER : subst (Tel _) kB (renTel Dwin mv) ≡ tν (aN ++ᵗ tν tN)
+    INNER = subst-tν kB (renTel (a ++ᵗ tν t) (mv ↑* 2))
+          ■ cong tν (renTel-++ᵗ a (tν t) (mv ↑* 2))
+    LEAF : subst (Tel _) kEqN (renTel (dgap₂ ++ᵗ Dwin) aswap11)
+             ≡ renTel dgap₂ aswap11 ++ᵗ tν (aN ++ᵗ tν tN)
+    LEAF = subst-■ (Tel _) kA kB (renTel (dgap₂ ++ᵗ Dwin) aswap11)
+         ■ cong (subst (Tel _) kB) (renTel-++ᵗ dgap₂ Dwin aswap11)
+         ■ subst-++ᵗ (renTel dgap₂ aswap11) kB (renTel Dwin mv)
+         ■ cong (renTel dgap₂ aswap11 ++ᵗ_) INNER
+    telEqN : subst (Tel _) kEqN
+               (s₂ ++ᵗ tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (dgap₂ ++ᵗ Dwin) aswap11)))
+               ≡ s′ ++ᵗ tν (aN ++ᵗ tν tN)
+    telEqN = subst-++ᵗ s₂ kEqN (tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (dgap₂ ++ᵗ Dwin) aswap11)))
+           ■ cong (s₂ ++ᵗ_)
+               ( subst-tφ kEqN y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (dgap₂ ++ᵗ Dwin) aswap11))
+               ■ cong (tφ y d)
+                   ( subst-tφ kEqN x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel (dgap₂ ++ᵗ Dwin) aswap11)
+                   ■ cong (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1)) LEAF ) )
+           ■ sym (++ᵗ-assoc s₂ (tφ y d (tφ x (c ⋯ weaken* ⦃ Kᵣ ⦄ 1) (renTel dgap₂ aswap11)))
+                             (tν (aN ++ᵗ tν tN)))
+    PW : ∀ x₀ → subst 𝔽 kEqN (liftRen (dgap₂ ++ᵗ Dwin) aswap11 x₀)
+                  ≡ liftRen t (liftRen a (mv ↑* 2) ↑* 2) x₀
+    PW x₀ = subst-■ 𝔽 kA kB (liftRen (dgap₂ ++ᵗ Dwin) aswap11 x₀)
+          ■ cong (subst 𝔽 kB) (liftRen-++ᵗ dgap₂ Dwin aswap11 x₀)
+          ■ liftRen-++ᵗ a (tν t) (mv ↑* 2) x₀
+    thrEqN : subst (λ z → List (Tm z)) kEqN (map (_⋯ liftRen (dgap₂ ++ᵗ Dwin) aswap11) esˢ) ≡ esN′
+    thrEqN = map-⋯-subst kEqN PW esˢ
     reshapeN-NF : mkNF (s′ ++ᵗ tν (aN ++ᵗ tν tN)) esN′ ≡ φφRHS
-    reshapeN-NF = {!reshapeN!}
+    reshapeN-NF = sym (NF-≡ kEqN telEqN thrEqN)
     fit′ : FIT (idₖ ⦃ Kᵣ ⦄) (s′ ++ᵗ tν (aN ++ᵗ tν tN))
     fit′ = {!fit′!}
     reshapeM-NF : swapTarget ≡
