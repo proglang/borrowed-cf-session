@@ -173,6 +173,33 @@ renTel-coe : ∀ {n m k} (e : n ≡ m) (t : Tel n k) →
                ≡ subst (λ z → Tel z (innerOf t z)) e (subst (Tel n) (sym (renTel-id t)) t)
 renTel-coe refl t = sym (subst-symˡ (renTel-id t) _) ■ cong (subst (Tel _) (sym (renTel-id t))) (renTel-idᵗ t)
 
+-- Lifting a pure ambient scope-transport by `↑* 2` is the congruent transport.
+↑*2-substᵃ : ∀ {n m} (e : n ≡ m) (x : 𝔽 (2 + n)) →
+             ((λ z → subst 𝔽 e z) ↑* 2) x ≡ subst 𝔽 (cong (λ z → 2 + z) e) x
+↑*2-substᵃ refl x = id↑* 2 (λ z → refl) x
+
+-- `liftRen` through a telescope carried along a pure ambient scope-transport
+-- (J-trivial: the transport collapses on the refl-index).
+-- `liftRen (renTel t ρ) σ` reads only the shape of `t` (endo ρ drops, up to the
+-- leaf-scope realignment `renTel-id t`).
+liftRen-renId : ∀ {n m k} (t : Tel n k) (ρ : n →ᵣ n) (σ : n →ᵣ m) (v : 𝔽 k) →
+                subst 𝔽 (innerOf-renTel t ρ m)
+                      (liftRen (renTel t ρ) σ (subst 𝔽 (sym (renTel-id t)) v)) ≡ liftRen t σ v
+liftRen-renId []         ρ σ v = refl
+liftRen-renId (tν t)     ρ σ v = liftRen-renId t (ρ ↑* 2) (σ ↑* 2) v
+liftRen-renId (tφ f c t) ρ σ v = liftRen-renId t (ρ ↑)    (σ ↑)   v
+
+liftRen-substᵃ : ∀ {n m k} (e : 2 + n ≡ 2 + m) (t : Tel (2 + n) k) (v : 𝔽 k) →
+                 subst 𝔽 (innerOf-renTel t (λ x → subst 𝔽 e x) (2 + m))
+                       (liftRen (renTel t (λ x → subst 𝔽 e x)) (assocSwapᵣ 1 1)
+                                (subst 𝔽 (sym (renTel-id t) ■ cong (innerOf t) e) v))
+                   ≡ subst 𝔽 (cong (innerOf t) e) (liftRen t (assocSwapᵣ 1 1) v)
+liftRen-substᵃ refl t v =
+  cong (λ p → subst 𝔽 (innerOf-renTel t (idₖ ⦃ Kᵣ ⦄) _)
+                    (liftRen (renTel t (idₖ ⦃ Kᵣ ⦄)) (assocSwapᵣ 1 1) (subst 𝔽 p v)))
+       (≡-irrelevant (sym (renTel-id t) ■ cong (innerOf t) refl) (sym (renTel-id t)))
+    ■ liftRen-renId t (idₖ ⦃ Kᵣ ⦄) (assocSwapᵣ 1 1) v
+
 -- Pushing a leaf-scope transport of a list out through a `map (_⋯ σ)`.
 map-⋯-substTm : ∀ {a b k} (e : k ≡ a) (σ : a →ᵣ b) (xs : List (Tm k)) →
                 map (_⋯ σ) (subst (λ z → List (Tm z)) e xs)
