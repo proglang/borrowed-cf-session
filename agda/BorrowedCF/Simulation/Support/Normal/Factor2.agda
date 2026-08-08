@@ -359,6 +359,79 @@ aswap-comm-thr ρ t x =
     ■ liftRen-cong t (λ z → sym (comm-↑²-aswap11-gen ρ z)) x
     ■ sym (liftRen-· t (ρ ↑* 2) (assocSwapᵣ 1 1) x)
 
+------------------------------------------------------------------------
+-- Heterogeneous `gapρ` commutation (for the swap-residue cmp cases).
+------------------------------------------------------------------------
+
+-- `assocSwapᵣ 2 2` commutes with a doubly-lifted renaming (fixes the two
+-- ν pairs, renames the remainder).
+gcomm22 : ∀ {a b} (ρ : a →ᵣ b) (y : 𝔽 (2 + (2 + a))) →
+          assocSwapᵣ 2 2 ((ρ ↑* 2 ↑* 2) y) ≡ (ρ ↑* 2 ↑* 2) (assocSwapᵣ 2 2 y)
+gcomm22 ρ zero                      = refl
+gcomm22 ρ (suc zero)                = refl
+gcomm22 ρ (suc (suc zero))          = refl
+gcomm22 ρ (suc (suc (suc zero)))    = refl
+gcomm22 ρ (suc (suc (suc (suc y)))) = refl
+
+-- gen versions of the Slots `comm-↑³` lemmas (arbitrary target scope).
+comm-↑³-aswap12-gen : ∀ {m m′} (ζ : m →ᵣ m′) (y : 𝔽 (1 + (2 + m))) →
+                      assocSwapᵣ 1 2 ((ζ ↑* 3) y) ≡ (ζ ↑* 3) (assocSwapᵣ 1 2 y)
+comm-↑³-aswap12-gen ζ zero                = refl
+comm-↑³-aswap12-gen ζ (suc zero)          = refl
+comm-↑³-aswap12-gen ζ (suc (suc zero))    = refl
+comm-↑³-aswap12-gen ζ (suc (suc (suc y))) = refl
+
+comm-↑³-aswap21-gen : ∀ {m m′} (ζ : m →ᵣ m′) (y : 𝔽 (2 + (1 + m))) →
+                      assocSwapᵣ 2 1 ((ζ ↑* 3) y) ≡ (ζ ↑* 3) (assocSwapᵣ 2 1 y)
+comm-↑³-aswap21-gen ζ zero                = refl
+comm-↑³-aswap21-gen ζ (suc zero)          = refl
+comm-↑³-aswap21-gen ζ (suc (suc zero))    = refl
+comm-↑³-aswap21-gen ζ (suc (suc (suc y))) = refl
+
+-- Naturality of a leaf-endo `liftId t ρ₀` against an ambient renaming
+-- `liftRen t τ`: transport-free, since both land at `innerOf t n′`.
+liftRen-liftId-nat : ∀ {n k n′} (t : Tel n k) (ρ₀ : n →ᵣ n) (τ : n →ᵣ n′) (τ′ : n′ →ᵣ n′)
+                     (h : ∀ z → τ (ρ₀ z) ≡ τ′ (τ z)) (v : 𝔽 k) →
+                     liftRen t τ (liftId t ρ₀ v) ≡ liftId (renTel t τ) τ′ (liftRen t τ v)
+liftRen-liftId-nat []         ρ₀ τ τ′ h v = h v
+liftRen-liftId-nat (tν t)     ρ₀ τ τ′ h v =
+  liftRen-liftId-nat t (ρ₀ ↑* 2) (τ ↑* 2) (τ′ ↑* 2)
+    (λ z → sym (dist-↑*-· 2 ρ₀ τ z) ■ (h ~↑* 2) z ■ dist-↑*-· 2 τ τ′ z) v
+liftRen-liftId-nat (tφ f c t) ρ₀ τ τ′ h v =
+  liftRen-liftId-nat t (ρ₀ ↑) (τ ↑) (τ′ ↑)
+    (λ z → sym (dist-↑-· ρ₀ τ z) ■ (h ~↑) z ■ dist-↑-· τ τ′ z) v
+
+-- The `↑* 2`-lifted form of `liftRen-liftId-nat` (over one ν pair).
+LLcomm : ∀ {n k n′} (t : Tel n k) (ρ₀ : n →ᵣ n) (τ : n →ᵣ n′) (τ′ : n′ →ᵣ n′)
+         (h : ∀ z → τ (ρ₀ z) ≡ τ′ (τ z)) (y : 𝔽 (2 + k)) →
+         (liftRen t τ ↑* 2) ((liftId t ρ₀ ↑* 2) y)
+           ≡ (liftId (renTel t τ) τ′ ↑* 2) ((liftRen t τ ↑* 2) y)
+LLcomm t ρ₀ τ τ′ h y =
+  sym (dist-↑*-· 2 (liftId t ρ₀) (liftRen t τ) y)
+    ■ (pw ~↑* 2) y
+    ■ dist-↑*-· 2 (liftRen t τ) (liftId (renTel t τ) τ′) y
+  where
+    pw : (liftId t ρ₀ ·ₖ liftRen t τ) ≗ (liftRen t τ ·ₖ liftId (renTel t τ) τ′)
+    pw z = liftRen-liftId-nat t ρ₀ τ τ′ h z
+
+-- The commutation of `gapρ a w` with `liftRen a (ρ ↑* 2) ↑* 2`.  The two
+-- `gapρ`s are for different telescopes/runs (`a` vs `renTel a (ρ↑*2)`);
+-- both act on `𝔽 (2 + innerOf a (2 + j′))` after the leaf renaming, so the
+-- pointwise statement is homogeneous.
+gapρ-comm-pt : ∀ {j j′ i} (a : Tel (2 + j) i) (w : Run a) (ρ : j →ᵣ j′) (x : 𝔽 (2 + i)) →
+  (liftRen a (ρ ↑* 2) ↑* 2) (gapρ a w x)
+    ≡ gapρ (renTel a (ρ ↑* 2)) (runRen w (ρ ↑* 2)) ((liftRen a (ρ ↑* 2) ↑* 2) x)
+gapρ-comm-pt [] rnil ρ x = sym (gcomm22 ρ x)
+gapρ-comm-pt (tφ f c a′) (rφ w′) ρ x =
+  LLcomm a′ (assocSwapᵣ 2 1) (ρ ↑* 3) (assocSwapᵣ 2 1)
+         (λ z → sym (comm-↑³-aswap21-gen ρ z)) (gapρ a′ w′ ((liftId a′ (assocSwapᵣ 1 2) ↑* 2) x))
+    ■ cong (liftId (renTel a′ (ρ ↑* 3)) (assocSwapᵣ 2 1) ↑* 2)
+           (gapρ-comm-pt a′ w′ (ρ ↑) ((liftId a′ (assocSwapᵣ 1 2) ↑* 2) x))
+    ■ cong (λ u → (liftId (renTel a′ (ρ ↑* 3)) (assocSwapᵣ 2 1) ↑* 2)
+                    (gapρ (renTel a′ (ρ ↑* 3)) (runRen w′ (ρ ↑* 3)) u))
+           (LLcomm a′ (assocSwapᵣ 1 2) (ρ ↑* 3) (assocSwapᵣ 1 2)
+                   (λ z → sym (comm-↑³-aswap12-gen ρ z)) x)
+
 -- FIT is invariant under a leaf-scope transport of its telescope.
 FIT-leaf-subst : ∀ {b n k₁ k₂} (ω : b →ᵣ n) (e : k₁ ≡ k₂) (X : Tel n k₁) →
                  FIT ω X → FIT ω (subst (Tel n) e X)
