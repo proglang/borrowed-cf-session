@@ -299,23 +299,29 @@ data Res {n} : NF n → NF n → Set where
   -- swap the two names of one ν pair  (= perm-ν1, closed under φ moves).
   -- Linked-φ: the codomain carries the ν-reindexing `renTel t (swapᵣ 1 1)`.
   flipᴿ : ∀ {j k} (s : Tel n j) (t : Tel (2 + j) k)
-          {T : Tel n k} {es : List (Tm k)} →
-          T ≡ s ++ᵗ tν t → FIT (idₖ ⦃ Kᵣ ⦄) T →
-          Res (mkNF T es)
-              (mkNF (s ++ᵗ tν (renTel t (swapᵣ 1 1))) (map (_⋯ liftRen t (swapᵣ 1 1)) es))
+          {T : Tel n k} {es : List (Tm k)}
+          {Tᵗ : Tel n (innerOf t (2 + j))} {esᵗ : List (Tm (innerOf t (2 + j)))} →
+          T  ≡ s ++ᵗ tν t →
+          Tᵗ ≡ s ++ᵗ tν (renTel t (swapᵣ 1 1)) →
+          esᵗ ≡ map (_⋯ liftRen t (swapᵣ 1 1)) es →
+          FIT (idₖ ⦃ Kᵣ ⦄) T →
+          Res (mkNF T es) (mkNF Tᵗ esᵗ)
 
   -- transpose two ν pairs separated by the run `a`, fixing the run
   -- (= perm-νν at `a = []`, and its conjugates under φ moves otherwise).
   swapᴿ : ∀ {j i k} (s : Tel n j) {a : Tel (2 + j) i} (w : Run a)
-          (t : Tel (2 + i) k) {T : Tel n k} {es : List (Tm k)} →
-          T ≡ s ++ᵗ tν (a ++ᵗ tν t) → FIT (idₖ ⦃ Kᵣ ⦄) T →
-          Res (mkNF T es)
-              (mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel t (gapρ a w)))) (map (_⋯ liftRen t (gapρ a w)) es))
+          (t : Tel (2 + i) k) {T : Tel n k} {es : List (Tm k)}
+          {Tᵗ : Tel n (innerOf t (2 + i))} {esᵗ : List (Tm (innerOf t (2 + i)))} →
+          T  ≡ s ++ᵗ tν (a ++ᵗ tν t) →
+          Tᵗ ≡ s ++ᵗ tν (a ++ᵗ tν (renTel t (gapρ a w))) →
+          esᵗ ≡ map (_⋯ liftRen t (gapρ a w)) es →
+          FIT (idₖ ⦃ Kᵣ ⦄) T →
+          Res (mkNF T es) (mkNF Tᵗ esᵗ)
 
 -- The seeds: the two banned `~₁` generators are residues, verbatim.
 res-seed : ∀ {n} {N K : NF n} → FIT (idₖ ⦃ Kᵣ ⦄) (tel N) → N ~₁ K → (N ~ᵩ₁ K) ⊎ Res N K
-res-seed fit (perm-ν1 s t es)       = inj₂ (flipᴿ s t refl fit)
-res-seed fit (perm-νν s t es)       = inj₂ (swapᴿ s rnil t refl fit)
+res-seed fit (perm-ν1 s t es)       = inj₂ (flipᴿ s t refl refl refl fit)
+res-seed fit (perm-νν s t es)       = inj₂ (swapᴿ s rnil t refl refl refl fit)
 res-seed fit (perm-φφ s x y c d t es) = inj₁ (φφᵩ s x y c d t es)
 res-seed fit (perm-νφ s x c t es)   = inj₁ (νφᵩ s x c t es)
 res-seed fit (perm-thr t p)         = inj₁ (thrᵩ t p)
@@ -355,7 +361,7 @@ private
       ■ liftId-id t (λ _ → refl) x
 
 res-sym : ∀ {n} {N K : NF n} → Res N K → Res K N
-res-sym (flipᴿ {j} s t {es = es} refl fit) =
+res-sym (flipᴿ {j} s t {es = es} refl refl refl fit) =
   subst (Res (mkNF (s ++ᵗ tν (renTel t (swapᵣ 1 1))) (map (_⋯ liftRen t (swapᵣ 1 1)) es)))
         ( NF-≡ (innerOf-renTel t (swapᵣ 1 1) (2 + j) ■ renTel-id t)
             ( subst-++ᵗ s (innerOf-renTel t (swapᵣ 1 1) (2 + j) ■ renTel-id t)
@@ -369,9 +375,9 @@ res-sym (flipᴿ {j} s t {es = es} refl fit) =
             ■ map-⋯-subst (innerOf-renTel t (swapᵣ 1 1) (2 + j) ■ renTel-id t)
                           (λ x → νReconThr t (swapᵣ 1 1) (λ y → swap-11-inv y) x) es
             ■ map-⋯-id (λ _ → refl) es ) )
-        (flipᴿ s (renTel t (swapᵣ 1 1)) {es = map (_⋯ liftRen t (swapᵣ 1 1)) es} refl
+        (flipᴿ s (renTel t (swapᵣ 1 1)) {es = map (_⋯ liftRen t (swapᵣ 1 1)) es} refl refl refl
                (FIT-pres-ν1 (idₖ ⦃ Kᵣ ⦄) s t fit))
-res-sym (swapᴿ {j} {i} s {a} w t {es = es} refl fit) =
+res-sym (swapᴿ {j} {i} s {a} w t {es = es} refl refl refl fit) =
   subst (Res (mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel t (gapρ a w)))) (map (_⋯ liftRen t (gapρ a w)) es)))
         ( NF-≡ (innerOf-renTel t (gapρ a w) (2 + i) ■ renTel-id t)
             ( subst-++ᵗ s (innerOf-renTel t (gapρ a w) (2 + i) ■ renTel-id t)
@@ -390,7 +396,7 @@ res-sym (swapᴿ {j} {i} s {a} w t {es = es} refl fit) =
             ■ map-⋯-subst (innerOf-renTel t (gapρ a w) (2 + i) ■ renTel-id t)
                           (λ x → νReconThr t (gapρ a w) (λ y → gapρ-invol a w y) x) es
             ■ map-⋯-id (λ _ → refl) es ) )
-        (swapᴿ s w (renTel t (gapρ a w)) {es = map (_⋯ liftRen t (gapρ a w)) es} refl
+        (swapᴿ s w (renTel t (gapρ a w)) {es = map (_⋯ liftRen t (gapρ a w)) es} refl refl refl
                (FIT-pres-gap (idₖ ⦃ Kᵣ ⦄) s a w t fit))
 
 -- The single-step commutation `push`/`push⁻` (a residue crosses one `~ᵩ`
