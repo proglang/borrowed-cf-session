@@ -2081,83 +2081,23 @@ realise (flipᴿ s t {es = esˢ} refl refl refl fit) bM =
   ~ᵩ-refl ,
   Eq*.return (ν1ᵇ s t esˢ)
 realise {n = n} (swapᴿ {j = j} {i = i} {k = k} s {a} w t {es = esˢ} refl refl refl fit) bM =
-  mkNF (s ++ᵗ tν (a ++ᵗ tν t)) esˢ ,
-  Block-swaptel s (a ++ᵗ tν (renTel t (gapρ a w))) (a ++ᵗ tν t) bM ,
-  ~ᵩ-refl ,
+  mkNF (s ++ᵗ tν (tν (shift2 a ++ᵗ renTel t (bubν⁻ a)))) (map (_⋯ liftRen t (bubν⁻ a)) esˢ) ,
+  Block-swaptel s (a ++ᵗ tν (renTel t (gapρ a w))) (tν (shift2 a ++ᵗ renTel t (bubν⁻ a))) bM ,
+  legᵩ ,
   legᵇ
   where
-    FI  = fit→FInner s a t fit
-    ζ0  = proj₁ (proj₂ FI)
-    fw0 = proj₂ (proj₂ FI)
-    legᵇ : mkNF (s ++ᵗ tν (a ++ᵗ tν t)) esˢ
+    legᵩ : mkNF (s ++ᵗ tν (a ++ᵗ tν t)) esˢ
+             ~ᵩ mkNF (s ++ᵗ tν (tν (shift2 a ++ᵗ renTel t (bubν⁻ a))))
+                     (map (_⋯ liftRen t (bubν⁻ a)) esˢ)
+    legᵩ = ~ᵩ-trans (≡→~ᵩ (sym (prefixNF-++ᵗ s (νNF (mkNF (a ++ᵗ tν t) esˢ)))))
+             (~ᵩ-trans (~ᵩ-prefix s (~ᵩ-νNF (bubbleνᵩ⁻ w t esˢ)))
+                       (≡→~ᵩ (prefixNF-++ᵗ s
+                                (νNF (mkNF (tν (shift2 a ++ᵗ renTel t (bubν⁻ a)))
+                                           (map (_⋯ liftRen t (bubν⁻ a)) esˢ))))))
+    legᵇ : mkNF (s ++ᵗ tν (tν (shift2 a ++ᵗ renTel t (bubν⁻ a)))) (map (_⋯ liftRen t (bubν⁻ a)) esˢ)
              ~ᵇ mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel t (gapρ a w))))
                      (map (_⋯ liftRen t (gapρ a w)) esˢ)
-    legᵇ = ~ᵇ-trans stepN (~ᵇ-trans (≡→~ᵇ DNM) (~ᵇ-sym stepM))
-      where
-        RS  = splitRun t
-        rb  = run RS
-        rst = rest RS
-        wb  = wrun RS
-        brb = brest RS
-        gρ  = gapρ a w
-        ω0  = ζ0 ·ₖ weaken* ⦃ Kᵣ ⦄ 2
-        fixc : ∀ x → gρ (wkTel (shift2 (tν a)) (ω0 x)) ≡ wkTel (shift2 (tν a)) (ω0 x)
-        fixc x = cong gρ (wkS2tν-gen a (ω0 x)) ■ gapρ-fix a w (ζ0 x) ■ sym (wkS2tν-gen a (ω0 x))
-        fwM : FRun _ ω0 (shift2 (tν a)) (runRen wb gρ)
-        fwM = frunFix ω0 (shift2 (tν a)) gρ fixc fw0
-        tM : Tel (innerOf rb (2 + i)) (innerOf rst (innerOf rb (2 + i)))
-        tM = renTel rst (liftRen rb gρ)
-        btM : Block tM
-        btM = Block-renTel (liftRen rb gρ) brb
-        kM : innerOf t (2 + i) ≡ innerOf rst (innerOf rb (2 + i))
-        kM = cong (λ z → innerOf z (2 + i)) (splits RS) ■ innerOf-++ᵗ rb rst (2 + i)
-        esM : List (Tm (innerOf rst (innerOf rb (2 + i))))
-        esM = subst (λ z → List (Tm z)) kM (map (_⋯ liftRen t gρ) esˢ)
-        D_N : NF _
-        D_N = mkNF (s ++ᵗ bswapTel a ζ0 fw0 rst) (map (_⋯ bswapRen a ζ0 fw0 rst) esˢ)
-        D_M : NF _
-        D_M = mkNF (s ++ᵗ bswapTel a ζ0 fwM tM) (map (_⋯ bswapRen a ζ0 fwM tM) esM)
-        reshapeN : mkNF (s ++ᵗ tν (a ++ᵗ tν t)) esˢ
-                     ≡ mkNF (s ++ᵗ tν (a ++ᵗ tν (rb ++ᵗ rst))) esˢ
-        reshapeN = cong (λ z → mkNF (s ++ᵗ tν (a ++ᵗ tν z)) esˢ) (splits RS)
-        stepN : mkNF (s ++ᵗ tν (a ++ᵗ tν t)) esˢ ~ᵇ D_N
-        stepN = ~ᵇ-trans (≡→~ᵇ reshapeN) (Eq*.return (bswpᵇ s w ζ0 fw0 brb esˢ))
-        coreM : subst (Tel (2 + i)) kM (renTel t gρ) ≡ renTel rb gρ ++ᵗ tM
-        coreM = subst-■ (Tel (2 + i)) (cong (λ z → innerOf z (2 + i)) (splits RS))
-                        (innerOf-++ᵗ rb rst (2 + i)) (renTel t gρ)
-              ■ cong (subst (Tel (2 + i)) (innerOf-++ᵗ rb rst (2 + i)))
-                     ( sym (subst-reix (λ z → innerOf z (2 + i)) (splits RS) (renTel t gρ))
-                     ■ substf (λ z → renTel z gρ) (splits RS) )
-              ■ renTel-++ᵗ rb rst gρ
-        telEqM : subst (Tel n) kM (s ++ᵗ tν (a ++ᵗ tν (renTel t gρ)))
-                   ≡ s ++ᵗ tν (a ++ᵗ tν (renTel rb gρ ++ᵗ tM))
-        telEqM = subst-++ᵗ s kM (tν (a ++ᵗ tν (renTel t gρ)))
-               ■ cong (s ++ᵗ_)
-                  ( subst-tν kM (a ++ᵗ tν (renTel t gρ))
-                  ■ cong tν
-                     ( subst-++ᵗ a kM (tν (renTel t gρ))
-                     ■ cong (a ++ᵗ_)
-                        ( subst-tν kM (renTel t gρ) ■ cong tν coreM ) ) )
-        reshapeM : mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel t gρ))) (map (_⋯ liftRen t gρ) esˢ)
-                     ≡ mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel rb gρ ++ᵗ tM))) esM
-        reshapeM = NF-≡ kM telEqM refl
-        stepM : mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel t gρ))) (map (_⋯ liftRen t gρ) esˢ) ~ᵇ D_M
-        stepM = ~ᵇ-trans (≡→~ᵇ reshapeM) (Eq*.return (bswpᵇ s w ζ0 fwM btM esM))
-        -- The two swap-targets coincide.  `DNM = NF-≡ leafEq telEqD thrEqD`
-        -- with `leafEq = sym (renTel-id t) ■ kM`.  After peeling `s`
-        -- (`subst-++ᵗ`) and the outer `tν` (`subst-tν`) both subgoals reduce
-        -- to a `dragTel`/`dragRen` ABSORPTION identity, by induction on `fw0`:
-        --   subst (Tel (2+j)) leafEq
-        --     (dragTel ω0 (shift2 (tν a)) fw0 (retail rst (tailRen rb (bubν⁻ (tν a)))))
-        --     ≡ dragTel ω0 (shift2 (tν a)) fwM (retail tM (tailRen (renTel rb gρ) (bubν⁻ (tν a))))
-        -- The tails differ by `renTel rst (liftRen rb gρ)` (= tM); this
-        -- gρ-reindex is compensated by the difference between the two drag
-        -- renamings, i.e. `drag_N ≗ liftRen rb gρ ·ₖ drag_M` on rst's leaf
-        -- (front-independence of the run `rb`: `runFixed`/`gapρ-fix`).  Base
-        -- case (rb = []) is the renaming identity `bubν⁻ (tν a) ≗ gρ ·ₖ …`
-        -- (finite-perm-check first); the `frφ` step adds a `bubφ⁻ S` layer.
-        DNM : D_N ≡ D_M
-        DNM = {!DNM!}
+    legᵇ = {!legᵇ!}
 
 ------------------------------------------------------------------------
 -- Pushing a residue down a `~ᵩ` chain, and the theorem.
