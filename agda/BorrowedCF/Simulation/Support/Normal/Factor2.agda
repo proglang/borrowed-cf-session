@@ -2054,7 +2054,19 @@ realise (flipᴿ s t {es = esˢ} refl refl refl fit) bM =
   Block-swaptel s (renTel t (swapᵣ 1 1)) t bM ,
   ~ᵩ-refl ,
   Eq*.return (ν1ᵇ s t esˢ)
-realise (swapᴿ s {a} w t {es = esˢ} refl refl refl fit) bM = {!swapᴿ!}
+realise (swapᴿ s {a} w t {es = esˢ} refl refl refl fit) bM =
+  mkNF (s ++ᵗ tν (a ++ᵗ tν t)) esˢ ,
+  Block-swaptel s (a ++ᵗ tν (renTel t (gapρ a w))) (a ++ᵗ tν t) bM ,
+  ~ᵩ-refl ,
+  legᵇ
+  where
+    FI  = fit→FInner s a t fit
+    ζ0  = proj₁ (proj₂ FI)
+    fw0 = proj₂ (proj₂ FI)
+    legᵇ : mkNF (s ++ᵗ tν (a ++ᵗ tν t)) esˢ
+             ~ᵇ mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel t (gapρ a w))))
+                     (map (_⋯ liftRen t (gapρ a w)) esˢ)
+    legᵇ = {!legᵇ!}
 
 ------------------------------------------------------------------------
 -- Pushing a residue down a `~ᵩ` chain, and the theorem.
