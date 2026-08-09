@@ -2097,7 +2097,29 @@ realise {n = n} (swapᴿ {j = j} {i = i} {k = k} s {a} w t {es = esˢ} refl refl
     legᵇ : mkNF (s ++ᵗ tν (tν (shift2 a ++ᵗ renTel t (bubν⁻ a)))) (map (_⋯ liftRen t (bubν⁻ a)) esˢ)
              ~ᵇ mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel t (gapρ a w))))
                      (map (_⋯ liftRen t (gapρ a w)) esˢ)
-    legᵇ = {!legᵇ!}
+    legᵇ = ~ᵇ-trans (≡→~ᵇ reshapeM′)
+             (~ᵇ-trans (Eq*.return (bswpᵇ s {a = []} rnil {rb = rb′} {wb = wrun RS′}
+                                          ζ′ fw′ {t = rst′} (brest RS′) esM′))
+                       (≡→~ᵇ reshapeEq))
+      where
+        esM′ = map (_⋯ liftRen t (bubν⁻ a)) esˢ
+        t′ = shift2 a ++ᵗ renTel t (bubν⁻ a)
+        fitM′ : FIT (idₖ ⦃ Kᵣ ⦄) (s ++ᵗ tν (tν t′))
+        fitM′ = FIT-pres (~ᵩ⇒~ legᵩ) fit
+        FI′ = fit→FInner-seed s t′ fitM′
+        ζ′  = proj₁ (proj₂ FI′)
+        fw′ = proj₂ (proj₂ FI′)
+        RS′  = splitRun t′
+        rb′  = run RS′
+        rst′ = rest RS′
+        reshapeM′ : mkNF (s ++ᵗ tν (tν t′)) esM′
+                      ≡ mkNF (s ++ᵗ tν ([] ++ᵗ tν (rb′ ++ᵗ rst′))) esM′
+        reshapeM′ = cong (λ z → mkNF (s ++ᵗ tν (tν z)) esM′) (splits RS′)
+        reshapeEq : mkNF (s ++ᵗ bswapTel ([] {2 + j}) ζ′ fw′ rst′)
+                          (map (_⋯ bswapRen ([] {2 + j}) ζ′ fw′ rst′) esM′)
+                      ≡ mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel t (gapρ a w))))
+                             (map (_⋯ liftRen t (gapρ a w)) esˢ)
+        reshapeEq = {!reshapeEq!}
 
 ------------------------------------------------------------------------
 -- Pushing a residue down a `~ᵩ` chain, and the theorem.
