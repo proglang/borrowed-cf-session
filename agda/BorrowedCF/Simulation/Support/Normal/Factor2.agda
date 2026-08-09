@@ -2122,6 +2122,19 @@ realise {n = n} (swapᴿ {j = j} {i = i} {k = k} s {a} w t {es = esˢ} refl refl
         reshapeM = NF-≡ kM telEqM refl
         stepM : mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel t gρ))) (map (_⋯ liftRen t gρ) esˢ) ~ᵇ D_M
         stepM = ~ᵇ-trans (≡→~ᵇ reshapeM) (Eq*.return (bswpᵇ s w ζ0 fwM btM esM))
+        -- The two swap-targets coincide.  `DNM = NF-≡ leafEq telEqD thrEqD`
+        -- with `leafEq = sym (renTel-id t) ■ kM`.  After peeling `s`
+        -- (`subst-++ᵗ`) and the outer `tν` (`subst-tν`) both subgoals reduce
+        -- to a `dragTel`/`dragRen` ABSORPTION identity, by induction on `fw0`:
+        --   subst (Tel (2+j)) leafEq
+        --     (dragTel ω0 (shift2 (tν a)) fw0 (retail rst (tailRen rb (bubν⁻ (tν a)))))
+        --     ≡ dragTel ω0 (shift2 (tν a)) fwM (retail tM (tailRen (renTel rb gρ) (bubν⁻ (tν a))))
+        -- The tails differ by `renTel rst (liftRen rb gρ)` (= tM); this
+        -- gρ-reindex is compensated by the difference between the two drag
+        -- renamings, i.e. `drag_N ≗ liftRen rb gρ ·ₖ drag_M` on rst's leaf
+        -- (front-independence of the run `rb`: `runFixed`/`gapρ-fix`).  Base
+        -- case (rb = []) is the renaming identity `bubν⁻ (tν a) ≗ gρ ·ₖ …`
+        -- (finite-perm-check first); the `frφ` step adds a `bubφ⁻ S` layer.
         DNM : D_N ≡ D_M
         DNM = {!DNM!}
 
