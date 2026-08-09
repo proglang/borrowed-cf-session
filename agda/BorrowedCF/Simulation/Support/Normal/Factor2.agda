@@ -2157,14 +2157,7 @@ realise {n = n} (swapᴿ {j = j} {i = i} {k = k} s {a} w t {es = esˢ} refl refl
         -- case (rb = []) is the renaming identity `bubν⁻ (tν a) ≗ gρ ·ₖ …`
         -- (finite-perm-check first); the `frφ` step adds a `bubφ⁻ S` layer.
         DNM : D_N ≡ D_M
-        DNM = NF-≡ leafEq telEqD thrEqD
-          where
-            leafEq : NF.inner D_N ≡ NF.inner D_M
-            leafEq = sym (renTel-id t) ■ kM
-            telEqD : subst (Tel n) leafEq (tel D_N) ≡ tel D_M
-            telEqD = {!telEqD!}
-            thrEqD : subst (λ z → List (Tm z)) leafEq (thr D_N) ≡ thr D_M
-            thrEqD = {!thrEqD!}
+        DNM = {!DNM!}
 
 ------------------------------------------------------------------------
 -- Pushing a residue down a `~ᵩ` chain, and the theorem.
