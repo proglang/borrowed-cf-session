@@ -2052,6 +2052,27 @@ Block-renTel : ∀ {n k n′} {t : Tel n k} (ρ : n →ᵣ n′) → Block t →
 Block-renTel ρ bnil = bnil
 Block-renTel ρ bν   = bν
 
+-- Support-aware congruence for `renTel`: two base renamings that agree on the
+-- ambient images `ω x` (the only names FIT-front-independent channels read)
+-- produce the same re-based telescope.  The agreement propagates through
+-- every binder because `renTel` under a ν/φ only ever touches weaken-images
+-- of `ω`, on which `↑*`/`↑` commute with the shared agreement (N2ν/N2).
+renFIT : ∀ {b n n′ k} (ω : b →ᵣ n) {σ σ′ : n →ᵣ n′} (t : Tel n k) →
+         FIT ω t → (∀ x → σ (ω x) ≡ σ′ (ω x)) →
+         renTel t σ ≡ renTel t σ′
+renFIT ω []         fit               h = refl
+renFIT ω {σ = σ} {σ′ = σ′} (tν t)     fit               h =
+  cong tν (renFIT (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 2) {σ = σ ↑* 2} {σ′ = σ′ ↑* 2} t fit
+             (λ x → N2ν σ (ω x) ■ cong (weaken* ⦃ Kᵣ ⦄ 2) (h x) ■ sym (N2ν σ′ (ω x))))
+renFIT ω {σ = σ} {σ′ = σ′} (tφ f c t) ((cf , ceq) , rest) h =
+  cong₂ (tφ f) chEq
+    (renFIT (ω ·ₖ weaken* ⦃ Kᵣ ⦄ 1) {σ = σ ↑} {σ′ = σ′ ↑} t rest
+       (λ x → N2 σ (ω x) ■ cong (weaken* ⦃ Kᵣ ⦄ 1) (h x) ■ sym (N2 σ′ (ω x))))
+  where
+    chEq : c ⋯ σ ≡ c ⋯ σ′
+    chEq = cong (_⋯ σ) ceq ■ fusion cf ω σ ■ ⋯-cong cf (λ x → h x)
+         ■ sym (fusion cf ω σ′) ■ sym (cong (_⋯ σ′) ceq)
+
 realise : ∀ {n} {N M : NF n} → Res N M → Block (tel M) →
           Σ[ M′ ∈ NF n ] Block (tel M′) × (N ~ᵩ M′) × (M′ ~ᵇ M)
 realise (flipᴿ s t {es = esˢ} refl refl refl fit) bM =
@@ -2136,7 +2157,14 @@ realise {n = n} (swapᴿ {j = j} {i = i} {k = k} s {a} w t {es = esˢ} refl refl
         -- case (rb = []) is the renaming identity `bubν⁻ (tν a) ≗ gρ ·ₖ …`
         -- (finite-perm-check first); the `frφ` step adds a `bubφ⁻ S` layer.
         DNM : D_N ≡ D_M
-        DNM = {!DNM!}
+        DNM = NF-≡ leafEq telEqD thrEqD
+          where
+            leafEq : NF.inner D_N ≡ NF.inner D_M
+            leafEq = sym (renTel-id t) ■ kM
+            telEqD : subst (Tel n) leafEq (tel D_N) ≡ tel D_M
+            telEqD = {!telEqD!}
+            thrEqD : subst (λ z → List (Tm z)) leafEq (thr D_N) ≡ thr D_M
+            thrEqD = {!thrEqD!}
 
 ------------------------------------------------------------------------
 -- Pushing a residue down a `~ᵩ` chain, and the theorem.
