@@ -2047,6 +2047,11 @@ Block-swaptel []         X Y bν = bν
 Block-swaptel (tν s)     X Y bν = bν
 Block-swaptel (tφ f c s) X Y ()
 
+-- `renTel` preserves the head constructor, hence block form.
+Block-renTel : ∀ {n k n′} {t : Tel n k} (ρ : n →ᵣ n′) → Block t → Block (renTel t ρ)
+Block-renTel ρ bnil = bnil
+Block-renTel ρ bν   = bν
+
 realise : ∀ {n} {N M : NF n} → Res N M → Block (tel M) →
           Σ[ M′ ∈ NF n ] Block (tel M′) × (N ~ᵩ M′) × (M′ ~ᵇ M)
 realise (flipᴿ s t {es = esˢ} refl refl refl fit) bM =
@@ -2054,7 +2059,7 @@ realise (flipᴿ s t {es = esˢ} refl refl refl fit) bM =
   Block-swaptel s (renTel t (swapᵣ 1 1)) t bM ,
   ~ᵩ-refl ,
   Eq*.return (ν1ᵇ s t esˢ)
-realise (swapᴿ s {a} w t {es = esˢ} refl refl refl fit) bM =
+realise {n = n} (swapᴿ {j = j} {i = i} {k = k} s {a} w t {es = esˢ} refl refl refl fit) bM =
   mkNF (s ++ᵗ tν (a ++ᵗ tν t)) esˢ ,
   Block-swaptel s (a ++ᵗ tν (renTel t (gapρ a w))) (a ++ᵗ tν t) bM ,
   ~ᵩ-refl ,
@@ -2066,7 +2071,59 @@ realise (swapᴿ s {a} w t {es = esˢ} refl refl refl fit) bM =
     legᵇ : mkNF (s ++ᵗ tν (a ++ᵗ tν t)) esˢ
              ~ᵇ mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel t (gapρ a w))))
                      (map (_⋯ liftRen t (gapρ a w)) esˢ)
-    legᵇ = {!legᵇ!}
+    legᵇ = ~ᵇ-trans stepN (~ᵇ-trans (≡→~ᵇ DNM) (~ᵇ-sym stepM))
+      where
+        RS  = splitRun t
+        rb  = run RS
+        rst = rest RS
+        wb  = wrun RS
+        brb = brest RS
+        gρ  = gapρ a w
+        ω0  = ζ0 ·ₖ weaken* ⦃ Kᵣ ⦄ 2
+        fixc : ∀ x → gρ (wkTel (shift2 (tν a)) (ω0 x)) ≡ wkTel (shift2 (tν a)) (ω0 x)
+        fixc x = cong gρ (wkS2tν-gen a (ω0 x)) ■ gapρ-fix a w (ζ0 x) ■ sym (wkS2tν-gen a (ω0 x))
+        fwM : FRun _ ω0 (shift2 (tν a)) (runRen wb gρ)
+        fwM = frunFix ω0 (shift2 (tν a)) gρ fixc fw0
+        tM : Tel (innerOf rb (2 + i)) (innerOf rst (innerOf rb (2 + i)))
+        tM = renTel rst (liftRen rb gρ)
+        btM : Block tM
+        btM = Block-renTel (liftRen rb gρ) brb
+        kM : innerOf t (2 + i) ≡ innerOf rst (innerOf rb (2 + i))
+        kM = cong (λ z → innerOf z (2 + i)) (splits RS) ■ innerOf-++ᵗ rb rst (2 + i)
+        esM : List (Tm (innerOf rst (innerOf rb (2 + i))))
+        esM = subst (λ z → List (Tm z)) kM (map (_⋯ liftRen t gρ) esˢ)
+        D_N : NF _
+        D_N = mkNF (s ++ᵗ bswapTel a ζ0 fw0 rst) (map (_⋯ bswapRen a ζ0 fw0 rst) esˢ)
+        D_M : NF _
+        D_M = mkNF (s ++ᵗ bswapTel a ζ0 fwM tM) (map (_⋯ bswapRen a ζ0 fwM tM) esM)
+        reshapeN : mkNF (s ++ᵗ tν (a ++ᵗ tν t)) esˢ
+                     ≡ mkNF (s ++ᵗ tν (a ++ᵗ tν (rb ++ᵗ rst))) esˢ
+        reshapeN = cong (λ z → mkNF (s ++ᵗ tν (a ++ᵗ tν z)) esˢ) (splits RS)
+        stepN : mkNF (s ++ᵗ tν (a ++ᵗ tν t)) esˢ ~ᵇ D_N
+        stepN = ~ᵇ-trans (≡→~ᵇ reshapeN) (Eq*.return (bswpᵇ s w ζ0 fw0 brb esˢ))
+        coreM : subst (Tel (2 + i)) kM (renTel t gρ) ≡ renTel rb gρ ++ᵗ tM
+        coreM = subst-■ (Tel (2 + i)) (cong (λ z → innerOf z (2 + i)) (splits RS))
+                        (innerOf-++ᵗ rb rst (2 + i)) (renTel t gρ)
+              ■ cong (subst (Tel (2 + i)) (innerOf-++ᵗ rb rst (2 + i)))
+                     ( sym (subst-reix (λ z → innerOf z (2 + i)) (splits RS) (renTel t gρ))
+                     ■ substf (λ z → renTel z gρ) (splits RS) )
+              ■ renTel-++ᵗ rb rst gρ
+        telEqM : subst (Tel n) kM (s ++ᵗ tν (a ++ᵗ tν (renTel t gρ)))
+                   ≡ s ++ᵗ tν (a ++ᵗ tν (renTel rb gρ ++ᵗ tM))
+        telEqM = subst-++ᵗ s kM (tν (a ++ᵗ tν (renTel t gρ)))
+               ■ cong (s ++ᵗ_)
+                  ( subst-tν kM (a ++ᵗ tν (renTel t gρ))
+                  ■ cong tν
+                     ( subst-++ᵗ a kM (tν (renTel t gρ))
+                     ■ cong (a ++ᵗ_)
+                        ( subst-tν kM (renTel t gρ) ■ cong tν coreM ) ) )
+        reshapeM : mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel t gρ))) (map (_⋯ liftRen t gρ) esˢ)
+                     ≡ mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel rb gρ ++ᵗ tM))) esM
+        reshapeM = NF-≡ kM telEqM refl
+        stepM : mkNF (s ++ᵗ tν (a ++ᵗ tν (renTel t gρ))) (map (_⋯ liftRen t gρ) esˢ) ~ᵇ D_M
+        stepM = ~ᵇ-trans (≡→~ᵇ reshapeM) (Eq*.return (bswpᵇ s w ζ0 fwM btM esM))
+        DNM : D_N ≡ D_M
+        DNM = {!DNM!}
 
 ------------------------------------------------------------------------
 -- Pushing a residue down a `~ᵩ` chain, and the theorem.
