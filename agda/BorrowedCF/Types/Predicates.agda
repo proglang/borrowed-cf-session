@@ -177,8 +177,8 @@ tpred? : {PA : Arr → Set} {PS : 𝕊 0 → Set} → Decidable PA → Decidable
 tpred? pa? ps? ⟨ s ⟩ = map′ ⟨_⟩ (λ{ ⟨ ps ⟩ → ps }) (ps? s)
 tpred? pa? ps? `⊤ = yes `⊤
 tpred? pa? ps? (t ⟨ a ⟩→ u) = map′ arr (λ{ (arr pa) → pa }) (pa? a)
-tpred? pa? ps? (t ⊗⟨ d ⟩ u) = map′ (uncurry _⊗_) (λ{ (pt ⊗ pu) → pt , pu }) (tpred? pa? ps? t ×-dec tpred? pa? ps? u)
-tpred? pa? ps? (t ⊕ u) = map′ (uncurry _⊕_) (λ{ (pt ⊕ pu) → pt , pu }) (tpred? pa? ps? t ×-dec tpred? pa? ps? u)
+tpred? pa? ps? (t ⊗⟨ d ⟩ u) = map′ (uncurry _⊗_) (λ{ (pt ⊗ pu) → pt , pu }) (tpred? pa? ps? t ×? tpred? pa? ps? u)
+tpred? pa? ps? (t ⊕ u) = map′ (uncurry _⊕_) (λ{ (pt ⊕ pu) → pt , pu }) (tpred? pa? ps? t ×? tpred? pa? ps? u)
 
 Mobile = TPred Arr.Mobile (λ s → ∃[ s′ ] Bounded s′ × s ≃ acq ; s′)
 
