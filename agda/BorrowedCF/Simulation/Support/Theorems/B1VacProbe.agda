@@ -330,9 +330,9 @@ mentions? : ∀ {n} (i : 𝔽 n) (s : 𝕊 n) → Dec (Mentions i s)
 mentions? i (` x)        = i Fin.≟ x
 mentions? i (end p)      = no λ()
 mentions? i (msg p T)    = no λ()
-mentions? i (brn p s₁ s₂) = mentions? i s₁ ⊎-dec mentions? i s₂
+mentions? i (brn p s₁ s₂) = mentions? i s₁ ⊎? mentions? i s₂
 mentions? i (mu s)       = mentions? (suc i) s
-mentions? i (s₁ ; s₂)    = mentions? i s₁ ⊎-dec mentions? i s₂
+mentions? i (s₁ ; s₂)    = mentions? i s₁ ⊎? mentions? i s₂
 mentions? i skip         = no λ()
 mentions? i ret          = no λ()
 mentions? i acq          = no λ()

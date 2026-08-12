@@ -89,8 +89,8 @@ module _ {ℓ} {P : Pred 𝕋 ℓ} {Γ : Ctx n} where
   allCx? : Decidable P → Decidable (AllCx P Γ)
   allCx? P? (` x) = map′ `_ (λ{ (` Px) → Px }) (P? (lookup Γ x))
   allCx? P? [] = yes []
-  allCx? P? (α ∥ β) = map′ (uncurry _∥_) allCx-∥⁻¹ (allCx? P? α ×-dec allCx? P? β)
-  allCx? P? (α ; β) = map′ (uncurry _;_) allCx-;⁻¹ (allCx? P? α ×-dec allCx? P? β)
+  allCx? P? (α ∥ β) = map′ (uncurry _∥_) allCx-∥⁻¹ (allCx? P? α ×? allCx? P? β)
+  allCx? P? (α ; β) = map′ (uncurry _;_) allCx-;⁻¹ (allCx? P? α ×? allCx? P? β)
 
 module _ {p q} {P : Pred 𝕋 p} {Q : Pred 𝕋 q} where
   allCx-map⁺ : {f : 𝕋 → 𝕋} → P ⊆ Q ∘ f → AllCx P Γ ⊆ AllCx Q (V.map f Γ)
