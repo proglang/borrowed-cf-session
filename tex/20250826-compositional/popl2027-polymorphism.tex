@@ -80,7 +80,6 @@ function-shaped value form shown below.
        &\qquad
        \grmor \Dualable\S
        \grmor \NonSkip\S
-       \grmor \T \SEq \TU
       \tag{Atomic qualifications} \\
     \Qual &\grmeq \top \grmor \Prop \grmor \Qual\land\Qual
       \tag{Qualifications} \\
@@ -239,13 +238,6 @@ admissible rules.
       \TyCtx\Entails
         \NonSkip{(\SSeq{\S[1]}{\SSeq{\S}{\S[2]}})}
     }
-    \\
-    \inferrule*[right=Q-Cong]{
-      \TyCtx\Entails \T\SEq\TU \\
-      \TyCtx\Entails \Prop{[\T/\alpha]}
-    }{
-      \TyCtx\Entails \Prop{[\TU/\alpha]}
-    }
   \end{mathpar}
   \caption{Postulated and derived qualification-entailment rules}
   \label{fig:poly-entailment}
@@ -286,13 +278,6 @@ $\SSeq{\S[1]}{\SSeq{\S}{\S[2]}}\SEq\SSkip$.  Sequential composition has no
 cancellation or annihilator: a sequence is equivalent to $\SSkip$ only if
 each factor is.  The middle factor would therefore be equivalent to
 $\SSkip$, contradicting the premise.
-
-\paragraph{Congruence.}
-Predicate interpretations are defined on equivalence classes of types.  If
-$\T\SEq\TU$, substituting either representative into a predicate gives the
-same proposition.  This proves \RuleName{Q-Cong}; for $\NonSkip$, in
-particular, $\T\SEq\TU$ implies that $\T$ is equivalent to $\SSkip$ exactly
-when $\TU$ is.
 
 The predicates have the following roles.
 
@@ -335,38 +320,34 @@ is
 where $\theta$ ranges over ground, kind-respecting substitutions.  In
 particular, $\NonSkip\alpha$ is a qualification on the type variable $\alpha$:
 it limits $\alpha$ to ground instantiations not equivalent to $\SSkip$.  It
-follows only from an assumption (possibly transported by equality) or from
-stronger constraints; failure to prove $\alpha\SEq\SSkip$ is not evidence for
-$\NonSkip\alpha$.  At a type application, a qualification
+follows only from an assumption or from stronger structural constraints;
+failure to prove $\alpha\SEq\SSkip$ is not evidence for $\NonSkip\alpha$.  At
+a type application, a qualification
 $\NonSkip\alpha$ therefore requires a proof that the actual session argument
 is non-skip.  Closed arguments are handled by
 \RuleName{Q-NonSkip-Ground}.
 
-\paragraph{Equality.}
-An equality qualification records relationships between type expressions
-modulo the existing type and CFST equational theories.  It is useful for generic
-code whose protocol decomposition is known through type variables.  All predicate
-qualifications are invariant under this equality.
-
-For example, consider a wrapper around local splitting (arrow annotations are
-shown explicitly):
+\paragraph{No equality qualification.}
+Type equivalence remains an ordinary judgment of the calculus, not a
+qualification that can be assumed for a quantified type variable.  A
+polymorphic interface should expose a required type decomposition directly.
+For example, the argument type of a wrapper around local splitting can inline
+the sequential structure (arrow annotations are shown explicitly):
 \begin{align*}
   \mathsf{splitAs}:{}&
-    \typecolor{\forall(\alpha,\beta,\gamma:\KSess).}\\[-.3ex]
-  &\quad \typecolor{((\alpha\SEq\SSeq{\beta}{\gamma})\land\NonSkip\gamma)
-      \Rightarrow}\\[-.3ex]
+    \typecolor{\forall(\beta,\gamma:\KSess).}\\[-.3ex]
+  &\quad \typecolor{\NonSkip\gamma\Rightarrow}\\[-.3ex]
   &\quad
       \TArr{\MobMobile}{\DirNone,\EffPure}
-        \alpha{\TPairOrd\beta\gamma},\\
-  \mathsf{splitAs}{[\alpha]}{[\beta]}{[\gamma]}\,c ={}&
+        {\SSeq\beta\gamma}{\TPairOrd\beta\gamma},\\
+  \mathsf{splitAs}{[\beta]}{[\gamma]}\,c ={}&
     \EApp{\CSplit{[\beta]}{[\gamma]}}c.
 \end{align*}
-The instantiated split constant expects $c:\SSeq{\beta}{\gamma}$, whereas the
-wrapper receives $c:\alpha$.  The equality qualification is used by
-\RuleName{T-Conv} to convert the argument before the application; without the
-qualification there is no relation between the three protocol type variables
-and the body is not typable.  The $\NonSkip\gamma$ qualification discharges the
-independent side condition of local splitting.
+The $\NonSkip\gamma$ qualification discharges the side condition of local
+splitting, while the argument already has the required sequence type.  More
+generally, a use of an equivalent type is handled by placing the existing
+\RuleName{T-Conv} rule at the relevant typing derivation.  There is no need to
+create an equality witness in the qualification solver.
 
 There is no separate $\Skips\S$ qualification: the declarative rules that need
 this information already use $\S\SEq\SSkip$.  Likewise, $\Ord\T$ is not part of
@@ -388,8 +369,8 @@ systems.  Mobility of skip-like sessions remains available through the
 existing \RuleName{Te-Skips} rule.
 
 For closed arguments, all atomic qualifications reduce to the existing
-decisions, including CFST equivalence for equality and $\NonSkip$.  When a type
-contains type variables, entailment uses only assumptions, congruence, and the
+predicate decisions; deciding $\NonSkip$ uses CFST equivalence with $\SSkip$.
+When a type contains type variables, entailment uses only assumptions and the
 structural predicate rules.  In particular, failure to refute a qualification
 is not a proof of it.
 
@@ -484,21 +465,14 @@ kinds.
     }{
       \TyCtx\vdash\NonSkip\S\ \Wf
     }
-    \\
-    \inferrule*[right=QF-Eq]{
-      \TyCtx\vdash\T:\Kind \\
-      \TyCtx\vdash\TU:\Kind
-    }{
-      \TyCtx\vdash\T\SEq\TU\ \Wf
-    }
   \end{mathpar}
   \caption{Qualification well-formedness ($\TyCtx\vdash\Qual\ \Wf$)}
   \label{fig:qualification-well-formedness}
 \end{figure}
 
-Thus $\Unr$ and $\Mobile$ apply to value types; $\Bounded$, $\SNew$,
-$\Dualable$, and $\NonSkip$ apply to session types; and equality relates two
-types of a common kind.  By \RuleName{K-Var}, the kinding premises are
+Thus $\Unr$ and $\Mobile$ apply to value types, whereas $\Bounded$, $\SNew$,
+$\Dualable$, and $\NonSkip$ apply to session types.  By \RuleName{K-Var}, the
+kinding premises are
 derivable only when every type variable occurring in the qualification has a
 declaration in $\TyCtx$.
 
@@ -506,6 +480,10 @@ All inherited type constructors receive their expected kinding rules.  In
 particular, sequential composition and recursive session formation require
 $\KSess$ operands, while the payload of send or receive only requires
 $\KVal$.  The qualifier entries of $\TyCtx$ are propositions, not kinds.
+
+For scoping, write $\TyCtx\vdash\T\SEq\TU$ for the paper's ordinary type
+equivalence judgment restricted to types well formed in $\TyCtx$.
+Qualification assumptions in $\TyCtx$ do not add equations to this judgment.
 
 Context equality and the subcontext preorder must be indexed by $\TyCtx$:
 \[
@@ -645,8 +623,9 @@ the acquired-session rule.
 \section{Lifting the monomorphic rules}
 
 Every declarative judgment in the paper is prefixed by $\TyCtx$.  The shape of
-the inherited rules is otherwise unchanged.  Predicate and equality side
-conditions become entailments.  Representative replacements are
+the inherited rules is otherwise unchanged.  Predicate side conditions become
+entailments, whereas type equivalence remains a separate judgment.
+Representative replacements are
 \[
 \begin{array}{lll}
   \RuleName{T-Seq}:& \TyCtx\Entails\Unr\T,
@@ -659,8 +638,8 @@ conditions become entailments.  Representative replacements are
     &\text{the residual suffix is nontrivial};\\
   \RuleName{TP-Res}:& \TyCtx\Entails\SNew\S,
     &\text{restriction uses a source protocol};\\
-  \RuleName{T-Conv}:& \TyCtx\Entails\T\SEq\TU,
-    &\text{conversion may use abstract equations}.
+  \RuleName{T-Conv}:& \TyCtx\vdash\T\SEq\TU,
+    &\text{conversion uses ordinary type equivalence}.
 \end{array}
 \]
 The abstraction rules for ordinary functions continue to test mobility or
@@ -855,7 +834,38 @@ The extension adds the standard lemmas for qualified System~F.
   $\TyCtx,\alpha:\Kind,\Qual\Entails\Prop$,
   $\TyCtx\vdash\TU:\Kind$, and
   $\TyCtx\Entails\Qual{[\TU/\alpha]}$, then
-  $\TyCtx\Entails\Prop{[\TU/\alpha]}$.
+  $\TyCtx\Entails\Prop{[\TU/\alpha]}$, where $\alpha$ is fresh for
+  $\TyCtx$.
+
+  \emph{Proof.}
+  By induction on the derivation of
+  $\TyCtx,\alpha:\Kind,\Qual\Entails\Prop$.
+  In the \RuleName{Q-Assume} case, an assumption inherited from $\TyCtx$
+  does not mention $\alpha$, by well-formedness and freshness, and remains
+  available by \RuleName{Q-Assume}.  An assumption contributed by $\Qual$
+  is a conjunct of $\Qual$; after substitution it follows from
+  $\TyCtx\Entails\Qual{[\TU/\alpha]}$, since entailment of conjunctions is
+  defined componentwise.
+
+  Every structural Horn clause commutes with substitution.  Apply the
+  induction hypotheses to its entailment premises and reapply the same
+  clause; the standard kinding-substitution lemma preserves any implicit
+  kinding side conditions.  This covers the inherited monomorphic predicate
+  rules and the structural dualability postulates.  The only exceptional
+  postulates are the variable-specific ones.  If their subject is a variable
+  other than $\alpha$, its declaration remains in $\TyCtx$, so the same
+  postulate applies after using the induction hypothesis on its premise.  For
+  \RuleName{Q-Unr-Var-Mobile} with subject $\alpha$, the induction hypothesis
+  yields $\TyCtx\Entails\Unr\TU$, and admissible
+  \RuleName{Q-Unr-Mobile} yields $\TyCtx\Entails\Mobile\TU$.  For
+  \RuleName{Q-New-Var-Dual}, kinding forces $\Kind=\KSess$; the induction
+  hypothesis yields $\TyCtx\Entails\SNew\TU$, and admissible
+  \RuleName{Q-New-Dual} yields $\TyCtx\Entails\Dualable\TU$.
+
+  The derived rules require no additional cases: expanding their
+  admissibility derivations reduces them to the cases above.  In particular,
+  the subject of \RuleName{Q-NonSkip-Ground} is closed, so substitution leaves
+  it unchanged.  This completes the induction.
 \item \emph{Type substitution.}  Typing, kinding, context equality, and the
   subcontext relation are preserved by a type substitution satisfying the
   qualification of its binder.
@@ -886,10 +896,11 @@ $\TyCtx$ are parameters and are never solved; the variables generated in
 $\CSet$ are unification variables and may be solved.  Explicit abstraction and
 application make quantifier placement and instantiation inputs to checking,
 while qualification entailment reuses the existing predicate checks and CFST
-equivalence procedure.  Equality assumptions over type variables are used by
-congruence and conversion, not solved by unification.  The algorithmic
-fixed-point rule additionally checks the supplied type of the recursive
-variable; it does not infer a polymorphic recursive type.
+equivalence procedure where required by predicates such as $\NonSkip$.
+Ordinary conversion remains outside qualification entailment and can be
+inserted explicitly in a checking derivation.  The algorithmic fixed-point
+rule additionally checks the supplied type of the recursive variable; it does
+not infer a polymorphic recursive type.
 
 \section{Recommended core}
 
@@ -897,16 +908,14 @@ The smallest useful version contains both kinds, universal and existential
 types, the qualifications
 \[
   \Unr\T,\quad \Mobile\T,\quad \Bounded\S,\quad \SNew\S,\quad
-  \Dualable\S,\quad \NonSkip\S,\quad \T\SEq\TU,
+  \Dualable\S,\quad \NonSkip\S,
 \]
 together with the value restriction on type abstraction and the
 function-shape restriction on fixed points.  Of these,
 $\Dualable$ can be hidden from surface syntax if suspended duals are generated
 only by the polymorphic type of $\CNew$; it is still needed internally to make
-$\SDual\alpha$ well formed.  Equality qualifications may likewise be omitted
-from an initial implementation if protocol refinements involving type variables
-are not required.  The remaining five predicates are directly observed by the
-declarative rules and should not be collapsed into mobility alone.
+$\SDual\alpha$ well formed.  The remaining predicates are directly observed
+by the declarative rules and should not be collapsed into mobility alone.
 
 \end{document}
 
