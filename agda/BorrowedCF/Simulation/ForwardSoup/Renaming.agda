@@ -207,6 +207,18 @@ prefix-coherent {b = b} {n = n} {n′ = n′}
   right-equal =
     sym (cong (Fin.join b n) split) ■ Fin.join-splitAt b n x
 
+swap-prefix-coherent :
+  {a b n o : ℕ}
+  (left : Translation.Env a o)
+  (right : Translation.Env b o)
+  (ambient : Translation.Env n o)
+  (x : 𝔽 (a + b + n)) →
+  ((right Translation.++ₛ left) Translation.++ₛ ambient)
+    (Source.swapᵣ a b x) ≡
+  ((left Translation.++ₛ right) Translation.++ₛ ambient) x
+swap-prefix-coherent {a = a} {b = b} left right ambient x
+  = Source.++-swapᵣ left right x
+
 flattenChannels-rename :
   (P : Typed.Proc n) (ρ : 𝔽 n → 𝔽 n′)
   (channels : Vec (OrientedChannel c)
