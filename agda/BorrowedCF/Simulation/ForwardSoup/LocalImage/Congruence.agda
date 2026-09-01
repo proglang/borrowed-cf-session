@@ -32,6 +32,105 @@ retarget-thread equal (present l embedded live) =
 retarget-thread equal (omitted omittedEq unitEq) =
   omitted omittedEq (sym equal ■ unitEq)
 
+record ImageReindex
+  {P Q : Typed.Proc n}
+  (sourceChannels : Vec (OrientedChannel c) (Translation.channelCount P))
+  (targetChannels : Vec (OrientedChannel c) (Translation.channelCount Q))
+  (sigma : Translation.Env n (2 *ℕ c)) : Set where
+  field
+    channelBackward :
+      𝔽 (Translation.channelCount Q) →
+      𝔽 (Translation.channelCount P)
+    channelForward :
+      𝔽 (Translation.channelCount P) →
+      𝔽 (Translation.channelCount Q)
+    channel-forward-backward :
+      (i : 𝔽 (Translation.channelCount Q)) →
+      channelForward (channelBackward i) ≡ i
+    channel-backward-forward :
+      (i : 𝔽 (Translation.channelCount P)) →
+      channelBackward (channelForward i) ≡ i
+    channel-entry :
+      (i : 𝔽 (Translation.channelCount Q)) →
+      lookup targetChannels i ≡ lookup sourceChannels (channelBackward i)
+    channel-content :
+      (i : 𝔽 (Translation.channelCount Q)) →
+      lookup (proj₁ (flattenOriented P sourceChannels sigma))
+        (channelBackward i) ≡
+      lookup (proj₁ (flattenOriented Q targetChannels sigma)) i
+
+    threadBackward :
+      𝔽 (Translation.processCount Q) →
+      𝔽 (Translation.processCount P)
+    threadForward :
+      𝔽 (Translation.processCount P) →
+      𝔽 (Translation.processCount Q)
+    thread-forward-backward :
+      (i : 𝔽 (Translation.processCount Q)) →
+      threadForward (threadBackward i) ≡ i
+    thread-backward-forward :
+      (i : 𝔽 (Translation.processCount P)) →
+      threadBackward (threadForward i) ≡ i
+    thread-content :
+      (i : 𝔽 (Translation.processCount Q)) →
+      lookup (proj₂ (flattenOriented P sourceChannels sigma))
+        (threadBackward i) ≡
+      lookup (proj₂ (flattenOriented Q targetChannels sigma)) i
+
+open ImageReindex public
+
+reindex-image :
+  {P Q : Typed.Proc n}
+  {sourceChannels : Vec (OrientedChannel c) (Translation.channelCount P)}
+  {targetChannels : Vec (OrientedChannel c) (Translation.channelCount Q)}
+  {sigma : Translation.Env n (2 *ℕ c)}
+  {ambientChannel : 𝔽 c → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config c m} →
+  ImageReindex {P = P} {Q = Q} sourceChannels targetChannels sigma →
+  LocalImage P sourceChannels sigma ambientChannel ambientThread C →
+  LocalImage Q targetChannels sigma ambientChannel ambientThread C
+reindex-image {P = P} {Q = Q}
+  {sourceChannels = sourceChannels}
+  {targetChannels = targetChannels} {C = C} reindex image = record
+  { channelEmbedding-injective = λ {i} {j} equal →
+      sym (channel-forward-backward reindex i) ■
+      cong (channelForward reindex)
+        (channelEmbedding-injective image
+          (cong physicalChannel (sym (channel-entry reindex i)) ■
+           equal ■
+           cong physicalChannel (channel-entry reindex j))) ■
+      channel-forward-backward reindex j
+  ; threadEmbedding = threadEmbedding image ∘ threadBackward reindex
+  ; threadEmbedding-injective = λ equalᵢ equalⱼ →
+      sym (thread-forward-backward reindex _) ■
+      cong (threadForward reindex)
+        (threadEmbedding-injective image equalᵢ equalⱼ) ■
+      thread-forward-backward reindex _
+  ; live-channel = λ i →
+      cong (lookup (Soup.channels C))
+        (cong physicalChannel (channel-entry reindex i)) ■
+      live-channel image (channelBackward reindex i) ■
+      channel-content reindex i
+  ; live-thread = λ i →
+      retarget-thread {threads = Soup.threads C}
+        (thread-content reindex i)
+        (live-thread image (threadBackward reindex i))
+  ; garbage-channel = λ i outside →
+      garbage-channel image i (λ k equal →
+        outside (channelForward reindex k)
+          (cong physicalChannel
+             (channel-entry reindex (channelForward reindex k)) ■
+           cong (physicalChannel ∘ lookup sourceChannels)
+             (channel-backward-forward reindex k) ■
+           equal))
+  ; garbage-thread = λ i outside →
+      garbage-thread image i (λ k equal →
+        outside (threadForward reindex k)
+          (cong (threadEmbedding image)
+             (thread-backward-forward reindex k) ■
+           equal))
+  }
+
 unit-head-thread :
   (P : Typed.Proc n)
   (channels : Vec (OrientedChannel c) (Translation.channelCount P))
