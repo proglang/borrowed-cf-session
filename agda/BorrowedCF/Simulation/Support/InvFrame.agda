@@ -36,7 +36,7 @@ inv-app : ∀ {N} {Γ : Ctx N} {α : Struct N} {d} {e₁ e₂ : Tm N} {T ϵ}
   → Σ[ α₁ ∈ Struct N ] Σ[ α₂ ∈ Struct N ]
       (∃[ T₁ ] ∃[ ϵ₁ ] Γ ; α₁ ⊢ e₁ ∶ T₁ ∣ ϵ₁)
       × (∃[ T₂ ] ∃[ ϵ₂ ] Γ ; α₂ ⊢ e₂ ∶ T₂ ∣ ϵ₂)
-      × ((h : 𝔽 N) → ¬ Unr (Γ h) → count h α₁ + count h α₂ ≤ count h α)
+      × ((h : 𝔽 N) → ¬ Unr (lookup Γ h) → count h α₁ + count h α₂ ≤ count h α)
 inv-app (T-AppUnr {γ₁ = γ₁} {γ₂ = γ₂} _ _ ⊢e₁ ⊢e₂) =
   γ₁ , γ₂ , (_ , _ , ⊢e₁) , (_ , _ , ⊢e₂) , λ h _ → ≤-refl
 inv-app (T-AppLin {γ₁ = γ₁} {γ₂ = γ₂} _ _ ⊢e₁ ⊢e₂) =
@@ -55,7 +55,7 @@ inv-pair : ∀ {N} {Γ : Ctx N} {α : Struct N} {e₁ e₂ : Tm N} {T ϵ}
   → Σ[ α₁ ∈ Struct N ] Σ[ α₂ ∈ Struct N ]
       (∃[ T₁ ] ∃[ ϵ₁ ] Γ ; α₁ ⊢ e₁ ∶ T₁ ∣ ϵ₁)
       × (∃[ T₂ ] ∃[ ϵ₂ ] Γ ; α₂ ⊢ e₂ ∶ T₂ ∣ ϵ₂)
-      × ((h : 𝔽 N) → ¬ Unr (Γ h) → count h α₁ + count h α₂ ≤ count h α)
+      × ((h : 𝔽 N) → ¬ Unr (lookup Γ h) → count h α₁ + count h α₂ ≤ count h α)
 inv-pair (T-Pair p/s {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂) =
   γ₁ , γ₂ , (_ , _ , ⊢e₁) , (_ , _ , ⊢e₂) ,
     λ h _ → ≤-reflexive (sym (count-join-Dir (biasedDir p/s) h γ₁ γ₂))
@@ -69,7 +69,7 @@ inv-seq : ∀ {N} {Γ : Ctx N} {α : Struct N} {e₁ e₂ : Tm N} {T ϵ}
   → Σ[ α₁ ∈ Struct N ] Σ[ α₂ ∈ Struct N ]
       (∃[ T₁ ] ∃[ ϵ₁ ] Γ ; α₁ ⊢ e₁ ∶ T₁ ∣ ϵ₁)
       × (∃[ T₂ ] ∃[ ϵ₂ ] Γ ; α₂ ⊢ e₂ ∶ T₂ ∣ ϵ₂)
-      × ((h : 𝔽 N) → ¬ Unr (Γ h) → count h α₁ + count h α₂ ≤ count h α)
+      × ((h : 𝔽 N) → ¬ Unr (lookup Γ h) → count h α₁ + count h α₂ ≤ count h α)
 inv-seq (T-Seq {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂) =
   γ₁ , γ₂ , (_ , _ , ⊢e₁) , (_ , _ , ⊢e₂) ,
     λ h _ → ≤-refl
@@ -83,7 +83,7 @@ inv-let : ∀ {N} {Γ : Ctx N} {α : Struct N} {e₁ : Tm N} {e₂ : Tm (suc N)}
   → Σ[ γ₁ ∈ Struct N ] Σ[ γ₂ ∈ Struct N ] Σ[ p/s ∈ ParSeq ]
       (∃[ T₁ ] ∃[ ϵ₁ ] Γ ; γ₁ ⊢ e₁ ∶ T₁ ∣ ϵ₁)
       × (∃[ T₁ ] ∃[ U ] ∃[ ϵ' ] (T₁ ⸴ Γ) ; join p/s (` zero) (𝐂S.wk γ₂) ⊢ e₂ ∶ U ∣ ϵ')
-      × ((h : 𝔽 N) → ¬ Unr (Γ h) → count h γ₁ + count h γ₂ ≤ count h α)
+      × ((h : 𝔽 N) → ¬ Unr (lookup Γ h) → count h γ₁ + count h γ₂ ≤ count h α)
 inv-let (T-Let p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e₁ ⊢e₂) =
   γ₁ , γ₂ , p/s , (_ , _ , ⊢e₁) , (_ , _ , _ , ⊢e₂) ,
     λ h _ → ≤-reflexive (sym (count-join-PS p/s h γ₁ γ₂))
@@ -98,7 +98,7 @@ inv-letpair : ∀ {N} {Γ : Ctx N} {α : Struct N} {e₁ : Tm N} {e₂ : Tm (suc
       (∃[ T₁ ] ∃[ ϵ₁ ] Γ ; γ₁ ⊢ e₁ ∶ T₁ ∣ ϵ₁)
       × (∃[ T₁ ] ∃[ T₂ ] ∃[ U ] ∃[ ϵ' ]
            (T₁ ⸴ T₂ ⸴ Γ) ; join p/s (join d (` zero) (` suc zero)) (𝐂S.wk (𝐂S.wk γ₂)) ⊢ e₂ ∶ U ∣ ϵ')
-      × ((h : 𝔽 N) → ¬ Unr (Γ h) → count h γ₁ + count h γ₂ ≤ count h α)
+      × ((h : 𝔽 N) → ¬ Unr (lookup Γ h) → count h γ₁ + count h γ₂ ≤ count h α)
 inv-letpair (T-LetPair {d = d} p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e₁ ⊢e₂) =
   γ₁ , γ₂ , p/s , d , (_ , _ , ⊢e₁) , (_ , _ , _ , _ , ⊢e₂) ,
     λ h _ → ≤-reflexive (sym (count-join-PS p/s h γ₁ γ₂))
@@ -121,7 +121,7 @@ inv-case : ∀ {N} {Γ : Ctx N} {α : Struct N} {e : Tm N} {e₁ e₂ : Tm (suc 
       (∃[ T₁ ] ∃[ ϵ₁ ] Γ ; γ₁ ⊢ e ∶ T₁ ∣ ϵ₁)
       × (∃[ T₁ ] ∃[ U ] ∃[ ϵ' ] (T₁ ⸴ Γ) ; join p/s (` zero) (𝐂S.wk γ₂) ⊢ e₁ ∶ U ∣ ϵ')
       × (∃[ T₂ ] ∃[ U ] ∃[ ϵ' ] (T₂ ⸴ Γ) ; join p/s (` zero) (𝐂S.wk γ₂) ⊢ e₂ ∶ U ∣ ϵ')
-      × ((h : 𝔽 N) → ¬ Unr (Γ h) → count h γ₁ + count h γ₂ ≤ count h α)
+      × ((h : 𝔽 N) → ¬ Unr (lookup Γ h) → count h γ₁ + count h γ₂ ≤ count h α)
 inv-case (T-Case p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e ⊢e₁ ⊢e₂) =
   γ₁ , γ₂ , p/s , (_ , _ , ⊢e) , (_ , _ , _ , ⊢e₁) , (_ , _ , _ , ⊢e₂) ,
     λ h _ → ≤-reflexive (sym (count-join-PS p/s h γ₁ γ₂))
@@ -152,8 +152,8 @@ app₂-cong refl = cong (app₂ _ _) (funext (λ x → Value-irr))
 strengthen-frame : ∀ {N} {Γ : Ctx N} {α : Struct N} {t : Tm N} {T ϵ}
   (E : Frame* N) → Γ ; α ⊢ E [ t ]* ∶ T ∣ ϵ
   → Σ[ β ∈ Struct N ] (∃[ T₀ ] ∃[ ϵ₀ ] Γ ; β ⊢ t ∶ T₀ ∣ ϵ₀)
-      × ((h : 𝔽 N) → ¬ Unr (Γ h) → count h β ≤ count h α)
-      × ((h : 𝔽 N) → ¬ Unr (Γ h) → count h α ≤ count h β
+      × ((h : 𝔽 N) → ¬ Unr (lookup Γ h) → count h β ≤ count h α)
+      × ((h : 𝔽 N) → ¬ Unr (lookup Γ h) → count h α ≤ count h β
          → {k : ℕ} (ρ : k →ᵣ N) → Inverter ρ h → Σ[ E₀ ∈ Frame* k ] E ≡ E₀ ⋯ᶠ* ρ)
 strengthen-frame [] ⊢t =
   _ , (_ , _ , ⊢t) , (λ h _ → ≤-refl) , (λ h _ _ ρ inv → [] , refl)
@@ -269,7 +269,7 @@ strengthen-frame (L._∷_ (`case□`of⟨ e₁ ; e₂ ⟩) E') ⊢E =
 -- A variable's typing context counts that variable at least as much as its
 -- canonical singleton context.
 inv-var-count : ∀ {N} {Γ : Ctx N} {α : Struct N} {x : 𝔽 N} {T ϵ}
-  → Γ ; α ⊢ ` x ∶ T ∣ ϵ → (h : 𝔽 N) → ¬ Unr (Γ h) → count h (` x) ≤ count h α
+  → Γ ; α ⊢ ` x ∶ T ∣ ϵ → (h : 𝔽 N) → ¬ Unr (lookup Γ h) → count h (` x) ≤ count h α
 inv-var-count (T-Var _ _)   h _  = ≤-refl
 inv-var-count (T-Conv _ _ d) h ¬u = inv-var-count d h ¬u
 inv-var-count (T-Weaken γ≤ d) h ¬u = ≤-trans (inv-var-count d h ¬u) (≼⇒count≤ ¬u γ≤)
@@ -285,18 +285,18 @@ fn-lsplit-dom (T-Weaken _ d) = fn-lsplit-dom d
 
 -- A variable's type is ≃-related to its context entry.
 arg-type : ∀ {N} {Γ : Ctx N} {β : Struct N} {x : 𝔽 N} {T ϵ}
-  → Γ ; β ⊢ ` x ∶ T ∣ ϵ → Γ x ≃ T
+  → Γ ; β ⊢ ` x ∶ T ∣ ϵ → lookup Γ x ≃ T
 arg-type (T-Var _ T-eq)   = subst (_ ≃_) T-eq ≃-refl
 arg-type (T-Conv T≃ _ d)  = ≃-trans (arg-type d) T≃
 arg-type (T-Weaken _ d)   = arg-type d
 
 -- The consumed lsplit handle has a non-unrestricted type.
 lsplit-app-nonUnr : ∀ {N} {Γ : Ctx N} {β : Struct N} {dir} {s : 𝕊 0} {x : 𝔽 N} {T ϵ}
-  → Γ ; β ⊢ K (`lsplit s) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
+  → Γ ; β ⊢ K (`lsplit s) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (lookup Γ x)
 lsplit-app-nonUnr d = go d
   where
     go : ∀ {N} {Γ : Ctx N} {β : Struct N} {dir} {s : 𝕊 0} {x : 𝔽 N} {T ϵ}
-       → Γ ; β ⊢ K (`lsplit s) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
+       → Γ ; β ⊢ K (`lsplit s) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (lookup Γ x)
     go (T-AppUnr _ _ ⊢fn ⊢arg) u =
       let s′ , eq = fn-lsplit-dom ⊢fn
       in ¬Unr-seq (unr-≃ (≃-trans (arg-type ⊢arg) (≃-sym eq)) u)
@@ -323,11 +323,11 @@ fn-rsplit-dom (T-Weaken _ d) = fn-rsplit-dom d
 
 -- The consumed rsplit handle has a non-unrestricted type.
 rsplit-app-nonUnr : ∀ {N} {Γ : Ctx N} {β : Struct N} {dir} {s : 𝕊 0} {x : 𝔽 N} {T ϵ}
-  → Γ ; β ⊢ K (`rsplit s) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
+  → Γ ; β ⊢ K (`rsplit s) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (lookup Γ x)
 rsplit-app-nonUnr d = go d
   where
     go : ∀ {N} {Γ : Ctx N} {β : Struct N} {dir} {s : 𝕊 0} {x : 𝔽 N} {T ϵ}
-       → Γ ; β ⊢ K (`rsplit s) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
+       → Γ ; β ⊢ K (`rsplit s) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (lookup Γ x)
     go (T-AppUnr _ _ ⊢fn ⊢arg) u =
       let s′ , eq = fn-rsplit-dom ⊢fn
       in ¬Unr-seq (unr-≃ (≃-trans (arg-type ⊢arg) (≃-sym eq)) u)
