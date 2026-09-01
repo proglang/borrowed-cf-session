@@ -7,9 +7,11 @@ open import BorrowedCF.Prelude
 import BorrowedCF.Processes.Typed as Typed
 import BorrowedCF.Processes.TranslationSoup as Translation
 import BorrowedCF.Processes.UntypedSoup as Soup
+import BorrowedCF.Reduction.ExpressionsSoup as SoupExpression
 import BorrowedCF.Terms.BaseSoup as SoupTerm
 open import BorrowedCF.Simulation.ForwardSoup.Image
   using (SoupImage; canonicalChannels; channelEmbedding; live-channel)
+open import BorrowedCF.Simulation.ForwardSoup.Expressions using (ValueEnv)
 
 open Nat.Variables
 open Fin.Patterns
@@ -46,6 +48,46 @@ UB-head (suc b) (b′ ∷ B) r c e₁ e₂
   with Translation.UB[ b′ ∷ B ] r
          (SoupTerm.`phi (r , Translation.syncs (b′ ∷ B)) , c , e₂)
 ... | sigma , flags = SoupTerm.* , refl
+
+chanTriple-value :
+  ∀ {e₁ e₂ : SoupTerm.Tm n} {c : 𝔽 n} →
+  SoupExpression.Value e₁ → SoupExpression.Value e₂ →
+  SoupExpression.Value (Translation.chanTriple (e₁ , c , e₂))
+chanTriple-value V₁ V₂ =
+  SoupExpression.V-⊗ (SoupExpression.V-⊗ V₁ SoupExpression.V-`) V₂
+
+Ub-Value :
+  ∀ b {e₁ e₂ : SoupTerm.Tm n} {c : 𝔽 n} →
+  SoupExpression.Value e₁ → SoupExpression.Value e₂ →
+  ValueEnv (Translation.Ub[ b ] (e₁ , c , e₂))
+Ub-Value zero V₁ V₂ ()
+Ub-Value (suc zero) V₁ V₂ zero = chanTriple-value V₁ V₂
+Ub-Value (suc (suc b)) V₁ V₂ zero =
+  chanTriple-value V₁ SoupExpression.V-K
+Ub-Value (suc (suc b)) V₁ V₂ (suc x) =
+  Ub-Value (suc b) SoupExpression.V-K V₂ x
+
+UB-Value :
+  ∀ (B : Typed.BindGroup) (r : 𝔽 n)
+    {e₁ e₂ : SoupTerm.Tm n} {c : 𝔽 n} →
+  SoupExpression.Value e₁ → SoupExpression.Value e₂ →
+  ValueEnv (proj₁ (Translation.UB[ B ] r (e₁ , c , e₂)))
+UB-Value [] r V₁ V₂ ()
+UB-Value (b ∷ []) r {e₁} {e₂} {c} V₁ V₂ =
+  subst
+    (λ k → ValueEnv (Translation.Ub[ k ] (e₁ , c , e₂)))
+    (sym (+-identityʳ b))
+    (Ub-Value b V₁ V₂)
+UB-Value (b ∷ B@(b′ ∷ B′)) r {e₁} {e₂} {c} V₁ V₂ y
+  with Translation.UB[ B ] r
+         (SoupTerm.`phi (r , Translation.syncs B) , c , e₂) in ubEq
+     | UB-Value B r SoupExpression.V-phi V₂
+... | sigma , flags | Vsigma with Fin.splitAt b y
+...   | inj₁ x = Ub-Value b V₁ SoupExpression.V-phi x
+...   | inj₂ x =
+  subst SoupExpression.Value
+    (cong (λ result → proj₁ result x) ubEq)
+    (Vsigma x)
 
 flatten-channel-open :
   (P : Typed.Proc n)
