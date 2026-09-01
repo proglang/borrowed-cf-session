@@ -9,6 +9,8 @@ import BorrowedCF.Processes.TranslationSoup as Translation
 
 open Nat.Variables
 
+variable a : ℕ
+
 -- A left process context.  The first index is the arity of the hole and the
 -- second index is the arity of the process obtained after plugging it.
 data ProcessContext : ℕ → ℕ → Set where
@@ -96,3 +98,19 @@ processCount-plug-cong (par context R) equal =
     (processCount-plug-cong context equal)
 processCount-plug-cong (bind B₁ B₂ context) equal =
   processCount-plug-cong context equal
+
+compose :
+  ProcessContext a n → ProcessContext k a → ProcessContext k n
+compose hole inner = inner
+compose (par outer Q) inner = par (compose outer inner) Q
+compose (bind B₁ B₂ outer) inner = bind B₁ B₂ (compose outer inner)
+
+plug-compose :
+  (outer : ProcessContext a n) (inner : ProcessContext k a)
+  (P : Typed.Proc k) →
+  plug (compose outer inner) P ≡ plug outer (plug inner P)
+plug-compose hole inner P = refl
+plug-compose (par outer Q) inner P =
+  cong (Typed._∥ Q) (plug-compose outer inner P)
+plug-compose (bind B₁ B₂ outer) inner P =
+  cong (Typed.ν B₁ B₂) (plug-compose outer inner P)
