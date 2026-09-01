@@ -19,6 +19,9 @@ import BorrowedCF.Reduction.ExpressionsSoup as SoupExpression
 
 open Nat.Variables
 
+private variable
+  A : Set
+
 Focus : ℕ → ℕ → ℕ → Set
 Focus channelCount arity c =
   Vec (OrientedChannel c) channelCount ×
@@ -60,6 +63,86 @@ focusEnv :
   Translation.Env k (2 *ℕ c)
 focusEnv context P channels sigma =
   proj₂ (focus context P channels sigma)
+
+take-++ˡ :
+  (xs : Vec A n) (ys : Vec A m) →
+  V.take n (xs V.++ ys) ≡ xs
+take-++ˡ [] ys = refl
+take-++ˡ (x ∷ xs) ys = cong (x ∷_) (take-++ˡ xs ys)
+
+replaceFocusChannels :
+  (context : ProcessContext k n)
+  (P Q : Typed.Proc k) →
+  Vec (OrientedChannel c)
+    (Translation.channelCount (plug context P)) →
+  Vec (OrientedChannel c) (Translation.channelCount Q) →
+  Vec (OrientedChannel c)
+    (Translation.channelCount (plug context Q))
+replaceFocusChannels hole P Q source target = target
+replaceFocusChannels (par context R) P Q source target =
+  replaceFocusChannels context P Q
+    (V.take (Translation.channelCount (plug context P)) source) target V.++
+  V.drop (Translation.channelCount (plug context P)) source
+replaceFocusChannels (bind B₁ B₂ context) P Q
+  (channel ∷ source) target =
+  channel ∷ replaceFocusChannels context P Q source target
+
+focusChannels-replace :
+  (context : ProcessContext k n)
+  (P Q : Typed.Proc k)
+  (source : Vec (OrientedChannel c)
+    (Translation.channelCount (plug context P)))
+  (target : Vec (OrientedChannel c) (Translation.channelCount Q))
+  (sigma : Translation.Env n (2 *ℕ c)) →
+  focusChannels context Q
+    (replaceFocusChannels context P Q source target) sigma ≡ target
+focusChannels-replace hole P Q source target sigma = refl
+focusChannels-replace (par context R) P Q source target sigma
+  rewrite take-++ˡ
+    (replaceFocusChannels context P Q
+      (V.take (Translation.channelCount (plug context P)) source) target)
+    (V.drop (Translation.channelCount (plug context P)) source)
+  = focusChannels-replace context P Q
+      (V.take (Translation.channelCount (plug context P)) source)
+      target sigma
+focusChannels-replace (bind B₁ B₂ context) P Q
+  (channel ∷ source) target sigma
+  with Translation.UB[ B₁ ] (physicalEndpoint channel zero)
+         (SoupTerm.* , physicalEndpoint channel zero , SoupTerm.*)
+     | Translation.UB[ B₂ ] (physicalEndpoint channel (suc zero))
+         (SoupTerm.* , physicalEndpoint channel (suc zero) , SoupTerm.*)
+... | sigma₁ , flags₁ | sigma₂ , flags₂ =
+  focusChannels-replace context P Q source target
+    ((sigma₁ Translation.++ₛ sigma₂) Translation.++ₛ sigma)
+
+focusEnv-replace :
+  (context : ProcessContext k n)
+  (P Q : Typed.Proc k)
+  (source : Vec (OrientedChannel c)
+    (Translation.channelCount (plug context P)))
+  (target : Vec (OrientedChannel c) (Translation.channelCount Q))
+  (sigma : Translation.Env n (2 *ℕ c)) →
+  focusEnv context Q
+    (replaceFocusChannels context P Q source target) sigma ≡
+  focusEnv context P source sigma
+focusEnv-replace hole P Q source target sigma = refl
+focusEnv-replace (par context R) P Q source target sigma
+  rewrite take-++ˡ
+    (replaceFocusChannels context P Q
+      (V.take (Translation.channelCount (plug context P)) source) target)
+    (V.drop (Translation.channelCount (plug context P)) source)
+  = focusEnv-replace context P Q
+      (V.take (Translation.channelCount (plug context P)) source)
+      target sigma
+focusEnv-replace (bind B₁ B₂ context) P Q
+  (channel ∷ source) target sigma
+  with Translation.UB[ B₁ ] (physicalEndpoint channel zero)
+         (SoupTerm.* , physicalEndpoint channel zero , SoupTerm.*)
+     | Translation.UB[ B₂ ] (physicalEndpoint channel (suc zero))
+         (SoupTerm.* , physicalEndpoint channel (suc zero) , SoupTerm.*)
+... | sigma₁ , flags₁ | sigma₂ , flags₂ =
+  focusEnv-replace context P Q source target
+    ((sigma₁ Translation.++ₛ sigma₂) Translation.++ₛ sigma)
 
 focusEnv-Value :
   (context : ProcessContext k n) (P : Typed.Proc k)
