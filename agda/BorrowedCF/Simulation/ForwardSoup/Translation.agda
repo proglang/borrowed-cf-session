@@ -8,7 +8,8 @@ import BorrowedCF.Processes.Typed as Typed
 import BorrowedCF.Processes.TranslationSoup as Translation
 import BorrowedCF.Processes.UntypedSoup as Soup
 import BorrowedCF.Terms.BaseSoup as SoupTerm
-open import BorrowedCF.Simulation.ForwardSoup.Image using (canonicalChannels)
+open import BorrowedCF.Simulation.ForwardSoup.Image
+  using (SoupImage; canonicalChannels; channelEmbedding; live-channel)
 
 open Nat.Variables
 
@@ -62,3 +63,10 @@ canonical-channel-open :
   proj₁ (lookup (canonicalChannels P) i) ≡ true
 canonical-channel-open P i =
   flatten-channel-open P (V.allFin (Translation.channelCount P)) (λ ()) i
+
+image-channel-open :
+  {P : Typed.Proc 0} {C : Soup.Config n m} →
+  (image : SoupImage P C) (i : 𝔽 (Translation.channelCount P)) →
+  proj₁ (lookup (Soup.channels C) (channelEmbedding image i)) ≡ true
+image-channel-open {P = P} image i =
+  cong proj₁ (live-channel image i) ■ canonical-channel-open P i
