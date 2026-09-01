@@ -4,6 +4,7 @@ open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Maybe.Properties using (just-injective)
 open import Data.Nat using () renaming (_*_ to _*ℕ_)
 import Data.Fin.Properties as FinP
+import Data.Vec.Properties as VecP
 
 open import BorrowedCF.Prelude
 
@@ -17,6 +18,64 @@ open import BorrowedCF.Simulation.ForwardSoup.LocalImage
 
 open Nat.Variables
 open Fin.Patterns
+
+private variable A : Set
+
+rotate : ∀ p {q} → Vec A (p + q) → Vec A (q + p)
+rotate p xs = V.drop p xs V.++ V.take p xs
+
+take-++ˡ : (xs : Vec A n) (ys : Vec A m) →
+  V.take n (xs V.++ ys) ≡ xs
+take-++ˡ [] ys = refl
+take-++ˡ (x ∷ xs) ys = cong (x ∷_) (take-++ˡ xs ys)
+
+drop-++ˡ : (xs : Vec A n) (ys : Vec A m) →
+  V.drop n (xs V.++ ys) ≡ ys
+drop-++ˡ [] ys = refl
+drop-++ˡ (x ∷ xs) ys = drop-++ˡ xs ys
+
+swap-↑ˡ : (p : ℕ) (i : 𝔽 n) →
+  Fin.swap n (i ↑ˡ p) ≡ p ↑ʳ i
+swap-↑ˡ p i =
+  cong (Fin.join p _ ∘ Sum.swap) (Fin.splitAt-↑ˡ _ i p)
+
+swap-↑ʳ : (q : ℕ) (i : 𝔽 n) →
+  Fin.swap q (q ↑ʳ i) ≡ i ↑ˡ q
+swap-↑ʳ q i =
+  cong (Fin.join _ q ∘ Sum.swap) (Fin.splitAt-↑ʳ q _ i)
+
+lookup-drop :
+  (p : ℕ) {q : ℕ} (xs : Vec A (p + q)) (i : 𝔽 q) →
+  lookup (V.drop p xs) i ≡ lookup xs (p ↑ʳ i)
+lookup-drop p xs i =
+  sym (V.lookup-++ʳ (V.take p xs) (V.drop p xs) i) ■
+  cong (λ ys → lookup ys (p ↑ʳ i)) (V.take++drop≡id p xs)
+
+lookup-take :
+  (p : ℕ) {q : ℕ} (xs : Vec A (p + q)) (i : 𝔽 p) →
+  lookup (V.take p xs) i ≡ lookup xs (i ↑ˡ q)
+lookup-take p {q} xs i =
+  sym (V.lookup-++ˡ (V.take p xs) (V.drop p xs) i) ■
+  cong (λ ys → lookup ys (i ↑ˡ q)) (V.take++drop≡id p xs)
+
+lookup-rotate-split :
+  (p : ℕ) {q : ℕ} (xs : Vec A (p + q))
+  (part : 𝔽 q ⊎ 𝔽 p) →
+  lookup (rotate p xs) (Fin.join q p part) ≡
+  lookup xs (Fin.join p q (Sum.swap part))
+lookup-rotate-split p xs (inj₁ j) =
+  V.lookup-++ˡ (V.drop p xs) (V.take p xs) j ■
+  lookup-drop p xs j
+lookup-rotate-split p xs (inj₂ j) =
+  V.lookup-++ʳ (V.drop p xs) (V.take p xs) j ■
+  lookup-take p xs j
+
+lookup-rotate :
+  (p : ℕ) {q : ℕ} (xs : Vec A (p + q)) (i : 𝔽 (q + p)) →
+  lookup (rotate p xs) i ≡ lookup xs (Fin.swap q i)
+lookup-rotate p {q} xs i =
+  cong (lookup (rotate p xs)) (sym (Fin.join-splitAt q p i)) ■
+  lookup-rotate-split p xs (Fin.splitAt q i)
 
 unitProcess : ∀ {n} → Typed.Proc n
 unitProcess = Typed.⟪ Source.K Source.`unit ⟫
