@@ -1,6 +1,7 @@
 module BorrowedCF.Simulation.ForwardSoup.LocalImage.Properties where
 
 open import Data.Nat using () renaming (_*_ to _*ℕ_)
+open import Data.Maybe using (just)
 
 open import BorrowedCF.Prelude
 
@@ -68,8 +69,8 @@ initialLocalImage P = record
   { channelEmbedding-injective = λ {i} {j} equal →
       sym (forwardPhysical-allFin i) ■ equal ■
       forwardPhysical-allFin j
-  ; threadEmbedding = id
-  ; threadEmbedding-injective = λ equal → equal
+  ; threadEmbedding = just
+  ; threadEmbedding-injective = λ { refl refl → refl }
   ; live-channel = λ i →
       cong
         (lookup (proj₁ (Translation.flatten P
@@ -78,10 +79,10 @@ initialLocalImage P = record
       cong (λ result → lookup (proj₁ result) i)
         (sym (flattenOriented-forward P
           (V.allFin (Translation.channelCount P)) (λ ())))
-  ; live-thread = λ j →
-      cong (λ result → lookup (proj₂ result) j)
+  ; live-thread = λ j → present j refl
+      (cong (λ result → lookup (proj₂ result) j)
         (sym (flattenOriented-forward P
-          (V.allFin (Translation.channelCount P)) (λ ())))
+          (V.allFin (Translation.channelCount P)) (λ ()))))
   ; garbage-channel = λ i outside _ →
       ⊥-elim (outside i (forwardPhysical-allFin i))
   ; garbage-thread = λ j outside _ →

@@ -223,9 +223,9 @@ focus-image {P = P} {context = context} {channels = channels}
              (sym (focus-logical-channel context P channels sigma j))))
   ; threadEmbedding =
       threadEmbedding image ∘ threadInContext context P
-  ; threadEmbedding-injective = λ equal →
+  ; threadEmbedding-injective = λ equalᵢ equalⱼ →
       threadInContext-injective context P
-        (threadEmbedding-injective image equal)
+        (threadEmbedding-injective image equalᵢ equalⱼ)
   ; live-channel = λ i →
       cong (lookup (Soup.channels C))
         (sym (cong physicalChannel
@@ -233,8 +233,13 @@ focus-image {P = P} {context = context} {channels = channels}
       live-channel image (channelInContext context P i) ■
       focus-channel context P channels sigma i
   ; live-thread = λ i →
-      live-thread image (threadInContext context P i) ■
-      focus-thread context P channels sigma i
+      case live-thread image (threadInContext context P i) of λ where
+        (present l embedded live) →
+          present l embedded
+            (live ■ focus-thread context P channels sigma i)
+        (omitted omittedEq unitEq) →
+          omitted omittedEq
+            (sym (focus-thread context P channels sigma i) ■ unitEq)
   ; garbage-channel = λ _ _ notAmbient →
       ⊥-elim (notAmbient tt)
   ; garbage-thread = λ _ _ notAmbient →

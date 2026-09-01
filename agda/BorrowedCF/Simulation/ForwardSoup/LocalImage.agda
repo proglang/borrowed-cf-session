@@ -1,6 +1,7 @@
 module BorrowedCF.Simulation.ForwardSoup.LocalImage where
 
 open import Data.Nat using () renaming (_*_ to _*ℕ_)
+open import Data.Maybe using (Maybe; just; nothing)
 
 open import BorrowedCF.Prelude
 
@@ -67,6 +68,25 @@ flattenOriented (Typed.ν B₁ B₂ P) (channel ∷ channels) sigma
 LocalOutside : {a b : ℕ} → (𝔽 a → 𝔽 b) → 𝔽 b → Set
 LocalOutside embedding i = (k : _) → embedding k ≢ i
 
+OptionalOutside : {a b : ℕ} → (𝔽 a → Maybe (𝔽 b)) → 𝔽 b → Set
+OptionalOutside embedding i = (k : _) → embedding k ≢ just i
+
+data OptionalThreadImage
+  {n m : ℕ}
+  (threads : Vec (Soup.Thread n) m)
+  (slot : Maybe (𝔽 m))
+  (expected : Soup.Thread n) : Set where
+  present :
+    (l : 𝔽 m) →
+    slot ≡ just l →
+    lookup threads l ≡ expected →
+    OptionalThreadImage threads slot expected
+
+  omitted :
+    slot ≡ nothing →
+    expected ≡ SoupTerm.K Source.`unit →
+    OptionalThreadImage threads slot expected
+
 record LocalImage
   {k n m : ℕ}
   (P : Typed.Proc k)
@@ -82,9 +102,12 @@ record LocalImage
       physicalChannel (lookup logicalChannels j) →
       i ≡ j
 
-    threadEmbedding : 𝔽 (Translation.processCount P) → 𝔽 m
+    threadEmbedding : 𝔽 (Translation.processCount P) → Maybe (𝔽 m)
     threadEmbedding-injective :
-      ∀ {i j} → threadEmbedding i ≡ threadEmbedding j → i ≡ j
+      ∀ {i j l} →
+      threadEmbedding i ≡ just l →
+      threadEmbedding j ≡ just l →
+      i ≡ j
 
     live-channel :
       (i : 𝔽 (Translation.channelCount P)) →
@@ -94,8 +117,8 @@ record LocalImage
 
     live-thread :
       (j : 𝔽 (Translation.processCount P)) →
-      lookup (Soup.threads C) (threadEmbedding j) ≡
-      lookup (proj₂ (flattenOriented P logicalChannels sigma)) j
+      OptionalThreadImage {n = n} (Soup.threads C) (threadEmbedding j)
+        (lookup (proj₂ (flattenOriented P logicalChannels sigma)) j)
 
     garbage-channel :
       (i : 𝔽 n) →
@@ -106,7 +129,7 @@ record LocalImage
 
     garbage-thread :
       (j : 𝔽 m) →
-      LocalOutside threadEmbedding j →
+      OptionalOutside threadEmbedding j →
       ¬ ambientThread j →
       lookup (Soup.threads C) j ≡ SoupTerm.K Source.`unit
 
