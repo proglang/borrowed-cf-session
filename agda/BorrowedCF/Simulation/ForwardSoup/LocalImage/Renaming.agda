@@ -19,23 +19,18 @@ open import BorrowedCF.Simulation.ForwardSoup.Translation
 
 open Nat.Variables
 
-rename-image :
+renaming-reindex :
   {P : Typed.Proc n} {rho : 𝔽 n → 𝔽 n′}
   {sourceChannels :
     Vec (OrientedChannel c) (Translation.channelCount P)}
   {sourceEnv : Translation.Env n′ (2 *ℕ c)}
-  {targetEnv : Translation.Env n (2 *ℕ c)}
-  {ambientChannel : 𝔽 c → Set} {ambientThread : 𝔽 m → Set}
-  {C : Soup.Config c m} →
+  {targetEnv : Translation.Env n (2 *ℕ c)} →
   ((x : 𝔽 n) → sourceEnv (rho x) ≡ targetEnv x) →
-  LocalImage P sourceChannels targetEnv
-    ambientChannel ambientThread C →
-  LocalImage (P Typed.⋯ₚ rho)
-    (untransportChannels P rho sourceChannels) sourceEnv
-    ambientChannel ambientThread C
-rename-image {P = P} {rho = rho} {sourceChannels = sourceChannels}
-  {sourceEnv = sourceEnv} {targetEnv = targetEnv} coherent image =
-  reindex-image reindex image
+  ImageReindex {P = P} {Q = P Typed.⋯ₚ rho}
+    sourceChannels (untransportChannels P rho sourceChannels)
+    targetEnv sourceEnv
+renaming-reindex {P = P} {rho = rho} {sourceChannels = sourceChannels}
+  {sourceEnv = sourceEnv} {targetEnv = targetEnv} coherent = reindex
   where
   targetChannels = untransportChannels P rho sourceChannels
   channelEq = channelCount-rename P rho
@@ -99,3 +94,20 @@ rename-image {P = P} {rho = rho} {sourceChannels = sourceChannels}
         cong (lookup targetThreads)
           (Fin.cast-involutive (sym processEq) processEq i)
     }
+
+rename-image :
+  {P : Typed.Proc n} {rho : 𝔽 n → 𝔽 n′}
+  {sourceChannels :
+    Vec (OrientedChannel c) (Translation.channelCount P)}
+  {sourceEnv : Translation.Env n′ (2 *ℕ c)}
+  {targetEnv : Translation.Env n (2 *ℕ c)}
+  {ambientChannel : 𝔽 c → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config c m} →
+  ((x : 𝔽 n) → sourceEnv (rho x) ≡ targetEnv x) →
+  LocalImage P sourceChannels targetEnv
+    ambientChannel ambientThread C →
+  LocalImage (P Typed.⋯ₚ rho)
+    (untransportChannels P rho sourceChannels) sourceEnv
+    ambientChannel ambientThread C
+rename-image coherent image =
+  reindex-image (renaming-reindex coherent) image
