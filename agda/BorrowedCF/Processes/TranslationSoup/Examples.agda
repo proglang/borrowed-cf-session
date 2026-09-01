@@ -20,7 +20,7 @@ restriction :
   ≡
   ( 1 , 1
   , 𝐒.config
-      ((false , [] , []) ∷ [])
+      ((true , [] , []) ∷ [])
       ( ( 𝐓Soup.chanTriple
             (𝐒Tm.* , 𝐒.leftEnd (Fin.zero {n = 0}) , 𝐒Tm.*)
           𝐒Tm.⊗
@@ -39,7 +39,7 @@ flagged-restriction :
   ≡
   ( 1 , 1
   , 𝐒.config
-      ( ( false
+      ( ( true
         , 𝐒.acq ∷ 𝐒.drop ∷ []
         , 𝐒.acq ∷ []
         ) ∷ []
@@ -87,7 +87,7 @@ local-ref-rejected = refl
 oneChannel : 𝐒.Config 1 0
 oneChannel =
   𝐒.config
-    ((false , 𝐒.drop ∷ [] , 𝐒.acq ∷ []) ∷ [])
+    ((true , 𝐒.drop ∷ [] , 𝐒.acq ∷ []) ∷ [])
     []
 
 endpoint-order :

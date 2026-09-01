@@ -109,7 +109,7 @@ flatten (𝐓.ν B₁ B₂ P) (i ∷ cs) σ
 ... | σ₁ , fs₁ | σ₂ , fs₂
   with flatten P cs ((σ₁ ++ₛ σ₂) ++ₛ σ)
 ... | channels , threads =
-  (false , fs₁ , fs₂) ∷ channels , threads
+  (true , fs₁ , fs₂) ∷ channels , threads
 
 SoupConfig : Set
 SoupConfig = Σ[ c ∈ ℕ ] Σ[ m ∈ ℕ ] 𝐒.Config c m

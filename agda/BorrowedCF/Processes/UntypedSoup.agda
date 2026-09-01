@@ -22,7 +22,7 @@ Thread n = Tm (2 *ℕ n)
 record Config (n m : ℕ) : Set where
   constructor config
   field
-    -- True means that the channel is closed.  The two lists belong to
+    -- True means that the channel is live.  The two lists belong to
     -- endpoints 2i and 2i+1, respectively.
     channels : Vec Channel n
     threads : Vec (Thread n) m
@@ -38,8 +38,8 @@ leftEnd i = endpoint i zero
 rightEnd : 𝔽 n → 𝔽 (2 *ℕ n)
 rightEnd i = endpoint i (suc zero)
 
-channelClosed : Config n m → 𝔽 n → Bool
-channelClosed C i = proj₁ (lookup (channels C) i)
+channelOpen : Config n m → 𝔽 n → Bool
+channelOpen C i = proj₁ (lookup (channels C) i)
 
 channelFlagLists : Channel → Vec (List Flag) 2
 channelFlagLists (_ , fs₀ , fs₁) = fs₀ ∷ fs₁ ∷ []
