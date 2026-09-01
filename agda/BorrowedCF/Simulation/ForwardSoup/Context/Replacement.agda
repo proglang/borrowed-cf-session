@@ -87,6 +87,24 @@ ThreadTargetPosition context P Q j =
   (Σ[ l ∈ 𝔽 (Translation.processCount (plug context P)) ]
     ThreadContextPair P Q context j l)
 
+ChannelSourcePosition :
+  (context : ProcessContext k n) (P Q : Typed.Proc k) →
+  𝔽 (Translation.channelCount (plug context P)) → Set
+ChannelSourcePosition context P Q j =
+  (Σ[ i ∈ 𝔽 (Translation.channelCount P) ]
+    channelInContext context P i ≡ j) ⊎
+  (Σ[ l ∈ 𝔽 (Translation.channelCount (plug context Q)) ]
+    ChannelContextPair P Q context l j)
+
+ThreadSourcePosition :
+  (context : ProcessContext k n) (P Q : Typed.Proc k) →
+  𝔽 (Translation.processCount (plug context P)) → Set
+ThreadSourcePosition context P Q j =
+  (Σ[ i ∈ 𝔽 (Translation.processCount P) ]
+    threadInContext context P i ≡ j) ⊎
+  (Σ[ l ∈ 𝔽 (Translation.processCount (plug context Q)) ]
+    ThreadContextPair P Q context l j)
+
 channelTargetPosition :
   (context : ProcessContext k n) (P Q : Typed.Proc k)
   (j : 𝔽 (Translation.channelCount (plug context Q))) →
@@ -168,6 +186,90 @@ threadTargetPosition (par context R) P Q j
       (Translation.processCount R) j
 threadTargetPosition (bind B₁ B₂ context) P Q j
   with threadTargetPosition context P Q j
+... | inj₁ inside = inj₁ inside
+... | inj₂ (l , paired) = inj₂ (l , bind-inner paired)
+
+channelSourcePosition :
+  (context : ProcessContext k n) (P Q : Typed.Proc k)
+  (j : 𝔽 (Translation.channelCount (plug context P))) →
+  ChannelSourcePosition context P Q j
+channelSourcePosition hole P Q j = inj₁ (j , refl)
+channelSourcePosition (par context R) P Q j
+  with Fin.splitAt (Translation.channelCount (plug context P)) j in split
+... | inj₁ l = lift (channelSourcePosition context P Q l)
+  where
+  equal : l ↑ˡ Translation.channelCount R ≡ j
+  equal =
+    sym (cong (Fin.join (Translation.channelCount (plug context P))
+      (Translation.channelCount R)) split) ■
+    Fin.join-splitAt (Translation.channelCount (plug context P))
+      (Translation.channelCount R) j
+
+  lift : ChannelSourcePosition context P Q l →
+    ChannelSourcePosition (par context R) P Q j
+  lift (inj₁ (i , inside)) = inj₁
+    (i , (cong (λ z → z ↑ˡ Translation.channelCount R) inside ■ equal))
+  lift (inj₂ (s , paired)) = inj₂
+    (s ↑ˡ Translation.channelCount R ,
+     subst (λ z → ChannelContextPair P Q (par context R)
+       (s ↑ˡ Translation.channelCount R) z) equal (par-left paired))
+... | inj₂ r = inj₂
+  (Translation.channelCount (plug context Q) ↑ʳ r ,
+   subst (ChannelContextPair P Q (par context R)
+     (Translation.channelCount (plug context Q) ↑ʳ r)) equal
+     (par-right r))
+  where
+  equal : Translation.channelCount (plug context P) ↑ʳ r ≡ j
+  equal =
+    sym (cong (Fin.join (Translation.channelCount (plug context P))
+      (Translation.channelCount R)) split) ■
+    Fin.join-splitAt (Translation.channelCount (plug context P))
+      (Translation.channelCount R) j
+channelSourcePosition (bind B₁ B₂ context) P Q zero =
+  inj₂ (zero , bind-head)
+channelSourcePosition (bind B₁ B₂ context) P Q (suc j)
+  with channelSourcePosition context P Q j
+... | inj₁ (i , inside) = inj₁ (i , cong suc inside)
+... | inj₂ (l , paired) = inj₂ (suc l , bind-tail paired)
+
+threadSourcePosition :
+  (context : ProcessContext k n) (P Q : Typed.Proc k)
+  (j : 𝔽 (Translation.processCount (plug context P))) →
+  ThreadSourcePosition context P Q j
+threadSourcePosition hole P Q j = inj₁ (j , refl)
+threadSourcePosition (par context R) P Q j
+  with Fin.splitAt (Translation.processCount (plug context P)) j in split
+... | inj₁ l = lift (threadSourcePosition context P Q l)
+  where
+  equal : l ↑ˡ Translation.processCount R ≡ j
+  equal =
+    sym (cong (Fin.join (Translation.processCount (plug context P))
+      (Translation.processCount R)) split) ■
+    Fin.join-splitAt (Translation.processCount (plug context P))
+      (Translation.processCount R) j
+
+  lift : ThreadSourcePosition context P Q l →
+    ThreadSourcePosition (par context R) P Q j
+  lift (inj₁ (i , inside)) = inj₁
+    (i , (cong (λ z → z ↑ˡ Translation.processCount R) inside ■ equal))
+  lift (inj₂ (s , paired)) = inj₂
+    (s ↑ˡ Translation.processCount R ,
+     subst (λ z → ThreadContextPair P Q (par context R)
+       (s ↑ˡ Translation.processCount R) z) equal (par-left paired))
+... | inj₂ r = inj₂
+  (Translation.processCount (plug context Q) ↑ʳ r ,
+   subst (ThreadContextPair P Q (par context R)
+     (Translation.processCount (plug context Q) ↑ʳ r)) equal
+     (par-right r))
+  where
+  equal : Translation.processCount (plug context P) ↑ʳ r ≡ j
+  equal =
+    sym (cong (Fin.join (Translation.processCount (plug context P))
+      (Translation.processCount R)) split) ■
+    Fin.join-splitAt (Translation.processCount (plug context P))
+      (Translation.processCount R) j
+threadSourcePosition (bind B₁ B₂ context) P Q j
+  with threadSourcePosition context P Q j
 ... | inj₁ inside = inj₁ inside
 ... | inj₂ (l , paired) = inj₂ (l , bind-inner paired)
 
