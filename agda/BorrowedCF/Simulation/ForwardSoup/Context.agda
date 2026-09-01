@@ -72,3 +72,27 @@ threadInContext-injective (par context Q) P equal =
     (Fin.↑ˡ-injective (Translation.processCount Q) _ _ equal)
 threadInContext-injective (bind B₁ B₂ context) P equal =
   threadInContext-injective context P equal
+
+channelCount-plug-cong :
+  (context : ProcessContext k n) {P Q : Typed.Proc k} →
+  Translation.channelCount P ≡ Translation.channelCount Q →
+  Translation.channelCount (plug context P) ≡
+  Translation.channelCount (plug context Q)
+channelCount-plug-cong hole equal = equal
+channelCount-plug-cong (par context R) equal =
+  cong (_+ Translation.channelCount R)
+    (channelCount-plug-cong context equal)
+channelCount-plug-cong (bind B₁ B₂ context) equal =
+  cong suc (channelCount-plug-cong context equal)
+
+processCount-plug-cong :
+  (context : ProcessContext k n) {P Q : Typed.Proc k} →
+  Translation.processCount P ≡ Translation.processCount Q →
+  Translation.processCount (plug context P) ≡
+  Translation.processCount (plug context Q)
+processCount-plug-cong hole equal = equal
+processCount-plug-cong (par context R) equal =
+  cong (_+ Translation.processCount R)
+    (processCount-plug-cong context equal)
+processCount-plug-cong (bind B₁ B₂ context) equal =
+  processCount-plug-cong context equal
