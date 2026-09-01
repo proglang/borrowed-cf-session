@@ -1,5 +1,7 @@
 module BorrowedCF.Terms.BaseSoup where
 
+open import Data.Maybe using (Maybe; just; nothing)
+
 open import BorrowedCF.Prelude
 open import BorrowedCF.Types
 open import BorrowedCF.Terms.Base
@@ -10,28 +12,25 @@ open import BorrowedCF.Terms.Base
 
 open Nat.Variables
 
--- A phi cell is stored in one thread of a configuration.  Its reference
--- consists of that thread's index and the cell's position in its flag list.
--- The second component is checked against the configuration by UntypedSoup.
+-- A phi cell is stored at one channel endpoint.  Its reference consists of
+-- the endpoint's variable and the cell's position in that endpoint's list.
 PhiRef : ℕ → Set
-PhiRef m = 𝔽 m × ℕ
+PhiRef n = 𝔽 n × ℕ
 
--- The first index scopes ordinary expression variables, including free
--- channel endpoints.  The second scopes the thread component of PhiRef.
-data Tm (n m : ℕ) : Set where
-  `_ : 𝔽 n → Tm n m
-  `phi : PhiRef m → Tm n m
-  K : (c : Const) → Tm n m
-  ƛ : (e : Tm (1 + n) m) → Tm n m
-  μ : (e : Tm (1 + n) m) → Tm n m
-  _·⟨_⟩_ : (e₁ : Tm n m) (d : Dir) (e₂ : Tm n m) → Tm n m
-  _;_ : (e₁ e₂ : Tm n m) → Tm n m
-  _⊗_ : (e₁ e₂ : Tm n m) → Tm n m
-  `let_`in_ : (e₁ : Tm n m) (e₂ : Tm (1 + n) m) → Tm n m
-  `let⊗_`in_ : (e₁ : Tm n m) (e₂ : Tm (2 + n) m) → Tm n m
-  `inj : (i : Side) (e : Tm n m) → Tm n m
+data Tm (n : ℕ) : Set where
+  `_ : 𝔽 n → Tm n
+  `phi : PhiRef n → Tm n
+  K : (c : Const) → Tm n
+  ƛ : (e : Tm (1 + n)) → Tm n
+  μ : (e : Tm (1 + n)) → Tm n
+  _·⟨_⟩_ : (e₁ : Tm n) (d : Dir) (e₂ : Tm n) → Tm n
+  _;_ : (e₁ e₂ : Tm n) → Tm n
+  _⊗_ : (e₁ e₂ : Tm n) → Tm n
+  `let_`in_ : (e₁ : Tm n) (e₂ : Tm (1 + n)) → Tm n
+  `let⊗_`in_ : (e₁ : Tm n) (e₂ : Tm (2 + n)) → Tm n
+  `inj : (i : Side) (e : Tm n) → Tm n
   `case_`of⟨_;_⟩ :
-    (e : Tm n m) (e₁ e₂ : Tm (1 + n) m) → Tm n m
+    (e : Tm n) (e₁ e₂ : Tm (1 + n)) → Tm n
 
 pattern * = K `unit
 pattern _·ᴸ_ e₁ e₂ = e₁ ·⟨ L ⟩ e₂
@@ -42,13 +41,16 @@ liftRen : (𝔽 n → 𝔽 n′) → 𝔽 (1 + n) → 𝔽 (1 + n′)
 liftRen ρ zero = zero
 liftRen ρ (suc x) = suc (ρ x)
 
+renameRef : (𝔽 n → 𝔽 n′) → PhiRef n → PhiRef n′
+renameRef ρ (x , k) = ρ x , k
+
 infixl 5 _⋯ᵣ_
 
--- Ordinary renaming acts on channels and local expression variables.  Phi
--- references are independent of this namespace.
-_⋯ᵣ_ : Tm n m → (𝔽 n → 𝔽 n′) → Tm n′ m
+-- Channel endpoints and phi addresses share the same namespace.  In
+-- particular, both are weakened when passing under an expression binder.
+_⋯ᵣ_ : Tm n → (𝔽 n → 𝔽 n′) → Tm n′
 (` x) ⋯ᵣ ρ = ` ρ x
-(`phi r) ⋯ᵣ ρ = `phi r
+(`phi r) ⋯ᵣ ρ = `phi (renameRef ρ r)
 K c ⋯ᵣ ρ = K c
 ƛ e ⋯ᵣ ρ = ƛ (e ⋯ᵣ liftRen ρ)
 μ e ⋯ᵣ ρ = μ (e ⋯ᵣ liftRen ρ)
@@ -62,69 +64,79 @@ K c ⋯ᵣ ρ = K c
 (`case e `of⟨ e₁ ; e₂ ⟩) ⋯ᵣ ρ =
   `case (e ⋯ᵣ ρ) `of⟨ (e₁ ⋯ᵣ liftRen ρ) ; (e₂ ⋯ᵣ liftRen ρ) ⟩
 
-wk : Tm n m → Tm (1 + n) m
+wk : Tm n → Tm (1 + n)
 wk e = e ⋯ᵣ suc
 
-Sub : ℕ → ℕ → ℕ → Set
-Sub n n′ m = 𝔽 n → Tm n′ m
+-- Variable and phi occurrences need separate images: the latter carries an
+-- endpoint address, which an arbitrary variable substitution cannot provide.
+record Sub (n n′ : ℕ) : Set where
+  constructor sub
+  field
+    varImage : 𝔽 n → Tm n′
+    phiImage : PhiRef n → Tm n′
 
-liftSub : Sub n n′ m → Sub (1 + n) (1 + n′) m
-liftSub σ zero = ` zero
-liftSub σ (suc x) = wk (σ x)
+open Sub public
+
+liftSub : Sub n n′ → Sub (1 + n) (1 + n′)
+liftSub {n = n} {n′ = n′} σ = sub vars refs
+  where
+  vars : 𝔽 (1 + n) → Tm (1 + n′)
+  vars zero = ` zero
+  vars (suc x) = wk (varImage σ x)
+
+  refs : PhiRef (1 + n) → Tm (1 + n′)
+  refs (zero , k) = `phi (zero , k)
+  refs (suc x , k) = wk (phiImage σ (x , k))
 
 infixl 5 _⋯ₛ_
 
--- Substitution affects the ordinary namespace only.  This is the operation
--- used by expression reduction; PhiRef values remain pointers into Config.
-_⋯ₛ_ : Tm n m → Sub n n′ m → Tm n′ m
-(` x) ⋯ₛ σ = σ x
-(`phi r) ⋯ₛ σ = `phi r
+_⋯ₛ_ : Tm n → Sub n n′ → Tm n′
+(` x) ⋯ₛ σ = varImage σ x
+(`phi r) ⋯ₛ σ = phiImage σ r
 K c ⋯ₛ σ = K c
 ƛ e ⋯ₛ σ = ƛ (e ⋯ₛ liftSub σ)
 μ e ⋯ₛ σ = μ (e ⋯ₛ liftSub σ)
 (e₁ ·⟨ d ⟩ e₂) ⋯ₛ σ = (e₁ ⋯ₛ σ) ·⟨ d ⟩ (e₂ ⋯ₛ σ)
 (e₁ ; e₂) ⋯ₛ σ = (e₁ ⋯ₛ σ) ; (e₂ ⋯ₛ σ)
 (e₁ ⊗ e₂) ⋯ₛ σ = (e₁ ⋯ₛ σ) ⊗ (e₂ ⋯ₛ σ)
-(`let e₁ `in e₂) ⋯ₛ σ = `let (e₁ ⋯ₛ σ) `in (e₂ ⋯ₛ liftSub σ)
+(`let e₁ `in e₂) ⋯ₛ σ =
+  `let (e₁ ⋯ₛ σ) `in (e₂ ⋯ₛ liftSub σ)
 (`let⊗ e₁ `in e₂) ⋯ₛ σ =
   `let⊗ (e₁ ⋯ₛ σ) `in (e₂ ⋯ₛ liftSub (liftSub σ))
 (`inj i e) ⋯ₛ σ = `inj i (e ⋯ₛ σ)
 (`case e `of⟨ e₁ ; e₂ ⟩) ⋯ₛ σ =
   `case (e ⋯ₛ σ) `of⟨ (e₁ ⋯ₛ liftSub σ) ; (e₂ ⋯ₛ liftSub σ) ⟩
 
-renameRef : (𝔽 m → 𝔽 m′) → PhiRef m → PhiRef m′
-renameRef ρ (j , k) = ρ j , k
+ResolvedPhiRef : ℕ → Set
+ResolvedPhiRef n = Maybe (PhiRef n)
 
-infixl 5 _⋯phi_
+resolveRef : ∀ {n} d → PhiRef (d + n) → ResolvedPhiRef n
+resolveRef d (x , k) with Fin.splitAt d x
+... | inj₁ _ = nothing
+... | inj₂ y = just (y , k)
 
--- Thread renaming is separate: it changes only the owner component of phi
--- references and does not pass under expression binders.
-_⋯phi_ : Tm n m → (𝔽 m → 𝔽 m′) → Tm n m′
-(` x) ⋯phi ρ = ` x
-(`phi r) ⋯phi ρ = `phi (renameRef ρ r)
-K c ⋯phi ρ = K c
-ƛ e ⋯phi ρ = ƛ (e ⋯phi ρ)
-μ e ⋯phi ρ = μ (e ⋯phi ρ)
-(e₁ ·⟨ d ⟩ e₂) ⋯phi ρ = (e₁ ⋯phi ρ) ·⟨ d ⟩ (e₂ ⋯phi ρ)
-(e₁ ; e₂) ⋯phi ρ = (e₁ ⋯phi ρ) ; (e₂ ⋯phi ρ)
-(e₁ ⊗ e₂) ⋯phi ρ = (e₁ ⋯phi ρ) ⊗ (e₂ ⋯phi ρ)
-(`let e₁ `in e₂) ⋯phi ρ = `let (e₁ ⋯phi ρ) `in (e₂ ⋯phi ρ)
-(`let⊗ e₁ `in e₂) ⋯phi ρ = `let⊗ (e₁ ⋯phi ρ) `in (e₂ ⋯phi ρ)
-(`inj i e) ⋯phi ρ = `inj i (e ⋯phi ρ)
-(`case e `of⟨ e₁ ; e₂ ⟩) ⋯phi ρ =
-  `case (e ⋯phi ρ) `of⟨ (e₁ ⋯phi ρ) ; (e₂ ⋯phi ρ) ⟩
+-- Resolve references against the free-variable namespace of the enclosing
+-- process.  A reference to one of the d local expression binders is retained
+-- as nothing so that configuration well-formedness can reject it.
+phiRefsFrom : ∀ {n} d → Tm (d + n) → List (ResolvedPhiRef n)
+phiRefsFrom d (` x) = []
+phiRefsFrom d (`phi r) = resolveRef d r ∷ []
+phiRefsFrom d (K c) = []
+phiRefsFrom d (ƛ e) = phiRefsFrom (suc d) e
+phiRefsFrom d (μ e) = phiRefsFrom (suc d) e
+phiRefsFrom d (e₁ ·⟨ dir ⟩ e₂) =
+  phiRefsFrom d e₁ ++ phiRefsFrom d e₂
+phiRefsFrom d (e₁ ; e₂) = phiRefsFrom d e₁ ++ phiRefsFrom d e₂
+phiRefsFrom d (e₁ ⊗ e₂) = phiRefsFrom d e₁ ++ phiRefsFrom d e₂
+phiRefsFrom d (`let e₁ `in e₂) =
+  phiRefsFrom d e₁ ++ phiRefsFrom (suc d) e₂
+phiRefsFrom d (`let⊗ e₁ `in e₂) =
+  phiRefsFrom d e₁ ++ phiRefsFrom (suc (suc d)) e₂
+phiRefsFrom d (`inj i e) = phiRefsFrom d e
+phiRefsFrom d (`case e `of⟨ e₁ ; e₂ ⟩) =
+  phiRefsFrom d e ++
+  phiRefsFrom (suc d) e₁ ++
+  phiRefsFrom (suc d) e₂
 
-phiRefs : Tm n m → List (PhiRef m)
-phiRefs (` x) = []
-phiRefs (`phi r) = r ∷ []
-phiRefs (K c) = []
-phiRefs (ƛ e) = phiRefs e
-phiRefs (μ e) = phiRefs e
-phiRefs (e₁ ·⟨ d ⟩ e₂) = phiRefs e₁ ++ phiRefs e₂
-phiRefs (e₁ ; e₂) = phiRefs e₁ ++ phiRefs e₂
-phiRefs (e₁ ⊗ e₂) = phiRefs e₁ ++ phiRefs e₂
-phiRefs (`let e₁ `in e₂) = phiRefs e₁ ++ phiRefs e₂
-phiRefs (`let⊗ e₁ `in e₂) = phiRefs e₁ ++ phiRefs e₂
-phiRefs (`inj i e) = phiRefs e
-phiRefs (`case e `of⟨ e₁ ; e₂ ⟩) =
-  phiRefs e ++ phiRefs e₁ ++ phiRefs e₂
+phiRefs : Tm n → List (ResolvedPhiRef n)
+phiRefs = phiRefsFrom 0

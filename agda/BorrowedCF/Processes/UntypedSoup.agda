@@ -1,6 +1,7 @@
 module BorrowedCF.Processes.UntypedSoup where
 
 open import Data.List.Relation.Unary.All using (All)
+open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (_<_) renaming (_*_ to _*ℕ_)
 
 open import BorrowedCF.Prelude
@@ -11,21 +12,20 @@ open Nat.Variables
 data Flag : Set where
   drop acq : Flag
 
--- A thread stores its expression and the phi cells hosted by that thread.
--- References may point into the flag list of any thread in the configuration.
-Thread : ℕ → ℕ → Set
-Thread n m = Tm (2 *ℕ n) m × List Flag
+-- Each endpoint has its own phi-cell list.
+Channel : Set
+Channel = Bool × List Flag × List Flag
+
+Thread : ℕ → Set
+Thread n = Tm (2 *ℕ n)
 
 record Config (n m : ℕ) : Set where
   constructor config
   field
-    -- One state bit per channel.  True means that the channel is closed;
-    -- endpoint references remain 2i and 2i+1 in the term namespace.
-    channels : Vec Bool n
-
-    -- Every term shares the channel namespace and the thread namespace.
-    -- Its accompanying list contains the phi cells hosted by that thread.
-    threads : Vec (Thread n m) m
+    -- True means that the channel is closed.  The two lists belong to
+    -- endpoints 2i and 2i+1, respectively.
+    channels : Vec Channel n
+    threads : Vec (Thread n) m
 
 open Config public
 
@@ -39,23 +39,33 @@ rightEnd : 𝔽 n → 𝔽 (2 *ℕ n)
 rightEnd i = endpoint i (suc zero)
 
 channelClosed : Config n m → 𝔽 n → Bool
-channelClosed C i = lookup (channels C) i
+channelClosed C i = proj₁ (lookup (channels C) i)
 
-termAt : Config n m → 𝔽 m → Tm (2 *ℕ n) m
-termAt C j = proj₁ (lookup (threads C) j)
+channelFlagLists : Channel → Vec (List Flag) 2
+channelFlagLists (_ , fs₀ , fs₁) = fs₀ ∷ fs₁ ∷ []
 
-flagsAt : Config n m → 𝔽 m → List Flag
-flagsAt C j = proj₂ (lookup (threads C) j)
+endpointFlagLists : Config n m → Vec (List Flag) (2 *ℕ n)
+endpointFlagLists {n} C =
+  V.cast (Nat.*-comm n 2) (V.concat (V.map channelFlagLists (channels C)))
 
--- The slot component of PhiRef is deliberately extrinsic: its upper bound is
--- stored in the configuration rather than in the indices of Tm.  This keeps
--- Config indexed only by channel and thread counts.
-ValidPhiRef : Config n m → PhiRef m → Set
-ValidPhiRef C (j , k) = k < L.length (flagsAt C j)
+termAt : Config n m → 𝔽 m → Thread n
+termAt C j = lookup (threads C) j
+
+flagsAt : Config n m → 𝔽 (2 *ℕ n) → List Flag
+flagsAt C x = lookup (endpointFlagLists C) x
+
+ValidPhiRef : Config n m → PhiRef (2 *ℕ n) → Set
+ValidPhiRef C (x , k) = k < L.length (flagsAt C x)
+
+ValidResolvedPhiRef :
+  Config n m → ResolvedPhiRef (2 *ℕ n) → Set
+ValidResolvedPhiRef C nothing = ⊥
+ValidResolvedPhiRef C (just r) = ValidPhiRef C r
 
 record WellFormed (C : Config n m) : Set where
   field
     phiRefs-valid :
-      (j : 𝔽 m) → All (ValidPhiRef C) (phiRefs (termAt C j))
+      (j : 𝔽 m) →
+      All (ValidResolvedPhiRef C) (phiRefs (termAt C j))
 
 open WellFormed public
