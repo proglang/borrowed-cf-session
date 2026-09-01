@@ -114,6 +114,42 @@ transportProcesses-cast (Typed.ν B₁ B₂ P) ρ xs =
   transportProcesses-cast P
     (Source._↑*_ ρ (sum B₁ + sum B₂)) xs
 
+untransportChannels :
+  (P : Typed.Proc n) (ρ : 𝔽 n → 𝔽 n′) →
+  Vec A (Translation.channelCount P) →
+  Vec A (Translation.channelCount (P Typed.⋯ₚ ρ))
+untransportChannels P ρ =
+  V.cast (sym (channelCount-rename P ρ))
+
+untransportProcesses :
+  (P : Typed.Proc n) (ρ : 𝔽 n → 𝔽 n′) →
+  Vec A (Translation.processCount P) →
+  Vec A (Translation.processCount (P Typed.⋯ₚ ρ))
+untransportProcesses P ρ =
+  V.cast (sym (processCount-rename P ρ))
+
+transportChannels-untransport :
+  (P : Typed.Proc n) (ρ : 𝔽 n → 𝔽 n′)
+  (xs : Vec A (Translation.channelCount P)) →
+  transportChannels P ρ (untransportChannels P ρ xs) ≡ xs
+transportChannels-untransport P ρ xs =
+  transportChannels-cast P ρ (untransportChannels P ρ xs) ■
+  VecP.cast-trans
+    (sym (channelCount-rename P ρ)) (channelCount-rename P ρ) xs ■
+  VecP.cast-is-id
+    (sym (channelCount-rename P ρ) ■ channelCount-rename P ρ) xs
+
+transportProcesses-untransport :
+  (P : Typed.Proc n) (ρ : 𝔽 n → 𝔽 n′)
+  (xs : Vec A (Translation.processCount P)) →
+  transportProcesses P ρ (untransportProcesses P ρ xs) ≡ xs
+transportProcesses-untransport P ρ xs =
+  transportProcesses-cast P ρ (untransportProcesses P ρ xs) ■
+  VecP.cast-trans
+    (sym (processCount-rename P ρ)) (processCount-rename P ρ) xs ■
+  VecP.cast-is-id
+    (sym (processCount-rename P ρ) ■ processCount-rename P ρ) xs
+
 take-++ˡ :
   (xs : Vec A n) (ys : Vec A m) →
   V.take n (xs V.++ ys) ≡ xs
