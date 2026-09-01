@@ -201,21 +201,27 @@ focus-thread (bind B₁ B₂ context) P (channel ∷ channels) sigma i
     ((sigma₁ Translation.++ₛ sigma₂) Translation.++ₛ sigma) i
 
 FocusedAmbientChannel :
-  {P : Typed.Proc n} →
-  (channels : Vec (OrientedChannel c) (Translation.channelCount P)) →
+  (context : ProcessContext k n) (P : Typed.Proc k) →
+  (channels : Vec (OrientedChannel c)
+    (Translation.channelCount (plug context P))) →
   (𝔽 c → Set) → 𝔽 c → Set
-FocusedAmbientChannel {P = P} channels ambient i =
+FocusedAmbientChannel context P channels ambient i =
   ambient i ⊎
-  Σ[ k ∈ 𝔽 (Translation.channelCount P) ]
-    physicalChannel (lookup channels k) ≡ i
+  Σ[ j ∈ 𝔽 (Translation.channelCount (plug context P)) ]
+    (((k : 𝔽 (Translation.channelCount P)) →
+        channelInContext context P k ≢ j) ×
+     physicalChannel (lookup channels j) ≡ i)
 
 FocusedAmbientThread :
-  {P : Typed.Proc n} {m : ℕ} →
-  (𝔽 (Translation.processCount P) → Maybe (𝔽 m)) →
+  (context : ProcessContext k n) (P : Typed.Proc k) {m : ℕ} →
+  (𝔽 (Translation.processCount (plug context P)) → Maybe (𝔽 m)) →
   (𝔽 m → Set) → 𝔽 m → Set
-FocusedAmbientThread {P = P} embedding ambient j =
+FocusedAmbientThread context P embedding ambient j =
   ambient j ⊎
-  Σ[ k ∈ 𝔽 (Translation.processCount P) ] embedding k ≡ just j
+  Σ[ l ∈ 𝔽 (Translation.processCount (plug context P)) ]
+    (((k : 𝔽 (Translation.processCount P)) →
+        threadInContext context P k ≢ l) ×
+     embedding l ≡ just j)
 
 focus-image :
   {P : Typed.Proc k} {context : ProcessContext k n}
@@ -229,11 +235,12 @@ focus-image :
   LocalImage P
     (focusChannels context P channels sigma)
     (focusEnv context P channels sigma)
-    (FocusedAmbientChannel {P = plug context P} channels ambientChannel)
-    (FocusedAmbientThread {P = plug context P}
+    (FocusedAmbientChannel context P channels ambientChannel)
+    (FocusedAmbientThread context P
       (threadEmbedding image) ambientThread) C
-focus-image {P = P} {context = context} {channels = channels}
-  {sigma = sigma} {C = C} image = record
+focus-image {c = c} {m = m} {P = P} {context = context} {channels = channels}
+  {sigma = sigma} {ambientChannel = ambientChannel}
+  {ambientThread = ambientThread} {C = C} image = record
   { channelEmbedding-injective = λ {i} {j} equal →
       channelInContext-injective context P
         (channelEmbedding-injective image
@@ -260,12 +267,40 @@ focus-image {P = P} {context = context} {channels = channels}
         (omitted omittedEq unitEq) →
           omitted omittedEq
             (sym (focus-thread context P channels sigma i) ■ unitEq)
-  ; garbage-channel = λ i _ notAmbient →
+  ; garbage-channel = λ i outside notAmbient →
       garbage-channel image i
-        (λ k equal → notAmbient (inj₂ (k , equal)))
+        (focusedChannelOutside i outside notAmbient)
         (λ ambient → notAmbient (inj₁ ambient))
-  ; garbage-thread = λ j _ notAmbient →
+  ; garbage-thread = λ j outside notAmbient →
       garbage-thread image j
-        (λ k equal → notAmbient (inj₂ (k , equal)))
+        (focusedThreadOutside j outside notAmbient)
         (λ ambient → notAmbient (inj₁ ambient))
   }
+  where
+  focusedChannelOutside :
+    (i : 𝔽 c) →
+    LocalOutside
+      (physicalChannel ∘ lookup (focusChannels context P channels sigma)) i →
+    ¬ FocusedAmbientChannel context P channels ambientChannel i →
+    LocalOutside (physicalChannel ∘ lookup channels) i
+  focusedChannelOutside i outside notAmbient j equal
+    with channelHolePosition context P j
+  ... | inj₁ (k , inside) = outside k
+    (cong physicalChannel
+       (sym (focus-logical-channel context P channels sigma k)) ■
+     cong (physicalChannel ∘ lookup channels) inside ■
+     equal)
+  ... | inj₂ beyond = notAmbient (inj₂ (j , beyond , equal))
+
+  focusedThreadOutside :
+    (j : 𝔽 m) →
+    OptionalOutside
+      (threadEmbedding image ∘ threadInContext context P) j →
+    ¬ FocusedAmbientThread context P
+      (threadEmbedding image) ambientThread j →
+    OptionalOutside (threadEmbedding image) j
+  focusedThreadOutside j outside notAmbient l equal
+    with threadHolePosition context P l
+  ... | inj₁ (k , inside) = outside k
+    (cong (threadEmbedding image) inside ■ equal)
+  ... | inj₂ beyond = notAmbient (inj₂ (l , beyond , equal))

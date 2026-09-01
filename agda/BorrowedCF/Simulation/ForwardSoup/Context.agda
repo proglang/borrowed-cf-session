@@ -75,6 +75,115 @@ threadInContext-injective (par context Q) P equal =
 threadInContext-injective (bind B₁ B₂ context) P equal =
   threadInContext-injective context P equal
 
+ChannelHolePosition :
+  (context : ProcessContext k n) (P : Typed.Proc k) →
+  𝔽 (Translation.channelCount (plug context P)) → Set
+ChannelHolePosition context P j =
+  (Σ[ i ∈ 𝔽 (Translation.channelCount P) ]
+    channelInContext context P i ≡ j) ⊎
+  ((i : 𝔽 (Translation.channelCount P)) →
+    channelInContext context P i ≢ j)
+
+channelHolePosition :
+  (context : ProcessContext k n) (P : Typed.Proc k)
+  (j : 𝔽 (Translation.channelCount (plug context P))) →
+  ChannelHolePosition context P j
+channelHolePosition hole P j = inj₁ (j , refl)
+channelHolePosition (par context Q) P j
+  with Fin.splitAt (Translation.channelCount (plug context P)) j in split
+... | inj₁ l = lift-left (channelHolePosition context P l)
+  where
+  left-equal :
+    l ↑ˡ Translation.channelCount Q ≡ j
+  left-equal =
+    sym (cong
+      (Fin.join (Translation.channelCount (plug context P))
+        (Translation.channelCount Q)) split) ■
+    Fin.join-splitAt
+      (Translation.channelCount (plug context P))
+      (Translation.channelCount Q) j
+  lift-left :
+    ChannelHolePosition context P l →
+    ChannelHolePosition (par context Q) P j
+  lift-left (inj₁ (i , inside)) = inj₁
+    (i , (cong (λ x → x ↑ˡ Translation.channelCount Q) inside ■
+      left-equal))
+  lift-left (inj₂ outside) = inj₂ (λ i equal → outside i
+    (Fin.↑ˡ-injective (Translation.channelCount Q) _ _
+      (equal ■ sym left-equal)))
+... | inj₂ r = inj₂ (λ i equal →
+  Fin.↑ˡ≢↑ʳ
+    (equal ■ sym right-equal))
+  where
+  right-equal :
+    Translation.channelCount (plug context P) ↑ʳ r ≡ j
+  right-equal =
+    sym (cong
+      (Fin.join (Translation.channelCount (plug context P))
+        (Translation.channelCount Q)) split) ■
+    Fin.join-splitAt
+      (Translation.channelCount (plug context P))
+      (Translation.channelCount Q) j
+channelHolePosition (bind B₁ B₂ context) P zero =
+  inj₂ (λ _ ())
+channelHolePosition (bind B₁ B₂ context) P (suc j)
+  with channelHolePosition context P j
+... | inj₁ (i , inside) = inj₁ (i , cong suc inside)
+... | inj₂ outside = inj₂ (λ i equal →
+  outside i (Fin.suc-injective equal))
+
+ThreadHolePosition :
+  (context : ProcessContext k n) (P : Typed.Proc k) →
+  𝔽 (Translation.processCount (plug context P)) → Set
+ThreadHolePosition context P j =
+  (Σ[ i ∈ 𝔽 (Translation.processCount P) ]
+    threadInContext context P i ≡ j) ⊎
+  ((i : 𝔽 (Translation.processCount P)) →
+    threadInContext context P i ≢ j)
+
+threadHolePosition :
+  (context : ProcessContext k n) (P : Typed.Proc k)
+  (j : 𝔽 (Translation.processCount (plug context P))) →
+  ThreadHolePosition context P j
+threadHolePosition hole P j = inj₁ (j , refl)
+threadHolePosition (par context Q) P j
+  with Fin.splitAt (Translation.processCount (plug context P)) j in split
+... | inj₁ l = lift-left (threadHolePosition context P l)
+  where
+  left-equal :
+    l ↑ˡ Translation.processCount Q ≡ j
+  left-equal =
+    sym (cong
+      (Fin.join (Translation.processCount (plug context P))
+        (Translation.processCount Q)) split) ■
+    Fin.join-splitAt
+      (Translation.processCount (plug context P))
+      (Translation.processCount Q) j
+  lift-left :
+    ThreadHolePosition context P l →
+    ThreadHolePosition (par context Q) P j
+  lift-left (inj₁ (i , inside)) = inj₁
+    (i , (cong (λ x → x ↑ˡ Translation.processCount Q) inside ■
+      left-equal))
+  lift-left (inj₂ outside) = inj₂ (λ i equal → outside i
+    (Fin.↑ˡ-injective (Translation.processCount Q) _ _
+      (equal ■ sym left-equal)))
+... | inj₂ r = inj₂ (λ i equal →
+  Fin.↑ˡ≢↑ʳ
+    (equal ■ sym right-equal))
+  where
+  right-equal :
+    Translation.processCount (plug context P) ↑ʳ r ≡ j
+  right-equal =
+    sym (cong
+      (Fin.join (Translation.processCount (plug context P))
+        (Translation.processCount Q)) split) ■
+    Fin.join-splitAt
+      (Translation.processCount (plug context P))
+      (Translation.processCount Q) j
+threadHolePosition (bind B₁ B₂ context) P j =
+  threadHolePosition context P j
+
 channelCount-plug-cong :
   (context : ProcessContext k n) {P Q : Typed.Proc k} →
   Translation.channelCount P ≡ Translation.channelCount Q →
