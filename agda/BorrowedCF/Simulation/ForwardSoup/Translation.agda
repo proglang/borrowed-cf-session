@@ -12,8 +12,40 @@ open import BorrowedCF.Simulation.ForwardSoup.Image
   using (SoupImage; canonicalChannels; channelEmbedding; live-channel)
 
 open Nat.Variables
+open Fin.Patterns
 
 variable c : ℕ
+
+++ₛ-lookupˡ :
+  ∀ {a b n} (sigma₁ : Translation.Env a n)
+    (sigma₂ : Translation.Env b n) (i : 𝔽 a) →
+  (sigma₁ Translation.++ₛ sigma₂) (i ↑ˡ b) ≡ sigma₁ i
+++ₛ-lookupˡ {a = a} {b = b} sigma₁ sigma₂ i =
+  cong [ sigma₁ , sigma₂ ]′ (Fin.splitAt-↑ˡ a i b)
+
+++ₛ-lookupʳ :
+  ∀ {a b n} (sigma₁ : Translation.Env a n)
+    (sigma₂ : Translation.Env b n) (i : 𝔽 b) →
+  (sigma₁ Translation.++ₛ sigma₂) (a ↑ʳ i) ≡ sigma₂ i
+++ₛ-lookupʳ {a = a} {b = b} sigma₁ sigma₂ i =
+  cong [ sigma₁ , sigma₂ ]′ (Fin.splitAt-↑ʳ a b i)
+
+UB-head :
+  ∀ b (B : Typed.BindGroup) (r c : 𝔽 n) (e₁ e₂ : SoupTerm.Tm n) →
+  Σ[ e₂′ ∈ SoupTerm.Tm n ]
+    proj₁ (Translation.UB[ suc b ∷ B ] r (e₁ , c , e₂)) 0F ≡
+    Translation.chanTriple (e₁ , c , e₂′)
+UB-head zero [] r c e₁ e₂ = e₂ , refl
+UB-head (suc b) [] r c e₁ e₂ = SoupTerm.* , refl
+UB-head zero (b′ ∷ B) r c e₁ e₂
+  with Translation.UB[ b′ ∷ B ] r
+         (SoupTerm.`phi (r , Translation.syncs (b′ ∷ B)) , c , e₂)
+... | sigma , flags =
+  SoupTerm.`phi (r , Translation.syncs (b′ ∷ B)) , refl
+UB-head (suc b) (b′ ∷ B) r c e₁ e₂
+  with Translation.UB[ b′ ∷ B ] r
+         (SoupTerm.`phi (r , Translation.syncs (b′ ∷ B)) , c , e₂)
+... | sigma , flags = SoupTerm.* , refl
 
 flatten-channel-open :
   (P : Typed.Proc n)
