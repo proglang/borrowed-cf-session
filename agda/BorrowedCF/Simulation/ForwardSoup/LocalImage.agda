@@ -18,6 +18,16 @@ variable c : ℕ
 data Orientation : Set where
   forward reverse : Orientation
 
+flipOrientation : Orientation → Orientation
+flipOrientation forward = reverse
+flipOrientation reverse = forward
+
+flipOrientation-involutive :
+  (orientation : Orientation) →
+  flipOrientation (flipOrientation orientation) ≡ orientation
+flipOrientation-involutive forward = refl
+flipOrientation-involutive reverse = refl
+
 orientSide : Orientation → 𝔽 2 → 𝔽 2
 orientSide forward side = side
 orientSide reverse zero = suc zero
@@ -37,6 +47,39 @@ physicalChannel = proj₁
 physicalEndpoint : OrientedChannel n → 𝔽 2 → 𝔽 (2 *ℕ n)
 physicalEndpoint (channel , orientation) side =
   Soup.endpoint channel (orientSide orientation side)
+
+flipOrientedChannel : OrientedChannel n → OrientedChannel n
+flipOrientedChannel (channel , orientation) =
+  channel , flipOrientation orientation
+
+physicalChannel-flip :
+  (channel : OrientedChannel n) →
+  physicalChannel (flipOrientedChannel channel) ≡ physicalChannel channel
+physicalChannel-flip (channel , orientation) = refl
+
+physicalEndpoint-flip-left :
+  (channel : OrientedChannel n) →
+  physicalEndpoint (flipOrientedChannel channel) zero ≡
+  physicalEndpoint channel (suc zero)
+physicalEndpoint-flip-left (channel , forward) = refl
+physicalEndpoint-flip-left (channel , reverse) = refl
+
+physicalEndpoint-flip-right :
+  (channel : OrientedChannel n) →
+  physicalEndpoint (flipOrientedChannel channel) (suc zero) ≡
+  physicalEndpoint channel zero
+physicalEndpoint-flip-right (channel , forward) = refl
+physicalEndpoint-flip-right (channel , reverse) = refl
+
+orientChannel-flip :
+  (channel : OrientedChannel n) (open? : Bool)
+  (leftFlags rightFlags : List Soup.Flag) →
+  orientChannel (proj₂ (flipOrientedChannel channel))
+    (open? , rightFlags , leftFlags) ≡
+  orientChannel (proj₂ channel)
+    (open? , leftFlags , rightFlags)
+orientChannel-flip (channel , forward) open? leftFlags rightFlags = refl
+orientChannel-flip (channel , reverse) open? leftFlags rightFlags = refl
 
 -- Flatten directly into a physical soup namespace.  An orientation records
 -- which physical endpoint implements each source endpoint.
