@@ -77,6 +77,22 @@ lookup-rotate p {q} xs i =
   cong (lookup (rotate p xs)) (sym (Fin.join-splitAt q p i)) ■
   lookup-rotate-split p xs (Fin.splitAt q i)
 
+take-rotate :
+  (p : ℕ) {q : ℕ} (xs : Vec A (p + q)) →
+  V.take q (rotate p xs) ≡ V.drop p xs
+take-rotate p xs = take-++ˡ (V.drop p xs) (V.take p xs)
+
+drop-rotate :
+  (p : ℕ) {q : ℕ} (xs : Vec A (p + q)) →
+  V.drop q (rotate p xs) ≡ V.take p xs
+drop-rotate p xs = drop-++ˡ (V.drop p xs) (V.take p xs)
+
+rotate-++ :
+  (xs : Vec A n) (ys : Vec A m) →
+  rotate n (xs V.++ ys) ≡ ys V.++ xs
+rotate-++ xs ys =
+  cong₂ V._++_ (drop-++ˡ xs ys) (take-++ˡ xs ys)
+
 unitProcess : ∀ {n} → Typed.Proc n
 unitProcess = Typed.⟪ Source.K Source.`unit ⟫
 
@@ -189,6 +205,134 @@ reindex-image {P = P} {Q = Q}
              (thread-backward-forward reindex k) ■
            equal))
   }
+
+flatten-par-channels :
+  (P Q : Typed.Proc n)
+  (channels : Vec (OrientedChannel c)
+    (Translation.channelCount P + Translation.channelCount Q))
+  (sigma : Translation.Env n (2 *ℕ c)) →
+  proj₁ (flattenOriented (P Typed.∥ Q) channels sigma) ≡
+  proj₁ (flattenOriented P
+    (V.take (Translation.channelCount P) channels) sigma) V.++
+  proj₁ (flattenOriented Q
+    (V.drop (Translation.channelCount P) channels) sigma)
+flatten-par-channels P Q channels sigma
+  with flattenOriented P
+         (V.take (Translation.channelCount P) channels) sigma
+     | flattenOriented Q
+         (V.drop (Translation.channelCount P) channels) sigma
+... | channelsP , threadsP | channelsQ , threadsQ = refl
+
+flatten-par-threads :
+  (P Q : Typed.Proc n)
+  (channels : Vec (OrientedChannel c)
+    (Translation.channelCount P + Translation.channelCount Q))
+  (sigma : Translation.Env n (2 *ℕ c)) →
+  proj₂ (flattenOriented (P Typed.∥ Q) channels sigma) ≡
+  proj₂ (flattenOriented P
+    (V.take (Translation.channelCount P) channels) sigma) V.++
+  proj₂ (flattenOriented Q
+    (V.drop (Translation.channelCount P) channels) sigma)
+flatten-par-threads P Q channels sigma
+  with flattenOriented P
+         (V.take (Translation.channelCount P) channels) sigma
+     | flattenOriented Q
+         (V.drop (Translation.channelCount P) channels) sigma
+... | channelsP , threadsP | channelsQ , threadsQ = refl
+
+parallel-swap-channels :
+  (P Q : Typed.Proc n)
+  (channels : Vec (OrientedChannel c)
+    (Translation.channelCount P + Translation.channelCount Q))
+  (sigma : Translation.Env n (2 *ℕ c)) →
+  proj₁ (flattenOriented (Q Typed.∥ P)
+    (rotate (Translation.channelCount P) channels) sigma) ≡
+  rotate (Translation.channelCount P)
+    (proj₁ (flattenOriented (P Typed.∥ Q) channels sigma))
+parallel-swap-channels P Q channels sigma =
+  flatten-par-channels Q P
+    (rotate (Translation.channelCount P) channels) sigma ■
+  cong₂ V._++_
+    (cong (λ xs → proj₁ (flattenOriented Q xs sigma))
+      (take-rotate (Translation.channelCount P) channels))
+    (cong (λ xs → proj₁ (flattenOriented P xs sigma))
+      (drop-rotate (Translation.channelCount P) channels)) ■
+  sym (rotate-++
+    (proj₁ (flattenOriented P
+      (V.take (Translation.channelCount P) channels) sigma))
+    (proj₁ (flattenOriented Q
+      (V.drop (Translation.channelCount P) channels) sigma))) ■
+  cong (rotate (Translation.channelCount P))
+    (sym (flatten-par-channels P Q channels sigma))
+
+parallel-swap-threads :
+  (P Q : Typed.Proc n)
+  (channels : Vec (OrientedChannel c)
+    (Translation.channelCount P + Translation.channelCount Q))
+  (sigma : Translation.Env n (2 *ℕ c)) →
+  proj₂ (flattenOriented (Q Typed.∥ P)
+    (rotate (Translation.channelCount P) channels) sigma) ≡
+  rotate (Translation.processCount P)
+    (proj₂ (flattenOriented (P Typed.∥ Q) channels sigma))
+parallel-swap-threads P Q channels sigma =
+  flatten-par-threads Q P
+    (rotate (Translation.channelCount P) channels) sigma ■
+  cong₂ V._++_
+    (cong (λ xs → proj₂ (flattenOriented Q xs sigma))
+      (take-rotate (Translation.channelCount P) channels))
+    (cong (λ xs → proj₂ (flattenOriented P xs sigma))
+      (drop-rotate (Translation.channelCount P) channels)) ■
+  sym (rotate-++
+    (proj₂ (flattenOriented P
+      (V.take (Translation.channelCount P) channels) sigma))
+    (proj₂ (flattenOriented Q
+      (V.drop (Translation.channelCount P) channels) sigma))) ■
+  cong (rotate (Translation.processCount P))
+    (sym (flatten-par-threads P Q channels sigma))
+
+parallel-swap-image :
+  {P Q : Typed.Proc n}
+  {channels : Vec (OrientedChannel c)
+    (Translation.channelCount P + Translation.channelCount Q)}
+  {sigma : Translation.Env n (2 *ℕ c)}
+  {ambientChannel : 𝔽 c → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config c m} →
+  LocalImage (P Typed.∥ Q) channels sigma
+    ambientChannel ambientThread C →
+  LocalImage (Q Typed.∥ P)
+    (rotate (Translation.channelCount P) channels) sigma
+    ambientChannel ambientThread C
+parallel-swap-image {P = P} {Q = Q} {channels = channels}
+  {sigma = sigma} image = reindex-image reindex image
+  where
+  reindex :
+    ImageReindex {P = P Typed.∥ Q} {Q = Q Typed.∥ P}
+      channels (rotate (Translation.channelCount P) channels) sigma
+  reindex = record
+    { channelBackward = Fin.swap (Translation.channelCount Q)
+    ; channelForward = Fin.swap (Translation.channelCount P)
+    ; channel-forward-backward =
+        Fin.swap-involutive (Translation.channelCount Q)
+    ; channel-backward-forward =
+        Fin.swap-involutive (Translation.channelCount P)
+    ; channel-entry = lookup-rotate (Translation.channelCount P) channels
+    ; channel-content = λ i →
+        sym (lookup-rotate (Translation.channelCount P)
+          (proj₁ (flattenOriented (P Typed.∥ Q) channels sigma)) i) ■
+        cong (λ xs → lookup xs i)
+          (sym (parallel-swap-channels P Q channels sigma))
+    ; threadBackward = Fin.swap (Translation.processCount Q)
+    ; threadForward = Fin.swap (Translation.processCount P)
+    ; thread-forward-backward =
+        Fin.swap-involutive (Translation.processCount Q)
+    ; thread-backward-forward =
+        Fin.swap-involutive (Translation.processCount P)
+    ; thread-content = λ i →
+        sym (lookup-rotate (Translation.processCount P)
+          (proj₂ (flattenOriented (P Typed.∥ Q) channels sigma)) i) ■
+        cong (λ xs → lookup xs i)
+          (sym (parallel-swap-threads P Q channels sigma))
+    }
 
 unit-head-thread :
   (P : Typed.Proc n)
