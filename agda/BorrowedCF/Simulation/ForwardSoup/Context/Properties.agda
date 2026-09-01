@@ -6,6 +6,7 @@ open import BorrowedCF.Prelude
 
 import BorrowedCF.Processes.Typed as Typed
 import BorrowedCF.Processes.TranslationSoup as Translation
+import BorrowedCF.Processes.UntypedSoup as Soup
 import BorrowedCF.Terms.BaseSoup as SoupTerm
 
 open import BorrowedCF.Simulation.ForwardSoup.Context
@@ -54,6 +55,37 @@ focusEnv :
   Translation.Env k (2 *ℕ c)
 focusEnv context P channels sigma =
   proj₂ (focus context P channels sigma)
+
+focus-logical-channel :
+  (context : ProcessContext k n) (P : Typed.Proc k)
+  (channels : Vec (OrientedChannel c)
+    (Translation.channelCount (plug context P)))
+  (sigma : Translation.Env n (2 *ℕ c))
+  (i : 𝔽 (Translation.channelCount P)) →
+  lookup channels (channelInContext context P i) ≡
+  lookup (focusChannels context P channels sigma) i
+focus-logical-channel hole P channels sigma i = refl
+focus-logical-channel (par context Q) P channels sigma i =
+  cong
+    (λ cs → lookup cs
+      (channelInContext context P i ↑ˡ Translation.channelCount Q))
+    (sym (V.take++drop≡id
+      (Translation.channelCount (plug context P)) channels)) ■
+  V.lookup-++ˡ
+    (V.take (Translation.channelCount (plug context P)) channels)
+    (V.drop (Translation.channelCount (plug context P)) channels)
+    (channelInContext context P i) ■
+  focus-logical-channel context P
+    (V.take (Translation.channelCount (plug context P)) channels) sigma i
+focus-logical-channel (bind B₁ B₂ context) P
+  (channel ∷ channels) sigma i
+  with Translation.UB[ B₁ ] (physicalEndpoint channel zero)
+         (SoupTerm.* , physicalEndpoint channel zero , SoupTerm.*)
+     | Translation.UB[ B₂ ] (physicalEndpoint channel (suc zero))
+         (SoupTerm.* , physicalEndpoint channel (suc zero) , SoupTerm.*)
+... | sigma₁ , flags₁ | sigma₂ , flags₂ =
+  focus-logical-channel context P channels
+    ((sigma₁ Translation.++ₛ sigma₂) Translation.++ₛ sigma) i
 
 focus-channel :
   (context : ProcessContext k n) (P : Typed.Proc k)
@@ -124,3 +156,45 @@ focus-thread (bind B₁ B₂ context) P (channel ∷ channels) sigma i
 ... | sigma₁ , flags₁ | sigma₂ , flags₂ =
   focus-thread context P channels
     ((sigma₁ Translation.++ₛ sigma₂) Translation.++ₛ sigma) i
+
+focus-image :
+  {P : Typed.Proc k} {context : ProcessContext k n}
+  {channels : Vec (OrientedChannel c)
+    (Translation.channelCount (plug context P))}
+  {sigma : Translation.Env n (2 *ℕ c)}
+  {ambientChannel : 𝔽 c → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config c m} →
+  LocalImage (plug context P) channels sigma
+    ambientChannel ambientThread C →
+  LocalImage P
+    (focusChannels context P channels sigma)
+    (focusEnv context P channels sigma)
+    (λ _ → ⊤) (λ _ → ⊤) C
+focus-image {P = P} {context = context} {channels = channels}
+  {sigma = sigma} {C = C} image = record
+  { channelEmbedding-injective = λ {i} {j} equal →
+      channelInContext-injective context P
+        (channelEmbedding-injective image
+          (cong physicalChannel (focus-logical-channel context P channels sigma i) ■
+           equal ■
+           cong physicalChannel
+             (sym (focus-logical-channel context P channels sigma j))))
+  ; threadEmbedding =
+      threadEmbedding image ∘ threadInContext context P
+  ; threadEmbedding-injective = λ equal →
+      threadInContext-injective context P
+        (threadEmbedding-injective image equal)
+  ; live-channel = λ i →
+      cong (lookup (Soup.channels C))
+        (sym (cong physicalChannel
+          (focus-logical-channel context P channels sigma i))) ■
+      live-channel image (channelInContext context P i) ■
+      focus-channel context P channels sigma i
+  ; live-thread = λ i →
+      live-thread image (threadInContext context P i) ■
+      focus-thread context P channels sigma i
+  ; garbage-channel = λ _ _ notAmbient →
+      ⊥-elim (notAmbient tt)
+  ; garbage-thread = λ _ _ notAmbient →
+      ⊥-elim (notAmbient tt)
+  }
