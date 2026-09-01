@@ -127,7 +127,8 @@ record ImageReindex
       channelBackward (channelForward i) ≡ i
     channel-entry :
       (i : 𝔽 (Translation.channelCount Q)) →
-      lookup targetChannels i ≡ lookup sourceChannels (channelBackward i)
+      physicalChannel (lookup targetChannels i) ≡
+      physicalChannel (lookup sourceChannels (channelBackward i))
     channel-content :
       (i : 𝔽 (Translation.channelCount Q)) →
       lookup (proj₁ (flattenOriented P sourceChannels sigma))
@@ -171,9 +172,9 @@ reindex-image {P = P} {Q = Q}
       sym (channel-forward-backward reindex i) ■
       cong (channelForward reindex)
         (channelEmbedding-injective image
-          (cong physicalChannel (sym (channel-entry reindex i)) ■
+          (sym (channel-entry reindex i) ■
            equal ■
-           cong physicalChannel (channel-entry reindex j))) ■
+           channel-entry reindex j)) ■
       channel-forward-backward reindex j
   ; threadEmbedding = threadEmbedding image ∘ threadBackward reindex
   ; threadEmbedding-injective = λ equalᵢ equalⱼ →
@@ -183,7 +184,7 @@ reindex-image {P = P} {Q = Q}
       thread-forward-backward reindex _
   ; live-channel = λ i →
       cong (lookup (Soup.channels C))
-        (cong physicalChannel (channel-entry reindex i)) ■
+        (channel-entry reindex i) ■
       live-channel image (channelBackward reindex i) ■
       channel-content reindex i
   ; live-thread = λ i →
@@ -193,8 +194,7 @@ reindex-image {P = P} {Q = Q}
   ; garbage-channel = λ i outside →
       garbage-channel image i (λ k equal →
         outside (channelForward reindex k)
-          (cong physicalChannel
-             (channel-entry reindex (channelForward reindex k)) ■
+          (channel-entry reindex (channelForward reindex k) ■
            cong (physicalChannel ∘ lookup sourceChannels)
              (channel-backward-forward reindex k) ■
            equal))
@@ -315,7 +315,8 @@ parallel-swap-image {P = P} {Q = Q} {channels = channels}
         Fin.swap-involutive (Translation.channelCount Q)
     ; channel-backward-forward =
         Fin.swap-involutive (Translation.channelCount P)
-    ; channel-entry = lookup-rotate (Translation.channelCount P) channels
+    ; channel-entry = λ i → cong physicalChannel
+        (lookup-rotate (Translation.channelCount P) channels i)
     ; channel-content = λ i →
         sym (lookup-rotate (Translation.channelCount P)
           (proj₁ (flattenOriented (P Typed.∥ Q) channels sigma)) i) ■
@@ -526,8 +527,9 @@ parallel-assoc-image {P = P} {Q = Q} {R = R} {channels = channels}
     ; channel-backward-forward =
         Fin.cast-involutive channelAssoc (sym channelAssoc)
     ; channel-entry = λ i →
-        cong (λ xs → lookup xs i) (associate-cast pc qc channels) ■
-        VecP.lookup-cast₁ (sym channelAssoc) channels i
+        cong physicalChannel
+          (cong (λ xs → lookup xs i) (associate-cast pc qc channels) ■
+           VecP.lookup-cast₁ (sym channelAssoc) channels i)
     ; channel-content = λ i →
         sym (VecP.lookup-cast₁ (sym channelAssoc)
           (proj₁ (flattenOriented
