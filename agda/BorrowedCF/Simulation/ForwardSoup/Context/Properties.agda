@@ -1,5 +1,6 @@
 module BorrowedCF.Simulation.ForwardSoup.Context.Properties where
 
+open import Data.Maybe using (Maybe; just)
 open import Data.Nat using () renaming (_*_ to _*ℕ_)
 
 open import BorrowedCF.Prelude
@@ -199,6 +200,23 @@ focus-thread (bind B₁ B₂ context) P (channel ∷ channels) sigma i
   focus-thread context P channels
     ((sigma₁ Translation.++ₛ sigma₂) Translation.++ₛ sigma) i
 
+FocusedAmbientChannel :
+  {P : Typed.Proc n} →
+  (channels : Vec (OrientedChannel c) (Translation.channelCount P)) →
+  (𝔽 c → Set) → 𝔽 c → Set
+FocusedAmbientChannel {P = P} channels ambient i =
+  ambient i ⊎
+  Σ[ k ∈ 𝔽 (Translation.channelCount P) ]
+    physicalChannel (lookup channels k) ≡ i
+
+FocusedAmbientThread :
+  {P : Typed.Proc n} {m : ℕ} →
+  (𝔽 (Translation.processCount P) → Maybe (𝔽 m)) →
+  (𝔽 m → Set) → 𝔽 m → Set
+FocusedAmbientThread {P = P} embedding ambient j =
+  ambient j ⊎
+  Σ[ k ∈ 𝔽 (Translation.processCount P) ] embedding k ≡ just j
+
 focus-image :
   {P : Typed.Proc k} {context : ProcessContext k n}
   {channels : Vec (OrientedChannel c)
@@ -206,12 +224,14 @@ focus-image :
   {sigma : Translation.Env n (2 *ℕ c)}
   {ambientChannel : 𝔽 c → Set} {ambientThread : 𝔽 m → Set}
   {C : Soup.Config c m} →
-  LocalImage (plug context P) channels sigma
-    ambientChannel ambientThread C →
+  (image : LocalImage (plug context P) channels sigma
+    ambientChannel ambientThread C) →
   LocalImage P
     (focusChannels context P channels sigma)
     (focusEnv context P channels sigma)
-    (λ _ → ⊤) (λ _ → ⊤) C
+    (FocusedAmbientChannel {P = plug context P} channels ambientChannel)
+    (FocusedAmbientThread {P = plug context P}
+      (threadEmbedding image) ambientThread) C
 focus-image {P = P} {context = context} {channels = channels}
   {sigma = sigma} {C = C} image = record
   { channelEmbedding-injective = λ {i} {j} equal →
@@ -240,8 +260,12 @@ focus-image {P = P} {context = context} {channels = channels}
         (omitted omittedEq unitEq) →
           omitted omittedEq
             (sym (focus-thread context P channels sigma i) ■ unitEq)
-  ; garbage-channel = λ _ _ notAmbient →
-      ⊥-elim (notAmbient tt)
-  ; garbage-thread = λ _ _ notAmbient →
-      ⊥-elim (notAmbient tt)
+  ; garbage-channel = λ i _ notAmbient →
+      garbage-channel image i
+        (λ k equal → notAmbient (inj₂ (k , equal)))
+        (λ ambient → notAmbient (inj₁ ambient))
+  ; garbage-thread = λ j _ notAmbient →
+      garbage-thread image j
+        (λ k equal → notAmbient (inj₂ (k , equal)))
+        (λ ambient → notAmbient (inj₁ ambient))
   }
