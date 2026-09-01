@@ -11,6 +11,10 @@ import BorrowedCF.Terms.BaseSoup as SoupTerm
 
 open import BorrowedCF.Simulation.ForwardSoup.Context
 open import BorrowedCF.Simulation.ForwardSoup.LocalImage
+open import BorrowedCF.Simulation.ForwardSoup.Expressions using (ValueEnv)
+open import BorrowedCF.Simulation.ForwardSoup.Translation
+  using (++ₛ-Value; UB-Value)
+import BorrowedCF.Reduction.ExpressionsSoup as SoupExpression
 
 open Nat.Variables
 
@@ -55,6 +59,44 @@ focusEnv :
   Translation.Env k (2 *ℕ c)
 focusEnv context P channels sigma =
   proj₂ (focus context P channels sigma)
+
+focusEnv-Value :
+  (context : ProcessContext k n) (P : Typed.Proc k)
+  (channels : Vec (OrientedChannel c)
+    (Translation.channelCount (plug context P)))
+  {sigma : Translation.Env n (2 *ℕ c)} →
+  ValueEnv sigma →
+  ValueEnv (focusEnv context P channels sigma)
+focusEnv-Value hole P channels Vsigma = Vsigma
+focusEnv-Value (par context Q) P channels Vsigma =
+  focusEnv-Value context P
+    (V.take (Translation.channelCount (plug context P)) channels) Vsigma
+focusEnv-Value (bind B₁ B₂ context) P (channel ∷ channels) Vsigma
+  with Translation.UB[ B₁ ] (physicalEndpoint channel zero)
+         (SoupTerm.* , physicalEndpoint channel zero , SoupTerm.*)
+         in ub₁
+     | Translation.UB[ B₂ ] (physicalEndpoint channel (suc zero))
+         (SoupTerm.* , physicalEndpoint channel (suc zero) , SoupTerm.*)
+         in ub₂
+... | sigma₁ , flags₁ | sigma₂ , flags₂ =
+  focusEnv-Value context P channels
+    (++ₛ-Value (++ₛ-Value Vsigma₁ Vsigma₂) Vsigma)
+  where
+  Vsigma₁ : ValueEnv sigma₁
+  Vsigma₁ x = subst SoupExpression.Value
+    (cong (λ result → proj₁ result x) ub₁)
+    (UB-Value B₁ (physicalEndpoint channel zero)
+      {e₁ = SoupTerm.*} {e₂ = SoupTerm.*}
+      {c = physicalEndpoint channel zero}
+      SoupExpression.V-K SoupExpression.V-K x)
+
+  Vsigma₂ : ValueEnv sigma₂
+  Vsigma₂ x = subst SoupExpression.Value
+    (cong (λ result → proj₁ result x) ub₂)
+    (UB-Value B₂ (physicalEndpoint channel (suc zero))
+      {e₁ = SoupTerm.*} {e₂ = SoupTerm.*}
+      {c = physicalEndpoint channel (suc zero)}
+      SoupExpression.V-K SoupExpression.V-K x)
 
 focus-logical-channel :
   (context : ProcessContext k n) (P : Typed.Proc k)
