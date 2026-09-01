@@ -72,13 +72,13 @@ UB-head :
 UB-head zero [] r c e₁ e₂ = e₂ , refl
 UB-head (suc b) [] r c e₁ e₂ = SoupTerm.* , refl
 UB-head zero (b′ ∷ B) r c e₁ e₂
-  with Translation.UB[ b′ ∷ B ] r
-         (SoupTerm.`phi (r , Translation.syncs (b′ ∷ B)) , c , e₂)
+  with Translation.UBFrom 1 (b′ ∷ B) r
+         (SoupTerm.`phi (r , 0) , c , e₂)
 ... | sigma , flags =
-  SoupTerm.`phi (r , Translation.syncs (b′ ∷ B)) , refl
+  SoupTerm.`phi (r , 0) , refl
 UB-head (suc b) (b′ ∷ B) r c e₁ e₂
-  with Translation.UB[ b′ ∷ B ] r
-         (SoupTerm.`phi (r , Translation.syncs (b′ ∷ B)) , c , e₂)
+  with Translation.UBFrom 1 (b′ ∷ B) r
+         (SoupTerm.`phi (r , 0) , c , e₂)
 ... | sigma , flags = SoupTerm.* , refl
 
 chanTriple-value :
@@ -99,27 +99,34 @@ Ub-Value (suc (suc b)) V₁ V₂ zero =
 Ub-Value (suc (suc b)) V₁ V₂ (suc x) =
   Ub-Value (suc b) SoupExpression.V-K V₂ x
 
-UB-Value :
-  ∀ (B : Typed.BindGroup) (r : 𝔽 n)
+UBFrom-Value :
+  ∀ k (B : Typed.BindGroup) (r : 𝔽 n)
     {e₁ e₂ : SoupTerm.Tm n} {c : 𝔽 n} →
   SoupExpression.Value e₁ → SoupExpression.Value e₂ →
-  ValueEnv (proj₁ (Translation.UB[ B ] r (e₁ , c , e₂)))
-UB-Value [] r V₁ V₂ ()
-UB-Value (b ∷ []) r {e₁} {e₂} {c} V₁ V₂ =
+  ValueEnv (proj₁ (Translation.UBFrom k B r (e₁ , c , e₂)))
+UBFrom-Value k [] r V₁ V₂ ()
+UBFrom-Value k (b ∷ []) r {e₁} {e₂} {c} V₁ V₂ =
   subst
     (λ k → ValueEnv (Translation.Ub[ k ] (e₁ , c , e₂)))
     (sym (+-identityʳ b))
     (Ub-Value b V₁ V₂)
-UB-Value (b ∷ B@(b′ ∷ B′)) r {e₁} {e₂} {c} V₁ V₂ y
-  with Translation.UB[ B ] r
-         (SoupTerm.`phi (r , Translation.syncs B) , c , e₂) in ubEq
-     | UB-Value B r SoupExpression.V-phi V₂
+UBFrom-Value k (b ∷ B@(b′ ∷ B′)) r {e₁} {e₂} {c} V₁ V₂ y
+  with Translation.UBFrom (suc k) B r
+         (SoupTerm.`phi (r , k) , c , e₂) in ubEq
+     | UBFrom-Value (suc k) B r SoupExpression.V-phi V₂
 ... | sigma , flags | Vsigma with Fin.splitAt b y
 ...   | inj₁ x = Ub-Value b V₁ SoupExpression.V-phi x
 ...   | inj₂ x =
   subst SoupExpression.Value
     (cong (λ result → proj₁ result x) ubEq)
     (Vsigma x)
+
+UB-Value :
+  ∀ (B : Typed.BindGroup) (r : 𝔽 n)
+    {e₁ e₂ : SoupTerm.Tm n} {c : 𝔽 n} →
+  SoupExpression.Value e₁ → SoupExpression.Value e₂ →
+  ValueEnv (proj₁ (Translation.UB[ B ] r (e₁ , c , e₂)))
+UB-Value = UBFrom-Value zero
 
 flatten-channel-open :
   (P : Typed.Proc n)

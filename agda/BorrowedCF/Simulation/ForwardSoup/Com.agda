@@ -168,24 +168,33 @@ private
     FinP.cast-is-id refl (suc i)
     ■ cong suc (sym (FinP.cast-is-id refl i))
 
+  UBFrom-flags-cong :
+    ∀ k₁ k₂ (B : Typed.BindGroup) {n₁ n₂ : ℕ}
+      (r₁ : 𝔽 n₁) (c₁ : Translation.UChan n₁)
+      (r₂ : 𝔽 n₂) (c₂ : Translation.UChan n₂) →
+    proj₂ (Translation.UBFrom k₁ B r₁ c₁) ≡
+    proj₂ (Translation.UBFrom k₂ B r₂ c₂)
+  UBFrom-flags-cong k₁ k₂ [] r₁ c₁ r₂ c₂ = refl
+  UBFrom-flags-cong k₁ k₂ (b ∷ []) r₁ c₁ r₂ c₂ = refl
+  UBFrom-flags-cong k₁ k₂ (b ∷ B@(b′ ∷ B′))
+    r₁ (e₁ , c₁ , e₂) r₂ (e₁′ , c₂ , e₂′)
+    with Translation.UBFrom (suc k₁) B r₁
+           (SoupTerm.`phi (r₁ , k₁) , c₁ , e₂)
+       | Translation.UBFrom (suc k₂) B r₂
+           (SoupTerm.`phi (r₂ , k₂) , c₂ , e₂′)
+       | UBFrom-flags-cong (suc k₁) (suc k₂) B r₁
+           (SoupTerm.`phi (r₁ , k₁) , c₁ , e₂)
+           r₂
+           (SoupTerm.`phi (r₂ , k₂) , c₂ , e₂′)
+  ... | σ₁ , fs₁ | σ₂ , fs₂ | eq = cong (Translation.ϕ[ b ] ∷_) eq
+
   UB-flags-cong :
     ∀ (B : Typed.BindGroup) {n₁ n₂ : ℕ}
       (r₁ : 𝔽 n₁) (c₁ : Translation.UChan n₁)
       (r₂ : 𝔽 n₂) (c₂ : Translation.UChan n₂) →
     proj₂ (Translation.UB[ B ] r₁ c₁) ≡
     proj₂ (Translation.UB[ B ] r₂ c₂)
-  UB-flags-cong [] r₁ c₁ r₂ c₂ = refl
-  UB-flags-cong (b ∷ []) r₁ c₁ r₂ c₂ = refl
-  UB-flags-cong (b ∷ B@(b′ ∷ B′)) r₁ (e₁ , c₁ , e₂) r₂ (e₁′ , c₂ , e₂′)
-    with Translation.UB[ B ] r₁
-           (SoupTerm.`phi (r₁ , Translation.syncs B) , c₁ , e₂)
-       | Translation.UB[ B ] r₂
-           (SoupTerm.`phi (r₂ , Translation.syncs B) , c₂ , e₂′)
-       | UB-flags-cong B r₁
-           (SoupTerm.`phi (r₁ , Translation.syncs B) , c₁ , e₂)
-           r₂
-           (SoupTerm.`phi (r₂ , Translation.syncs B) , c₂ , e₂′)
-  ... | σ₁ , fs₁ | σ₂ , fs₂ | eq = cong (_++ Translation.ϕ[ b ] ∷ []) eq
+  UB-flags-cong = UBFrom-flags-cong zero zero
 
   UB-flags-drop :
     ∀ b B {n : ℕ} (r c : 𝔽 n) (e₁ e₂ : SoupTerm.Tm n) →
@@ -193,8 +202,8 @@ private
     proj₂ (Translation.UB[ Bᵗ b B ] r (e₁ , c , e₂))
   UB-flags-drop b [] r c e₁ e₂ = refl
   UB-flags-drop b (b′ ∷ B) r c e₁ e₂
-    with Translation.UB[ b′ ∷ B ] r
-           (SoupTerm.`phi (r , Translation.syncs (b′ ∷ B)) , c , e₂)
+    with Translation.UBFrom 1 (b′ ∷ B) r
+           (SoupTerm.`phi (r , 0) , c , e₂)
   ... | σ , fs = refl
 
   Ub-drop :
@@ -215,11 +224,11 @@ private
   UB-env-drop (suc b) [] r c e₂ 0F = refl
   UB-env-drop (suc b) [] r c e₂ (suc x) = UB-env-drop b [] r c e₂ x
   UB-env-drop b (b′ ∷ B) r c e₂ x
-    with Translation.UB[ b′ ∷ B ] r
-           (SoupTerm.`phi (r , Translation.syncs (b′ ∷ B)) , c , e₂)
+    with Translation.UBFrom 1 (b′ ∷ B) r
+           (SoupTerm.`phi (r , 0) , c , e₂)
        | Fin.splitAt (suc b) x
   ... | σ , fs | inj₁ y =
-    Ub-drop b c (SoupTerm.`phi (r , Translation.syncs (b′ ∷ B))) y
+    Ub-drop b c (SoupTerm.`phi (r , 0)) y
   ... | σ , fs | inj₂ y = refl
 
   UB-head :
@@ -230,13 +239,13 @@ private
   UB-head zero [] r c e₁ e₂ = e₂ , refl
   UB-head (suc b) [] r c e₁ e₂ = SoupTerm.* , refl
   UB-head zero (b′ ∷ B) r c e₁ e₂
-    with Translation.UB[ b′ ∷ B ] r
-           (SoupTerm.`phi (r , Translation.syncs (b′ ∷ B)) , c , e₂)
+    with Translation.UBFrom 1 (b′ ∷ B) r
+           (SoupTerm.`phi (r , 0) , c , e₂)
   ... | σ , fs =
-    SoupTerm.`phi (r , Translation.syncs (b′ ∷ B)) , refl
+    SoupTerm.`phi (r , 0) , refl
   UB-head (suc b) (b′ ∷ B) r c e₁ e₂
-    with Translation.UB[ b′ ∷ B ] r
-           (SoupTerm.`phi (r , Translation.syncs (b′ ∷ B)) , c , e₂)
+    with Translation.UBFrom 1 (b′ ∷ B) r
+           (SoupTerm.`phi (r , 0) , c , e₂)
   ... | σ , fs = SoupTerm.* , refl
 
   Ub-ren :
@@ -252,6 +261,24 @@ private
   Ub-ren (suc (suc b)) η e₁ c e₂ (suc x) =
     Ub-ren (suc b) η SoupTerm.* c e₂ x
 
+  UBFrom-ren :
+    ∀ k (B : Typed.BindGroup) {n n′ : ℕ} (η : 𝔽 n → 𝔽 n′)
+      (r : 𝔽 n) (e₁ : SoupTerm.Tm n) (c : 𝔽 n)
+      (e₂ : SoupTerm.Tm n) (x : 𝔽 (sum B)) →
+    proj₁ (Translation.UBFrom k B r (e₁ , c , e₂)) x SoupTerm.⋯ᵣ η ≡
+    proj₁ (Translation.UBFrom k B (η r)
+      (e₁ SoupTerm.⋯ᵣ η , η c , e₂ SoupTerm.⋯ᵣ η)) x
+  UBFrom-ren k [] η r e₁ c e₂ ()
+  UBFrom-ren k (b ∷ []) η r e₁ c e₂ x =
+    Ub-ren (b + 0) η e₁ c e₂ x
+  UBFrom-ren k (b ∷ B@(b′ ∷ B′)) η r e₁ c e₂ y
+    with UBFrom-ren (suc k) B η r (SoupTerm.`phi (r , k)) c e₂
+       | Fin.splitAt b y
+  ... | IH | inj₁ x =
+    Ub-ren b η e₁ c (SoupTerm.`phi (r , k)) x
+  ... | IH | inj₂ x =
+    IH x
+
   UB-ren :
     ∀ (B : Typed.BindGroup) {n n′ : ℕ} (η : 𝔽 n → 𝔽 n′)
       (r : 𝔽 n) (e₁ : SoupTerm.Tm n) (c : 𝔽 n)
@@ -259,16 +286,7 @@ private
     proj₁ (Translation.UB[ B ] r (e₁ , c , e₂)) x SoupTerm.⋯ᵣ η ≡
     proj₁ (Translation.UB[ B ] (η r)
       (e₁ SoupTerm.⋯ᵣ η , η c , e₂ SoupTerm.⋯ᵣ η)) x
-  UB-ren [] η r e₁ c e₂ ()
-  UB-ren (b ∷ []) η r e₁ c e₂ x =
-    Ub-ren (b + 0) η e₁ c e₂ x
-  UB-ren (b ∷ B@(b′ ∷ B′)) η r e₁ c e₂ y
-    with UB-ren B η r (SoupTerm.`phi (r , Translation.syncs B)) c e₂
-       | Fin.splitAt b y
-  ... | IH | inj₁ x =
-    Ub-ren b η e₁ c (SoupTerm.`phi (r , Translation.syncs B)) x
-  ... | IH | inj₂ x =
-    IH x
+  UB-ren = UBFrom-ren zero
 
   chanTriple-coherent :
     {cₛ cₜ o : ℕ}
@@ -304,6 +322,36 @@ private
   Ub-coherent (suc (suc b)) ρₛ ρₜ e₁eq xeq e₂eq (suc i) =
     Ub-coherent (suc b) ρₛ ρₜ refl xeq e₂eq i
 
+  UBFrom-coherent :
+    ∀ k (B : Typed.BindGroup) {cₛ cₜ o : ℕ}
+      {rₛ xₛ : 𝔽 cₛ} {e₁ₛ e₂ₛ : SoupTerm.Tm cₛ}
+      {rₜ xₜ : 𝔽 cₜ} {e₁ₜ e₂ₜ : SoupTerm.Tm cₜ}
+      (ρₛ : 𝔽 cₛ → 𝔽 o) (ρₜ : 𝔽 cₜ → 𝔽 o) →
+    ρₛ rₛ ≡ ρₜ rₜ →
+    e₁ₛ SoupTerm.⋯ᵣ ρₛ ≡ e₁ₜ SoupTerm.⋯ᵣ ρₜ →
+    ρₛ xₛ ≡ ρₜ xₜ →
+    e₂ₛ SoupTerm.⋯ᵣ ρₛ ≡ e₂ₜ SoupTerm.⋯ᵣ ρₜ →
+    (i : 𝔽 (sum B)) →
+    proj₁ (Translation.UBFrom k B rₛ (e₁ₛ , xₛ , e₂ₛ)) i
+      SoupTerm.⋯ᵣ ρₛ
+    ≡
+    proj₁ (Translation.UBFrom k B rₜ (e₁ₜ , xₜ , e₂ₜ)) i
+      SoupTerm.⋯ᵣ ρₜ
+  UBFrom-coherent k [] ρₛ ρₜ req e₁eq xeq e₂eq ()
+  UBFrom-coherent k (b ∷ []) ρₛ ρₜ req e₁eq xeq e₂eq i =
+    Ub-coherent (b + 0) ρₛ ρₜ e₁eq xeq e₂eq i
+  UBFrom-coherent k (b ∷ B@(b′ ∷ B′))
+    ρₛ ρₜ req e₁eq xeq e₂eq i
+    with UBFrom-coherent (suc k) B ρₛ ρₜ req
+           (cong (λ z → SoupTerm.`phi (z , k)) req)
+           xeq e₂eq
+       | Fin.splitAt b i
+  ... | IH | inj₁ y =
+    Ub-coherent b ρₛ ρₜ e₁eq xeq
+      (cong (λ z → SoupTerm.`phi (z , k)) req)
+      y
+  ... | IH | inj₂ y = IH y
+
   UB-coherent :
     ∀ (B : Typed.BindGroup) {cₛ cₜ o : ℕ}
       {rₛ xₛ : 𝔽 cₛ} {e₁ₛ e₂ₛ : SoupTerm.Tm cₛ}
@@ -319,19 +367,7 @@ private
     ≡
     proj₁ (Translation.UB[ B ] rₜ (e₁ₜ , xₜ , e₂ₜ)) i
       SoupTerm.⋯ᵣ ρₜ
-  UB-coherent [] ρₛ ρₜ req e₁eq xeq e₂eq ()
-  UB-coherent (b ∷ []) ρₛ ρₜ req e₁eq xeq e₂eq i =
-    Ub-coherent (b + 0) ρₛ ρₜ e₁eq xeq e₂eq i
-  UB-coherent (b ∷ B@(b′ ∷ B′)) ρₛ ρₜ req e₁eq xeq e₂eq i
-    with UB-coherent B ρₛ ρₜ req
-           (cong (λ z → SoupTerm.`phi (z , Translation.syncs B)) req)
-           xeq e₂eq
-       | Fin.splitAt b i
-  ... | IH | inj₁ y =
-    Ub-coherent b ρₛ ρₜ e₁eq xeq
-      (cong (λ z → SoupTerm.`phi (z , Translation.syncs B)) req)
-      y
-  ... | IH | inj₂ y = IH y
+  UB-coherent = UBFrom-coherent zero
 
   chanTriple-value :
     ∀ {e₁ e₂ : SoupTerm.Tm n} {c : 𝔽 n} →
@@ -351,21 +387,21 @@ private
   Ub-Value (suc (suc b)) V₁ V₂ (suc x) =
     Ub-Value (suc b) SoupExpression.V-K V₂ x
 
-  UB-Value :
-    ∀ (B : Typed.BindGroup) (r : 𝔽 n)
+  UBFrom-Value :
+    ∀ k (B : Typed.BindGroup) (r : 𝔽 n)
       {e₁ e₂ : SoupTerm.Tm n} {c : 𝔽 n} →
     SoupExpression.Value e₁ → SoupExpression.Value e₂ →
-    ValueEnv (proj₁ (Translation.UB[ B ] r (e₁ , c , e₂)))
-  UB-Value [] r V₁ V₂ ()
-  UB-Value (b ∷ []) r {e₁} {e₂} {c} V₁ V₂ =
+    ValueEnv (proj₁ (Translation.UBFrom k B r (e₁ , c , e₂)))
+  UBFrom-Value k [] r V₁ V₂ ()
+  UBFrom-Value k (b ∷ []) r {e₁} {e₂} {c} V₁ V₂ =
     subst
       (λ k → ValueEnv (Translation.Ub[ k ] (e₁ , c , e₂)))
       (sym (+-identityʳ b))
       (Ub-Value b V₁ V₂)
-  UB-Value (b ∷ B@(b′ ∷ B′)) r {e₁} {e₂} {c} V₁ V₂ y
-    with Translation.UB[ B ] r
-           (SoupTerm.`phi (r , Translation.syncs B) , c , e₂) in ubEq
-       | UB-Value B r SoupExpression.V-phi V₂
+  UBFrom-Value k (b ∷ B@(b′ ∷ B′)) r {e₁} {e₂} {c} V₁ V₂ y
+    with Translation.UBFrom (suc k) B r
+           (SoupTerm.`phi (r , k) , c , e₂) in ubEq
+       | UBFrom-Value (suc k) B r SoupExpression.V-phi V₂
   ... | σ , fs | Vσ with Fin.splitAt b y
   ...   | inj₁ x = Ub-Value b V₁ SoupExpression.V-phi x
   ...   | inj₂ x =
@@ -373,23 +409,36 @@ private
       (cong (λ result → proj₁ result x) ubEq)
       (Vσ x)
 
+  UB-Value :
+    ∀ (B : Typed.BindGroup) (r : 𝔽 n)
+      {e₁ e₂ : SoupTerm.Tm n} {c : 𝔽 n} →
+    SoupExpression.Value e₁ → SoupExpression.Value e₂ →
+    ValueEnv (proj₁ (Translation.UB[ B ] r (e₁ , c , e₂)))
+  UB-Value = UBFrom-Value zero
+
   bindFlags : Typed.BindGroup → List Soup.Flag
   bindFlags [] = []
   bindFlags (b ∷ []) = []
-  bindFlags (b ∷ B@(_ ∷ _)) = bindFlags B ++ Translation.ϕ[ b ] ∷ []
+  bindFlags (b ∷ B@(_ ∷ _)) = Translation.ϕ[ b ] ∷ bindFlags B
+
+  UBFrom-flags-shape :
+    ∀ k (B : Typed.BindGroup) {n : ℕ} (r c : 𝔽 n)
+      (e₁ e₂ : SoupTerm.Tm n) →
+    proj₂ (Translation.UBFrom k B r (e₁ , c , e₂)) ≡ bindFlags B
+  UBFrom-flags-shape k [] r c e₁ e₂ = refl
+  UBFrom-flags-shape k (b ∷ []) r c e₁ e₂ = refl
+  UBFrom-flags-shape k (b ∷ B@(b′ ∷ B′)) r c e₁ e₂
+    with Translation.UBFrom (suc k) B r
+           (SoupTerm.`phi (r , k) , c , e₂)
+       | UBFrom-flags-shape (suc k) B r c
+           (SoupTerm.`phi (r , k)) e₂
+  ... | σ , fs | eq = cong (Translation.ϕ[ b ] ∷_) eq
 
   UB-flags-shape :
     ∀ (B : Typed.BindGroup) {n : ℕ} (r c : 𝔽 n)
       (e₁ e₂ : SoupTerm.Tm n) →
     proj₂ (Translation.UB[ B ] r (e₁ , c , e₂)) ≡ bindFlags B
-  UB-flags-shape [] r c e₁ e₂ = refl
-  UB-flags-shape (b ∷ []) r c e₁ e₂ = refl
-  UB-flags-shape (b ∷ B@(b′ ∷ B′)) r c e₁ e₂
-    with Translation.UB[ B ] r
-           (SoupTerm.`phi (r , Translation.syncs B) , c , e₂)
-       | UB-flags-shape B r c
-           (SoupTerm.`phi (r , Translation.syncs B)) e₂
-  ... | σ , fs | eq = cong (_++ Translation.ϕ[ b ] ∷ []) eq
+  UB-flags-shape = UBFrom-flags-shape zero
 
   channelShape :
     (P : Typed.Proc n) → Vec Soup.Channel (Translation.channelCount P)

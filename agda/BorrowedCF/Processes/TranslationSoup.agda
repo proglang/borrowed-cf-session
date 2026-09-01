@@ -70,17 +70,20 @@ Ub[ suc (suc b) ] (e₁ , c , e₂) (suc x) =
 BindResult : 𝐓.BindGroup → ℕ → Set
 BindResult B n = Env (sum B) n × List 𝐒.Flag
 
-UB[_] : (B : 𝐓.BindGroup) → 𝔽 n → UChan n → BindResult B n
-UB[ [] ] r c = (λ ()) , []
-UB[ b ∷ [] ] r c = Ub[ b + 0 ] c , []
-UB[ b ∷ B@(_ ∷ _) ] r (e₁ , c , e₂)
-  with UB[ B ] r (𝐒Tm.`phi (r , syncs B) , c , e₂)
+UBFrom : ℕ → (B : 𝐓.BindGroup) → 𝔽 n → UChan n → BindResult B n
+UBFrom k [] r c = (λ ()) , []
+UBFrom k (b ∷ []) r c = Ub[ b + 0 ] c , []
+UBFrom k (b ∷ B@(_ ∷ _)) r (e₁ , c , e₂)
+  with UBFrom (suc k) B r (𝐒Tm.`phi (r , k) , c , e₂)
 ... | σ , fs =
   ( (λ y →
-      [ Ub[ b ] (e₁ , c , 𝐒Tm.`phi (r , syncs B)) , σ ]′
+      [ Ub[ b ] (e₁ , c , 𝐒Tm.`phi (r , k)) , σ ]′
         (Fin.splitAt b y))
-  , fs ++ ϕ[ b ] ∷ []
+  , ϕ[ b ] ∷ fs
   )
+
+UB[_] : (B : 𝐓.BindGroup) → 𝔽 n → UChan n → BindResult B n
+UB[ B ] = UBFrom zero B
 
 channelCount : 𝐓.Proc n → ℕ
 channelCount (𝐓.⟪ e ⟫) = 0

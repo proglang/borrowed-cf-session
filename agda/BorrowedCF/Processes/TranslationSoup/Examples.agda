@@ -40,7 +40,7 @@ flagged-restriction :
   ( 1 , 1
   , 𝐒.config
       ( ( true
-        , 𝐒.acq ∷ 𝐒.drop ∷ []
+        , 𝐒.drop ∷ 𝐒.acq ∷ []
         , 𝐒.acq ∷ []
         ) ∷ []
       )
@@ -55,17 +55,17 @@ bindResult =
     (𝐒Tm.* , 0F , 𝐒Tm.*)
 
 bind-flags :
-  proj₂ bindResult ≡ 𝐒.acq ∷ 𝐒.drop ∷ []
+  proj₂ bindResult ≡ 𝐒.drop ∷ 𝐒.acq ∷ []
 bind-flags = refl
 
 bind-first :
   proj₁ bindResult 0F
-  ≡ 𝐓Soup.chanTriple (𝐒Tm.* , 0F , 𝐒Tm.`phi (0F , 1))
+  ≡ 𝐓Soup.chanTriple (𝐒Tm.* , 0F , 𝐒Tm.`phi (0F , 0))
 bind-first = refl
 
 bind-last :
   proj₁ bindResult 1F
-  ≡ 𝐓Soup.chanTriple (𝐒Tm.`phi (0F , 0) , 0F , 𝐒Tm.*)
+  ≡ 𝐓Soup.chanTriple (𝐒Tm.`phi (0F , 1) , 0F , 𝐒Tm.*)
 bind-last = refl
 
 resolvedTerm : 𝐒Tm.Tm 1
