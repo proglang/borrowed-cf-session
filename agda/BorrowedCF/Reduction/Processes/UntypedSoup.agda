@@ -69,20 +69,21 @@ consumePhi x k (`case e `of⟨ e₁ ; e₂ ⟩) =
   `case consumePhi x k e
     `of⟨ consumePhi (suc x) k e₁ ; consumePhi (suc x) k e₂ ⟩
 
-weakenEndpoint : ∀ {n} → 𝔽 (2 *ℕ n) → 𝔽 (2 *ℕ suc n)
-weakenEndpoint {n} x =
-  Fin.cast (sym (Nat.*-suc 2 n)) (suc (suc x))
+insertEndpoint : ∀ {n} → 𝔽 (suc n) → 𝔽 (2 *ℕ n) → 𝔽 (2 *ℕ suc n)
+insertEndpoint {n} i x
+  with Fin.remQuot 2 (Fin.cast (Nat.*-comm 2 n) x)
+... | c , side = endpoint (Fin.punchIn i c) side
 
-weakenThread : Thread n → Thread (suc n)
-weakenThread e = e ⋯ᵣ weakenEndpoint
+insertThreadEndpoints : ∀ {n} → 𝔽 (suc n) → Thread n → Thread (suc n)
+insertThreadEndpoints i e = e ⋯ᵣ insertEndpoint i
 
-newResult : ∀ {n} → Frame* (2 *ℕ n) → Thread (suc n)
-newResult {n} F =
-  let l = leftEnd {n = suc n} zero
-      r = rightEnd {n = suc n} zero
+newResult : ∀ {n} → 𝔽 (suc n) → Frame* (2 *ℕ n) → Thread (suc n)
+newResult i F =
+  let l = leftEnd i
+      r = rightEnd i
       c₀ = 𝓒[ `phi (l , 0) × l × * ]
       c₁ = 𝓒[ `phi (r , 0) × r × * ]
-  in frames-rename F weakenEndpoint [ c₀ ⊗ c₁ ]*
+  in frames-rename F (insertEndpoint i) [ c₀ ⊗ c₁ ]*
 
 data Opposite : 𝔽 2 → 𝔽 2 → Set where
   left-right : Opposite zero (suc zero)
@@ -107,11 +108,11 @@ data _─→ₚ_ : ∀ {n m n′ m′} → Config n m → Config n′ m′ → S
 
   RUS-New :
     ∀ {n m s} {cs : Vec Channel n} {ts : Vec (Thread n) m}
-      (j : 𝔽 m) (F : Frame* (2 *ℕ n)) →
+      (j : 𝔽 m) (i : 𝔽 (suc n)) (F : Frame* (2 *ℕ n)) →
     lookup ts j ≡ F [ K (`new s) ·¹ * ]* →
     config cs ts ─→ₚ
-    config ((true , acq ∷ [] , acq ∷ []) ∷ cs)
-      (replaceAt (V.map weakenThread ts) j (newResult F))
+    config (V.insertAt cs i (true , acq ∷ [] , acq ∷ []))
+      (replaceAt (V.map (insertThreadEndpoints i) ts) j (newResult i F))
 
   RUS-LSplit :
     ∀ {n m s} {cs : Vec Channel n} {ts : Vec (Thread n) m}

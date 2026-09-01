@@ -51,7 +51,7 @@ new-prepends-channel-and-weakens-endpoints :
       []
     )
 new-prepends-channel-and-weakens-endpoints =
-  𝐑.RUS-New 1F []
+  𝐑.RUS-New 1F 0F []
     refl
 
 rsplit-appends-drop-and-uses-old-slot :

@@ -164,12 +164,13 @@ permute-step pi (RUS-Fork {cs = cs} {ts = ts} j F V eq) =
     (cong (config cs)
       (permute-insertAfter-replace pi ts j (F [ * ]*) (_ ·¹ *)))
     (RUS-Fork j′ F V (lookup-permute pi ts j ■ eq))
-permute-step pi (RUS-New {n = n} {cs = cs} {ts = ts} j F eq) =
+permute-step pi (RUS-New {n = n} {cs = cs} {ts = ts} j i F eq) =
   pi ,
   subst (config cs (permuteVec pi ts) ─→ₚ_)
-    (cong (config ((true , acq ∷ [] , acq ∷ []) ∷ cs))
-      (permute-replace-map (weakenThread {n = n}) pi ts j (newResult {n = n} F)))
-    (RUS-New (pi ⟨$⟩ˡ j) F
+    (cong (config (V.insertAt cs i (true , acq ∷ [] , acq ∷ [])))
+      (permute-replace-map (insertThreadEndpoints {n = n} i) pi ts j
+        (newResult {n = n} i F)))
+    (RUS-New (pi ⟨$⟩ˡ j) i F
       (lookup-permute pi ts j ■ eq))
 permute-step pi (RUS-LSplit {cs = cs} {ts = ts} j i side F live eq) =
   pi ,
