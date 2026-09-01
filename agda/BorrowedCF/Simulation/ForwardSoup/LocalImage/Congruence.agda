@@ -334,6 +334,220 @@ parallel-swap-image {P = P} {Q = Q} {channels = channels}
           (sym (parallel-swap-threads P Q channels sigma))
     }
 
+associate :
+  (p q : ℕ) {r : ℕ} →
+  Vec A (p + (q + r)) → Vec A ((p + q) + r)
+associate p q xs =
+  let rest = V.drop p xs
+  in (V.take p xs V.++ V.take q rest) V.++ V.drop q rest
+
+associate-grouped :
+  (p q : ℕ) {r : ℕ} (xs : Vec A (p + (q + r))) →
+  V.take p xs V.++
+    (V.take q (V.drop p xs) V.++ V.drop q (V.drop p xs)) ≡ xs
+associate-grouped p q xs =
+  cong (V.take p xs V.++_) (V.take++drop≡id q (V.drop p xs)) ■
+  V.take++drop≡id p xs
+
+associate-cast :
+  (p q : ℕ) {r : ℕ} (xs : Vec A (p + (q + r))) →
+  associate p q xs ≡ V.cast (sym (Nat.+-assoc p q r)) xs
+associate-cast p q {r} xs =
+  sym (VecP.cast-sym (Nat.+-assoc p q r)
+    (VecP.++-assoc-eqFree
+      (V.take p xs)
+      (V.take q (V.drop p xs))
+      (V.drop q (V.drop p xs)))) ■
+  cong (V.cast (sym (Nat.+-assoc p q r)))
+    (associate-grouped p q xs)
+
+associate-left :
+  (p q : ℕ) {r : ℕ} (xs : Vec A (p + (q + r))) →
+  V.take p (V.take (p + q) (associate p q xs)) ≡ V.take p xs
+associate-left p q xs =
+  cong (V.take p) (take-++ˡ
+    (V.take p xs V.++ V.take q (V.drop p xs))
+    (V.drop q (V.drop p xs))) ■
+  take-++ˡ (V.take p xs) (V.take q (V.drop p xs))
+
+associate-middle :
+  (p q : ℕ) {r : ℕ} (xs : Vec A (p + (q + r))) →
+  V.drop p (V.take (p + q) (associate p q xs)) ≡
+  V.take q (V.drop p xs)
+associate-middle p q xs =
+  cong (V.drop p) (take-++ˡ
+    (V.take p xs V.++ V.take q (V.drop p xs))
+    (V.drop q (V.drop p xs))) ■
+  drop-++ˡ (V.take p xs) (V.take q (V.drop p xs))
+
+associate-right :
+  (p q : ℕ) {r : ℕ} (xs : Vec A (p + (q + r))) →
+  V.drop (p + q) (associate p q xs) ≡
+  V.drop q (V.drop p xs)
+associate-right p q xs =
+  drop-++ˡ
+    (V.take p xs V.++ V.take q (V.drop p xs))
+    (V.drop q (V.drop p xs))
+
+parallel-assoc-channels :
+  (P Q R : Typed.Proc n)
+  (channels : Vec (OrientedChannel c)
+    (Translation.channelCount P +
+      (Translation.channelCount Q + Translation.channelCount R)))
+  (sigma : Translation.Env n (2 *ℕ c)) →
+  proj₁ (flattenOriented ((P Typed.∥ Q) Typed.∥ R)
+    (associate (Translation.channelCount P)
+      (Translation.channelCount Q) channels) sigma) ≡
+  V.cast (sym (Nat.+-assoc
+    (Translation.channelCount P)
+    (Translation.channelCount Q)
+    (Translation.channelCount R)))
+    (proj₁ (flattenOriented (P Typed.∥ (Q Typed.∥ R)) channels sigma))
+parallel-assoc-channels P Q R channels sigma
+  =
+  flatten-par-channels (P Typed.∥ Q) R
+    (associate p q channels) sigma ■
+  cong₂ V._++_
+    (flatten-par-channels P Q
+      (V.take (p + q) (associate p q channels)) sigma)
+    refl ■
+  cong₂ V._++_
+    (cong₂ V._++_
+      (cong (λ xs → proj₁ (flattenOriented P xs sigma))
+        (associate-left p q channels))
+      (cong (λ xs → proj₁ (flattenOriented Q xs sigma))
+        (associate-middle p q channels)))
+    (cong (λ xs → proj₁ (flattenOriented R xs sigma))
+      (associate-right p q channels)) ■
+  sym (VecP.cast-sym (Nat.+-assoc pc qc rc)
+    (VecP.++-assoc-eqFree channelsP channelsQ channelsR)) ■
+  cong (V.cast (sym (Nat.+-assoc pc qc rc)))
+    (cong (channelsP V.++_)
+      (sym (flatten-par-channels Q R (V.drop p channels) sigma))) ■
+  cong (V.cast (sym (Nat.+-assoc pc qc rc)))
+    (sym (flatten-par-channels P (Q Typed.∥ R) channels sigma))
+  where
+  p = Translation.channelCount P
+  q = Translation.channelCount Q
+  pc = Translation.channelCount P
+  qc = Translation.channelCount Q
+  rc = Translation.channelCount R
+  channelsP = proj₁ (flattenOriented P (V.take p channels) sigma)
+  channelsQ = proj₁ (flattenOriented Q
+    (V.take q (V.drop p channels)) sigma)
+  channelsR = proj₁ (flattenOriented R
+    (V.drop q (V.drop p channels)) sigma)
+
+parallel-assoc-threads :
+  (P Q R : Typed.Proc n)
+  (channels : Vec (OrientedChannel c)
+    (Translation.channelCount P +
+      (Translation.channelCount Q + Translation.channelCount R)))
+  (sigma : Translation.Env n (2 *ℕ c)) →
+  proj₂ (flattenOriented ((P Typed.∥ Q) Typed.∥ R)
+    (associate (Translation.channelCount P)
+      (Translation.channelCount Q) channels) sigma) ≡
+  V.cast (sym (Nat.+-assoc
+    (Translation.processCount P)
+    (Translation.processCount Q)
+    (Translation.processCount R)))
+    (proj₂ (flattenOriented (P Typed.∥ (Q Typed.∥ R)) channels sigma))
+parallel-assoc-threads P Q R channels sigma
+  =
+  flatten-par-threads (P Typed.∥ Q) R
+    (associate p q channels) sigma ■
+  cong₂ V._++_
+    (flatten-par-threads P Q
+      (V.take (p + q) (associate p q channels)) sigma)
+    refl ■
+  cong₂ V._++_
+    (cong₂ V._++_
+      (cong (λ xs → proj₂ (flattenOriented P xs sigma))
+        (associate-left p q channels))
+      (cong (λ xs → proj₂ (flattenOriented Q xs sigma))
+        (associate-middle p q channels)))
+    (cong (λ xs → proj₂ (flattenOriented R xs sigma))
+      (associate-right p q channels)) ■
+  sym (VecP.cast-sym (Nat.+-assoc pp pq pr)
+    (VecP.++-assoc-eqFree threadsP threadsQ threadsR)) ■
+  cong (V.cast (sym (Nat.+-assoc pp pq pr)))
+    (cong (threadsP V.++_)
+      (sym (flatten-par-threads Q R (V.drop p channels) sigma))) ■
+  cong (V.cast (sym (Nat.+-assoc pp pq pr)))
+    (sym (flatten-par-threads P (Q Typed.∥ R) channels sigma))
+  where
+  p = Translation.channelCount P
+  q = Translation.channelCount Q
+  pp = Translation.processCount P
+  pq = Translation.processCount Q
+  pr = Translation.processCount R
+  threadsP = proj₂ (flattenOriented P (V.take p channels) sigma)
+  threadsQ = proj₂ (flattenOriented Q
+    (V.take q (V.drop p channels)) sigma)
+  threadsR = proj₂ (flattenOriented R
+    (V.drop q (V.drop p channels)) sigma)
+
+parallel-assoc-image :
+  {P Q R : Typed.Proc n}
+  {channels : Vec (OrientedChannel c)
+    (Translation.channelCount P +
+      (Translation.channelCount Q + Translation.channelCount R))}
+  {sigma : Translation.Env n (2 *ℕ c)}
+  {ambientChannel : 𝔽 c → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config c m} →
+  LocalImage (P Typed.∥ (Q Typed.∥ R)) channels sigma
+    ambientChannel ambientThread C →
+  LocalImage ((P Typed.∥ Q) Typed.∥ R)
+    (associate (Translation.channelCount P)
+      (Translation.channelCount Q) channels) sigma
+    ambientChannel ambientThread C
+parallel-assoc-image {P = P} {Q = Q} {R = R} {channels = channels}
+  {sigma = sigma} image = reindex-image reindex image
+  where
+  pc = Translation.channelCount P
+  qc = Translation.channelCount Q
+  rc = Translation.channelCount R
+  pp = Translation.processCount P
+  pq = Translation.processCount Q
+  pr = Translation.processCount R
+  channelAssoc = Nat.+-assoc pc qc rc
+  processAssoc = Nat.+-assoc pp pq pr
+
+  reindex :
+    ImageReindex
+      {P = P Typed.∥ (Q Typed.∥ R)}
+      {Q = (P Typed.∥ Q) Typed.∥ R}
+      channels (associate pc qc channels) sigma
+  reindex = record
+    { channelBackward = Fin.cast channelAssoc
+    ; channelForward = Fin.cast (sym channelAssoc)
+    ; channel-forward-backward =
+        Fin.cast-involutive (sym channelAssoc) channelAssoc
+    ; channel-backward-forward =
+        Fin.cast-involutive channelAssoc (sym channelAssoc)
+    ; channel-entry = λ i →
+        cong (λ xs → lookup xs i) (associate-cast pc qc channels) ■
+        VecP.lookup-cast₁ (sym channelAssoc) channels i
+    ; channel-content = λ i →
+        sym (VecP.lookup-cast₁ (sym channelAssoc)
+          (proj₁ (flattenOriented
+            (P Typed.∥ (Q Typed.∥ R)) channels sigma)) i) ■
+        cong (λ xs → lookup xs i)
+          (sym (parallel-assoc-channels P Q R channels sigma))
+    ; threadBackward = Fin.cast processAssoc
+    ; threadForward = Fin.cast (sym processAssoc)
+    ; thread-forward-backward =
+        Fin.cast-involutive (sym processAssoc) processAssoc
+    ; thread-backward-forward =
+        Fin.cast-involutive processAssoc (sym processAssoc)
+    ; thread-content = λ i →
+        sym (VecP.lookup-cast₁ (sym processAssoc)
+          (proj₂ (flattenOriented
+            (P Typed.∥ (Q Typed.∥ R)) channels sigma)) i) ■
+        cong (λ xs → lookup xs i)
+          (sym (parallel-assoc-threads P Q R channels sigma))
+    }
+
 unit-head-thread :
   (P : Typed.Proc n)
   (channels : Vec (OrientedChannel c) (Translation.channelCount P))
