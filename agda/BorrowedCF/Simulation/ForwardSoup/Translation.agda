@@ -1,5 +1,6 @@
 module BorrowedCF.Simulation.ForwardSoup.Translation where
 
+open import Data.Nat.ListAction using (sum)
 open import Data.Nat using () renaming (_*_ to _*ℕ_)
 
 open import BorrowedCF.Prelude
@@ -8,6 +9,7 @@ import BorrowedCF.Processes.Typed as Typed
 import BorrowedCF.Processes.TranslationSoup as Translation
 import BorrowedCF.Processes.UntypedSoup as Soup
 import BorrowedCF.Reduction.ExpressionsSoup as SoupExpression
+import BorrowedCF.Terms.Base as Source
 import BorrowedCF.Terms.BaseSoup as SoupTerm
 open import BorrowedCF.Simulation.ForwardSoup.Image
   using (SoupImage; canonicalChannels; channelEmbedding; live-channel)
@@ -17,6 +19,27 @@ open Nat.Variables
 open Fin.Patterns
 
 variable c : ℕ
+
+channelCount-rename :
+  (P : Typed.Proc n) (ρ : 𝔽 n → 𝔽 n′) →
+  Translation.channelCount (P Typed.⋯ₚ ρ) ≡
+  Translation.channelCount P
+channelCount-rename (Typed.⟪ e ⟫) ρ = refl
+channelCount-rename (P Typed.∥ Q) ρ =
+  cong₂ _+_ (channelCount-rename P ρ) (channelCount-rename Q ρ)
+channelCount-rename (Typed.ν B₁ B₂ P) ρ =
+  cong suc (channelCount-rename P
+    (Source._↑*_ ρ (sum B₁ + sum B₂)))
+
+processCount-rename :
+  (P : Typed.Proc n) (ρ : 𝔽 n → 𝔽 n′) →
+  Translation.processCount (P Typed.⋯ₚ ρ) ≡
+  Translation.processCount P
+processCount-rename (Typed.⟪ e ⟫) ρ = refl
+processCount-rename (P Typed.∥ Q) ρ =
+  cong₂ _+_ (processCount-rename P ρ) (processCount-rename Q ρ)
+processCount-rename (Typed.ν B₁ B₂ P) ρ =
+  processCount-rename P (Source._↑*_ ρ (sum B₁ + sum B₂))
 
 ++ₛ-lookupˡ :
   ∀ {a b n} (sigma₁ : Translation.Env a n)
