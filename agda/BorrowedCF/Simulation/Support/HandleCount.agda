@@ -16,7 +16,6 @@ open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
 open import BorrowedCF.Processes.Typed using (BindGroup; structBinder)
 open import BorrowedCF.Terms using (module SplitRenamings)
-import BorrowedCF.Reduction.Processes.Typed as 𝐓R
 open import BorrowedCF.Simulation.Support.Confine using (count)
 open import BorrowedCF.Simulation.Support.StructDom
   using (count-cast; count-structBinder-lt; count-weaken*-lo
