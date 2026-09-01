@@ -32,6 +32,15 @@ variable c : ℕ
 ++ₛ-lookupʳ {a = a} {b = b} sigma₁ sigma₂ i =
   cong [ sigma₁ , sigma₂ ]′ (Fin.splitAt-↑ʳ a b i)
 
+++ₛ-Value :
+  ∀ {a b n} {sigma₁ : Translation.Env a n}
+    {sigma₂ : Translation.Env b n} →
+  ValueEnv sigma₁ → ValueEnv sigma₂ →
+  ValueEnv (sigma₁ Translation.++ₛ sigma₂)
+++ₛ-Value {a = a} Vsigma₁ Vsigma₂ i with Fin.splitAt a i
+... | inj₁ x = Vsigma₁ x
+... | inj₂ x = Vsigma₂ x
+
 UB-head :
   ∀ b (B : Typed.BindGroup) (r c : 𝔽 n) (e₁ e₂ : SoupTerm.Tm n) →
   Σ[ e₂′ ∈ SoupTerm.Tm n ]
