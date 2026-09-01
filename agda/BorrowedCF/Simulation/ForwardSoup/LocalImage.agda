@@ -152,6 +152,16 @@ record LocalImage
       threadEmbedding j ≡ just l →
       i ≡ j
 
+    channel-not-ambient :
+      (i : 𝔽 (Translation.channelCount P)) →
+      ¬ ambientChannel
+        (physicalChannel (lookup logicalChannels i))
+
+    thread-not-ambient :
+      ∀ {i l} →
+      threadEmbedding i ≡ just l →
+      ¬ ambientThread l
+
     live-channel :
       (i : 𝔽 (Translation.channelCount P)) →
       lookup (Soup.channels C)

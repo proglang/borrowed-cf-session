@@ -71,6 +71,8 @@ initialLocalImage P = record
       forwardPhysical-allFin j
   ; threadEmbedding = just
   ; threadEmbedding-injective = λ { refl refl → refl }
+  ; channel-not-ambient = λ _ ()
+  ; thread-not-ambient = λ _ ()
   ; live-channel = λ i →
       cong
         (lookup (proj₁ (Translation.flatten P

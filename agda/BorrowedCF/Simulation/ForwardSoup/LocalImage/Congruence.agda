@@ -170,7 +170,8 @@ reindex-image :
   LocalImage Q targetChannels targetEnv ambientChannel ambientThread C
 reindex-image {P = P} {Q = Q}
   {sourceChannels = sourceChannels}
-  {targetChannels = targetChannels} {C = C} reindex image = record
+  {targetChannels = targetChannels} {ambientChannel = ambientChannel}
+  {C = C} reindex image = record
   { channelEmbedding-injective = λ {i} {j} equal →
       sym (channel-forward-backward reindex i) ■
       cong (channelForward reindex)
@@ -185,6 +186,11 @@ reindex-image {P = P} {Q = Q}
       cong (threadForward reindex)
         (threadEmbedding-injective image equalᵢ equalⱼ) ■
       thread-forward-backward reindex _
+  ; channel-not-ambient = λ i ambient →
+      channel-not-ambient image (channelBackward reindex i)
+        (subst ambientChannel (channel-entry reindex i) ambient)
+  ; thread-not-ambient = λ embedded →
+      thread-not-ambient image embedded
   ; live-channel = λ i →
       cong (lookup (Soup.channels C))
         (channel-entry reindex i) ■
@@ -590,6 +596,8 @@ unit-left-elim {c = c} {m = m} {P = P} {channels = channels} {sigma = sigma}
   ; threadEmbedding = threadEmbedding image ∘ suc
   ; threadEmbedding-injective = λ equalᵢ equalⱼ →
       Fin.suc-injective (threadEmbedding-injective image equalᵢ equalⱼ)
+  ; channel-not-ambient = channel-not-ambient image
+  ; thread-not-ambient = thread-not-ambient image
   ; live-channel = live-channel image
   ; live-thread = λ j →
       retarget-thread {n = c} {threads = Soup.threads C}
@@ -636,6 +644,10 @@ unit-left-intro {c = c} {m = m} {P = P} {channels = channels}
   { channelEmbedding-injective = channelEmbedding-injective image
   ; threadEmbedding = embedding′
   ; threadEmbedding-injective = embedding′-injective
+  ; channel-not-ambient = channel-not-ambient image
+  ; thread-not-ambient = λ where
+      {zero} ()
+      {suc i} embedded → thread-not-ambient image embedded
   ; live-channel = live-channel image
   ; live-thread = λ where
       zero → omitted refl (unit-head-thread P channels sigma)

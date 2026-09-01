@@ -336,6 +336,23 @@ focus-image {c = c} {m = m} {P = P} {context = context} {channels = channels}
   ; threadEmbedding-injective = λ equalᵢ equalⱼ →
       threadInContext-injective context P
         (threadEmbedding-injective image equalᵢ equalⱼ)
+  ; channel-not-ambient = λ i → λ where
+      (inj₁ inherited) →
+        channel-not-ambient image (channelInContext context P i)
+          (subst ambientChannel
+            (sym (cong physicalChannel
+              (focus-logical-channel context P channels sigma i)))
+            inherited)
+      (inj₂ (j , beyond , equal)) →
+        beyond i (channelEmbedding-injective image
+          (cong physicalChannel
+             (focus-logical-channel context P channels sigma i) ■
+           sym equal))
+  ; thread-not-ambient = λ {i} {l} embedded → λ where
+      (inj₁ inherited) →
+        thread-not-ambient image embedded inherited
+      (inj₂ (j , beyond , equal)) →
+        beyond i (threadEmbedding-injective image embedded equal)
   ; live-channel = λ i →
       cong (lookup (Soup.channels C))
         (sym (cong physicalChannel
