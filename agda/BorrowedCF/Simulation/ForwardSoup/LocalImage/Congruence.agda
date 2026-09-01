@@ -108,10 +108,11 @@ retarget-thread equal (omitted omittedEq unitEq) =
   omitted omittedEq (sym equal ■ unitEq)
 
 record ImageReindex
-  {P Q : Typed.Proc n}
+  {P : Typed.Proc n} {Q : Typed.Proc n′}
   (sourceChannels : Vec (OrientedChannel c) (Translation.channelCount P))
   (targetChannels : Vec (OrientedChannel c) (Translation.channelCount Q))
-  (sigma : Translation.Env n (2 *ℕ c)) : Set where
+  (sourceEnv : Translation.Env n (2 *ℕ c))
+  (targetEnv : Translation.Env n′ (2 *ℕ c)) : Set where
   field
     channelBackward :
       𝔽 (Translation.channelCount Q) →
@@ -131,9 +132,9 @@ record ImageReindex
       physicalChannel (lookup sourceChannels (channelBackward i))
     channel-content :
       (i : 𝔽 (Translation.channelCount Q)) →
-      lookup (proj₁ (flattenOriented P sourceChannels sigma))
+      lookup (proj₁ (flattenOriented P sourceChannels sourceEnv))
         (channelBackward i) ≡
-      lookup (proj₁ (flattenOriented Q targetChannels sigma)) i
+      lookup (proj₁ (flattenOriented Q targetChannels targetEnv)) i
 
     threadBackward :
       𝔽 (Translation.processCount Q) →
@@ -149,22 +150,24 @@ record ImageReindex
       threadBackward (threadForward i) ≡ i
     thread-content :
       (i : 𝔽 (Translation.processCount Q)) →
-      lookup (proj₂ (flattenOriented P sourceChannels sigma))
+      lookup (proj₂ (flattenOriented P sourceChannels sourceEnv))
         (threadBackward i) ≡
-      lookup (proj₂ (flattenOriented Q targetChannels sigma)) i
+      lookup (proj₂ (flattenOriented Q targetChannels targetEnv)) i
 
 open ImageReindex public
 
 reindex-image :
-  {P Q : Typed.Proc n}
+  {P : Typed.Proc n} {Q : Typed.Proc n′}
   {sourceChannels : Vec (OrientedChannel c) (Translation.channelCount P)}
   {targetChannels : Vec (OrientedChannel c) (Translation.channelCount Q)}
-  {sigma : Translation.Env n (2 *ℕ c)}
+  {sourceEnv : Translation.Env n (2 *ℕ c)}
+  {targetEnv : Translation.Env n′ (2 *ℕ c)}
   {ambientChannel : 𝔽 c → Set} {ambientThread : 𝔽 m → Set}
   {C : Soup.Config c m} →
-  ImageReindex {P = P} {Q = Q} sourceChannels targetChannels sigma →
-  LocalImage P sourceChannels sigma ambientChannel ambientThread C →
-  LocalImage Q targetChannels sigma ambientChannel ambientThread C
+  ImageReindex {P = P} {Q = Q}
+    sourceChannels targetChannels sourceEnv targetEnv →
+  LocalImage P sourceChannels sourceEnv ambientChannel ambientThread C →
+  LocalImage Q targetChannels targetEnv ambientChannel ambientThread C
 reindex-image {P = P} {Q = Q}
   {sourceChannels = sourceChannels}
   {targetChannels = targetChannels} {C = C} reindex image = record
@@ -307,7 +310,7 @@ parallel-swap-image {P = P} {Q = Q} {channels = channels}
   where
   reindex :
     ImageReindex {P = P Typed.∥ Q} {Q = Q Typed.∥ P}
-      channels (rotate (Translation.channelCount P) channels) sigma
+      channels (rotate (Translation.channelCount P) channels) sigma sigma
   reindex = record
     { channelBackward = Fin.swap (Translation.channelCount Q)
     ; channelForward = Fin.swap (Translation.channelCount P)
@@ -518,7 +521,7 @@ parallel-assoc-image {P = P} {Q = Q} {R = R} {channels = channels}
     ImageReindex
       {P = P Typed.∥ (Q Typed.∥ R)}
       {Q = (P Typed.∥ Q) Typed.∥ R}
-      channels (associate pc qc channels) sigma
+      channels (associate pc qc channels) sigma sigma
   reindex = record
     { channelBackward = Fin.cast channelAssoc
     ; channelForward = Fin.cast (sym channelAssoc)
