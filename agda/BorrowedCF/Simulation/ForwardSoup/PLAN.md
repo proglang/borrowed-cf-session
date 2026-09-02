@@ -439,3 +439,11 @@ proved and 11 leaf holes, `sim-global`). Notes: `chanCx-⸴*` no longer exists i
 and `Backward/*` are stale); the typed context/struct types are `Context.Ctx`/`Context.Struct`; `_;_⊢ₚ_` uses U+037E.
 Phase 3 layout: `Local/Step.agda` (record + identity embeddings + orientation kit), one `Local/<Rule>.agda` per leaf
 exporting `U-<rule>-local : … → LocalStep …`, wired into `Local.agda`.
+Phase 3 started (2026-09-02, third session). `Local/Step.agda` (307 lines, 0 goals) holds `LocalStep`,
+`embedding-mono` and the shared leaf infrastructure: `ren-id` (identity renaming of soup terms),
+`identity-embedding`/`identity-step` for the rules that keep both counts, the orientation kit
+(`orientSide-opposite`, `open-orient`, `endpointFlags-orient`, `setEndpointFlags-orient`,
+`appendEndpointFlag-orient`) and the redex-presence facts (`frame-not-K`, `K-head-irreducible`,
+`K-irreducible`, `plug-not-K`).  `Local/Exp.agda` (102 lines, 0 goals) exports `U-exp-local`;
+`Local.agda` is down to 449 lines and 10 goals.  Note: `Local/*.agda` may not define anything called
+`image′`/`n′`/`m′`/`step`/`C′` — `Local/Step.agda` re-exports the `LocalStep` fields with `open … public`.

@@ -1,12 +1,11 @@
 -- | Phase 2 of the forward simulation Typed → UntypedSoup: the local
 --   simulation skeleton (`ForwardSoup/PLAN.md`, §3 and §6.2).
 --
---   `LocalStep` packages one soup step together with the ambient embedding
---   that carries the frame across it and the image of the reduct.  `local-sim`
---   dispatches on the fourteen typed reduction rules: the three frame rules
---   (`R-Par`, `R-Bind`, `R-Struct`) are proved here from the Phase 1 frame
---   algebra, the eleven leaf rules are left as goals to be discharged by the
---   per-rule modules of Phase 3.
+--   `LocalStep` and the shared leaf infrastructure live in `Local/Step.agda`;
+--   this module is the dispatcher over the fourteen typed reduction rules.
+--   The three frame rules (`R-Par`, `R-Bind`, `R-Struct`) are proved here from
+--   the Phase 1 frame algebra, the leaf rules are discharged by the per-rule
+--   modules of Phase 3.
 module BorrowedCF.Simulation.ForwardSoup.Local where
 
 open import Data.Nat.ListAction using (sum)
@@ -57,6 +56,9 @@ open import BorrowedCF.Simulation.ForwardSoup.World
 open import BorrowedCF.Simulation.ForwardSoup.World.Embedding
   using (Transport; AmbientEmbedding; targetAmbientChannel; targetAmbientThread)
 
+open import BorrowedCF.Simulation.ForwardSoup.Local.Step public
+open import BorrowedCF.Simulation.ForwardSoup.Local.Exp using (U-exp-local)
+
 -- `LocalStep` has fields called `n′`/`m′`, so the homonymous generalisable
 -- variables must stay out of scope here.
 open Nat.Variables hiding (n′; m′)
@@ -79,66 +81,6 @@ private
     {Γ₁ : Context.Ctx a} {Γ₂ : Context.Ctx b} →
     ChanCx Γ₁ → ChanCx Γ₂ → ChanCx (Γ₁ Context.⸴* Γ₂)
   chanCx-⸴* = AllVP.++⁺
-
-------------------------------------------------------------------------
--- One simulated step, with the frame carried across it.
-
-record LocalStep
-  {k n m : ℕ}
-  (P′ : Typed.Proc k)
-  (sigma : Translation.Env k (2 *ℕ n))
-  (ambientChannel : 𝔽 n → Set)
-  (ambientThread : 𝔽 m → Set)
-  (C : Soup.Config n m) : Set where
-  field
-    n′ m′ : ℕ
-    C′ : Soup.Config n′ m′
-    step : C SoupReduction.─→ₚ C′
-    embedding : AmbientEmbedding ambientChannel ambientThread C C′
-    logicalChannels′ :
-      Vec (OrientedChannel n′) (Translation.channelCount P′)
-    image′ :
-      LocalImage P′ logicalChannels′
-        (renameEnv (AmbientEmbedding.endpointEmbedding embedding) sigma)
-        (targetAmbientChannel embedding)
-        (targetAmbientThread embedding)
-        C′
-
-open LocalStep public
-
-------------------------------------------------------------------------
--- Shrinking the ambient sets of an embedding.  Only the two content
--- obligations mention them, so restricting the sets keeps every map — and
--- hence `targetAmbientChannel`/`targetAmbientThread` stay the transports of
--- the *same* maps.
-
-embedding-mono :
-  {n m n′ m′ : ℕ}
-  {ambientChannel ambientChannel₁ : 𝔽 n → Set}
-  {ambientThread ambientThread₁ : 𝔽 m → Set}
-  {C : Soup.Config n m} {C′ : Soup.Config n′ m′} →
-  ((i : 𝔽 n) → ambientChannel i → ambientChannel₁ i) →
-  ((l : 𝔽 m) → ambientThread l → ambientThread₁ l) →
-  AmbientEmbedding ambientChannel₁ ambientThread₁ C C′ →
-  AmbientEmbedding ambientChannel ambientThread C C′
-embedding-mono monoChannel monoThread embedding = record
-  { channelEmbedding =
-      AmbientEmbedding.channelEmbedding embedding
-  ; channelEmbedding-injective =
-      AmbientEmbedding.channelEmbedding-injective embedding
-  ; threadEmbedding =
-      AmbientEmbedding.threadEmbedding embedding
-  ; threadEmbedding-injective =
-      AmbientEmbedding.threadEmbedding-injective embedding
-  ; endpointEmbedding =
-      AmbientEmbedding.endpointEmbedding embedding
-  ; endpoint-respects-channel =
-      AmbientEmbedding.endpoint-respects-channel embedding
-  ; ambient-channel-content = λ i ambient →
-      AmbientEmbedding.ambient-channel-content embedding i (monoChannel i ambient)
-  ; ambient-thread-content = λ j ambient →
-      AmbientEmbedding.ambient-thread-content embedding j (monoThread j ambient)
-  }
 
 ------------------------------------------------------------------------
 -- The local simulation statement.
@@ -165,7 +107,8 @@ Local-Sim =
 local-sim : Local-Sim
 
 -- Leaf rules (Phase 3).
-local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-Exp red) = {! !}
+local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-Exp red) =
+  U-exp-local Vsigma image red
 local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-Fork E V) = {! !}
 local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-New E) = {! !}
 local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-Com V) = {! !}
