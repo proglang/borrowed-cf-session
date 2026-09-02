@@ -504,3 +504,32 @@ inline lambdas: as `where` definitions they join the termination-checker's mutua
 induction on `B` is rejected.  In `Local/Acq.agda` the residual image needs *both*
 `consumePhi-image` (global rewrite of every thread) and `config-resp` (the extra `replaceAt` of the
 redex thread, which is ambient for the residual).
+
+### 6.4 Open design issue: interior R-RSplit is not simulated by RUS-RSplit as stated (2026-09-02)
+
+`RUS-RSplit` appends the new `drop` flag at the END of the endpoint's flag list and gives the two new
+triples `phi (x , k)` with `k = length flags` (= number of existing boundaries). The translation
+`UB[ B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂ ]` numbers boundary slots in group order (`UBFrom k` hands slot `k` to
+the boundary after group `k`), so the new boundary gets slot `length B₁` and every boundary of `B₂`
+moves up by one. The two agree only when `B₂ = []`. Concrete counterexample: source groups `1 ∷ 2 ∷ []`
+(`B₁ = []`, `q = 0`, `b₁ = 0`, `B₂ = 2 ∷ []`), target groups `1 ∷ 1 ∷ 2 ∷ []`: the soup produces the new
+handle pair with `phi (x , 1)` and leaves `P`'s handles at `phi (x , 0)`; the translation of the typed
+reduct has the new pair at `phi (x , 0)` and `P`'s handles at `phi (x , 1)`. Flag lists coincide
+(`drop ∷ drop`), thread contents do not. Typing does not force `B₂ = []` (`rsplit-confine`, the untyped
+`SplitsRQ*` theorems treat interior splits), and `LocalImage` demands exact thread equality. This is
+the real reason the old `RSplit.agda` holes (`bindFlags-rsplit`, the step witness, `target-body`)
+could not be closed.
+
+Options (user decision):
+1. Change `RUS-RSplit` to a *positional* insertion: insert the flag at position `p = length B₁`
+   (the group boundary index) and apply `insertPhi x p` (the inverse of `consumePhi`: slots `≥ p`
+   shift up) to all threads; then `RUS-RSplit` mirrors the typed rule exactly and `LocalImage` stays
+   as is. Cost: soup semantics change + `insertPhi` versions of the Acq support lemmas
+   (`UBFrom-consumePhi`, `flatten-consumePhi`, `consumePhi-image`) and the phi-separation argument
+   for ambient threads (mirrors `RUS-Acquire`).
+2. Keep the soup and weaken the image: `LocalImage` up to a per-endpoint permutation of flag slots
+   (threads compared modulo a slot bijection). Heavy: touches every module of Phase 1-3.
+3. Keep both and prove `U-rsplit-local` only under the extra hypothesis `B₂ ≡ []` (the case the soup
+   rule supports); the general theorem then has one unsimulated typed step.
+
+LSplit is unaffected (no new boundary: `ϕ[ q + suc b₁ ] = ϕ[ q + suc (suc b₁) ] = drop`, channels unchanged).
