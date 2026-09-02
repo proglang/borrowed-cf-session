@@ -293,3 +293,134 @@ the former keeps all existing `LocalImage` lemmas untouched.
 vacuity), `Forward/Discard.agda:32–52` (discard vacuity), `Processes/Typed.agda` (`inv-ν`, `inv-∥`,
 `inv-⟪⟫`, `bindCtx⇒chanCtx`), `Processes/Congruence.agda:242` (`_/_⊢-≋_`). All have interfaces
 and no holes; they only become importable after the Phase 0 pragma.
+
+## 6. Phase 1/2 detailed design (2026-09-02, second session)
+
+Decisions taken after re-reading `LocalImage`, `World/Embedding`, `Congruence`, `Restriction`:
+
+* `Separated` is a **hypothesis of `Local-Sim`**, not a field of `LocalImage`; it never mentions
+  `lc`, so it is invariant under `≋` and monotone in the ambient sets:
+  ```agda
+  PhiFreeFor : (𝔽 n → Set) → SoupTerm.Tm (2 *ℕ n) → Set
+  PhiFreeFor aC t = ∀ (i : 𝔽 n) (side : 𝔽 2) (k : ℕ) → ¬ aC i →
+    SoupReduction.consumePhi (Soup.endpoint i side) k t ≡ t
+  record Separated (σ : Env k (2 *ℕ n)) (aC : 𝔽 n → Set) (aT : 𝔽 m → Set) (C : Config n m) where
+    env-separated    : ∀ x → PhiFreeFor aC (σ x)
+    thread-separated : ∀ j → aT j → PhiFreeFor aC (lookup (threads C) j)
+  ```
+  i.e. ambient threads and the environment mention `phi` only on ambient channels.
+* `ambient-transport` produces an image whose ambient sets are the **complements of the
+  transported resources**; garbage clauses are then vacuous and `par-join` does all bookkeeping.
+* Frame-case helper statements (all in new modules under `LocalImage/`):
+
+  `Frame.agda` (shared): `_∪ᵖ_`, `singletonᵖ`, `ownedChannels lc`, `ownedThreads te`,
+  `ambient-resp` (pointwise-equivalent ambient predicates), `env-resp` (pointwise-equal envs,
+  via `flattenOriented-env-cong`), `bindEnv B₁ B₂ c σ`, `bindChannel B₁ B₂ c`, `flatten-bind`.
+
+  `Parallel.agda`: `par-split-left`, `par-split-right`, `par-join` (see agent brief in §6.1).
+
+  `Bind.agda`: `res-split`, `res-join`.
+
+  `Embedding.agda`: `ambient-transport` along an `AmbientEmbedding`.
+
+  `Separation.agda`: `Separated`, `separated-mono`, `separated-bind`, `separated-par-left`
+  (+ `consumePhi-ren`, `consumePhi-T`, `flatten-phi-free`).
+
+  `Struct.agda`: `reindex-sym`, the `ImageReindex`es for `ν-comm′` and `ν-ext′`, `≋′-image`
+  (both directions) and `≋-image : P ≋ Q → LocalImage P lc … → Σ lc′. LocalImage Q lc′ …`.
+
+### 6.1 Statements
+
+```agda
+-- Frame.agda
+_∪ᵖ_ : (𝔽 a → Set) → (𝔽 a → Set) → 𝔽 a → Set ;  (p ∪ᵖ q) i = p i ⊎ q i
+singletonᵖ : 𝔽 a → 𝔽 a → Set ;  singletonᵖ c i = c ≡ i
+ownedChannels : Vec (OrientedChannel n) k → 𝔽 n → Set
+ownedChannels lc i = Σ[ j ∈ 𝔽 k ] physicalChannel (lookup lc j) ≡ i
+ownedThreads : (𝔽 k → Maybe (𝔽 m)) → 𝔽 m → Set
+ownedThreads te l = Σ[ j ∈ 𝔽 k ] te j ≡ just l
+ambient-resp : (∀ i → aC i → aC′ i) → (∀ i → aC′ i → aC i) →
+               (∀ l → aT l → aT′ l) → (∀ l → aT′ l → aT l) →
+               LocalImage P lc σ aC aT C → LocalImage P lc σ aC′ aT′ C
+flattenOriented-env-cong : (∀ x → σ x ≡ σ′ x) → flattenOriented P lc σ ≡ flattenOriented P lc σ′
+env-resp : (∀ x → σ x ≡ σ′ x) → LocalImage P lc σ aC aT C → LocalImage P lc σ′ aC aT C
+bindEnv : (B₁ B₂ : BindGroup) → OrientedChannel n → Env k (2 *ℕ n) → Env (sum B₁ + sum B₂ + k) (2 *ℕ n)
+bindEnv B₁ B₂ c σ =
+  (proj₁ (UB[ B₁ ] (physicalEndpoint c 0F) (* , physicalEndpoint c 0F , *)) ++ₛ
+   proj₁ (UB[ B₂ ] (physicalEndpoint c 1F) (* , physicalEndpoint c 1F , *))) ++ₛ σ
+bindChannel : (B₁ B₂ : BindGroup) → OrientedChannel n → Soup.Channel
+bindChannel B₁ B₂ c = orientChannel (proj₂ c) (true , proj₂ (UB[ B₁ ] …) , proj₂ (UB[ B₂ ] …))
+flatten-bind : flattenOriented (ν B₁ B₂ P) (c ∷ lc) σ ≡
+  (bindChannel B₁ B₂ c ∷ proj₁ (flattenOriented P lc (bindEnv B₁ B₂ c σ)) ,
+   proj₂ (flattenOriented P lc (bindEnv B₁ B₂ c σ)))
+
+-- Parallel.agda
+par-split-left : (image : LocalImage (P ∥ Q) lc σ aC aT C) →
+  LocalImage P (V.take (channelCount P) lc) σ
+    (aC ∪ᵖ ownedChannels (V.drop (channelCount P) lc))
+    (aT ∪ᵖ ownedThreads (threadEmbedding image ∘ (processCount P ↑ʳ_))) C
+par-split-right : (image : LocalImage (P ∥ Q) lc σ aC aT C) →
+  LocalImage Q (V.drop (channelCount P) lc) σ
+    (aC ∪ᵖ ownedChannels (V.take (channelCount P) lc))
+    (aT ∪ᵖ ownedThreads (threadEmbedding image ∘ (_↑ˡ processCount Q))) C
+par-join : (imageP : LocalImage P lc₁ σ aC₁ aT₁ C) (imageQ : LocalImage Q lc₂ σ aC₂ aT₂ C) →
+  (∀ j → aC₁ (physicalChannel (lookup lc₂ j))) →
+  (∀ {j l} → threadEmbedding imageQ j ≡ just l → aT₁ l) →
+  (∀ i → aC i → aC₁ i) → (∀ i → aC i → aC₂ i) →
+  (∀ l → aT l → aT₁ l) → (∀ l → aT l → aT₂ l) →
+  (∀ i → aC₁ i → aC i ⊎ ownedChannels lc₂ i) →
+  (∀ l → aT₁ l → aT l ⊎ ownedThreads (threadEmbedding imageQ) l) →
+  LocalImage (P ∥ Q) (lc₁ V.++ lc₂) σ aC aT C
+  -- thread embedding of the result: [ threadEmbedding imageP , threadEmbedding imageQ ]′ ∘ Fin.splitAt (processCount P)
+
+-- Bind.agda
+res-split : LocalImage (ν B₁ B₂ P) (c ∷ lc) σ aC aT C →
+  LocalImage P lc (bindEnv B₁ B₂ c σ) (aC ∪ᵖ singletonᵖ (physicalChannel c)) aT C
+  × lookup (channels C) (physicalChannel c) ≡ bindChannel B₁ B₂ c
+res-join : LocalImage P lc (bindEnv B₁ B₂ c σ) (aC ∪ᵖ singletonᵖ (physicalChannel c)) aT C →
+  lookup (channels C) (physicalChannel c) ≡ bindChannel B₁ B₂ c →
+  LocalImage (ν B₁ B₂ P) (c ∷ lc) σ aC aT C
+
+-- Embedding.agda
+ambient-transport : (emb : AmbientEmbedding aC₁ aT₁ C C′) (image : LocalImage Q lc σ aC aT C) →
+  (∀ i → aC₁ (physicalChannel (lookup lc i))) →
+  (∀ {j l} → threadEmbedding image j ≡ just l → aT₁ l) →
+  LocalImage Q (V.map (renameOriented (channelEmbedding emb)) lc) (renameEnv (endpointEmbedding emb) σ)
+    (λ i → ¬ ownedChannels (V.map (renameOriented (channelEmbedding emb)) lc) i)
+    (λ l → ¬ ownedThreads (Maybe.map (threadEmbedding emb) ∘ threadEmbedding image) l) C′
+
+-- Separation.agda
+separated-mono : (∀ i → aC i → aC′ i) → (∀ l → aT′ l → aT l) → Separated σ aC aT C → Separated σ aC′ aT′ C
+separated-bind : Separated σ aC aT C → Separated (bindEnv B₁ B₂ c σ) (aC ∪ᵖ singletonᵖ (physicalChannel c)) aT C
+consumePhi-ren : (ρ injective) → consumePhi (ρ x) k (t ⋯ᵣ ρ) ≡ consumePhi x k t ⋯ᵣ ρ
+consumePhi-T : consumePhi x k (T[ e ] σ) ≡ T[ e ] (λ y → consumePhi x k (σ y))
+flatten-phi-free : (∀ y → PhiFreeFor aC (σ y)) → (∀ i → aC (physicalChannel (lookup lc i))) →
+  ∀ j → PhiFreeFor aC (lookup (proj₂ (flattenOriented Q lc σ)) j)
+separated-par-left : Separated σ aC aT C → (image : LocalImage (P ∥ Q) lc σ aC aT C) →
+  Separated σ (aC ∪ᵖ ownedChannels (V.drop (channelCount P) lc))
+              (aT ∪ᵖ ownedThreads (threadEmbedding image ∘ (processCount P ↑ʳ_))) C
+
+-- Struct.agda
+reindex-sym : ImageReindex {P} {Q} lcP lcQ σP σQ → ImageReindex {Q} {P} lcQ lcP σQ σP
+≋′-image  : P ≋′ Q → LocalImage P lc σ aC aT C → Σ[ lc′ ∈ _ ] LocalImage Q lc′ σ aC aT C
+≋′-image⁻ : P ≋′ Q → LocalImage Q lc σ aC aT C → Σ[ lc′ ∈ _ ] LocalImage P lc′ σ aC aT C
+≋-image   : P ≋ Q  → LocalImage P lc σ aC aT C → Σ[ lc′ ∈ _ ] LocalImage Q lc′ σ aC aT C
+```
+
+### 6.2 Skeleton (Phase 2)
+
+```agda
+record LocalStep (P′ : Proc k) (σ : Env k (2 *ℕ n)) (aC : 𝔽 n → Set) (aT : 𝔽 m → Set) (C : Config n m) : Set where
+  field n′ m′ ; C′ : Config n′ m′ ; step : C ─→ₚ C′ ; emb : AmbientEmbedding aC aT C C′
+        lc′ : Vec (OrientedChannel n′) (channelCount P′)
+        image′ : LocalImage P′ lc′ (renameEnv (endpointEmbedding emb) σ) (targetAmbientChannel emb) (targetAmbientThread emb) C′
+Local-Sim = ∀ {k Γ g P P′ n m lc σ aC aT C} → ChanCx Γ → Γ ; g ⊢ₚ P → ValueEnv σ →
+  Separated σ aC aT C → LocalImage P lc σ aC aT C → P ─→ₚ P′ → LocalStep P′ σ aC aT C
+```
+R-Par: `par-split-left` → recurse (`separated-par-left`) → `ambient-transport` of `par-split-right`
+along `emb` → `par-join` (hypotheses discharged by `Transport` algebra) → `LocalStep`.
+R-Bind: `res-split` → recurse (`separated-bind`, `++ₛ-Value`/`UB-Value`, `inv-ν`) → `res-join` after
+`ambient-resp` (`Transport ce (aC ∪ {c}) ⇔ Transport ce aC ∪ {ce c}`), `env-resp`
+(`renameEnv ee (bindEnv c σ) ≐ bindEnv (renameOriented ce c) (renameEnv ee σ)` from `UB-ren-coherent`)
+and `ambient-channel-content` + `UB-flags-ren` for the head channel.
+R-Struct: `≋-image e₁` → recurse (`Γ-S / ⊢P ⊢-≋ e₁`, `separated` unchanged) → `≋-image e₂` on `image′`.
