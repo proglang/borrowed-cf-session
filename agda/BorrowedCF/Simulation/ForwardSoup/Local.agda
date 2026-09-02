@@ -26,6 +26,8 @@ import BorrowedCF.Reduction.Processes.Typed as TypedReduction
 import BorrowedCF.Reduction.Processes.UntypedSoup as SoupReduction
 import BorrowedCF.Terms.BaseSoup as SoupTerm
 
+import BorrowedCF.Simulation.Support.Theorems.ComHelpers2 as ComHelpers
+
 open import BorrowedCF.Reduction.Base using (ChanCx)
 open import BorrowedCF.Processes.Congruence using (_/_⊢-≋_)
 open Typed using (_;_⊢ₚ_)
@@ -59,6 +61,7 @@ open import BorrowedCF.Simulation.ForwardSoup.World.Embedding
 open import BorrowedCF.Simulation.ForwardSoup.Local.Step public
 open import BorrowedCF.Simulation.ForwardSoup.Local.Choice using (U-choice-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Close using (U-close-local)
+open import BorrowedCF.Simulation.ForwardSoup.Local.Com using (U-com-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Exp using (U-exp-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Fork using (U-fork-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.New using (U-new-local)
@@ -117,7 +120,15 @@ local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-Fork E V) =
   U-fork-local {E = E} Vsigma V image
 local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-New E) =
   U-new-local {E = E} Vsigma image
-local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-Com V) = {! !}
+local-sim Γ-S ⊢P Vsigma separated image
+  (TypedReduction.R-Com {b₁ = b₁} {B₁ = B₁} {b₂ = b₂} {B₂ = B₂}
+    {e = e} {P = P₀} {E₁ = E₁} {E₂ = E₂} V)
+  with ComHelpers.com-head≥1 {E₁ = E₁} {E₂ = E₂} {P = P₀} V ⊢P
+... | b₁′ , refl
+  with ComHelpers.com-head≥2 {E₁ = E₁} {E₂ = E₂} {P = P₀} V ⊢P
+... | b₂′ , refl =
+  U-com-local {b₁ = b₁′} {b₂ = b₂′} {B₁ = B₁} {B₂ = B₂}
+    {P = P₀} {E₁ = E₁} {E₂ = E₂} {e = e} Vsigma V image
 local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-Choice E₁ E₂ i) =
   U-choice-local {E₁ = E₁} {E₂ = E₂} {choice = i} Vsigma image
 local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-LSplit = {! !}
