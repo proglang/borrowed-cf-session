@@ -424,3 +424,13 @@ R-Bind: `res-split` → recurse (`separated-bind`, `++ₛ-Value`/`UB-Value`, `in
 (`renameEnv ee (bindEnv c σ) ≐ bindEnv (renameOriented ce c) (renameEnv ee σ)` from `UB-ren-coherent`)
 and `ambient-channel-content` + `UB-flags-ren` for the head channel.
 R-Struct: `≋-image e₁` → recurse (`Γ-S / ⊢P ⊢-≋ e₁`, `separated` unchanged) → `≋-image e₂` on `image′`.
+
+### 6.3 Status (2026-09-02, end of Phase 1)
+
+Phase 0 done (`b26f164`, `51ca31e`; `ComHelpers2.agda` ported to vector contexts on the way).
+Phase 1 done: `LocalImage/{Frame,Separation,SeparationFrame,Reindex,Parallel,Bind,Embedding,Commutation,Extrusion,Struct}.agda`,
+all loading with 0 goals. Deviations from §6.1: `res-join` takes an extra `¬ aC (physicalChannel c)` (supplied by
+`res-split-not-ambient`); `ambient-transport` exports `embedChannels`/`embedThreads`/`physicalChannel-embed`;
+`Extrusion` names the renaming `extrusionRenaming B₁ B₂`; `≋-image` obtains the backward `ν-swap′` via
+`Processes/Congruence.swapₚ-inv` and the backward `∥-assoc′` by a swap/assoc dance. Next: Phase 2 skeleton in
+`ForwardSoup/Local.agda`.
