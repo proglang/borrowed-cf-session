@@ -50,6 +50,10 @@ open import BorrowedCF.Simulation.ForwardSoup.LocalImage.Frame
   using (_∪ᵖ_; singletonᵖ; ownedChannels; ownedThreads; bindEnv; bindChannel)
 open import BorrowedCF.Simulation.ForwardSoup.LocalImage.Parallel
   using (par-split-left; par-split-right; par-join)
+open import BorrowedCF.Simulation.ForwardSoup.Local.BindDrop
+  using ( lift*-↑ˡ; lift*-↑ʳ; split-left; split-right; split-ambient
+        ; Ub-drop; UB-env-drop; UB-flags-drop
+        )
 open import BorrowedCF.Simulation.ForwardSoup.Local.Frames
   using (bindEnv-Value; T-ren-coh; Tᶠ*-plug-ren-coh)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Residual
@@ -74,18 +78,6 @@ open Fin.Patterns
 --   the second, and the ambient ones.
 
 private
-  lift*-↑ˡ :
-    ∀ {a b : ℕ} (rho : 𝔽 a → 𝔽 b) j (y : 𝔽 j) →
-    Source._↑*_ rho j (y ↑ˡ a) ≡ y ↑ˡ b
-  lift*-↑ˡ rho (suc j) zero = refl
-  lift*-↑ˡ rho (suc j) (suc y) = cong suc (lift*-↑ˡ rho j y)
-
-  lift*-↑ʳ :
-    ∀ {a b : ℕ} (rho : 𝔽 a → 𝔽 b) j (w : 𝔽 a) →
-    Source._↑*_ rho j (j ↑ʳ w) ≡ j ↑ʳ rho w
-  lift*-↑ʳ rho zero w = refl
-  lift*-↑ʳ rho (suc j) w = cong suc (lift*-↑ʳ rho j w)
-
   wkₚ-A :
     ∀ a c {k} (v : 𝔽 a) →
     Source.wkₚ {n = k} a c ((v ↑ˡ c) ↑ˡ k) ≡ ((Fin.suc v ↑ˡ suc c) ↑ˡ k)
@@ -212,76 +204,6 @@ private
        ■ cong (λ t → suc a + suc t) (Fin.toℕ-↑ʳ c y)
        ■ sym (+-assoc (suc a) (suc c) (Fin.toℕ y))
        ■ sym (Fin.toℕ-↑ʳ (suc a + suc c) y))
-
-  ----------------------------------------------------------------------
-  -- Reading off a two-step `Fin.splitAt`.
-
-  split-left :
-    ∀ a c {k} {x : 𝔽 (a + c + k)} {z : 𝔽 (a + c)} {v : 𝔽 a} →
-    Fin.splitAt (a + c) x ≡ inj₁ z →
-    Fin.splitAt a z ≡ inj₁ v →
-    (v ↑ˡ c) ↑ˡ k ≡ x
-  split-left a c {k} {x} {z} {v} outer inner =
-    cong (λ s → Fin.join a c s ↑ˡ k) (sym inner)
-    ■ cong (λ t → t ↑ˡ k) (Fin.join-splitAt a c z)
-    ■ cong (Fin.join (a + c) k) (sym outer)
-    ■ Fin.join-splitAt (a + c) k x
-
-  split-right :
-    ∀ a c {k} {x : 𝔽 (a + c + k)} {z : 𝔽 (a + c)} {w : 𝔽 c} →
-    Fin.splitAt (a + c) x ≡ inj₁ z →
-    Fin.splitAt a z ≡ inj₂ w →
-    (a ↑ʳ w) ↑ˡ k ≡ x
-  split-right a c {k} {x} {z} {w} outer inner =
-    cong (λ s → Fin.join a c s ↑ˡ k) (sym inner)
-    ■ cong (λ t → t ↑ˡ k) (Fin.join-splitAt a c z)
-    ■ cong (Fin.join (a + c) k) (sym outer)
-    ■ Fin.join-splitAt (a + c) k x
-
-  split-ambient :
-    ∀ p {k} {x : 𝔽 (p + k)} {y : 𝔽 k} →
-    Fin.splitAt p x ≡ inj₂ y →
-    p ↑ʳ y ≡ x
-  split-ambient p {k} {x} outer =
-    cong (Fin.join p k) (sym outer) ■ Fin.join-splitAt p k x
-
-  ----------------------------------------------------------------------
-  -- Dropping the head binder of a group (verbatim from `ForwardSoup/Com.agda`).
-
-  Ub-drop :
-    ∀ b {d : ℕ} (c : 𝔽 d) (e₂ : SoupTerm.Tm d) (x : 𝔽 (suc b)) →
-    Translation.Ub[ suc (suc b) ] (SoupTerm.* , c , e₂) (Fin.suc x) ≡
-    Translation.Ub[ suc b ] (SoupTerm.* , c , e₂) x
-  Ub-drop zero c e₂ zero = refl
-  Ub-drop (suc b) c e₂ zero = refl
-  Ub-drop (suc b) c e₂ (suc x) = Ub-drop b c e₂ x
-
-  UB-env-drop :
-    ∀ b (B : Typed.BindGroup) {d : ℕ} (r c : 𝔽 d) (e₂ : SoupTerm.Tm d)
-      (x : 𝔽 (sum (suc b ∷ B))) →
-    proj₁ (Translation.UB[ suc (suc b) ∷ B ] r (SoupTerm.* , c , e₂))
-      (Fin.suc x) ≡
-    proj₁ (Translation.UB[ suc b ∷ B ] r (SoupTerm.* , c , e₂)) x
-  UB-env-drop zero [] r c e₂ 0F = refl
-  UB-env-drop (suc b) [] r c e₂ 0F = refl
-  UB-env-drop (suc b) [] r c e₂ (suc x) = UB-env-drop b [] r c e₂ x
-  UB-env-drop b (b′ ∷ B) r c e₂ x
-    with Translation.UBFrom 1 (b′ ∷ B) r
-           (SoupTerm.`phi (r , 0) , c , e₂)
-       | Fin.splitAt (suc b) x
-  ... | sigma , flags | inj₁ y = Ub-drop b c (SoupTerm.`phi (r , 0)) y
-  ... | sigma , flags | inj₂ y = refl
-
-  UB-flags-drop :
-    ∀ b (B : Typed.BindGroup) {d : ℕ} (r c : 𝔽 d)
-      (e₁ e₂ : SoupTerm.Tm d) →
-    proj₂ (Translation.UB[ suc (suc b) ∷ B ] r (e₁ , c , e₂)) ≡
-    proj₂ (Translation.UB[ suc b ∷ B ] r (e₁ , c , e₂))
-  UB-flags-drop b [] r c e₁ e₂ = refl
-  UB-flags-drop b (b′ ∷ B) r c e₁ e₂
-    with Translation.UBFrom 1 (b′ ∷ B) r
-           (SoupTerm.`phi (r , 0) , c , e₂)
-  ... | sigma , flags = refl
 
 ------------------------------------------------------------------------
 -- The leaf.
