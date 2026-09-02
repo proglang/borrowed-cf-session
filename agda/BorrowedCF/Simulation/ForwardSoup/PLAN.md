@@ -533,3 +533,18 @@ Options (user decision):
    rule supports); the general theorem then has one unsimulated typed step.
 
 LSplit is unaffected (no new boundary: `ϕ[ q + suc b₁ ] = ϕ[ q + suc (suc b₁) ] = drop`, channels unchanged).
+
+Addendum to 6.4 (after the LSplit port): the flag lists themselves also differ whenever `init B₂`
+contains a zero-width block: for `B₁ = []`, `q = 0`, `b = 0`, `B₂ = 0 ∷ c ∷ []` the soup gives
+`drop ∷ acq ∷ drop`, the translation of the reduct gives `drop ∷ drop ∷ acq`. A fourth option is to
+restrict the *typed* rule `R-RSplit` to `B₂ ≡ []` (last block only), which needs a semantic argument.
+Recommended: option 1 (positional insertion with an `insertPhi x k` dual of `consumePhi`; the whole of
+`Local/AcqSupport.agda` transposes, and `Separated` already supplies the ambient-thread argument).
+
+Status (2026-09-02, end of session): Phase 3 done except R-RSplit. `Local.agda` loads with exactly one
+hole (R-RSplit); every other rule of `local-sim` and `sim-global` are proved. Leaf modules:
+`Local/{Exp,Close,Fork,New,Choice,Com,Discard,Drop,Acq,LSplit}.agda` with support modules
+`Local/{Step,Frames,Residual,BindDrop,AcqSupport,SplitCommon}.agda`; typed side
+`Support/Theorems/DropShape.agda` (new) and `B1VacProbe.agda`, `ComHelpers2.agda` (repaired).
+Phase 4 (cleanup: delete the `SoupImage` world, old leaves, `Context/*`, stale `Forward.agda`/`Backward/*`)
+not started.

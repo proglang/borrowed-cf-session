@@ -67,6 +67,7 @@ open import BorrowedCF.Simulation.ForwardSoup.Local.Discard using (U-discard-loc
 open import BorrowedCF.Simulation.ForwardSoup.Local.Drop using (U-drop-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Exp using (U-exp-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Fork using (U-fork-local)
+open import BorrowedCF.Simulation.ForwardSoup.Local.LSplit using (U-lsplit-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.New using (U-new-local)
 
 -- `LocalStep` has fields called `n′`/`m′`, so the homonymous generalisable
@@ -134,7 +135,9 @@ local-sim Γ-S ⊢P Vsigma separated image
     {P = P₀} {E₁ = E₁} {E₂ = E₂} {e = e} Vsigma V image
 local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-Choice E₁ E₂ i) =
   U-choice-local {E₁ = E₁} {E₂ = E₂} {choice = i} Vsigma image
-local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-LSplit = {! !}
+local-sim Γ-S ⊢P Vsigma separated image
+  (TypedReduction.R-LSplit {E = E}) =
+  U-lsplit-local {E = E} Γ-S ⊢P Vsigma image
 local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-RSplit = {! !}
 local-sim Γ-S ⊢P Vsigma separated image
   (TypedReduction.R-Drop {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {P = P₀} {E = E}) =
