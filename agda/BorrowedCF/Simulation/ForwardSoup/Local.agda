@@ -62,6 +62,7 @@ open import BorrowedCF.Simulation.ForwardSoup.Local.Step public
 open import BorrowedCF.Simulation.ForwardSoup.Local.Choice using (U-choice-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Close using (U-close-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Com using (U-com-local)
+open import BorrowedCF.Simulation.ForwardSoup.Local.Discard using (U-discard-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Exp using (U-exp-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Fork using (U-fork-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.New using (U-new-local)
@@ -138,7 +139,10 @@ local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-Acq = {! !}
 local-sim Γ-S ⊢P Vsigma separated image
   (TypedReduction.R-Close {E₁ = E₁} {E₂ = E₂}) =
   U-close-local {E₁ = E₁} {E₂ = E₂} Vsigma image
-local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-Discard = {! !}
+local-sim Γ-S ⊢P Vsigma separated image
+  (TypedReduction.R-Discard {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {P = P₀} {E = E}) =
+  U-discard-local {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P₀}
+    Γ-S ⊢P Vsigma image
 
 ------------------------------------------------------------------------
 -- R-Par: split the frame, step on the left, transport the right half along

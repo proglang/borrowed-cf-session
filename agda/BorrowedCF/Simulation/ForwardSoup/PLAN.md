@@ -460,3 +460,22 @@ Staleness check (2026-09-02): `Support/Theorems/Drop.agda`, `Theorems/B1VacProbe
 `Forward.agda`, `Backward/*`) no longer load — contexts are vectors now (`lookup Γ x`, not `Γ x`). The Drop/Discard
 vacuity lemmas must be re-established in a fresh typed-only module. `Support/SplitConfine.agda`, `Support/AcqInv.agda`
 and (after the Phase 0 port) `Support/Theorems/ComHelpers2.agda` are current.
+`Local/Discard.agda` (446 lines, 0 goals) exports `U-discard-local`; `Local.agda` is at 473 lines and
+4 goals (R-LSplit, R-RSplit, R-Drop, R-Acq).  Two new shared modules came with it.
+`Local/BindDrop.agda` (255 lines, 0 goals) holds everything the three *binder-shrinking* leaves
+(`R-Com`, `R-Drop`, `R-Discard`) share: `lift*-↑ˡ`/`lift*-↑ʳ`, `split-left`/`-right`/`-ambient`,
+`Ub-drop`/`UB-env-drop`/`UB-flags-drop` (lifted out of `Local/Com.agda`, now 735 lines), plus
+`block-shift`, `UB-env-drop-last`, the three `weakenᵣ-bindEnv-coh`/`-last`/`-drop` environment
+coherences and `bindChannel-drop`/`bindChannel-last`.
+`Support/Theorems/DropShape.agda` (208 lines, 0 goals, no pragma) re-establishes the typed-side
+vacuity arguments on vector contexts: `fn-discard-dom`, `discard-handle-≃skip`,
+`discard-b0-vacuous`, `fn-drop-dom`, `drop-handle-≃ret`, `drop-b₁-zero`, `drop-B₁-cons`,
+`drop-shape`.  It needs the `NoRet`/`RetTip` theory of `Support/Theorems/B1VacProbe.agda`, which
+loads again after re-typing its two `BindCtx′` lemmas (`first-borrow-noRet`,
+`last-first-borrow-≄ret`) for vector contexts; both were unused elsewhere.
+For the `R-Drop` port: `drop-shape` gives `b₁ ≡ 0` and `B₁ ≡ c′ ∷ B′`, so the group shrinks
+`1 ∷ c′ ∷ B′ ↦ 0 ∷ c′ ∷ B′`, the environment coherence is `weakenᵣ-bindEnv-coh-drop`, and the head
+flag flips `ϕ[ 1 ] = drop ↦ ϕ[ 0 ] = acq` while the `UBFrom 1 (c′ ∷ B′) …` tail is shared — so
+`RUS-Drop … before = []`, `after` = that tail's flag list, and the handle triple is
+`𝓒[ * × end₁ × `phi (end₁ , 0) ]` (the `UB-head zero (c′ ∷ B′) …` clause).  The channel bookkeeping
+needs `endpointFlags-orient` and `setEndpointFlags-orient` from `Local/Step.agda`.
