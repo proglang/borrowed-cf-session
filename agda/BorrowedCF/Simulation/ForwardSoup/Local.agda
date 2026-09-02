@@ -57,6 +57,7 @@ open import BorrowedCF.Simulation.ForwardSoup.World.Embedding
   using (Transport; AmbientEmbedding; targetAmbientChannel; targetAmbientThread)
 
 open import BorrowedCF.Simulation.ForwardSoup.Local.Step public
+open import BorrowedCF.Simulation.ForwardSoup.Local.Choice using (U-choice-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Close using (U-close-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Exp using (U-exp-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Fork using (U-fork-local)
@@ -117,7 +118,8 @@ local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-Fork E V) =
 local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-New E) =
   U-new-local {E = E} Vsigma image
 local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-Com V) = {! !}
-local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-Choice E₁ E₂ i) = {! !}
+local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-Choice E₁ E₂ i) =
+  U-choice-local {E₁ = E₁} {E₂ = E₂} {choice = i} Vsigma image
 local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-LSplit = {! !}
 local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-RSplit = {! !}
 local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-Drop = {! !}

@@ -15,6 +15,7 @@
 module BorrowedCF.Simulation.ForwardSoup.Local.Step where
 
 open import Data.Nat using () renaming (_*_ to _*ℕ_)
+open import Data.Maybe using (Maybe; just; nothing)
 
 open import BorrowedCF.Prelude
 
@@ -210,6 +211,65 @@ identity-step {n = n} {m = m} {sigma = sigma}
   fromThread : (l : 𝔽 m) → Transport id ambientThread l → ambientThread l
   fromThread l (source , ambient , sourceEq) =
     subst ambientThread sourceEq ambient
+
+------------------------------------------------------------------------
+-- Moving an image to a configuration that agrees with the old one away from
+-- the frame.  An image only ever inspects non-ambient positions: the ones it
+-- owns — which `channel-not-ambient`/`thread-not-ambient` place outside the
+-- ambient sets — and the garbage ones, which are non-ambient by the
+-- hypothesis of the garbage clauses.  So the *ambient* positions are exactly
+-- the ones an image never looks at, and two configurations agreeing outside
+-- them carry the same images.
+--
+-- This is what a leaf rule needs for the sibling processes it does not touch:
+-- the rule rewrites some threads, all of which are ambient for the sibling's
+-- image, so the sibling's image survives unchanged.
+
+private
+  thread-image-transfer :
+    {n m : ℕ} {threads threads′ : Vec (Soup.Thread n) m}
+    {slot : Maybe (𝔽 m)} {expected : Soup.Thread n} →
+    ((l : 𝔽 m) → slot ≡ just l → lookup threads′ l ≡ lookup threads l) →
+    OptionalThreadImage {n = n} threads slot expected →
+    OptionalThreadImage {n = n} threads′ slot expected
+  thread-image-transfer content (present l slotEq lookupEq) =
+    present l slotEq (content l slotEq ■ lookupEq)
+  thread-image-transfer content (omitted slotEq expectedEq) =
+    omitted slotEq expectedEq
+
+config-resp :
+  {k n m : ℕ} {P : Typed.Proc k}
+  {logicalChannels :
+    Vec (OrientedChannel n) (Translation.channelCount P)}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C C′ : Soup.Config n m} →
+  ((i : 𝔽 n) → ¬ ambientChannel i →
+    lookup (Soup.channels C′) i ≡ lookup (Soup.channels C) i) →
+  ((l : 𝔽 m) → ¬ ambientThread l →
+    lookup (Soup.threads C′) l ≡ lookup (Soup.threads C) l) →
+  LocalImage P logicalChannels sigma ambientChannel ambientThread C →
+  LocalImage P logicalChannels sigma ambientChannel ambientThread C′
+config-resp {logicalChannels = logicalChannels} channelContent threadContent
+  image = record
+  { channelEmbedding-injective = channelEmbedding-injective image
+  ; threadEmbedding = threadEmbedding image
+  ; threadEmbedding-injective = threadEmbedding-injective image
+  ; channel-not-ambient = channel-not-ambient image
+  ; thread-not-ambient = thread-not-ambient image
+  ; live-channel = λ i →
+      channelContent (physicalChannel (lookup logicalChannels i))
+        (channel-not-ambient image i)
+      ■ live-channel image i
+  ; live-thread = λ j →
+      thread-image-transfer
+        (λ l slotEq → threadContent l (thread-not-ambient image slotEq))
+        (live-thread image j)
+  ; garbage-channel = λ i outside notAmbient →
+      channelContent i notAmbient ■ garbage-channel image i outside notAmbient
+  ; garbage-thread = λ l outside notAmbient →
+      threadContent l notAmbient ■ garbage-thread image l outside notAmbient
+  }
 
 ------------------------------------------------------------------------
 -- Orientation kit.  A leaf rule sees the logical side `side` of an oriented

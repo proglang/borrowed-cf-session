@@ -447,3 +447,16 @@ Phase 3 started (2026-09-02, third session). `Local/Step.agda` (307 lines, 0 goa
 `K-irreducible`, `plug-not-K`).  `Local/Exp.agda` (102 lines, 0 goals) exports `U-exp-local`;
 `Local.agda` is down to 449 lines and 10 goals.  Note: `Local/*.agda` may not define anything called
 `image′`/`n′`/`m′`/`step`/`C′` — `Local/Step.agda` re-exports the `LocalStep` fields with `open … public`.
+`Local/{Fork,New,Close}.agda` followed; `Local/Frames.agda` holds the frame/env coherence kit
+(`T-ren-coh`, `Tᶠ*-plug-ren-coh`, `Tᶠ*-plug-renEnv`, `bindEnv-Value`, `renameEnv-Value`).
+`Local/Step.agda` also exports `config-resp` (367 lines): an image only inspects *non-ambient*
+positions, so it transports along any change of configuration confined to the ambient sets.  Every
+leaf whose redex sits beside a residual process needs it for the sibling's image.
+`Local/Choice.agda` (405 lines, 0 goals) exports `U-choice-local`; `Local.agda` is at 458 lines and
+6 goals (R-Com, R-LSplit, R-RSplit, R-Drop, R-Acq, R-Discard).  The Choice shape —
+`res-split` → `par-split-left`/`-right` → `UB-head` for both handles → `RUS-*` → rebuild with
+`par-join`/`res-join` → `identity-step` — is the template for the R-Com port.
+Staleness check (2026-09-02): `Support/Theorems/Drop.agda`, `Theorems/B1VacProbe.agda`, `Forward/Discard.agda` (and
+`Forward.agda`, `Backward/*`) no longer load — contexts are vectors now (`lookup Γ x`, not `Γ x`). The Drop/Discard
+vacuity lemmas must be re-established in a fresh typed-only module. `Support/SplitConfine.agda`, `Support/AcqInv.agda`
+and (after the Phase 0 port) `Support/Theorems/ComHelpers2.agda` are current.
