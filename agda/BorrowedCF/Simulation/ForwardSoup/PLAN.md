@@ -434,3 +434,8 @@ all loading with 0 goals. Deviations from §6.1: `res-join` takes an extra `¬ a
 `Extrusion` names the renaming `extrusionRenaming B₁ B₂`; `≋-image` obtains the backward `ν-swap′` via
 `Processes/Congruence.swapₚ-inv` and the backward `∥-assoc′` by a swap/assoc dance. Next: Phase 2 skeleton in
 `ForwardSoup/Local.agda`.
+Phase 2 done: `ForwardSoup/Local.agda` (`LocalStep`, `embedding-mono`, `Local-Sim : Set₁`, `local-sim` with R-Par/R-Bind/R-Struct
+proved and 11 leaf holes, `sim-global`). Notes: `chanCx-⸴*` no longer exists in `Reduction/Base.agda` (`Forward.agda`
+and `Backward/*` are stale); the typed context/struct types are `Context.Ctx`/`Context.Struct`; `_;_⊢ₚ_` uses U+037E.
+Phase 3 layout: `Local/Step.agda` (record + identity embeddings + orientation kit), one `Local/<Rule>.agda` per leaf
+exporting `U-<rule>-local : … → LocalStep …`, wired into `Local.agda`.
