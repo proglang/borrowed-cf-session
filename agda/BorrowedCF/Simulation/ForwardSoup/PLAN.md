@@ -479,3 +479,28 @@ flag flips `ϕ[ 1 ] = drop ↦ ϕ[ 0 ] = acq` while the `UBFrom 1 (c′ ∷ B′
 `RUS-Drop … before = []`, `after` = that tail's flag list, and the handle triple is
 `𝓒[ * × end₁ × `phi (end₁ , 0) ]` (the `UB-head zero (c′ ∷ B′) …` clause).  The channel bookkeeping
 needs `endpointFlags-orient` and `setEndpointFlags-orient` from `Local/Step.agda`.
+`Local/Drop.agda` (445 lines, 0 goals) exports `U-drop-local` and `Local/Acq.agda` (472 lines,
+0 goals) exports `U-acq-local`; `Local.agda` is at 481 lines and **2 goals** (R-LSplit, R-RSplit —
+the last two leaves).  `Drop` is `Discard` with a channel update: `RUS-Drop j c side F [] fs`,
+new content `setEndpointFlags side (acq ∷ fs)` matched against `bindChannel (0 ∷ c′ ∷ B′) B₂ c`;
+`identity-step`, `config-resp` and the left image's `garbage-channel` all pick up an
+`V.lookup∘updateAt′ i physical` step (the bound channel is never ambient, by
+`res-split-not-ambient`).
+`Local/AcqSupport.agda` (531 lines, 0 goals) is the new `consumePhi` algebra:
+`consumePhi-hit`/`-succ` (the two `shiftSlot`-at-0 clauses; both need
+`with x Data.Fin.Properties.≟ x`), `consumePhi-Value`, `consumeEnv`/`consumeEnv-Value`,
+`Ub-consumePhi`, `UBFrom-consumePhi l B x c e₁ e₂` (consuming cell `0` maps `UBFrom (suc l)` to
+`UBFrom l`; specialised to slot `0`, so `shiftSlot 0 (suc l) = l` is definitional and no `≤`
+hypothesis is needed), `UBFrom-head` (the offset-`l` generalisation of `UB-head`),
+`UBFrom-flags-cong` (copied from the old `ForwardSoup/Com.agda`), `endpoint-side-injective` /
+`orientSide-distinct` / `physicalEndpoint-distinct`, `++ₛ-consumePhi`,
+`Tᶠ-plug-consumePhi`/`Tᶠ*-plug-consumePhi`, `flatten-channels-env` (channels do not depend on the
+environment), `flatten-consumePhi` and `consumePhi-image`.  Deviations from the brief:
+`Tᶠ*-plug-Env-cong` is *not* needed — after `Tᶠ*-plug-consumePhi` the plugged term is
+definitionally `consumeEnv x 0 env 0F`, so `sym (T[_]-plugᶠ* E {e = ` 0F} Vconsumed)` followed by
+`T[_]-Env-cong target envCoh` closes the goal — and nothing was added to `Local/Frames.agda`, so
+its dependents did not have to be revisited.  `UBFrom-consumePhi`'s two block proofs must be
+inline lambdas: as `where` definitions they join the termination-checker's mutual block and the
+induction on `B` is rejected.  In `Local/Acq.agda` the residual image needs *both*
+`consumePhi-image` (global rewrite of every thread) and `config-resp` (the extra `replaceAt` of the
+redex thread, which is ambient for the residual).

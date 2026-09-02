@@ -59,10 +59,12 @@ open import BorrowedCF.Simulation.ForwardSoup.World.Embedding
   using (Transport; AmbientEmbedding; targetAmbientChannel; targetAmbientThread)
 
 open import BorrowedCF.Simulation.ForwardSoup.Local.Step public
+open import BorrowedCF.Simulation.ForwardSoup.Local.Acq using (U-acq-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Choice using (U-choice-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Close using (U-close-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Com using (U-com-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Discard using (U-discard-local)
+open import BorrowedCF.Simulation.ForwardSoup.Local.Drop using (U-drop-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Exp using (U-exp-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Fork using (U-fork-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.New using (U-new-local)
@@ -134,8 +136,14 @@ local-sim Γ-S ⊢P Vsigma separated image (TypedReduction.R-Choice E₁ E₂ i)
   U-choice-local {E₁ = E₁} {E₂ = E₂} {choice = i} Vsigma image
 local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-LSplit = {! !}
 local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-RSplit = {! !}
-local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-Drop = {! !}
-local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-Acq = {! !}
+local-sim Γ-S ⊢P Vsigma separated image
+  (TypedReduction.R-Drop {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {P = P₀} {E = E}) =
+  U-drop-local {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P₀}
+    Γ-S ⊢P Vsigma image
+local-sim Γ-S ⊢P Vsigma separated image
+  (TypedReduction.R-Acq {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {P = P₀} {E = E}) =
+  U-acq-local {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P₀}
+    separated Vsigma image
 local-sim Γ-S ⊢P Vsigma separated image
   (TypedReduction.R-Close {E₁ = E₁} {E₂ = E₂}) =
   U-close-local {E₁ = E₁} {E₂ = E₂} Vsigma image
