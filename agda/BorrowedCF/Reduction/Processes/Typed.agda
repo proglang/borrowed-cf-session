@@ -1,3 +1,5 @@
+{-# OPTIONS --allow-unsolved-metas #-}
+
 module BorrowedCF.Reduction.Processes.Typed where
 
 open import Data.List.Relation.Unary.All as All using (All; []; _∷_)
