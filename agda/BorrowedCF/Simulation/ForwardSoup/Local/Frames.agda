@@ -25,10 +25,12 @@ import BorrowedCF.Terms.Base as Source
 import BorrowedCF.Terms.BaseSoup as SoupTerm
 
 open import BorrowedCF.Simulation.ForwardSoup.Expressions
-  using (ValueEnv; Tᶠ[_]; Tᶠ*[_]; T[_]-⋯ᵣ; T[_]-Env-cong)
+  using (ValueEnv; Tᶠ[_]; Tᶠ*[_]; T[_]-⋯ᵣ; T[_]-Env-cong; T[_]-renEnv; wk-⋯ᵣ)
 open import BorrowedCF.Simulation.ForwardSoup.LocalImage
   using (OrientedChannel; physicalEndpoint)
 open import BorrowedCF.Simulation.ForwardSoup.LocalImage.Frame using (bindEnv)
+open import BorrowedCF.Simulation.ForwardSoup.LocalImage.PhysicalRenaming
+  using (renameEnv)
 open import BorrowedCF.Simulation.ForwardSoup.Translation
   using (++ₛ-Value; UB-Value)
 
@@ -115,6 +117,106 @@ Tᶠ*-plug-ren-coh (F₀ ∷ E) θ σ₁ σ₂ Vσ₁ Vσ₂ coh t =
       (Tᶠ*[ SourceReduction._⋯ᶠ*_ E θ ] {σ = σ₁} Vσ₁) t)
   ■ cong (SoupExpression._[_] (Tᶠ[ F₀ ] {σ = σ₂} Vσ₂))
       (Tᶠ*-plug-ren-coh E θ σ₁ σ₂ Vσ₁ Vσ₂ coh t)
+
+------------------------------------------------------------------------
+-- Translating in a physically renamed environment.
+--
+--   Renaming the *environment* of a translated frame is the same as renaming
+--   the translated frame itself.  `R-New` needs this because the soup rule
+--   states its result with `frames-rename`, whereas the image of the reduct
+--   speaks about the translation in the renamed environment.
+
+renameEnv-Value :
+  ∀ {k a b : ℕ} {sigma : Translation.Env k a} (rho : 𝔽 a → 𝔽 b) →
+  ValueEnv sigma → ValueEnv (renameEnv rho sigma)
+renameEnv-Value rho Vsigma x = SoupExpression.value-rename (Vsigma x) rho
+
+private
+  T-renEnv-lift :
+    ∀ {a d d′ : ℕ} (e : Source.Tm (1 + a))
+      (σ : Translation.Env a d) (ρ : 𝔽 d → 𝔽 d′) →
+    Translation.T[ e ] (Translation.liftEnv (renameEnv ρ σ)) ≡
+    Translation.T[ e ] (Translation.liftEnv σ) SoupTerm.⋯ᵣ SoupTerm.liftRen ρ
+  T-renEnv-lift {a = a} e σ ρ =
+    T[_]-Env-cong e liftEq
+    ■ T[_]-renEnv e (Translation.liftEnv σ) (SoupTerm.liftRen ρ)
+    where
+    liftEq :
+      (x : 𝔽 (1 + a)) →
+      Translation.liftEnv (renameEnv ρ σ) x ≡
+      Translation.liftEnv σ x SoupTerm.⋯ᵣ SoupTerm.liftRen ρ
+    liftEq zero = refl
+    liftEq (suc x) = sym (wk-⋯ᵣ (σ x) ρ)
+
+  T-renEnv-lift₂ :
+    ∀ {a d d′ : ℕ} (e : Source.Tm (2 + a))
+      (σ : Translation.Env a d) (ρ : 𝔽 d → 𝔽 d′) →
+    Translation.T[ e ]
+      (Translation.liftEnv (Translation.liftEnv (renameEnv ρ σ))) ≡
+    Translation.T[ e ] (Translation.liftEnv (Translation.liftEnv σ))
+      SoupTerm.⋯ᵣ SoupTerm.liftRen (SoupTerm.liftRen ρ)
+  T-renEnv-lift₂ {a = a} e σ ρ =
+    T[_]-Env-cong e liftEq
+    ■ T[_]-renEnv e (Translation.liftEnv (Translation.liftEnv σ))
+        (SoupTerm.liftRen (SoupTerm.liftRen ρ))
+    where
+    liftEq :
+      (x : 𝔽 (2 + a)) →
+      Translation.liftEnv (Translation.liftEnv (renameEnv ρ σ)) x ≡
+      Translation.liftEnv (Translation.liftEnv σ) x
+        SoupTerm.⋯ᵣ SoupTerm.liftRen (SoupTerm.liftRen ρ)
+    liftEq zero = refl
+    liftEq (suc zero) = refl
+    liftEq (suc (suc x)) =
+      sym
+        (wk-⋯ᵣ (SoupTerm.wk (σ x)) (SoupTerm.liftRen ρ)
+         ■ cong SoupTerm.wk (wk-⋯ᵣ (σ x) ρ))
+
+Tᶠ-plug-renEnv :
+  ∀ {a d d′ : ℕ} (F₀ : SourceReduction.Frame a)
+    {σ : Translation.Env a d} (Vσ : ValueEnv σ)
+    (ρ : 𝔽 d → 𝔽 d′) (t : SoupTerm.Tm d′) →
+  SoupExpression._[_]
+    (Tᶠ[ F₀ ] {σ = renameEnv ρ σ} (renameEnv-Value ρ Vσ)) t ≡
+  SoupExpression._[_]
+    (SoupExpression.frame-rename (Tᶠ[ F₀ ] {σ = σ} Vσ) ρ) t
+Tᶠ-plug-renEnv (SourceReduction.app₁ e d V?) {σ = σ} Vσ ρ t =
+  cong (λ z → t SoupTerm.·⟨ d ⟩ z) (T[_]-renEnv e σ ρ)
+Tᶠ-plug-renEnv (SourceReduction.app₂ e d V?) {σ = σ} Vσ ρ t =
+  cong (λ z → z SoupTerm.·⟨ d ⟩ t) (T[_]-renEnv e σ ρ)
+Tᶠ-plug-renEnv (SourceReduction.□⊗ e) {σ = σ} Vσ ρ t =
+  cong (λ z → t SoupTerm.⊗ z) (T[_]-renEnv e σ ρ)
+Tᶠ-plug-renEnv (V SourceReduction.⊗□) {σ = σ} Vσ ρ t =
+  cong (λ z → z SoupTerm.⊗ t)
+    (T[_]-renEnv (SourceReduction.vTm V) σ ρ)
+Tᶠ-plug-renEnv (SourceReduction.□; e) {σ = σ} Vσ ρ t =
+  cong (λ z → t SoupTerm.; z) (T[_]-renEnv e σ ρ)
+Tᶠ-plug-renEnv (SourceReduction.`let-`in e) {σ = σ} Vσ ρ t =
+  cong (λ z → SoupTerm.`let t `in z) (T-renEnv-lift e σ ρ)
+Tᶠ-plug-renEnv (SourceReduction.`let⊗-`in e) {σ = σ} Vσ ρ t =
+  cong (λ z → SoupTerm.`let⊗ t `in z) (T-renEnv-lift₂ e σ ρ)
+Tᶠ-plug-renEnv (SourceReduction.`inj□ i) Vσ ρ t = refl
+Tᶠ-plug-renEnv (SourceReduction.`case□`of⟨ e₁ ; e₂ ⟩) {σ = σ} Vσ ρ t =
+  cong₂ (λ z₁ z₂ → SoupTerm.`case t `of⟨ z₁ ; z₂ ⟩)
+    (T-renEnv-lift e₁ σ ρ) (T-renEnv-lift e₂ σ ρ)
+
+Tᶠ*-plug-renEnv :
+  ∀ {a d d′ : ℕ} (E : SourceReduction.Frame* a)
+    {σ : Translation.Env a d} (Vσ : ValueEnv σ)
+    (ρ : 𝔽 d → 𝔽 d′) (t : SoupTerm.Tm d′) →
+  SoupExpression._[_]*
+    (Tᶠ*[ E ] {σ = renameEnv ρ σ} (renameEnv-Value ρ Vσ)) t ≡
+  SoupExpression._[_]*
+    (SoupExpression.frames-rename (Tᶠ*[ E ] {σ = σ} Vσ) ρ) t
+Tᶠ*-plug-renEnv [] Vσ ρ t = refl
+Tᶠ*-plug-renEnv (F₀ ∷ E) {σ = σ} Vσ ρ t =
+  Tᶠ-plug-renEnv F₀ Vσ ρ
+    (SoupExpression._[_]*
+      (Tᶠ*[ E ] {σ = renameEnv ρ σ} (renameEnv-Value ρ Vσ)) t)
+  ■ cong
+      (SoupExpression._[_]
+        (SoupExpression.frame-rename (Tᶠ[ F₀ ] {σ = σ} Vσ) ρ))
+      (Tᶠ*-plug-renEnv E Vσ ρ t)
 
 ------------------------------------------------------------------------
 -- A binder frame environment consists of values.
