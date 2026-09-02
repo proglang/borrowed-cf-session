@@ -57,6 +57,7 @@ open import BorrowedCF.Simulation.ForwardSoup.World.Embedding
   using (Transport; AmbientEmbedding; targetAmbientChannel; targetAmbientThread)
 
 open import BorrowedCF.Simulation.ForwardSoup.Local.Step public
+open import BorrowedCF.Simulation.ForwardSoup.Local.Close using (U-close-local)
 open import BorrowedCF.Simulation.ForwardSoup.Local.Exp using (U-exp-local)
 
 -- `LocalStep` has fields called `n′`/`m′`, so the homonymous generalisable
@@ -117,7 +118,9 @@ local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-LSplit = {! !}
 local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-RSplit = {! !}
 local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-Drop = {! !}
 local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-Acq = {! !}
-local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-Close = {! !}
+local-sim Γ-S ⊢P Vsigma separated image
+  (TypedReduction.R-Close {E₁ = E₁} {E₂ = E₂}) =
+  U-close-local {E₁ = E₁} {E₂ = E₂} Vsigma image
 local-sim Γ-S ⊢P Vsigma separated image TypedReduction.R-Discard = {! !}
 
 ------------------------------------------------------------------------
