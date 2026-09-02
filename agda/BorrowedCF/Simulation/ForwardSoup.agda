@@ -16,6 +16,9 @@ open import BorrowedCF.Simulation.ForwardSoup.Fork
 open import BorrowedCF.Simulation.ForwardSoup.New
 open import BorrowedCF.Simulation.ForwardSoup.Close
 open import BorrowedCF.Simulation.ForwardSoup.Choice
+open import BorrowedCF.Simulation.ForwardSoup.Com using (U-com)
+
+import BorrowedCF.Simulation.Support.Theorems.ComHelpers2 as ComHelpers
 
 Forward-Sim : Set
 Forward-Sim =
@@ -35,7 +38,16 @@ sim→ ⊢P image (TypedReduction.R-Fork E V)
 sim→ ⊢P image (TypedReduction.R-New {s = s} E)
   with U-new {E = E} {s = s} image
 ... | C′ , step , image′ = _ , _ , C′ , step , image′
-sim→ ⊢P image (TypedReduction.R-Com V) = {!!}
+sim→ ⊢P image
+  (TypedReduction.R-Com {b₁ = b₁} {B₁ = B₁} {b₂ = b₂} {B₂ = B₂}
+    {e = e} {P = P₀} {E₁ = E₁} {E₂ = E₂} V)
+  with ComHelpers.com-head≥1 {E₁ = E₁} {E₂ = E₂} {P = P₀} V ⊢P
+... | b₁′ , refl
+  with ComHelpers.com-head≥2 {E₁ = E₁} {E₂ = E₂} {P = P₀} V ⊢P
+... | b₂′ , refl
+  with U-com {b₁ = b₁′} {b₂ = b₂′} {B₁ = B₁} {B₂ = B₂}
+        {E₁ = E₁} {E₂ = E₂} {P = P₀} {e = e} V ⊢P image
+... | C′ , step , image′ = _ , _ , C′ , step , image′
 sim→ ⊢P image (TypedReduction.R-Choice E₁ E₂ side)
   with U-choice {E₁ = E₁} {E₂ = E₂} {side = side} image
 ... | C′ , step , image′ = _ , _ , C′ , step , image′

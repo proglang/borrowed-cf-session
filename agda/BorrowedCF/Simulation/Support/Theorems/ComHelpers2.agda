@@ -202,7 +202,7 @@ fn-recv-dom (T-Weaken _ d) = fn-recv-dom d
 
 pair1-handle : ∀ {N} {Γ : Ctx N} {β : Struct N} {ee}{x : 𝔽 N}{T ϵ}
   → Γ ; β ⊢ ((` x) ⊗ ee) ∶ T ∣ ϵ
-  → ∃[ Tx ] ∃[ d ] ∃[ Te ] (T ≃ (Tx ⊗⟨ d ⟩ Te)) × (Γ x ≃ Tx)
+  → ∃[ Tx ] ∃[ d ] ∃[ Te ] (T ≃ (Tx ⊗⟨ d ⟩ Te)) × (lookup Γ x ≃ Tx)
 pair1-handle (T-Pair {T = Tx} {U = Te} p/s _ ⊢x ⊢e) =
   Tx , biasedDir p/s , Te , ≃-refl , arg-type ⊢x
 pair1-handle (T-Conv T≃ _ d) =
@@ -231,27 +231,27 @@ open T using (last; cons-ret/acq; cons-acq; nil; cons)
 head-bounded : ∀ {s b₁}{B₁ : BindGroup}{Γ₁ : Ctx (sum (suc b₁ ∷ B₁))}
   → Bounded s
   → BindCtx s (suc b₁ ∷ B₁) Γ₁ → b₁ ≡ 0
-  → ∃[ s'' ] (Γ₁ 0F ≡ ⟨ s'' ⟩) × Bounded s''
-head-bounded Bs (last (cons s₁ˡ s₂ˡ ¬sk s≃ˡ Γ≗ˡ (nil Skˡ))) refl =
-  s₁ˡ , sym (Γ≗ˡ 0F)
+  → ∃[ s'' ] (lookup Γ₁ 0F ≡ ⟨ s'' ⟩) × Bounded s''
+head-bounded Bs (last (cons s₁ˡ s₂ˡ ¬sk s≃ˡ (nil Skˡ))) refl =
+  s₁ˡ , refl
   , bounded-seqL (≃-bounded (≃-sym s≃ˡ) Bs) Skˡ
-head-bounded Bs (cons-ret/acq sh {s₂ = st} s≃ Γ≗
-                  (cons s₁'' s₂'' ¬sk s≃' Γ≗' (nil Sk)) rest) refl =
-  s₁'' , (sym (Γ≗ 0F) ■ sym (Γ≗' 0F))
+head-bounded Bs (cons-ret/acq sh {s₂ = st} s≃
+                  (cons s₁'' s₂'' ¬sk s≃' (nil Sk)) rest) refl =
+  s₁'' , refl
   , bounded-seqL (≃-bounded (≃-sym s≃') (-;₂ ret)) Sk
 
 -- recv handle (bare variable y): Δ y ≃ ⟨ msg ⁇ Tᵐ ⟩.
 recv-handle-≃msg : ∀ {N} {Δ : Ctx N}{α β}{y : 𝔽 N}{a Targ U ϵ₁ ϵ₂}
   → Δ ; α ⊢ K `recv ∶ Targ ⟨ a ⟩→ U ∣ ϵ₁
   → Δ ; β ⊢ (` y) ∶ Targ ∣ ϵ₂
-  → ∃[ Tᵐ ] (Δ y ≃ ⟨ msg ⁇ Tᵐ ⟩)
+  → ∃[ Tᵐ ] (lookup Δ y ≃ ⟨ msg ⁇ Tᵐ ⟩)
 recv-handle-≃msg {y = y} ⊢fn ⊢arg
   with fn-recv-dom ⊢fn
 ... | Tᵐ , dom≃ = Tᵐ , ≃-trans (arg-type ⊢arg) (≃-sym dom≃)
 
 recv-handle-≃msg-app : ∀ {N} {Δ : Ctx N}{β}{y : 𝔽 N}{U ϵ}
   → Δ ; β ⊢ K `recv ·¹ (` y) ∶ U ∣ ϵ
-  → ∃[ Tᵐ ] (Δ y ≃ ⟨ msg ⁇ Tᵐ ⟩)
+  → ∃[ Tᵐ ] (lookup Δ y ≃ ⟨ msg ⁇ Tᵐ ⟩)
 recv-handle-≃msg-app (T-AppUnr   _ _ ⊢fn ⊢arg) = recv-handle-≃msg ⊢fn ⊢arg
 recv-handle-≃msg-app (T-AppLin   _ _ ⊢fn ⊢arg) = recv-handle-≃msg ⊢fn ⊢arg
 recv-handle-≃msg-app (T-Conv _ _ d) = recv-handle-≃msg-app d
@@ -267,7 +267,7 @@ com-head≥2 : ∀ {m} {Γ : Ctx m} {γ}{b₁ b₂}{B₁ B₂ : BindGroup}{e}{E�
         T.∥ (P T.⋯ₚ wkₚ (b₁ + sum B₁) (b₂ + sum B₂)))
       → ∃[ b₂' ] (b₂ ≡ suc b₂')
 com-head≥2 {b₂ = suc b₂'} V ⊢P = b₂' , refl
-com-head≥2 {m = m} {b₁ = b₁} {b₂ = zero} {B₁ = B₁} {B₂ = B₂} {E₂ = E₂} V ⊢P
+com-head≥2 {m = m} {Γ = Γ} {b₁ = b₁} {b₂ = zero} {B₁ = B₁} {B₂ = B₂} {E₂ = E₂} V ⊢P
   with inv-ν ⊢P
 ... | Γ₁ , Γ₂ , s , p , N , ⊢B₁ , ⊢B₂ , C , C′ , ⊢body
   with inv-∥ ⊢body
@@ -281,10 +281,11 @@ com-head≥2 {m = m} {b₁ = b₁} {b₂ = zero} {B₁ = B₁} {B₂ = B₂} {E�
   with recv-handle-≃msg-app ⊢plug
 ... | Tᵐ , Δr≃msg = ⊥-elim (msg-not-Bounded (≃-bounded (⟨⟩≃ (≃-trans (≃-reflexive (sym Δr≡)) Δr≃msg)) Bs''))
   where
-    Δr≡ : ((Γ₁ ⸴* Γ₂) ⸴* _) (wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ≡ ⟨ s'' ⟩
+    Δr≡ : lookup ((Γ₁ ⸴* Γ₂) ⸴* Γ)
+            (wkʳ m (wkˡ ⦃ Kᵣ ⦄ (suc b₁ + sum B₁) 0F)) ≡ ⟨ s'' ⟩
     Δr≡ =
-        cong [ Γ₁ ⸴* Γ₂ , _ ]′ (Fin.splitAt-↑ˡ (sum (suc b₁ ∷ B₁) + sum (suc zero ∷ B₂)) (sum (suc b₁ ∷ B₁) ↑ʳ 0F) m)
-      ■ cong [ Γ₁ , Γ₂ ]′ (Fin.splitAt-↑ʳ (sum (suc b₁ ∷ B₁)) (sum (suc zero ∷ B₂)) 0F)
+        V.lookup-++ˡ (Γ₁ ⸴* Γ₂) Γ (sum (suc b₁ ∷ B₁) ↑ʳ 0F)
+      ■ V.lookup-++ʳ Γ₁ Γ₂ 0F
       ■ Δ0≡
 
 ------------------------------------------------------------------------
@@ -297,7 +298,7 @@ com-head≥2 {m = m} {b₁ = b₁} {b₂ = zero} {B₁ = B₁} {B₂ = B₂} {E�
 
 pair₂-handle : ∀ {N} {Γ : Ctx N} {β : Struct N} {ee}{x : 𝔽 N}{T ϵ}
   → Γ ; β ⊢ (ee ⊗ (` x)) ∶ T ∣ ϵ
-  → ∃[ Te ] ∃[ d ] ∃[ Tx ] (T ≃ (Te ⊗⟨ d ⟩ Tx)) × (Γ x ≃ Tx)
+  → ∃[ Te ] ∃[ d ] ∃[ Tx ] (T ≃ (Te ⊗⟨ d ⟩ Tx)) × (lookup Γ x ≃ Tx)
 pair₂-handle (T-Pair {T = Te} {U = Tx} p/s _ ⊢e ⊢x) =
   Te , biasedDir p/s , Tx , ≃-refl , arg-type ⊢x
 pair₂-handle (T-Conv T≃ _ d) =
@@ -309,7 +310,7 @@ pair₂-handle (T-Weaken _ d) = pair₂-handle d
 send-handle-≃msg : ∀ {N} {Δ : Ctx N}{α β}{ee}{x : 𝔽 N}{a Targ U ϵ₁ ϵ₂}
   → Δ ; α ⊢ K `send ∶ Targ ⟨ a ⟩→ U ∣ ϵ₁
   → Δ ; β ⊢ (ee ⊗ (` x)) ∶ Targ ∣ ϵ₂
-  → ∃[ Tᵐ ] (Δ x ≃ ⟨ msg ‼ Tᵐ ⟩)
+  → ∃[ Tᵐ ] (lookup Δ x ≃ ⟨ msg ‼ Tᵐ ⟩)
 send-handle-≃msg ⊢fn ⊢arg
   with fn-send-dom ⊢fn | pair₂-handle ⊢arg
 ... | Tᵐ , dom≃ | Te , d , Tx , T≃ , Hx≃
@@ -318,7 +319,7 @@ send-handle-≃msg ⊢fn ⊢arg
 
 send-handle-≃msg-app : ∀ {N} {Δ : Ctx N}{β}{ee}{x : 𝔽 N}{U ϵ}
   → Δ ; β ⊢ K `send ·¹ (ee ⊗ (` x)) ∶ U ∣ ϵ
-  → ∃[ Tᵐ ] (Δ x ≃ ⟨ msg ‼ Tᵐ ⟩)
+  → ∃[ Tᵐ ] (lookup Δ x ≃ ⟨ msg ‼ Tᵐ ⟩)
 send-handle-≃msg-app (T-AppUnr   _ _ ⊢fn ⊢arg) = send-handle-≃msg ⊢fn ⊢arg
 send-handle-≃msg-app (T-AppLin   _ _ ⊢fn ⊢arg) = send-handle-≃msg ⊢fn ⊢arg
 send-handle-≃msg-app (T-Conv _ _ d) = send-handle-≃msg-app d
@@ -334,7 +335,7 @@ com-head≥1 : ∀ {m} {Γ : Ctx m} {γ}{b₁ b₂}{B₁ B₂ : BindGroup}{e}{E�
         T.∥ (P T.⋯ₚ wkₚ (b₁ + sum B₁) (b₂ + sum B₂)))
       → ∃[ b₁' ] (b₁ ≡ suc b₁')
 com-head≥1 {b₁ = suc b₁'} V ⊢P = b₁' , refl
-com-head≥1 {m = m} {b₁ = zero} {b₂ = b₂} {B₁ = B₁} {B₂ = B₂} {E₁ = E₁} V ⊢P
+com-head≥1 {m = m} {Γ = Γ} {b₁ = zero} {b₂ = b₂} {B₁ = B₁} {B₂ = B₂} {E₁ = E₁} V ⊢P
   with inv-ν ⊢P
 ... | Γ₁ , Γ₂ , s , p , N , ⊢B₁ , ⊢B₂ , C , C′ , ⊢body
   with inv-∥ ⊢body
@@ -346,7 +347,13 @@ com-head≥1 {m = m} {b₁ = zero} {b₂ = b₂} {B₁ = B₁} {B₂ = B₂} {E�
   with head-bounded bd-end C refl
 ... | s'' , Δ0≡ , Bs''
   with send-handle-≃msg-app ⊢plug
-... | Tᵐ , Δs≃msg = ⊥-elim (msg‼-not-Bounded (≃-bounded (⟨⟩≃ (≃-trans (≃-reflexive (sym Δ0≡)) Δs≃msg)) Bs''))
+... | Tᵐ , Δs≃msg = ⊥-elim (msg‼-not-Bounded (≃-bounded (⟨⟩≃ (≃-trans (≃-reflexive (sym Δs≡)) Δs≃msg)) Bs''))
+  where
+    Δs≡ : lookup ((Γ₁ ⸴* Γ₂) ⸴* Γ) 0F ≡ ⟨ s'' ⟩
+    Δs≡ =
+        V.lookup-++ˡ (Γ₁ ⸴* Γ₂) Γ 0F
+      ■ V.lookup-++ˡ Γ₁ Γ₂ 0F
+      ■ Δ0≡
 
 ------------------------------------------------------------------------
 -- Ported helpers (verbatim from Theorems/Choice) for the U-com assembly.
