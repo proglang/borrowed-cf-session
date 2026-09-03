@@ -586,3 +586,14 @@ and the old arity-0 leaves (`ForwardSoup/{LSplit,RSplit,Com,Choice,Close,New,For
 session: `Local/SplitCommon.agda` and `Local/RSplitCommon.agda` each keep a private copy of the same
 four arithmetic helpers (`∸-pos`, `∸-bound`, `∸-suc`, `q<q+suc`); they should be lifted into one
 place.
+
+### 6.5 Status (2026-09-02): simulation complete; Phase 4 in progress
+
+`Local.agda` loads with 0 goals: `local-sim : Local-Sim` and `sim-global` are fully proved. R-RSplit went
+through after the soup rule change (option 1 of §6.4: positional insertion + `insertPhi`). Phase 4 step 1:
+deleted the unreachable `SoupImage` world (old dispatcher `ForwardSoup.agda`, `Base`, `Exp`, `Fork`, `New`,
+`Close`, `Choice`, `Com`, `LSplit`, `Context`, `Context/*`, `Image/ThreadPermutation`); `Image.agda` is kept
+because `Translation.agda` imports it. Remaining Phase 4: dead lemmas in the shared modules
+(`Expressions`, `Translation`, `Renaming`, `Image`), duplicated arithmetic helpers in
+`Local/SplitCommon.agda` vs `Local/RSplitCommon.agda`. Out of scope: the stale untyped-target development
+(`Simulation/Forward.agda`, `Forward/*`, `Backward/*`, `Support/Theorems/Splits*`), which no longer loads.
