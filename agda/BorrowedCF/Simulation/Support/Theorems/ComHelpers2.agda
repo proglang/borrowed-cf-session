@@ -235,8 +235,8 @@ head-bounded : ∀ {s b₁}{B₁ : BindGroup}{Γ₁ : Ctx (sum (suc b₁ ∷ B�
 head-bounded Bs (last (cons s₁ˡ s₂ˡ ¬sk s≃ˡ (nil Skˡ))) refl =
   s₁ˡ , refl
   , bounded-seqL (≃-bounded (≃-sym s≃ˡ) Bs) Skˡ
-head-bounded Bs (cons-ret/acq sh {s₂ = st} s≃
-                  (cons s₁'' s₂'' ¬sk s≃' (nil Sk)) rest) refl =
+head-bounded Bs (cons-ret/acq sh {s₂ = st} s≃ ¬sk₂
+                  (cons s₁'' s₂'' ¬sk s≃' (nil Sk)) rest ah) refl =
   s₁'' , refl
   , bounded-seqL (≃-bounded (≃-sym s≃') (-;₂ ret)) Sk
 

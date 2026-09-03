@@ -108,7 +108,7 @@ discard-b0-vacuous :
   ⊥
 discard-b0-vacuous {E = E} ⊢P with inv-ν ⊢P
 ... | _ , _ , _ , _ , _ , _ , _
-    , cons-ret/acq _ _ (cons s₁ʰ s₂ʰ ¬sk₁ s≃₁ (nil skTail)) _
+    , cons-ret/acq _ _ _ (cons s₁ʰ s₂ʰ ¬sk₁ s≃₁ (nil skTail)) _ _
     , _ , ⊢body
   with inv-∥ ⊢body
 ... | _ , _ , _ , ⊢discardThread , _
@@ -155,8 +155,8 @@ drop-b₁-zero {b₁ = suc b} {B₁ = []} {E = E} ⊢P with inv-ν ⊢P
         (noRet-;-fst (noRet-≃ (≃-sym s≃) (NoRet._;_ (new⇒noRet N) NoRet.end)))))
 drop-b₁-zero {b₁ = suc b} {B₁ = c₀ ∷ B′} {E = E} ⊢P with inv-ν ⊢P
 ... | _ , _ , _ , _ , N , _ , _
-    , cons-ret/acq sh frontSplit
-        (cons s₁ʰ s₂ʰ ¬sk₁ s≃₁ (cons _ _ ¬skTail _ _)) _
+    , cons-ret/acq sh frontSplit _
+        (cons s₁ʰ s₂ʰ ¬sk₁ s≃₁ (cons _ _ ¬skTail _ _)) _ _
     , _ , ⊢body
   with inv-∥ ⊢body
 ... | _ , _ , _ , ⊢dropThread , _

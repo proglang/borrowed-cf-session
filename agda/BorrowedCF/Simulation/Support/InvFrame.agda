@@ -278,7 +278,7 @@ inv-var-count (T-Weaken γ≤ d) h ¬u = ≤-trans (inv-var-count d h ¬u) (≼�
 -- the ¬ Skips s premise of the `lsplit constant.
 fn-lsplit-dom : ∀ {N} {Γ : Ctx N} {β : Struct N} {s : 𝕊 0} {T U a ϵ}
   → Γ ; β ⊢ K (`lsplit s) ∶ T ⟨ a ⟩→ U ∣ ϵ → Σ[ s′ ∈ 𝕊 0 ] (⟨ s ; s′ ⟩ ≃ T)
-fn-lsplit-dom (T-Const (`lsplit _ s′ _)) = s′ , ≃-refl
+fn-lsplit-dom (T-Const (`lsplit _ s′ _ _)) = s′ , ≃-refl
 fn-lsplit-dom (T-Conv (dom≃ `→ cod≃) _ d) =
   let s′ , eq = fn-lsplit-dom d in s′ , ≃-trans eq dom≃
 fn-lsplit-dom (T-Weaken _ d) = fn-lsplit-dom d
@@ -316,7 +316,7 @@ lsplit-app-nonUnr d = go d
 -- the ¬ Skips s premise of the `rsplit constant.
 fn-rsplit-dom : ∀ {N} {Γ : Ctx N} {β : Struct N} {s : 𝕊 0} {T U a ϵ}
   → Γ ; β ⊢ K (`rsplit s) ∶ T ⟨ a ⟩→ U ∣ ϵ → Σ[ s′ ∈ 𝕊 0 ] (⟨ s ; s′ ⟩ ≃ T)
-fn-rsplit-dom (T-Const (`rsplit _ s′ _)) = s′ , ≃-refl
+fn-rsplit-dom (T-Const (`rsplit _ s′ _ _)) = s′ , ≃-refl
 fn-rsplit-dom (T-Conv (dom≃ `→ cod≃) _ d) =
   let s′ , eq = fn-rsplit-dom d in s′ , ≃-trans eq dom≃
 fn-rsplit-dom (T-Weaken _ d) = fn-rsplit-dom d

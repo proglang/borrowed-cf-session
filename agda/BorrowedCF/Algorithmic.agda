@@ -150,12 +150,14 @@ data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
   A-LSplit :
     let α = UV.fresh m in
     (≤γ : Γ ∶ [] ≼ γ) →
+    (¬skips : ¬ Skips s) →      -- NEW: the first component of a split must do real work
     -----------------------------------------------------------------------------------
     Γ ; γ / m ⊢ K (`lsplit s) ⇒ ⟨ s ; `` α ⟩ →*M ⟨ s ⟩ ⊗ᴸ ⟨ `` α ⟩ ∣ ℙ ∣ ℙ ↑ [] / suc m
 
   A-RSplit :
     let α = record { var = m; pol = ‼ } in
     (≤γ : Γ ∶ [] ≼ γ) →
+    (¬skips : ¬ Skips s) →      -- NEW: the first component of a split must do real work
     -----------------------------------------------------------------------------------------------
     Γ ; γ / m ⊢ K (`rsplit s) ⇒ ⟨ s ; `` α ⟩ →*M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; `` α ⟩ ∣ ℙ ∣ ℙ ↑ [] / suc m
 
@@ -282,12 +284,12 @@ module _ {σ : UV.Sub} (Sσ : Solving σ) where
   sound (A-Const ≤γ Ac ⊢c) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
              (T-Const (subConst-⊢ ⊢c))
-  sound (A-LSplit ≤γ) SΓ SΔ =
+  sound (A-LSplit ≤γ ¬skips) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
-             (T-Const (`lsplit _ _ (UV.ap-¬skips σ _ ∘ skips-⋯ᵣ⁻¹)))
-  sound (A-RSplit ≤γ) SΓ SΔ =
+             (T-Const (`lsplit _ _ (¬skips ∘ subTy-skips⁻¹) (UV.ap-¬skips σ _ ∘ skips-⋯ᵣ⁻¹)))
+  sound (A-RSplit ≤γ ¬skips) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
-             (T-Const (`rsplit _ _ (UV.ap-¬skips σ _ ∘ skips-⋯ᵣ⁻¹)))
+             (T-Const (`rsplit _ _ (¬skips ∘ subTy-skips⁻¹) (UV.ap-¬skips σ _ ∘ skips-⋯ᵣ⁻¹)))
   sound (A-App {Δ₁ = Δ₁} ec ≤γ x y) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
              (sound-app ec x y SΓ (All.++⁻ˡ Δ₁ SΔ ) (All.++⁻ʳ Δ₁ SΔ))

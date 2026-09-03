@@ -140,9 +140,14 @@ data ⊢_∶_ : Const → 𝕋 → Set where
 
   `new  : New s → ⊢ `new s ∶ `⊤ →*M ⟨ acq ; (s ; end ⁇) ⟩ ⊗¹ ⟨ acq ; (dual s ; end ‼) ⟩ ∣ ℙ
 
-  `lsplit : (s s′ : 𝕊 0) → ¬ Skips s′ →
+  -- Both components of a split must do real work: a split never produces a bare
+  -- skip handle.  In particular the head of a non-first group keeps its `acq`
+  -- under both splits; for `rsplit the condition on s is what stops
+  -- ⟨ acq ; t ⟩ ≃ ⟨ skip ; (acq ; t) ⟩ from turning the head into an
+  -- unreleasable ⟨ ret ⟩ whose `acq` has moved into the new group.
+  `lsplit : (s s′ : 𝕊 0) → ¬ Skips s → ¬ Skips s′ →
     ⊢ `lsplit s ∶ ⟨ s ; s′ ⟩ →*M ⟨ s ⟩       ⊗ᴸ ⟨ s′ ⟩       ∣ ℙ
-  `rsplit : (s s′ : 𝕊 0) → ¬ Skips s′ →
+  `rsplit : (s s′ : 𝕊 0) → ¬ Skips s → ¬ Skips s′ →
     ⊢ `rsplit s ∶ ⟨ s ; s′ ⟩ →*M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; s′ ⟩ ∣ ℙ
 
   `drop : ⊢ `drop ∶ ⟨ ret ⟩     →*M `⊤    ∣ 𝕀
@@ -161,8 +166,8 @@ data ⊢_∶_ : Const → 𝕋 → Set where
 constFnUnr : ∀ {c} → ⊢ c ∶ T ⟨ a ⟩→ U → Arr.Unr a
 constFnUnr `fork = refl
 constFnUnr (`new x) = refl
-constFnUnr (`lsplit x s′ _) = refl
-constFnUnr (`rsplit x s′ _) = refl
+constFnUnr (`lsplit x s′ _ _) = refl
+constFnUnr (`rsplit x s′ _ _) = refl
 constFnUnr `drop = refl
 constFnUnr `discard = refl
 constFnUnr `acq = refl

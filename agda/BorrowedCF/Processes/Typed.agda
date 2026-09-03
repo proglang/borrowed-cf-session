@@ -158,6 +158,13 @@ data BindCtx′ (s : 𝕊 0) : Ctx n → Set where
     (s-split : s₁ ; s₂ ≃ s) →
     BindCtx′ s₂ Γ → BindCtx′ s (⟨ s₁ ⟩ ∷ Γ)
 
+-- The first bound handle of a non-first group must carry the group's `acq`
+-- (it is not a skip).  Stated on the context so that it needs no mutual
+-- recursion with BindCtx.
+AcqHeadCtx : Ctx n → Set
+AcqHeadCtx (⟨ s ⟩ ∷ _) = ¬ Skips s
+AcqHeadCtx _ = ⊥               -- empty context or a non-handle type at the head
+
 data BindCtx (s : 𝕊 0) : (B : BindGroup) → Ctx (sum B) → Set where
   last :
     BindCtx′ s Γ →
@@ -167,13 +174,16 @@ data BindCtx (s : 𝕊 0) : (B : BindGroup) → Ctx (sum B) → Set where
   cons-ret/acq :
     (s₁ : 𝕊 0) {s₂ : 𝕊 0} {Γ₁ : Ctx n} {Γ₂ : Ctx (sum B)} →
     (s≃ : s₁ ; s₂ ≃ s) →
+    (¬skips₂ : ¬ Skips s₂) →
     BindCtx′ (s₁ ; ret) Γ₁ →
     BindCtx  (acq ; s₂) B Γ₂ →
+    (acqHead : AcqHeadCtx Γ₂) →
     ----------------------------
     BindCtx s (n ∷ B) (Γ₁ ⸴* Γ₂)
 
   cons-acq :
     BindCtx (acq ; s) B Γ →
+    (acqHead : AcqHeadCtx Γ) →
     -----------------------
     BindCtx s (0 ∷ B) Γ
 
@@ -183,8 +193,8 @@ bindCtx′⇒chanCtx (cons s₁ s₂ ¬skips s-split b) = (_ , refl) ∷ bindCtx
 
 bindCtx⇒chanCtx : ∀ {B Γ} → BindCtx s B Γ → ChanCx Γ
 bindCtx⇒chanCtx (last x) = bindCtx′⇒chanCtx x
-bindCtx⇒chanCtx (cons-ret/acq s₁ s≃ x C) = Allⱽ.++⁺ (bindCtx′⇒chanCtx x) (bindCtx⇒chanCtx C)
-bindCtx⇒chanCtx (cons-acq C) = bindCtx⇒chanCtx C
+bindCtx⇒chanCtx (cons-ret/acq s₁ s≃ ¬skips₂ x C ah) = Allⱽ.++⁺ (bindCtx′⇒chanCtx x) (bindCtx⇒chanCtx C)
+bindCtx⇒chanCtx (cons-acq C ah) = bindCtx⇒chanCtx C
 
 bindCtx-B≢[] : ¬ BindCtx s [] Γ
 bindCtx-B≢[] ()
@@ -195,8 +205,8 @@ bindCtx′-≃ eq (cons _ _ ¬skips s≃ C) = cons _ _ (¬skips ∘ ≃-skips (�
 
 bindCtx-≃ : s₁ ≃ s₂ → BindCtx s₁ B Γ → BindCtx s₂ B Γ
 bindCtx-≃ eq (last x) = last (bindCtx′-≃ eq x)
-bindCtx-≃ eq (cons-ret/acq _ s≃ x C) = cons-ret/acq _ (≃-trans s≃ eq) x C
-bindCtx-≃ eq (cons-acq C) = cons-acq (bindCtx-≃ (≃-; refl eq) C)
+bindCtx-≃ eq (cons-ret/acq _ s≃ ¬skips₂ x C ah) = cons-ret/acq _ (≃-trans s≃ eq) ¬skips₂ x C ah
+bindCtx-≃ eq (cons-acq C ah) = cons-acq (bindCtx-≃ (≃-; refl eq) C) ah
 
 bindCtx-inv-cons : ∀ {b Γ} → .(0 < L.length B) → BindCtx s (b ∷ B) Γ →
   ∃[ s₁ ] ∃[ s₂ ] ∃[ Γ₁ ] ∃[ Γ₂ ]
@@ -204,10 +214,13 @@ bindCtx-inv-cons : ∀ {b Γ} → .(0 < L.length B) → BindCtx s (b ∷ B) Γ �
       × Γ₁ ⸴* Γ₂ ≡ Γ
       × BindCtx′ (s₁ ; ret) Γ₁
       × BindCtx (acq ; s₂) B Γ₂
+      × ¬ Skips s₂
+      × AcqHeadCtx Γ₂
   ⊎
-  Σ[ b≡0 ∈ b ≡ 0 ] BindCtx (acq ; s) B (V.drop b Γ)
-bindCtx-inv-cons 0< (cons-ret/acq s₁ s≃ x C) = inj₁ (s₁ , _ , _ , _ , s≃ , refl , x , C)
-bindCtx-inv-cons {Γ = Γ} 0< (cons-acq C) = inj₂ (refl , C)
+  Σ[ b≡0 ∈ b ≡ 0 ] BindCtx (acq ; s) B (V.drop b Γ) × AcqHeadCtx (V.drop b Γ)
+bindCtx-inv-cons 0< (cons-ret/acq s₁ s≃ ¬skips₂ x C ah) =
+  inj₁ (s₁ , _ , _ , _ , s≃ , refl , x , C , ¬skips₂ , ah)
+bindCtx-inv-cons {Γ = Γ} 0< (cons-acq C ah) = inj₂ (refl , C , ah)
 
 bindCtx-inv-msg : s′ ≃ msg p T′ → BindCtx s (suc n ∷ B) (⟨ s′ ⟩ ∷ Γ) →
   ∃[ s₂ ] msg p T′ ; s₂ ≃ s × BindCtx s₂ (n ∷ B) Γ
@@ -215,13 +228,13 @@ bindCtx-inv-msg {s′} {Γ = Γ} isMsg C with ⟨ s′ ⟩ ∷ Γ in Γ-eq
 bindCtx-inv-msg isMsg (last (cons s₁ s₂ ¬skips s-split x)) | Γ′
   with (refl , refl) ← V.∷-injective Γ-eq =
   s₂ , ≃-trans (≃-; ((≃-sym isMsg)) refl) s-split , last x
-bindCtx-inv-msg isMsg (cons-ret/acq s′ {s″} s≃ (cons s₁ s₂ ¬skips s-split x) C) | Γ′
+bindCtx-inv-msg isMsg (cons-ret/acq s′ {s″} s≃ ¬skips₂ (cons s₁ s₂ ¬skips s-split x) C ah) | Γ′
   with (refl , refl) ← V.∷-injective Γ-eq
   with atom-;-unsnoc ret s-split
 ... | inj₂ (s₂′ , s₁s₂′ , s₂′ret) =
   (s₂′ ; s″)
     , ≃-trans (≃-trans (≃-sym ≃-assoc-;) (≃-; (≃-trans (≃-; (≃-sym isMsg) refl) s₁s₂′) refl)) s≃
-    , cons-ret/acq s₂′ refl (bindCtx′-≃ (≃-sym s₂′ret) x) C
+    , cons-ret/acq s₂′ refl ¬skips₂ (bindCtx′-≃ (≃-sym s₂′ret) x) C ah
 ... | inj₁ Ss₂ = ⊥-elim $ atomKind≢⇒≄-;ʳ msg ret (λ()) $
   ≃-trans ≃-skipˡ
     $ ≃-trans (≃-sym ≃-skipʳ)
