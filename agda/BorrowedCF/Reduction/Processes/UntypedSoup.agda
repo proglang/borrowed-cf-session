@@ -69,6 +69,88 @@ consumePhi x k (`case e `of⟨ e₁ ; e₂ ⟩) =
   `case consumePhi x k e
     `of⟨ consumePhi (suc x) k e₁ ; consumePhi (suc x) k e₂ ⟩
 
+-- Insert one phi cell.  `insertSlot k l` is the dual of `shiftSlot`: slots
+-- below `k` keep their number, slots at or above `k` move up by one.
+insertSlot : ℕ → ℕ → ℕ
+insertSlot zero l = suc l
+insertSlot (suc k) zero = zero
+insertSlot (suc k) (suc l) = suc (insertSlot k l)
+
+-- Renumber the phi cells of one endpoint after a new sync boundary has been
+-- inserted at position `k`.  Dual to `consumePhi`, which removes cell `k`.
+insertPhi : 𝔽 n → ℕ → Tm n → Tm n
+insertPhi x k (` y) = ` y
+insertPhi x k (`phi (y , l)) with x FinP.≟ y
+... | no _ = `phi (y , l)
+... | yes refl = `phi (x , insertSlot k l)
+insertPhi x k (K c) = K c
+insertPhi x k (ƛ e) = ƛ (insertPhi (suc x) k e)
+insertPhi x k (μ e) = μ (insertPhi (suc x) k e)
+insertPhi x k (e₁ ·⟨ d ⟩ e₂) =
+  insertPhi x k e₁ ·⟨ d ⟩ insertPhi x k e₂
+insertPhi x k (e₁ ; e₂) = insertPhi x k e₁ ; insertPhi x k e₂
+insertPhi x k (e₁ ⊗ e₂) = insertPhi x k e₁ ⊗ insertPhi x k e₂
+insertPhi x k (`let e₁ `in e₂) =
+  `let insertPhi x k e₁ `in insertPhi (suc x) k e₂
+insertPhi x k (`let⊗ e₁ `in e₂) =
+  `let⊗ insertPhi x k e₁ `in insertPhi (suc (suc x)) k e₂
+insertPhi x k (`inj side e) = `inj side (insertPhi x k e)
+insertPhi x k (`case e `of⟨ e₁ ; e₂ ⟩) =
+  `case insertPhi x k e
+    `of⟨ insertPhi (suc x) k e₁ ; insertPhi (suc x) k e₂ ⟩
+
+insertPhi-Value :
+  (x : 𝔽 n) (k : ℕ) {e : Tm n} → Value e → Value (insertPhi x k e)
+insertPhi-Value x k V-` = V-`
+insertPhi-Value x k (V-phi {r = y , l}) with x FinP.≟ y
+... | no _ = V-phi
+... | yes refl = V-phi
+insertPhi-Value x k V-K = V-K
+insertPhi-Value x k V-λ = V-λ
+insertPhi-Value x k (V-⊗ V₁ V₂) =
+  V-⊗ (insertPhi-Value x k V₁) (insertPhi-Value x k V₂)
+insertPhi-Value x k (V-⊕ V) = V-⊕ (insertPhi-Value x k V)
+
+insertPhi-frame : 𝔽 n → ℕ → Frame n → Frame n
+insertPhi-frame x k (app₁ e d V?) =
+  app₁ (insertPhi x k e) d λ d≡L → insertPhi-Value x k (V? d≡L)
+insertPhi-frame x k (app₂ e d V?) =
+  app₂ (insertPhi x k e) d λ d≡→ → insertPhi-Value x k (V? d≡→)
+insertPhi-frame x k (□⊗ e) = □⊗ (insertPhi x k e)
+insertPhi-frame x k (V ⊗□) = insertPhi-Value x k V ⊗□
+insertPhi-frame x k (□; e) = □; (insertPhi x k e)
+insertPhi-frame x k (`let-`in e) = `let-`in (insertPhi (suc x) k e)
+insertPhi-frame x k (`let⊗-`in e) = `let⊗-`in (insertPhi (suc (suc x)) k e)
+insertPhi-frame x k (`inj□ i) = `inj□ i
+insertPhi-frame x k (`case□`of⟨ e₁ ; e₂ ⟩) =
+  `case□`of⟨ insertPhi (suc x) k e₁ ; insertPhi (suc x) k e₂ ⟩
+
+insertPhi-frames : 𝔽 n → ℕ → Frame* n → Frame* n
+insertPhi-frames x k [] = []
+insertPhi-frames x k (F ∷ Fs) =
+  insertPhi-frame x k F ∷ insertPhi-frames x k Fs
+
+insertPhi-plug :
+  (x : 𝔽 n) (k : ℕ) (F : Frame n) (t : Tm n) →
+  insertPhi x k (F [ t ]) ≡ insertPhi-frame x k F [ insertPhi x k t ]
+insertPhi-plug x k (app₁ e d V?) t = refl
+insertPhi-plug x k (app₂ e d V?) t = refl
+insertPhi-plug x k (□⊗ e) t = refl
+insertPhi-plug x k (V ⊗□) t = refl
+insertPhi-plug x k (□; e) t = refl
+insertPhi-plug x k (`let-`in e) t = refl
+insertPhi-plug x k (`let⊗-`in e) t = refl
+insertPhi-plug x k (`inj□ i) t = refl
+insertPhi-plug x k (`case□`of⟨ e₁ ; e₂ ⟩) t = refl
+
+insertPhi-plug* :
+  (x : 𝔽 n) (k : ℕ) (F : Frame* n) (t : Tm n) →
+  insertPhi x k (F [ t ]*) ≡ insertPhi-frames x k F [ insertPhi x k t ]*
+insertPhi-plug* x k [] t = refl
+insertPhi-plug* x k (F ∷ Fs) t =
+  insertPhi-plug x k F (Fs [ t ]*)
+  ■ cong (insertPhi-frame x k F [_]) (insertPhi-plug* x k Fs t)
+
 insertEndpoint : ∀ {n} → 𝔽 (suc n) → 𝔽 (2 *ℕ n) → 𝔽 (2 *ℕ suc n)
 insertEndpoint {n} i x
   with Fin.remQuot 2 (Fin.cast (Nat.*-comm 2 n) x)
@@ -126,20 +208,29 @@ data _─→ₚ_ : ∀ {n m n′ m′} → Config n m → Config n′ m′ → S
       (F [ 𝓒[ e₁ × endpoint i side × * ] ⊗
            𝓒[ * × endpoint i side × e₂ ] ]*))
 
+  -- A right split inserts a *new* sync boundary at flag position `k`, where
+  -- `k` is the number of boundaries that precede it on this endpoint (in the
+  -- translation: the number of binder groups before the split one).  Every
+  -- phi reference of the endpoint at slot `k` or above therefore moves up by
+  -- one — in every thread of the soup, which is what `insertPhi` does; it is
+  -- the exact dual of the `consumePhi` sweep of `RUS-Acquire`.  The two new
+  -- handles carry the new boundary `phi (x , k)`.
   RUS-RSplit :
     ∀ {n m s} {cs : Vec Channel n} {ts : Vec (Thread n) m}
       (j : 𝔽 m) (i : 𝔽 n) (side : 𝔽 2)
-      (F : Frame* (2 *ℕ n)) {e₁ e₂} →
+      (F : Frame* (2 *ℕ n)) (before after : List Flag) {e₁ e₂} →
     proj₁ (lookup cs i) ≡ true →
+    endpointFlags (lookup cs i) side ≡ before ++ after →
     lookup ts j ≡
       F [ K (`rsplit s) ·¹ 𝓒[ e₁ × endpoint i side × e₂ ] ]* →
     config cs ts ─→ₚ
-    config (V.updateAt cs i (appendEndpointFlag side drop))
-      (replaceAt ts j
-        (let x = endpoint i side
-             k = L.length (endpointFlags (lookup cs i) side)
-         in F [ 𝓒[ e₁ × x × `phi (x , k) ] ⊗
-                𝓒[ `phi (x , k) × x × e₂ ] ]*))
+    config (V.updateAt cs i (setEndpointFlags side (before ++ drop ∷ after)))
+      (let x = endpoint i side
+           k = L.length before
+       in replaceAt (V.map (insertPhi x k) ts) j
+            (insertPhi-frames x k F
+              [ 𝓒[ insertPhi x k e₁ × x × `phi (x , k) ] ⊗
+                𝓒[ `phi (x , k) × x × insertPhi x k e₂ ] ]*))
 
   RUS-Drop :
     ∀ {n m} {cs : Vec Channel n} {ts : Vec (Thread n) m}

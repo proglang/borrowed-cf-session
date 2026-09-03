@@ -178,12 +178,15 @@ permute-step pi (RUS-LSplit {cs = cs} {ts = ts} j i side F live eq) =
     (cong (config cs) (permute-replace pi ts j _))
     (RUS-LSplit (pi ⟨$⟩ˡ j) i side F live
       (lookup-permute pi ts j ■ eq))
-permute-step pi (RUS-RSplit {cs = cs} {ts = ts} j i side F live eq) =
+permute-step pi
+  (RUS-RSplit {cs = cs} {ts = ts} j i side F before after live fs eq) =
   pi ,
   subst (config cs (permuteVec pi ts) ─→ₚ_)
-    (cong (config (V.updateAt cs i (appendEndpointFlag side drop)))
-      (permute-replace pi ts j _))
-    (RUS-RSplit (pi ⟨$⟩ˡ j) i side F live
+    (cong (config (V.updateAt cs i
+            (setEndpointFlags side (before ++ drop ∷ after))))
+      (permute-replace-map (insertPhi (endpoint i side) (L.length before))
+        pi ts j _))
+    (RUS-RSplit (pi ⟨$⟩ˡ j) i side F before after live fs
       (lookup-permute pi ts j ■ eq))
 permute-step pi (RUS-Drop {cs = cs} {ts = ts} j i side F before after live fs eq) =
   pi ,
