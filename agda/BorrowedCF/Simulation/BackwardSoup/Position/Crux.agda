@@ -3,52 +3,65 @@
 -- | Phase 3, THE CRUX (`BackwardSoup/PLAN.md` §9, P3).
 --
 --   `Position.agda` STATES the metatheorem (`ImpureRedexHead`,
---   `PairArgRedexHead`, `DropFirstGroupSingleton`, `AcqNonFirstGroupHead` --
---   RENAMED from `AcqSecondGroupHead`, see its own doc comment) and proves
---   all its combinatorial ingredients; it loads with 0 goals.  This module
---   is the proof attempt.
+--   `PairArgRedexHead`, `DropFirstGroupSingleton`, `AcqNonFirstGroupHead`)
+--   and proves all its combinatorial ingredients; it loads with 0 goals.
+--   This module is the proof attempt.
 --
---   CURRENT STATE (this pass).  `acq-non-first-group-head` (`?3`/`?4`) and
---   `drop-first-group-singleton` (`?2`) are FULLY PROVED -- the latter
---   reduces cleanly to `impure-redex-head` (`?0`), no further gap of its
---   own.  `impure-redex-head` (`?0`) and `pair-arg-redex-head` (`?1`)
---   remain OPEN.  Exactly ONE piece of genuinely NEW theory is missing and
---   is isolated as a single hole, `nonFirstGroup-interior-noAcq` (§1a): a
---   front-atom-peel fact for `acq`, dual to what `Types/AtomUnsnoc.agda`
---   built for the LAST atom of a `;`-chain, needed by BOTH the "different
---   group" branch of `?0`/`?1`'s case (iv) (Position.agda's proof sketch)
---   and (in its easier, NoAcq-only direction) `acq-non-first-group-head`
---   below.  `?0`/`?1` ADDITIONALLY need, for their "same group, but not
---   first" branch, that the group's own head is not known `¬ Mobile` (it is
---   expected TO carry the acq), so `before-mono-≼` cannot be invoked
---   against it the way `Position.first-group-¬mobile` lets it be invoked
---   for the first group -- a second, related gap, not yet isolated as its
---   own lemma.  The "same group, first group" case of `?0`/`?1` (case iii
---   proper) is NOT attempted here: it needs the `Δ`-structure `TP-Res`
---   prescribes for the binder's body threaded through `before-⋯ᵣ` and
---   `Position.ContextOrder.ctx-¬before-direct`/`-pair`, all doable with
---   already-proved ingredients (§1b's `TypeWalk` is the template for the
---   `Binder.below`-walk this needs), but it was not reached in this pass.
+--   CURRENT STATE (this pass).  The piece of NEW THEORY the previous pass
+--   isolated as THE GAP -- a FRONT-atom peel for `acq`, dual to what
+--   `Types/AtomUnsnoc.agda` builds for the LAST atom -- is now BUILT and
+--   hole-free, in `Types/AtomCons.agda`: `Cons a w z` witnesses `w ≃ a ; z`,
+--   `≃-cons` transports it, and `atom-;-cons` (`acq-;-split` at `acq`) splits
+--   `s₁ ; s₂ ≃ acq ; t` into "the `acq` is at the front of `s₁`" or "`s₁`
+--   skips and the `acq` is at the front of `s₂`".  With it,
+--   `nonFirstGroup-interior-noAcq` and `acq-non-first-group-head` are PROVED
+--   here -- modulo ONE hole, `acqHeadCtx⇒acqHeaded` (§1a).
 --
---   §1a-§1d below are NEW, general-purpose, PROVED infrastructure (no
---   holes except the one named above): `first-group-noAcq` (a witness-
---   exposing generalisation of `Position.first-group-¬mobile`), `TypeWalk`
---   (a generic walker propagating a `≃`-fact about a fixed global variable
---   from its own thread's typing up through a resolved `Binder`'s
---   `below`), `acq-handle-≃acq`/`Q-acq-type`/`Q-drop-type` (domain
---   extraction for `acq`/`drop`, mirroring `Support.Theorems.DropShape`'s
---   `drop-handle-≃ret`), and `dropGroupShape` (`Support.Theorems.
---   DropShape`'s `drop-b₁-zero`/`drop-B₁-cons` argument, generalised off
---   its canonical `0F` position to work at any `BindCtx`-resolved index).
+--   ★ THAT HOLE IS NOT FILLABLE, AND THE REASON IS A GAP IN
+--     `Processes/Typed.agda`, NOT IN THIS PROOF. ★
 --
---   PROVED HERE ORIGINALLY, as the (iv)-ingredient: for the impure
---   constants whose domain session carries no `acq` -- `discard : ⟨ skip ⟩`,
+--   `Examples/StrictGroupGap.agda` (NEW, 0 goals, no pragma) machine-checks
+--   two counterexamples to the metatheorem as `BindCtx` currently stands:
+--
+--     * `refuted`: `cons-ret/acq` still admits `s₁ ≡ skip` -- a group that
+--       does no work and hands its `acq` on -- so a `⊢ᴮ`-legal group list
+--       reachable from a `New`-derived session can govern `acq ; acq ; ⋯` and
+--       put an ACQ-HEADED handle at offset 1 of a group.  That refutes
+--       `nonFirstGroup-interior-noAcq` as the previous pass stated it, hence
+--       `AcqNonFirstGroupHead`, and (through the same `⟨ ret ⟩`-headed
+--       non-first group) `ImpureRedexHead` for `drop`.
+--       FIX: `AcqHeadCtx` must say what its own doc comment says --
+--       `AcqHeadCtx (⟨ s ⟩ ∷ _) = Σ[ t ] (s ≃ acq ; t)` instead of
+--       `¬ Skips s`.  Everything in §1a below is written against exactly that
+--       (`AcqHeaded`), so the change turns `acqHeadCtx⇒acqHeaded` into `id`.
+--
+--     * `mobile-head-alone-refuted`: `Bounded s′` in `Mobile ⟨ acq ; s′ ⟩` is
+--       satisfied by an `end` tip as well as a `ret` tip, and `cons` only
+--       forbids handles after a SKIPS remainder, so a Mobile handle need NOT
+--       be the last of its group (`mobileGroup` is a legal `BindCtx′` with a
+--       Mobile head and a second handle).  `mobile-head-alone`, which
+--       `impure-redex-head`'s "same group, non-first" branch needs in order to
+--       apply `before-mono-≼` against a group head that may itself be Mobile,
+--       is therefore FALSE too, and PLAN.md §6's mobility-soundness argument
+--       needs a matching premise (a group's terminator must end the group).
+--
+--   §1a-§1d are general-purpose, PROVED infrastructure: `first-group-noAcq`
+--   (a witness-exposing generalisation of `Position.first-group-¬mobile`),
+--   the `acq` peel (`acq-peel`, `bindCtx′-acq-interior`, `consRetAcq-peel`),
+--   `TypeWalk` (a generic walker propagating a `≃`-fact about a fixed global
+--   variable from its own thread's typing up through a resolved `Binder`'s
+--   `below`), `acq-handle-≃acq`/`Q-acq-type`/`Q-drop-type` (domain extraction
+--   for `acq`/`drop`, mirroring `Support.Theorems.DropShape`'s
+--   `drop-handle-≃ret`), and `dropGroupShape`.
+--
+--   PROVED HERE ORIGINALLY, as the (iv)-ingredient: for the impure constants
+--   whose domain session carries no `acq` -- `discard : ⟨ skip ⟩`,
 --   `drop : ⟨ ret ⟩`, `recv : ⟨ msg ⁇ T ⟩`, `end p : ⟨ end p ⟩` -- the
---   consumed handle is NOT MOBILE, hence `∥′-tm-;` can never reorder it and
+--   consumed handle is NOT MOBILE, hence `∥′-tm-;` can never reorder it and
 --   `before-mono-≼` applies to it directly.  (`select`/`branch` consume a
---   `⟨ brn p s₁ s₂ ⟩` whose branches are arbitrary, so `NoAcq` is not
---   available for them; `send` consumes a PAIR, and `Position.pair-arg-not-var`
---   is what handles that case.)
+--   `⟨ brn p s₁ s₂ ⟩`; `Types/AtomCons.agda`'s `¬cons-brn` now settles those
+--   too, an atom never sitting in front of a `brn`.  `send` consumes a PAIR,
+--   and `Position.pair-arg-not-var` is what handles that case.)
 module BorrowedCF.Simulation.BackwardSoup.Position.Crux where
 
 open import Data.Nat.ListAction using (sum)
@@ -61,6 +74,10 @@ open import BorrowedCF.Reduction.Base
 
 import BorrowedCF.Processes.Typed as 𝐓
 
+import Data.List.Relation.Unary.All as Allᴸ
+
+open import BorrowedCF.Types.AtomCons
+  using (acq-;-split; acq-;-¬skips; acq-;-≄ret)
 open import BorrowedCF.Simulation.Support.InvFrame using (arg-type)
 open import BorrowedCF.Simulation.Support.Theorems.B1VacProbe
   using ( NoRet; new⇒noRet; noRet-≃; ¬noRet-ret; noRet-;-fst
@@ -135,13 +152,21 @@ impure-handle-¬mobile nd ⊢app mob
 ... | s , eq , na = ¬mobile-noAcq na (mobile-≃ eq mob)
 
 ------------------------------------------------------------------------
--- 1a.  NoAcq witnesses.  `first-group-noAcq` generalises
---      `Position.first-group-¬mobile` to expose the WITNESS session,
---      needed to contradict `Γ ﹫ x ≃ ⟨ acq ; s ⟩` directly (via
---      `noAcq-;-fst` / `¬noAcq-acq`) without going through
---      `Mobile`'s `Bounded` side condition at all.
---      `nonFirstGroup-interior-noAcq` is THE GAP: see its documentation
---      below.
+-- 1a.  NoAcq witnesses, and the FRONT-ATOM PEEL for `acq`.
+--
+--   `first-group-noAcq` generalises `Position.first-group-¬mobile` to expose
+--   the WITNESS session, needed to contradict `Γ ﹫ x ≃ ⟨ acq ; s ⟩` directly
+--   (via `noAcq-;-fst` / `¬noAcq-acq`) without going through `Mobile`'s
+--   `Bounded` side condition at all.
+--
+--   `Types/AtomCons.agda` (NEW, hole-free) supplies what the previous pass
+--   recorded as THE GAP: the FRONT-atom dual of `Types/AtomUnsnoc.agda`'s
+--   `atom-;-unsnoc`.  `acq-;-split` says that in `s₁ ; s₂ ≃ acq ; g` the `acq`
+--   sits ENTIRELY inside ONE factor, at THAT factor's own front: either `s₁`
+--   skips and `s₂ ≃ acq ; g`, or `s₁ ≃ acq ; h` with `h ; s₂ ≃ g` -- and then
+--   `NoAcq g` yields `NoAcq h` and `NoAcq s₂` at once.  (`Cons` needs no `brn`
+--   constructor, because `_;_` distributes over `brn` only on the RIGHT; that
+--   is what makes the front peel much shorter than `AtomUnsnoc`.)
 
 private
   bindCtx′-noAcq : ∀ {n} {Γ : Ctx n} {s : 𝕊 0} → NoAcq s → BindCtx′ s Γ →
@@ -163,70 +188,134 @@ private
     in s′ , subst (_≃ ⟨ s′ ⟩) (sym (V.lookup-++ˡ Γ₁ Γ₂ q)) eq , na
   first-group-noAcq N (cons-acq C _) (head-group B′ ()) idx
 
--- ★ THE GAP ★ (Position.agda's proof sketch (iv); the module-level comment
--- at the top of this file cites the tools this needs: `atom-;-unsnoc` /
--- `atomKind≢⇒≄-;ʳ` of `Types/AtomUnsnoc.agda` / `Types/AtomSnoc.agda`.
+------------------------------------------------------------------------
+-- ★ THE ONE REMAINING GAP ★  --  and it is a GAP IN `Processes/Typed.agda`,
+-- not in this proof: `AcqNonFirstGroupHead` is FALSE for `BindCtx` as it
+-- stands.  See `Examples/StrictGroupGap.agda` for the machine-checked
+-- counterexample and the recommended premise change.
 --
--- Precisely what is missing.  `BindCtx (acq ; g) B Γ` (`g` NoAcq) is what
--- a `cons-ret/acq`/`cons-acq` node hands to the group list AFTER crossing
--- exactly one `acq` boundary (`cons-ret/acq`'s own recursive premise is
--- literally `BindCtx (acq ; s₂) B Γ₂`; `cons-acq`'s is
--- `BindCtx (acq ; s) B Γ`).  For a handle NOT at offset 0 of its
--- group (`grp`), we want `Γ ﹫ i` NoAcq.  A `BindCtx′`-chain argument
--- (`bindCtx′-noAcq` above) gets this INSTANTLY from `NoAcq` of the group's
--- own governing session `s₁ᶜ ; ret` -- but here the governing session
--- is `acq ; g`, NOT NoAcq, and splitting it (`cons-ret/acq`'s own
--- `s≃ : s₁ᶜ ; s₂ᶜ ≃ acq ; g`) does not by itself pin the acq to
--- `s₁ᶜ`'s own front: nothing rules out `s₁ᶜ` being entirely `Skips` (or more
--- generally NoAcq) with the acq "leaking" into `s₂ᶜ` instead, UNLESS one
--- shows that a chain equivalent to `acq ; g` (`g` NoAcq) can only be
--- re-split with the acq landing ENTIRELY inside one factor, at THAT
--- factor's own front -- exactly the front-peel dual of what
--- `Types/AtomUnsnoc.agda` builds for the LAST atom of a chain
--- (`Snoc`/`atom-;-unsnoc`), which this attempt did not have time to
--- build symmetrically for the FIRST atom.  (`AcqHeadCtx`, the OTHER
--- premise `cons-ret/acq`/`cons-acq` carry, states only `¬ Skips` of the
--- head channel -- enough to rule out `discard`'s `⟨ skip ⟩` domain
--- directly via `Skips`-≃-invariance, but NOT enough for `recv`/`end`/
--- `send`'s domains, real non-skip non-acq atoms.)
+-- `AcqHeaded Γ` says what `Processes/Typed.agda`'s `AcqHeadCtx` DOC COMMENT
+-- says -- "the first bound handle of a non-first group must carry the group's
+-- `acq`" -- rather than what its DEFINITION says (the strictly weaker
+-- `¬ Skips s`).  Everything below is proved from `AcqHeaded`; the single
+-- unfilled hole is the step from the one to the other.  With `AcqHeadCtx`
+-- redefined as
 --
--- What IS available and used below: `NoAcq` is exactly conjunctive over
--- `_;_` (both directions -- the constructor and
--- `noAcq-;-fst`/`-snd`), and ≃-invariant (`noAcq-≃`), so the missing
--- piece is precisely a chain-recombination lemma, not a new predicate.
+--     AcqHeadCtx (⟨ s ⟩ ∷ _) = Σ[ t ∈ 𝕊 0 ] (s ≃ acq ; t)
+--     AcqHeadCtx _           = ⊥
+--
+-- the hole is discharged by `id` and this module's `acq-non-first-group-head`
+-- becomes hole-free.
+
+AcqHeaded : ∀ {n} → Ctx n → Set
+AcqHeaded (⟨ s ⟩ ∷ _) = Σ[ t ∈ 𝕊 0 ] (s ≃ acq ; t)
+AcqHeaded _ = ⊥
+
+acqHeadCtx⇒acqHeaded : ∀ {n} {Γ : Ctx n} → AcqHeadCtx Γ → AcqHeaded Γ
+acqHeadCtx⇒acqHeaded = {!!}   -- HOLE 0 (FALSE as `AcqHeadCtx` stands)
+
+private
+  -- The peel itself, in the form the `BindCtx` chains use.
+  acq-peel : ∀ {n} {s₁ s₂ g : 𝕊 n} → NoAcq g → ¬ Skips s₁ → s₁ ; s₂ ≃ acq ; g →
+    (Σ[ h ∈ 𝕊 n ] (s₁ ≃ acq ; h) × NoAcq h) × NoAcq s₂
+  acq-peel NAg ¬sk split with acq-;-split split
+  ... | inj₁ (Sk , _) = ⊥-elim (¬sk Sk)
+  ... | inj₂ (h , eq , hs≃g) =
+    let NAhs = noAcq-≃ (≃-sym hs≃g) NAg
+    in (h , eq , noAcq-;-fst NAhs) , noAcq-;-snd NAhs
+
+  -- Every NON-HEAD handle of an acq-headed group is acq-free: the head takes
+  -- the whole `acq`, and `acq-peel` leaves a `NoAcq` remainder for the rest of
+  -- the `BindCtx′` chain.
+  bindCtx′-acq-interior :
+    ∀ {n} {Γ : Ctx (suc n)} {g : 𝕊 0} → NoAcq g → BindCtx′ (acq ; g) Γ →
+    AcqHeaded Γ → (z : 𝔽 n) →
+    Σ[ s′ ∈ 𝕊 0 ] ((Γ ﹫ suc z) ≃ ⟨ s′ ⟩) × NoAcq s′
+  bindCtx′-acq-interior NAg (cons s₁ s₂ _ split C′) (t , u≃) z =
+    bindCtx′-noAcq (proj₂ (acq-peel NAg (λ Sk → acq-;-¬skips Sk u≃) split)) C′ z
+
+  -- At a `cons-ret/acq` node under an acq-headed context the `acq` goes to the
+  -- node's OWN group: `acq-;-split`'s first alternative (`Skips s₁`, the acq
+  -- escaping into the rest) would make the group's session `≃ ret`, and its
+  -- head handle is acq-headed, so `ret ≃ acq ; ⋯` -- refuted by `acq-;-≄ret`.
+  consRetAcq-peel :
+    ∀ {n k} {Γ₁ : Ctx n} {Γ₂ : Ctx k} {s₁ s₂ g : 𝕊 0} →
+    NoAcq g → s₁ ; s₂ ≃ acq ; g → BindCtx′ (s₁ ; ret) Γ₁ → AcqHeaded (Γ₁ ⸴* Γ₂) →
+    AcqHeaded Γ₁
+      × (Σ[ h ∈ 𝕊 0 ] (s₁ ; ret ≃ acq ; (h ; ret)) × NoAcq (h ; ret))
+      × NoAcq s₂
+  consRetAcq-peel NAg s≃ (nil (_ ; ())) ah
+  consRetAcq-peel NAg s≃ (cons u₁ u₂ _ split C″) (t , u≃) with acq-;-split s≃
+  ... | inj₂ (h , s₁≃ , hs≃g) =
+    let NAhs = noAcq-≃ (≃-sym hs≃g) NAg in
+    (t , u≃)
+      , (h , ≃-trans (≃-; s₁≃ ≃-refl) ≃-assoc-; , (noAcq-;-fst NAhs NoAcq.; NoAcq.ret))
+      , noAcq-;-snd NAhs
+  ... | inj₁ (Sk , _) =
+    ⊥-elim (acq-;-≄ret (≃-trans (≃-sym (≃-trans split (≃-skipsˡ Sk)))
+                                (≃-trans (≃-; u≃ ≃-refl) ≃-assoc-;)))
+
+-- PROVED (from `AcqHeaded`).  An interior handle -- offset > 0 in its group --
+-- of a group list governed by `acq ; g` with `g` acq-free carries no `acq`.
+-- `Allᴸ.All NonZero B` (i.e. `⊢ᴮ` of the enclosing list) rules out the
+-- `cons-acq` node, whose empty group would stack a SECOND `acq` in front of
+-- the governing session.
 nonFirstGroup-interior-noAcq :
   ∀ {B} {Γ : Ctx (sum B)} {g : 𝕊 0} → NoAcq g → BindCtx (acq ; g) B Γ →
+  AcqHeaded Γ → Allᴸ.All NonZero B →
   ∀ {i} (grp : GroupOf B i) → 0 Nat.< groupOffset grp →
   Σ[ s′ ∈ 𝕊 0 ] ((Γ ﹫ i) ≃ ⟨ s′ ⟩) × NoAcq s′
-nonFirstGroup-interior-noAcq = {!!}
+nonFirstGroup-interior-noAcq NAg (last C) ah nz (head-group _ (suc j)) 0<off =
+  bindCtx′-acq-interior NAg C ah (j ↑ˡ 0)
+nonFirstGroup-interior-noAcq NAg (last C) ah nz (head-group _ zero) ()
+nonFirstGroup-interior-noAcq NAg (last C) ah nz (next-group _ ()) 0<off
+nonFirstGroup-interior-noAcq NAg
+  (cons-ret/acq s₁ {s₂} {Γ₁ = Γ₁} {Γ₂ = Γ₂} s≃ _ front rest ah′) ah nz
+  (head-group B′ (suc q)) 0<off
+  with consRetAcq-peel NAg s≃ front ah
+... | ah₁ , (h , frontEq , NAhret) , _ =
+  let s′ , eq , na = bindCtx′-acq-interior NAhret (𝐓.bindCtx′-≃ frontEq front) ah₁ q
+  in s′ , subst (_≃ ⟨ s′ ⟩) (sym (V.lookup-++ˡ Γ₁ Γ₂ (suc q))) eq , na
+nonFirstGroup-interior-noAcq NAg
+  (cons-ret/acq s₁ {s₂} {Γ₁ = Γ₁} {Γ₂ = Γ₂} s≃ _ front rest ah′) ah nz
+  (head-group B′ zero) ()
+nonFirstGroup-interior-noAcq NAg
+  (cons-ret/acq s₁ {s₂} {Γ₁ = Γ₁} {Γ₂ = Γ₂} s≃ _ front rest ah′) ah nz
+  (next-group n g′) 0<off
+  with consRetAcq-peel NAg s≃ front ah
+... | _ , _ , NAs₂ =
+  let s′ , eq , na =
+        nonFirstGroup-interior-noAcq NAs₂ rest (acqHeadCtx⇒acqHeaded ah′)
+          (Allᴸ.tail nz) g′ 0<off
+  in s′ , subst (_≃ ⟨ s′ ⟩) (sym (V.lookup-++ʳ Γ₁ Γ₂ _)) eq , na
+nonFirstGroup-interior-noAcq NAg (cons-acq C ah′) ah nz grp 0<off =
+  ⊥-elim (case Nat.>-nonZero⁻¹ 0 ⦃ Allᴸ.head nz ⦄ of λ ())
 
 -- The composite for a LATER group's interior (offset > 0): descend past
--- however many groups precede `grp`'s own group (`⊢ᴮ` forbids more than the
--- very first group being empty, so at most one real `acq`-crossing sits
--- between the top and any given group), landing on `nonFirstGroup-
--- interior-noAcq` once `groupIndex grp` is confirmed `> 0`.  Only the
--- "index > 0, offset ≡ 0" case (the group HEAD itself) is left unaddressed
--- -- `impure-redex-head`/`pair-arg-redex-head` need it too (Position.agda's
--- case (iv), "if x IS that head"); `acq-non-first-group-head` below does
--- not, since it already KNOWS (from `acq`'s own typing rule) that ITS
--- target carries the acq.
+-- however many groups precede `grp`'s own group, landing on
+-- `nonFirstGroup-interior-noAcq` once `groupIndex grp` is confirmed `> 0`.
+-- `⊢ᴮ (b ∷ B)` IS `Allᴸ.All NonZero B`, so it is passed on unchanged.
 private
   laterGroup-interior-noAcq :
     ∀ {B} {Γ : Ctx (sum B)} {s : 𝕊 0} {p} → New s →
-    BindCtx (s ; end p) B Γ →
+    BindCtx (s ; end p) B Γ → 𝐓.⊢ᴮ B →
     ∀ {i} (grp : GroupOf B i) →
     0 Nat.< groupIndex grp → 0 Nat.< groupOffset grp →
     Σ[ s′ ∈ 𝕊 0 ] ((Γ ﹫ i) ≃ ⟨ s′ ⟩) × NoAcq s′
-  laterGroup-interior-noAcq N (last C) (head-group B′ j) () 0<off
+  laterGroup-interior-noAcq N (last C) ⊢B (head-group B′ j) () 0<off
+  laterGroup-interior-noAcq N (last C) ⊢B (next-group _ ()) 0<gi 0<off
   laterGroup-interior-noAcq {Γ = Γ} N
-    (cons-ret/acq s₁ {s₂} {Γ₁ = Γ₁} {Γ₂ = Γ₂} s≃ _ front rest _)
-    (next-group n g′) 0<gi 0<off =
+    (cons-ret/acq s₁ {s₂} {Γ₁ = Γ₁} {Γ₂ = Γ₂} s≃ _ front rest ah)
+    ⊢B (next-group n g′) 0<gi 0<off =
     let s′ , eq , na =
           nonFirstGroup-interior-noAcq
-            (noAcq-;-snd (noAcq-≃ (≃-sym s≃) (new-end⇒noAcq N))) rest g′ 0<off
+            (noAcq-;-snd (noAcq-≃ (≃-sym s≃) (new-end⇒noAcq N))) rest
+            (acqHeadCtx⇒acqHeaded ah) ⊢B g′ 0<off
     in s′ , subst (_≃ ⟨ s′ ⟩) (sym (V.lookup-++ʳ Γ₁ Γ₂ _)) eq , na
-  laterGroup-interior-noAcq N (cons-acq C _) (next-group .0 g′) 0<gi 0<off =
-    nonFirstGroup-interior-noAcq (new-end⇒noAcq N) C g′ 0<off
+  laterGroup-interior-noAcq N (cons-ret/acq s₁ s≃ _ front rest ah) ⊢B
+    (head-group B′ j) () 0<off
+  laterGroup-interior-noAcq N (cons-acq C ah) ⊢B (next-group .0 g′) 0<gi 0<off =
+    nonFirstGroup-interior-noAcq (new-end⇒noAcq N) C (acqHeadCtx⇒acqHeaded ah) ⊢B g′ 0<off
 
 ------------------------------------------------------------------------
 -- 1b.  A generic walker: propagate a `≃`-fact about the fixed global
@@ -343,7 +432,7 @@ private
     retTipBorrow = retTip-≃ (≃-sym s≃₁) (noRet-front-cons noRet-sh)
 
 ------------------------------------------------------------------------
--- 2.  THE FOUR HOLES.
+-- 2.  THE REMAINING HOLES.
 --
 -- Each is exactly the statement of the corresponding `Position.*` type.
 -- Everything they need is available:
@@ -368,32 +457,39 @@ private
 --                                                  forces, walked down to the
 --                                                  redex thread.
 --
--- `acq-non-first-group-head` (`?3`, restated -- see `Position.agda`'s
--- `AcqNonFirstGroupHead`) is PROVED below, modulo the one isolated gap
--- `nonFirstGroup-interior-noAcq` (§1a): it needs only the "offset > 0 ⟹
--- NoAcq" half of Position.agda's case (iv), because `x`'s OWN acq-typing
--- comes directly from `acq`'s typing rule (§1c/§1b), not from a forward
--- "group head ⟹ acq-typed" derivation the OTHER three holes still need.
+-- `acq-non-first-group-head` (restated -- see `Position.agda`'s
+-- `AcqNonFirstGroupHead`) is PROVED below, modulo the single hole
+-- `acqHeadCtx⇒acqHeaded` (§1a): it needs only the "offset > 0 implies NoAcq" half
+-- of Position.agda's case (iv), because `x`'s OWN acq-typing comes directly
+-- from `acq`'s typing rule (§1c/§1b), not from a forward "group head implies
+-- acq-typed" derivation the other two holes still need.
 --
--- `impure-redex-head` / `pair-arg-redex-head` / `drop-first-group-singleton`
--- remain OPEN.  Besides `nonFirstGroup-interior-noAcq`, they additionally
--- need, for the "x IS the head of a later group" branch of case (iv), the
--- FORWARD direction ("later-group head ⟹ acq-typed") that
--- `acq-non-first-group-head` sidesteps; AND, for case (iii) (same group)
--- when the group is NOT the first, `Position.group-head-before`'s partner
--- handle -- the group's own head -- is not known `¬ Mobile` (it is, in
--- fact, expected TO carry the acq), so `before-mono-≼` cannot be invoked
--- against it the way `first-group-¬mobile` lets it be invoked for the
--- first group.  Both gaps trace back to the same missing front-atom-peel
--- fact recorded in `nonFirstGroup-interior-noAcq`'s documentation.  Beyond
--- that, wiring `Position.binderTyping`'s payload down to
--- `E [ K c ;¹ (` x) ]*`'s own typing needs a walk of `Binder.below`
--- exactly like §1b's `TypeWalk` (for `?0`/`?1`, this time tracking `count`/
--- `before` as `Position.ContextOrder`'s own `Walk` already does -- it is
--- the RIGHT tool, just not yet driven from a resolved `Binder`), or
--- `Support.Theorems.DropShape`'s `NoRet`/`RetTip` machinery generalised off
--- its canonical `0F` position (for `?2`, which otherwise needs nothing
--- beyond `?0`).
+-- `impure-redex-head` / `pair-arg-redex-head` remain OPEN, and are FALSE for
+-- `BindCtx` as it stands (`Examples/StrictGroupGap.agda`, quoted in the
+-- header).  What they need, ONCE the two premises named there are in place:
+--
+--   (a) case (iv), "x IS the head of a later group": the FORWARD direction
+--       "later-group head implies acq-typed", which `consRetAcq-peel` (§1a) now
+--       supplies from `AcqHeaded` -- then each impure constant's domain
+--       refutes `≃ acq ; t`: `⟨ skip ⟩` by `AtomCons.atom-;-¬skips`,
+--       `⟨ ret ⟩` / `⟨ end p ⟩` / `⟨ msg ⁇ T ⟩` by `atom-;-atom`,
+--       `⟨ brn p s₁ s₂ ⟩` by `¬cons-brn`, and `send`'s pair by
+--       `Position.pair-arg-not-var`;
+--   (b) case (iii), "same group, offset > 0": `group-head-before` puts the
+--       group's own head `;`-before `x`, and `ctx-¬before-direct` refutes
+--       that -- but it wants `¬ Mobile` of BOTH.  For `x` that is
+--       `impure-handle-¬mobile` (extended to `select`/`branch` by
+--       `¬cons-brn`); for the head it is `first-group-¬mobile` when the group
+--       is the first, and otherwise `mobile-head-alone` -- WHICH IS FALSE as
+--       `BindCtx′` stands (`mobile-head-alone-refuted`);
+--   (c) the plumbing: lift `before` from `structBinder B₁` into the body
+--       structure `TP-Res` prescribes (two `before-⋯ᵣ` steps plus
+--       `ContextOrder.bind-before`), and bound `count y` of a binder-local
+--       variable in that structure by 1 (`structNSeq` lists each variable
+--       once; `count-⋯ᵣwkʳ-↑ʳ` / `count-weaken*-shift` of
+--       `Support/StructDom.agda` move the other two components out of the
+--       way).  This is the only genuinely mechanical part left, and it is
+--       INDEPENDENT of the two premise questions.
 
 impure-redex-head : ImpureRedexHead
 impure-redex-head = {!!}   -- HOLE 1
@@ -464,7 +560,7 @@ acq-non-first-group-head {ctx = ctx} {E = E} {x = x} ⊢plug
   with groupOffset g Nat.≟ 0
 ... | yes off≡0 = 0≢⇒0< gi≢0 , off≡0
 ... | no off≢0 =
-  let s′ , eq′ , na′ = laterGroup-interior-noAcq N C g (0≢⇒0< gi≢0) (0≢⇒0< off≢0)
+  let s′ , eq′ , na′ = laterGroup-interior-noAcq N C ⊢B₁ g (0≢⇒0< gi≢0) (0≢⇒0< off≢0)
   in ⊥-elim (acq-vs-noAcq na′ (⟨⟩≃′ (≃-trans (≃-sym eq′) eqAcq₁)))
 acq-non-first-group-head {ctx = ctx} {E = E} {x = x} ⊢plug
   | bnd@(binder {mid} B₁ B₂ above below dec local index-eq)
@@ -485,5 +581,5 @@ acq-non-first-group-head {ctx = ctx} {E = E} {x = x} ⊢plug
   with groupOffset g Nat.≟ 0
 ... | yes off≡0 = 0≢⇒0< gi≢0 , off≡0
 ... | no off≢0 =
-  let s′ , eq′ , na′ = laterGroup-interior-noAcq (new-dual N) C′ g (0≢⇒0< gi≢0) (0≢⇒0< off≢0)
+  let s′ , eq′ , na′ = laterGroup-interior-noAcq (new-dual N) C′ ⊢B₂ g (0≢⇒0< gi≢0) (0≢⇒0< off≢0)
   in ⊥-elim (acq-vs-noAcq na′ (⟨⟩≃′ (≃-trans (≃-sym eq′) eqAcq₂)))

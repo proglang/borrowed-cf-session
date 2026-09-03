@@ -230,3 +230,39 @@ P5 `Leaves/*.agda` — per soup rule: soup step data + canonical typed redex ⇒
    `GlobalImage P′ C₀′ × C₀′ ≈ˢ C′`, obtained from the forward leaf `U-*-local` on the canonical step plus a transport of
    images along the soup step's free choices (New index, Fork position: `logicalChannels`/`threadEmbedding`; RSplit slot: `≈ˢ`).
 P6 `Main.agda` — the dispatcher on the eleven soup rules; `SlotBisim.agda` — `≈¹` commutes with every soup rule.
+
+## 10. P3 finding (2026-09-03): the strict rules are still one premise short — TWICE
+
+`Position/Crux.agda`'s remaining gap was a FRONT-atom peel for `acq`, dual to `Types/AtomUnsnoc.agda`'s
+last-atom `atom-;-unsnoc`.  That is now built and hole-free in **`Types/AtomCons.agda`**: `Cons a w z`
+witnesses `w ≃ a ; z`, `≃-cons` transports it along `_≃_`, and `atom-;-cons` splits `x ; y ≃ a ; t`
+into "the atom is at the front of `x`" or "`x` skips and it is at the front of `y`".  `Cons` needs no
+`brn` constructor (`_;_` distributes over `brn` only rightwards), so the module is a fifth the size of
+`AtomUnsnoc` and needs neither `SnocA`/`SnocM` nor `snoc-⋯-sum`.
+
+With it, `nonFirstGroup-interior-noAcq` and `acq-non-first-group-head` are proved — but only from a
+STRONGER `AcqHeadCtx` than the one `Processes/Typed.agda` has.  **`Examples/StrictGroupGap.agda`**
+(0 goals, no pragma) machine-checks two counterexamples to the P3 metatheorem as `BindCtx` stands:
+
+* `refuted` — `cons-ret/acq` still admits `s₁ ≡ skip`: a group that does no work and passes its `acq`
+  on.  §7's `¬ Skips s` premise on `rsplit` blocks the TERM that performs such a split, but `TP-Res`
+  quantifies over `BindCtx` freely, so the shape is still typable.  The next group then governs
+  `acq ; acq ; …` and may put an ACQ-HEADED handle at offset 1, refuting
+  `nonFirstGroup-interior-noAcq`, hence `AcqNonFirstGroupHead`, and — through the same
+  `⟨ ret ⟩`-headed non-first group, on which `R-Drop` may then not fire — `ImpureRedexHead` for `drop`.
+  FIX: make `AcqHeadCtx` say what its own doc comment says,
+  `AcqHeadCtx (⟨ s ⟩ ∷ _) = Σ[ t ∈ 𝕊 0 ] (s ≃ acq ; t)` instead of `¬ Skips s`.  `Crux.agda` §1a is
+  written against exactly that (`AcqHeaded`), so the change discharges its one hole
+  (`acqHeadCtx⇒acqHeaded`) by `id`.  To be checked before adopting it: every producer of an
+  `acqHead` argument (`Reduction/Processes/Typed.agda`'s R-LSplit/R-RSplit/R-Acq, `Examples/Probes*`).
+* `mobile-head-alone-refuted` — §6's mobility argument ("a Mobile handle is the only handle of its
+  group") does not follow either: `Bounded s′` in `Mobile ⟨ acq ; s′ ⟩` is satisfied by an `end` tip as
+  well as a `ret` tip, and `cons` only forbids handles after a SKIPS remainder, so `mobileGroup`
+  (`⟨ acq ; end ‼ ⟩ ∷ ⟨ ret ⟩ ∷ []` over `(acq ; end ‼) ; ret`) is a legal `BindCtx′` with a Mobile
+  HEAD and a second handle.  `impure-redex-head`'s "same group, non-first" branch needs exactly the
+  refuted claim in order to apply `before-mono-≼` against a head that may itself be Mobile, so a
+  matching premise is needed as well: a group's terminator must END the group.
+
+Only after both premises are settled is the rest of the crux mechanical: lift `before` from
+`structBinder B₁` into the body structure `TP-Res` prescribes, and bound `count y` of a binder-local
+variable there by 1 (see the note above `impure-redex-head`).
