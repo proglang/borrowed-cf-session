@@ -209,3 +209,24 @@ Plan, per ingredient:
     is an independent induction over the eleven soup rules, needing `swapPhi`'s commutation with
     `consumePhi`, `insertPhi`, `_[_]*` and `_⋯ᵣ_` — the exact analogues of
     `ForwardSoup/Local/InsertSupport.agda` and `AcqSupport.agda`, which are the templates to copy.
+
+## 9. Proof architecture for `Backward-Sim` (branch `codex/soup-strict-groups`)
+
+Phases, each a module under `Simulation/BackwardSoup/`; one Opus run per phase, Fable reviews/commits.
+P1 `Locate.agda` — thread paths: a process context (`hole`/`par`/`bind`, as the retired `Context.agda`
+   had: `plug`, `threadInContext`, `focusEnv`), `locate : (P) (i : 𝔽 (processCount P)) → Σ ctx e. P ≡ plug ctx ⟪ e ⟫
+   × threadInContext ctx i₀ ≡ i`, and `thread-content : lookup (proj₂ (flattenOriented P lc σ)) i ≡ T[ e ] (focusEnv ctx lc σ)`.
+   With `GlobalImage`, a non-garbage soup thread `j` is `threadEmbedding i ≡ just j` for a unique `i`.
+P2 `Inversion.agda` — translation inversion under `ValueEnv σ`: `T[ e ] σ ≡ F [ K c ·¹ v ]*` ⇒ `Σ E w. e ≡ E [ K c ·¹ w ]*
+   × Tᶠ*[ E ] Vσ ≡ F × T[ w ] σ ≡ v` (values of handle type are variables: `σ x` is a chanTriple, never an application, and no
+   frame decomposes it); expression-step inversion `T[ e ] σ ⋯→ t′ ⇒ Σ e′. e ⋯→ e′ × T[ e′ ] σ ≡ t′` (reverse of `T[_]-⋯→`).
+P3 `Position.agda` — typing facts for the located redex: a handle-typed value is a variable; which `ν` on the path binds it,
+   its group and position; with the strict rules: Drop/Discard ⇒ `0F` of a non-empty first group (`DropShape`), Acq ⇒ empty
+   first group + acq head, Com/Choice/Close ⇒ heads of the first groups of both sides.
+P4 `Canonical.agda` — `≋`-rearrangement: bring the redex thread(s) directly under their binder as the left component(s) of
+   its body, with the remainder in `⋯ₚ weakenᵣ`/`⋯ᶠ* weakenᵣ` form (`ν-ext′`, `ν-comm′`, `∥-comm/assoc`, `Strengthen.agda`).
+   Probe 6 of the second hunt checks the `≋` rules suffice.
+P5 `Leaves/*.agda` — per soup rule: soup step data + canonical typed redex ⇒ `R-Struct (canon) (R-rule) refl` and
+   `GlobalImage P′ C₀′ × C₀′ ≈ˢ C′`, obtained from the forward leaf `U-*-local` on the canonical step plus a transport of
+   images along the soup step's free choices (New index, Fork position: `logicalChannels`/`threadEmbedding`; RSplit slot: `≈ˢ`).
+P6 `Main.agda` — the dispatcher on the eleven soup rules; `SlotBisim.agda` — `≈¹` commutes with every soup rule.
