@@ -423,35 +423,43 @@ private
   ↑ʳ-inj zero equal = equal
   ↑ʳ-inj (suc p) equal = ↑ʳ-inj p (Fin.suc-injective equal)
 
-  count-⋯ᵣ :
-    ∀ {m n} (γ : Struct m) (ρ : m →ᵣ n) → (∀ {i j} → ρ i ≡ ρ j → i ≡ j) →
-    (z : 𝔽 m) → count (ρ z) (γ 𝐂.⋯ᵣ ρ) ≡ count z γ
-  count-⋯ᵣ (` w) ρ inj z with ρ z Fin.≟ ρ w | z Fin.≟ w
-  ... | yes _  | yes _ = refl
-  ... | no  _  | no  _ = refl
-  ... | yes eq | no ¬p = ⊥-elim (¬p (inj eq))
-  ... | no ¬eq | yes p = ⊥-elim (¬eq (cong ρ p))
-  count-⋯ᵣ [] ρ inj z = refl
-  count-⋯ᵣ (α ∥ β) ρ inj z = cong₂ _+_ (count-⋯ᵣ α ρ inj z) (count-⋯ᵣ β ρ inj z)
-  count-⋯ᵣ (α ; β) ρ inj z = cong₂ _+_ (count-⋯ᵣ α ρ inj z) (count-⋯ᵣ β ρ inj z)
 
-  mem-⋯ᵣ :
-    ∀ {m n} (γ : Struct m) (ρ : m →ᵣ n) (inj : ∀ {i j} → ρ i ≡ ρ j → i ≡ j)
-      (z : 𝔽 m) → z ∈ₘ γ → ρ z ∈ₘ (γ 𝐂.⋯ᵣ ρ)
-  mem-⋯ᵣ γ ρ inj z z∈ eq = z∈ (sym (count-⋯ᵣ γ ρ inj z) ■ eq)
+-- PUBLIC (Phase 4a, `Position/ContextOrder.agda`): `count`, membership and
+-- the `;`-order all transport along an INJECTIVE renaming of the structure.
+-- (`before-⋯ᵣ` is the `_⋯ᵣ_` analogue of `before-resp-≈`; it is what lets
+-- the process-level walk cross a `TP-Res`, whose body structure renames the
+-- ambient `γ` by `weaken*`.)
+count-⋯ᵣ :
+  ∀ {m n} (γ : Struct m) (ρ : m →ᵣ n) → (∀ {i j} → ρ i ≡ ρ j → i ≡ j) →
+  (z : 𝔽 m) → count (ρ z) (γ 𝐂.⋯ᵣ ρ) ≡ count z γ
+count-⋯ᵣ (` w) ρ inj z with ρ z Fin.≟ ρ w | z Fin.≟ w
+... | yes _  | yes _ = refl
+... | no  _  | no  _ = refl
+... | yes eq | no ¬p = ⊥-elim (¬p (inj eq))
+... | no ¬eq | yes p = ⊥-elim (¬eq (cong ρ p))
+count-⋯ᵣ [] ρ inj z = refl
+count-⋯ᵣ (α ∥ β) ρ inj z = cong₂ _+_ (count-⋯ᵣ α ρ inj z) (count-⋯ᵣ β ρ inj z)
+count-⋯ᵣ (α ; β) ρ inj z = cong₂ _+_ (count-⋯ᵣ α ρ inj z) (count-⋯ᵣ β ρ inj z)
 
-  before-⋯ᵣ :
-    ∀ {m n} (γ : Struct m) (ρ : m →ᵣ n) (inj : ∀ {i j} → ρ i ≡ ρ j → i ≡ j)
-      {i j : 𝔽 m} → before i j γ → before (ρ i) (ρ j) (γ 𝐂.⋯ᵣ ρ)
-  before-⋯ᵣ (` w) ρ inj ()
-  before-⋯ᵣ [] ρ inj ()
-  before-⋯ᵣ (α ∥ β) ρ inj (inj₁ b) = inj₁ (before-⋯ᵣ α ρ inj b)
-  before-⋯ᵣ (α ∥ β) ρ inj (inj₂ b) = inj₂ (before-⋯ᵣ β ρ inj b)
-  before-⋯ᵣ (α ; β) ρ inj (inj₁ (i∈ , j∈)) =
-    inj₁ (mem-⋯ᵣ α ρ inj _ i∈ , mem-⋯ᵣ β ρ inj _ j∈)
-  before-⋯ᵣ (α ; β) ρ inj (inj₂ (inj₁ b)) = inj₂ (inj₁ (before-⋯ᵣ α ρ inj b))
-  before-⋯ᵣ (α ; β) ρ inj (inj₂ (inj₂ b)) = inj₂ (inj₂ (before-⋯ᵣ β ρ inj b))
+mem-⋯ᵣ :
+  ∀ {m n} (γ : Struct m) (ρ : m →ᵣ n) (inj : ∀ {i j} → ρ i ≡ ρ j → i ≡ j)
+    (z : 𝔽 m) → z ∈ₘ γ → ρ z ∈ₘ (γ 𝐂.⋯ᵣ ρ)
+mem-⋯ᵣ γ ρ inj z z∈ eq = z∈ (sym (count-⋯ᵣ γ ρ inj z) ■ eq)
 
+before-⋯ᵣ :
+  ∀ {m n} (γ : Struct m) (ρ : m →ᵣ n) (inj : ∀ {i j} → ρ i ≡ ρ j → i ≡ j)
+    {i j : 𝔽 m} → before i j γ → before (ρ i) (ρ j) (γ 𝐂.⋯ᵣ ρ)
+before-⋯ᵣ (` w) ρ inj ()
+before-⋯ᵣ [] ρ inj ()
+before-⋯ᵣ (α ∥ β) ρ inj (inj₁ b) = inj₁ (before-⋯ᵣ α ρ inj b)
+before-⋯ᵣ (α ∥ β) ρ inj (inj₂ b) = inj₂ (before-⋯ᵣ β ρ inj b)
+before-⋯ᵣ (α ; β) ρ inj (inj₁ (i∈ , j∈)) =
+  inj₁ (mem-⋯ᵣ α ρ inj _ i∈ , mem-⋯ᵣ β ρ inj _ j∈)
+before-⋯ᵣ (α ; β) ρ inj (inj₂ (inj₁ b)) = inj₂ (inj₁ (before-⋯ᵣ α ρ inj b))
+before-⋯ᵣ (α ; β) ρ inj (inj₂ (inj₂ b)) = inj₂ (inj₂ (before-⋯ᵣ β ρ inj b))
+
+
+private
   mem-wk : (γ : Struct n) (z : 𝔽 n) → z ∈ₘ γ → suc z ∈ₘ 𝐂.wk γ
   mem-wk γ z z∈ eq = z∈ (sym (count-wk-suc γ z) ■ eq)
 
