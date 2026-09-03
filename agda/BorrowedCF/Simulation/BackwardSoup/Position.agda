@@ -34,8 +34,8 @@
 --   to import them from here.
 --
 --   The crux itself (`impure-redex-head : ImpureRedexHead`) is NOT proved in
---   this module: it lives in `Position/Crux.agda`, which carries clearly
---   marked holes.  This module loads with 0 goals; only the STATEMENT is
+--   this module: it lives in `Position/Crux.agda`, which is now hole-free and
+--   pragma-free.  This module loads with 0 goals; only the STATEMENT is
 --   needed downstream.
 module BorrowedCF.Simulation.BackwardSoup.Position where
 
@@ -524,6 +524,22 @@ groupHead-offset (head-group B zero) = refl
 groupHead-offset (head-group B (suc j)) = refl
 groupHead-offset (next-group b g) = groupHead-offset g
 
+groupHead-width : ∀ {B i} (g : GroupOf B i) → groupWidth (groupHeadOf g) ≡ groupWidth g
+groupHead-width (head-group B zero) = refl
+groupHead-width (head-group B (suc j)) = refl
+groupHead-width (next-group b g) = groupHead-width g
+
+-- The offset is an index INTO the group, so it is below the group's width.
+groupOffset<width : ∀ {B i} (g : GroupOf B i) → groupOffset g Nat.< groupWidth g
+groupOffset<width (head-group B j) = Fin.toℕ<n j
+groupOffset<width (next-group b g) = groupOffset<width g
+
+-- ... hence a handle at a POSITIVE offset is not its group's head.
+groupHeadIx≢ : ∀ {B i} (g : GroupOf B i) → 0 Nat.< groupOffset g → groupHeadIx g ≢ i
+groupHeadIx≢ (head-group B zero) ()
+groupHeadIx≢ (head-group B (suc j)) 0<off ()
+groupHeadIx≢ (next-group b g) 0<off eq = groupHeadIx≢ g 0<off (↑ʳ-inj b eq)
+
 -- Step (ii)/(iii) of the crux, in its purely combinatorial half: a handle
 -- that is NOT at offset 0 of its group has the group's head `;`-before it.
 group-head-before :
@@ -577,14 +593,15 @@ first-group-¬mobile N (cons-acq C _) (head-group B′ ()) idx
 --        `v ⊗□` -- force the hole to be PURE, contradicting
 --        `ImpureHandleConst`).  `before-mono-≼` says `≼` cannot repair that,
 --        because turning `∥` into `;` needs `∥′-tm-;`, i.e. a MOBILE handle,
---        and `x′` is not mobile: a first-group handle is `NoAcq`
---        (`bindCtx′-¬mobile` over `noAcq-front`), and a non-first group's
---        NON-head handle carries no `acq` either -- the head carries it
---        (`AcqHeadCtx` plus the `cons-ret/acq` chain equation).
+--        and the group's HEAD is not mobile: `Crux.group-head-¬mobile` -- a
+--        Mobile handle at offset 0 carries its group's terminator, and a
+--        group's terminator ENDS the group (`Crux.mobile-head-alone`, over
+--        `Types/NoTerm.agda`), so its group would be a singleton with no room
+--        for `x`.
 --  (iv)  EARLIER GROUP.  If `x`'s group is not the first, its head carries
---        the group's `acq` (`AcqHeadCtx` and `acq ; s₂ ≃ s₁ ; rest`, via the
---        head-atom lemmas `atom-;-unsnoc` / `atomKind≢⇒≄-;ʳ` of
---        `Types/Equivalence.agda`).  If `x` IS that head, its session
+--        the group's `acq` (`AcqHeadCtx`, now `Σ[ t ] (s ≃ acq ; t)`, via the
+--        FRONT-atom peel `atom-;-cons` of `Types/AtomCons.agda`; the lemma is
+--        `Crux.laterGroup-head-acq`).  If `x` IS that head, its session
 --        `acq ; …` cannot be what an impure constant consumes (`discard`
 --        wants `⟨ skip ⟩`, `drop` wants `⟨ ret ⟩`, `send` wants
 --        `⟨ msg ‼ T ⟩`, ... -- each `≄ acq ; s`).  If `x` is not the head,
