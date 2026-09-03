@@ -637,14 +637,21 @@ DropFirstGroupSingleton =
   [] ; [] ⊢ₚ plug ctx 𝐓.⟪ E [ K `drop ·¹ (` x) ]* ⟫ →
   (binderWidth (resolve ctx x) ≡ 1) × (binderRest (resolve ctx x) ≢ L.[])
 
--- `acq` is the mirror image: `⊢ᴮ` forbids an empty group in non-first
--- position, so an acquiring handle is the head of the SECOND group and the
--- FIRST group is empty (PLAN.md §4, F4(c)).
-AcqSecondGroupHead : Set
-AcqSecondGroupHead =
+-- `acq` is the mirror image of `drop`: `⊢ᴮ` forbids an empty group in
+-- non-first position, so an acquired handle is always the HEAD of a
+-- NON-FIRST group.  (Originally stated as `AcqSecondGroupHead`, pinning the
+-- group index to exactly 1 -- as if only a two-group shape were reachable.
+-- That is too strong: `⊢ᴮ` allows arbitrarily many non-empty groups ahead of
+-- the acquired one, e.g. `ν (0 ∷ b₁ ∷ b₂ ∷ …) …` after an `lsplit`/`rsplit`
+-- history that already produced several real groups before this `acq` fires
+-- on a LATER one.  What forces the group index is a DIFFERENT fact: a
+-- `BindCtx′` chain has exactly one `acq` at its own front, so an INTERIOR
+-- handle (offset > 0 in its group) never carries one, and a first-group
+-- handle never carries one either (`New`-derived, hence `NoAcq`).  The
+-- acquired handle can therefore only be the head of *some* non-first group,
+-- not necessarily the second.  PLAN.md §4, F4(c).)
+AcqNonFirstGroupHead : Set
+AcqNonFirstGroupHead =
   ∀ {k} {ctx : ProcessContext k 0} {E : Frame* k} {x : 𝔽 k} →
   [] ; [] ⊢ₚ plug ctx 𝐓.⟪ E [ K `acq ·¹ (` x) ]* ⟫ →
-  (binderGroup (resolve ctx x) ≡ 1)
-    × (binderPos (resolve ctx x) ≡ 0)
-    × (binderGroups (resolve ctx x)
-         ≡ 0 L.∷ binderWidth (resolve ctx x) L.∷ binderRest (resolve ctx x))
+  (0 Nat.< binderGroup (resolve ctx x)) × (binderPos (resolve ctx x) ≡ 0)
