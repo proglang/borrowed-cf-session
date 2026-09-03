@@ -101,3 +101,22 @@ stuck, and the soup's continuation leaves the well-typed world. One of the follo
      is expressible as `before ≡ []`; for Drop likewise `before ≡ []`), and it only makes both sides
      deadlock instead of restoring correspondence.
 Recommendation: (i), then prove the statement of §5 with `≡ᵖ`.
+
+## 6. Branch `codex/soup-strict-groups`: the strict rules (2026-09-02)
+
+Validation round before the change:
+* Paper comparison (`tex/rules/process-typing.tex`, `tex/sec/types.tex`): the Agda `BindCtx` is the paper's
+  B-Seq/B-Drop/B-Acq and the split constants carry only `¬ Skips s′`; the proposal strengthens the paper.
+* `¬ Skips s` on `rsplit` is NOT optional: splitting the head `⟨ acq ; t ⟩` of a non-first group as
+  `⟨ skip ; (acq ; t) ⟩` would leave a head `⟨ ret ⟩` without its `acq` (moved to the new group): the
+  soup cannot drop it (its left token is not `*`) and the typed side cannot acquire; both deadlock.
+* Preservation of the new premises under every typed rule checked by hand: R-LSplit/R-RSplit keep the
+  head's `acq` (the left part is non-skip), R-RSplit's new boundary has a non-skip continuation
+  (`¬ Skips s′`), R-Discard/R-Drop empty only the first group, R-Acq removes the empty first group,
+  New creates `0 ∷ 1 ∷ []` with an acq-headed second group.
+* Mobility stays sound: a handle `⟨ acq ; s′ ⟩` with `Bounded s′` carries its group's terminator; `cons`
+  forbids handles after a terminator, `AcqHeadCtx` forbids a skip handle before it, so a Mobile handle
+  is the only handle of its group and `∥/;-transmute` only reorders across groups, which the tokens
+  serialise.
+Rules as implemented: `` `lsplit/`rsplit `` get `¬ Skips s`; `cons-ret/acq` gets `¬ Skips s₂` and
+`AcqHeadCtx Γ₂`; `cons-acq` gets `AcqHeadCtx Γ` (`AcqHeadCtx (⟨ s ⟩ ∷ _) = ¬ Skips s`, else `⊥`).
