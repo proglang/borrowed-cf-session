@@ -597,3 +597,18 @@ because `Translation.agda` imports it. Remaining Phase 4: dead lemmas in the sha
 (`Expressions`, `Translation`, `Renaming`, `Image`), duplicated arithmetic helpers in
 `Local/SplitCommon.agda` vs `Local/RSplitCommon.agda`. Out of scope: the stale untyped-target development
 (`Simulation/Forward.agda`, `Forward/*`, `Backward/*`, `Support/Theorems/Splits*`), which no longer loads.
+
+Phase 4 step 2 (2026-09-03): dead-code sweep of the shared modules, computed as a reachability fixpoint
+from the names used outside them.  Deleted `Expressions.ValueEnv-lift`, `Expressions.liftSub*` (673→665
+lines); `Translation.flatten-channel-open`, `canonical-channel-open`, `image-channel-open` plus the now
+unused `Image` import, the `_*ℕ_` import and `variable c : ℕ` (186→125); `Renaming.untransportProcesses`,
+`transportProcesses-untransport` (330→312); and the whole of `Image.agda` (138 lines: `SoupImage`,
+`initialImage`, `canonicalFlatten`/`-Channels`/`-Threads`, `FinInjective`, `liftRen-id`, `rename-id≗`,
+`rename-id`, `ChannelOutside`, `ThreadOutside`), which was reachable only from the three deleted
+`*-channel-open` lemmas.  Nothing dead is left in `Expressions`/`Translation`/`Renaming`.  The four
+arithmetic helpers `∸-pos`, `q<q+suc`, `∸-suc`, `∸-bound` are now public in `Local/SplitCommon.agda` and
+the primed copies in `Local/RSplitCommon.agda` (including a nested `∸-suc′`) are gone (1108→1092 lines);
+`RSplitCommon` already opened `SplitCommon`.  Stale comment references to the deleted
+`ForwardSoup/LSplit.agda` fixed in `Local/SplitCommon.agda` and `Local/Frames.agda`.  `Local.agda` and
+`World.agda` both load with 0 goals and no diagnostics.  Not merged: `cons-step`/`cons-step-ins` in the
+two `*Common` modules (a relation-parameterised version is not worth the risk).

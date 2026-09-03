@@ -8,8 +8,8 @@
 --
 --     σ₁ (θ x) ≡ σ₂ x  ⟹  T[ e ⋯ θ ] σ₁ ≡ T[ e ] σ₂
 --
---   These are the one-renaming versions of the private `*-ren-ren-coh`
---   lemmas of `ForwardSoup/LSplit.agda`; `bindEnv-Value` is the companion
+--   These are the one-renaming versions of the two-renaming `*-ren-ren-coh`
+--   lemmas of `Local/SplitCommon.agda`; `bindEnv-Value` is the companion
 --   fact that a binder frame environment consists of values.
 module BorrowedCF.Simulation.ForwardSoup.Local.Frames where
 

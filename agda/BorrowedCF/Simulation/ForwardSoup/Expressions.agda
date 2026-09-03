@@ -14,10 +14,6 @@ open Nat.Variables
 ValueEnv : TS.Env n n′ → Set
 ValueEnv σ = ∀ x → SoupRed.Value (σ x)
 
-ValueEnv-lift : ∀ {n n′} {σ : TS.Env n n′} → ValueEnv σ → ValueEnv (TS.liftEnv σ)
-ValueEnv-lift Vσ zero = SoupRed.V-`
-ValueEnv-lift Vσ (suc x) = SoupRed.value-rename (Vσ x) suc
-
 idSub : Soup.Sub n n
 idSub = Soup.sub (λ x → Soup.` x) Soup.`phi
 
@@ -354,10 +350,6 @@ subst₀-wk e t =
 liftEnv* : (k : ℕ) → TS.Env n n′ → TS.Env (k + n) (k + n′)
 liftEnv* zero σ = σ
 liftEnv* (suc k) σ = TS.liftEnv (liftEnv* k σ)
-
-liftSub* : (k : ℕ) → Soup.Sub n n′ → Soup.Sub (k + n) (k + n′)
-liftSub* zero τ = τ
-liftSub* (suc k) τ = Soup.liftSub (liftSub* k τ)
 
 singleSub* : (k : ℕ) → Soup.Tm n′ → Soup.Sub (suc k + n′) (k + n′)
 singleSub* zero t = SoupRed.singleSub t

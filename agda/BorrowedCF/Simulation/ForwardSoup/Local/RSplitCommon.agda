@@ -55,18 +55,10 @@ private
   variable d : ℕ
 
 ------------------------------------------------------------------------
--- Small arithmetic facts (the SplitCommon copies are private).
+-- Small arithmetic facts.  `∸-pos`, `∸-bound`, `∸-suc` and `q<q+suc` come
+-- from `Local/SplitCommon.agda`.
 
 private
-  ∸-pos′ : ∀ {a b : ℕ} → a Nat.< b → 0 Nat.< b Nat.∸ a
-  ∸-pos′ {zero} {suc b} lt = Nat.s≤s Nat.z≤n
-  ∸-pos′ {suc a} {suc b} lt = ∸-pos′ (Nat.s≤s⁻¹ lt)
-
-  ∸-bound′ : ∀ {a s u : ℕ} → a Nat.≤ u → u Nat.< a + s → u Nat.∸ a Nat.< s
-  ∸-bound′ {a = a} {s = s} {u = u} ge lt =
-    Nat.+-cancelˡ-< a (u Nat.∸ a) s
-      (subst (Nat._< a + s) (sym (Nat.m+[n∸m]≡n ge)) lt)
-
   ∸-shift : ∀ (q b u : ℕ) → q Nat.≤ u → (q + b) Nat.∸ u ≡ b Nat.∸ (u Nat.∸ q)
   ∸-shift q b u le =
     cong ((q + b) Nat.∸_) (sym (Nat.m+[n∸m]≡n le))
@@ -85,10 +77,6 @@ private
 
   ↑ʳ0ℕ : ∀ (q : ℕ) {w : ℕ} → Fin.toℕ (q ↑ʳ (Fin.zero {w})) ≡ q
   ↑ʳ0ℕ q {w} = Fin.toℕ-↑ʳ q (Fin.zero {w}) ■ Nat.+-identityʳ q
-
-  q<q+suc′ : ∀ (q b : ℕ) → q Nat.< q + suc b
-  q<q+suc′ q b =
-    subst (suc q Nat.≤_) (sym (Nat.+-suc q b)) (Nat.s≤s (Nat.m≤m+n q b))
 
 ------------------------------------------------------------------------
 -- Flag lists.  The reduct's binder group has one extra `drop` boundary,
@@ -194,14 +182,14 @@ private
     srcTail : pick (W₁ Nat.∸ suc (Fin.toℕ w)) e₂ ≡ SoupTerm.*
     srcTail =
       pick-pos (W₁ Nat.∸ suc (Fin.toℕ w)) e₂
-        (∸-pos′
+        (∸-pos
           (subst (suc (Fin.toℕ w) Nat.<_) (sym w₁Eq)
-            (Nat.≤-<-trans lt (q<q+suc′ q b))))
+            (Nat.≤-<-trans lt (q<q+suc q b))))
 
     tgtTail : pick (W₂ Nat.∸ suc (Fin.toℕ w′)) t ≡ SoupTerm.*
     tgtTail =
       pick-pos (W₂ Nat.∸ suc (Fin.toℕ w′)) t
-        (∸-pos′
+        (∸-pos
           (subst (λ z → suc z Nat.< W₂) (sym w′ℕ)
             (subst (suc (Fin.toℕ w) Nat.<_) (sym w₂Eq)
               (Nat.≤-<-trans lt
@@ -239,7 +227,7 @@ private
     tgtHead : pick (Fin.toℕ w′) t ≡ SoupTerm.*
     tgtHead =
       pick-pos (Fin.toℕ w′) t
-        (subst (0 Nat.<_) (sym w′ℕ) (∸-pos′ gt))
+        (subst (0 Nat.<_) (sym w′ℕ) (∸-pos gt))
 
     tailEq : W₁ Nat.∸ suc (Fin.toℕ w) ≡ W₂ Nat.∸ suc (Fin.toℕ w′)
     tailEq =
@@ -310,16 +298,16 @@ private
     ge′ = Nat.≤-trans ge shift≥
 
     p : 𝔽 (sum (b′ ∷ B))
-    p = Fin.fromℕ< (∸-bound′ ge (Fin.toℕ<n w))
+    p = Fin.fromℕ< (∸-bound ge (Fin.toℕ<n w))
 
     p′ : 𝔽 (sum (b″ ∷ B′))
-    p′ = Fin.fromℕ< (∸-bound′ ge′ (Fin.toℕ<n w′))
+    p′ = Fin.fromℕ< (∸-bound ge′ (Fin.toℕ<n w′))
 
     pℕ : Fin.toℕ p ≡ Fin.toℕ w Nat.∸ b₀
-    pℕ = Fin.toℕ-fromℕ< (∸-bound′ ge (Fin.toℕ<n w))
+    pℕ = Fin.toℕ-fromℕ< (∸-bound ge (Fin.toℕ<n w))
 
     p′ℕ : Fin.toℕ p′ ≡ Fin.toℕ w′ Nat.∸ b₀
-    p′ℕ = Fin.toℕ-fromℕ< (∸-bound′ ge′ (Fin.toℕ<n w′))
+    p′ℕ = Fin.toℕ-fromℕ< (∸-bound ge′ (Fin.toℕ<n w′))
 
     wSplit : Fin.toℕ w ≡ b₀ + Fin.toℕ p
     wSplit = sym (cong (b₀ +_) pℕ ■ Nat.m+[n∸m]≡n ge)
@@ -342,12 +330,8 @@ private
       p′ℕ
       ■ cong (Nat._∸ b₀)
           (hi (subst (b₀ + t Nat.<_) (sym wSplit) (Nat.+-monoʳ-< b₀ gt)))
-      ■ ∸-suc′ ge
+      ■ ∸-suc ge
       ■ cong suc (sym pℕ)
-      where
-      ∸-suc′ : ∀ {a u : ℕ} → a Nat.≤ u → suc u Nat.∸ a ≡ suc (u Nat.∸ a)
-      ∸-suc′ {zero} le = refl
-      ∸-suc′ {suc a} {suc u} le = ∸-suc′ (Nat.s≤s⁻¹ le)
 
 ------------------------------------------------------------------------
 -- The environment of the reduct is the environment of the redex with one
@@ -412,10 +396,10 @@ UBFrom-rwk l s [] [] q b x c e₁ e₂ w w′ slotEq notEq lo hi
       (subst (suc q Nat.≤_) (sym w′ℕ) (Nat.s≤s (Nat.<⇒≤ gt)))
 
   p′ : 𝔽 (suc b + 0)
-  p′ = Fin.fromℕ< (∸-bound′ ge (Fin.toℕ<n w′))
+  p′ = Fin.fromℕ< (∸-bound ge (Fin.toℕ<n w′))
 
   p′ℕ : Fin.toℕ p′ ≡ Fin.toℕ w′ Nat.∸ (q + 1)
-  p′ℕ = Fin.toℕ-fromℕ< (∸-bound′ ge (Fin.toℕ<n w′))
+  p′ℕ = Fin.toℕ-fromℕ< (∸-bound ge (Fin.toℕ<n w′))
 
   p′ℕ′ : Fin.toℕ p′ ≡ Fin.toℕ w Nat.∸ q
   p′ℕ′ = p′ℕ ■ cong₂ Nat._∸_ w′ℕ (q+1 q)
@@ -452,16 +436,16 @@ UBFrom-rwk l s [] (b₂ ∷ B₂) q b x c e₁ e₂ w w′ slotEq notEq lo hi
   geBlock = Nat.≮⇒≥ ¬ltBlock
 
   gt : q Nat.< Fin.toℕ w
-  gt = Nat.<-≤-trans (q<q+suc′ q b) geBlock
+  gt = Nat.<-≤-trans (q<q+suc q b) geBlock
 
   w′ℕ : Fin.toℕ w′ ≡ suc (Fin.toℕ w)
   w′ℕ = hi gt
 
   p : 𝔽 (sum (b₂ ∷ B₂))
-  p = Fin.fromℕ< (∸-bound′ geBlock (Fin.toℕ<n w))
+  p = Fin.fromℕ< (∸-bound geBlock (Fin.toℕ<n w))
 
   pℕ : Fin.toℕ p ≡ Fin.toℕ w Nat.∸ (q + suc b)
-  pℕ = Fin.toℕ-fromℕ< (∸-bound′ geBlock (Fin.toℕ<n w))
+  pℕ = Fin.toℕ-fromℕ< (∸-bound geBlock (Fin.toℕ<n w))
 
   wSplit : Fin.toℕ w ≡ (q + suc b) + Fin.toℕ p
   wSplit = sym (cong ((q + suc b) +_) pℕ ■ Nat.m+[n∸m]≡n geBlock)
@@ -472,10 +456,10 @@ UBFrom-rwk l s [] (b₂ ∷ B₂) q b x c e₁ e₂ w w′ slotEq notEq lo hi
       (subst (suc q Nat.≤_) (sym w′ℕ) (Nat.s≤s (Nat.<⇒≤ gt)))
 
   p₂ : 𝔽 (sum (suc b ∷ b₂ ∷ B₂))
-  p₂ = Fin.fromℕ< (∸-bound′ ge (Fin.toℕ<n w′))
+  p₂ = Fin.fromℕ< (∸-bound ge (Fin.toℕ<n w′))
 
   p₂ℕ : Fin.toℕ p₂ ≡ Fin.toℕ w′ Nat.∸ (q + 1)
-  p₂ℕ = Fin.toℕ-fromℕ< (∸-bound′ ge (Fin.toℕ<n w′))
+  p₂ℕ = Fin.toℕ-fromℕ< (∸-bound ge (Fin.toℕ<n w′))
 
   p₂ℕ′ : Fin.toℕ p₂ ≡ Fin.toℕ w Nat.∸ q
   p₂ℕ′ = p₂ℕ ■ cong₂ Nat._∸_ w′ℕ (q+1 q)
@@ -556,10 +540,10 @@ UBFrom-rwk l s [] (b₂ ∷ B₂) q b x c e₁ e₂ w w′ slotEq notEq lo hi
       (subst (suc q Nat.≤_) (sym w′ℕ) (Nat.s≤s (Nat.<⇒≤ gt)))
 
   p₂ : 𝔽 (sum (suc b ∷ b₂ ∷ B₂))
-  p₂ = Fin.fromℕ< (∸-bound′ ge (Fin.toℕ<n w′))
+  p₂ = Fin.fromℕ< (∸-bound ge (Fin.toℕ<n w′))
 
   p₂ℕ : Fin.toℕ p₂ ≡ Fin.toℕ w′ Nat.∸ (q + 1)
-  p₂ℕ = Fin.toℕ-fromℕ< (∸-bound′ ge (Fin.toℕ<n w′))
+  p₂ℕ = Fin.toℕ-fromℕ< (∸-bound ge (Fin.toℕ<n w′))
 
   p₂ℕ′ : Fin.toℕ p₂ ≡ Fin.toℕ w Nat.∸ q
   p₂ℕ′ = p₂ℕ ■ cong₂ Nat._∸_ w′ℕ (q+1 q)
@@ -568,7 +552,7 @@ UBFrom-rwk l s [] (b₂ ∷ B₂) q b x c e₁ e₂ w w′ slotEq notEq lo hi
   split₂ = sym (cong ((q + 1) +_) p₂ℕ ■ Nat.m+[n∸m]≡n ge)
 
   p₃bound : Fin.toℕ w Nat.∸ q Nat.< suc b
-  p₃bound = ∸-bound′ (Nat.<⇒≤ gt) ltBlock
+  p₃bound = ∸-bound (Nat.<⇒≤ gt) ltBlock
 
   p₃ : 𝔽 (suc b)
   p₃ = Fin.fromℕ< p₃bound
@@ -1051,10 +1035,10 @@ module _ {n k : ℕ} (B₁ B₂ B : Typed.BindGroup) (q b₁ : ℕ)
       ends-apart = physicalEndpoint-distinct channel
 
       v : 𝔽 (sum B)
-      v = Fin.fromℕ< (∸-bound′ geG ltGB)
+      v = Fin.fromℕ< (∸-bound geG ltGB)
 
       vℕ : Fin.toℕ v ≡ Fin.toℕ y Nat.∸ sum G
-      vℕ = Fin.toℕ-fromℕ< (∸-bound′ geG ltGB)
+      vℕ = Fin.toℕ-fromℕ< (∸-bound geG ltGB)
 
       yEq : Fin.toℕ y ≡ sum G + Fin.toℕ v
       yEq = sym (cong (sum G +_) vℕ ■ Nat.m+[n∸m]≡n geG)
@@ -1076,10 +1060,10 @@ module _ {n k : ℕ} (B₁ B₂ B : Typed.BindGroup) (q b₁ : ℕ)
       ■ sym (bindEnv-outer G′ B channel sigma (𝐒.rwk {q} {b₁} {k} y) u rwkEq)
       where
       u : 𝔽 k
-      u = Fin.fromℕ< (∸-bound′ ge (Fin.toℕ<n y))
+      u = Fin.fromℕ< (∸-bound ge (Fin.toℕ<n y))
 
       uℕ : Fin.toℕ u ≡ Fin.toℕ y Nat.∸ (sum G + sum B)
-      uℕ = Fin.toℕ-fromℕ< (∸-bound′ ge (Fin.toℕ<n y))
+      uℕ = Fin.toℕ-fromℕ< (∸-bound ge (Fin.toℕ<n y))
 
       yEq : Fin.toℕ y ≡ sum G + sum B + Fin.toℕ u
       yEq = sym (cong (sum G + sum B +_) uℕ ■ Nat.m+[n∸m]≡n ge)

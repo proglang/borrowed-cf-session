@@ -12,7 +12,7 @@
 --       to `rwk` alike without a bespoke index calculus.
 --
 --     * the `blockAt`/`atk` position kit and the flag-list shape lemmas,
---       ported from the arity-0 proof `ForwardSoup/LSplit.agda`.
+--       ported from the (now deleted) arity-0 `SoupImage` proof.
 --
 --     * the two-renaming frame coherences `T-ren-ren-coh`, `lift-ren-ren-coh`,
 --       `Tᶠ-plug-ren-ren-coh`, `Tᶠ*-plug-ren-ren-coh` — the two-step version
@@ -54,26 +54,27 @@ private
   variable d : ℕ
 
 ------------------------------------------------------------------------
--- Small arithmetic facts.
+-- Small arithmetic facts.  The first four are public: `Local/RSplitCommon.agda`
+-- shares them.
+
+∸-pos : ∀ {a b : ℕ} → a Nat.< b → 0 Nat.< b Nat.∸ a
+∸-pos {zero} {suc b} lt = Nat.s≤s Nat.z≤n
+∸-pos {suc a} {suc b} lt = ∸-pos (Nat.s≤s⁻¹ lt)
+
+q<q+suc : ∀ (q b : ℕ) → q Nat.< q + suc b
+q<q+suc q b =
+  subst (suc q Nat.≤_) (sym (Nat.+-suc q b)) (Nat.s≤s (Nat.m≤m+n q b))
+
+∸-suc : ∀ {a u : ℕ} → a Nat.≤ u → suc u Nat.∸ a ≡ suc (u Nat.∸ a)
+∸-suc {zero} le = refl
+∸-suc {suc a} {suc u} le = ∸-suc (Nat.s≤s⁻¹ le)
+
+∸-bound : ∀ {a s u : ℕ} → a Nat.≤ u → u Nat.< a + s → u Nat.∸ a Nat.< s
+∸-bound {a = a} {s = s} {u = u} ge lt =
+  Nat.+-cancelˡ-< a (u Nat.∸ a) s
+    (subst (Nat._< a + s) (sym (Nat.m+[n∸m]≡n ge)) lt)
 
 private
-  ∸-pos : ∀ {a b : ℕ} → a Nat.< b → 0 Nat.< b Nat.∸ a
-  ∸-pos {zero} {suc b} lt = Nat.s≤s Nat.z≤n
-  ∸-pos {suc a} {suc b} lt = ∸-pos (Nat.s≤s⁻¹ lt)
-
-  q<q+suc : ∀ (q b : ℕ) → q Nat.< q + suc b
-  q<q+suc q b =
-    subst (suc q Nat.≤_) (sym (Nat.+-suc q b)) (Nat.s≤s (Nat.m≤m+n q b))
-
-  ∸-suc : ∀ {a u : ℕ} → a Nat.≤ u → suc u Nat.∸ a ≡ suc (u Nat.∸ a)
-  ∸-suc {zero} le = refl
-  ∸-suc {suc a} {suc u} le = ∸-suc (Nat.s≤s⁻¹ le)
-
-  ∸-bound : ∀ {a s u : ℕ} → a Nat.≤ u → u Nat.< a + s → u Nat.∸ a Nat.< s
-  ∸-bound {a = a} {s = s} {u = u} ge lt =
-    Nat.+-cancelˡ-< a (u Nat.∸ a) s
-      (subst (Nat._< a + s) (sym (Nat.m+[n∸m]≡n ge)) lt)
-
   -- The two shapes of a one-position insertion at `t`.
   trisect :
     ∀ {t u u′ : ℕ} → u ≢ t →
