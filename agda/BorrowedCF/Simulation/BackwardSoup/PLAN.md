@@ -120,3 +120,32 @@ Validation round before the change:
   serialise.
 Rules as implemented: `` `lsplit/`rsplit `` get `¬ Skips s`; `cons-ret/acq` gets `¬ Skips s₂` and
 `AcqHeadCtx Γ₂`; `cons-acq` gets `AcqHeadCtx Γ` (`AcqHeadCtx (⟨ s ⟩ ∷ _) = ¬ Skips s`, else `⊥`).
+
+## 7. Remedy (i), implemented (branch `codex/soup-strict-groups`)
+
+Both F4 counterexamples are now ILL-TYPED; §4's "`is well typed (`f4-typing`)`" and the
+corresponding claim for `Pf4b` are historical.  Two rules were tightened:
+
+1. `Terms/Base.agda` — the split constants require `¬ Skips` of BOTH components:
+   `` `lsplit : (s s′ : 𝕊 0) → ¬ Skips s → ¬ Skips s′ → … `` and likewise `` `rsplit ``.
+   A split therefore never produces a bare `⟨ skip ⟩` handle, and the `¬ Skips s` premise of
+   `` `rsplit `` is what stops `⟨ acq ; t ⟩ ≃ ⟨ skip ; (acq ; t) ⟩` from turning a group head
+   into an unreleasable `⟨ ret ⟩` whose `acq` has moved into the new group.
+2. `Processes/Typed.agda` — `BindCtx` gained two premises, stated via
+   `AcqHeadCtx : Ctx n → Set` (`AcqHeadCtx (⟨ s ⟩ ∷ _) = ¬ Skips s`, `⊥` otherwise):
+   `cons-ret/acq` now takes `¬skips₂ : ¬ Skips s₂` (a group boundary is only formed in front
+   of real work) and `acqHead : AcqHeadCtx Γ₂`; `cons-acq` takes `acqHead : AcqHeadCtx Γ`
+   (the first bound handle of a non-first group carries that group's `acq`).
+
+`Examples/Probes.agda` keeps the soup steps and the "reduct is not a flattening" facts and
+replaces the two typings by checked refutations of the exact blocked premise:
+`f4-boundary-blocked : ¬ (¬ Skips {0} skip)` — the `cons-ret/acq` of `Pf4`'s width-2 group has
+`s₂ ≡ skip` (witnessed by `f4-second-boundary` and `f4-tail-block`) — and
+`f4b-acqHead-blocked : ¬ AcqHeadCtx (⟨ skip ⟩ ∷ ⟨ acq ; end ‼ ⟩ ∷ [])` — the second group of
+`Pf4b` (witnessed by `f4b-second-group`) is headed by a bare `⟨ skip ⟩`.
+
+F4 (c) is unaffected: `f4c-C1` still checks (with the new premises discharged by `λ ()`), and
+`Pf4c` remains rejected by `⊢ᴮ` alone.
+
+With F4 gone, the only remaining obstacle to the §5 statement is F3 (`RUS-RSplit` at a
+non-canonical slot), i.e. the `≡ᵖ` slot-renumbering quotient.
