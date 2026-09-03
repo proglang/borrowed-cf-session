@@ -361,3 +361,15 @@ acq-;-¬skips = atom-;-¬skips acq (λ ())
 
 acq-;-≄ret : {t : 𝕊 n} → ¬ (ret ≃ acq ; t)
 acq-;-≄ret eq = case atom-;-atom acq (λ ()) ret eq of λ ()
+
+acq-;-≄end : {t : 𝕊 n} → ¬ (end p ≃ acq ; t)
+acq-;-≄end eq = case atom-;-atom acq (λ ()) end eq of λ ()
+
+acq-;-≄msg : {t : 𝕊 n} → ¬ (msg p T ≃ acq ; t)
+acq-;-≄msg eq = case atom-;-atom acq (λ ()) msg eq of λ ()
+
+-- An atom never sits in FRONT of a `brn`: `_;_` distributes over `brn` only
+-- on the right, so `select` / `branch` handles are never acq-headed.
+acq-;-¬brn : {t : 𝕊 n} → ¬ (brn p s₁ s₂ ≃ acq ; t)
+acq-;-¬brn eq =
+  let _ , c , _ = ≃-cons acq (λ ()) (≃-sym eq) (hd here) in ¬cons-brn acq c

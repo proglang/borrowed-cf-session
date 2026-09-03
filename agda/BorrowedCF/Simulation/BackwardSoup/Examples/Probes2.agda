@@ -48,6 +48,8 @@ import BorrowedCF.Terms.BaseSoup as 𝐒Tm
 open 𝐓 using (_;_⊢ₚ_)
 open 𝐓Tm using (_;_⊢_∶_∣_)
 
+open import BorrowedCF.Types.AtomCons using (acq-;-¬skips)
+
 open import BorrowedCF.Simulation.BackwardSoup.Examples.Base
 
 open Bin using (_Respects_)
@@ -737,7 +739,7 @@ f3a-C1 =
       (𝐓.cons ret skip (λ ()) ≃-skipʳ (𝐓.nil skip)))
     (𝐓.last
       (𝐓.cons (acq ; end ‼) skip (λ { (() ; _) }) ≃-skipʳ (𝐓.nil skip)))
-    (λ { (() ; _) })
+    (end ‼ , ≃-refl)
 
 f3a-C2 : 𝐓.BindCtx (dual (msg ‼ `⊤) ; end ⁇) (2 ∷ [])
            (⟨ msg ⁇ `⊤ ⟩ ∷ ⟨ end ⁇ ⟩ ∷ [])
@@ -898,13 +900,13 @@ f3d-after =
     (𝐓.cons (msg ‼ `⊤ ; ret) skip (λ { (() ; _) }) ≃-skipʳ (𝐓.nil skip))
     (𝐓.last
       (𝐓.cons (acq ; end ‼) skip (λ { (() ; _) }) ≃-skipʳ (𝐓.nil skip)))
-    (λ { (() ; _) })
+    (end ‼ , ≃-refl)
 
 -- ... and the same context is REJECTED in non-first position, which is the
 -- content of `AcqHeadCtx` (cf. `Probes.f4b-acqHead-blocked`):
 f3d-acqHead-first-only :
   ¬ 𝐓.AcqHeadCtx (⟨ skip ⟩ ∷ ⟨ acq ; end ‼ ⟩ ∷ [])
-f3d-acqHead-first-only ah = ah skip
+f3d-acqHead-first-only (t , eq) = acq-;-¬skips skip eq
 
 ------------------------------------------------------------------------
 -- §4 (and §3b)  A `skip` handle that is not at the head, discarded early.
@@ -942,7 +944,7 @@ sk4-C1 =
         (𝐓.cons ret skip (λ ()) ≃-skipʳ (𝐓.nil skip))))
     (𝐓.last
       (𝐓.cons (acq ; end ‼) skip (λ { (() ; _) }) ≃-skipʳ (𝐓.nil skip)))
-    (λ { (() ; _) })
+    (end ‼ , ≃-refl)
 
 -- (i) the strict split constants cannot manufacture the `⟨ skip ⟩`.
 sk4-split-blocked : ¬ (¬ Skips {0} skip)

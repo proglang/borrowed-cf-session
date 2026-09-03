@@ -19,16 +19,19 @@
 --   refutation of `Position/Crux.agda`'s `nonFirstGroup-interior-noAcq`, on
 --   which `acq-non-first-group-head` depends.
 --
---   THE FIX (`Crux.agda` §1a is written against it, and needs only its one
---   remaining hole `acqHeadCtx⇒acqHeaded` filled by `id`):  make
---   `AcqHeadCtx` say what its own doc comment says --
+--   THE FIX, NOW ADOPTED in `Processes/Typed.agda`:  `AcqHeadCtx` says what
+--   its own doc comment says --
 --
 --       AcqHeadCtx (⟨ s ⟩ ∷ _) = Σ[ t ∈ 𝕊 0 ] (s ≃ acq ; t)
 --       AcqHeadCtx _           = ⊥
 --
---   instead of the strictly weaker `¬ Skips s`.  `blocked` below checks that
---   this kills the counterexample at exactly one place: the `⟨ ret ⟩`-headed
---   group in the middle is then not a legal non-first group.
+--   instead of the strictly weaker `¬ Skips s`.  `bad` below is STILL a legal
+--   `BindCtx` (its own next group IS acq-headed) and `refuted` therefore still
+--   stands: the P3 metatheorem is false for a `BindCtx` taken in isolation, and
+--   `Crux.nonFirstGroup-interior-noAcq` now carries the `AcqHeadCtx` premise
+--   that `bad` cannot satisfy from ABOVE.  `blocked` is exactly that missing
+--   premise: the `⟨ ret ⟩`-headed group `bad` governs may no longer sit under
+--   any binder, so the top-level `BindCtx` of §1 (the former `top`) is gone.
 module BorrowedCF.Simulation.BackwardSoup.Examples.StrictGroupGap where
 
 open import Data.Nat.ListAction using (sum)
@@ -41,6 +44,7 @@ open import BorrowedCF.Context
 import BorrowedCF.Processes.Typed as 𝐓
 
 open import BorrowedCF.Types.AtomCons using (acq-;-≄ret)
+open import BorrowedCF.Types.NoTerm using (NoTerm; noTerm-;-snd; ¬noTerm-end)
 open import BorrowedCF.Simulation.Support.Theorems.B1VacProbe using (NoRet)
 open import BorrowedCF.Simulation.BackwardSoup.GroupOrder
   using (NoAcq; ¬noAcq-acq; noAcq-≃; noAcq-;-fst)
@@ -64,24 +68,29 @@ inner =
 -- handle `⟨ ret ⟩` and the governing `acq` is passed on to `inner`.  Every
 -- premise of `cons-ret/acq` is satisfied: `¬ Skips s₂` holds (`s₂` is
 -- `acq ; end ‼`) and `AcqHeadCtx Γ₂` holds (`inner`'s head is `⟨ acq ⟩`).
+-- `bad` keeps its own `acqHead` (its next group IS acq-headed) ...
+bad-acqHead-ok : 𝐓.AcqHeadCtx (⟨ acq ⟩ ∷ ⟨ acq ; end ‼ ⟩ ∷ [])
+bad-acqHead-ok = skip , ≃-sym ≃-skipʳ
+
 bad : 𝐓.BindCtx (acq ; end ‼) (1 L.∷ 2 L.∷ L.[])
         ((⟨ ret ⟩ ∷ []) V.++ (⟨ acq ⟩ ∷ ⟨ acq ; end ‼ ⟩ ∷ []))
 bad =
   𝐓.cons-ret/acq skip ≃-skipˡ (λ { (() ; _) })
     (𝐓.cons ret skip (λ { (_ ; ()) }) (≃-trans ≃-skipʳ (≃-sym ≃-skipˡ)) (𝐓.nil skip))
     inner
-    (λ ())
+    bad-acqHead-ok
 
--- ... and it is reachable from a `New`-derived top-level session at a
--- `⊢ᴮ`-legal shape, so `TP-Res` accepts it.
-top : 𝐓.BindCtx (skip ; end ‼) (1 L.∷ 1 L.∷ 2 L.∷ L.[])
-        ((⟨ ret ⟩ ∷ []) V.++ ((⟨ ret ⟩ ∷ []) V.++ (⟨ acq ⟩ ∷ ⟨ acq ; end ‼ ⟩ ∷ [])))
-top =
-  𝐓.cons-ret/acq skip ≃-refl (λ ())
-    (𝐓.cons ret skip (λ { (_ ; ()) }) (≃-trans ≃-skipʳ (≃-sym ≃-skipˡ)) (𝐓.nil skip))
-    bad
-    (λ ())
-
+-- Under the OLD `AcqHeadCtx` (`¬ Skips s`) `bad` was moreover reachable from a
+-- `New`-derived top-level session at a `⊢ᴮ`-legal shape, by
+--
+--   top : 𝐓.BindCtx (skip ; end ‼) (1 ∷ 1 ∷ 2 ∷ [])
+--           ((⟨ ret ⟩ ∷ []) V.++ ((⟨ ret ⟩ ∷ []) V.++ (⟨ acq ⟩ ∷ ⟨ acq ; end ‼ ⟩ ∷ [])))
+--   top = 𝐓.cons-ret/acq skip ≃-refl (λ ())
+--           (𝐓.cons ret skip … (𝐓.nil skip)) bad (λ ())
+--
+-- so `TP-Res` accepted it.  That last `(λ ())` is exactly what `blocked` (§3)
+-- now refutes: `bad`'s group list is headed by `⟨ ret ⟩`, which carries no
+-- `acq`.  The shape and the `⊢ᴮ`/`New` data are kept as a record.
 top-New : New (skip {0})
 top-New = New.skip
 
@@ -105,7 +114,7 @@ private
   ⟨⟩≃′ ⟨ eq ⟩ = eq
 
 -- The statement of `Position/Crux.agda`'s `nonFirstGroup-interior-noAcq`, as
--- the previous pass posed it (no `AcqHeaded`, no `⊢ᴮ`).
+-- the previous pass posed it (no `AcqHeadCtx` premise, no `⊢ᴮ`).
 NonFirstGroupInteriorNoAcq : Set
 NonFirstGroupInteriorNoAcq =
   ∀ {B} {Γ : Ctx (sum B)} {g : 𝕊 0} → NoAcq g → 𝐓.BindCtx (acq ; g) B Γ →
@@ -122,17 +131,12 @@ interior-mobile : Mobile ⟨ acq ; end ‼ ⟩
 interior-mobile = ⟨ end ‼ , end , ≃-refl ⟩
 
 ------------------------------------------------------------------------
--- 3.  What the strengthened premise would block.
+-- 3.  What the strengthened premise blocks.
 
--- With `AcqHeadCtx (⟨ s ⟩ ∷ _) = Σ[ t ] s ≃ acq ; t`, the `acqHead` argument
--- of `top` -- whose second group is headed by `⟨ ret ⟩` -- is not derivable.
-blocked : ¬ (Σ[ t ∈ 𝕊 0 ] (ret ≃ acq ; t))
+-- The `acqHead` argument of the former `top` -- whose second group is headed
+-- by `⟨ ret ⟩` -- is not derivable.
+blocked : ¬ 𝐓.AcqHeadCtx (⟨ ret ⟩ ∷ ⟨ acq ⟩ ∷ ⟨ acq ; end ‼ ⟩ ∷ [])
 blocked (t , eq) = acq-;-≄ret eq
-
--- `bad` itself keeps its own `acqHead` (its next group IS acq-headed), but it
--- can then no longer sit under any binder: nothing may hand it on.
-bad-acqHead-ok : Σ[ t ∈ 𝕊 0 ] (acq ≃ acq ; t)
-bad-acqHead-ok = skip , ≃-sym ≃-skipʳ
 
 ------------------------------------------------------------------------
 -- 4.  A SECOND laxity, independent of the first: `mobile-head-alone`.
@@ -163,3 +167,12 @@ mobile-head-alone-refuted f =
   case f {u = acq ; end ‼} {s₁ = acq ; end ‼} {s₂ = ret}
          (NoRet.acq NoRet.; NoRet.end) interior-mobile ≃-refl
   of λ ()
+
+-- THE FIX, NOW ADOPTED (`Types/NoTerm.agda`): replace `NoRet u` by `NoTerm u`
+-- -- no `ret` AND no `end` -- which is exactly what a `New`-derived session
+-- gives.  The witness above is `u = acq ; end ‼`, whose `end` is precisely
+-- what `NoTerm` forbids, so it no longer applies; and with `NoTerm u` the
+-- claim IS provable (`NoTerm.bounded-tail-skips`), which is what
+-- `Position/Crux.agda`'s `mobile-head-alone` runs on.
+noTerm-would-block : ¬ NoTerm {0} (acq ; end ‼)
+noTerm-would-block nt = ¬noTerm-end (noTerm-;-snd nt)

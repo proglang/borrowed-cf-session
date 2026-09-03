@@ -158,11 +158,13 @@ data BindCtx′ (s : 𝕊 0) : Ctx n → Set where
     (s-split : s₁ ; s₂ ≃ s) →
     BindCtx′ s₂ Γ → BindCtx′ s (⟨ s₁ ⟩ ∷ Γ)
 
--- The first bound handle of a non-first group must carry the group's `acq`
--- (it is not a skip).  Stated on the context so that it needs no mutual
--- recursion with BindCtx.
+-- The first bound handle of a non-first group must carry the group's `acq`:
+-- its session STARTS with the `acq` (`s ≃ acq ; t`), not merely "is not a
+-- skip" -- see `Simulation/BackwardSoup/Examples/StrictGroupGap.agda` for the
+-- counterexample that the weaker reading admits.  Stated on the context so
+-- that it needs no mutual recursion with BindCtx.
 AcqHeadCtx : Ctx n → Set
-AcqHeadCtx (⟨ s ⟩ ∷ _) = ¬ Skips s
+AcqHeadCtx (⟨ s ⟩ ∷ _) = Σ[ t ∈ 𝕊 0 ] (s ≃ acq ; t)
 AcqHeadCtx _ = ⊥               -- empty context or a non-handle type at the head
 
 data BindCtx (s : 𝕊 0) : (B : BindGroup) → Ctx (sum B) → Set where

@@ -41,6 +41,8 @@ import BorrowedCF.Terms.BaseSoup as 𝐒Tm
 open 𝐓 using (_;_⊢ₚ_)
 open 𝐓Tm using (_;_⊢_∶_∣_)
 
+open import BorrowedCF.Types.AtomCons using (acq-;-¬skips)
+
 open import BorrowedCF.Simulation.BackwardSoup.Examples.Base
 
 ------------------------------------------------------------------------
@@ -351,9 +353,11 @@ f4b-second-group =
     (𝐓.cons skip (acq ; end ‼) (λ { (() ; _) }) ≃-skipˡ
       (𝐓.cons (acq ; end ‼) skip (λ { (() ; _) }) ≃-skipʳ (𝐓.nil skip)))
 
--- ... and `AcqHeadCtx` of its context is `¬ Skips skip`, which is refutable.
+-- ... and `AcqHeadCtx` of its context asks for `Σ[ t ] (skip ≃ acq ; t)`,
+-- i.e. for the `⟨ skip ⟩` head to carry the group's `acq`: refutable, because
+-- a session that starts with an atom does not skip.
 f4b-acqHead-blocked : ¬ 𝐓.AcqHeadCtx (⟨ skip ⟩ ∷ ⟨ acq ; end ‼ ⟩ ∷ [])
-f4b-acqHead-blocked ah = ah skip
+f4b-acqHead-blocked (t , eq) = acq-;-¬skips skip eq
 
 ⊢b0 : f4b-Γ ; ([] ∥ (` 0F)) ⊢ b0 ∶ `⊤ ∣ 𝕀
 ⊢b0 =
@@ -482,8 +486,8 @@ f4c-C1 =
         (𝐓.cons acq (acq ; end ‼) (λ { (() ; _) }) ≃-refl
           (𝐓.cons (acq ; end ‼) skip (λ { (() ; _) }) ≃-skipʳ
             (𝐓.nil skip))))
-      (λ ()))
-    (λ ())
+      (skip , ≃-sym ≃-skipʳ))
+    (skip , ≃-sym ≃-skipʳ)
 
 ⊢c0 : f4c-Γ ; ([] ∥ (` 0F)) ⊢ c0 ∶ `⊤ ∣ 𝕀
 ⊢c0 =
