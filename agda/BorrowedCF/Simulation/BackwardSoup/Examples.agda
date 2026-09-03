@@ -45,6 +45,33 @@
 -- `Probes.agda` now carries checked refutations of exactly those premises for
 -- `Pf4` and `Pf4b`.
 --
+-- SECOND HUNT (`Probes2.agda`, 2026-09-03).  Every remaining suspect -- a
+-- typed rule's side condition that the soup rule does not have -- was probed
+-- once more under the strict rules:
+--
+--   probe                                  verdict
+--   -------------------------------------  ---------------------------------
+--   Com/Choice on a non-head handle of      ill typed: the group `;`-chain
+--     the first group (both threads and     orders the handles and no
+--     one-thread order)      §1, §1b        first-group handle is Mobile
+--   Close with a width-2 side  §2           ill typed, same reason (an empty
+--                                           flag list forces ONE group)
+--   Drop on the last handle of a width-2    ill typed, same reason (the
+--     first group           §3a             binder context itself is legal)
+--   Acquire past a non-empty group  §3c     the SOUP is stuck too
+--   state after a typed `R-Acq`     §3d     positive: still typable
+--   interior `⟨ skip ⟩`, discarded early    ill typed, same reason; and
+--                          §3b, §4          unreachable (`¬ Skips` on splits)
+--   handles inside data (`let⊗`)    §5      positive: exact flattening
+--   redex nested away from its binder §6    typed step via `R-Struct`; the
+--                                           `≋` rules needed all exist
+--
+-- The recurring blocker is CHECKED, not argued: `Probes2.§0` ports the
+-- `before`/`≼` order theory and the `NoAcq` mobility refutation (both of
+-- whose original modules predate `Ctx = Vec` and no longer load), and each
+-- probe discharges a concrete `¬ (Γ ∶ derived ≼ prescribed)`.
+-- NO COUNTEREXAMPLE SURVIVES.
+--
 -- Recommended generalised statement (see the report accompanying this
 -- suite):  for a well-typed closed `P` and a soup step
 -- `C ─→ₚ C′` out of `C = flatten P`, there is `P′` with `P ─→ₚ P′` and
@@ -61,3 +88,4 @@ open import BorrowedCF.Simulation.BackwardSoup.Examples.Splits
 open import BorrowedCF.Simulation.BackwardSoup.Examples.Handles
 open import BorrowedCF.Simulation.BackwardSoup.Examples.Sync
 open import BorrowedCF.Simulation.BackwardSoup.Examples.Probes
+open import BorrowedCF.Simulation.BackwardSoup.Examples.Probes2
