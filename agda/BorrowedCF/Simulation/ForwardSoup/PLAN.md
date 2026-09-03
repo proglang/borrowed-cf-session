@@ -548,3 +548,41 @@ hole (R-RSplit); every other rule of `local-sim` and `sim-global` are proved. Le
 `Support/Theorems/DropShape.agda` (new) and `B1VacProbe.agda`, `ComHelpers2.agda` (repaired).
 Phase 4 (cleanup: delete the `SoupImage` world, old leaves, `Context/*`, stale `Forward.agda`/`Backward/*`)
 not started.
+
+Status (2026-09-03): **Phase 3 is complete — `Local.agda` loads with 0 goals and no errors, so the
+whole forward simulation Typed → UntypedSoup is proved.**  The last leaf `R-RSplit` was closed along
+option 1 of §6.4 (positional insertion), on top of `Local/InsertSupport.agda`.  Two new modules:
+
+* `Local/RSplitCommon.agda` (1107 lines, 0 goals) — the `rwk` mirror of `Local/SplitCommon.agda`'s
+  `lwk` half, with `insertPhi` threaded through.  Exports `prefixFlags`, `prefixFlags-length`,
+  `bindFlags-split`, `bindFlags-rsplit-src`, `bindFlags-rsplit-tgt`, `pick-insertPhi`,
+  `ub-split-entry`, `UBFrom-rwk`, `UB-rwk`, `injAt`, `injAt-toℕ`, `inj-injAt`,
+  `group-rsplit-shape-from`, `group-rsplit-shape`, `rwk-toℕ-lo`/`-hi`/`-≤`, `sum-rsplit`,
+  `rsplit-point≤` and `source-target-rwk`.
+* `Local/RSplit.agda` (798 lines, 0 goals) — `U-rsplit-local`, shaped like `Local/LSplit.agda`
+  (confinement `rsplit-confine` → `res-split` → `par-split` → `RUS-RSplit` → `par-join`/`res-join` →
+  `identity-step`) but with `Local/Acq.agda`'s global-sweep bookkeeping: the residual's image goes
+  through `insertPhi-image` before `config-resp`, and `Separated` supplies both the environment
+  obligation (`phiFree-insertPhi` on `env-separated`) and the ambient-thread obligation
+  (`phiFree-insertPhi` on `thread-separated`).
+
+Deviations from the design sketch, all deliberate:
+
+* `UBFrom-rwk` and `group-rsplit-shape-from` carry the insertion slot as an explicit parameter `s`
+  together with `s ≡ L.length B₁ + l`, rather than mentioning `L.length B₁ + l` in the statement:
+  the cons step then only needs `slotEq ■ sym (+-suc _ l)` instead of a `subst` over the whole
+  induction hypothesis, and the `l = 0` specialisations pass `sym (+-identityʳ _)`.
+* Positions are described by a new general `injAt B₁ Bm B₂` (any middle *group* `Bm`, not just a
+  single block) rather than by `SplitCommon`'s `blockAt`; `SplitRenamings.atk` is definitionally
+  `inj {B = w ∷ []}`, so `inj-injAt` covers the redex handle and both reduct handles at once.
+* `RUS-RSplit` produces a configuration mentioning `L.length before`, which does not reduce for a
+  variable `B₁`; the step is therefore built by one `subst` over `prefixFlags-length B₁`, with the
+  whole thread vector as the motive.  Everything else in the leaf uses `boundary = L.length B₁`.
+* Both new modules are `--safe`-clean (no `--allow-unsolved-metas` pragma).
+
+Phase 4 (cleanup) is still not started; the candidates are unchanged — delete the `SoupImage` world
+and the old arity-0 leaves (`ForwardSoup/{LSplit,RSplit,Com,Choice,Close,New,Fork,Exp}.agda`),
+`Context/*`, and the stale `Simulation/Forward.agda` / `Backward/*`.  One small item specific to this
+session: `Local/SplitCommon.agda` and `Local/RSplitCommon.agda` each keep a private copy of the same
+four arithmetic helpers (`∸-pos`, `∸-bound`, `∸-suc`, `q<q+suc`); they should be lifted into one
+place.
