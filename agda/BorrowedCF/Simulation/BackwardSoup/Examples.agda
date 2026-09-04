@@ -7,6 +7,11 @@
 -- `flatten P′ ≡ C′` by `refl` or, where that fails, the weaker relation
 -- that does hold plus the failure mode it illustrates.
 --
+-- A separate raw regression module, `StrictSync.agda`, fixes the newly
+-- tightened synchronization patterns directly: `RUS-Com`, `RUS-Choice`,
+-- and `RUS-Close` require the distinguished endpoint handle to start
+-- with `*`, and no longer fire on a non-unit leading component.
+--
 --   rule          naive proposition           what holds instead
 --   ------------  --------------------------  --------------------------
 --   RUS-Exp       holds (`refl`)              --                (F5 ok)
@@ -87,5 +92,6 @@ open import BorrowedCF.Simulation.BackwardSoup.Examples.Growth
 open import BorrowedCF.Simulation.BackwardSoup.Examples.Splits
 open import BorrowedCF.Simulation.BackwardSoup.Examples.Handles
 open import BorrowedCF.Simulation.BackwardSoup.Examples.Sync
+open import BorrowedCF.Simulation.BackwardSoup.Examples.StrictSync
 open import BorrowedCF.Simulation.BackwardSoup.Examples.Probes
 open import BorrowedCF.Simulation.BackwardSoup.Examples.Probes2
