@@ -69,16 +69,74 @@ open Nat.Variables hiding (n′; m′)
 open Fin.Patterns
 
 ------------------------------------------------------------------------
+-- Exact evidence for the drop leaf.
+
+record DropStep
+  {k n m b₁ : ℕ} {B₁ B₂ : Typed.BindGroup}
+  {E : SourceReduction.Frame* (sum (b₁ ∷ B₁) + sum B₂ + k)}
+  {P : Typed.Proc (sum (b₁ ∷ B₁) + sum B₂ + k)}
+  {channel : OrientedChannel n}
+  {bodyChannels :
+    Vec (OrientedChannel n)
+      (Translation.channelCount (Typed._⋯ₚ_ P Source.weakenᵣ))}
+  (P′ : Typed.Proc k)
+  (sigma : Translation.Env k (2 *ℕ n))
+  (ambientChannel : 𝔽 n → Set)
+  (ambientThread : 𝔽 m → Set)
+  (C : Soup.Config n m)
+  (image : LocalImage
+    (Typed.ν (suc b₁ ∷ B₁) B₂
+      (Typed.⟪ SourceReduction._[_]*
+                 (SourceReduction._⋯ᶠ*_ E Source.weakenᵣ)
+                 (Source._·¹_ (Source.K Source.`drop)
+                   (Source.` 0F)) ⟫
+       Typed.∥ (Typed._⋯ₚ_ P Source.weakenᵣ)))
+    (channel ∷ bodyChannels) sigma ambientChannel ambientThread C) : Set where
+  field
+    dropThread : 𝔽 m
+    dropSlotEq : threadEmbedding image zero ≡ just dropThread
+
+    dropFrame : SoupExpression.Frame* (2 *ℕ n)
+    dropArgument : Soup.Thread n
+    dropEndpoint : 𝔽 (2 *ℕ n)
+    dropTailFlags : List Soup.Flag
+
+    dropSelectedSource :
+      lookup (Soup.threads C) dropThread ≡
+      Translation.T[
+        SourceReduction._[_]*
+          (SourceReduction._⋯ᶠ*_ E Source.weakenᵣ)
+          (Source._·¹_ (Source.K Source.`drop) (Source.` 0F))
+      ] (bindEnv (suc b₁ ∷ B₁) B₂ channel sigma)
+    dropSelected :
+      lookup (Soup.threads C) dropThread ≡
+      SoupExpression._[_]* dropFrame
+        (SoupTerm._·¹_ (SoupTerm.K SoupTerm.`drop) dropArgument)
+
+    dropConfigStep :
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config
+          (V.updateAt (Soup.channels C) (physicalChannel channel)
+            (SoupReduction.setEndpointFlags
+              (orientSide (proj₂ channel) 0F)
+              (Soup.acq ∷ dropTailFlags)))
+          (SoupReduction.replaceAt (Soup.threads C) dropThread
+            (SoupExpression._[_]* dropFrame SoupTerm.*)))
+
+open DropStep public
+
+------------------------------------------------------------------------
 -- The leaf.
 
-U-drop-local :
+drop-step :
   {k n m b₁ : ℕ} {Γ : Context.Ctx k} {g : Context.Struct k}
   {B₁ B₂ : Typed.BindGroup}
   {E : SourceReduction.Frame* (sum (b₁ ∷ B₁) + sum B₂ + k)}
   {P : Typed.Proc (sum (b₁ ∷ B₁) + sum B₂ + k)}
-  {logicalChannels :
+  {channel : OrientedChannel n}
+  {bodyChannels :
     Vec (OrientedChannel n)
-      (suc (Translation.channelCount (Typed._⋯ₚ_ P Source.weakenᵣ)))}
+      (Translation.channelCount (Typed._⋯ₚ_ P Source.weakenᵣ))}
   {sigma : Translation.Env k (2 *ℕ n)}
   {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
   {C : Soup.Config n m} →
@@ -90,19 +148,22 @@ U-drop-local :
                  (Source._·¹_ (Source.K Source.`drop) (Source.` 0F)) ⟫
        Typed.∥ (Typed._⋯ₚ_ P Source.weakenᵣ)) →
   ValueEnv sigma →
-  LocalImage
+  (image : LocalImage
     (Typed.ν (suc b₁ ∷ B₁) B₂
       (Typed.⟪ SourceReduction._[_]*
                  (SourceReduction._⋯ᶠ*_ E Source.weakenᵣ)
                  (Source._·¹_ (Source.K Source.`drop) (Source.` 0F)) ⟫
        Typed.∥ (Typed._⋯ₚ_ P Source.weakenᵣ)))
-    logicalChannels sigma ambientChannel ambientThread C →
-  LocalStep
+    (channel ∷ bodyChannels) sigma ambientChannel ambientThread C) →
+  DropStep
+    {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P}
+    {channel = channel} {bodyChannels = bodyChannels}
     (Typed.ν (b₁ ∷ B₁) B₂
       (Typed.⟪ SourceReduction._[_]* E Source.* ⟫ Typed.∥ P))
     sigma ambientChannel ambientThread C
-U-drop-local {k = k} {n = n} {m = m} {B₂ = B₂} {E = E} {P = P}
-  {logicalChannels = channel ∷ bodyChannels} {sigma = sigma}
+    image
+drop-step {k = k} {n = n} {m = m} {B₂ = B₂} {E = E} {P = P}
+  {channel = channel} {bodyChannels = bodyChannels} {sigma = sigma}
   {ambientChannel = aC} {ambientThread = aT} {C = C}
   Γ-S ⊢P Vsigma image
   with drop-shape {E = E} {P = P} ⊢P
@@ -281,7 +342,10 @@ U-drop-local {k = k} {n = n} {m = m} {B₂ = B₂} {E = E} {P = P}
   dispatch :
     OptionalThreadImage {n = n} (Soup.threads C)
       (threadEmbedding left 0F) expected →
-    LocalStep reduct sigma aC aT C
+    DropStep
+      {b₁ = 0} {B₁ = c′ ∷ B′} {B₂ = B₂} {E = E} {P = P}
+      {channel = channel} {bodyChannels = bodyChannels}
+      reduct sigma aC aT C image
 
   dispatch (omitted slotEq expectedEq) =
     ⊥-elim
@@ -291,8 +355,20 @@ U-drop-local {k = k} {n = n} {m = m} {B₂ = B₂} {E = E} {P = P}
          ■ expectedEq))
 
   dispatch (present j slotEq lookupEq) =
-    identity-step soupStep ambientChannelsUnchanged ambientThreadsUnchanged
-      (res-join joined newChanEq notAmb)
+    record
+      { dropThread = j
+      ; dropSlotEq = slotEq
+      ; dropFrame = F
+      ; dropArgument = triple₁
+      ; dropEndpoint = end₁
+      ; dropTailFlags = tailFlags
+      ; dropSelectedSource = lookupEq
+      ; dropSelected = selected
+      ; dropConfigStep =
+          identity-config-step
+            soupStep ambientChannelsUnchanged ambientThreadsUnchanged
+            (res-join joined newChanEq notAmb)
+      }
     where
     ----------------------------------------------------------------
     -- The step.
@@ -443,3 +519,46 @@ U-drop-local {k = k} {n = n} {m = m} {B₂ = B₂} {E = E} {P = P}
                 ■ owned
                 )
               ))
+
+U-drop-local :
+  {k n m b₁ : ℕ} {Γ : Context.Ctx k} {g : Context.Struct k}
+  {B₁ B₂ : Typed.BindGroup}
+  {E : SourceReduction.Frame* (sum (b₁ ∷ B₁) + sum B₂ + k)}
+  {P : Typed.Proc (sum (b₁ ∷ B₁) + sum B₂ + k)}
+  {logicalChannels :
+    Vec (OrientedChannel n)
+      (suc (Translation.channelCount (Typed._⋯ₚ_ P Source.weakenᵣ)))}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config n m} →
+  ChanCx Γ →
+  Γ ; g ⊢ₚ
+    Typed.ν (suc b₁ ∷ B₁) B₂
+      (Typed.⟪ SourceReduction._[_]*
+                 (SourceReduction._⋯ᶠ*_ E Source.weakenᵣ)
+                 (Source._·¹_ (Source.K Source.`drop) (Source.` 0F)) ⟫
+       Typed.∥ (Typed._⋯ₚ_ P Source.weakenᵣ)) →
+  ValueEnv sigma →
+  LocalImage
+    (Typed.ν (suc b₁ ∷ B₁) B₂
+      (Typed.⟪ SourceReduction._[_]*
+                 (SourceReduction._⋯ᶠ*_ E Source.weakenᵣ)
+                 (Source._·¹_ (Source.K Source.`drop) (Source.` 0F)) ⟫
+       Typed.∥ (Typed._⋯ₚ_ P Source.weakenᵣ)))
+    logicalChannels sigma ambientChannel ambientThread C →
+  LocalStep
+    (Typed.ν (b₁ ∷ B₁) B₂
+      (Typed.⟪ SourceReduction._[_]* E Source.* ⟫ Typed.∥ P))
+    sigma ambientChannel ambientThread C
+U-drop-local {k = k} {n = n} {m = m} {b₁ = b₁}
+  {Γ = Γ} {g = g} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P}
+  {logicalChannels = channel ∷ bodyChannels} {sigma = sigma}
+  {ambientChannel = ambientChannel} {ambientThread = ambientThread} {C = C}
+  Γ-S ⊢P Vsigma image =
+  configStep⇒localStep
+    (dropConfigStep
+      (drop-step {k = k} {n = n} {m = m} {b₁ = b₁}
+        {Γ = Γ} {g = g} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P}
+        {channel = channel} {bodyChannels = bodyChannels} {sigma = sigma}
+        {ambientChannel = ambientChannel} {ambientThread = ambientThread}
+        {C = C} Γ-S ⊢P Vsigma image))
