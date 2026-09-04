@@ -2,6 +2,7 @@
 module BorrowedCF.Simulation.BackwardSoup where
 
 open import BorrowedCF.Simulation.BackwardSoup.Statement public
+open import BorrowedCF.Simulation.BackwardSoup.SlotInsert public
 open import BorrowedCF.Simulation.BackwardSoup.Locate public
 open import BorrowedCF.Simulation.BackwardSoup.Inversion public
 open import BorrowedCF.Simulation.BackwardSoup.Position public
