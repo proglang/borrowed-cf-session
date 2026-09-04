@@ -57,14 +57,40 @@ open Fin.Patterns
 -- The leaf.
 
 record ChoiceStep
-  {k n m : ℕ}
-  (P′ : Typed.Proc k)
+  {k n m b₁ b₂ : ℕ} {B₁ B₂ : Typed.BindGroup}
+  {E₁ E₂ :
+    SourceReduction.Frame*
+      (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + k)}
+  {choice : Source.Side}
+  {P : Typed.Proc (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + k)}
+  {channel : OrientedChannel n}
+  {bodyChannels : Vec (OrientedChannel n) (Translation.channelCount P)}
   (sigma : Translation.Env k (2 *ℕ n))
   (ambientChannel : 𝔽 n → Set)
   (ambientThread : 𝔽 m → Set)
-  (C : Soup.Config n m) : Set where
+  (C : Soup.Config n m)
+  (image :
+    LocalImage
+      (Typed.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
+        ((Typed.⟪ SourceReduction._[_]* E₁
+                    (Source._·¹_ (Source.K (Source.`select choice))
+                      (Source.` 0F)) ⟫
+          Typed.∥
+          Typed.⟪ SourceReduction._[_]* E₂
+                    (Source._·¹_ (Source.K Source.`branch)
+                      (Source.` (Source.wkʳ k
+                                  (Source.wkˡ (suc b₁ + sum B₁) 0F)))) ⟫)
+         Typed.∥ P))
+      (channel ∷ bodyChannels) sigma ambientChannel ambientThread C)
+  (P′ : Typed.Proc k) : Set where
   field
     choiceSelector choiceBrancher : 𝔽 m
+    choiceSelectorSlot :
+      threadEmbedding (par-split-left (res-split-image image)) 0F ≡
+      just choiceSelector
+    choiceBrancherSlot :
+      threadEmbedding (par-split-left (res-split-image image)) 1F ≡
+      just choiceBrancher
     choiceSelector≢Brancher : choiceSelector ≢ choiceBrancher
 
     choiceChannel : 𝔽 n
@@ -120,13 +146,12 @@ choice-step :
       (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + k)}
   {choice : Source.Side}
   {P : Typed.Proc (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + k)}
-  {logicalChannels :
-    Vec (OrientedChannel n) (suc (Translation.channelCount P))}
+  {channel : OrientedChannel n}
+  {bodyChannels : Vec (OrientedChannel n) (Translation.channelCount P)}
   {sigma : Translation.Env k (2 *ℕ n)}
   {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
-  {C : Soup.Config n m} →
-  ValueEnv sigma →
-  LocalImage
+  {C : Soup.Config n m}
+  (image : LocalImage
     (Typed.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
       ((Typed.⟪ SourceReduction._[_]* E₁
                   (Source._·¹_ (Source.K (Source.`select choice))
@@ -137,8 +162,13 @@ choice-step :
                     (Source.` (Source.wkʳ k
                                 (Source.wkˡ (suc b₁ + sum B₁) 0F)))) ⟫)
        Typed.∥ P))
-    logicalChannels sigma ambientChannel ambientThread C →
+    (channel ∷ bodyChannels) sigma ambientChannel ambientThread C) →
+  ValueEnv sigma →
   ChoiceStep
+    {b₁ = b₁} {b₂ = b₂} {B₁ = B₁} {B₂ = B₂}
+    {E₁ = E₁} {E₂ = E₂} {choice = choice} {P = P}
+    {channel = channel} {bodyChannels = bodyChannels}
+    sigma ambientChannel ambientThread C image
     (Typed.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
       ((Typed.⟪ SourceReduction._[_]* E₁ (Source.` 0F) ⟫
         Typed.∥
@@ -147,11 +177,10 @@ choice-step :
                     (Source.` (Source.wkʳ k
                                 (Source.wkˡ (suc b₁ + sum B₁) 0F)))) ⟫)
        Typed.∥ P))
-    sigma ambientChannel ambientThread C
 choice-step {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
   {B₁ = B₁} {B₂ = B₂} {E₁ = E₁} {E₂ = E₂} {choice = choice} {P = P}
-  {logicalChannels = channel ∷ bodyChannels} {sigma = sigma}
-  {ambientChannel = aC} {ambientThread = aT} {C = C} Vsigma image =
+  {channel = channel} {bodyChannels = bodyChannels} {sigma = sigma}
+  {ambientChannel = aC} {ambientThread = aT} {C = C} image Vsigma =
   dispatch (live-thread left 0F) (live-thread left 1F)
   where
   ----------------------------------------------------------------------
@@ -296,7 +325,9 @@ choice-step {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
       (threadEmbedding left 0F) expected₁ →
     OptionalThreadImage {n = n} (Soup.threads C)
       (threadEmbedding left 1F) expected₂ →
-    ChoiceStep reduct sigma aC aT C
+    ChoiceStep
+      {channel = channel} {bodyChannels = bodyChannels}
+      sigma aC aT C image reduct
 
   -- An omitted owner thread would be `K `unit`, but the translation of a
   -- plugged application never is.
@@ -311,6 +342,8 @@ choice-step {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
     record
       { choiceSelector = j
       ; choiceBrancher = l
+      ; choiceSelectorSlot = slotEq₁
+      ; choiceBrancherSlot = slotEq₂
       ; choiceSelector≢Brancher = j≢l
       ; choiceChannel = physical
       ; choiceSide₁ = side₁
@@ -515,13 +548,14 @@ U-choice-local :
     sigma ambientChannel ambientThread C
 U-choice-local {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
   {B₁ = B₁} {B₂ = B₂} {E₁ = E₁} {E₂ = E₂} {choice = choice}
-  {P = P} {logicalChannels = logicalChannels} {sigma = sigma}
+  {P = P} {logicalChannels = channel ∷ bodyChannels} {sigma = sigma}
   {ambientChannel = ambientChannel} {ambientThread = ambientThread} {C = C}
   Vsigma image =
   configStep⇒localStep
     (choiceConfigStep
       (choice-step {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
         {B₁ = B₁} {B₂ = B₂} {E₁ = E₁} {E₂ = E₂} {choice = choice}
-        {P = P} {logicalChannels = logicalChannels} {sigma = sigma}
+        {P = P} {channel = channel} {bodyChannels = bodyChannels}
+        {sigma = sigma}
         {ambientChannel = ambientChannel} {ambientThread = ambientThread}
-        {C = C} Vsigma image))
+        {C = C} image Vsigma))

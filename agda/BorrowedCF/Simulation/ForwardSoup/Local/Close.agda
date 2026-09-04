@@ -64,13 +64,34 @@ private
 
 record CloseStep
   {k n m : ℕ}
-  (P′ : Typed.Proc k)
+  {E₁ E₂ : SourceReduction.Frame* k}
+  {channel : OrientedChannel n}
   (sigma : Translation.Env k (2 *ℕ n))
   (ambientChannel : 𝔽 n → Set)
   (ambientThread : 𝔽 m → Set)
-  (C : Soup.Config n m) : Set where
+  (C : Soup.Config n m)
+  (image :
+    LocalImage
+      (Typed.ν (1 ∷ []) (1 ∷ [])
+        (Typed.⟪ SourceReduction._[_]*
+                   (SourceReduction._⋯ᶠ*_ E₁
+                     (Source.weaken* ⦃ Source.Kᵣ ⦄ 2))
+                   (Source._·¹_ (Source.K (Source.`end Types.‼))
+                     (Source.` 0F)) ⟫
+         Typed.∥
+         Typed.⟪ SourceReduction._[_]*
+                   (SourceReduction._⋯ᶠ*_ E₂
+                     (Source.weaken* ⦃ Source.Kᵣ ⦄ 2))
+                   (Source._·¹_ (Source.K (Source.`end Types.⁇))
+                     (Source.` 1F)) ⟫))
+      (channel ∷ []) sigma ambientChannel ambientThread C)
+  (P′ : Typed.Proc k) : Set where
   field
     closeLeft closeRight : 𝔽 m
+    closeLeftSlot :
+      threadEmbedding (res-split-image image) 0F ≡ just closeLeft
+    closeRightSlot :
+      threadEmbedding (res-split-image image) 1F ≡ just closeRight
     closeLeft≢Right : closeLeft ≢ closeRight
 
     closeChannel : 𝔽 n
@@ -112,12 +133,11 @@ open CloseStep public
 close-step :
   {k n m : ℕ}
   {E₁ E₂ : SourceReduction.Frame* k}
-  {logicalChannels : Vec (OrientedChannel n) 1}
+  {channel : OrientedChannel n}
   {sigma : Translation.Env k (2 *ℕ n)}
   {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
-  {C : Soup.Config n m} →
-  ValueEnv sigma →
-  LocalImage
+  {C : Soup.Config n m}
+  (image : LocalImage
     (Typed.ν (1 ∷ []) (1 ∷ [])
       (Typed.⟪ SourceReduction._[_]*
                  (SourceReduction._⋯ᶠ*_ E₁
@@ -130,14 +150,16 @@ close-step :
                    (Source.weaken* ⦃ Source.Kᵣ ⦄ 2))
                  (Source._·¹_ (Source.K (Source.`end Types.⁇))
                    (Source.` 1F)) ⟫))
-    logicalChannels sigma ambientChannel ambientThread C →
+    (channel ∷ []) sigma ambientChannel ambientThread C) →
+  ValueEnv sigma →
   CloseStep
+    {E₁ = E₁} {E₂ = E₂} {channel = channel}
+    sigma ambientChannel ambientThread C image
     (Typed.⟪ SourceReduction._[_]* E₁ Source.* ⟫ Typed.∥
      Typed.⟪ SourceReduction._[_]* E₂ Source.* ⟫)
-    sigma ambientChannel ambientThread C
 close-step {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
-  {logicalChannels = channel ∷ []} {sigma = sigma}
-  {ambientChannel = aC} {ambientThread = aT} {C = C} Vsigma image =
+  {channel = channel} {sigma = sigma}
+  {ambientChannel = aC} {ambientThread = aT} {C = C} image Vsigma =
   dispatch (live-thread body 0F) (live-thread body 1F)
   where
   ----------------------------------------------------------------------
@@ -221,9 +243,10 @@ close-step {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
     OptionalThreadImage {n = n} (Soup.threads C)
       (threadEmbedding body 1F) expected₂ →
     CloseStep
+      {channel = channel}
+      sigma aC aT C image
       (Typed.⟪ SourceReduction._[_]* E₁ Source.* ⟫ Typed.∥
        Typed.⟪ SourceReduction._[_]* E₂ Source.* ⟫)
-      sigma aC aT C
 
   -- An omitted owner thread would be `K `unit`, but the translation of a
   -- plugged application never is.
@@ -240,6 +263,8 @@ close-step {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
     record
       { closeLeft = j
       ; closeRight = l
+      ; closeLeftSlot = slotEq₁
+      ; closeRightSlot = slotEq₂
       ; closeLeft≢Right = j≢l
       ; closeChannel = physical
       ; closeSide₁ = side₁
@@ -391,12 +416,12 @@ U-close-local :
      Typed.⟪ SourceReduction._[_]* E₂ Source.* ⟫)
     sigma ambientChannel ambientThread C
 U-close-local {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
-  {logicalChannels = logicalChannels} {sigma = sigma}
+  {logicalChannels = channel ∷ []} {sigma = sigma}
   {ambientChannel = ambientChannel} {ambientThread = ambientThread} {C = C}
   Vsigma image =
   configStep⇒localStep
     (closeConfigStep
       (close-step {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
-        {logicalChannels = logicalChannels} {sigma = sigma}
+        {channel = channel} {sigma = sigma}
         {ambientChannel = ambientChannel} {ambientThread = ambientThread}
-        {C = C} Vsigma image))
+        {C = C} image Vsigma))
