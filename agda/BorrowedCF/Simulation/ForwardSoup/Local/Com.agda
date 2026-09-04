@@ -208,7 +208,54 @@ private
 ------------------------------------------------------------------------
 -- The leaf.
 
-U-com-local :
+record ComStep
+  {k n m : ℕ}
+  (P′ : Typed.Proc k)
+  (sigma : Translation.Env k (2 *ℕ n))
+  (ambientChannel : 𝔽 n → Set)
+  (ambientThread : 𝔽 m → Set)
+  (C : Soup.Config n m) : Set where
+  field
+    comSender comReceiver : 𝔽 m
+    comSender≢Receiver : comSender ≢ comReceiver
+
+    comChannel : 𝔽 n
+    comSide₁ comSide₂ : 𝔽 2
+    comOpposite : SoupReduction.Opposite comSide₁ comSide₂
+    comOpen : SoupReduction.is-open (Soup.channels C) comChannel
+
+    comSendFrame comRecvFrame : SoupExpression.Frame* (2 *ℕ n)
+    comMessage comSendTail comRecvTail : Soup.Thread n
+    comMessageValue : SoupExpression.Value comMessage
+
+    comSelectedSend :
+      lookup (Soup.threads C) comSender ≡
+      SoupExpression._[_]* comSendFrame
+        (SoupTerm._·¹_ (SoupTerm.K SoupTerm.`send)
+          (SoupTerm._⊗_ comMessage
+            (SoupTerm._⊗_
+              (SoupTerm._⊗_ SoupTerm.*
+                (SoupTerm.` (Soup.endpoint comChannel comSide₁)))
+              comSendTail)))
+    comSelectedRecv :
+      lookup (Soup.threads C) comReceiver ≡
+      SoupExpression._[_]* comRecvFrame
+        (SoupTerm._·¹_ (SoupTerm.K SoupTerm.`recv)
+          (SoupTerm._⊗_
+            (SoupTerm._⊗_ SoupTerm.*
+              (SoupTerm.` (Soup.endpoint comChannel comSide₂)))
+            comRecvTail))
+
+    comConfigStep :
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config (Soup.channels C)
+          (SoupReduction.replaceTwo (Soup.threads C)
+            comSender (SoupExpression._[_]* comSendFrame SoupTerm.*)
+            comReceiver (SoupExpression._[_]* comRecvFrame comMessage)))
+
+open ComStep public
+
+com-step :
   {k n m b₁ b₂ : ℕ} {B₁ B₂ : Typed.BindGroup}
   {P : Typed.Proc (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + k)}
   {E₁ E₂ :
@@ -246,14 +293,14 @@ U-com-local :
        (Typed._⋯ₚ_ P
          (Source.wkₚ (suc b₁ + sum B₁) (suc b₂ + sum B₂)))))
     logicalChannels sigma ambientChannel ambientThread C →
-  LocalStep
+  ComStep
     (Typed.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
       ((Typed.⟪ SourceReduction._[_]* E₁ Source.* ⟫
         Typed.∥
         Typed.⟪ SourceReduction._[_]* E₂ e ⟫)
        Typed.∥ P))
     sigma ambientChannel ambientThread C
-U-com-local {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
+com-step {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
   {B₁ = B₁} {B₂ = B₂} {P = P} {E₁ = E₁} {E₂ = E₂} {e = e}
   {logicalChannels = channel ∷ bodyChannels} {sigma = sigma}
   {ambientChannel = aC} {ambientThread = aT} {C = C} Vsigma V image =
@@ -533,7 +580,7 @@ U-com-local {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
       (threadEmbedding left 0F) expected₁ →
     OptionalThreadImage {n = n} (Soup.threads C)
       (threadEmbedding left 1F) expected₂ →
-    LocalStep reduct sigma aC aT C
+    ComStep reduct sigma aC aT C
 
   dispatch (omitted slotEq expectedEq) _ =
     ⊥-elim
@@ -549,8 +596,27 @@ U-com-local {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
          ■ expectedEq))
 
   dispatch (present j slotEq₁ lookupEq₁) (present l slotEq₂ lookupEq₂) =
-    identity-step soupStep (λ _ _ → refl) ambientThreadsUnchanged
-      (res-join joined (chanEq ■ bindEq) notAmb)
+    record
+      { comSender = j
+      ; comReceiver = l
+      ; comSender≢Receiver = j≢l
+      ; comChannel = physical
+      ; comSide₁ = side₁
+      ; comSide₂ = side₂
+      ; comOpposite = orientSide-opposite orientation
+      ; comOpen = openEq
+      ; comSendFrame = F₁
+      ; comRecvFrame = F₂
+      ; comMessage = message
+      ; comSendTail = tail₁
+      ; comRecvTail = tail₂
+      ; comMessageValue = Vmessage
+      ; comSelectedSend = selected₁
+      ; comSelectedRecv = selected₂
+      ; comConfigStep =
+          identity-config-step soupStep (λ _ _ → refl) ambientThreadsUnchanged
+            (res-join joined (chanEq ■ bindEq) notAmb)
+      }
     where
     j≢l : j ≢ l
     j≢l eq
@@ -732,3 +798,61 @@ U-com-local {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
                 ■ owned
                 )
               ))
+
+U-com-local :
+  {k n m b₁ b₂ : ℕ} {B₁ B₂ : Typed.BindGroup}
+  {P : Typed.Proc (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + k)}
+  {E₁ E₂ :
+    SourceReduction.Frame* (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + k)}
+  {e : Source.Tm (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + k)}
+  {logicalChannels :
+    Vec (OrientedChannel n)
+      (suc
+        (Translation.channelCount
+          (Typed._⋯ₚ_ P
+            (Source.wkₚ (suc b₁ + sum B₁) (suc b₂ + sum B₂)))))}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config n m} →
+  ValueEnv sigma →
+  SourceReduction.Value e →
+  LocalImage
+    (Typed.ν (suc (suc b₁) ∷ B₁) (suc (suc b₂) ∷ B₂)
+      ((Typed.⟪ SourceReduction._[_]*
+                  (SourceReduction._⋯ᶠ*_ E₁
+                    (Source.wkₚ (suc b₁ + sum B₁) (suc b₂ + sum B₂)))
+                  (Source._·¹_ (Source.K Source.`send)
+                    (Source._⊗_
+                      (Source._⋯_ e
+                        (Source.wkₚ (suc b₁ + sum B₁) (suc b₂ + sum B₂)))
+                      (Source.` 0F))) ⟫
+        Typed.∥
+        Typed.⟪ SourceReduction._[_]*
+                  (SourceReduction._⋯ᶠ*_ E₂
+                    (Source.wkₚ (suc b₁ + sum B₁) (suc b₂ + sum B₂)))
+                  (Source._·¹_ (Source.K Source.`recv)
+                    (Source.` (Source.wkʳ k
+                                (Source.wkˡ (suc (suc b₁) + sum B₁) 0F)))) ⟫)
+       Typed.∥
+       (Typed._⋯ₚ_ P
+         (Source.wkₚ (suc b₁ + sum B₁) (suc b₂ + sum B₂)))))
+    logicalChannels sigma ambientChannel ambientThread C →
+  LocalStep
+    (Typed.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
+      ((Typed.⟪ SourceReduction._[_]* E₁ Source.* ⟫
+        Typed.∥
+        Typed.⟪ SourceReduction._[_]* E₂ e ⟫)
+       Typed.∥ P))
+    sigma ambientChannel ambientThread C
+U-com-local {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
+  {B₁ = B₁} {B₂ = B₂} {P = P} {E₁ = E₁} {E₂ = E₂} {e = e}
+  {logicalChannels = logicalChannels} {sigma = sigma}
+  {ambientChannel = ambientChannel} {ambientThread = ambientThread} {C = C}
+  Vsigma V image =
+  configStep⇒localStep
+    (comConfigStep
+      (com-step {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
+        {B₁ = B₁} {B₂ = B₂} {P = P} {E₁ = E₁} {E₂ = E₂}
+        {e = e} {logicalChannels = logicalChannels} {sigma = sigma}
+        {ambientChannel = ambientChannel} {ambientThread = ambientThread}
+        {C = C} Vsigma V image))

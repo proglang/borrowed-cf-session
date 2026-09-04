@@ -62,7 +62,54 @@ private
 ------------------------------------------------------------------------
 -- The leaf.
 
-U-close-local :
+record CloseStep
+  {k n m : ℕ}
+  (P′ : Typed.Proc k)
+  (sigma : Translation.Env k (2 *ℕ n))
+  (ambientChannel : 𝔽 n → Set)
+  (ambientThread : 𝔽 m → Set)
+  (C : Soup.Config n m) : Set where
+  field
+    closeLeft closeRight : 𝔽 m
+    closeLeft≢Right : closeLeft ≢ closeRight
+
+    closeChannel : 𝔽 n
+    closeSide₁ closeSide₂ : 𝔽 2
+    closeOpposite : SoupReduction.Opposite closeSide₁ closeSide₂
+    closeChannelContent :
+      lookup (Soup.channels C) closeChannel ≡ (true , [] , [])
+
+    closeLeftFrame closeRightFrame : SoupExpression.Frame* (2 *ℕ n)
+
+    closeSelectedLeft :
+      lookup (Soup.threads C) closeLeft ≡
+      SoupExpression._[_]* closeLeftFrame
+        (SoupTerm._·¹_ (SoupTerm.K (SoupTerm.`end Types.‼))
+          (SoupTerm._⊗_
+            (SoupTerm._⊗_ SoupTerm.*
+              (SoupTerm.` (Soup.endpoint closeChannel closeSide₁)))
+            SoupTerm.*))
+    closeSelectedRight :
+      lookup (Soup.threads C) closeRight ≡
+      SoupExpression._[_]* closeRightFrame
+        (SoupTerm._·¹_ (SoupTerm.K (SoupTerm.`end Types.⁇))
+          (SoupTerm._⊗_
+            (SoupTerm._⊗_ SoupTerm.*
+              (SoupTerm.` (Soup.endpoint closeChannel closeSide₂)))
+            SoupTerm.*))
+
+    closeConfigStep :
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config
+          (SoupReduction.replaceAt (Soup.channels C) closeChannel
+            (false , [] , []))
+          (SoupReduction.replaceTwo (Soup.threads C)
+            closeLeft (SoupExpression._[_]* closeLeftFrame SoupTerm.*)
+            closeRight (SoupExpression._[_]* closeRightFrame SoupTerm.*)))
+
+open CloseStep public
+
+close-step :
   {k n m : ℕ}
   {E₁ E₂ : SourceReduction.Frame* k}
   {logicalChannels : Vec (OrientedChannel n) 1}
@@ -84,11 +131,11 @@ U-close-local :
                  (Source._·¹_ (Source.K (Source.`end Types.⁇))
                    (Source.` 1F)) ⟫))
     logicalChannels sigma ambientChannel ambientThread C →
-  LocalStep
+  CloseStep
     (Typed.⟪ SourceReduction._[_]* E₁ Source.* ⟫ Typed.∥
      Typed.⟪ SourceReduction._[_]* E₂ Source.* ⟫)
     sigma ambientChannel ambientThread C
-U-close-local {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
+close-step {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
   {logicalChannels = channel ∷ []} {sigma = sigma}
   {ambientChannel = aC} {ambientThread = aT} {C = C} Vsigma image =
   dispatch (live-thread body 0F) (live-thread body 1F)
@@ -173,7 +220,7 @@ U-close-local {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
       (threadEmbedding body 0F) expected₁ →
     OptionalThreadImage {n = n} (Soup.threads C)
       (threadEmbedding body 1F) expected₂ →
-    LocalStep
+    CloseStep
       (Typed.⟪ SourceReduction._[_]* E₁ Source.* ⟫ Typed.∥
        Typed.⟪ SourceReduction._[_]* E₂ Source.* ⟫)
       sigma aC aT C
@@ -190,7 +237,23 @@ U-close-local {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
         (sym (T[_]-plugᶠ* ownerFrame₂ {e = redex₂} Venv) ■ expectedEq))
 
   dispatch (present j slotEq₁ lookupEq₁) (present l slotEq₂ lookupEq₂) =
-    identity-step soupStep channelsUnchanged threadsUnchanged targetImage
+    record
+      { closeLeft = j
+      ; closeRight = l
+      ; closeLeft≢Right = j≢l
+      ; closeChannel = physical
+      ; closeSide₁ = side₁
+      ; closeSide₂ = side₂
+      ; closeOpposite = orientSide-opposite orientation
+      ; closeChannelContent = chanEq
+      ; closeLeftFrame = F₁
+      ; closeRightFrame = F₂
+      ; closeSelectedLeft = selected₁
+      ; closeSelectedRight = selected₂
+      ; closeConfigStep =
+          identity-config-step soupStep channelsUnchanged threadsUnchanged
+            targetImage
+      }
     where
     j≢l : j ≢ l
     j≢l eq
@@ -300,3 +363,40 @@ U-close-local {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
       ; garbage-channel = λ i _ notAmbient → targetGarbageChannel i notAmbient
       ; garbage-thread = targetGarbageThread
       }
+
+U-close-local :
+  {k n m : ℕ}
+  {E₁ E₂ : SourceReduction.Frame* k}
+  {logicalChannels : Vec (OrientedChannel n) 1}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config n m} →
+  ValueEnv sigma →
+  LocalImage
+    (Typed.ν (1 ∷ []) (1 ∷ [])
+      (Typed.⟪ SourceReduction._[_]*
+                 (SourceReduction._⋯ᶠ*_ E₁
+                   (Source.weaken* ⦃ Source.Kᵣ ⦄ 2))
+                 (Source._·¹_ (Source.K (Source.`end Types.‼))
+                   (Source.` 0F)) ⟫
+       Typed.∥
+       Typed.⟪ SourceReduction._[_]*
+                 (SourceReduction._⋯ᶠ*_ E₂
+                   (Source.weaken* ⦃ Source.Kᵣ ⦄ 2))
+                 (Source._·¹_ (Source.K (Source.`end Types.⁇))
+                   (Source.` 1F)) ⟫))
+    logicalChannels sigma ambientChannel ambientThread C →
+  LocalStep
+    (Typed.⟪ SourceReduction._[_]* E₁ Source.* ⟫ Typed.∥
+     Typed.⟪ SourceReduction._[_]* E₂ Source.* ⟫)
+    sigma ambientChannel ambientThread C
+U-close-local {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
+  {logicalChannels = logicalChannels} {sigma = sigma}
+  {ambientChannel = ambientChannel} {ambientThread = ambientThread} {C = C}
+  Vsigma image =
+  configStep⇒localStep
+    (closeConfigStep
+      (close-step {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
+        {logicalChannels = logicalChannels} {sigma = sigma}
+        {ambientChannel = ambientChannel} {ambientThread = ambientThread}
+        {C = C} Vsigma image))

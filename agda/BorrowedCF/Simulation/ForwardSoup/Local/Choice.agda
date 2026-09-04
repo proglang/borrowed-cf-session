@@ -56,7 +56,64 @@ open Fin.Patterns
 ------------------------------------------------------------------------
 -- The leaf.
 
-U-choice-local :
+record ChoiceStep
+  {k n m : ℕ}
+  (P′ : Typed.Proc k)
+  (sigma : Translation.Env k (2 *ℕ n))
+  (ambientChannel : 𝔽 n → Set)
+  (ambientThread : 𝔽 m → Set)
+  (C : Soup.Config n m) : Set where
+  field
+    choiceSelector choiceBrancher : 𝔽 m
+    choiceSelector≢Brancher : choiceSelector ≢ choiceBrancher
+
+    choiceChannel : 𝔽 n
+    choiceSide₁ choiceSide₂ : 𝔽 2
+    choiceOpposite : SoupReduction.Opposite choiceSide₁ choiceSide₂
+    choiceOpen : SoupReduction.is-open (Soup.channels C) choiceChannel
+
+    choiceSelectFrame choiceBranchFrame : SoupExpression.Frame* (2 *ℕ n)
+    choiceLabel : Source.Side
+    choiceSelectTail choiceBranchTail : Soup.Thread n
+
+    choiceSelectedSelect :
+      lookup (Soup.threads C) choiceSelector ≡
+      SoupExpression._[_]* choiceSelectFrame
+        (SoupTerm._·¹_ (SoupTerm.K (SoupTerm.`select choiceLabel))
+          (SoupTerm._⊗_
+            (SoupTerm._⊗_ SoupTerm.*
+              (SoupTerm.` (Soup.endpoint choiceChannel choiceSide₁)))
+            choiceSelectTail))
+    choiceSelectedBranch :
+      lookup (Soup.threads C) choiceBrancher ≡
+      SoupExpression._[_]* choiceBranchFrame
+        (SoupTerm._·¹_ (SoupTerm.K SoupTerm.`branch)
+          (SoupTerm._⊗_
+            (SoupTerm._⊗_ SoupTerm.*
+              (SoupTerm.` (Soup.endpoint choiceChannel choiceSide₂)))
+            choiceBranchTail))
+
+    choiceConfigStep :
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config (Soup.channels C)
+          (SoupReduction.replaceTwo (Soup.threads C)
+            choiceSelector
+              (SoupExpression._[_]* choiceSelectFrame
+                (SoupTerm._⊗_
+                  (SoupTerm._⊗_ SoupTerm.*
+                    (SoupTerm.` (Soup.endpoint choiceChannel choiceSide₁)))
+                  choiceSelectTail))
+            choiceBrancher
+              (SoupExpression._[_]* choiceBranchFrame
+                (SoupTerm.`inj choiceLabel
+                  (SoupTerm._⊗_
+                    (SoupTerm._⊗_ SoupTerm.*
+                      (SoupTerm.` (Soup.endpoint choiceChannel choiceSide₂)))
+                    choiceBranchTail)))))
+
+open ChoiceStep public
+
+choice-step :
   {k n m b₁ b₂ : ℕ} {B₁ B₂ : Typed.BindGroup}
   {E₁ E₂ :
     SourceReduction.Frame*
@@ -81,7 +138,7 @@ U-choice-local :
                                 (Source.wkˡ (suc b₁ + sum B₁) 0F)))) ⟫)
        Typed.∥ P))
     logicalChannels sigma ambientChannel ambientThread C →
-  LocalStep
+  ChoiceStep
     (Typed.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
       ((Typed.⟪ SourceReduction._[_]* E₁ (Source.` 0F) ⟫
         Typed.∥
@@ -91,7 +148,7 @@ U-choice-local :
                                 (Source.wkˡ (suc b₁ + sum B₁) 0F)))) ⟫)
        Typed.∥ P))
     sigma ambientChannel ambientThread C
-U-choice-local {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
+choice-step {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
   {B₁ = B₁} {B₂ = B₂} {E₁ = E₁} {E₂ = E₂} {choice = choice} {P = P}
   {logicalChannels = channel ∷ bodyChannels} {sigma = sigma}
   {ambientChannel = aC} {ambientThread = aT} {C = C} Vsigma image =
@@ -239,7 +296,7 @@ U-choice-local {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
       (threadEmbedding left 0F) expected₁ →
     OptionalThreadImage {n = n} (Soup.threads C)
       (threadEmbedding left 1F) expected₂ →
-    LocalStep reduct sigma aC aT C
+    ChoiceStep reduct sigma aC aT C
 
   -- An omitted owner thread would be `K `unit`, but the translation of a
   -- plugged application never is.
@@ -251,8 +308,26 @@ U-choice-local {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
       (plug-not-K F₂ (sym (T[_]-plugᶠ* E₂ {e = redex₂} Venv) ■ expectedEq))
 
   dispatch (present j slotEq₁ lookupEq₁) (present l slotEq₂ lookupEq₂) =
-    identity-step soupStep (λ _ _ → refl) ambientThreadsUnchanged
-      (res-join joined chanEq notAmb)
+    record
+      { choiceSelector = j
+      ; choiceBrancher = l
+      ; choiceSelector≢Brancher = j≢l
+      ; choiceChannel = physical
+      ; choiceSide₁ = side₁
+      ; choiceSide₂ = side₂
+      ; choiceOpposite = orientSide-opposite orientation
+      ; choiceOpen = openEq
+      ; choiceSelectFrame = F₁
+      ; choiceBranchFrame = F₂
+      ; choiceLabel = choice
+      ; choiceSelectTail = tail₁
+      ; choiceBranchTail = tail₂
+      ; choiceSelectedSelect = selected₁
+      ; choiceSelectedBranch = selected₂
+      ; choiceConfigStep =
+          identity-config-step soupStep (λ _ _ → refl) ambientThreadsUnchanged
+            (res-join joined chanEq notAmb)
+      }
     where
     j≢l : j ≢ l
     j≢l eq
@@ -402,3 +477,51 @@ U-choice-local {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
         (λ {i} {l′} embedded → inj₂ (i , embedded))
         (λ _ → inj₁) (λ _ → inj₁) (λ _ → inj₁) (λ _ → inj₁)
         (λ _ ambient → ambient) (λ _ ambient → ambient)
+
+U-choice-local :
+  {k n m b₁ b₂ : ℕ} {B₁ B₂ : Typed.BindGroup}
+  {E₁ E₂ :
+    SourceReduction.Frame*
+      (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + k)}
+  {choice : Source.Side}
+  {P : Typed.Proc (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + k)}
+  {logicalChannels :
+    Vec (OrientedChannel n) (suc (Translation.channelCount P))}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config n m} →
+  ValueEnv sigma →
+  LocalImage
+    (Typed.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
+      ((Typed.⟪ SourceReduction._[_]* E₁
+                  (Source._·¹_ (Source.K (Source.`select choice))
+                    (Source.` 0F)) ⟫
+        Typed.∥
+        Typed.⟪ SourceReduction._[_]* E₂
+                  (Source._·¹_ (Source.K Source.`branch)
+                    (Source.` (Source.wkʳ k
+                                (Source.wkˡ (suc b₁ + sum B₁) 0F)))) ⟫)
+       Typed.∥ P))
+    logicalChannels sigma ambientChannel ambientThread C →
+  LocalStep
+    (Typed.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
+      ((Typed.⟪ SourceReduction._[_]* E₁ (Source.` 0F) ⟫
+        Typed.∥
+        Typed.⟪ SourceReduction._[_]* E₂
+                  (Source.`inj choice
+                    (Source.` (Source.wkʳ k
+                                (Source.wkˡ (suc b₁ + sum B₁) 0F)))) ⟫)
+       Typed.∥ P))
+    sigma ambientChannel ambientThread C
+U-choice-local {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
+  {B₁ = B₁} {B₂ = B₂} {E₁ = E₁} {E₂ = E₂} {choice = choice}
+  {P = P} {logicalChannels = logicalChannels} {sigma = sigma}
+  {ambientChannel = ambientChannel} {ambientThread = ambientThread} {C = C}
+  Vsigma image =
+  configStep⇒localStep
+    (choiceConfigStep
+      (choice-step {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
+        {B₁ = B₁} {B₂ = B₂} {E₁ = E₁} {E₂ = E₂} {choice = choice}
+        {P = P} {logicalChannels = logicalChannels} {sigma = sigma}
+        {ambientChannel = ambientChannel} {ambientThread = ambientThread}
+        {C = C} Vsigma image))
