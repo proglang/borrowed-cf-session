@@ -8,6 +8,7 @@ open import BorrowedCF.Simulation.BackwardSoup.Inversion public
 open import BorrowedCF.Simulation.BackwardSoup.Position public
 open import BorrowedCF.Simulation.BackwardSoup.Canonical public
 open import BorrowedCF.Simulation.BackwardSoup.CanonicalPair public
+open import BorrowedCF.Simulation.BackwardSoup.PairPosition public
 open import BorrowedCF.Simulation.BackwardSoup.LocatePair public
 open import BorrowedCF.Simulation.BackwardSoup.Tracks public
 open import BorrowedCF.Simulation.BackwardSoup.TracksImage public
