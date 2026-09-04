@@ -72,21 +72,10 @@ open Fin.Patterns
 
 ------------------------------------------------------------------------
 -- 0.  `≋` housekeeping.
-
-≋-sym : {P Q : 𝐓.Proc n} → P 𝐓.≋ Q → Q 𝐓.≋ P
-≋-sym = Eq*.symmetric 𝐓._≋′_
-
-≡→≋ : {P Q : 𝐓.Proc n} → P ≡ Q → P 𝐓.≋ Q
-≡→≋ refl = ≋-refl
-
--- A `≋` step is a congruence for every process context.
-≋-plug :
-  (c : ProcessContext k n) {P Q : 𝐓.Proc k} →
-  P 𝐓.≋ Q → plug c P 𝐓.≋ plug c Q
-≋-plug hole eq = eq
-≋-plug (par-left c R₀) eq = 𝐓.∥-cong (≋-plug c eq) ≋-refl
-≋-plug (par-right R₀ c) eq = 𝐓.∥-cong ≋-refl (≋-plug c eq)
-≋-plug (bind B₁ B₂ c) eq = 𝐓.ν-cong (≋-plug c eq)
+--
+-- `≋-sym`, `≡→≋` and `≋-plug` now live at the end of `Locate.agda`, which
+-- this module opens above, so that `Tracks.agda` can reason about the very
+-- same derivations without depending on this module.
 
 ------------------------------------------------------------------------
 -- 1.  Bind stacks.

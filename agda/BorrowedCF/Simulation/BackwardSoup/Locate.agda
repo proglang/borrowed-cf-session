@@ -33,6 +33,8 @@ open import Data.Nat using () renaming (_*_ to _*ℕ_)
 open import Data.Maybe using (Maybe; just; nothing)
 
 import Data.Vec.Relation.Unary.All.Properties as AllVP
+import Relation.Binary.Construct.Closure.Equivalence as Eq*
+import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star
 
 open import BorrowedCF.Prelude
 
@@ -573,3 +575,24 @@ image-thread-term {P = P} image j notUnit
 ...   | located ctx e =
   _ , ctx , e , _ , refl , embedded ,
   (content ■ thread-content ctx e (logicalChannels image) (λ ()))
+
+------------------------------------------------------------------------
+-- 7.  `≋` housekeeping.
+--
+-- (Moved here from `Canonical.agda` so that `Tracks.agda` -- which must not
+-- depend on `Canonical.agda` -- can talk about the very same derivations.)
+
+≋-sym : {P Q : Typed.Proc n} → P Typed.≋ Q → Q Typed.≋ P
+≋-sym = Eq*.symmetric Typed._≋′_
+
+≡→≋ : {P Q : Typed.Proc n} → P ≡ Q → P Typed.≋ Q
+≡→≋ refl = Star.ε
+
+-- A `≋` step is a congruence for every process context.
+≋-plug :
+  (c : ProcessContext k n) {P Q : Typed.Proc k} →
+  P Typed.≋ Q → plug c P Typed.≋ plug c Q
+≋-plug hole eq = eq
+≋-plug (par-left c R₀) eq = Typed.∥-cong (≋-plug c eq) Star.ε
+≋-plug (par-right R₀ c) eq = Typed.∥-cong Star.ε (≋-plug c eq)
+≋-plug (bind B₁ B₂ c) eq = Typed.ν-cong (≋-plug c eq)
