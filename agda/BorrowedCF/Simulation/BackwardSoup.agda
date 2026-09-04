@@ -17,3 +17,4 @@ open import BorrowedCF.Simulation.BackwardSoup.Triple public
 open import BorrowedCF.Simulation.BackwardSoup.Lift public
 open import BorrowedCF.Simulation.BackwardSoup.Leaves.Exp public
 open import BorrowedCF.Simulation.BackwardSoup.Leaves.Fork public
+open import BorrowedCF.Simulation.BackwardSoup.Leaves.New public
