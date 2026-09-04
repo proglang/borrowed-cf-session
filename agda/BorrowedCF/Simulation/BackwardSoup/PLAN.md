@@ -364,7 +364,7 @@ Tracks ≋-canon (threadInContext ctx ⟪ e ⟫ 0F) (threadInContext above′ (�
 and the same for `CanonHead`, `CanonRedex`, `CanonAcq`, `CanonSplit`, `Canon₂` (two clauses, `0F`/`1F`
 of `(⟪ e₁ ⟫ ∥ ⟪ e₂ ⟫) ∥ resid`), `CanonPair`; `canon-swap`/`canon-swap₂` keep the index (`ν-swap′`
 tracks identically up to the `processCount-rename` cast).
-P5.3 **`BackwardSoup/Unique.agda`** — unique decomposition of soup redexes:
+P5.3 **DONE: `BackwardSoup/Unique.agda`** — unique decomposition of soup redexes:
 `redex-unique : Value v → Value v′ → F [ K c ·¹ v ]* ≡ F′ [ K c′ ·¹ v′ ]* → (c ≡ c′) × (v ≡ v′) ×
 (∀ t → F [ t ]* ≡ F′ [ t ]*)` (stated on plugged terms, as `Inversion.agda` does), plus the list
 lemma `xs ++ a ∷ ys ≡ xs′ ++ a ∷ ys′ → length xs ≡ length xs′ → xs ≡ xs′ × ys ≡ ys′` for the flag
@@ -427,6 +427,11 @@ P5.8 **`BackwardSoup/SlotBisim.agda`** — `≈¹` commutes with every soup rule
   orientations are converted by separately typed `canonPair-lr` and
   `canonPair-rl` helpers, avoiding an ambiguous size argument in the final
   dependent elimination.
+* P5.3 DONE (checkpoint `uniquely decompose soup redexes`): `Unique.agda`
+  proves uniqueness of a plugged unary-constant redex up to constant,
+  argument, and plugging function, as well as uniqueness of list splits at
+  equal positions.  Both results are constructive and require no proof
+  irrelevance for evaluation frames.
 * Forward-leaf structure relevant to P5.4 (checked 2026-09-04): every leaf ends in a local
   `dispatch (present j slotEq lookupEq) = identity-step soupStep … image′` (two `present`s for
   Close/Choice/Com) with `selected : lookup ts j ≡ F [ K c ·¹ arg ]*` and `soupStep = RUS-… j … F …`
