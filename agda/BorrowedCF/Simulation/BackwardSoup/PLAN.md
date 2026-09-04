@@ -379,7 +379,7 @@ the slot(s) (`slot-eq : threadEmbedding image 0F ≡ just slot`), the frame(s) w
 `U-<rule>-local` becomes a corollary.  `U-new-local` is generalised over the insertion index
 (`0F` is not forced anywhere; `V.insertAt-punchIn`/`insertAt-lookup` are index-generic).  RSplit exposes
 the canonical `before` (`prefixFlags`).
-P5.5 **`BackwardSoup/Lift.agda`** — `plug-red : (ctx) → P ─→ₚ P′ → plug ctx P ─→ₚ plug ctx P′`
+P5.5 **DONE: `BackwardSoup/Lift.agda`** — `plug-red : (ctx) → P ─→ₚ P′ → plug ctx P ─→ₚ plug ctx P′`
 (`R-Par`, `R-Struct ∥-comm` for `par-right`, `R-Bind`); image descent `focusImage` along a
 `ProcessContext` (`par-split-left/right`, `res-split-image`; thread embedding
 `threadEmbedding image ∘ threadInContext ctx P` definitionally) with `Separated`/`ValueEnv`/typing
@@ -436,6 +436,11 @@ P5.8 **`BackwardSoup/SlotBisim.agda`** — `≈¹` commutes with every soup rule
   Com/Choice/Close expose strict synchronization evidence; Exp/Fork expose
   their selected source thread and exact indexed reduct.  The remaining
   single-thread leaves still need the same treatment.
+* P5.5 DONE (checkpoint `focus and lift exact soup images`): `Lift.agda`
+  packages the focused ambient predicates and image for every
+  `ProcessContext`, ascends exact `ConfigStep`s through left/right parallel
+  and restriction frames, lifts typed reductions through the same contexts,
+  and focuses the separation invariant required by global phi sweeps.
 * Forward-leaf structure relevant to P5.4 (checked 2026-09-04): every leaf ends in a local
   `dispatch (present j slotEq lookupEq) = identity-step soupStep … image′` (two `present`s for
   Close/Choice/Com) with `selected : lookup ts j ≡ F [ K c ·¹ arg ]*` and `soupStep = RUS-… j … F …`
