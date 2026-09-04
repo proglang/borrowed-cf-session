@@ -98,8 +98,19 @@ record DropStep
 
     dropFrame : SoupExpression.Frame* (2 *ℕ n)
     dropArgument : Soup.Thread n
+    dropArgumentValue : SoupExpression.Value dropArgument
     dropEndpoint : 𝔽 (2 *ℕ n)
+    dropEndpointShape : dropEndpoint ≡ physicalEndpoint channel 0F
+    dropArgumentShape :
+      dropArgument ≡
+      Translation.chanTriple
+        (SoupTerm.* , dropEndpoint , SoupTerm.`phi (dropEndpoint , 0))
     dropTailFlags : List Soup.Flag
+    dropSourceFlags :
+      SoupReduction.endpointFlags
+        (lookup (Soup.channels C) (physicalChannel channel))
+        (orientSide (proj₂ channel) 0F) ≡
+      [] L.++ Soup.drop ∷ dropTailFlags
 
     dropSelectedSource :
       lookup (Soup.threads C) dropThread ≡
@@ -122,6 +133,24 @@ record DropStep
               (Soup.acq ∷ dropTailFlags)))
           (SoupReduction.replaceAt (Soup.threads C) dropThread
             (SoupExpression._[_]* dropFrame SoupTerm.*)))
+
+    dropConfigStepAt :
+      {i : 𝔽 n} {side : 𝔽 2} {j : 𝔽 m}
+      {before after : List Soup.Flag}
+      {thread′ : Soup.Thread n} →
+      physicalChannel channel ≡ i →
+      orientSide (proj₂ channel) 0F ≡ side →
+      dropThread ≡ j →
+      before ≡ [] →
+      after ≡ dropTailFlags →
+      SoupExpression._[_]* dropFrame SoupTerm.* ≡ thread′ →
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config
+          (V.updateAt (Soup.channels C) i
+            (SoupReduction.setEndpointFlags side
+              (before L.++ Soup.acq ∷ after)))
+          (SoupReduction.replaceAt (Soup.threads C) j
+            thread′))
 
 open DropStep public
 
@@ -360,14 +389,20 @@ drop-step {k = k} {n = n} {m = m} {B₂ = B₂} {E = E} {P = P}
       ; dropSlotEq = slotEq
       ; dropFrame = F
       ; dropArgument = triple₁
+      ; dropArgumentValue =
+          SoupExpression.V-⊗
+            (SoupExpression.V-⊗ SoupExpression.V-K SoupExpression.V-`)
+            SoupExpression.V-phi
       ; dropEndpoint = end₁
+      ; dropEndpointShape = refl
+      ; dropArgumentShape = refl
       ; dropTailFlags = tailFlags
+      ; dropSourceFlags = flagsEq
       ; dropSelectedSource = lookupEq
       ; dropSelected = selected
-      ; dropConfigStep =
-          identity-config-step
-            soupStep ambientChannelsUnchanged ambientThreadsUnchanged
-            (res-join joined newChanEq notAmb)
+      ; dropConfigStep = configStep
+      ; dropConfigStepAt = λ where
+          refl refl refl refl refl refl → configStep
       }
     where
     ----------------------------------------------------------------
@@ -519,6 +554,12 @@ drop-step {k = k} {n = n} {m = m} {B₂ = B₂} {E = E} {P = P}
                 ■ owned
                 )
               ))
+
+    configStep : ConfigStep reduct sigma aC aT C targetConfig
+    configStep =
+      identity-config-step
+        soupStep ambientChannelsUnchanged ambientThreadsUnchanged
+        (res-join joined newChanEq notAmb)
 
 U-drop-local :
   {k n m b₁ : ℕ} {Γ : Context.Ctx k} {g : Context.Struct k}
