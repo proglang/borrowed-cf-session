@@ -719,11 +719,11 @@ acq-reflect {P = P} {n = n} {cs = cs} {ts = ts}
     (t : SoupTerm.Tm (2 *ℕ n)) →
     acqFrame leaf SoupExpression.[ t ]* ≡ F SoupExpression.[ t ]*
   framePlugEq =
-    proj₂ (proj₂
+    proj₁ (proj₂ (proj₂
       (redex-unique
         {F = acqFrame leaf} {F′ = F}
         {c = Source.`acq} {c′ = Source.`acq}
-        (acqTranslatedValue leaf) concreteValue redexEq))
+        (acqTranslatedValue leaf) concreteValue redexEq)))
 
   replacementEq :
     SoupReduction.consumePhi (acqEndpoint leaf) (acqPhiSlot leaf)

@@ -155,6 +155,10 @@ private
       coreHandleEnd : 𝔽 (2 *ℕ n)
       coreHandleRight : SoupTerm.Tm (2 *ℕ n)
       coreHandleEndEq : coreHandleEnd ≡ Soup.endpoint coreChannel coreSide
+      coreHandleValue :
+        SoupExpression.Value
+          (Translation.chanTriple
+            (coreHandleLeft , coreHandleEnd , coreHandleRight))
       coreSelected :
         lookup (Soup.threads C) coreThread ≡
         SoupExpression._[_]* coreFrame
@@ -479,6 +483,7 @@ private
       ; coreHandleEnd = end₁
       ; coreHandleRight = e₂
       ; coreHandleEndEq = refl
+      ; coreHandleValue = subst SoupExpression.Value handleSrc (Vsource x₀)
       ; coreSelected = selected
       ; coreTargetChannels = targetChannels
       ; coreTargetChannels≡ = refl
@@ -843,6 +848,10 @@ record RSplitStep
     rsplitHandleEnd : 𝔽 (2 *ℕ n)
     rsplitHandleRight : SoupTerm.Tm (2 *ℕ n)
     rsplitHandleEndEq : rsplitHandleEnd ≡ Soup.endpoint rsplitChannel rsplitSide
+    rsplitHandleValue :
+      SoupExpression.Value
+        (Translation.chanTriple
+          (rsplitHandleLeft , rsplitHandleEnd , rsplitHandleRight))
     rsplitSelected :
       lookup (Soup.threads C) rsplitThread ≡
       SoupExpression._[_]* rsplitFrame
@@ -968,6 +977,7 @@ rsplit-step {k = k} {q = q} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {B = B}
   ; rsplitHandleEnd = RSplitCore.coreHandleEnd core
   ; rsplitHandleRight = RSplitCore.coreHandleRight core
   ; rsplitHandleEndEq = RSplitCore.coreHandleEndEq core
+  ; rsplitHandleValue = RSplitCore.coreHandleValue core
   ; rsplitSelected = RSplitCore.coreSelected core
   ; rsplitTargetChannels = RSplitCore.coreTargetChannels core
   ; rsplitTargetChannels≡ = RSplitCore.coreTargetChannels≡ core

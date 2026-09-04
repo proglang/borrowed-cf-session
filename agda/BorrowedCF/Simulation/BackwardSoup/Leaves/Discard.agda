@@ -132,9 +132,9 @@ private
     F SoupExpression.[ t ]* ≡ F′ SoupExpression.[ t ]*
   redex-frame-unique {F = F} {F′ = F′} {c = c} {c′ = c′}
     V V′ equal =
-    proj₂ (proj₂
+    proj₁ (proj₂ (proj₂
       (redex-unique {F = F} {F′ = F′} {c = c} {c′ = c′}
-        V V′ equal))
+        V V′ equal)))
 
   canon-redex-local :
     {P : Typed.Proc 0}

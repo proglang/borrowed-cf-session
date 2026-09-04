@@ -826,10 +826,10 @@ lsplit-reflect {P = P} {n = n} {cs = cs} {ts = ts}
       lsplitFrame leaf SoupExpression.[ t ]* ≡
       F SoupExpression.[ t ]*
     framePlugEq =
-      proj₂ (proj₂ (redex-unique
+      proj₁ (proj₂ (proj₂ (redex-unique
         {F = lsplitFrame leaf} {F′ = F}
         {c = SoupTerm.`lsplit s} {c′ = SoupTerm.`lsplit s}
-        leafHandleValue concreteHandleValue redexEq))
+        leafHandleValue concreteHandleValue redexEq)))
 
   exactStep =
     ascend focused

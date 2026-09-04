@@ -179,7 +179,7 @@ fork-reflect {P = P} {cs = cs} {ts = ts} j F {e = e} Ve selected
     redex-unique {F = forkFrame leaf} {F′ = F}
       {c = SoupTerm.`fork} {c′ = SoupTerm.`fork}
       translatedChildValue Ve redexEq
-  ... | _ , _ , framePlugEq = framePlugEq SoupTerm.*
+  ... | _ , _ , framePlugEq , _ = framePlugEq SoupTerm.*
 
   childEq :
     Translation.T[ arg ] sigma SoupTerm.·¹ SoupTerm.* ≡
@@ -188,7 +188,8 @@ fork-reflect {P = P} {cs = cs} {ts = ts} j F {e = e} Ve selected
     redex-unique {F = forkFrame leaf} {F′ = F}
       {c = SoupTerm.`fork} {c′ = SoupTerm.`fork}
       translatedChildValue Ve redexEq
-  ... | _ , argEq′ , _ = cong (λ u → u SoupTerm.·¹ SoupTerm.*) argEq′
+  ... | _ , argEq′ , _ , _ =
+    cong (λ u → u SoupTerm.·¹ SoupTerm.*) argEq′
 
   targetThreadsEq :
     SoupReduction.insertAfter

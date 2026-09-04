@@ -6,6 +6,7 @@ open import BorrowedCF.Types using (Dir; L; R; 𝟙)
 
 import BorrowedCF.Terms.BaseSoup as SoupTerm
 import BorrowedCF.Reduction.ExpressionsSoup as SoupRed
+import BorrowedCF.Reduction.Processes.UntypedSoup as SoupReduction
 
 open import BorrowedCF.Simulation.BackwardSoup.Inversion
   using (plug-app-not-value)
@@ -75,9 +76,12 @@ redex-unique :
   F SoupRed.[ SoupTerm.K c SoupTerm.·¹ v ]* ≡
   F′ SoupRed.[ SoupTerm.K c′ SoupTerm.·¹ v′ ]* →
   (c ≡ c′) × (v ≡ v′) ×
-  ((t : SoupTerm.Tm n) → F SoupRed.[ t ]* ≡ F′ SoupRed.[ t ]*)
+  ((t : SoupTerm.Tm n) → F SoupRed.[ t ]* ≡ F′ SoupRed.[ t ]*) ×
+  ((x : 𝔽 n) (k : ℕ) (t : SoupTerm.Tm n) →
+    SoupReduction.insertPhi-frames x k F SoupRed.[ t ]* ≡
+    SoupReduction.insertPhi-frames x k F′ SoupRed.[ t ]*)
 redex-unique {F = []} {F′ = []} V V′ refl =
-  refl , refl , (λ t → refl)
+  refl , refl , (λ t → refl) , (λ x k t → refl)
 redex-unique {F = []} {F′ = SoupRed.app₁ e L V? ∷ F′} V V′ ()
 redex-unique {F = []} {F′ = SoupRed.app₁ e R V? ∷ F′} V V′ ()
 redex-unique {F = []} {F′ = SoupRed.app₁ e 𝟙 V? ∷ F′} V V′ eq
@@ -168,8 +172,11 @@ redex-unique {F = SoupRed.app₁ e L V? ∷ F} {F′ = SoupRed.app₁ e′ L V?�
   with app-injective eq
 ... | inner≡ , e≡
   with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...     | c≡ , v≡ , plug≡ =
-  c≡ , v≡ , λ t → cong₂ (λ a b → a SoupTerm.·⟨ L ⟩ b) (plug≡ t) e≡
+...     | c≡ , v≡ , plug≡ , insert≡ =
+  c≡ , v≡
+  , (λ t → cong₂ (λ a b → a SoupTerm.·⟨ L ⟩ b) (plug≡ t) e≡)
+  , λ x k t → cong₂ (λ a b → a SoupTerm.·⟨ L ⟩ b)
+      (insert≡ x k t) (cong (SoupReduction.insertPhi x k) e≡)
 redex-unique {F = SoupRed.app₁ e L V? ∷ F} {F′ = SoupRed.app₁ e′ R V?′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₁ e L V? ∷ F} {F′ = SoupRed.app₁ e′ 𝟙 V?′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₁ e 𝟙 V? ∷ F} {F′ = SoupRed.app₁ e′ L V?′ ∷ F′} V V′ ()
@@ -177,8 +184,11 @@ redex-unique {F = SoupRed.app₁ e 𝟙 V? ∷ F} {F′ = SoupRed.app₁ e′ �
   with app-injective eq
 ... | inner≡ , e≡
   with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...     | c≡ , v≡ , plug≡ =
-  c≡ , v≡ , λ t → cong₂ (λ a b → a SoupTerm.·⟨ 𝟙 ⟩ b) (plug≡ t) e≡
+...     | c≡ , v≡ , plug≡ , insert≡ =
+  c≡ , v≡
+  , (λ t → cong₂ (λ a b → a SoupTerm.·⟨ 𝟙 ⟩ b) (plug≡ t) e≡)
+  , λ x k t → cong₂ (λ a b → a SoupTerm.·⟨ 𝟙 ⟩ b)
+      (insert≡ x k t) (cong (SoupReduction.insertPhi x k) e≡)
 redex-unique {F = SoupRed.app₁ e 𝟙 V? ∷ F} {F′ = SoupRed.app₁ e′ R V?′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₁ e R V? ∷ F} {F′ = SoupRed.app₁ e′ L V?′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₁ e R V? ∷ F} {F′ = SoupRed.app₁ e′ 𝟙 V?′ ∷ F′} V V′ ()
@@ -186,8 +196,11 @@ redex-unique {F = SoupRed.app₁ e R V? ∷ F} {F′ = SoupRed.app₁ e′ R V?�
   with app-injective eq
 ... | inner≡ , e≡
   with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...   | c≡ , v≡ , plug≡ =
-  c≡ , v≡ , λ t → cong₂ (λ a b → a SoupTerm.·⟨ R ⟩ b) (plug≡ t) e≡
+...   | c≡ , v≡ , plug≡ , insert≡ =
+  c≡ , v≡
+  , (λ t → cong₂ (λ a b → a SoupTerm.·⟨ R ⟩ b) (plug≡ t) e≡)
+  , λ x k t → cong₂ (λ a b → a SoupTerm.·⟨ R ⟩ b)
+      (insert≡ x k t) (cong (SoupReduction.insertPhi x k) e≡)
 redex-unique {F = SoupRed.app₁ e d V? ∷ F} {F′ = SoupRed.□⊗ e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₁ e d V? ∷ F} {F′ = V₀ SoupRed.⊗□ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₁ e d V? ∷ F} {F′ = SoupRed.□; e′ ∷ F′} V V′ ()
@@ -200,8 +213,11 @@ redex-unique {F = SoupRed.app₂ e L V? ∷ F} {F′ = SoupRed.app₂ e′ L V?�
   with app-injective eq
 ... | e≡ , inner≡
   with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...   | c≡ , v≡ , plug≡ =
-  c≡ , v≡ , λ t → cong₂ (λ a b → a SoupTerm.·⟨ L ⟩ b) e≡ (plug≡ t)
+...   | c≡ , v≡ , plug≡ , insert≡ =
+  c≡ , v≡
+  , (λ t → cong₂ (λ a b → a SoupTerm.·⟨ L ⟩ b) e≡ (plug≡ t))
+  , λ x k t → cong₂ (λ a b → a SoupTerm.·⟨ L ⟩ b)
+      (cong (SoupReduction.insertPhi x k) e≡) (insert≡ x k t)
 redex-unique {F = SoupRed.app₂ e L V? ∷ F} {F′ = SoupRed.app₂ e′ R V?′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₂ e L V? ∷ F} {F′ = SoupRed.app₂ e′ 𝟙 V?′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₂ e 𝟙 V? ∷ F} {F′ = SoupRed.app₂ e′ L V?′ ∷ F′} V V′ ()
@@ -209,8 +225,11 @@ redex-unique {F = SoupRed.app₂ e 𝟙 V? ∷ F} {F′ = SoupRed.app₂ e′ �
   with app-injective eq
 ... | e≡ , inner≡
   with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...   | c≡ , v≡ , plug≡ =
-  c≡ , v≡ , λ t → cong₂ (λ a b → a SoupTerm.·⟨ 𝟙 ⟩ b) e≡ (plug≡ t)
+...   | c≡ , v≡ , plug≡ , insert≡ =
+  c≡ , v≡
+  , (λ t → cong₂ (λ a b → a SoupTerm.·⟨ 𝟙 ⟩ b) e≡ (plug≡ t))
+  , λ x k t → cong₂ (λ a b → a SoupTerm.·⟨ 𝟙 ⟩ b)
+      (cong (SoupReduction.insertPhi x k) e≡) (insert≡ x k t)
 redex-unique {F = SoupRed.app₂ e 𝟙 V? ∷ F} {F′ = SoupRed.app₂ e′ R V?′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₂ e R V? ∷ F} {F′ = SoupRed.app₂ e′ L V?′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₂ e R V? ∷ F} {F′ = SoupRed.app₂ e′ 𝟙 V?′ ∷ F′} V V′ ()
@@ -218,8 +237,11 @@ redex-unique {F = SoupRed.app₂ e R V? ∷ F} {F′ = SoupRed.app₂ e′ R V?�
   with app-injective eq
 ... | e≡ , inner≡
   with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...   | c≡ , v≡ , plug≡ =
-  c≡ , v≡ , λ t → cong₂ (λ a b → a SoupTerm.·⟨ R ⟩ b) e≡ (plug≡ t)
+...   | c≡ , v≡ , plug≡ , insert≡ =
+  c≡ , v≡
+  , (λ t → cong₂ (λ a b → a SoupTerm.·⟨ R ⟩ b) e≡ (plug≡ t))
+  , λ x k t → cong₂ (λ a b → a SoupTerm.·⟨ R ⟩ b)
+      (cong (SoupReduction.insertPhi x k) e≡) (insert≡ x k t)
 redex-unique {F = SoupRed.app₂ e d V? ∷ F} {F′ = SoupRed.□⊗ e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₂ e d V? ∷ F} {F′ = V₀ SoupRed.⊗□ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₂ e d V? ∷ F} {F′ = SoupRed.□; e′ ∷ F′} V V′ ()
@@ -234,8 +256,11 @@ redex-unique {F = SoupRed.□⊗ e ∷ F} {F′ = SoupRed.□⊗ e′ ∷ F′} 
   with pair-injective eq
 ... | inner≡ , e≡
   with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...   | c≡ , v≡ , plug≡ =
-  c≡ , v≡ , λ t → cong₂ (λ a b → a SoupTerm.⊗ b) (plug≡ t) e≡
+...   | c≡ , v≡ , plug≡ , insert≡ =
+  c≡ , v≡
+  , (λ t → cong₂ (λ a b → a SoupTerm.⊗ b) (plug≡ t) e≡)
+  , λ x k t → cong₂ (λ a b → a SoupTerm.⊗ b)
+      (insert≡ x k t) (cong (SoupReduction.insertPhi x k) e≡)
 redex-unique {F = SoupRed.□⊗ e ∷ F} {F′ = SoupRed.□; e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.□⊗ e ∷ F} {F′ = SoupRed.`let-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.□⊗ e ∷ F} {F′ = SoupRed.`let⊗-`in e′ ∷ F′} V V′ ()
@@ -248,8 +273,11 @@ redex-unique {F = V₀ SoupRed.⊗□ ∷ F} {F′ = V₁ SoupRed.⊗□ ∷ F�
   with pair-injective eq
 ... | v≡ , inner≡
   with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...   | c≡ , v≡′ , plug≡ =
-  c≡ , v≡′ , λ t → cong₂ (λ a b → a SoupTerm.⊗ b) v≡ (plug≡ t)
+...   | c≡ , v≡′ , plug≡ , insert≡ =
+  c≡ , v≡′
+  , (λ t → cong₂ (λ a b → a SoupTerm.⊗ b) v≡ (plug≡ t))
+  , λ x k t → cong₂ (λ a b → a SoupTerm.⊗ b)
+      (cong (SoupReduction.insertPhi x k) v≡) (insert≡ x k t)
 redex-unique {F = V₀ SoupRed.⊗□ ∷ F} {F′ = SoupRed.□; e′ ∷ F′} V V′ ()
 redex-unique {F = V₀ SoupRed.⊗□ ∷ F} {F′ = SoupRed.`let-`in e′ ∷ F′} V V′ ()
 redex-unique {F = V₀ SoupRed.⊗□ ∷ F} {F′ = SoupRed.`let⊗-`in e′ ∷ F′} V V′ ()
@@ -264,8 +292,11 @@ redex-unique {F = SoupRed.□; e ∷ F} {F′ = SoupRed.□; e′ ∷ F′} V 
   with seq-injective eq
 ... | inner≡ , e≡
   with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...   | c≡ , v≡ , plug≡ =
-  c≡ , v≡ , λ t → cong₂ (λ a b → a SoupTerm.; b) (plug≡ t) e≡
+...   | c≡ , v≡ , plug≡ , insert≡ =
+  c≡ , v≡
+  , (λ t → cong₂ (λ a b → a SoupTerm.; b) (plug≡ t) e≡)
+  , λ x k t → cong₂ (λ a b → a SoupTerm.; b)
+      (insert≡ x k t) (cong (SoupReduction.insertPhi x k) e≡)
 redex-unique {F = SoupRed.□; e ∷ F} {F′ = SoupRed.`let-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.□; e ∷ F} {F′ = SoupRed.`let⊗-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.□; e ∷ F} {F′ = SoupRed.`inj□ i ∷ F′} V V′ ()
@@ -280,8 +311,11 @@ redex-unique {F = SoupRed.`let-`in e ∷ F} {F′ = SoupRed.`let-`in e′ ∷ F�
   with let-injective eq
 ... | inner≡ , e≡
   with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...   | c≡ , v≡ , plug≡ =
-  c≡ , v≡ , λ t → cong₂ (λ a b → SoupTerm.`let a `in b) (plug≡ t) e≡
+...   | c≡ , v≡ , plug≡ , insert≡ =
+  c≡ , v≡
+  , (λ t → cong₂ (λ a b → SoupTerm.`let a `in b) (plug≡ t) e≡)
+  , λ x k t → cong₂ (λ a b → SoupTerm.`let a `in b)
+      (insert≡ x k t) (cong (SoupReduction.insertPhi (suc x) k) e≡)
 redex-unique {F = SoupRed.`let-`in e ∷ F} {F′ = SoupRed.`let⊗-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`let-`in e ∷ F} {F′ = SoupRed.`inj□ i ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`let-`in e ∷ F} {F′ = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F′} V V′ ()
@@ -296,8 +330,12 @@ redex-unique {F = SoupRed.`let⊗-`in e ∷ F} {F′ = SoupRed.`let⊗-`in e′ 
   with letpair-injective eq
 ... | inner≡ , e≡
   with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...   | c≡ , v≡ , plug≡ =
-  c≡ , v≡ , λ t → cong₂ (λ a b → SoupTerm.`let⊗ a `in b) (plug≡ t) e≡
+...   | c≡ , v≡ , plug≡ , insert≡ =
+  c≡ , v≡
+  , (λ t → cong₂ (λ a b → SoupTerm.`let⊗ a `in b) (plug≡ t) e≡)
+  , λ x k t → cong₂ (λ a b → SoupTerm.`let⊗ a `in b)
+      (insert≡ x k t)
+      (cong (SoupReduction.insertPhi (suc (suc x)) k) e≡)
 redex-unique {F = SoupRed.`let⊗-`in e ∷ F} {F′ = SoupRed.`inj□ i ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`let⊗-`in e ∷ F} {F′ = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F′} V V′ ()
 
@@ -312,16 +350,20 @@ redex-unique {F = SoupRed.`inj□ true ∷ F} {F′ = SoupRed.`inj□ true ∷ F
   with inj-injective eq
 ... | inner≡
   with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...   | c≡ , v≡ , plug≡ =
-  c≡ , v≡ , λ t → cong (SoupTerm.`inj true) (plug≡ t)
+...   | c≡ , v≡ , plug≡ , insert≡ =
+  c≡ , v≡
+  , (λ t → cong (SoupTerm.`inj true) (plug≡ t))
+  , λ x k t → cong (SoupTerm.`inj true) (insert≡ x k t)
 redex-unique {F = SoupRed.`inj□ true ∷ F} {F′ = SoupRed.`inj□ false ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`inj□ false ∷ F} {F′ = SoupRed.`inj□ true ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`inj□ false ∷ F} {F′ = SoupRed.`inj□ false ∷ F′} V V′ eq
   with inj-injective eq
 ... | inner≡
   with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...   | c≡ , v≡ , plug≡ =
-  c≡ , v≡ , λ t → cong (SoupTerm.`inj false) (plug≡ t)
+...   | c≡ , v≡ , plug≡ , insert≡ =
+  c≡ , v≡
+  , (λ t → cong (SoupTerm.`inj false) (plug≡ t))
+  , λ x k t → cong (SoupTerm.`inj false) (insert≡ x k t)
 redex-unique {F = SoupRed.`inj□ i ∷ F} {F′ = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F′} V V′ ()
 
 redex-unique {F = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F} {F′ = SoupRed.app₁ e′ d V?′ ∷ F′} V V′ ()
@@ -336,12 +378,27 @@ redex-unique {F = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F} {F′ = SoupRed
   with case-injective eq
 ... | inner≡ , e₁≡ , e₂≡
   with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...   | c≡ , v≡ , plug≡ =
-  c≡ , v≡ , λ t →
-    cong (λ z → SoupTerm.`case z `of⟨ e₁ ; e₂ ⟩) (plug≡ t)
-    ■ cong₂
-        (λ a b → SoupTerm.`case (F′ SoupRed.[ t ]*) `of⟨ a ; b ⟩)
-        e₁≡ e₂≡
+...   | c≡ , v≡ , plug≡ , insert≡ =
+  c≡ , v≡
+  , (λ t →
+      cong (λ z → SoupTerm.`case z `of⟨ e₁ ; e₂ ⟩) (plug≡ t)
+      ■ cong₂
+          (λ a b → SoupTerm.`case (F′ SoupRed.[ t ]*) `of⟨ a ; b ⟩)
+          e₁≡ e₂≡)
+  , λ x k t →
+      cong
+        (λ z →
+          SoupTerm.`case z
+            `of⟨ SoupReduction.insertPhi (suc x) k e₁
+               ; SoupReduction.insertPhi (suc x) k e₂ ⟩)
+        (insert≡ x k t)
+      ■ cong₂
+          (λ a b →
+            SoupTerm.`case
+              (SoupReduction.insertPhi-frames x k F′ SoupRed.[ t ]*)
+              `of⟨ a ; b ⟩)
+          (cong (SoupReduction.insertPhi (suc x) k) e₁≡)
+          (cong (SoupReduction.insertPhi (suc x) k) e₂≡)
 
 split-around-unique :
   {A : Set} {a : A} {xs xs′ ys ys′ : List A} →
