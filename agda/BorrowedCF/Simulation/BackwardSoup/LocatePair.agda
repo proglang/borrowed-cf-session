@@ -2,6 +2,7 @@
 module BorrowedCF.Simulation.BackwardSoup.LocatePair where
 
 open import Data.Nat.ListAction using (sum)
+open import Data.Nat using () renaming (_*_ to _*ℕ_)
 
 open import BorrowedCF.Prelude
 
@@ -10,10 +11,16 @@ import BorrowedCF.Processes.TranslationSoup as Translation
 import BorrowedCF.Terms.Base as Source
 
 open import BorrowedCF.Simulation.BackwardSoup.Locate
-  using (Located; located; ProcessContext; plug; threadInContext; locate)
+  using ( Located; located; ProcessContext; plug; threadInContext; locate
+        ; focusEnv; thread-content)
 open import BorrowedCF.Simulation.BackwardSoup.CanonicalPair
   using ( ProcessContext₂; par₂; par₂ˢ; left₂; right₂; bind₂
-        ; plug₂; thread₁; thread₂)
+        ; plug₂; plug-fill₂; plug-fill₁; fill₂; fill₁
+        ; thread₁; thread₂; thread₁-fill₂; thread₂-fill₁)
+open import BorrowedCF.Simulation.BackwardSoup.Canonical
+  using (toℕ-substProc)
+open import BorrowedCF.Simulation.ForwardSoup.LocalImage
+  using (OrientedChannel; flattenOriented)
 
 open Nat.Variables
 open Fin.Patterns
@@ -151,3 +158,119 @@ locatePair (P Typed.∥ Q) i j apart
        rightJ)
 locatePair (Typed.ν B₁ B₂ P) i j apart =
   under-bind (locatePair P i j apart)
+
+------------------------------------------------------------------------
+-- Content of the two holes.  `plug-fill₂` and `plug-fill₁` are only
+-- propositional equalities, so the logical-channel vector and thread index
+-- are transported explicitly before applying the one-hole `thread-content`
+-- theorem.
+
+private
+  flatten-thread-resp :
+    {c : ℕ}
+    {P Q : Typed.Proc n} (equal : P ≡ Q)
+    (channels : Vec (OrientedChannel c) (Translation.channelCount Q))
+    (sigma : Translation.Env n (2 *ℕ c))
+    (i : 𝔽 (Translation.processCount P)) →
+    lookup
+      (proj₂ (flattenOriented Q channels sigma))
+      (subst (λ R → 𝔽 (Translation.processCount R)) equal i) ≡
+    lookup
+      (proj₂
+        (flattenOriented P
+          (subst
+            (λ R → Vec (OrientedChannel c) (Translation.channelCount R))
+            (sym equal) channels)
+          sigma))
+      i
+  flatten-thread-resp refl channels sigma i = refl
+
+thread₁-content :
+  {c : ℕ}
+  (ctx : ProcessContext₂ k₁ k₂ n)
+  (e₁ : Source.Tm k₁) (e₂ : Source.Tm k₂)
+  (channels :
+    Vec (OrientedChannel c)
+      (Translation.channelCount
+        (plug₂ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)))
+  (sigma : Translation.Env n (2 *ℕ c)) →
+  lookup
+    (proj₂
+      (flattenOriented
+        (plug₂ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫) channels sigma))
+    (thread₁ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫ 0F) ≡
+  Translation.T[ e₁ ]
+    (focusEnv (fill₂ ctx Typed.⟪ e₂ ⟫) Typed.⟪ e₁ ⟫
+      (subst
+        (λ R → Vec (OrientedChannel c) (Translation.channelCount R))
+        (sym (plug-fill₂ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)) channels)
+      sigma)
+thread₁-content {c = c} ctx e₁ e₂ channels sigma =
+  cong
+    (lookup
+      (proj₂
+        (flattenOriented
+          (plug₂ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫) channels sigma)))
+    (sym position) ■
+  flatten-thread-resp equal channels sigma local ■
+  thread-content (fill₂ ctx Typed.⟪ e₂ ⟫) e₁
+    (subst
+      (λ R → Vec (OrientedChannel c) (Translation.channelCount R))
+      (sym equal) channels)
+    sigma
+  where
+  equal = plug-fill₂ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫
+
+  local = threadInContext (fill₂ ctx Typed.⟪ e₂ ⟫) Typed.⟪ e₁ ⟫ 0F
+
+  position :
+    subst (λ R → 𝔽 (Translation.processCount R)) equal local ≡
+    thread₁ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫ 0F
+  position = Fin.toℕ-injective
+    (toℕ-substProc equal local ■
+     sym (thread₁-fill₂ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫ 0F))
+
+thread₂-content :
+  {c : ℕ}
+  (ctx : ProcessContext₂ k₁ k₂ n)
+  (e₁ : Source.Tm k₁) (e₂ : Source.Tm k₂)
+  (channels :
+    Vec (OrientedChannel c)
+      (Translation.channelCount
+        (plug₂ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)))
+  (sigma : Translation.Env n (2 *ℕ c)) →
+  lookup
+    (proj₂
+      (flattenOriented
+        (plug₂ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫) channels sigma))
+    (thread₂ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫ 0F) ≡
+  Translation.T[ e₂ ]
+    (focusEnv (fill₁ ctx Typed.⟪ e₁ ⟫) Typed.⟪ e₂ ⟫
+      (subst
+        (λ R → Vec (OrientedChannel c) (Translation.channelCount R))
+        (sym (plug-fill₁ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)) channels)
+      sigma)
+thread₂-content {c = c} ctx e₁ e₂ channels sigma =
+  cong
+    (lookup
+      (proj₂
+        (flattenOriented
+          (plug₂ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫) channels sigma)))
+    (sym position) ■
+  flatten-thread-resp equal channels sigma local ■
+  thread-content (fill₁ ctx Typed.⟪ e₁ ⟫) e₂
+    (subst
+      (λ R → Vec (OrientedChannel c) (Translation.channelCount R))
+      (sym equal) channels)
+    sigma
+  where
+  equal = plug-fill₁ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫
+
+  local = threadInContext (fill₁ ctx Typed.⟪ e₁ ⟫) Typed.⟪ e₂ ⟫ 0F
+
+  position :
+    subst (λ R → 𝔽 (Translation.processCount R)) equal local ≡
+    thread₂ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫ 0F
+  position = Fin.toℕ-injective
+    (toℕ-substProc equal local ■
+     sym (thread₂-fill₁ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫ 0F))
