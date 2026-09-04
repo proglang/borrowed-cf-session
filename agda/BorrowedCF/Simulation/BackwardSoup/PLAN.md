@@ -311,3 +311,90 @@ Still stale for reasons predating this branch (context-as-function vs. `Vec`): `
 `Simulation/Support/Rev{Com,Drop}Confine.agda`.
 
 Next: P4 (`Canonical.agda`) and P5 (`Leaves/*.agda`) of §9.
+
+## 12. P4b closed; P5 architecture revised (2026-09-04)
+
+P4b is complete: `CanonicalPair.agda` loads hole-free and pragma-free (commit `build the two-hole
+canonical form for synchronising redexes`): `compose₂`/`fill₁`/`fill₂` algebra, the two ambient
+renamings `wt₁`/`wt₂`, TWO-LEVEL bind stacks (`wkL₂`, `foldPar₂`, `push₂`), `Bubble₂`/`bubble₂`,
+`Binder₂` (one `bind₂` node on the common path; `binder₂⇒₁/₂` project the one-hole `Binder`s),
+`Canon₂`/`canon₂`, `canon-swap₂`, `HeadShape₂`/`headShapes⇒₂`, and `canon-pair`.
+`Support/PairConfine.agda` (`strengthen-frame*`, `com-confine`, `close-confine`) is being repaired.
+
+### 12.1 Why the §9 plan for P5 does not work as written
+
+§9 P5 said: apply the FORWARD leaf `U-*-local` to the image transported along `≋-canon` and read the
+soup configuration off the result.  Two facts block this:
+
+1. `≋-image` (`ForwardSoup/LocalImage/Struct.agda`) returns only `Σ lc′. LocalImage Q lc′ …`; it hides
+   the thread map.  The backward leaf must know that the transported image sends the CANONICAL redex
+   thread (`0F` of the `ν` body) to the soup slot `j` the soup step fired on.  Without that, nothing
+   connects the soup step to the typed redex we chose: a well-typed process can contain several
+   threads with identical soup content (two `⟪ discard x ⟫` on different channels, or `⟪ * ; * ⟫`
+   twice), so no content-based or counting argument can recover `j` from a black-box transport.
+2. `LocalStep` hides the soup step's DATA (slot, frame, channel, flag split).  The forward leaf's
+   `C′` is a `RUS-*` result, but the leaf's slot and frame are computed inside `with`-blocks, so the
+   backward proof cannot equate the forward `C′` with the soup step's reduct.
+
+Consequences: (a) thread tracking through `≋` must be made SYNTACTIC and threaded through `Canonical`;
+(b) each forward leaf must EXPOSE its step data.  CHANNEL tracking is NOT needed: once the slot is
+known, `lookup ts j ≡ T[ E₀ [ K c ·¹ ` 0F ]* ] σ_c ≡ F [ K c ·¹ v ]*` and unique decomposition give
+`v ≡ σ_c 0F`, whose endpoint is `endpoint (physicalChannel (lookup lc_c 0F)) side_c`, so the physical
+channel and side of the soup step are forced (`endpoint` is injective).
+
+### 12.2 Components (one module per step; one Opus run per module, Fable commits)
+
+P5.0 **`BackwardSoup/Tracks.agda`** — syntactic thread tracking.  Inductive families
+`Tracks′ : (s : P ≋′ Q) → 𝔽 (pc P) → 𝔽 (pc Q) → Set` (one constructor per axiom and position:
+`comm-l/comm-r`, `assoc`, `unit` (`suc i ↦ i`; the unit thread is untracked), `swap`, `comm-ν`, `ext`
+(identity up to `Fin.cast (processCount-rename …)`), `cong-l/cong-r`, `cong-ν`) and
+`Tracks : (d : P ≋ Q) → 𝔽 (pc P) → 𝔽 (pc Q) → Set` (`ε`, `fwd`, `bwd`).  Algebra: `tracks-◅◅`,
+`tracks-sym` (`Eq*.symmetric`), `tracks-gmap` for `ν-cong`/`∥-cong` (`𝐓.∥-cong ps qs` is
+`gmap ∥-cong′ ps ◅◅ ∥-comm ◅◅ gmap ∥-cong′ qs ◅◅ ∥-comm`), `tracks-≡→≋`/`tracks-subst` (by `J`),
+`tracks-≋-plug`/`tracks-≋-plugL` (`threadInContext` is preserved), and the instances used by
+`Canonical` (`∥-comm`, `∥-assoc`, `∥-unitʳ`, `ν-ext′`, `ν-comm′`, `ν-swap′`).
+P5.1 **`BackwardSoup/TracksImage.agda`** — `≋-image` respects `Tracks`:
+`≋-image-tracks : Tracks d a b → threadEmbedding (proj₂ (≋-image d I)) b ≡ threadEmbedding I a`, via
+`≋′-image-tracks`/`≋′-image⁻-tracks` (reindex cases reduce to `threadBackward` computations; unit and
+congruence cases are definitional through `par-split-*`/`par-join`/`res-split-image`/`res-join`).
+P5.2 **`Canonical.agda`/`CanonicalPair.agda` tracking fields** — `Bubble.tracks`
+(`∀ Z₀ t → Tracks (≋-eq Z₀) (threadInContext c Z₀ t) (thread t of Z₀ in the target)`), a tracking
+clause for `foldPar`, `push`, `foldPar₂`, `push₂`, `bubblePar`, `bubble₂`; `Canon.tracks :
+Tracks ≋-canon (threadInContext ctx ⟪ e ⟫ 0F) (threadInContext above′ (ν C₁ C₂ (⟪ e ⋯ ρ ⟫ ∥ resid)) 0F)`
+and the same for `CanonHead`, `CanonRedex`, `CanonAcq`, `CanonSplit`, `Canon₂` (two clauses, `0F`/`1F`
+of `(⟪ e₁ ⟫ ∥ ⟪ e₂ ⟫) ∥ resid`), `CanonPair`; `canon-swap`/`canon-swap₂` keep the index (`ν-swap′`
+tracks identically up to the `processCount-rename` cast).
+P5.3 **`BackwardSoup/Unique.agda`** — unique decomposition of soup redexes:
+`redex-unique : Value v → Value v′ → F [ K c ·¹ v ]* ≡ F′ [ K c′ ·¹ v′ ]* → (c ≡ c′) × (v ≡ v′) ×
+(∀ t → F [ t ]* ≡ F′ [ t ]*)` (stated on plugged terms, as `Inversion.agda` does), plus the list
+lemma `xs ++ a ∷ ys ≡ xs′ ++ a ∷ ys′ → length xs ≡ length xs′ → xs ≡ xs′ × ys ≡ ys′` for the flag
+splits of Drop/Acq.
+P5.4 **Exposure in the forward leaves** (`ForwardSoup/Local/Step.agda` + each `Local/<Rule>.agda`):
+`ConfigStep P′ σ aC aT C C′` = `LocalStep` with the target configuration as an INDEX
+(`step : C ─→ₚ C′`, `embedding`, `logicalChannels′`, `image′`), `identity-config-step`,
+`configStep⇒localStep`.  Each leaf gains `<rule>-step : image → <Rule>Step image` whose record fixes
+the slot(s) (`slot-eq : threadEmbedding image 0F ≡ just slot`), the frame(s) with the thread content
+(`lookup ts slot ≡ frame [ K c ·¹ arg ]*`, `Value arg`), the rule's other data (channel, side,
+`before`/`after` with the flag equation, sent value, choice) and `result : ConfigStep … (RUS-result)`;
+`U-<rule>-local` becomes a corollary.  `U-new-local` is generalised over the insertion index
+(`0F` is not forced anywhere; `V.insertAt-punchIn`/`insertAt-lookup` are index-generic).  RSplit exposes
+the canonical `before` (`prefixFlags`).
+P5.5 **`BackwardSoup/Lift.agda`** — `plug-red : (ctx) → P ─→ₚ P′ → plug ctx P ─→ₚ plug ctx P′`
+(`R-Par`, `R-Struct ∥-comm` for `par-right`, `R-Bind`); image descent `focusImage` along a
+`ProcessContext` (`par-split-left/right`, `res-split-image`; thread embedding
+`threadEmbedding image ∘ threadInContext ctx P` definitionally) with `Separated`/`ValueEnv`/typing
+descent; image ascent `liftConfigStep : ConfigStep P′ (focused) … C C′ → ConfigStep (plug ctx P′) σ aC aT C C′`
+(the `R-Par`/`R-Bind` bodies of `ForwardSoup/Local.agda`'s `local-sim`, plus the mirrored `par-right`).
+P5.6 **`BackwardSoup/Leaves/<Rule>.agda`** — per soup rule: `image-thread-term` (slot ↦ located
+thread), `plug-inversion-K`, `handle-value-var`, `resolve` + `Position/Crux` shape, `canon-*`,
+`≋-image` + `≋-image-tracks` (⇒ canonical redex ↦ `j`), `focusImage above′`, the exposed forward
+leaf, `redex-unique` (⇒ the forward reduct IS the soup reduct), `liftConfigStep`, and the typed step
+`R-Struct ≋-canon (plug-red above′ (R-<rule>)) ε`.  Two-thread rules build `Binder₂` from the two
+`resolve`s (same physical channel ⇒ same logical channel by `channelEmbedding-injective` ⇒ same `bind`
+node) and use `canon-pair`; Com/Close use `PairConfine`.  RSplit returns the forward configuration
+`C″` and `C″ ≈ˢ C′` (slot renumbering between `prefixFlags B₁` and the soup's `before`).  New uses
+the soup's insertion index.  Exp needs no canonicalisation (`step-inversion` + `plug-red`).
+P5.7 **`BackwardSoup/Main.agda`** — `backward-core` (`C₀ ≡ C`) by cases on the eleven rules, and
+`backward-sim : Backward-Sim` from `backward-core` and `Slot-Bisim`.
+P5.8 **`BackwardSoup/SlotBisim.agda`** — `≈¹` commutes with every soup rule (`swapPhi` against
+`consumePhi`/`insertPhi`/`_[_]*`/`_⋯ᵣ_`; templates `Local/AcqSupport.agda`, `Local/InsertSupport.agda`).
