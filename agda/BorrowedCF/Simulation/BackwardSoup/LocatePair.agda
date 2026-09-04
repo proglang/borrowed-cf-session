@@ -3,16 +3,19 @@ module BorrowedCF.Simulation.BackwardSoup.LocatePair where
 
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat using () renaming (_*_ to _*ℕ_)
+open import Data.Maybe using (just)
 
 open import BorrowedCF.Prelude
 
 import BorrowedCF.Processes.Typed as Typed
 import BorrowedCF.Processes.TranslationSoup as Translation
+import BorrowedCF.Processes.UntypedSoup as Soup
 import BorrowedCF.Terms.Base as Source
+import BorrowedCF.Terms.BaseSoup as SoupTerm
 
 open import BorrowedCF.Simulation.BackwardSoup.Locate
   using ( Located; located; ProcessContext; plug; threadInContext; locate
-        ; focusEnv; thread-content)
+        ; focusEnv; thread-content; image-thread)
 open import BorrowedCF.Simulation.BackwardSoup.CanonicalPair
   using ( ProcessContext₂; par₂; par₂ˢ; left₂; right₂; bind₂
         ; plug₂; plug-fill₂; plug-fill₁; fill₂; fill₁
@@ -20,7 +23,9 @@ open import BorrowedCF.Simulation.BackwardSoup.CanonicalPair
 open import BorrowedCF.Simulation.BackwardSoup.Canonical
   using (toℕ-substProc)
 open import BorrowedCF.Simulation.ForwardSoup.LocalImage
-  using (OrientedChannel; flattenOriented)
+  using (OrientedChannel; flattenOriented; threadEmbedding)
+open import BorrowedCF.Simulation.ForwardSoup.World
+  using (GlobalImage; logicalChannels; localImage)
 
 open Nat.Variables
 open Fin.Patterns
@@ -43,6 +48,9 @@ data LocatedPair :
       (thread₂ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫ 0F)
 
 private
+  just-injective : {A : Set} {x y : A} → just x ≡ just y → x ≡ y
+  just-injective refl = refl
+
   retarget :
     {P : Typed.Proc n}
     {i i′ j j′ : 𝔽 (Translation.processCount P)} →
@@ -158,6 +166,48 @@ locatePair (P Typed.∥ Q) i j apart
        rightJ)
 locatePair (Typed.ν B₁ B₂ P) i j apart =
   under-bind (locatePair P i j apart)
+
+------------------------------------------------------------------------
+-- Recover both source indices before locating their common two-hole
+-- context.  Distinct physical slots imply distinct source indices because
+-- a local image embeds source threads functionally.
+
+image-thread-pair :
+  {P : Typed.Proc 0} {n m : ℕ} {C : Soup.Config n m}
+  (image : GlobalImage P C) (j l : 𝔽 m) →
+  j ≢ l →
+  lookup (Soup.threads C) j ≢ SoupTerm.K Source.`unit →
+  lookup (Soup.threads C) l ≢ SoupTerm.K Source.`unit →
+  Σ[ i₁ ∈ 𝔽 (Translation.processCount P) ]
+  Σ[ i₂ ∈ 𝔽 (Translation.processCount P) ]
+    ((threadEmbedding (localImage image) i₁ ≡ just j) ×
+     (lookup (Soup.threads C) j ≡
+       lookup
+         (proj₂
+           (flattenOriented P (logicalChannels image) (λ ())))
+         i₁)) ×
+    ((threadEmbedding (localImage image) i₂ ≡ just l) ×
+     (lookup (Soup.threads C) l ≡
+       lookup
+         (proj₂
+           (flattenOriented P (logicalChannels image) (λ ())))
+         i₂)) ×
+    LocatedPair P i₁ i₂
+image-thread-pair {P = P} image j l slots-apart live₁ live₂
+  with image-thread image j live₁ | image-thread image l live₂
+... | i₁ , embedded₁ , content₁ | i₂ , embedded₂ , content₂ =
+  i₁ , i₂ ,
+  (embedded₁ , content₁) ,
+  (embedded₂ , content₂) ,
+  locatePair P i₁ i₂ source-apart
+  where
+  source-apart : i₁ ≢ i₂
+  source-apart equal =
+    slots-apart
+      (just-injective
+        (sym embedded₁
+         ■ cong (threadEmbedding (localImage image)) equal
+         ■ embedded₂))
 
 ------------------------------------------------------------------------
 -- Content of the two holes.  `plug-fill₂` and `plug-fill₁` are only
