@@ -65,6 +65,45 @@ record LocalStep
 
 open LocalStep public
 
+record ConfigStep
+  {k n m n′ m′ : ℕ}
+  (P′ : Typed.Proc k)
+  (sigma : Translation.Env k (2 *ℕ n))
+  (ambientChannel : 𝔽 n → Set)
+  (ambientThread : 𝔽 m → Set)
+  (C : Soup.Config n m)
+  (C′ : Soup.Config n′ m′) : Set where
+  field
+    config-step : C SoupReduction.─→ₚ C′
+    config-embedding : AmbientEmbedding ambientChannel ambientThread C C′
+    config-logicalChannels′ :
+      Vec (OrientedChannel n′) (Translation.channelCount P′)
+    config-image′ :
+      LocalImage P′ config-logicalChannels′
+        (renameEnv (AmbientEmbedding.endpointEmbedding config-embedding) sigma)
+        (targetAmbientChannel config-embedding)
+        (targetAmbientThread config-embedding)
+        C′
+
+open ConfigStep public
+
+configStep⇒localStep :
+  {k n m n′ m′ : ℕ} {P′ : Typed.Proc k}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config n m} {C′ : Soup.Config n′ m′} →
+  ConfigStep P′ sigma ambientChannel ambientThread C C′ →
+  LocalStep P′ sigma ambientChannel ambientThread C
+configStep⇒localStep {n′ = n′} {m′ = m′} {C′ = C′} step′ = record
+  { n′ = n′
+  ; m′ = m′
+  ; C′ = C′
+  ; step = config-step step′
+  ; embedding = config-embedding step′
+  ; logicalChannels′ = config-logicalChannels′ step′
+  ; image′ = config-image′ step′
+  }
+
 ------------------------------------------------------------------------
 -- Shrinking the ambient sets of an embedding.  Only the two content
 -- obligations mention them, so restricting the sets keeps every map — and
@@ -170,7 +209,7 @@ identity-embedding {C = C} channelContent threadContent = record
 -- so the image of the reduct only has to be adjusted along the (definitional)
 -- identity renaming of the environment and the ambient predicates.
 
-identity-step :
+identity-config-step :
   {k n m : ℕ} {P′ : Typed.Proc k}
   {logicalChannels′ :
     Vec (OrientedChannel n) (Translation.channelCount P′)}
@@ -183,17 +222,14 @@ identity-step :
   ((j : 𝔽 m) → ambientThread j →
     lookup (Soup.threads C′) j ≡ lookup (Soup.threads C) j) →
   LocalImage P′ logicalChannels′ sigma ambientChannel ambientThread C′ →
-  LocalStep P′ sigma ambientChannel ambientThread C
-identity-step {n = n} {m = m} {sigma = sigma}
+  ConfigStep P′ sigma ambientChannel ambientThread C C′
+identity-config-step {n = n} {m = m} {sigma = sigma}
   {ambientChannel = ambientChannel} {ambientThread = ambientThread}
   {C′ = C′} step channelContent threadContent image = record
-  { n′ = n
-  ; m′ = m
-  ; C′ = C′
-  ; step = step
-  ; embedding = identity-embedding channelContent threadContent
-  ; logicalChannels′ = _
-  ; image′ =
+  { config-step = step
+  ; config-embedding = identity-embedding channelContent threadContent
+  ; config-logicalChannels′ = _
+  ; config-image′ =
       ambient-resp toChannel fromChannel toThread fromThread
         (env-resp (λ x → sym (ren-id (sigma x) (λ _ → refl))) image)
   }
@@ -211,6 +247,24 @@ identity-step {n = n} {m = m} {sigma = sigma}
   fromThread : (l : 𝔽 m) → Transport id ambientThread l → ambientThread l
   fromThread l (source , ambient , sourceEq) =
     subst ambientThread sourceEq ambient
+
+identity-step :
+  {k n m : ℕ} {P′ : Typed.Proc k}
+  {logicalChannels′ :
+    Vec (OrientedChannel n) (Translation.channelCount P′)}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C C′ : Soup.Config n m} →
+  C SoupReduction.─→ₚ C′ →
+  ((i : 𝔽 n) → ambientChannel i →
+    lookup (Soup.channels C′) i ≡ lookup (Soup.channels C) i) →
+  ((j : 𝔽 m) → ambientThread j →
+    lookup (Soup.threads C′) j ≡ lookup (Soup.threads C) j) →
+  LocalImage P′ logicalChannels′ sigma ambientChannel ambientThread C′ →
+  LocalStep P′ sigma ambientChannel ambientThread C
+identity-step step channelContent threadContent image =
+  configStep⇒localStep
+    (identity-config-step step channelContent threadContent image)
 
 ------------------------------------------------------------------------
 -- Moving an image to a configuration that agrees with the old one away from
