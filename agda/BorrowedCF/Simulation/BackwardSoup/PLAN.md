@@ -447,14 +447,22 @@ P5.8 **`BackwardSoup/SlotBisim.agda`** — `≈¹` commutes with every soup rule
   and restriction frames, lifts typed reductions through the same contexts,
   and focuses the separation invariant required by global phi sweeps.
 * P5.6 PARTIAL (checkpoints `reflect soup expression steps`, `reflect soup fork
-  steps`): Exp locates the selected source thread and eliminates the ill-typed
-  residual expression case.  Fork additionally inverts the translated unary
-  redex, reflects the value argument, and uses `redex-unique` to identify the
-  caller's frame and child.  Both apply the exact forward leaf at the same
-  physical slot and lift the typed reduction and image through the complete
-  process context.  `Locate.image-thread-term` exports its transported
-  position equation and `Lift.focusImage-thread` relates focused and global
-  thread embeddings explicitly.
+  steps`, `reflect soup channel allocation`): Exp locates the selected source
+  thread and eliminates the ill-typed residual expression case.  Fork
+  additionally inverts the translated unary redex, reflects the value
+  argument, and uses `redex-unique` to identify the caller's frame and child.
+  New preserves the soup rule's arbitrary physical insertion index and proves
+  equality of the endpoint-renamed target frames.  All three apply the exact
+  forward leaf at the same physical slot and lift the typed reduction and
+  image through the complete process context.  `Locate.image-thread-term`
+  exports its transported position equation and `Lift.focusImage-thread`
+  relates focused and global thread embeddings explicitly.
+* Pair-leaf support (checkpoint `locate paired soup redex threads`):
+  `LocatePair.agda` recursively locates any two distinct process indices in a
+  common `ProcessContext₂`, preserving both exact positions.  This supplies
+  the missing input to `CanonicalPair` for Com, Choice, and Close.  The shared
+  `Triple.agda`, `TracksImage.≋-image-slot`, and `CanonicalImage.agda` package
+  handle/endpoint injectivity and exact physical-slot transport.
 * Forward-leaf structure relevant to P5.4 (checked 2026-09-04): every leaf ends in a local
   `dispatch (present j slotEq lookupEq) = identity-step soupStep … image′` (two `present`s for
   Close/Choice/Com) with `selected : lookup ts j ≡ F [ K c ·¹ arg ]*` and `soupStep = RUS-… j … F …`
