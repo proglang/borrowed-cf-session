@@ -2,14 +2,14 @@
 --
 --   `E [ K (`new s) ·¹ * ]*` allocates a channel: the source reduct is a
 --   restriction with binder groups `0 ∷ 1 ∷ []` on both sides, and the soup
---   takes an `RUS-New` step that inserts a fresh open channel at physical
---   index `0F`.  The thread namespace is unchanged, but every endpoint index
---   shifts along `insertEndpoint 0F`, so the frame travels along the
---   embedding `(suc , id , insertEndpoint 0F)`.
+--   takes an `RUS-New` step that inserts a fresh open channel at the chosen
+--   physical index `i`.  The thread namespace is unchanged, but every endpoint
+--   index shifts along `insertEndpoint i`, so the frame travels along the
+--   embedding `(Fin.punchIn i , id , insertEndpoint i)`.
 --
---   The new channel becomes the head of the logical channel vector, forward
+--   The new channel becomes the only logical channel of the reduct, forward
 --   oriented; `res-join` rebuilds the restriction over it once the body image
---   is available.  The body image's live thread is `newResult 0F F`, which
+--   is available.  The body image's live thread is `newResult i F`, which
 --   `newResult-eq` identifies with the translation of the reduct in the
 --   binder environment.
 module BorrowedCF.Simulation.ForwardSoup.Local.New where
@@ -83,28 +83,94 @@ insertEndpoint-endpoint target i side =
 ------------------------------------------------------------------------
 -- The leaf.
 
-U-new-local :
+record NewStep
+  {k n m : ℕ}
+  {E : SourceReduction.Frame* k} {s : Types.𝕊 0}
+  {logicalChannels : Vec (OrientedChannel n) 0}
+  (P′ : Typed.Proc k)
+  (sigma : Translation.Env k (2 *ℕ n))
+  (ambientChannel : 𝔽 n → Set)
+  (ambientThread : 𝔽 m → Set)
+  (C : Soup.Config n m)
+  (image : LocalImage
+    (Typed.⟪ SourceReduction._[_]* E
+      (Source._·¹_ (Source.K (Source.`new s)) Source.*) ⟫)
+    logicalChannels sigma ambientChannel ambientThread C) : Set where
+  field
+    newThread : 𝔽 m
+    newSlotEq : threadEmbedding image zero ≡ just newThread
+    newSourceFrame : SourceReduction.Frame* k
+    newSourceFrame≡ : newSourceFrame ≡ E
+
+    newFrame : SoupExpression.Frame* (2 *ℕ n)
+    newSelectedSource :
+      lookup (Soup.threads C) newThread ≡
+      Translation.T[
+        SourceReduction._[_]* E
+          (Source._·¹_ (Source.K (Source.`new s)) Source.*)
+      ] sigma
+    newSelectedNew :
+      lookup (Soup.threads C) newThread ≡
+      SoupExpression._[_]* newFrame
+        (SoupTerm._·¹_ (SoupTerm.K (Source.`new s)) SoupTerm.*)
+
+    newIndex : 𝔽 (suc n)
+    newEndpointRenaming : 𝔽 (2 *ℕ n) → 𝔽 (2 *ℕ suc n)
+    newEndpointRenaming≡ :
+      newEndpointRenaming ≡ SoupReduction.insertEndpoint newIndex
+
+    newFreshChannel : Soup.Channel
+    newFreshChannel≡ :
+      newFreshChannel ≡ (true , Soup.acq ∷ [] , Soup.acq ∷ [])
+    newTargetChannels : Vec Soup.Channel (suc n)
+    newTargetChannels≡ :
+      newTargetChannels ≡
+      V.insertAt (Soup.channels C) newIndex newFreshChannel
+    newTargetThreads : Vec (Soup.Thread (suc n)) m
+    newTargetThreads≡ :
+      newTargetThreads ≡
+      SoupReduction.replaceAt
+        (V.map (SoupReduction.insertThreadEndpoints newIndex)
+          (Soup.threads C))
+        newThread
+        (SoupReduction.newResult newIndex newFrame)
+
+    newConfigStep :
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config
+          (V.insertAt (Soup.channels C) newIndex
+            (true , Soup.acq ∷ [] , Soup.acq ∷ []))
+          (SoupReduction.replaceAt
+            (V.map (SoupReduction.insertThreadEndpoints newIndex)
+              (Soup.threads C))
+            newThread
+            (SoupReduction.newResult newIndex newFrame)))
+
+open NewStep public
+
+new-step :
   {k n m : ℕ}
   {E : SourceReduction.Frame* k} {s : Types.𝕊 0}
   {logicalChannels : Vec (OrientedChannel n) 0}
   {sigma : Translation.Env k (2 *ℕ n)}
   {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
   {C : Soup.Config n m} →
+  (i : 𝔽 (suc n)) →
   ValueEnv sigma →
-  LocalImage
+  (image : LocalImage
     (Typed.⟪ SourceReduction._[_]* E
                (Source._·¹_ (Source.K (Source.`new s)) Source.*) ⟫)
-    logicalChannels sigma ambientChannel ambientThread C →
-  LocalStep
+    logicalChannels sigma ambientChannel ambientThread C) →
+  NewStep {E = E} {s = s}
     (Typed.ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
       (Typed.⟪ SourceReduction._[_]*
                  (SourceReduction._⋯ᶠ*_ E
                    (Source.weaken* ⦃ Source.Kᵣ ⦄ 2))
                  (Source._⊗_ (Source.` 0F) (Source.` 1F)) ⟫))
-    sigma ambientChannel ambientThread C
-U-new-local {k = k} {n = n} {m = m} {E = E} {s = s}
+    sigma ambientChannel ambientThread C image
+new-step {k = k} {n = n} {m = m} {E = E} {s = s}
   {logicalChannels = []} {sigma = sigma}
-  {ambientChannel = aC} {ambientThread = aT} {C = C} Vsigma image
+  {ambientChannel = aC} {ambientThread = aT} {C = C} i Vsigma image
   with live-thread image 0F
 
 -- An omitted redex thread would be `K `unit`, but the translation of a
@@ -117,15 +183,30 @@ U-new-local {k = k} {n = n} {m = m} {E = E} {s = s}
        ■ expectedEq))
 
 ... | present j slotEq lookupEq = record
-  { n′ = suc n
-  ; m′ = m
-  ; C′ = targetConfig
-  ; step = soupStep
-  ; embedding = emb
-  ; logicalChannels′ = newChannel ∷ []
-  ; image′ =
-      ambient-resp (λ _ ambient → ambient) (λ _ ambient → ambient)
-        toThread fromThread targetImage
+  { newThread = j
+  ; newSlotEq = slotEq
+  ; newSourceFrame = E
+  ; newSourceFrame≡ = refl
+  ; newFrame = F
+  ; newSelectedSource = lookupEq
+  ; newSelectedNew = selected
+  ; newIndex = i
+  ; newEndpointRenaming = rho
+  ; newEndpointRenaming≡ = refl
+  ; newFreshChannel = freshChannel
+  ; newFreshChannel≡ = refl
+  ; newTargetChannels = targetChannels
+  ; newTargetChannels≡ = refl
+  ; newTargetThreads = targetThreads
+  ; newTargetThreads≡ = refl
+  ; newConfigStep = record
+      { config-step = soupStep
+      ; config-embedding = emb
+      ; config-logicalChannels′ = newChannel ∷ []
+      ; config-image′ =
+          ambient-resp (λ _ ambient → ambient) (λ _ ambient → ambient)
+            toThread fromThread targetImage
+      }
   }
   where
   cs : Vec Soup.Channel n
@@ -136,7 +217,7 @@ U-new-local {k = k} {n = n} {m = m} {E = E} {s = s}
 
   -- The physical endpoint renaming induced by the allocation.
   rho : 𝔽 (2 *ℕ n) → 𝔽 (2 *ℕ suc n)
-  rho = SoupReduction.insertEndpoint 0F
+  rho = SoupReduction.insertEndpoint i
 
   F : SoupExpression.Frame* (2 *ℕ n)
   F = Tᶠ*[ E ] {σ = sigma} Vsigma
@@ -154,26 +235,26 @@ U-new-local {k = k} {n = n} {m = m} {E = E} {s = s}
   freshChannel = true , Soup.acq ∷ [] , Soup.acq ∷ []
 
   targetChannels : Vec Soup.Channel (suc n)
-  targetChannels = V.insertAt cs 0F freshChannel
+  targetChannels = V.insertAt cs i freshChannel
 
   targetThreads : Vec (Soup.Thread (suc n)) m
   targetThreads =
     SoupReduction.replaceAt
-      (V.map (SoupReduction.insertThreadEndpoints 0F) ts) j
-      (SoupReduction.newResult 0F F)
+      (V.map (SoupReduction.insertThreadEndpoints i) ts) j
+      (SoupReduction.newResult i F)
 
   targetConfig : Soup.Config (suc n) m
   targetConfig = Soup.config targetChannels targetThreads
 
   soupStep : C SoupReduction.─→ₚ targetConfig
   soupStep =
-    SoupReduction.RUS-New {s = s} {cs = cs} {ts = ts} j 0F F selected
+    SoupReduction.RUS-New {s = s} {cs = cs} {ts = ts} j i F selected
 
   j-not-ambient : ¬ aT j
   j-not-ambient = thread-not-ambient image slotEq
 
   ----------------------------------------------------------------------
-  -- The embedding: one channel is inserted at the front, the threads keep
+  -- The embedding: one channel is inserted, the threads keep
   -- their slots but their endpoints shift.
 
   ambientThreadContent :
@@ -182,19 +263,20 @@ U-new-local {k = k} {n = n} {m = m} {E = E} {s = s}
   ambientThreadContent l ambient =
     V.lookup∘updateAt′ l j
       (λ l≡j → j-not-ambient (subst aT l≡j ambient))
-      (V.map (SoupReduction.insertThreadEndpoints 0F) ts)
-    ■ V.lookup-map l (SoupReduction.insertThreadEndpoints 0F) ts
+      (V.map (SoupReduction.insertThreadEndpoints i) ts)
+    ■ V.lookup-map l (SoupReduction.insertThreadEndpoints i) ts
 
   emb : AmbientEmbedding aC aT C targetConfig
   emb = record
-    { channelEmbedding = suc
-    ; channelEmbedding-injective = Fin.suc-injective
+    { channelEmbedding = Fin.punchIn i
+    ; channelEmbedding-injective = λ {i₁} {i₂} eq →
+        Fin.punchIn-injective i i₁ i₂ eq
     ; threadEmbedding = id
     ; threadEmbedding-injective = id
     ; endpointEmbedding = rho
-    ; endpoint-respects-channel = insertEndpoint-endpoint 0F
-    ; ambient-channel-content = λ i _ →
-        V.insertAt-punchIn cs 0F freshChannel i
+    ; endpoint-respects-channel = insertEndpoint-endpoint i
+    ; ambient-channel-content = λ i₀ _ →
+        V.insertAt-punchIn cs i freshChannel i₀
     ; ambient-thread-content = ambientThreadContent
     }
 
@@ -208,7 +290,7 @@ U-new-local {k = k} {n = n} {m = m} {E = E} {s = s}
   -- The bound channel of the reduct, and the environment of its body.
 
   newChannel : OrientedChannel (suc n)
-  newChannel = 0F , forward
+  newChannel = i , forward
 
   bindRen : 𝔽 k → 𝔽 (2 + k)
   bindRen = Source.weaken* ⦃ Source.Kᵣ ⦄ 2
@@ -249,7 +331,7 @@ U-new-local {k = k} {n = n} {m = m} {E = E} {s = s}
       (Source._⊗_ (Source.` 0F) (Source.` 1F))
 
   newResult-eq :
-    SoupReduction.newResult 0F F ≡ Translation.T[ reduct ] env
+    SoupReduction.newResult i F ≡ Translation.T[ reduct ] env
   newResult-eq =
     sym
       (T[_]-plugᶠ* (SourceReduction._⋯ᶠ*_ E bindRen)
@@ -261,9 +343,28 @@ U-new-local {k = k} {n = n} {m = m} {E = E} {s = s}
   ----------------------------------------------------------------------
   -- The image of the body of the reduct.
 
+  targetGarbageChannel :
+    (i′ : 𝔽 (suc n)) →
+    LocalOutside (physicalChannel ∘ lookup []) i′ →
+    ¬ (Transport (Fin.punchIn i) aC ∪ᵖ singletonᵖ (physicalChannel newChannel)) i′ →
+    lookup targetChannels i′ ≡ (false , [] , [])
+  targetGarbageChannel i′ outside notAmbient with i Fin.≟ i′
+  ... | yes refl = ⊥-elim (notAmbient (inj₂ refl))
+  ... | no i≢i′ =
+    cong (lookup targetChannels) (sym punchEq)
+    ■ V.insertAt-punchIn cs i freshChannel i₀
+    ■ garbage-channel image i₀ (λ ())
+        (λ ambient → notAmbient (inj₁ (i₀ , ambient , punchEq)))
+    where
+    i₀ : 𝔽 n
+    i₀ = Fin.punchOut i≢i′
+
+    punchEq : Fin.punchIn i i₀ ≡ i′
+    punchEq = Fin.punchIn-punchOut i≢i′
+
   bodyImage :
     LocalImage (Typed.⟪ reduct ⟫) [] env
-      (Transport suc aC ∪ᵖ singletonᵖ (physicalChannel newChannel))
+      (Transport (Fin.punchIn i) aC ∪ᵖ singletonᵖ (physicalChannel newChannel))
       aT targetConfig
   bodyImage = record
     { channelEmbedding-injective = λ {i} _ → vacuous i
@@ -276,19 +377,14 @@ U-new-local {k = k} {n = n} {m = m} {E = E} {s = s}
         0F →
           present j slotEq
             (V.lookup∘updateAt j
-               (V.map (SoupReduction.insertThreadEndpoints 0F) ts)
+               (V.map (SoupReduction.insertThreadEndpoints i) ts)
              ■ newResult-eq)
-    ; garbage-channel = λ where
-        zero outside notAmbient → ⊥-elim (notAmbient (inj₂ refl))
-        (suc i₀) outside notAmbient →
-          V.insertAt-punchIn cs 0F freshChannel i₀
-          ■ garbage-channel image i₀ (λ ())
-              (λ ambient → notAmbient (inj₁ (i₀ , ambient , refl)))
+    ; garbage-channel = targetGarbageChannel
     ; garbage-thread = λ l outside notAmbient →
         V.lookup∘updateAt′ l j
           (λ l≡j → outside 0F (slotEq ■ cong just (sym l≡j)))
-          (V.map (SoupReduction.insertThreadEndpoints 0F) ts)
-        ■ V.lookup-map l (SoupReduction.insertThreadEndpoints 0F) ts
+          (V.map (SoupReduction.insertThreadEndpoints i) ts)
+        ■ V.lookup-map l (SoupReduction.insertThreadEndpoints i) ts
         ■ cong (SoupTerm._⋯ᵣ rho)
             (garbage-thread image l outside notAmbient)
     }
@@ -296,13 +392,44 @@ U-new-local {k = k} {n = n} {m = m} {E = E} {s = s}
   channelContent :
     lookup targetChannels (physicalChannel newChannel) ≡
     bindChannel (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ []) newChannel
-  channelContent = V.insertAt-lookup cs 0F freshChannel
+  channelContent = V.insertAt-lookup cs i freshChannel
 
-  notAmbient : ¬ Transport suc aC (physicalChannel newChannel)
-  notAmbient (source , ambient , ())
+  notAmbient : ¬ Transport (Fin.punchIn i) aC (physicalChannel newChannel)
+  notAmbient (source , ambient , sourceEq) =
+    Fin.punchInᵢ≢i i source sourceEq
 
   targetImage :
     LocalImage
       (Typed.ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ []) (Typed.⟪ reduct ⟫))
-      (newChannel ∷ []) outerEnv (Transport suc aC) aT targetConfig
+      (newChannel ∷ []) outerEnv (Transport (Fin.punchIn i) aC) aT targetConfig
   targetImage = res-join bodyImage channelContent notAmbient
+
+U-new-local :
+  {k n m : ℕ}
+  {E : SourceReduction.Frame* k} {s : Types.𝕊 0}
+  {logicalChannels : Vec (OrientedChannel n) 0}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config n m} →
+  ValueEnv sigma →
+  LocalImage
+    (Typed.⟪ SourceReduction._[_]* E
+               (Source._·¹_ (Source.K (Source.`new s)) Source.*) ⟫)
+    logicalChannels sigma ambientChannel ambientThread C →
+  LocalStep
+    (Typed.ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ [])
+      (Typed.⟪ SourceReduction._[_]*
+                 (SourceReduction._⋯ᶠ*_ E
+                   (Source.weaken* ⦃ Source.Kᵣ ⦄ 2))
+                 (Source._⊗_ (Source.` 0F) (Source.` 1F)) ⟫))
+    sigma ambientChannel ambientThread C
+U-new-local {k = k} {n = n} {m = m} {E = E} {s = s}
+  {logicalChannels = logicalChannels} {sigma = sigma}
+  {ambientChannel = ambientChannel} {ambientThread = ambientThread} {C = C}
+  Vsigma image =
+  configStep⇒localStep
+    (newConfigStep
+      (new-step {k = k} {n = n} {m = m} {E = E} {s = s}
+        {logicalChannels = logicalChannels} {sigma = sigma}
+        {ambientChannel = ambientChannel} {ambientThread = ambientThread}
+        {C = C} 0F Vsigma image))
