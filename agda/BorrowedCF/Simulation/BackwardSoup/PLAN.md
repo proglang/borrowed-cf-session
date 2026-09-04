@@ -421,8 +421,12 @@ P5.8 **`BackwardSoup/SlotBisim.agda`** — `≈¹` commutes with every soup rule
   every `Canon*` record has a new LAST parameter `src : 𝔽 (pc P)` and a last field `tracks : Tracks
   ≋-canon src (threadInContext above′ (ν … (⟪ redex ⟫ ∥ resid)) 0F)`; the constructions return
   `src = threadInContext ctx ⟪ e ⟫ 0F`, exactly the index `Locate.located` produces.
-* P5.2b in progress: `CanonicalPair.agda` (`thread₁`/`thread₂`, `Bubble₂.tracks₁/₂`, `Canon₂`/`CanonPair`
-  with `src₁ src₂`).
+* P5.2b DONE (checkpoint `track both redex threads through canonicalisation`):
+  `CanonicalPair.agda` now carries `thread₁`/`thread₂` through
+  `Bubble₂.tracks₁`/`tracks₂`, `Canon₂`, and `CanonPair`.  The two endpoint
+  orientations are converted by separately typed `canonPair-lr` and
+  `canonPair-rl` helpers, avoiding an ambiguous size argument in the final
+  dependent elimination.
 * Forward-leaf structure relevant to P5.4 (checked 2026-09-04): every leaf ends in a local
   `dispatch (present j slotEq lookupEq) = identity-step soupStep … image′` (two `present`s for
   Close/Choice/Com) with `selected : lookup ts j ≡ F [ K c ·¹ arg ]*` and `soupStep = RUS-… j … F …`
