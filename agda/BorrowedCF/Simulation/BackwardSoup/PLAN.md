@@ -433,19 +433,23 @@ P5.8 **`BackwardSoup/SlotBisim.agda`** — `≈¹` commutes with every soup rule
   equal positions.  Both results are constructive and require no proof
   irrelevance for evaluation frames.
 * P5.4 PARTIAL: `Step.agda` indexes the exact target configuration;
-  Com/Choice/Close expose strict synchronization evidence; Exp/Fork expose
-  their selected source thread and exact indexed reduct.  The remaining
-  single-thread leaves still need the same treatment.
+  Exp/Fork/New/LSplit/Drop/Discard expose their selected source thread and
+  exact indexed reduct.  LSplit's evidence now transports the slot equation
+  back across its internal `proc-image` canonicalisation.  Com/Choice/Close
+  expose strict synchronization evidence but are being tightened to relate
+  both physical slots to the supplied source image.  Acq and RSplit remain.
 * P5.5 DONE (checkpoint `focus and lift exact soup images`): `Lift.agda`
   packages the focused ambient predicates and image for every
   `ProcessContext`, ascends exact `ConfigStep`s through left/right parallel
   and restriction frames, lifts typed reductions through the same contexts,
   and focuses the separation invariant required by global phi sweeps.
-* P5.6 PARTIAL (checkpoint `reflect soup expression steps`): the Exp leaf
-  locates the selected source thread, eliminates the ill-typed residual
-  expression case, applies the exact forward leaf at the same physical slot,
-  and lifts the resulting typed reduction and image through the complete
-  process context.  `Locate.image-thread-term` now exports its transported
+* P5.6 PARTIAL (checkpoints `reflect soup expression steps`, `reflect soup fork
+  steps`): Exp locates the selected source thread and eliminates the ill-typed
+  residual expression case.  Fork additionally inverts the translated unary
+  redex, reflects the value argument, and uses `redex-unique` to identify the
+  caller's frame and child.  Both apply the exact forward leaf at the same
+  physical slot and lift the typed reduction and image through the complete
+  process context.  `Locate.image-thread-term` exports its transported
   position equation and `Lift.focusImage-thread` relates focused and global
   thread embeddings explicitly.
 * Forward-leaf structure relevant to P5.4 (checked 2026-09-04): every leaf ends in a local
