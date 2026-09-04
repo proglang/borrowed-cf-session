@@ -561,6 +561,8 @@ image-thread-term :
   Σ[ k ∈ ℕ ] Σ[ ctx ∈ ProcessContext k 0 ] Σ[ e ∈ Source.Tm k ]
   Σ[ i ∈ 𝔽 (Translation.processCount P) ]
   Σ[ shape ∈ plug ctx Typed.⟪ e ⟫ ≡ P ]
+    (subst (λ R → 𝔽 (Translation.processCount R)) shape
+      (threadInContext ctx Typed.⟪ e ⟫ zero) ≡ i) ×
     (threadEmbedding (localImage image) i ≡ just j) ×
     (lookup (Soup.threads C) j ≡
       Translation.T[ e ]
@@ -573,7 +575,7 @@ image-thread-term {P = P} image j notUnit
   with image-thread image j notUnit
 ... | i , embedded , content with locate P i
 ...   | located ctx e =
-  _ , ctx , e , _ , refl , embedded ,
+  _ , ctx , e , _ , refl , refl , embedded ,
   (content ■ thread-content ctx e (logicalChannels image) (λ ()))
 
 ------------------------------------------------------------------------

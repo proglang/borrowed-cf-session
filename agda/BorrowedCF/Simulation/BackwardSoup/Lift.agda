@@ -15,7 +15,7 @@ import BorrowedCF.Terms.BaseSoup as SoupTerm
 
 open import BorrowedCF.Simulation.BackwardSoup.Locate
   using ( ProcessContext; hole; par-left; par-right; bind; plug
-        ; focusChannels; focusEnv)
+        ; focusChannels; focusEnv; threadInContext)
 
 open import BorrowedCF.Simulation.ForwardSoup.Local.Step
   using (ConfigStep; embedding-mono)
@@ -600,6 +600,31 @@ focusImage {c = c} {m = m} (bind B₁ B₂ ctx) P
       notAmbient₀
         (subst ambientChannel
           (AmbientEmbedding.channelEmbedding-injective emb sourceEq) ambient)
+
+-- Focusing preserves the physical slot assigned to each process thread.
+focusImage-thread :
+  ∀ {k n c m : ℕ}
+  (ctx : ProcessContext k n)
+  (P : Typed.Proc k)
+  {logicalChannels :
+    Vec (OrientedChannel c) (Translation.channelCount (plug ctx P))}
+  {sigma : Translation.Env n (2 *ℕ c)}
+  {ambientChannel : 𝔽 c → Set}
+  {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config c m}
+  (image : LocalImage (plug ctx P) logicalChannels sigma
+    ambientChannel ambientThread C)
+  (i : 𝔽 (Translation.processCount P)) →
+  threadEmbedding (focused-image (focusImage ctx P image)) i ≡
+  threadEmbedding image (threadInContext ctx P i)
+focusImage-thread hole P image i = refl
+focusImage-thread (par-left ctx Q) P image i =
+  focusImage-thread ctx P (par-split-left image) i
+focusImage-thread (par-right Q ctx) P image i =
+  focusImage-thread ctx P (par-split-right image) i
+focusImage-thread (bind B₁ B₂ ctx) P
+  {logicalChannels = channel ∷ logicalChannels} image i =
+  focusImage-thread ctx P (res-split-image image) i
 
 ------------------------------------------------------------------------
 -- Separation follows the same descent as the image.  The focused ambient
