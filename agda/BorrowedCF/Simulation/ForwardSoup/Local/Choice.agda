@@ -102,6 +102,19 @@ record ChoiceStep
     choiceLabel : Source.Side
     choiceSelectTail choiceBranchTail : Soup.Thread n
 
+    choiceSelectHandleValue :
+      SoupExpression.Value
+        (SoupTerm._⊗_
+          (SoupTerm._⊗_ SoupTerm.*
+            (SoupTerm.` (Soup.endpoint choiceChannel choiceSide₁)))
+          choiceSelectTail)
+    choiceBranchHandleValue :
+      SoupExpression.Value
+        (SoupTerm._⊗_
+          (SoupTerm._⊗_ SoupTerm.*
+            (SoupTerm.` (Soup.endpoint choiceChannel choiceSide₂)))
+          choiceBranchTail)
+
     choiceSelectedSelect :
       lookup (Soup.threads C) choiceSelector ≡
       SoupExpression._[_]* choiceSelectFrame
@@ -374,6 +387,8 @@ choice-step {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
       ; choiceLabel = choice
       ; choiceSelectTail = tail₁
       ; choiceBranchTail = tail₂
+      ; choiceSelectHandleValue = subst SoupExpression.Value handleEq₁ (Venv 0F)
+      ; choiceBranchHandleValue = subst SoupExpression.Value handleEq₂ (Venv handleVar)
       ; choiceSelectedSelect = selected₁
       ; choiceSelectedBranch = selected₂
       ; choiceConfigStep = configStep
