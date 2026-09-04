@@ -30,6 +30,7 @@ module BorrowedCF.Simulation.BackwardSoup.TracksImage where
 
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat using () renaming (_*_ to _*ℕ_)
+open import Data.Maybe using (just)
 
 open import BorrowedCF.Prelude
 
@@ -506,3 +507,18 @@ restriction-swap-embedding
 ≋-image-tracks image (track-bwd {s = step} t rest) =
   ≋-image-tracks (proj₂ (≋′-image⁻ step image)) rest ■
   ≋′-image⁻-tracks image t
+
+-- The form used by backward leaves: a tracked source process position keeps
+-- its known physical soup slot after structural canonicalisation.
+≋-image-slot :
+  {k n m : ℕ} {P Q : Typed.Proc k}
+  {logicalChannels : Vec (OrientedChannel n) (Translation.channelCount P)}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config n m} {derivation : P Typed.≋ Q}
+  (image : LocalImage P logicalChannels sigma ambientChannel ambientThread C)
+  {a : 𝔽 (pc P)} {b : 𝔽 (pc Q)} {j : 𝔽 m} →
+  Tracks derivation a b →
+  threadEmbedding image a ≡ just j →
+  threadEmbedding (proj₂ (≋-image derivation image)) b ≡ just j
+≋-image-slot image tracks slot = ≋-image-tracks image tracks ■ slot
