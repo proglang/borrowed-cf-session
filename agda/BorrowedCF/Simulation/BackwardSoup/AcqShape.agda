@@ -4,23 +4,34 @@ module BorrowedCF.Simulation.BackwardSoup.AcqShape where
 open import Data.List.Relation.Unary.All as Allᴸ
   using ([]; _∷_) renaming (All to Allᴸ)
 open import Data.Nat.ListAction using (sum)
+open import Data.Nat using () renaming (_*_ to _*ℕ_)
 
 open import BorrowedCF.Prelude
 
 import BorrowedCF.Processes.Typed as Typed
 import BorrowedCF.Processes.TranslationSoup as Translation
 import BorrowedCF.Processes.UntypedSoup as Soup
+import BorrowedCF.Reduction.Processes.UntypedSoup as SoupReduction
 import BorrowedCF.Terms.BaseSoup as SoupTerm
 
 open import BorrowedCF.Simulation.ForwardSoup.Local.SplitCommon
   using ( bindFlags; pick; pick-pos; Ub-entry; UBFrom-cons-lo; UBFrom-lookupʳ
         ; UB-flags-shape)
 open import BorrowedCF.Simulation.BackwardSoup.Position
-  using (GroupOf; head-group; next-group)
+  using (GroupOf; head-group; next-group; SideOf; inl; inr; sideOf; groupOf)
 open import BorrowedCF.Simulation.BackwardSoup.Triple
-  using (chanTriple-injective)
+  using (chanTriple-injective; endpoint-injective)
 open import BorrowedCF.Simulation.BackwardSoup.Canonical
   using (AcqShape; acq-l; acq-r)
+open import BorrowedCF.Simulation.ForwardSoup.LocalImage
+  using ( OrientedChannel; physicalChannel; physicalEndpoint
+        ; orientSide; orientChannel)
+open import BorrowedCF.Simulation.ForwardSoup.LocalImage.Frame
+  using (bindEnv; bindChannel)
+open import BorrowedCF.Simulation.ForwardSoup.Local.Step
+  using (endpointFlags-orient)
+open import BorrowedCF.Simulation.ForwardSoup.Translation
+  using (++ₛ-lookupˡ; ++ₛ-lookupʳ)
 
 open Fin.Patterns
 
@@ -271,3 +282,161 @@ acq-shape-right B₁ B₂ typed r i group before after flagsEq entryEq
 ... | b , B′ , refl , refl
   with acq-entry-zero b B′ r i group entryEq
 ... | refl = acq-r B₁ b B′
+
+acq-bind-shape :
+  {n k : ℕ} (B₁ B₂ : Typed.BindGroup) →
+  Typed.⊢ᴮ B₁ → Typed.⊢ᴮ B₂ →
+  (channel : OrientedChannel n) →
+  (sigma : Translation.Env k (2 *ℕ n)) →
+  (local : 𝔽 (sum B₁ + sum B₂)) →
+  (cs : Vec Soup.Channel n) (physical : 𝔽 n) (side : 𝔽 2) →
+  (before after : List Soup.Flag) →
+  {tail : SoupTerm.Tm (2 *ℕ n)} →
+  lookup cs (physicalChannel channel) ≡ bindChannel B₁ B₂ channel →
+  bindEnv B₁ B₂ channel sigma (local ↑ˡ k) ≡
+    Translation.chanTriple
+      ( SoupTerm.`phi (Soup.endpoint physical side , L.length before)
+      , Soup.endpoint physical side
+      , tail ) →
+  SoupReduction.endpointFlags (lookup cs physical) side ≡
+    before ++ Soup.acq ∷ after →
+  AcqShape B₁ B₂ local
+acq-bind-shape {n = n} {k = k} B₁ B₂ typed₁ typed₂ channel sigma local
+  cs physical side before after {tail} channelEq entryEq flagsEq
+  with sideOf B₁ B₂ local
+... | inl i
+  with UB-entry-shape B₁ (physicalEndpoint channel 0F)
+         (physicalEndpoint channel 0F) SoupTerm.* SoupTerm.* i (groupOf B₁ i)
+... | left , right , ubEq =
+  acq-shape-left B₁ B₂ typed₁ (physicalEndpoint channel 0F) i
+    (groupOf B₁ i) before after
+    canonicalFlags canonicalEntry
+  where
+  orientation = proj₂ channel
+  end₁ = physicalEndpoint channel 0F
+  flags₁ = proj₂ (Translation.UB[ B₁ ] end₁ (SoupTerm.* , end₁ , SoupTerm.*))
+  end₂ = physicalEndpoint channel 1F
+  flags₂ = proj₂ (Translation.UB[ B₂ ] end₂ (SoupTerm.* , end₂ , SoupTerm.*))
+  baseChannel = true , flags₁ , flags₂
+
+  envEntryEq :
+    bindEnv B₁ B₂ channel sigma ((i ↑ˡ sum B₂) ↑ˡ k) ≡
+    proj₁ (Translation.UB[ B₁ ] end₁ (SoupTerm.* , end₁ , SoupTerm.*)) i
+  envEntryEq =
+    ++ₛ-lookupˡ
+      (proj₁ (Translation.UB[ B₁ ] end₁ (SoupTerm.* , end₁ , SoupTerm.*))
+       Translation.++ₛ
+       proj₁ (Translation.UB[ B₂ ] end₂ (SoupTerm.* , end₂ , SoupTerm.*)))
+      sigma (i ↑ˡ sum B₂)
+    ■ ++ₛ-lookupˡ
+        (proj₁ (Translation.UB[ B₁ ] end₁ (SoupTerm.* , end₁ , SoupTerm.*)))
+        (proj₁ (Translation.UB[ B₂ ] end₂ (SoupTerm.* , end₂ , SoupTerm.*))) i
+
+  endpointEq : end₁ ≡ Soup.endpoint physical side
+  endpointEq =
+    proj₁ (proj₂
+      (chanTriple-injective (sym ubEq ■ sym envEntryEq ■ entryEq)))
+
+  physicalEq = proj₁ (endpoint-injective {n = n} endpointEq)
+  sideEq = proj₂ (endpoint-injective {n = n} endpointEq)
+
+  concreteFlags :
+    SoupReduction.endpointFlags
+      (lookup cs (physicalChannel channel)) (orientSide orientation 0F) ≡
+    before ++ Soup.acq ∷ after
+  concreteFlags =
+    subst₂
+      (λ p s → SoupReduction.endpointFlags (lookup cs p) s ≡
+        before ++ Soup.acq ∷ after)
+      (sym physicalEq) (sym sideEq) flagsEq
+
+  canonicalFlags : flags₁ ≡ before ++ Soup.acq ∷ after
+  canonicalFlags =
+    sym (endpointFlags-orient orientation baseChannel 0F)
+    ■ sym
+        (cong
+          (λ ch → SoupReduction.endpointFlags ch (orientSide orientation 0F))
+          channelEq)
+    ■ concreteFlags
+
+  canonicalEntry :
+    proj₁ (Translation.UB[ B₁ ] end₁ (SoupTerm.* , end₁ , SoupTerm.*)) i ≡
+    Translation.chanTriple
+      (SoupTerm.`phi (end₁ , L.length before) , end₁ , tail)
+  canonicalEntry =
+    sym envEntryEq ■ entryEq
+    ■ sym
+        (cong
+          (λ endpoint → Translation.chanTriple
+            (SoupTerm.`phi (endpoint , L.length before) , endpoint , tail))
+          endpointEq)
+
+acq-bind-shape {n = n} {k = k} B₁ B₂ typed₁ typed₂ channel sigma
+  .(sum B₁ ↑ʳ i) cs physical side before after {tail}
+  channelEq entryEq flagsEq
+  | inr i
+  with UB-entry-shape B₂ (physicalEndpoint channel 1F)
+         (physicalEndpoint channel 1F) SoupTerm.* SoupTerm.* i (groupOf B₂ i)
+... | left , right , ubEq =
+  acq-shape-right B₁ B₂ typed₂ (physicalEndpoint channel 1F) i
+    (groupOf B₂ i) before after
+    canonicalFlags canonicalEntry
+  where
+  orientation = proj₂ channel
+  end₁ = physicalEndpoint channel 0F
+  flags₁ = proj₂ (Translation.UB[ B₁ ] end₁ (SoupTerm.* , end₁ , SoupTerm.*))
+  end₂ = physicalEndpoint channel 1F
+  flags₂ = proj₂ (Translation.UB[ B₂ ] end₂ (SoupTerm.* , end₂ , SoupTerm.*))
+  baseChannel = true , flags₁ , flags₂
+
+  envEntryEq :
+    bindEnv B₁ B₂ channel sigma ((sum B₁ ↑ʳ i) ↑ˡ k) ≡
+    proj₁ (Translation.UB[ B₂ ] end₂ (SoupTerm.* , end₂ , SoupTerm.*)) i
+  envEntryEq =
+    ++ₛ-lookupˡ
+      (proj₁ (Translation.UB[ B₁ ] end₁ (SoupTerm.* , end₁ , SoupTerm.*))
+       Translation.++ₛ
+       proj₁ (Translation.UB[ B₂ ] end₂ (SoupTerm.* , end₂ , SoupTerm.*)))
+      sigma (sum B₁ ↑ʳ i)
+    ■ ++ₛ-lookupʳ
+        (proj₁ (Translation.UB[ B₁ ] end₁ (SoupTerm.* , end₁ , SoupTerm.*)))
+        (proj₁ (Translation.UB[ B₂ ] end₂ (SoupTerm.* , end₂ , SoupTerm.*))) i
+
+  endpointEq : end₂ ≡ Soup.endpoint physical side
+  endpointEq =
+    proj₁ (proj₂
+      (chanTriple-injective (sym ubEq ■ sym envEntryEq ■ entryEq)))
+
+  physicalEq = proj₁ (endpoint-injective {n = n} endpointEq)
+  sideEq = proj₂ (endpoint-injective {n = n} endpointEq)
+
+  concreteFlags :
+    SoupReduction.endpointFlags
+      (lookup cs (physicalChannel channel)) (orientSide orientation 1F) ≡
+    before ++ Soup.acq ∷ after
+  concreteFlags =
+    subst₂
+      (λ p s → SoupReduction.endpointFlags (lookup cs p) s ≡
+        before ++ Soup.acq ∷ after)
+      (sym physicalEq) (sym sideEq) flagsEq
+
+  canonicalFlags : flags₂ ≡ before ++ Soup.acq ∷ after
+  canonicalFlags =
+    sym (endpointFlags-orient orientation baseChannel 1F)
+    ■ sym
+        (cong
+          (λ ch → SoupReduction.endpointFlags ch (orientSide orientation 1F))
+          channelEq)
+    ■ concreteFlags
+
+  canonicalEntry :
+    proj₁ (Translation.UB[ B₂ ] end₂ (SoupTerm.* , end₂ , SoupTerm.*)) i ≡
+    Translation.chanTriple
+      (SoupTerm.`phi (end₂ , L.length before) , end₂ , tail)
+  canonicalEntry =
+    sym envEntryEq ■ entryEq
+    ■ sym
+        (cong
+          (λ endpoint → Translation.chanTriple
+            (SoupTerm.`phi (endpoint , L.length before) , endpoint , tail))
+          endpointEq)
