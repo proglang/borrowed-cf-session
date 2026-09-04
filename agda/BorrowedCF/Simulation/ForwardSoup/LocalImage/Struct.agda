@@ -59,18 +59,19 @@ private
     VecP.cast-trans equal (sym equal) xs ■
     VecP.cast-is-id (equal ■ sym equal) xs
 
-  -- Transporting a local image along an equality of source processes.
-  proc-image :
-    {k n m : ℕ} {P Q : Typed.Proc k} → P ≡ Q →
-    {logicalChannels : Vec (OrientedChannel n) (Translation.channelCount P)}
-    {sigma : Translation.Env k (2 *ℕ n)}
-    {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
-    {C : Soup.Config n m} →
-    LocalImage P logicalChannels sigma ambientChannel ambientThread C →
-    Σ[ targetChannels ∈
-         Vec (OrientedChannel n) (Translation.channelCount Q) ]
-      LocalImage Q targetChannels sigma ambientChannel ambientThread C
-  proc-image refl image = -, image
+-- Transporting a local image along an equality of source processes.
+-- (Public: `BackwardSoup/TracksImage.agda` states the thread-map lemma for it.)
+proc-image :
+  {k n m : ℕ} {P Q : Typed.Proc k} → P ≡ Q →
+  {logicalChannels : Vec (OrientedChannel n) (Translation.channelCount P)}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config n m} →
+  LocalImage P logicalChannels sigma ambientChannel ambientThread C →
+  Σ[ targetChannels ∈
+       Vec (OrientedChannel n) (Translation.channelCount Q) ]
+    LocalImage Q targetChannels sigma ambientChannel ambientThread C
+proc-image refl image = -, image
 
 ------------------------------------------------------------------------
 -- Transporting a local image along the typed structural congruence.
