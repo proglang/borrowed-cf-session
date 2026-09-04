@@ -77,6 +77,68 @@ open Nat.Variables hiding (n′; m′)
 open Fin.Patterns
 
 ------------------------------------------------------------------------
+-- Exact evidence for the discard leaf.
+
+record DiscardStep
+  {k n m b₁ : ℕ} {B₁ B₂ : Typed.BindGroup}
+  {E : SourceReduction.Frame* (sum (b₁ ∷ B₁) + sum B₂ + k)}
+  {P : Typed.Proc (sum (b₁ ∷ B₁) + sum B₂ + k)}
+  {channel : OrientedChannel n}
+  {bodyChannels :
+    Vec (OrientedChannel n)
+      (Translation.channelCount (Typed._⋯ₚ_ P Source.weakenᵣ))}
+  (P′ : Typed.Proc k)
+  (sigma : Translation.Env k (2 *ℕ n))
+  (ambientChannel : 𝔽 n → Set)
+  (ambientThread : 𝔽 m → Set)
+  (C : Soup.Config n m)
+  (image : LocalImage
+    (Typed.ν (suc b₁ ∷ B₁) B₂
+      (Typed.⟪ SourceReduction._[_]*
+                 (SourceReduction._⋯ᶠ*_ E Source.weakenᵣ)
+                 (Source._·¹_ (Source.K Source.`discard)
+                   (Source.` 0F)) ⟫
+       Typed.∥ (Typed._⋯ₚ_ P Source.weakenᵣ)))
+    (channel ∷ bodyChannels) sigma ambientChannel ambientThread C) : Set where
+  field
+    discardThread : 𝔽 m
+    discardSlotEq : threadEmbedding image zero ≡ just discardThread
+
+    discardFrame : SoupExpression.Frame* (2 *ℕ n)
+    discardArgument discardTail : Soup.Thread n
+    discardEndpoint : 𝔽 (2 *ℕ n)
+
+    discardSourceValue :
+      SoupExpression.Value (bindEnv (suc b₁ ∷ B₁) B₂ channel sigma 0F)
+    discardTranslatedValue :
+      SoupExpression.Value discardArgument
+    discardArgument≡source :
+      discardArgument ≡ bindEnv (suc b₁ ∷ B₁) B₂ channel sigma 0F
+    discardArgument≡handle :
+      discardArgument ≡
+      Translation.chanTriple (SoupTerm.* , discardEndpoint , discardTail)
+
+    discardSelectedSource :
+      lookup (Soup.threads C) discardThread ≡
+      Translation.T[
+        SourceReduction._[_]*
+          (SourceReduction._⋯ᶠ*_ E Source.weakenᵣ)
+          (Source._·¹_ (Source.K Source.`discard) (Source.` 0F))
+      ] (bindEnv (suc b₁ ∷ B₁) B₂ channel sigma)
+    discardSelected :
+      lookup (Soup.threads C) discardThread ≡
+      SoupExpression._[_]* discardFrame
+        (SoupTerm._·¹_ (SoupTerm.K SoupTerm.`discard) discardArgument)
+
+    discardConfigStep :
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config (Soup.channels C)
+          (SoupReduction.replaceAt (Soup.threads C) discardThread
+            (SoupExpression._[_]* discardFrame SoupTerm.*)))
+
+open DiscardStep public
+
+------------------------------------------------------------------------
 -- The common part of the three cases: the head borrow disappears from the
 -- environment (`envCoherent`) and the bound channel keeps its content
 -- (`bindEqual`).
@@ -99,18 +161,20 @@ private
     bindChannel (suc b₁ ∷ B₁) B₂ channel ≡
       bindChannel (b₁ ∷ B₁) B₂ channel →
     ValueEnv sigma →
-    LocalImage
-      (Typed.ν (suc b₁ ∷ B₁) B₂
-        (Typed.⟪ SourceReduction._[_]*
-                   (SourceReduction._⋯ᶠ*_ E Source.weakenᵣ)
-                   (Source._·¹_ (Source.K Source.`discard)
-                     (Source.` 0F)) ⟫
-         Typed.∥ (Typed._⋯ₚ_ P Source.weakenᵣ)))
-      (channel ∷ bodyChannels) sigma ambientChannel ambientThread C →
-    LocalStep
+    (image : LocalImage
+        (Typed.ν (suc b₁ ∷ B₁) B₂
+          (Typed.⟪ SourceReduction._[_]*
+                     (SourceReduction._⋯ᶠ*_ E Source.weakenᵣ)
+                     (Source._·¹_ (Source.K Source.`discard)
+                       (Source.` 0F)) ⟫
+           Typed.∥ (Typed._⋯ₚ_ P Source.weakenᵣ)))
+        (channel ∷ bodyChannels) sigma ambientChannel ambientThread C) →
+    DiscardStep
+      {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P}
+      {channel = channel} {bodyChannels = bodyChannels}
       (Typed.ν (b₁ ∷ B₁) B₂
         (Typed.⟪ SourceReduction._[_]* E Source.* ⟫ Typed.∥ P))
-      sigma ambientChannel ambientThread C
+      sigma ambientChannel ambientThread C image
   discard-worker {k = k} {n = n} {m = m} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂}
     {E = E} {P = P} {channel = channel} {bodyChannels = bodyChannels}
     {sigma = sigma} {ambientChannel = aC} {ambientThread = aT} {C = C}
@@ -243,7 +307,10 @@ private
     dispatch :
       OptionalThreadImage {n = n} (Soup.threads C)
         (threadEmbedding left 0F) expected →
-      LocalStep reduct sigma aC aT C
+      DiscardStep
+        {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P}
+        {channel = channel} {bodyChannels = bodyChannels}
+        reduct sigma aC aT C image
 
     dispatch (omitted slotEq expectedEq) =
       ⊥-elim
@@ -253,8 +320,23 @@ private
            ■ expectedEq))
 
     dispatch (present j slotEq lookupEq) =
-      identity-step soupStep (λ _ _ → refl) ambientThreadsUnchanged
-        (res-join joined (chanEq ■ bindEq) notAmb)
+      record
+        { discardThread = j
+        ; discardSlotEq = slotEq
+        ; discardFrame = F
+        ; discardArgument = triple₁
+        ; discardTail = tail₁
+        ; discardEndpoint = end₁
+        ; discardSourceValue = Vsource 0F
+        ; discardTranslatedValue = Vtriple
+        ; discardArgument≡source = sym handleEq
+        ; discardArgument≡handle = refl
+        ; discardSelectedSource = lookupEq
+        ; discardSelected = selected
+        ; discardConfigStep =
+            identity-config-step soupStep (λ _ _ → refl) ambientThreadsUnchanged
+              (res-join joined (chanEq ■ bindEq) notAmb)
+        }
       where
       ----------------------------------------------------------------
       -- The step.
@@ -392,6 +474,62 @@ private
 ------------------------------------------------------------------------
 -- The leaf.
 
+discard-step :
+  {k n m b₁ : ℕ} {Γ : Context.Ctx k} {g : Context.Struct k}
+  {B₁ B₂ : Typed.BindGroup}
+  {E : SourceReduction.Frame* (sum (b₁ ∷ B₁) + sum B₂ + k)}
+  {P : Typed.Proc (sum (b₁ ∷ B₁) + sum B₂ + k)}
+  {channel : OrientedChannel n}
+  {bodyChannels :
+    Vec (OrientedChannel n)
+      (Translation.channelCount (Typed._⋯ₚ_ P Source.weakenᵣ))}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config n m} →
+  ChanCx Γ →
+  Γ ; g ⊢ₚ
+    Typed.ν (suc b₁ ∷ B₁) B₂
+      (Typed.⟪ SourceReduction._[_]*
+                 (SourceReduction._⋯ᶠ*_ E Source.weakenᵣ)
+                 (Source._·¹_ (Source.K Source.`discard)
+                   (Source.` 0F)) ⟫
+       Typed.∥ (Typed._⋯ₚ_ P Source.weakenᵣ)) →
+  ValueEnv sigma →
+  (image : LocalImage
+    (Typed.ν (suc b₁ ∷ B₁) B₂
+      (Typed.⟪ SourceReduction._[_]*
+                 (SourceReduction._⋯ᶠ*_ E Source.weakenᵣ)
+                 (Source._·¹_ (Source.K Source.`discard)
+                   (Source.` 0F)) ⟫
+       Typed.∥ (Typed._⋯ₚ_ P Source.weakenᵣ)))
+    (channel ∷ bodyChannels) sigma ambientChannel ambientThread C) →
+  DiscardStep
+    {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P}
+    {channel = channel} {bodyChannels = bodyChannels}
+    (Typed.ν (b₁ ∷ B₁) B₂
+      (Typed.⟪ SourceReduction._[_]* E Source.* ⟫ Typed.∥ P))
+    sigma ambientChannel ambientThread C image
+discard-step {b₁ = suc b′} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P}
+  {channel = channel} {bodyChannels = bodyChannels} {sigma = sigma}
+  Γ-S ⊢P Vsigma image =
+  discard-worker {b₁ = suc b′} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P}
+    {channel = channel} {bodyChannels = bodyChannels} {sigma = sigma}
+    (weakenᵣ-bindEnv-coh {b′ = b′} {B₁ = B₁} {B₂ = B₂}
+      {channel = channel} {sigma = sigma})
+    (bindChannel-drop {b′ = b′} {B₁ = B₁} {B₂ = B₂} {channel = channel})
+    Vsigma image
+discard-step {b₁ = zero} {B₁ = []} {B₂ = B₂} {E = E} {P = P}
+  {channel = channel} {bodyChannels = bodyChannels} {sigma = sigma}
+  Γ-S ⊢P Vsigma image =
+  discard-worker {b₁ = zero} {B₁ = []} {B₂ = B₂} {E = E} {P = P}
+    {channel = channel} {bodyChannels = bodyChannels} {sigma = sigma}
+    (weakenᵣ-bindEnv-coh-last {B₂ = B₂} {channel = channel} {sigma = sigma})
+    (bindChannel-last {B₂ = B₂} {channel = channel})
+    Vsigma image
+discard-step {b₁ = zero} {B₁ = c₀ ∷ B′} {E = E} {P = P}
+  Γ-S ⊢P Vsigma image =
+  ⊥-elim (discard-b0-vacuous {E = E} {P = P} ⊢P)
+
 U-discard-local :
   {k n m b₁ : ℕ} {Γ : Context.Ctx k} {g : Context.Struct k}
   {B₁ B₂ : Typed.BindGroup}
@@ -427,20 +565,24 @@ U-discard-local :
 U-discard-local {b₁ = suc b′} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P}
   {logicalChannels = channel ∷ bodyChannels} {sigma = sigma}
   Γ-S ⊢P Vsigma image =
-  discard-worker {b₁ = suc b′} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P}
-    {channel = channel} {bodyChannels = bodyChannels} {sigma = sigma}
-    (weakenᵣ-bindEnv-coh {b′ = b′} {B₁ = B₁} {B₂ = B₂}
-      {channel = channel} {sigma = sigma})
-    (bindChannel-drop {b′ = b′} {B₁ = B₁} {B₂ = B₂} {channel = channel})
-    Vsigma image
+  configStep⇒localStep
+    (discardConfigStep
+      (discard-step {b₁ = suc b′} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P}
+        {channel = channel} {bodyChannels = bodyChannels} {sigma = sigma}
+        Γ-S ⊢P Vsigma image))
 U-discard-local {b₁ = zero} {B₁ = []} {B₂ = B₂} {E = E} {P = P}
   {logicalChannels = channel ∷ bodyChannels} {sigma = sigma}
   Γ-S ⊢P Vsigma image =
-  discard-worker {b₁ = zero} {B₁ = []} {B₂ = B₂} {E = E} {P = P}
-    {channel = channel} {bodyChannels = bodyChannels} {sigma = sigma}
-    (weakenᵣ-bindEnv-coh-last {B₂ = B₂} {channel = channel} {sigma = sigma})
-    (bindChannel-last {B₂ = B₂} {channel = channel})
-    Vsigma image
+  configStep⇒localStep
+    (discardConfigStep
+      (discard-step {b₁ = zero} {B₁ = []} {B₂ = B₂} {E = E} {P = P}
+        {channel = channel} {bodyChannels = bodyChannels} {sigma = sigma}
+        Γ-S ⊢P Vsigma image))
 U-discard-local {b₁ = zero} {B₁ = c₀ ∷ B′} {E = E} {P = P}
+  {logicalChannels = channel ∷ bodyChannels} {sigma = sigma}
   Γ-S ⊢P Vsigma image =
-  ⊥-elim (discard-b0-vacuous {E = E} {P = P} ⊢P)
+  configStep⇒localStep
+    (discardConfigStep
+      (discard-step {b₁ = zero} {B₁ = c₀ ∷ B′} {E = E} {P = P}
+        {channel = channel} {bodyChannels = bodyChannels} {sigma = sigma}
+        Γ-S ⊢P Vsigma image))
