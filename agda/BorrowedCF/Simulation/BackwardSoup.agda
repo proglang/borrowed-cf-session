@@ -14,6 +14,7 @@ open import BorrowedCF.Simulation.BackwardSoup.CanonicalImage public
 open import BorrowedCF.Simulation.BackwardSoup.TypedInversion public
 open import BorrowedCF.Simulation.BackwardSoup.Unique public
 open import BorrowedCF.Simulation.BackwardSoup.Triple public
+open import BorrowedCF.Simulation.BackwardSoup.AcqShape public
 open import BorrowedCF.Simulation.BackwardSoup.Lift public
 open import BorrowedCF.Simulation.BackwardSoup.Leaves.Exp public
 open import BorrowedCF.Simulation.BackwardSoup.Leaves.Fork public

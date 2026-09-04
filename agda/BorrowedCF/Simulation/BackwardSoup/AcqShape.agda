@@ -13,11 +13,14 @@ import BorrowedCF.Processes.UntypedSoup as Soup
 import BorrowedCF.Terms.BaseSoup as SoupTerm
 
 open import BorrowedCF.Simulation.ForwardSoup.Local.SplitCommon
-  using (bindFlags; pick-pos; Ub-entry; UBFrom-cons-lo; UBFrom-lookupʳ)
+  using ( bindFlags; pick-pos; Ub-entry; UBFrom-cons-lo; UBFrom-lookupʳ
+        ; UB-flags-shape)
 open import BorrowedCF.Simulation.BackwardSoup.Position
   using (GroupOf; head-group; next-group)
 open import BorrowedCF.Simulation.BackwardSoup.Triple
   using (chanTriple-injective)
+open import BorrowedCF.Simulation.BackwardSoup.Canonical
+  using (AcqShape; acq-l; acq-r)
 
 open Fin.Patterns
 
@@ -183,3 +186,47 @@ acq-entry-zero b (c ∷ C) r i
           (UBFrom-lookupʳ 0 0 (suc b ∷ c ∷ C) r r
             SoupTerm.* SoupTerm.* (suc b ↑ʳ k))
        ■ equal))
+
+acq-shape-left :
+  {n : ℕ} (B₁ B₂ : Typed.BindGroup) →
+  Typed.⊢ᴮ B₁ →
+  (r : 𝔽 n) (i : 𝔽 (sum B₁)) →
+  GroupOf B₁ i →
+  (before after : List Soup.Flag) →
+  {tail : SoupTerm.Tm n} →
+  proj₂
+    (Translation.UB[ B₁ ] r (SoupTerm.* , r , SoupTerm.*)) ≡
+    before ++ Soup.acq ∷ after →
+  proj₁
+    (Translation.UB[ B₁ ] r (SoupTerm.* , r , SoupTerm.*)) i ≡
+    Translation.chanTriple
+      (SoupTerm.`phi (r , L.length before) , r , tail) →
+  AcqShape B₁ B₂ (i ↑ˡ sum B₂)
+acq-shape-left B₁ B₂ typed r i group before after flagsEq entryEq
+  with acq-flag-shape B₁ typed before after
+         (sym (UB-flags-shape B₁ r r SoupTerm.* SoupTerm.*) ■ flagsEq)
+... | b , B′ , refl , refl
+  with acq-entry-zero b B′ r i group entryEq
+... | refl = acq-l b B′ B₂
+
+acq-shape-right :
+  {n : ℕ} (B₁ B₂ : Typed.BindGroup) →
+  Typed.⊢ᴮ B₂ →
+  (r : 𝔽 n) (i : 𝔽 (sum B₂)) →
+  GroupOf B₂ i →
+  (before after : List Soup.Flag) →
+  {tail : SoupTerm.Tm n} →
+  proj₂
+    (Translation.UB[ B₂ ] r (SoupTerm.* , r , SoupTerm.*)) ≡
+    before ++ Soup.acq ∷ after →
+  proj₁
+    (Translation.UB[ B₂ ] r (SoupTerm.* , r , SoupTerm.*)) i ≡
+    Translation.chanTriple
+      (SoupTerm.`phi (r , L.length before) , r , tail) →
+  AcqShape B₁ B₂ (sum B₁ ↑ʳ i)
+acq-shape-right B₁ B₂ typed r i group before after flagsEq entryEq
+  with acq-flag-shape B₂ typed before after
+         (sym (UB-flags-shape B₂ r r SoupTerm.* SoupTerm.*) ■ flagsEq)
+... | b , B′ , refl , refl
+  with acq-entry-zero b B′ r i group entryEq
+... | refl = acq-r B₁ b B′
