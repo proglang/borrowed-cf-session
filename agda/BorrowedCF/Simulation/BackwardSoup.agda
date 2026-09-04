@@ -1,0 +1,16 @@
+-- | Aggregate interface for the soup-to-typed simulation development.
+module BorrowedCF.Simulation.BackwardSoup where
+
+open import BorrowedCF.Simulation.BackwardSoup.Statement public
+open import BorrowedCF.Simulation.BackwardSoup.Locate public
+open import BorrowedCF.Simulation.BackwardSoup.Inversion public
+open import BorrowedCF.Simulation.BackwardSoup.Position public
+open import BorrowedCF.Simulation.BackwardSoup.Canonical public
+open import BorrowedCF.Simulation.BackwardSoup.CanonicalPair public
+open import BorrowedCF.Simulation.BackwardSoup.Tracks public
+open import BorrowedCF.Simulation.BackwardSoup.TracksImage public
+open import BorrowedCF.Simulation.BackwardSoup.TypedInversion public
+open import BorrowedCF.Simulation.BackwardSoup.Unique public
+open import BorrowedCF.Simulation.BackwardSoup.Lift public
+open import BorrowedCF.Simulation.BackwardSoup.Leaves.Exp public
+open import BorrowedCF.Simulation.BackwardSoup.Leaves.Fork public
