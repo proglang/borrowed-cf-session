@@ -128,6 +128,21 @@ record CloseStep
             closeLeft (SoupExpression._[_]* closeLeftFrame SoupTerm.*)
             closeRight (SoupExpression._[_]* closeRightFrame SoupTerm.*)))
 
+    closeConfigStepAt :
+      {i : 𝔽 n} {j l : 𝔽 m}
+      {left′ right′ : Soup.Thread n} →
+      closeChannel ≡ i →
+      closeLeft ≡ j →
+      closeRight ≡ l →
+      SoupExpression._[_]* closeLeftFrame SoupTerm.* ≡ left′ →
+      SoupExpression._[_]* closeRightFrame SoupTerm.* ≡ right′ →
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config
+          (SoupReduction.replaceAt (Soup.channels C) i
+            (false , [] , []))
+          (SoupReduction.replaceTwo (Soup.threads C)
+            j left′ l right′))
+
 open CloseStep public
 
 close-step :
@@ -275,9 +290,9 @@ close-step {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
       ; closeRightFrame = F₂
       ; closeSelectedLeft = selected₁
       ; closeSelectedRight = selected₂
-      ; closeConfigStep =
-          identity-config-step soupStep channelsUnchanged threadsUnchanged
-            targetImage
+      ; closeConfigStep = configStep
+      ; closeConfigStepAt = λ where
+          refl refl refl refl refl → configStep
       }
     where
     j≢l : j ≢ l
@@ -388,6 +403,15 @@ close-step {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
       ; garbage-channel = λ i _ notAmbient → targetGarbageChannel i notAmbient
       ; garbage-thread = targetGarbageThread
       }
+
+    configStep :
+      ConfigStep
+        (Typed.⟪ SourceReduction._[_]* E₁ Source.* ⟫ Typed.∥
+         Typed.⟪ SourceReduction._[_]* E₂ Source.* ⟫)
+        sigma aC aT C (Soup.config targetChannels targetThreads)
+    configStep =
+      identity-config-step soupStep channelsUnchanged threadsUnchanged
+        targetImage
 
 U-close-local :
   {k n m : ℕ}
