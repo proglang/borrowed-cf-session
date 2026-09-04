@@ -138,6 +138,27 @@ record AcqStep
                   (SoupExpression._[_]* acqFrame
                     (Translation.chanTriple (SoupTerm.* , x , acqTail))))))
 
+    acqConfigStepAt :
+      {i : 𝔽 n} {side : 𝔽 2} {j : 𝔽 m}
+      {x : 𝔽 (2 *ℕ n)} {slot : ℕ} {after : List Soup.Flag}
+      {thread′ : Soup.Thread n} →
+      acqPhysicalChannel ≡ i →
+      acqPhysicalSide ≡ side →
+      acqThread ≡ j →
+      acqEndpoint ≡ x →
+      acqPhiSlot ≡ slot →
+      acqAfterFlags ≡ after →
+      SoupReduction.consumePhi acqEndpoint acqPhiSlot
+        (SoupExpression._[_]* acqFrame
+          (Translation.chanTriple
+            (SoupTerm.* , acqEndpoint , acqTail))) ≡ thread′ →
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config
+          (V.updateAt (Soup.channels C) i
+            (SoupReduction.setEndpointFlags side after))
+          (let ts′ = V.map (SoupReduction.consumePhi x slot) (Soup.threads C)
+           in SoupReduction.replaceAt ts′ j thread′))
+
 open AcqStep public
 
 ------------------------------------------------------------------------
@@ -407,6 +428,11 @@ acq-step {k = k} {n = n} {m = m} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂}
           identity-config-step
             soupStep ambientChannelsUnchanged ambientThreadsUnchanged
             (res-join joined newChanEq notAmb)
+      ; acqConfigStepAt = λ where
+          refl refl refl refl refl refl refl →
+            identity-config-step
+              soupStep ambientChannelsUnchanged ambientThreadsUnchanged
+              (res-join joined newChanEq notAmb)
       }
     where
     ------------------------------------------------------------------
