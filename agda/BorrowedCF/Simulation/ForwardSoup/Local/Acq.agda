@@ -89,6 +89,8 @@ record AcqStep
     acqPhysicalChannel : 𝔽 n
     acqPhysicalSide : 𝔽 2
     acqEndpoint : 𝔽 (2 *ℕ n)
+    acqEndpointShape :
+      acqEndpoint ≡ Soup.endpoint acqPhysicalChannel acqPhysicalSide
     acqPhiSlot : ℕ
     acqBeforeFlags acqAfterFlags : List Soup.Flag
 
@@ -410,6 +412,7 @@ acq-step {k = k} {n = n} {m = m} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂}
       ; acqPhysicalChannel = physical
       ; acqPhysicalSide = side₁
       ; acqEndpoint = end₁
+      ; acqEndpointShape = refl
       ; acqPhiSlot = 0
       ; acqBeforeFlags = []
       ; acqAfterFlags = tailFlags
