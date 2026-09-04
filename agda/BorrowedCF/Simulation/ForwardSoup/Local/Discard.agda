@@ -136,6 +136,14 @@ record DiscardStep
           (SoupReduction.replaceAt (Soup.threads C) discardThread
             (SoupExpression._[_]* discardFrame SoupTerm.*)))
 
+    discardConfigStepAt :
+      {j : 𝔽 m} {thread′ : Soup.Thread n} →
+      discardThread ≡ j →
+      SoupExpression._[_]* discardFrame SoupTerm.* ≡ thread′ →
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config (Soup.channels C)
+          (SoupReduction.replaceAt (Soup.threads C) j thread′))
+
 open DiscardStep public
 
 ------------------------------------------------------------------------
@@ -333,9 +341,9 @@ private
         ; discardArgument≡handle = refl
         ; discardSelectedSource = lookupEq
         ; discardSelected = selected
-        ; discardConfigStep =
-            identity-config-step soupStep (λ _ _ → refl) ambientThreadsUnchanged
-              (res-join joined (chanEq ■ bindEq) notAmb)
+        ; discardConfigStep = configStep
+        ; discardConfigStepAt = λ where
+            refl refl → configStep
         }
       where
       ----------------------------------------------------------------
@@ -470,6 +478,11 @@ private
                   ■ owned
                   )
                 ))
+
+      configStep : ConfigStep reduct sigma aC aT C targetConfig
+      configStep =
+        identity-config-step soupStep (λ _ _ → refl) ambientThreadsUnchanged
+          (res-join joined (chanEq ■ bindEq) notAmb)
 
 ------------------------------------------------------------------------
 -- The leaf.
