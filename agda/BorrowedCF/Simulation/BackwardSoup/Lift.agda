@@ -41,6 +41,8 @@ open import BorrowedCF.Simulation.ForwardSoup.LocalImage.SeparationFrame
   using (separated-bind; separated-par-left; separated-par-right)
 open import BorrowedCF.Simulation.ForwardSoup.World.Embedding
   using (Transport; AmbientEmbedding; module AmbientEmbedding)
+open import BorrowedCF.Simulation.ForwardSoup.World
+  using (GlobalImage)
 
 open Nat.Variables hiding (n′; m′)
 open Fin.Patterns
@@ -633,3 +635,24 @@ focusSeparated (bind B₁ B₂ ctx) P
   focusSeparated ctx P
     (separated-bind {B₁ = B₁} {B₂ = B₂} separated)
     (res-split-image image)
+
+------------------------------------------------------------------------
+-- Close an exact step after it has been lifted to the top level.  Empty
+-- source ambients remain logically empty after transport, and the renamed
+-- empty environment is pointwise equal to the empty environment.
+
+closeConfigStep :
+  {P′ : Typed.Proc 0} {n m n′ m′ : ℕ}
+  {C : Soup.Config n m} {C′ : Soup.Config n′ m′} →
+  ConfigStep P′ (λ ()) (λ _ → ⊥) (λ _ → ⊥) C C′ →
+  GlobalImage P′ C′
+closeConfigStep step = record
+  { logicalChannels = ConfigStep.config-logicalChannels′ step
+  ; localImage =
+      ambient-resp
+        (λ _ transported → proj₁ (proj₂ transported))
+        (λ _ → ⊥-elim)
+        (λ _ transported → proj₁ (proj₂ transported))
+        (λ _ → ⊥-elim)
+        (env-resp (λ ()) (ConfigStep.config-image′ step))
+  }
