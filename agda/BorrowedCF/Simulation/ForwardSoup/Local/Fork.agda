@@ -47,13 +47,19 @@ private
 record ForkStep
   {k n m : ℕ}
   {E : SourceReduction.Frame* k} {e : Source.Tm k}
+  {logicalChannels : Vec (OrientedChannel n) 0}
   (P′ : Typed.Proc k)
   (sigma : Translation.Env k (2 *ℕ n))
   (ambientChannel : 𝔽 n → Set)
   (ambientThread : 𝔽 m → Set)
-  (C : Soup.Config n m) : Set where
+  (C : Soup.Config n m)
+  (image : LocalImage
+    (Typed.⟪ SourceReduction._[_]* E
+      (Source._·¹_ (Source.K Source.`fork) e) ⟫)
+    logicalChannels sigma ambientChannel ambientThread C) : Set where
   field
     forkParent : 𝔽 m
+    forkSlotEq : threadEmbedding image zero ≡ just forkParent
     forkSourceFrame : SourceReduction.Frame* k
     forkSourceFrame≡ : forkSourceFrame ≡ E
 
@@ -99,14 +105,14 @@ fork-step :
   {C : Soup.Config n m} →
   ValueEnv sigma →
   SourceReduction.Value e →
-  LocalImage
+  (image : LocalImage
     (Typed.⟪ SourceReduction._[_]* E
                (Source._·¹_ (Source.K Source.`fork) e) ⟫)
-    logicalChannels sigma ambientChannel ambientThread C →
+    logicalChannels sigma ambientChannel ambientThread C) →
   ForkStep {E = E} {e = e}
     (Typed.⟪ SourceReduction._[_]* E Source.* ⟫ Typed.∥
      Typed.⟪ Source._·¹_ e Source.* ⟫)
-    sigma ambientChannel ambientThread C
+    sigma ambientChannel ambientThread C image
 fork-step {n = n} {m = m} {E = E} {e = e}
   {logicalChannels = []} {sigma = sigma}
   {ambientChannel = aC} {ambientThread = aT} {C = C} Vsigma Ve image
@@ -123,6 +129,7 @@ fork-step {n = n} {m = m} {E = E} {e = e}
 
 ... | present j slotEq lookupEq = record
   { forkParent = j
+  ; forkSlotEq = slotEq
   ; forkSourceFrame = E
   ; forkSourceFrame≡ = refl
   ; forkFrame = F

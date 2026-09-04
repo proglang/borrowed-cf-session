@@ -32,13 +32,17 @@ open Nat.Variables hiding (n′; m′)
 
 record ExpStep
   {k n m : ℕ} {e e′ : Source.Tm k}
+  {logicalChannels : Vec (OrientedChannel n) 0}
   (P′ : Typed.Proc k)
   (sigma : Translation.Env k (2 *ℕ n))
   (ambientChannel : 𝔽 n → Set)
   (ambientThread : 𝔽 m → Set)
-  (C : Soup.Config n m) : Set where
+  (C : Soup.Config n m)
+  (image : LocalImage (Typed.⟪ e ⟫) logicalChannels sigma
+    ambientChannel ambientThread C) : Set where
   field
     expThread : 𝔽 m
+    expSlotEq : threadEmbedding image zero ≡ just expThread
 
     expSelectedThread :
       lookup (Soup.threads C) expThread ≡ Translation.T[ e ] sigma
@@ -63,11 +67,11 @@ exp-step :
   {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
   {C : Soup.Config n m} →
   ValueEnv sigma →
-  LocalImage (Typed.⟪ e ⟫) logicalChannels sigma
-    ambientChannel ambientThread C →
+  (image : LocalImage (Typed.⟪ e ⟫) logicalChannels sigma
+    ambientChannel ambientThread C) →
   e SourceReduction.⋯→ e′ →
   ExpStep {e = e} {e′ = e′}
-    (Typed.⟪ e′ ⟫) sigma ambientChannel ambientThread C
+    (Typed.⟪ e′ ⟫) sigma ambientChannel ambientThread C image
 exp-step {n = n} {m = m} {e = e} {e′ = e′} {logicalChannels = []} {sigma = sigma}
   {ambientChannel = ambientChannel} {ambientThread = ambientThread} {C = C}
   Vsigma image red
@@ -87,6 +91,7 @@ exp-step {n = n} {m = m} {e = e} {e′ = e′} {logicalChannels = []} {sigma = s
 
 ... | present j slotEq lookupEq = record
   { expThread = j
+  ; expSlotEq = slotEq
   ; expSelectedThread = lookupEq
   ; expSourceStep = red
   ; expTranslatedStep = selectedStep
