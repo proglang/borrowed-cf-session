@@ -62,31 +62,111 @@ open Nat.Variables hiding (n′; m′)
 open Fin.Patterns
 
 ------------------------------------------------------------------------
--- The leaf.
+-- Exact evidence for the acquire leaf.
 
-U-acq-local :
+record AcqStep
   {k n m b₁ : ℕ} {B₁ B₂ : Typed.BindGroup}
   {E : SourceReduction.Frame* (sum (suc b₁ ∷ B₁) + sum B₂ + k)}
   {P : Typed.Proc (sum (suc b₁ ∷ B₁) + sum B₂ + k)}
-  {logicalChannels :
-    Vec (OrientedChannel n) (suc (Translation.channelCount P))}
+  {channel : OrientedChannel n}
+  {bodyChannels :
+    Vec (OrientedChannel n) (Translation.channelCount P)}
+  (P′ : Typed.Proc k)
+  (sigma : Translation.Env k (2 *ℕ n))
+  (ambientChannel : 𝔽 n → Set)
+  (ambientThread : 𝔽 m → Set)
+  (C : Soup.Config n m)
+  (image : LocalImage
+    (Typed.ν (0 ∷ suc b₁ ∷ B₁) B₂
+      (Typed.⟪ SourceReduction._[_]* E
+                 (Source._·¹_ (Source.K Source.`acq) (Source.` 0F)) ⟫
+       Typed.∥ P))
+    (channel ∷ bodyChannels) sigma ambientChannel ambientThread C) : Set where
+  field
+    acqThread : 𝔽 m
+    acqSlotEq : threadEmbedding image zero ≡ just acqThread
+
+    acqPhysicalChannel : 𝔽 n
+    acqPhysicalSide : 𝔽 2
+    acqEndpoint : 𝔽 (2 *ℕ n)
+    acqPhiSlot : ℕ
+    acqBeforeFlags acqAfterFlags : List Soup.Flag
+
+    acqFrame : SoupExpression.Frame* (2 *ℕ n)
+    acqTail acqArgument : Soup.Thread n
+
+    acqSourceValue :
+      SoupExpression.Value
+        (bindEnv (0 ∷ suc b₁ ∷ B₁) B₂ channel sigma 0F)
+    acqTranslatedValue :
+      SoupExpression.Value acqArgument
+    acqArgument≡source :
+      acqArgument ≡ bindEnv (0 ∷ suc b₁ ∷ B₁) B₂ channel sigma 0F
+    acqArgument≡handle :
+      acqArgument ≡
+      Translation.chanTriple
+        (SoupTerm.`phi (acqEndpoint , acqPhiSlot) , acqEndpoint , acqTail)
+
+    acqChannelOpen :
+      proj₁ (lookup (Soup.channels C) acqPhysicalChannel) ≡ true
+    acqChannelFlags :
+      SoupReduction.endpointFlags
+        (lookup (Soup.channels C) acqPhysicalChannel) acqPhysicalSide ≡
+      acqBeforeFlags L.++ Soup.acq ∷ acqAfterFlags
+
+    acqSelectedSource :
+      lookup (Soup.threads C) acqThread ≡
+      Translation.T[
+        SourceReduction._[_]* E
+          (Source._·¹_ (Source.K Source.`acq) (Source.` 0F))
+      ] (bindEnv (0 ∷ suc b₁ ∷ B₁) B₂ channel sigma)
+    acqSelected :
+      lookup (Soup.threads C) acqThread ≡
+      SoupExpression._[_]* acqFrame
+        (SoupTerm._·¹_ (SoupTerm.K SoupTerm.`acq) acqArgument)
+
+    acqConfigStep :
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config
+          (V.updateAt (Soup.channels C) acqPhysicalChannel
+            (SoupReduction.setEndpointFlags acqPhysicalSide acqAfterFlags))
+          (let x = acqEndpoint
+               k = acqPhiSlot
+               ts′ = V.map (SoupReduction.consumePhi x k) (Soup.threads C)
+           in SoupReduction.replaceAt ts′ acqThread
+                (SoupReduction.consumePhi x k
+                  (SoupExpression._[_]* acqFrame
+                    (Translation.chanTriple (SoupTerm.* , x , acqTail))))))
+
+open AcqStep public
+
+------------------------------------------------------------------------
+-- The leaf.
+
+acq-step :
+  {k n m b₁ : ℕ} {B₁ B₂ : Typed.BindGroup}
+  {E : SourceReduction.Frame* (sum (suc b₁ ∷ B₁) + sum B₂ + k)}
+  {P : Typed.Proc (sum (suc b₁ ∷ B₁) + sum B₂ + k)}
+  {channel : OrientedChannel n}
+  {bodyChannels :
+    Vec (OrientedChannel n) (Translation.channelCount P)}
   {sigma : Translation.Env k (2 *ℕ n)}
   {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
   {C : Soup.Config n m} →
   Separated sigma ambientChannel ambientThread C →
   ValueEnv sigma →
-  LocalImage
+  (image : LocalImage
     (Typed.ν (0 ∷ suc b₁ ∷ B₁) B₂
       (Typed.⟪ SourceReduction._[_]* E
                  (Source._·¹_ (Source.K Source.`acq) (Source.` 0F)) ⟫
        Typed.∥ P))
-    logicalChannels sigma ambientChannel ambientThread C →
-  LocalStep
+    (channel ∷ bodyChannels) sigma ambientChannel ambientThread C) →
+  AcqStep
     (Typed.ν (suc b₁ ∷ B₁) B₂
       (Typed.⟪ SourceReduction._[_]* E (Source.` 0F) ⟫ Typed.∥ P))
-    sigma ambientChannel ambientThread C
-U-acq-local {k = k} {n = n} {m = m} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂}
-  {E = E} {P = P} {logicalChannels = channel ∷ bodyChannels}
+    sigma ambientChannel ambientThread C image
+acq-step {k = k} {n = n} {m = m} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂}
+  {E = E} {P = P} {channel = channel} {bodyChannels = bodyChannels}
   {sigma = sigma} {ambientChannel = aC} {ambientThread = aT} {C = C}
   separated Vsigma image =
   dispatch (live-thread left 0F)
@@ -293,15 +373,41 @@ U-acq-local {k = k} {n = n} {m = m} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂}
   dispatch :
     OptionalThreadImage {n = n} (Soup.threads C)
       (threadEmbedding left 0F) expected →
-    LocalStep reduct sigma aC aT C
+    AcqStep
+      {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {E = E} {P = P}
+      {channel = channel} {bodyChannels = bodyChannels}
+      reduct sigma aC aT C image
 
   dispatch (omitted slotEq expectedEq) =
     ⊥-elim
       (plug-not-K F (sym (T[_]-plugᶠ* E {e = redex} Venv) ■ expectedEq))
 
   dispatch (present j slotEq lookupEq) =
-    identity-step soupStep ambientChannelsUnchanged ambientThreadsUnchanged
-      (res-join joined newChanEq notAmb)
+    record
+      { acqThread = j
+      ; acqSlotEq = slotEq
+      ; acqPhysicalChannel = physical
+      ; acqPhysicalSide = side₁
+      ; acqEndpoint = end₁
+      ; acqPhiSlot = 0
+      ; acqBeforeFlags = []
+      ; acqAfterFlags = tailFlags
+      ; acqFrame = F
+      ; acqTail = tail₁
+      ; acqArgument = triple₁
+      ; acqSourceValue = Venv 0F
+      ; acqTranslatedValue = subst SoupExpression.Value handleEq (Venv 0F)
+      ; acqArgument≡source = sym handleEq
+      ; acqArgument≡handle = refl
+      ; acqChannelOpen = openEq
+      ; acqChannelFlags = flagsEq
+      ; acqSelectedSource = lookupEq
+      ; acqSelected = selected
+      ; acqConfigStep =
+          identity-config-step
+            soupStep ambientChannelsUnchanged ambientThreadsUnchanged
+            (res-join joined newChanEq notAmb)
+      }
     where
     ------------------------------------------------------------------
     -- The step.
@@ -470,3 +576,36 @@ U-acq-local {k = k} {n = n} {m = m} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂}
         (λ {i} {l′} embedded → inj₂ (i , embedded))
         (λ _ → inj₁) (λ _ → inj₁) (λ _ → inj₁) (λ _ → inj₁)
         (λ _ ambient → ambient) (λ _ ambient → ambient)
+
+U-acq-local :
+  {k n m b₁ : ℕ} {B₁ B₂ : Typed.BindGroup}
+  {E : SourceReduction.Frame* (sum (suc b₁ ∷ B₁) + sum B₂ + k)}
+  {P : Typed.Proc (sum (suc b₁ ∷ B₁) + sum B₂ + k)}
+  {logicalChannels :
+    Vec (OrientedChannel n) (suc (Translation.channelCount P))}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config n m} →
+  Separated sigma ambientChannel ambientThread C →
+  ValueEnv sigma →
+  LocalImage
+    (Typed.ν (0 ∷ suc b₁ ∷ B₁) B₂
+      (Typed.⟪ SourceReduction._[_]* E
+                 (Source._·¹_ (Source.K Source.`acq) (Source.` 0F)) ⟫
+       Typed.∥ P))
+    logicalChannels sigma ambientChannel ambientThread C →
+  LocalStep
+    (Typed.ν (suc b₁ ∷ B₁) B₂
+      (Typed.⟪ SourceReduction._[_]* E (Source.` 0F) ⟫ Typed.∥ P))
+    sigma ambientChannel ambientThread C
+U-acq-local {k = k} {n = n} {m = m} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂}
+  {E = E} {P = P} {logicalChannels = channel ∷ bodyChannels}
+  {sigma = sigma} {ambientChannel = ambientChannel}
+  {ambientThread = ambientThread} {C = C} separated Vsigma image =
+  configStep⇒localStep
+    (acqConfigStep
+      (acq-step {k = k} {n = n} {m = m} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂}
+        {E = E} {P = P} {channel = channel} {bodyChannels = bodyChannels}
+        {sigma = sigma} {ambientChannel = ambientChannel}
+        {ambientThread = ambientThread} {C = C}
+        separated Vsigma image))
