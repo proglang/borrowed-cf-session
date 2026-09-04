@@ -13,7 +13,7 @@ import BorrowedCF.Processes.UntypedSoup as Soup
 import BorrowedCF.Terms.BaseSoup as SoupTerm
 
 open import BorrowedCF.Simulation.ForwardSoup.Local.SplitCommon
-  using ( bindFlags; pick-pos; Ub-entry; UBFrom-cons-lo; UBFrom-lookupʳ
+  using ( bindFlags; pick; pick-pos; Ub-entry; UBFrom-cons-lo; UBFrom-lookupʳ
         ; UB-flags-shape)
 open import BorrowedCF.Simulation.BackwardSoup.Position
   using (GroupOf; head-group; next-group)
@@ -98,6 +98,37 @@ private
           (SoupTerm.`phi (r , slot)) right i)
        ■ equal)
 
+  ub-from-entry-shape :
+    {n : ℕ} (slot : ℕ) (B : Typed.BindGroup) (r c : 𝔽 n)
+    (left right : SoupTerm.Tm n) (i : 𝔽 (sum B)) →
+    GroupOf B i →
+    Σ[ left′ ∈ SoupTerm.Tm n ] Σ[ right′ ∈ SoupTerm.Tm n ]
+      proj₁ (Translation.UBFrom slot B r (left , c , right)) i ≡
+      Translation.chanTriple (left′ , c , right′)
+  ub-from-entry-shape slot [] r c left right i ()
+  ub-from-entry-shape slot (b ∷ []) r c left right .(j ↑ˡ 0)
+    (head-group .[] j) =
+    pick (Fin.toℕ (j ↑ˡ 0)) left
+    , pick ((b + 0) Nat.∸ suc (Fin.toℕ (j ↑ˡ 0))) right
+    , Ub-entry (b + 0) c left right (j ↑ˡ 0)
+  ub-from-entry-shape slot (b ∷ b′ ∷ B′) r c left right
+    .(j ↑ˡ sum (b′ ∷ B′)) (head-group .(b′ ∷ B′) j) =
+    pick (Fin.toℕ j) left
+    , pick (b Nat.∸ suc (Fin.toℕ j)) (SoupTerm.`phi (r , slot))
+    , (UBFrom-cons-lo slot b b′ B′ r c left right
+        (j ↑ˡ sum (b′ ∷ B′)) j
+        (Fin.toℕ-↑ˡ j (sum (b′ ∷ B′)))
+      ■ Ub-entry b c left (SoupTerm.`phi (r , slot)) j)
+  ub-from-entry-shape slot (b ∷ []) r c left right i
+    (next-group .b ())
+  ub-from-entry-shape slot (b ∷ b′ ∷ B′) r c left right
+    .(b ↑ʳ i) (next-group .b {i = i} g)
+    with ub-from-entry-shape (suc slot) (b′ ∷ B′) r c
+           (SoupTerm.`phi (r , slot)) right i g
+  ... | left′ , right′ , entryEq =
+    left′ , right′
+    , (UBFrom-lookupʳ slot b (b′ ∷ B′) r c left right i ■ entryEq)
+
   all-positive-no-acq :
     {B : Typed.BindGroup} →
     Allᴸ NonZero B →
@@ -174,6 +205,7 @@ acq-entry-zero b (c ∷ C) r i
             SoupTerm.* SoupTerm.*
             (suc j ↑ˡ sum (c ∷ C)))
        ■ equal))
+
 acq-entry-zero b [] r i (next-group .zero (next-group .(suc b) ())) equal
 acq-entry-zero b (c ∷ C) r i
   (next-group .zero (next-group .(suc b) {i = k} g)) {tail} equal =
@@ -186,6 +218,15 @@ acq-entry-zero b (c ∷ C) r i
           (UBFrom-lookupʳ 0 0 (suc b ∷ c ∷ C) r r
             SoupTerm.* SoupTerm.* (suc b ↑ʳ k))
        ■ equal))
+
+UB-entry-shape :
+  {n : ℕ} (B : Typed.BindGroup) (r c : 𝔽 n)
+  (left right : SoupTerm.Tm n) (i : 𝔽 (sum B)) →
+  GroupOf B i →
+  Σ[ left′ ∈ SoupTerm.Tm n ] Σ[ right′ ∈ SoupTerm.Tm n ]
+    proj₁ (Translation.UB[ B ] r (left , c , right)) i ≡
+    Translation.chanTriple (left′ , c , right′)
+UB-entry-shape = ub-from-entry-shape zero
 
 acq-shape-left :
   {n : ℕ} (B₁ B₂ : Typed.BindGroup) →
