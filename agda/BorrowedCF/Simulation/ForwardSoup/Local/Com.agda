@@ -266,6 +266,18 @@ record ComStep
     comSendFrame comRecvFrame : SoupExpression.Frame* (2 *ℕ n)
     comMessage comSendTail comRecvTail : Soup.Thread n
     comMessageValue : SoupExpression.Value comMessage
+    comSendHandleValue :
+      SoupExpression.Value
+        (Translation.chanTriple
+          ( SoupTerm.*
+          , Soup.endpoint comChannel comSide₁
+          , comSendTail ))
+    comRecvHandleValue :
+      SoupExpression.Value
+        (Translation.chanTriple
+          ( SoupTerm.*
+          , Soup.endpoint comChannel comSide₂
+          , comRecvTail ))
 
     comSelectedSend :
       lookup (Soup.threads C) comSender ≡
@@ -291,6 +303,16 @@ record ComStep
           (SoupReduction.replaceTwo (Soup.threads C)
             comSender (SoupExpression._[_]* comSendFrame SoupTerm.*)
             comReceiver (SoupExpression._[_]* comRecvFrame comMessage)))
+
+    comConfigStepAt :
+      {j l : 𝔽 m} {send′ recv′ : Soup.Thread n} →
+      comSender ≡ j →
+      comReceiver ≡ l →
+      SoupExpression._[_]* comSendFrame SoupTerm.* ≡ send′ →
+      SoupExpression._[_]* comRecvFrame comMessage ≡ recv′ →
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config (Soup.channels C)
+          (SoupReduction.replaceTwo (Soup.threads C) j send′ l recv′))
 
 open ComStep public
 
@@ -657,11 +679,17 @@ com-step {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
       ; comSendTail = tail₁
       ; comRecvTail = tail₂
       ; comMessageValue = Vmessage
+      ; comSendHandleValue = sendHandleValue
+      ; comRecvHandleValue = recvHandleValue
       ; comSelectedSend = selected₁
       ; comSelectedRecv = selected₂
       ; comConfigStep =
           identity-config-step soupStep (λ _ _ → refl) ambientThreadsUnchanged
             (res-join joined (chanEq ■ bindEq) notAmb)
+      ; comConfigStepAt = λ where
+          refl refl refl refl →
+            identity-config-step soupStep (λ _ _ → refl) ambientThreadsUnchanged
+              (res-join joined (chanEq ■ bindEq) notAmb)
       }
     where
     j≢l : j ≢ l
@@ -702,6 +730,20 @@ com-step {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
             SoupExpression._[_]* F₂
               (SoupTerm._·¹_ (SoupTerm.K SoupTerm.`recv) handle))
           handleEq₂
+
+    sendHandleValue :
+      SoupExpression.Value
+        (Translation.chanTriple
+          (SoupTerm.* , Soup.endpoint physical side₁ , tail₁))
+    sendHandleValue =
+      subst SoupExpression.Value handleEq₁ (Vsource 0F)
+
+    recvHandleValue :
+      SoupExpression.Value
+        (Translation.chanTriple
+          (SoupTerm.* , Soup.endpoint physical side₂ , tail₂))
+    recvHandleValue =
+      subst SoupExpression.Value handleEq₂ (Vsource handleVar)
 
     targetThreads : Vec (Soup.Thread n) m
     targetThreads =
