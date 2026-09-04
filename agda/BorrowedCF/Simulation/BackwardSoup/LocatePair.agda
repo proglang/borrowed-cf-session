@@ -7,15 +7,19 @@ open import Data.Maybe using (just)
 
 open import BorrowedCF.Prelude
 
+import BorrowedCF.Context as Context
 import BorrowedCF.Processes.Typed as Typed
 import BorrowedCF.Processes.TranslationSoup as Translation
 import BorrowedCF.Processes.UntypedSoup as Soup
 import BorrowedCF.Terms.Base as Source
 import BorrowedCF.Terms.BaseSoup as SoupTerm
+import BorrowedCF.Types as Types
+
+open import BorrowedCF.Reduction.Base using (ChanCx)
 
 open import BorrowedCF.Simulation.BackwardSoup.Locate
   using ( Located; located; ProcessContext; plug; threadInContext; locate
-        ; focusEnv; thread-content; image-thread)
+        ; focusEnv; thread-content; image-thread; focusExprTyping)
 open import BorrowedCF.Simulation.BackwardSoup.CanonicalPair
   using ( ProcessContext₂; par₂; par₂ˢ; left₂; right₂; bind₂
         ; plug₂; plug-fill₂; plug-fill₁; fill₂; fill₁
@@ -29,6 +33,8 @@ open import BorrowedCF.Simulation.ForwardSoup.World
 
 open Nat.Variables
 open Fin.Patterns
+open Typed using (_;_⊢ₚ_)
+open Source using (_;_⊢_∶_∣_)
 
 ------------------------------------------------------------------------
 -- The equality-indexed presentation avoids transporting process indices
@@ -208,6 +214,29 @@ image-thread-pair {P = P} image j l slots-apart live₁ live₂
         (sym embedded₁
          ■ cong (threadEmbedding (localImage image)) equal
          ■ embedded₂))
+
+------------------------------------------------------------------------
+-- Type both located expressions by viewing the common two-hole context as
+-- each of its two one-hole projections.
+
+focusPairExprTyping :
+  (ctx : ProcessContext₂ k₁ k₂ n)
+  (e₁ : Source.Tm k₁) (e₂ : Source.Tm k₂)
+  {Γ : Context.Ctx n} {γ : Context.Struct n} →
+  ChanCx Γ →
+  Γ ; γ ⊢ₚ plug₂ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫ →
+  (Σ[ Γ₁ ∈ Context.Ctx k₁ ] Σ[ γ₁ ∈ Context.Struct k₁ ]
+    ChanCx Γ₁ × (Γ₁ ; γ₁ ⊢ e₁ ∶ Types.`⊤ ∣ Types.𝕀)) ×
+  (Σ[ Γ₂ ∈ Context.Ctx k₂ ] Σ[ γ₂ ∈ Context.Struct k₂ ]
+    ChanCx Γ₂ × (Γ₂ ; γ₂ ⊢ e₂ ∶ Types.`⊤ ∣ Types.𝕀))
+focusPairExprTyping ctx e₁ e₂ {Γ = Γ} {γ = γ} Γ-S ⊢P =
+  focusExprTyping (fill₂ ctx Typed.⟪ e₂ ⟫) e₁ Γ-S
+    (subst (Γ ; γ ⊢ₚ_)
+      (sym (plug-fill₂ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)) ⊢P)
+  ,
+  focusExprTyping (fill₁ ctx Typed.⟪ e₁ ⟫) e₂ Γ-S
+    (subst (Γ ; γ ⊢ₚ_)
+      (sym (plug-fill₁ ctx Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)) ⊢P)
 
 ------------------------------------------------------------------------
 -- Content of the two holes.  `plug-fill₂` and `plug-fill₁` are only
