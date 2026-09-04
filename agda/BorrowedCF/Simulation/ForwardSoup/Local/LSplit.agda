@@ -103,6 +103,50 @@ private
   ownedChannels-cast⁻ refl xs i owned =
     subst (λ ys → ownedChannels ys i) (sym (V.cast-is-id refl xs)) owned
 
+  record LSplitCore
+    {k n m q b₁ kk : ℕ} {B₁ B₂ B : Typed.BindGroup} {s : Types.𝕊 0}
+    {rho :
+      𝔽 kk → 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + k)}
+    {E₀ : SourceReduction.Frame* kk}
+    {P₀ : Typed.Proc kk}
+    (P′ : Typed.Proc k)
+    (sigma : Translation.Env k (2 *ℕ n))
+    (ambientChannel : 𝔽 n → Set)
+    (ambientThread : 𝔽 m → Set)
+    (C : Soup.Config n m) : Set where
+    field
+      coreThread : 𝔽 m
+      coreChannel : 𝔽 n
+      coreSide : 𝔽 2
+      coreOpen : SoupReduction.is-open (Soup.channels C) coreChannel
+
+      coreFrame : SoupExpression.Frame* (2 *ℕ n)
+      coreHandleLeft : SoupTerm.Tm (2 *ℕ n)
+      coreHandleEnd : 𝔽 (2 *ℕ n)
+      coreHandleRight : SoupTerm.Tm (2 *ℕ n)
+      coreSelected :
+        lookup (Soup.threads C) coreThread ≡
+        SoupExpression._[_]* coreFrame
+          (SoupTerm._·¹_ (SoupTerm.K (SoupTerm.`lsplit s))
+            (Translation.chanTriple
+              (coreHandleLeft , coreHandleEnd , coreHandleRight)))
+
+      coreReplacement : Soup.Thread n
+      coreReplacement≡ :
+        coreReplacement ≡
+        SoupExpression._[_]* coreFrame
+          (SoupTerm._⊗_
+            (Translation.chanTriple
+              (coreHandleLeft , coreHandleEnd , SoupTerm.*))
+            (Translation.chanTriple
+              (SoupTerm.* , coreHandleEnd , coreHandleRight)))
+
+      coreConfigStep :
+        ConfigStep P′ sigma ambientChannel ambientThread C
+          (Soup.config (Soup.channels C)
+            (SoupReduction.replaceAt
+              (Soup.threads C) coreThread coreReplacement))
+
 ------------------------------------------------------------------------
 -- The rule, with the frame and the residual already factored through `ρ⁻`.
 
@@ -134,7 +178,8 @@ private
                          {q + suc b₁} {k} (q ↑ʳ 0F)))) ⟫
          Typed.∥ (Typed._⋯ₚ_ P₀ rho)))
       (channel ∷ bodyChannels) sigma ambientChannel ambientThread C →
-    LocalStep
+    LSplitCore {q = q} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {B = B} {s = s}
+      {rho = rho} {E₀ = E₀} {P₀ = P₀}
       (Typed.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
         (Typed.⟪ SourceReduction._[_]*
                    (SourceReduction._⋯ᶠ*_
@@ -317,7 +362,7 @@ private
     dispatch :
       OptionalThreadImage {n = n} (Soup.threads C)
         (threadEmbedding left 0F) expected →
-      LocalStep reduct sigma aC aT C
+      LSplitCore reduct sigma aC aT C
 
     dispatch (omitted slotEq expectedEq) =
       ⊥-elim
@@ -326,9 +371,22 @@ private
                  {e = redex} Vsource)
            ■ expectedEq))
 
-    dispatch (present j slotEq lookupEq) =
-      identity-step soupStep (λ _ _ → refl) ambientThreadsUnchanged
-        (res-join joined (chanEq ■ bindEq) notAmb)
+    dispatch (present j slotEq lookupEq) = record
+      { coreThread = j
+      ; coreChannel = physical
+      ; coreSide = orientSide (proj₂ channel) 0F
+      ; coreOpen = openEq
+      ; coreFrame = F
+      ; coreHandleLeft = e₁
+      ; coreHandleEnd = end₁
+      ; coreHandleRight = e₂
+      ; coreSelected = selected
+      ; coreReplacement = plugged
+      ; coreReplacement≡ = refl
+      ; coreConfigStep =
+          identity-config-step soupStep (λ _ _ → refl) ambientThreadsUnchanged
+            (res-join joined (chanEq ■ bindEq) notAmb)
+      }
       where
       ----------------------------------------------------------------
       -- The step.
@@ -521,6 +579,231 @@ private
 ------------------------------------------------------------------------
 -- The leaf.
 
+record LSplitStep
+  {k n m q b₁ : ℕ} {B₁ B₂ B : Typed.BindGroup} {s : Types.𝕊 0}
+  {E : SourceReduction.Frame*
+         (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + k)}
+  {P : Typed.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + k)}
+  (P′ : Typed.Proc k)
+  (sigma : Translation.Env k (2 *ℕ n))
+  (ambientChannel : 𝔽 n → Set)
+  (ambientThread : 𝔽 m → Set)
+  (C : Soup.Config n m) : Set where
+  field
+    lsplitArity : ℕ
+    lsplitRenaming :
+      𝔽 lsplitArity → 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + k)
+    lsplitSkip :
+      (y : 𝔽 lsplitArity) →
+      lsplitRenaming y ≢
+      Source.SplitRenamings.atk B₁ B₂ (sum B) {q + suc b₁} {k} (q ↑ʳ 0F)
+    lsplitSourceFrame : SourceReduction.Frame* lsplitArity
+    lsplitSourceFrameFactor :
+      E ≡ SourceReduction._⋯ᶠ*_ lsplitSourceFrame lsplitRenaming
+    lsplitSourceResidual : Typed.Proc lsplitArity
+    lsplitSourceResidualFactor :
+      P ≡ Typed._⋯ₚ_ lsplitSourceResidual lsplitRenaming
+
+    lsplitThread : 𝔽 m
+    lsplitChannel : 𝔽 n
+    lsplitSide : 𝔽 2
+    lsplitOpen : SoupReduction.is-open (Soup.channels C) lsplitChannel
+
+    lsplitFrame : SoupExpression.Frame* (2 *ℕ n)
+    lsplitHandleLeft : SoupTerm.Tm (2 *ℕ n)
+    lsplitHandleEnd : 𝔽 (2 *ℕ n)
+    lsplitHandleRight : SoupTerm.Tm (2 *ℕ n)
+    lsplitSelected :
+      lookup (Soup.threads C) lsplitThread ≡
+      SoupExpression._[_]* lsplitFrame
+        (SoupTerm._·¹_ (SoupTerm.K (SoupTerm.`lsplit s))
+          (Translation.chanTriple
+            (lsplitHandleLeft , lsplitHandleEnd , lsplitHandleRight)))
+
+    lsplitReplacement : Soup.Thread n
+    lsplitReplacement≡ :
+      lsplitReplacement ≡
+      SoupExpression._[_]* lsplitFrame
+        (SoupTerm._⊗_
+          (Translation.chanTriple
+            (lsplitHandleLeft , lsplitHandleEnd , SoupTerm.*))
+          (Translation.chanTriple
+            (SoupTerm.* , lsplitHandleEnd , lsplitHandleRight)))
+
+    lsplitConfigStep :
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config (Soup.channels C)
+          (SoupReduction.replaceAt
+            (Soup.threads C) lsplitThread lsplitReplacement))
+
+open LSplitStep public
+
+lsplit-step :
+  {k n m q b₁ : ℕ} {Γ : Context.Ctx k} {g : Context.Struct k}
+  {B₁ B₂ B : Typed.BindGroup} {s : Types.𝕊 0}
+  {E : SourceReduction.Frame*
+         (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + k)}
+  {P : Typed.Proc (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + k)}
+  {logicalChannels :
+    Vec (OrientedChannel n) (suc (Translation.channelCount P))}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config n m} →
+  ChanCx Γ →
+  Γ ; g ⊢ₚ
+    Typed.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+      (Typed.⟪ SourceReduction._[_]* E
+                 (Source._·¹_ (Source.K (Source.`lsplit s))
+                   (Source.`
+                     (Source.SplitRenamings.atk B₁ B₂ (sum B)
+                       {q + suc b₁} {k} (q ↑ʳ 0F)))) ⟫
+       Typed.∥ P) →
+  ValueEnv sigma →
+  LocalImage
+    (Typed.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+      (Typed.⟪ SourceReduction._[_]* E
+                 (Source._·¹_ (Source.K (Source.`lsplit s))
+                   (Source.`
+                     (Source.SplitRenamings.atk B₁ B₂ (sum B)
+                       {q + suc b₁} {k} (q ↑ʳ 0F)))) ⟫
+       Typed.∥ P))
+    logicalChannels sigma ambientChannel ambientThread C →
+  LSplitStep {q = q} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {B = B} {s = s}
+    {E = E} {P = P}
+    (Typed.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
+      (Typed.⟪ SourceReduction._[_]*
+                 (SourceReduction._⋯ᶠ*_ E
+                   (Source.SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {k}))
+                 (Source._⊗_
+                   (Source.`
+                     (Source.SplitRenamings.atk B₁ B₂ (sum B)
+                       {q + suc (suc b₁)} {k} (q ↑ʳ 0F)))
+                   (Source.`
+                     (Source.SplitRenamings.atk B₁ B₂ (sum B)
+                       {q + suc (suc b₁)} {k} (q ↑ʳ 1F)))) ⟫
+       Typed.∥
+         (Typed._⋯ₚ_ P
+           (Source.SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {k}))))
+    sigma ambientChannel ambientThread C
+lsplit-step {k = k} {q = q} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {B = B}
+  {s = s} {E = E} {P = P} {logicalChannels = channel ∷ bodyChannels}
+  {sigma = sigma} {ambientChannel = aC} {ambientThread = aT} {C = C}
+  Γ-S ⊢P Vsigma image
+  with lsplit-confine Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁}
+         {s = s} {E = E} {P = P} ⊢P
+... | kk , rho , skip , E₀ , Eeq , P₀ , Peq = record
+  { lsplitArity = kk
+  ; lsplitRenaming = rho
+  ; lsplitSkip = skip
+  ; lsplitSourceFrame = E₀
+  ; lsplitSourceFrameFactor = Eeq
+  ; lsplitSourceResidual = P₀
+  ; lsplitSourceResidualFactor = Peq
+  ; lsplitThread = LSplitCore.coreThread core
+  ; lsplitChannel = LSplitCore.coreChannel core
+  ; lsplitSide = LSplitCore.coreSide core
+  ; lsplitOpen = LSplitCore.coreOpen core
+  ; lsplitFrame = LSplitCore.coreFrame core
+  ; lsplitHandleLeft = LSplitCore.coreHandleLeft core
+  ; lsplitHandleEnd = LSplitCore.coreHandleEnd core
+  ; lsplitHandleRight = LSplitCore.coreHandleRight core
+  ; lsplitSelected = LSplitCore.coreSelected core
+  ; lsplitReplacement = LSplitCore.coreReplacement core
+  ; lsplitReplacement≡ = LSplitCore.coreReplacement≡ core
+  ; lsplitConfigStep =
+      subst
+        (λ Z →
+          ConfigStep Z sigma aC aT C
+            (Soup.config (Soup.channels C)
+              (SoupReduction.replaceAt
+                (Soup.threads C)
+                (LSplitCore.coreThread core)
+                (LSplitCore.coreReplacement core))))
+        stepEq
+        (LSplitCore.coreConfigStep core)
+  }
+  where
+  module 𝐒 = Source.SplitRenamings B₁ B₂ (sum B)
+
+  lwk : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + k) →
+        𝔽 (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B + k)
+  lwk = 𝐒.lwk {q} {b₁} {k}
+
+  redexEq :
+    Typed.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+      (Typed.⟪ SourceReduction._[_]* E
+                 (Source._·¹_ (Source.K (Source.`lsplit s))
+                   (Source.` (𝐒.atk {q + suc b₁} {k} (q ↑ʳ 0F)))) ⟫
+       Typed.∥ P)
+    ≡
+    Typed.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+      (Typed.⟪ SourceReduction._[_]*
+                 (SourceReduction._⋯ᶠ*_ E₀ rho)
+                 (Source._·¹_ (Source.K (Source.`lsplit s))
+                   (Source.` (𝐒.atk {q + suc b₁} {k} (q ↑ʳ 0F)))) ⟫
+       Typed.∥ (Typed._⋯ₚ_ P₀ rho))
+  redexEq =
+    cong₂
+      (λ E′ P′ →
+        Typed.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
+          (Typed.⟪ SourceReduction._[_]* E′
+                     (Source._·¹_ (Source.K (Source.`lsplit s))
+                       (Source.` (𝐒.atk {q + suc b₁} {k} (q ↑ʳ 0F)))) ⟫
+           Typed.∥ P′))
+      Eeq Peq
+
+  redexImage =
+    channels-resp
+      (cast-cons (cong Translation.channelCount Peq) channel bodyChannels)
+      (proc-image redexEq image)
+
+  core :
+    LSplitCore {q = q} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {B = B} {s = s}
+      {rho = rho} {E₀ = E₀} {P₀ = P₀}
+      (Typed.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
+        (Typed.⟪ SourceReduction._[_]*
+                   (SourceReduction._⋯ᶠ*_
+                     (SourceReduction._⋯ᶠ*_ E₀ rho) lwk)
+                   (Source._⊗_
+                     (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 0F)))
+                     (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 1F)))) ⟫
+         Typed.∥ (Typed._⋯ₚ_ P₀ (λ y → lwk (rho y)))))
+      sigma aC aT C
+  core =
+    lsplit-worker {rho = rho} {E₀ = E₀} {P₀ = P₀} {channel = channel}
+      skip Vsigma redexImage
+
+  stepEq :
+    Typed.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
+      (Typed.⟪ SourceReduction._[_]*
+                 (SourceReduction._⋯ᶠ*_
+                   (SourceReduction._⋯ᶠ*_ E₀ rho) lwk)
+                 (Source._⊗_
+                   (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 0F)))
+                   (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 1F)))) ⟫
+       Typed.∥ (Typed._⋯ₚ_ P₀ (λ y → lwk (rho y))))
+    ≡
+    Typed.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
+      (Typed.⟪ SourceReduction._[_]*
+                 (SourceReduction._⋯ᶠ*_ E lwk)
+                 (Source._⊗_
+                   (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 0F)))
+                   (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 1F)))) ⟫
+       Typed.∥ (Typed._⋯ₚ_ P lwk))
+  stepEq =
+    cong₂
+      (λ E′ P′ →
+        Typed.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
+          (Typed.⟪ SourceReduction._[_]*
+                     (SourceReduction._⋯ᶠ*_ E′ lwk)
+                     (Source._⊗_
+                       (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 0F)))
+                       (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 1F)))) ⟫
+           Typed.∥ P′))
+      (sym Eeq)
+      (sym (Typed.fusionₚ P₀ rho lwk)
+       ■ cong (λ Z → Typed._⋯ₚ_ Z lwk) (sym Peq))
+
 U-lsplit-local :
   {k n m q b₁ : ℕ} {Γ : Context.Ctx k} {g : Context.Struct k}
   {B₁ B₂ B : Typed.BindGroup} {s : Types.𝕊 0}
@@ -571,74 +854,10 @@ U-lsplit-local {k = k} {q = q} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {B = B}
   {s = s} {E = E} {P = P} {logicalChannels = channel ∷ bodyChannels}
   {sigma = sigma} {ambientChannel = aC} {ambientThread = aT} {C = C}
   Γ-S ⊢P Vsigma image
-  with lsplit-confine Γ-S {B₁ = B₁} {B₂ = B₂} {B = B} {q = q} {b₁ = b₁}
-         {s = s} {E = E} {P = P} ⊢P
-... | kk , rho , skip , E₀ , Eeq , P₀ , Peq =
-  subst (λ Z → LocalStep Z sigma aC aT C) stepEq
-    (lsplit-worker {rho = rho} {E₀ = E₀} {P₀ = P₀} {channel = channel}
-      skip Vsigma redexImage)
-  where
-  module 𝐒 = Source.SplitRenamings B₁ B₂ (sum B)
-
-  lwk : 𝔽 (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B + k) →
-        𝔽 (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B + k)
-  lwk = 𝐒.lwk {q} {b₁} {k}
-
-  redexEq :
-    Typed.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
-      (Typed.⟪ SourceReduction._[_]* E
-                 (Source._·¹_ (Source.K (Source.`lsplit s))
-                   (Source.` (𝐒.atk {q + suc b₁} {k} (q ↑ʳ 0F)))) ⟫
-       Typed.∥ P)
-    ≡
-    Typed.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
-      (Typed.⟪ SourceReduction._[_]*
-                 (SourceReduction._⋯ᶠ*_ E₀ rho)
-                 (Source._·¹_ (Source.K (Source.`lsplit s))
-                   (Source.` (𝐒.atk {q + suc b₁} {k} (q ↑ʳ 0F)))) ⟫
-       Typed.∥ (Typed._⋯ₚ_ P₀ rho))
-  redexEq =
-    cong₂
-      (λ E′ P′ →
-        Typed.ν (B₁ ++ (q + suc b₁) ∷ B₂) B
-          (Typed.⟪ SourceReduction._[_]* E′
-                     (Source._·¹_ (Source.K (Source.`lsplit s))
-                       (Source.` (𝐒.atk {q + suc b₁} {k} (q ↑ʳ 0F)))) ⟫
-           Typed.∥ P′))
-      Eeq Peq
-
-  redexImage =
-    channels-resp
-      (cast-cons (cong Translation.channelCount Peq) channel bodyChannels)
-      (proc-image redexEq image)
-
-  stepEq :
-    Typed.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
-      (Typed.⟪ SourceReduction._[_]*
-                 (SourceReduction._⋯ᶠ*_
-                   (SourceReduction._⋯ᶠ*_ E₀ rho) lwk)
-                 (Source._⊗_
-                   (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 0F)))
-                   (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 1F)))) ⟫
-       Typed.∥ (Typed._⋯ₚ_ P₀ (λ y → lwk (rho y))))
-    ≡
-    Typed.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
-      (Typed.⟪ SourceReduction._[_]*
-                 (SourceReduction._⋯ᶠ*_ E lwk)
-                 (Source._⊗_
-                   (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 0F)))
-                   (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 1F)))) ⟫
-       Typed.∥ (Typed._⋯ₚ_ P lwk))
-  stepEq =
-    cong₂
-      (λ E′ P′ →
-        Typed.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
-          (Typed.⟪ SourceReduction._[_]*
-                     (SourceReduction._⋯ᶠ*_ E′ lwk)
-                     (Source._⊗_
-                       (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 0F)))
-                       (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 1F)))) ⟫
-           Typed.∥ P′))
-      (sym Eeq)
-      (sym (Typed.fusionₚ P₀ rho lwk)
-       ■ cong (λ Z → Typed._⋯ₚ_ Z lwk) (sym Peq))
+  = configStep⇒localStep
+      (LSplitStep.lsplitConfigStep
+        (lsplit-step {k = k} {q = q} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {B = B}
+          {s = s} {E = E} {P = P}
+          {logicalChannels = channel ∷ bodyChannels}
+          {sigma = sigma} {ambientChannel = aC} {ambientThread = aT} {C = C}
+          Γ-S ⊢P Vsigma image))
