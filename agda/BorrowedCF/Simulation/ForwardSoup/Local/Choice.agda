@@ -301,8 +301,7 @@ U-choice-local {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
       SoupReduction.RUS-Choice
         {cs = Soup.channels C} {ts = Soup.threads C}
         j l physical side₁ side₂ F₁ F₂ choice
-        {e₁ = SoupTerm.*} {e₁′ = tail₁}
-        {e₂ = SoupTerm.*} {e₂′ = tail₂}
+        {e₁′ = tail₁} {e₂′ = tail₂}
         j≢l (orientSide-opposite orientation) openEq selected₁ selected₂
 
     ------------------------------------------------------------------

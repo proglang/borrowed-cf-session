@@ -215,8 +215,6 @@ U-close-local {k = k} {n = n} {m = m} {E₁ = E₁} {E₂ = E₂}
       SoupReduction.RUS-Close
         {cs = Soup.channels C} {ts = Soup.threads C}
         j l physical side₁ side₂ F₁ F₂
-        {e₁ = SoupTerm.*} {e₁′ = SoupTerm.*}
-        {e₂ = SoupTerm.*} {e₂′ = SoupTerm.*}
         j≢l (orientSide-opposite orientation) chanEq selected₁ selected₂
 
     ------------------------------------------------------------------

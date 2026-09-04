@@ -604,8 +604,7 @@ U-com-local {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
         {cs = Soup.channels C} {ts = Soup.threads C}
         j l physical side₁ side₂ F₁ F₂
         {e = message}
-        {e₁ = SoupTerm.*} {e₁′ = tail₁}
-        {e₂ = SoupTerm.*} {e₂′ = tail₂}
+        {e₁′ = tail₁} {e₂′ = tail₂}
         j≢l (orientSide-opposite orientation) openEq Vmessage
         selected₁ selected₂
 

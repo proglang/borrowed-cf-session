@@ -171,6 +171,10 @@ data Opposite : 𝔽 2 → 𝔽 2 → Set where
   left-right : Opposite zero (suc zero)
   right-left : Opposite (suc zero) zero
 
+-- created an abbrev for `proj₁ (lookup cs i) ≡ true` defined as
+is-open : ∀ {n} → Vec Channel n → 𝔽 n → Set
+is-open cs i = proj₁ (lookup cs i) ≡ true
+
 infix 4 _─→ₚ_
 
 data _─→ₚ_ : ∀ {n m n′ m′} → Config n m → Config n′ m′ → Set where
@@ -192,6 +196,7 @@ data _─→ₚ_ : ∀ {n m n′ m′} → Config n m → Config n′ m′ → S
     ∀ {n m s} {cs : Vec Channel n} {ts : Vec (Thread n) m}
       (j : 𝔽 m) (i : 𝔽 (suc n)) (F : Frame* (2 *ℕ n)) →
     lookup ts j ≡ F [ K (`new s) ·¹ * ]* →
+    -- could be simplified by just putting the new channel at the end and weakening all threads
     config cs ts ─→ₚ
     config (V.insertAt cs i (true , acq ∷ [] , acq ∷ []))
       (replaceAt (V.map (insertThreadEndpoints i) ts) j (newResult i F))
@@ -200,7 +205,7 @@ data _─→ₚ_ : ∀ {n m n′ m′} → Config n m → Config n′ m′ → S
     ∀ {n m s} {cs : Vec Channel n} {ts : Vec (Thread n) m}
       (j : 𝔽 m) (i : 𝔽 n) (side : 𝔽 2)
       (F : Frame* (2 *ℕ n)) {e₁ e₂} →
-    proj₁ (lookup cs i) ≡ true →
+    is-open cs i →
     lookup ts j ≡
       F [ K (`lsplit s) ·¹ 𝓒[ e₁ × endpoint i side × e₂ ] ]* →
     config cs ts ─→ₚ
@@ -219,7 +224,7 @@ data _─→ₚ_ : ∀ {n m n′ m′} → Config n m → Config n′ m′ → S
     ∀ {n m s} {cs : Vec Channel n} {ts : Vec (Thread n) m}
       (j : 𝔽 m) (i : 𝔽 n) (side : 𝔽 2)
       (F : Frame* (2 *ℕ n)) (before after : List Flag) {e₁ e₂} →
-    proj₁ (lookup cs i) ≡ true →
+    is-open cs i →
     endpointFlags (lookup cs i) side ≡ before ++ after →
     lookup ts j ≡
       F [ K (`rsplit s) ·¹ 𝓒[ e₁ × endpoint i side × e₂ ] ]* →
@@ -236,7 +241,7 @@ data _─→ₚ_ : ∀ {n m n′ m′} → Config n m → Config n′ m′ → S
     ∀ {n m} {cs : Vec Channel n} {ts : Vec (Thread n) m}
       (j : 𝔽 m) (i : 𝔽 n) (side : 𝔽 2)
       (F : Frame* (2 *ℕ n)) (before after : List Flag) →
-    proj₁ (lookup cs i) ≡ true →
+    is-open cs i →
     endpointFlags (lookup cs i) side ≡ before ++ drop ∷ after →
     lookup ts j ≡
       F [ K `drop ·¹
@@ -258,7 +263,7 @@ data _─→ₚ_ : ∀ {n m n′ m′} → Config n m → Config n′ m′ → S
     ∀ {n m} {cs : Vec Channel n} {ts : Vec (Thread n) m}
       (j : 𝔽 m) (i : 𝔽 n) (side : 𝔽 2)
       (F : Frame* (2 *ℕ n)) (before after : List Flag) {e} →
-    proj₁ (lookup cs i) ≡ true →
+    is-open cs i →
     endpointFlags (lookup cs i) side ≡ before ++ acq ∷ after →
     lookup ts j ≡
       F [ K `acq ·¹
@@ -275,14 +280,14 @@ data _─→ₚ_ : ∀ {n m n′ m′} → Config n m → Config n′ m′ → S
   RUS-Close :
     ∀ {n m} {cs : Vec Channel n} {ts : Vec (Thread n) m}
       (j k : 𝔽 m) (i : 𝔽 n) (side₁ side₂ : 𝔽 2)
-      (F₁ F₂ : Frame* (2 *ℕ n)) {e₁ e₁′ e₂ e₂′} →
+      (F₁ F₂ : Frame* (2 *ℕ n)) →
     j ≢ k →
     Opposite side₁ side₂ →
     lookup cs i ≡ (true , [] , []) →
     lookup ts j ≡
-      F₁ [ K (`end ‼) ·¹ 𝓒[ e₁ × endpoint i side₁ × e₁′ ] ]* →
+      F₁ [ K (`end ‼) ·¹ 𝓒[ * × endpoint i side₁ × * ] ]* →
     lookup ts k ≡
-      F₂ [ K (`end ⁇) ·¹ 𝓒[ e₂ × endpoint i side₂ × e₂′ ] ]* →
+      F₂ [ K (`end ⁇) ·¹ 𝓒[ * × endpoint i side₂ × * ] ]* →
     config cs ts ─→ₚ
     config (replaceAt cs i (false , [] , []))
       (replaceTwo ts j (F₁ [ * ]*) k (F₂ [ * ]*))
@@ -290,15 +295,15 @@ data _─→ₚ_ : ∀ {n m n′ m′} → Config n m → Config n′ m′ → S
   RUS-Com :
     ∀ {n m} {cs : Vec Channel n} {ts : Vec (Thread n) m}
       (j k : 𝔽 m) (i : 𝔽 n) (side₁ side₂ : 𝔽 2)
-      (F₁ F₂ : Frame* (2 *ℕ n)) {e e₁ e₁′ e₂ e₂′} →
+      (F₁ F₂ : Frame* (2 *ℕ n)) {e e₁′ e₂′} →
     j ≢ k →
     Opposite side₁ side₂ →
-    proj₁ (lookup cs i) ≡ true →
+    is-open cs i →
     Value e →
     lookup ts j ≡
-      F₁ [ K `send ·¹ (e ⊗ 𝓒[ e₁ × endpoint i side₁ × e₁′ ]) ]* →
+      F₁ [ K `send ·¹ (e ⊗ 𝓒[ * × endpoint i side₁ × e₁′ ]) ]* →
     lookup ts k ≡
-      F₂ [ K `recv ·¹ 𝓒[ e₂ × endpoint i side₂ × e₂′ ] ]* →
+      F₂ [ K `recv ·¹ 𝓒[ * × endpoint i side₂ × e₂′ ] ]* →
     config cs ts ─→ₚ
     config cs (replaceTwo ts j (F₁ [ * ]*) k (F₂ [ e ]*))
 
@@ -306,18 +311,18 @@ data _─→ₚ_ : ∀ {n m n′ m′} → Config n m → Config n′ m′ → S
     ∀ {n m} {cs : Vec Channel n} {ts : Vec (Thread n) m}
       (j k : 𝔽 m) (i : 𝔽 n) (side₁ side₂ : 𝔽 2)
       (F₁ F₂ : Frame* (2 *ℕ n)) (choice : Side)
-      {e₁ e₁′ e₂ e₂′} →
+      {e₁′ e₂′} →
     j ≢ k →
     Opposite side₁ side₂ →
-    proj₁ (lookup cs i) ≡ true →
+    is-open cs i →
     lookup ts j ≡
       F₁ [ K (`select choice) ·¹
-        𝓒[ e₁ × endpoint i side₁ × e₁′ ] ]* →
+        𝓒[ * × endpoint i side₁ × e₁′ ] ]* →
     lookup ts k ≡
       F₂ [ K `branch ·¹
-        𝓒[ e₂ × endpoint i side₂ × e₂′ ] ]* →
+        𝓒[ * × endpoint i side₂ × e₂′ ] ]* →
     config cs ts ─→ₚ
     config cs (replaceTwo ts
-      j (F₁ [ 𝓒[ e₁ × endpoint i side₁ × e₁′ ] ]*)
+      j (F₁ [ 𝓒[ * × endpoint i side₁ × e₁′ ] ]*)
       k (F₂ [ `inj choice
-           𝓒[ e₂ × endpoint i side₂ × e₂′ ] ]*))
+           𝓒[ * × endpoint i side₂ × e₂′ ] ]*))
