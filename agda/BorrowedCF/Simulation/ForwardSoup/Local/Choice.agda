@@ -137,6 +137,25 @@ record ChoiceStep
                       (SoupTerm.` (Soup.endpoint choiceChannel choiceSide₂)))
                     choiceBranchTail)))))
 
+    choiceConfigStepAt :
+      {j l : 𝔽 m} {left′ right′ : Soup.Thread n} →
+      choiceSelector ≡ j →
+      choiceBrancher ≡ l →
+      SoupExpression._[_]* choiceSelectFrame
+        (SoupTerm._⊗_
+          (SoupTerm._⊗_ SoupTerm.*
+            (SoupTerm.` (Soup.endpoint choiceChannel choiceSide₁)))
+          choiceSelectTail) ≡ left′ →
+      SoupExpression._[_]* choiceBranchFrame
+        (SoupTerm.`inj choiceLabel
+          (SoupTerm._⊗_
+            (SoupTerm._⊗_ SoupTerm.*
+              (SoupTerm.` (Soup.endpoint choiceChannel choiceSide₂)))
+            choiceBranchTail)) ≡ right′ →
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config (Soup.channels C)
+          (SoupReduction.replaceTwo (Soup.threads C) j left′ l right′))
+
 open ChoiceStep public
 
 choice-step :
@@ -357,9 +376,9 @@ choice-step {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
       ; choiceBranchTail = tail₂
       ; choiceSelectedSelect = selected₁
       ; choiceSelectedBranch = selected₂
-      ; choiceConfigStep =
-          identity-config-step soupStep (λ _ _ → refl) ambientThreadsUnchanged
-            (res-join joined chanEq notAmb)
+      ; choiceConfigStep = configStep
+      ; choiceConfigStepAt = λ where
+          refl refl refl refl → configStep
       }
     where
     j≢l : j ≢ l
@@ -510,6 +529,12 @@ choice-step {k = k} {n = n} {m = m} {b₁ = b₁} {b₂ = b₂}
         (λ {i} {l′} embedded → inj₂ (i , embedded))
         (λ _ → inj₁) (λ _ → inj₁) (λ _ → inj₁) (λ _ → inj₁)
         (λ _ ambient → ambient) (λ _ ambient → ambient)
+
+    configStep :
+      ConfigStep reduct sigma aC aT C targetConfig
+    configStep =
+      identity-config-step soupStep (λ _ _ → refl) ambientThreadsUnchanged
+        (res-join joined chanEq notAmb)
 
 U-choice-local :
   {k n m b₁ b₂ : ℕ} {B₁ B₂ : Typed.BindGroup}
