@@ -9,6 +9,7 @@ open import BorrowedCF.Simulation.BackwardSoup.Canonical public
 open import BorrowedCF.Simulation.BackwardSoup.CanonicalPair public
 open import BorrowedCF.Simulation.BackwardSoup.Tracks public
 open import BorrowedCF.Simulation.BackwardSoup.TracksImage public
+open import BorrowedCF.Simulation.BackwardSoup.CanonicalImage public
 open import BorrowedCF.Simulation.BackwardSoup.TypedInversion public
 open import BorrowedCF.Simulation.BackwardSoup.Unique public
 open import BorrowedCF.Simulation.BackwardSoup.Triple public
