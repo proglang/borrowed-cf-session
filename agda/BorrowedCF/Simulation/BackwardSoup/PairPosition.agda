@@ -14,7 +14,10 @@ import BorrowedCF.Terms.BaseSoup as SoupTerm
 
 open import BorrowedCF.Simulation.BackwardSoup.Locate
   using ( ProcessContext; hole; par-left; par-right; bind
-        ; plug; threadInContext; focusEnv)
+        ; plug; threadInContext; focusEnv; focusValueEnv; focusPairEnv
+        ; bindEnv-Pair)
+open import BorrowedCF.Simulation.BackwardSoup.Inversion
+  using (PairEnv)
 open import BorrowedCF.Simulation.BackwardSoup.Position
   using (weakenThrough; SideOf; inl; inr; sideOf; groupOf)
 open import BorrowedCF.Simulation.BackwardSoup.CanonicalPair
@@ -27,9 +30,15 @@ open import BorrowedCF.Simulation.BackwardSoup.Triple
 open import BorrowedCF.Simulation.ForwardSoup.LocalImage
   using (OrientedChannel; physicalChannel; physicalEndpoint; flattenOriented)
 open import BorrowedCF.Simulation.ForwardSoup.LocalImage.Frame
-  using (bindEnv; flatten-bind-thread)
+  using ( bindEnv; bindChannel; flatten-bind-thread
+        ; flatten-bind-channel; flatten-bind-channel-suc)
+open import BorrowedCF.Simulation.ForwardSoup.Local.Frames
+  using (bindEnv-Value)
+open import BorrowedCF.Simulation.ForwardSoup.Expressions
+  using (ValueEnv)
 open import BorrowedCF.Simulation.ForwardSoup.LocalImage.Congruence
-  using (lookup-take; lookup-drop; flatten-par-threads)
+  using ( lookup-take; lookup-drop; flatten-par-channels
+        ; flatten-par-threads)
 open import BorrowedCF.Simulation.ForwardSoup.Translation
   using (++ₛ-lookupˡ; ++ₛ-lookupʳ)
 
@@ -416,6 +425,122 @@ pairFocusEnv₂ (right₂ Q c) e₁ e₂ channels sigma =
     (V.drop (Translation.channelCount Q) channels) sigma
 pairFocusEnv₂ (bind₂ B₁ B₂ c) e₁ e₂ (channel ∷ channels) sigma =
   pairFocusEnv₂ c e₁ e₂ channels (bindEnv B₁ B₂ channel sigma)
+
+pairFocusValueEnv₁ :
+  (c : ProcessContext₂ k₁ k₂ n)
+  (e₁ : Source.Tm k₁) (e₂ : Source.Tm k₂)
+  (channels : Vec (OrientedChannel p)
+    (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)))
+  {sigma : Translation.Env n (2 *ℕ p)} →
+  ValueEnv sigma → ValueEnv (pairFocusEnv₁ c e₁ e₂ channels sigma)
+pairFocusValueEnv₁ (par₂ c₁ c₂) e₁ e₂ channels Vsigma =
+  focusValueEnv c₁ Typed.⟪ e₁ ⟫
+    (V.take (Translation.channelCount (plug c₁ Typed.⟪ e₁ ⟫)) channels)
+    Vsigma
+pairFocusValueEnv₁ (par₂ˢ c₂ c₁) e₁ e₂ channels Vsigma =
+  focusValueEnv c₁ Typed.⟪ e₁ ⟫
+    (V.drop (Translation.channelCount (plug c₂ Typed.⟪ e₂ ⟫)) channels)
+    Vsigma
+pairFocusValueEnv₁ (left₂ c Q) e₁ e₂ channels Vsigma =
+  pairFocusValueEnv₁ c e₁ e₂
+    (V.take
+      (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫))
+      channels)
+    Vsigma
+pairFocusValueEnv₁ (right₂ Q c) e₁ e₂ channels Vsigma =
+  pairFocusValueEnv₁ c e₁ e₂
+    (V.drop (Translation.channelCount Q) channels) Vsigma
+pairFocusValueEnv₁ (bind₂ B₁ B₂ c) e₁ e₂
+  (channel ∷ channels) Vsigma =
+  pairFocusValueEnv₁ c e₁ e₂ channels
+    (bindEnv-Value {B₁ = B₁} {B₂ = B₂} {channel = channel} Vsigma)
+
+pairFocusValueEnv₂ :
+  (c : ProcessContext₂ k₁ k₂ n)
+  (e₁ : Source.Tm k₁) (e₂ : Source.Tm k₂)
+  (channels : Vec (OrientedChannel p)
+    (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)))
+  {sigma : Translation.Env n (2 *ℕ p)} →
+  ValueEnv sigma → ValueEnv (pairFocusEnv₂ c e₁ e₂ channels sigma)
+pairFocusValueEnv₂ (par₂ c₁ c₂) e₁ e₂ channels Vsigma =
+  focusValueEnv c₂ Typed.⟪ e₂ ⟫
+    (V.drop (Translation.channelCount (plug c₁ Typed.⟪ e₁ ⟫)) channels)
+    Vsigma
+pairFocusValueEnv₂ (par₂ˢ c₂ c₁) e₁ e₂ channels Vsigma =
+  focusValueEnv c₂ Typed.⟪ e₂ ⟫
+    (V.take (Translation.channelCount (plug c₂ Typed.⟪ e₂ ⟫)) channels)
+    Vsigma
+pairFocusValueEnv₂ (left₂ c Q) e₁ e₂ channels Vsigma =
+  pairFocusValueEnv₂ c e₁ e₂
+    (V.take
+      (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫))
+      channels)
+    Vsigma
+pairFocusValueEnv₂ (right₂ Q c) e₁ e₂ channels Vsigma =
+  pairFocusValueEnv₂ c e₁ e₂
+    (V.drop (Translation.channelCount Q) channels) Vsigma
+pairFocusValueEnv₂ (bind₂ B₁ B₂ c) e₁ e₂
+  (channel ∷ channels) Vsigma =
+  pairFocusValueEnv₂ c e₁ e₂ channels
+    (bindEnv-Value {B₁ = B₁} {B₂ = B₂} {channel = channel} Vsigma)
+
+pairFocusPairEnv₁ :
+  (c : ProcessContext₂ k₁ k₂ n)
+  (e₁ : Source.Tm k₁) (e₂ : Source.Tm k₂)
+  (channels : Vec (OrientedChannel p)
+    (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)))
+  {sigma : Translation.Env n (2 *ℕ p)} →
+  PairEnv sigma → PairEnv (pairFocusEnv₁ c e₁ e₂ channels sigma)
+pairFocusPairEnv₁ (par₂ c₁ c₂) e₁ e₂ channels Psigma =
+  focusPairEnv c₁ Typed.⟪ e₁ ⟫
+    (V.take (Translation.channelCount (plug c₁ Typed.⟪ e₁ ⟫)) channels)
+    Psigma
+pairFocusPairEnv₁ (par₂ˢ c₂ c₁) e₁ e₂ channels Psigma =
+  focusPairEnv c₁ Typed.⟪ e₁ ⟫
+    (V.drop (Translation.channelCount (plug c₂ Typed.⟪ e₂ ⟫)) channels)
+    Psigma
+pairFocusPairEnv₁ (left₂ c Q) e₁ e₂ channels Psigma =
+  pairFocusPairEnv₁ c e₁ e₂
+    (V.take
+      (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫))
+      channels)
+    Psigma
+pairFocusPairEnv₁ (right₂ Q c) e₁ e₂ channels Psigma =
+  pairFocusPairEnv₁ c e₁ e₂
+    (V.drop (Translation.channelCount Q) channels) Psigma
+pairFocusPairEnv₁ (bind₂ B₁ B₂ c) e₁ e₂
+  (channel ∷ channels) Psigma =
+  pairFocusPairEnv₁ c e₁ e₂ channels
+    (bindEnv-Pair {B₁ = B₁} {B₂ = B₂} {channel = channel} Psigma)
+
+pairFocusPairEnv₂ :
+  (c : ProcessContext₂ k₁ k₂ n)
+  (e₁ : Source.Tm k₁) (e₂ : Source.Tm k₂)
+  (channels : Vec (OrientedChannel p)
+    (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)))
+  {sigma : Translation.Env n (2 *ℕ p)} →
+  PairEnv sigma → PairEnv (pairFocusEnv₂ c e₁ e₂ channels sigma)
+pairFocusPairEnv₂ (par₂ c₁ c₂) e₁ e₂ channels Psigma =
+  focusPairEnv c₂ Typed.⟪ e₂ ⟫
+    (V.drop (Translation.channelCount (plug c₁ Typed.⟪ e₁ ⟫)) channels)
+    Psigma
+pairFocusPairEnv₂ (par₂ˢ c₂ c₁) e₁ e₂ channels Psigma =
+  focusPairEnv c₂ Typed.⟪ e₂ ⟫
+    (V.take (Translation.channelCount (plug c₂ Typed.⟪ e₂ ⟫)) channels)
+    Psigma
+pairFocusPairEnv₂ (left₂ c Q) e₁ e₂ channels Psigma =
+  pairFocusPairEnv₂ c e₁ e₂
+    (V.take
+      (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫))
+      channels)
+    Psigma
+pairFocusPairEnv₂ (right₂ Q c) e₁ e₂ channels Psigma =
+  pairFocusPairEnv₂ c e₁ e₂
+    (V.drop (Translation.channelCount Q) channels) Psigma
+pairFocusPairEnv₂ (bind₂ B₁ B₂ c) e₁ e₂
+  (channel ∷ channels) Psigma =
+  pairFocusPairEnv₂ c e₁ e₂ channels
+    (bindEnv-Pair {B₁ = B₁} {B₂ = B₂} {channel = channel} Psigma)
 
 pairThread₁-content :
   (c : ProcessContext₂ k₁ k₂ n)
@@ -1138,6 +1263,173 @@ bound-common (bound₁-under b₁) (bound₂-here l₂ eq₂) ()
 bound-common (bound₁-under b₁) (bound₂-under b₂) eq =
   lift-bind (bound-common b₁ b₂ (Fin.suc-injective eq))
 
+private
+  bound-common-entry-equal :
+    {c : ProcessContext₂ k₁ k₂ n} {x₁ : 𝔽 k₁} {x₂ : 𝔽 k₂}
+    {i₁ i₂ : 𝔽 (pairChannels c)}
+    (found₁ : Bound₁ c x₁ i₁) (found₂ : Bound₂ c x₂ i₂)
+    (same : i₁ ≡ i₂)
+    (e₁ : Source.Tm k₁) (e₂ : Source.Tm k₂)
+    (channels : Vec (OrientedChannel p)
+      (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)))
+    (sigma : Translation.Env n (2 *ℕ p)) →
+    Binder₂.local₁ (bound-common found₁ found₂ same) ≡
+    Binder₂.local₂ (bound-common found₁ found₂ same) →
+    pairFocusEnv₁ c e₁ e₂ channels sigma x₁ ≡
+    pairFocusEnv₂ c e₁ e₂ channels sigma x₂
+  bound-common-entry-equal (bound₁-par b₁) (bound₂-par b₂) same
+    e₁ e₂ channels sigma localEq = ⊥-elim (Fin.↑ˡ≢↑ʳ same)
+  bound-common-entry-equal (bound₁-parˢ b₁) (bound₂-parˢ b₂) same
+    e₁ e₂ channels sigma localEq = ⊥-elim (Fin.↑ˡ≢↑ʳ (sym same))
+  bound-common-entry-equal
+    (bound₁-left {c = c} {Q = Q} b₁) (bound₂-left b₂) same
+    e₁ e₂ channels sigma localEq =
+    bound-common-entry-equal b₁ b₂
+      (Fin.↑ˡ-injective _ _ _ same) e₁ e₂
+      (V.take
+        (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫))
+        channels)
+      sigma localEq
+  bound-common-entry-equal
+    (bound₁-right {Q = Q} b₁) (bound₂-right b₂) same
+    e₁ e₂ channels sigma localEq =
+    bound-common-entry-equal b₁ b₂
+      (Fin.↑ʳ-injective _ _ _ same) e₁ e₂
+      (V.drop (Translation.channelCount Q) channels) sigma localEq
+  bound-common-entry-equal {n = n}
+    (bound₁-here {B₁ = B₁} {B₂ = B₂} {c = c} l₁ eq₁)
+    (bound₂-here l₂ eq₂) refl e₁ e₂ (channel ∷ channels) sigma localEq =
+    cong (pairFocusEnv₁ c e₁ e₂ channels
+      (bindEnv B₁ B₂ channel sigma)) (sym eq₁)
+    ■ pairFocusEnv₁-ambient c e₁ e₂ channels
+        (bindEnv B₁ B₂ channel sigma) (l₁ ↑ˡ n)
+    ■ cong (bindEnv B₁ B₂ channel sigma) (cong (_↑ˡ n) localEq)
+    ■ sym (pairFocusEnv₂-ambient c e₁ e₂ channels
+        (bindEnv B₁ B₂ channel sigma) (l₂ ↑ˡ n))
+    ■ cong (pairFocusEnv₂ c e₁ e₂ channels
+        (bindEnv B₁ B₂ channel sigma)) eq₂
+  bound-common-entry-equal (bound₁-here l₁ eq₁) (bound₂-under b₂) ()
+    e₁ e₂ channels sigma localEq
+  bound-common-entry-equal (bound₁-under b₁) (bound₂-here l₂ eq₂) ()
+    e₁ e₂ channels sigma localEq
+  bound-common-entry-equal
+    (bound₁-under {B₁ = B₁} {B₂ = B₂} b₁) (bound₂-under b₂) same
+    e₁ e₂ (channel ∷ channels) sigma localEq =
+    bound-common-entry-equal b₁ b₂ (Fin.suc-injective same) e₁ e₂
+      channels (bindEnv B₁ B₂ channel sigma) localEq
+
+  bound-common-channel-content :
+    {c : ProcessContext₂ k₁ k₂ n} {x₁ : 𝔽 k₁} {x₂ : 𝔽 k₂}
+    {i₁ i₂ : 𝔽 (pairChannels c)}
+    (found₁ : Bound₁ c x₁ i₁) (found₂ : Bound₂ c x₂ i₂)
+    (same : i₁ ≡ i₂)
+    (e₁ : Source.Tm k₁) (e₂ : Source.Tm k₂)
+    (channels : Vec (OrientedChannel p)
+      (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)))
+    (sigma : Translation.Env n (2 *ℕ p)) →
+    lookup
+      (proj₁ (flattenOriented
+        (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫) channels sigma))
+      (pairBoundChannel₁ found₁ e₁ e₂) ≡
+    bindChannel
+      (Binder₂.C₁ (bound-common found₁ found₂ same))
+      (Binder₂.C₂ (bound-common found₁ found₂ same))
+      (lookup channels (pairBoundChannel₁ found₁ e₁ e₂))
+  bound-common-channel-content (bound₁-par b₁) (bound₂-par b₂) same
+    e₁ e₂ channels sigma = ⊥-elim (Fin.↑ˡ≢↑ʳ same)
+  bound-common-channel-content (bound₁-parˢ b₁) (bound₂-parˢ b₂) same
+    e₁ e₂ channels sigma = ⊥-elim (Fin.↑ˡ≢↑ʳ (sym same))
+  bound-common-channel-content
+    (bound₁-left {c = c} {Q = Q} b₁) (bound₂-left b₂) same
+    e₁ e₂ channels sigma =
+    cong
+      (λ channels′ → lookup channels′
+        (pairBoundChannel₁ b₁ e₁ e₂ ↑ˡ Translation.channelCount Q))
+      (flatten-par-channels
+        (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫) Q channels sigma)
+    ■ V.lookup-++ˡ
+        (proj₁ (flattenOriented
+          (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)
+          (V.take
+            (Translation.channelCount
+              (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫))
+            channels)
+          sigma))
+        (proj₁ (flattenOriented Q
+          (V.drop
+            (Translation.channelCount
+              (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫))
+            channels)
+          sigma))
+        (pairBoundChannel₁ b₁ e₁ e₂)
+    ■ bound-common-channel-content b₁ b₂
+        (Fin.↑ˡ-injective _ _ _ same) e₁ e₂
+        (V.take
+          (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫))
+          channels)
+        sigma
+    ■ cong
+        (bindChannel
+          (Binder₂.C₁
+            (bound-common b₁ b₂ (Fin.↑ˡ-injective _ _ _ same)))
+          (Binder₂.C₂
+            (bound-common b₁ b₂ (Fin.↑ˡ-injective _ _ _ same))))
+        (lookup-take
+          (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫))
+          channels (pairBoundChannel₁ b₁ e₁ e₂))
+  bound-common-channel-content
+    (bound₁-right {c = c} {Q = Q} b₁) (bound₂-right b₂) same
+    e₁ e₂ channels sigma =
+    cong
+      (λ channels′ → lookup channels′
+        (Translation.channelCount Q ↑ʳ pairBoundChannel₁ b₁ e₁ e₂))
+      (flatten-par-channels
+        Q (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫) channels sigma)
+    ■ V.lookup-++ʳ
+        (proj₁ (flattenOriented Q
+          (V.take (Translation.channelCount Q) channels)
+          sigma))
+        (proj₁ (flattenOriented
+          (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)
+          (V.drop (Translation.channelCount Q) channels)
+          sigma))
+        (pairBoundChannel₁ b₁ e₁ e₂)
+    ■ bound-common-channel-content b₁ b₂
+        (Fin.↑ʳ-injective _ _ _ same) e₁ e₂
+        (V.drop (Translation.channelCount Q) channels) sigma
+    ■ cong
+        (bindChannel
+          (Binder₂.C₁
+            (bound-common b₁ b₂ (Fin.↑ʳ-injective _ _ _ same)))
+          (Binder₂.C₂
+            (bound-common b₁ b₂ (Fin.↑ʳ-injective _ _ _ same))))
+        (lookup-drop (Translation.channelCount Q) channels
+          (pairBoundChannel₁ b₁ e₁ e₂))
+  bound-common-channel-content
+    (bound₁-here {B₁ = B₁} {B₂ = B₂} {c = c} l₁ eq₁)
+    (bound₂-here l₂ eq₂) refl e₁ e₂ (channel ∷ channels) sigma =
+    flatten-bind-channel
+      {B₁ = B₁} {B₂ = B₂}
+      {P = plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫}
+      {channel = channel} {logicalChannels = channels} {sigma = sigma}
+  bound-common-channel-content
+    (bound₁-here l₁ eq₁) (bound₂-under b₂) ()
+    e₁ e₂ channels sigma
+  bound-common-channel-content
+    (bound₁-under b₁) (bound₂-here l₂ eq₂) ()
+    e₁ e₂ channels sigma
+  bound-common-channel-content
+    (bound₁-under {B₁ = B₁} {B₂ = B₂} {c = c} b₁)
+    (bound₂-under b₂) same
+    e₁ e₂ (channel ∷ channels) sigma =
+    flatten-bind-channel-suc
+      {B₁ = B₁} {B₂ = B₂}
+      {P = plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫}
+      {channel = channel} {logicalChannels = channels} {sigma = sigma}
+      (pairBoundChannel₁ b₁ e₁ e₂)
+    ■ bound-common-channel-content b₁ b₂ (Fin.suc-injective same)
+        e₁ e₂ channels (bindEnv B₁ B₂ channel sigma)
+
 resolveBound₁-closed :
   (c : ProcessContext₂ k₁ k₂ 0) (x : 𝔽 k₁) →
   Σ[ i ∈ 𝔽 (pairChannels c) ] Bound₁ c x i
@@ -1192,6 +1484,125 @@ same-physical-channel⇒binder₂ c e₁ e₂ channels channel-injective x₁ x�
     (pairBoundChannels-equal⇒indices-equal found₁ found₂ e₁ e₂
       (channel-injective
         ( physicalEq₁ ■ sym physicalEq₂ )))
+  where
+  endpointEq₁ =
+    proj₁ (proj₂
+      (chanTriple-injective (sym canonical₁ ■ entry₁)))
+
+  endpointEq₂ =
+    proj₁ (proj₂
+      (chanTriple-injective (sym canonical₂ ■ entry₂)))
+
+  physicalEq₁ = proj₁ (endpoint-injective endpointEq₁)
+  physicalEq₂ = proj₁ (endpoint-injective endpointEq₂)
+
+same-physical-channel⇒binder₂-apart :
+  (c : ProcessContext₂ k₁ k₂ 0)
+  (e₁ : Source.Tm k₁) (e₂ : Source.Tm k₂)
+  (channels : Vec (OrientedChannel p)
+    (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫))) →
+  (∀ {i j} →
+    physicalChannel (lookup channels i) ≡
+    physicalChannel (lookup channels j) → i ≡ j) →
+  (x₁ : 𝔽 k₁) (x₂ : 𝔽 k₂)
+  {physical : 𝔽 p} {side₁ side₂ : 𝔽 2}
+  {left₁ right₁ left₂ right₂ : SoupTerm.Tm (2 *ℕ p)} →
+  side₁ ≢ side₂ →
+  pairFocusEnv₁ c e₁ e₂ channels (λ ()) x₁ ≡
+    Translation.chanTriple
+      (left₁ , Soup.endpoint physical side₁ , right₁) →
+  pairFocusEnv₂ c e₁ e₂ channels (λ ()) x₂ ≡
+    Translation.chanTriple
+      (left₂ , Soup.endpoint physical side₂ , right₂) →
+  Σ[ bnd ∈ Binder₂ c x₁ x₂ ]
+    Binder₂.local₁ bnd ≢ Binder₂.local₂ bnd
+same-physical-channel⇒binder₂-apart {p = p}
+  c e₁ e₂ channels channel-injective x₁ x₂ sidesApart entry₁ entry₂
+  with resolveBound₁-closed c x₁ | resolveBound₂-closed c x₂
+... | i₁ , found₁ | i₂ , found₂
+  with pairBound₁-endpoint found₁ e₁ e₂ channels (λ ())
+     | pairBound₂-endpoint found₂ e₁ e₂ channels (λ ())
+... | canonicalSide₁ , canonicalLeft₁ , canonicalRight₁ , canonical₁
+    | canonicalSide₂ , canonicalLeft₂ , canonicalRight₂ , canonical₂ =
+  let
+    samePosition =
+      pairBoundChannels-equal⇒indices-equal found₁ found₂ e₁ e₂
+        (channel-injective (physicalEq₁ ■ sym physicalEq₂))
+    bnd = bound-common found₁ found₂ samePosition
+    apart = λ localEq → sidesApart
+      (proj₂ (endpoint-injective {n = p}
+        (proj₁ (proj₂ (chanTriple-injective
+          (sym entry₁
+           ■ bound-common-entry-equal found₁ found₂ samePosition
+               e₁ e₂ channels (λ ()) localEq
+           ■ entry₂))))))
+  in bnd , apart
+  where
+  endpointEq₁ =
+    proj₁ (proj₂
+      (chanTriple-injective (sym canonical₁ ■ entry₁)))
+
+  endpointEq₂ =
+    proj₁ (proj₂
+      (chanTriple-injective (sym canonical₂ ■ entry₂)))
+
+  physicalEq₁ = proj₁ (endpoint-injective endpointEq₁)
+  physicalEq₂ = proj₁ (endpoint-injective endpointEq₂)
+
+same-physical-channel⇒binder₂-data :
+  (c : ProcessContext₂ k₁ k₂ 0)
+  (e₁ : Source.Tm k₁) (e₂ : Source.Tm k₂)
+  (channels : Vec (OrientedChannel p)
+    (Translation.channelCount (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫))) →
+  (∀ {i j} →
+    physicalChannel (lookup channels i) ≡
+    physicalChannel (lookup channels j) → i ≡ j) →
+  (x₁ : 𝔽 k₁) (x₂ : 𝔽 k₂)
+  {physical : 𝔽 p} {side₁ side₂ : 𝔽 2}
+  {left₁ right₁ left₂ right₂ : SoupTerm.Tm (2 *ℕ p)} →
+  side₁ ≢ side₂ →
+  pairFocusEnv₁ c e₁ e₂ channels (λ ()) x₁ ≡
+    Translation.chanTriple
+      (left₁ , Soup.endpoint physical side₁ , right₁) →
+  pairFocusEnv₂ c e₁ e₂ channels (λ ()) x₂ ≡
+    Translation.chanTriple
+      (left₂ , Soup.endpoint physical side₂ , right₂) →
+  Σ[ bnd ∈ Binder₂ c x₁ x₂ ]
+    (Binder₂.local₁ bnd ≢ Binder₂.local₂ bnd) ×
+    Σ[ logical ∈ 𝔽 (Translation.channelCount
+      (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)) ]
+      (physicalChannel (lookup channels logical) ≡ physical) ×
+      lookup
+        (proj₁ (flattenOriented
+          (plug₂ c Typed.⟪ e₁ ⟫ Typed.⟪ e₂ ⟫)
+          channels (λ ())))
+        logical ≡
+      bindChannel (Binder₂.C₁ bnd) (Binder₂.C₂ bnd)
+        (lookup channels logical)
+same-physical-channel⇒binder₂-data {p = p}
+  c e₁ e₂ channels channel-injective x₁ x₂ sidesApart entry₁ entry₂
+  with resolveBound₁-closed c x₁ | resolveBound₂-closed c x₂
+... | i₁ , found₁ | i₂ , found₂
+  with pairBound₁-endpoint found₁ e₁ e₂ channels (λ ())
+     | pairBound₂-endpoint found₂ e₁ e₂ channels (λ ())
+... | canonicalSide₁ , canonicalLeft₁ , canonicalRight₁ , canonical₁
+    | canonicalSide₂ , canonicalLeft₂ , canonicalRight₂ , canonical₂ =
+  let
+    samePosition =
+      pairBoundChannels-equal⇒indices-equal found₁ found₂ e₁ e₂
+        (channel-injective (physicalEq₁ ■ sym physicalEq₂))
+    bnd = bound-common found₁ found₂ samePosition
+    logical = pairBoundChannel₁ found₁ e₁ e₂
+    apart = λ localEq → sidesApart
+      (proj₂ (endpoint-injective {n = p}
+        (proj₁ (proj₂ (chanTriple-injective
+          (sym entry₁
+           ■ bound-common-entry-equal found₁ found₂ samePosition
+               e₁ e₂ channels (λ ()) localEq
+           ■ entry₂))))))
+    content = bound-common-channel-content found₁ found₂ samePosition
+      e₁ e₂ channels (λ ())
+  in bnd , apart , logical , physicalEq₁ , content
   where
   endpointEq₁ =
     proj₁ (proj₂

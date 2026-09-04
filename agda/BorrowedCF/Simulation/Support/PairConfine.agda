@@ -26,6 +26,9 @@ open import BorrowedCF.Simulation.Support.Base
 import BorrowedCF.Processes.Typed as 𝐓
 open import BorrowedCF.Context using (Ctx; Struct)
 open 𝐓 using (_;_⊢ₚ_; inv-∥; inv-ν; inv-⟪⟫; BindGroup; structBinder; bindCtx⇒chanCtx)
+open 𝐓 using (BindCtx; BindCtx′)
+open 𝐓.BindCtx
+open 𝐓.BindCtx′
 open import BorrowedCF.Context.Base using (_∥_; _⸴*_; `_)
 import BorrowedCF.Context.Substitution as 𝐂S
 open import BorrowedCF.Simulation.Support.Confine
@@ -33,7 +36,7 @@ open import BorrowedCF.Simulation.Support.Confine
 open import BorrowedCF.Simulation.Support.InvFrame
   using ( inv-app; inv-pair; inv-seq; inv-let; inv-letpair; inv-case
         ; inv-var-count; value-reflect; app₁-cong; app₂-cong; ⊗□-cong
-        ; +≤ˡ⇒0; +≤ʳ⇒0)
+        ; +≤ˡ⇒0; +≤ʳ⇒0; arg-type)
   renaming (inv-inj to inv-injᶠ)
 open import BorrowedCF.Simulation.Support.Strengthen
   using ( Inverter; Inverter*; H↑; invH↑; mk-thin
@@ -53,6 +56,79 @@ open import BorrowedCF.Simulation.Support.Confine
   using (count-join-Dir; count-join-PS; count-wk-suc)
 open Nat using ( _≤_; _<_; ≤-refl; ≤-trans; m≤m+n; m≤n+m; +-monoˡ-≤; +-monoʳ-≤
                ; n≤0⇒n≡0; s≤s⁻¹; s≤s; z≤n; +-comm; +-assoc; +-identityʳ)
+open import BorrowedCF.Types.Predicates using (New)
+open import BorrowedCF.Simulation.Support.CloseVacuityProbe
+  using (close-residual-skips)
+
+------------------------------------------------------------------------
+-- Close handles at the head of a binding group force that group to have
+-- width one: no further borrow can follow an end tip.
+
+fn-end-dom :
+  ∀ {N} {Γ : Ctx N} {β : Struct N} {p T U a ϵ} →
+  Γ ; β ⊢ K (`end p) ∶ T ⟨ a ⟩→ U ∣ ϵ → ⟨ end p ⟩ ≃ T
+fn-end-dom (T-Const `end) = ≃-refl
+fn-end-dom (T-Conv (dom≃ `→ cod≃) _ d) =
+  ≃-trans (fn-end-dom d) dom≃
+fn-end-dom (T-Weaken _ d) = fn-end-dom d
+
+close-handle-end :
+  ∀ {N} {Γ : Ctx N} {β : Struct N} {p} {dir} {x : 𝔽 N} {T ϵ} {s₀} →
+  Γ ; β ⊢ K (`end p) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ →
+  lookup Γ x ≡ ⟨ s₀ ⟩ → s₀ ≃ end p
+close-handle-end {x = x} {s₀ = s₀} d Γx = go d
+  where
+  tip :
+    ∀ {β₁ β₂ p T U a ϵ₁ ϵ₂} →
+    _ ; β₁ ⊢ K (`end p) ∶ T ⟨ a ⟩→ U ∣ ϵ₁ →
+    _ ; β₂ ⊢ ` x ∶ T ∣ ϵ₂ → s₀ ≃ end p
+  tip ⊢fn ⊢arg =
+    let
+      T≃Γx = arg-type ⊢arg
+      end≃T = fn-end-dom ⊢fn
+      ⟨s₀⟩≃end : ⟨ s₀ ⟩ ≃ ⟨ end _ ⟩
+      ⟨s₀⟩≃end =
+        ≃-trans (≃-sym (≃-reflexive Γx))
+          (≃-trans T≃Γx (≃-sym end≃T))
+    in ⟨⟩≃-inv ⟨s₀⟩≃end
+    where
+    ⟨⟩≃-inv : ∀ {a b} → ⟨ a ⟩ ≃ ⟨ b ⟩ → a ≃ b
+    ⟨⟩≃-inv ⟨ eq ⟩ = eq
+
+  go :
+    ∀ {β dir T ϵ} →
+    _ ; β ⊢ K (`end _) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → s₀ ≃ end _
+  go (T-AppUnr _ _ ⊢fn ⊢arg) = tip ⊢fn ⊢arg
+  go (T-AppLin _ _ ⊢fn ⊢arg) = tip ⊢fn ⊢arg
+  go (T-AppLeft _ _ ⊢fn ⊢arg) = tip ⊢fn ⊢arg
+  go (T-AppRight _ _ ⊢fn ⊢arg) = tip ⊢fn ⊢arg
+  go (T-Conv _ _ d) = go d
+  go (T-Weaken _ d) = go d
+
+private
+  close-block-width :
+    ∀ {p q} {s : 𝕊 0} {b} {Γ : Ctx (suc b)} {s₀} →
+    New s → BindCtx′ (s ; end p) Γ →
+    lookup Γ 0F ≡ ⟨ s₀ ⟩ → s₀ ≃ end q → b ≡ 0
+  close-block-width N (cons _ _ _ _ (nil _)) Γ0 endTip = refl
+  close-block-width {s₀ = s₀} N
+    (cons sa sb noSkip split (cons _ _ noSkip₂ split₂ tail))
+    Γ0 endTip =
+    ⊥-elim (noSkip₂ (close-residual-skips N split (≃-trans sa≃s₀ endTip)))
+    where
+    ⟨⟩-injective : ⟨ sa ⟩ ≡ ⟨ s₀ ⟩ → sa ≡ s₀
+    ⟨⟩-injective refl = refl
+
+    sa≃s₀ : sa ≃ s₀
+    sa≃s₀ with ⟨⟩-injective Γ0
+    ... | refl = ≃-refl
+
+close-group-width :
+  ∀ {p q} {s : 𝕊 0} {b} {Γ : Ctx (suc b + 0)} {s₀} →
+  New s → BindCtx (s ; end p) (suc b ∷ []) Γ →
+  lookup Γ 0F ≡ ⟨ s₀ ⟩ → s₀ ≃ end q → b ≡ 0
+close-group-width N (last block) Γ0 endTip =
+  sym (+-identityʳ _) ■ close-block-width N block Γ0 endTip
 
 ------------------------------------------------------------------------
 -- 1.  `strengthen-frame`, indexed by a SET of missing variables.
@@ -338,6 +414,17 @@ PairConfined {m} b₁ b₂ B₁ B₂ E₁ E₂ v P =
   × Σ (𝐓.Proc ((b₁ + sum B₁) + (b₂ + sum B₂) + m)) λ P₀ →
     P ≡ P₀ 𝐓.⋯ₚ wkₚ (b₁ + sum B₁) (b₂ + sum B₂)
 
+ClosePairConfined : ∀ {m} (b₁ b₂ : ℕ) (B₁ B₂ : BindGroup)
+  (E₁ E₂ : Frame* (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + m))
+  (P : 𝐓.Proc (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + m)) → Set
+ClosePairConfined {m} b₁ b₂ B₁ B₂ E₁ E₂ P =
+  Σ (Frame* ((b₁ + sum B₁) + (b₂ + sum B₂) + m)) λ E₁₀ →
+    (E₁ ≡ E₁₀ ⋯ᶠ* wkₚ (b₁ + sum B₁) (b₂ + sum B₂))
+  × Σ (Frame* ((b₁ + sum B₁) + (b₂ + sum B₂) + m)) λ E₂₀ →
+    (E₂ ≡ E₂₀ ⋯ᶠ* wkₚ (b₁ + sum B₁) (b₂ + sum B₂))
+  × Σ (𝐓.Proc ((b₁ + sum B₁) + (b₂ + sum B₂) + m)) λ P₀ →
+    P ≡ P₀ 𝐓.⋯ₚ wkₚ (b₁ + sum B₁) (b₂ + sum B₂)
+
 -- The `R-Com` handle of the SECOND endpoint, exactly as the rule writes it.
 comHandle : ∀ (b₁ b₂ : ℕ) (B₁ B₂ : BindGroup) {m} →
   𝔽 (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + m)
@@ -441,6 +528,84 @@ com-confine {m = m} Γ-S {γ = γ} {b₁ = b₁} {b₂ = b₂} {B₁ = B₁} {B�
                  (λ { z (inj₁ refl) → count0⇒∉dom δ cδ₁0
                     ; z (inj₂ refl) → count0⇒∉dom δ cδ₂0 })
   in E₁₀ , E₁eq , E₂₀ , E₂eq , v₀ , veq , P₀ , Peq
+
+close-pair-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
+  {b₁ b₂ : ℕ} {B₁ B₂ : BindGroup}
+  {E₁ E₂ : Frame* (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + m)}
+  {P : 𝐓.Proc (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + m)} →
+  Γ ; γ ⊢ₚ 𝐓.ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)
+    ((𝐓.⟪ E₁ [ K (`end ‼) ·¹ (` 0F) ]* ⟫
+      𝐓.∥ 𝐓.⟪ E₂ [ K (`end ⁇) ·¹ (` comHandle b₁ b₂ B₁ B₂) ]* ⟫)
+     𝐓.∥ P) →
+  ClosePairConfined b₁ b₂ B₁ B₂ E₁ E₂ P
+close-pair-confine {m = m} Γ-S {γ = γ} {b₁ = b₁} {b₂ = b₂} {B₁ = B₁} {B₂ = B₂}
+                  {E₁ = E₁} {E₂ = E₂} {P = P} ⊢ν =
+  let
+    Γ₁ , Γ₂ , s , p , N , ⊢B₁ , ⊢B₂ , C , C′ , ⊢body = inv-ν ⊢ν
+    Γ-body = ++⁺ (++⁺ (bindCtx⇒chanCtx C) (bindCtx⇒chanCtx C′)) Γ-S
+    ¬u : (h : 𝔽 (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + m)) →
+         ¬ Unr (lookup ((Γ₁ ⸴* Γ₂) ⸴* _) h)
+    ¬u h u = ¬unr-handle (subst Unr (proj₂ (chanCx-lookup Γ-body h)) u)
+    h₁ : 𝔽 (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + m)
+    h₁ = 0F
+    h₂ : 𝔽 (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + m)
+    h₂ = comHandle b₁ b₂ B₁ B₂
+    cγ₁ = count-handle-head b₁ B₁ (suc b₂ ∷ B₂) γ
+    cγ₂ = count-handle-snd b₁ b₂ B₁ B₂ γ
+    αβ , δ , αβδ≼ , ⊢pair , ⊢resid = inv-∥ ⊢body
+    α , β , αβ≼ , ⊢th₁ , ⊢th₂ = inv-∥ ⊢pair
+    β₁ , (_ , _ , ⊢plug₁) , support₁ , factor₁ = strengthen-frame* E₁ (inv-⟪⟫ ⊢th₁)
+    β₂ , (_ , _ , ⊢plug₂) , support₂ , factor₂ = strengthen-frame* E₂ (inv-⟪⟫ ⊢th₂)
+    αfn₁ , αarg₁ , _ , (_ , _ , ⊢x) , cle₁ = inv-app ⊢plug₁
+    αfn₂ , αarg₂ , _ , (_ , _ , ⊢y) , cle₂ = inv-app ⊢plug₂
+    -- thread 1 owns h₁
+    1≤αarg₁ = subst (Nat._≤ count h₁ αarg₁) (count-self h₁) (inv-var-count ⊢x h₁ (¬u h₁))
+    1≤β₁ = ≤-trans 1≤αarg₁
+             (≤-trans (m≤n+m (count h₁ αarg₁) (count h₁ αfn₁)) (cle₁ h₁ (¬u h₁)))
+    1≤α = ≤-trans 1≤β₁ (support₁ h₁ (¬u h₁))
+    -- thread 2 owns h₂
+    1≤αarg₂ = subst (Nat._≤ count h₂ αarg₂) (count-self h₂) (inv-var-count ⊢y h₂ (¬u h₂))
+    1≤β₂ = ≤-trans 1≤αarg₂
+             (≤-trans (m≤n+m (count h₂ αarg₂) (count h₂ αfn₂)) (cle₂ h₂ (¬u h₂)))
+    1≤β = ≤-trans 1≤β₂ (support₂ h₂ (¬u h₂))
+    -- the linear budget of each handle in the whole body
+    bud₁ = subst (count h₁ αβ + count h₁ δ Nat.≤_) cγ₁ (≼⇒count≤ (¬u h₁) αβδ≼)
+    bud₂ = subst (count h₂ αβ + count h₂ δ Nat.≤_) cγ₂ (≼⇒count≤ (¬u h₂) αβδ≼)
+    spl₁ = ≼⇒count≤ (¬u h₁) αβ≼
+    spl₂ = ≼⇒count≤ (¬u h₂) αβ≼
+    1≤αβ₁ = ≤-trans 1≤α (≤-trans (m≤m+n (count h₁ α) (count h₁ β)) spl₁)
+    1≤αβ₂ = ≤-trans 1≤β (≤-trans (m≤n+m (count h₂ β) (count h₂ α)) spl₂)
+    αβ≤1₁ = ≤-trans (m≤m+n (count h₁ αβ) (count h₁ δ)) bud₁
+    αβ≤1₂ = ≤-trans (m≤m+n (count h₂ αβ) (count h₂ δ)) bud₂
+    cδ₁0 = n≤0⇒n≡0 (s≤s⁻¹ (≤-trans (+-monoˡ-≤ (count h₁ δ) 1≤αβ₁) bud₁))
+    cδ₂0 = n≤0⇒n≡0 (s≤s⁻¹ (≤-trans (+-monoˡ-≤ (count h₂ δ) 1≤αβ₂) bud₂))
+    cβ₁0 = n≤0⇒n≡0 (s≤s⁻¹ (≤-trans (+-monoˡ-≤ (count h₁ β) 1≤α) (≤-trans spl₁ αβ≤1₁)))
+    cα₂0 = n≤0⇒n≡0 (s≤s⁻¹
+             (subst (Nat._≤ 1) (+-comm (count h₂ α) 1)
+               (≤-trans (+-monoʳ-≤ (count h₂ α) 1≤β) (≤-trans spl₂ αβ≤1₂))))
+    α≤1₁ = ≤-trans (m≤m+n (count h₁ α) (count h₁ β)) (≤-trans spl₁ αβ≤1₁)
+    β≤1₂ = ≤-trans (m≤n+m (count h₂ β) (count h₂ α)) (≤-trans spl₂ αβ≤1₂)
+    H : 𝔽 (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + m) → Set
+    H y = (y ≡ h₁) ⊎ (y ≡ h₂)
+    inv : Inverter* (wkₚ (b₁ + sum B₁) (b₂ + sum B₂)) H
+    inv = inv*-weaken
+            (λ y → λ { (inj₁ e) → inj₁ e
+                     ; (inj₂ e) → inj₂ (e ■ wkₚ-gap₂-eq (b₁ + sum B₁) (b₂ + sum B₂)) })
+            (inv-wkₚ (b₁ + sum B₁) (b₂ + sum B₂))
+    Hu : (h : 𝔽 _) → H h → ¬ Unr (lookup ((Γ₁ ⸴* Γ₂) ⸴* _) h)
+    Hu h _ = ¬u h
+    Hc₁ : (h : 𝔽 _) → H h → count h α ≤ count h β₁
+    Hc₁ = λ { h (inj₁ refl) → ≤-trans α≤1₁ 1≤β₁
+            ; h (inj₂ refl) → subst (Nat._≤ count h₂ β₁) (sym cα₂0) z≤n }
+    Hc₂ : (h : 𝔽 _) → H h → count h β ≤ count h β₂
+    Hc₂ = λ { h (inj₁ refl) → subst (Nat._≤ count h₁ β₂) (sym cβ₁0) z≤n
+            ; h (inj₂ refl) → ≤-trans β≤1₂ 1≤β₂ }
+    E₁₀ , E₁eq = factor₁ (wkₚ (b₁ + sum B₁) (b₂ + sum B₂)) H inv Hu Hc₁
+    E₂₀ , E₂eq = factor₂ (wkₚ (b₁ + sum B₁) (b₂ + sum B₂)) H inv Hu Hc₂
+    P₀ , Peq = strengthen-Proc-gen* ⊢resid (wkₚ (b₁ + sum B₁) (b₂ + sum B₂)) H inv
+                 (λ { z (inj₁ refl) → count0⇒∉dom δ cδ₁0
+                    ; z (inj₂ refl) → count0⇒∉dom δ cδ₂0 })
+  in E₁₀ , E₁eq , E₂₀ , E₂eq , P₀ , Peq
 
 close-confine : ∀ {m} {Γ : Ctx m} → ChanCx Γ → {γ : Struct m}
   {E₁ E₂ : Frame* (1 + 1 + m)} →

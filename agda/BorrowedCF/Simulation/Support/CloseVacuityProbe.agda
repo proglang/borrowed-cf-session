@@ -437,12 +437,12 @@ close-residual-skips : ∀ {s s₂ : 𝕊 0} {p p′} → New s →
 close-residual-skips {s₁ = s₁} {s = s} {s₂} N s≃ h≃ =
   endTip-Sc-skips (endTip-≃ (≃-sym s≃) (noEnd-front (new⇒noEnd N))) h≃
 
-b≡0 : ∀ {s : 𝕊 0} {n Γ p′} → New s →
-      (bc : BindCtx′ (s ; end {0} ‼) (suc n) Γ) →
-      (∀ {a r Γ′} → a ; r ≃ s ; end {0} ‼ → a ≃ end {0} p′ →
-         BindCtx′ r n Γ′ → n ≡ 0)
+b≡0 : ∀ {s : 𝕊 0} {n : ℕ} {Γ : Ctx (suc n)} {p′} → New s →
+      (bc : BindCtx′ (s ; end {0} ‼) Γ) →
+      (∀ {a r} {Γ′ : Ctx n} → a ; r ≃ s ; end {0} ‼ →
+         a ≃ end {0} p′ → BindCtx′ r Γ′ → n ≡ 0)
 b≡0 N bc s≃ ha (nil _) = refl
-b≡0 N bc s≃ ha (cons _ _ ¬skips s≃′ Γ≗′ bc′) =
+b≡0 N bc s≃ ha (cons _ _ ¬skips s≃′ bc′) =
   ⊥-elim (¬skips (close-residual-skips N s≃ ha))
 
 ------------------------------------------------------------------------
@@ -452,10 +452,11 @@ b≡0 N bc s≃ ha (cons _ _ ¬skips s≃′ Γ≗′ bc′) =
 ------------------------------------------------------------------------
 
 g1 : Ctx 1
-g1 = ⟨ end ‼ ⟩ F.∷ (λ ())
+g1 = ⟨ end ‼ ⟩ ∷ []
 
-bc1 : BindCtx′ (skip ; end ‼) 1 g1
-bc1 = cons (end ‼) skip (λ { (_ ; ()) }) (≃-trans ≃-skipʳ (≃-sym ≃-skipˡ)) (λ _ → refl) (nil skip)
+bc1 : BindCtx′ (skip ; end ‼) g1
+bc1 = cons (end ‼) skip (λ { (_ ; ()) })
+        (≃-trans ≃-skipʳ (≃-sym ≃-skipˡ)) (nil skip)
 
 -- And the verdict applied to it: forced to length 0 (b = 0).
 bc1-b≡0 : 1 ≡ suc 0   -- length is suc 0, the "n" component is 0
