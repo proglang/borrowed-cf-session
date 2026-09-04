@@ -398,3 +398,34 @@ P5.7 **`BackwardSoup/Main.agda`** — `backward-core` (`C₀ ≡ C`) by cases on
 `backward-sim : Backward-Sim` from `backward-core` and `Slot-Bisim`.
 P5.8 **`BackwardSoup/SlotBisim.agda`** — `≈¹` commutes with every soup rule (`swapPhi` against
 `consumePhi`/`insertPhi`/`_[_]*`/`_⋯ᵣ_`; templates `Local/AcqSupport.agda`, `Local/InsertSupport.agda`).
+
+### 12.3 P5 progress log
+
+* P5.0 DONE (commit `track thread indices through structural congruence`): `Tracks.agda` (358 lines).
+  `Tracks′` constructors `comm-l/comm-r/assoc/unit/swap-ν/comm-ν/ext-ν/cong-l/cong-r/cong-ν`, `Tracks`
+  constructors `track-ε/track-fwd/track-bwd`; the unit thread of `∥-unit′` is the only untracked thread.
+  `≋-sym`, `≡→≋`, `≋-plug` moved from `Canonical.agda` to the end of `Locate.agda` (importers of
+  `Canonical` no longer see them through it).  `tracks-≋-plug` needs `{d₂ = ≋-refl}` spelled out
+  (`_◅◅_` is not invertible by unification).  Functionality of `Tracks′` was not proved (not needed).
+* P5.1 DONE (commit `carry thread tracking across the image transport`): `TracksImage.agda` (508
+  lines): `≋′-image-tracks`, `≋′-image⁻-tracks`, `≋-image-tracks`, plus the public transport lemmas
+  `proc-image-embedding` (stated with a `Fin.toℕ` premise), `subst-channels-embedding`,
+  `restriction-swap-embedding`.  `Struct.proc-image` is now public.  `Fin.cast`'s equation is
+  irrelevant, so no `≡-irrelevant` juggling was needed.
+* P5.2a DONE (commit `track the redex thread through canonicalisation`): `Canonical.agda` (1273 lines).
+  Conventions: indices are characterised NUMERICALLY (`Fin.toℕ`) wherever a `Fin.cast` along
+  `pc-plugL`/`processCount-rename` would otherwise appear (`tracks-castℕ` in `Tracks.agda`; `Front P v`,
+  `front-*`, numeric axiom wrappers `∥-commℕ-l/r`, `∥-assoc-symℕ`, `∥-unitʳ-symℕ`, `ν-ext′ℕ`, `ν-comm′ℕ`,
+  `ν-swap′ℕ`, `threadInContext-ℕ`, `threadInContext-compose`, `threadInContext-ctxL`, `tracks-≋-plugL`,
+  `tracks-foldPar`).  `Bubble` has a sixth field `tracks`; `push` returns `Σ[ σ ] Σ[ d ] (hnd × trk)`;
+  every `Canon*` record has a new LAST parameter `src : 𝔽 (pc P)` and a last field `tracks : Tracks
+  ≋-canon src (threadInContext above′ (ν … (⟪ redex ⟫ ∥ resid)) 0F)`; the constructions return
+  `src = threadInContext ctx ⟪ e ⟫ 0F`, exactly the index `Locate.located` produces.
+* P5.2b in progress: `CanonicalPair.agda` (`thread₁`/`thread₂`, `Bubble₂.tracks₁/₂`, `Canon₂`/`CanonPair`
+  with `src₁ src₂`).
+* Forward-leaf structure relevant to P5.4 (checked 2026-09-04): every leaf ends in a local
+  `dispatch (present j slotEq lookupEq) = identity-step soupStep … image′` (two `present`s for
+  Close/Choice/Com) with `selected : lookup ts j ≡ F [ K c ·¹ arg ]*` and `soupStep = RUS-… j … F …`
+  in scope, and `threadEmbedding left 0F` is definitionally `threadEmbedding image 0F` (the redex is
+  thread `0F` of the binder body); `U-new-local` hard-codes the insertion index `0F` in `targetChannels`,
+  `soupStep`, `emb` and `channelContent` only.
