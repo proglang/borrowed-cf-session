@@ -398,14 +398,11 @@ private
 discard-reflect :
   {P : Typed.Proc 0} {n m : ℕ}
   {cs : Vec Soup.Channel n} {ts : Vec (Soup.Thread n) m}
-  (j : 𝔽 m) (F : SoupExpression.Frame* (2 *ℕ n))
-  {i : 𝔽 n} {side : 𝔽 2} {e₂ : Soup.Thread n} →
-  SoupExpression.Value
-    (Translation.chanTriple (SoupTerm.* , Soup.endpoint i side , e₂)) →
+  (j : 𝔽 m) (F : SoupExpression.Frame* (2 *ℕ n)) {e : Soup.Thread n} →
+  SoupExpression.Value e →
   lookup ts j ≡
     F SoupExpression.[
-      SoupTerm.K SoupTerm.`discard SoupTerm.·¹
-        Translation.chanTriple (SoupTerm.* , Soup.endpoint i side , e₂)
+      SoupTerm.K SoupTerm.`discard SoupTerm.·¹ e
     ]* →
   [] ; Context.[] ⊢ₚ P →
   (image : GlobalImage P (Soup.config cs ts)) →
@@ -415,7 +412,7 @@ discard-reflect :
       (Soup.config cs
         (SoupReduction.replaceAt ts j (F SoupExpression.[ SoupTerm.* ]*)))
 discard-reflect {P = P} {n = n} {cs = cs} {ts = ts}
-  j F {i = i} {side = side} {e₂ = e₂} Vhandle selected
+  j F {e = e} Vhandle selected
   ⊢P image
   with image-thread-term image j
          (discard-redex-not-unit {F = F} selected)
@@ -428,8 +425,7 @@ discard-reflect {P = P} {n = n} {cs = cs} {ts = ts}
            (logicalChannels image) (λ ()))
          (focusPairEnv ctx Typed.⟪ source ⟫
            (logicalChannels image) closedPairEnv)
-         F SoupTerm.`discard Types.𝟙
-         (Translation.chanTriple (SoupTerm.* , Soup.endpoint i side , e₂))
+         F SoupTerm.`discard Types.𝟙 e
          (sym content ■ selected)
 ... | E , arg , refl , frameEq , argEq
   with discard-argument-var {E = E} {w = arg} ⊢source
@@ -479,8 +475,7 @@ discard-reflect {P = P} {n = n} {cs = cs} {ts = ts}
       SoupTerm.K SoupTerm.`discard SoupTerm.·¹ discardArgument leaf
     ]* ≡
     F SoupExpression.[
-      SoupTerm.K SoupTerm.`discard SoupTerm.·¹
-        Translation.chanTriple (SoupTerm.* , Soup.endpoint i side , e₂)
+      SoupTerm.K SoupTerm.`discard SoupTerm.·¹ e
     ]*
   redexEq =
     sym (discardSelected leaf) ■
