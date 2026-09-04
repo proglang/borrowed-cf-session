@@ -457,6 +457,13 @@ P5.8 **`BackwardSoup/SlotBisim.agda`** — `≈¹` commutes with every soup rule
   image through the complete process context.  `Locate.image-thread-term`
   exports its transported position equation and `Lift.focusImage-thread`
   relates focused and global thread embeddings explicitly.
+* P5.6 unary restriction leaves DONE through RSplit: Drop and Discard recover
+  the strict first-group shape; LSplit reconstructs the canonical typed split;
+  Acquire uses the exact zero-slot/head-group invariant.  RSplit reconstructs
+  `R-RSplit`, obtains the forward image at the canonical boundary, and relates
+  it to any valid soup insertion boundary through `SlotInsert.agda`'s adjacent
+  transpositions.  `redex-unique` now also preserves `insertPhi`-transformed
+  frame plugging, which is required because the fresh phi occurs in the hole.
 * Pair-leaf support (checkpoint `locate paired soup redex threads`):
   `LocatePair.agda` recursively locates any two distinct process indices in a
   common `ProcessContext₂`, preserving both exact positions.  This supplies
