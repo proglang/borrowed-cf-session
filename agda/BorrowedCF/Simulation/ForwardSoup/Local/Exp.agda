@@ -30,7 +30,33 @@ open Nat.Variables hiding (n′; m′)
 -- The redex thread is `present`: its expected content is `T[ e ] sigma`,
 -- which steps, whereas `K `unit` does not.
 
-U-exp-local :
+record ExpStep
+  {k n m : ℕ} {e e′ : Source.Tm k}
+  (P′ : Typed.Proc k)
+  (sigma : Translation.Env k (2 *ℕ n))
+  (ambientChannel : 𝔽 n → Set)
+  (ambientThread : 𝔽 m → Set)
+  (C : Soup.Config n m) : Set where
+  field
+    expThread : 𝔽 m
+
+    expSelectedThread :
+      lookup (Soup.threads C) expThread ≡ Translation.T[ e ] sigma
+    expSourceStep :
+      e SourceReduction.⋯→ e′
+    expTranslatedStep :
+      lookup (Soup.threads C) expThread
+        SoupExpression.⋯→ Translation.T[ e′ ] sigma
+
+    expConfigStep :
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config (Soup.channels C)
+          (SoupReduction.replaceAt (Soup.threads C) expThread
+            (Translation.T[ e′ ] sigma)))
+
+open ExpStep public
+
+exp-step :
   {k n m : ℕ} {e e′ : Source.Tm k}
   {logicalChannels : Vec (OrientedChannel n) 0}
   {sigma : Translation.Env k (2 *ℕ n)}
@@ -40,8 +66,9 @@ U-exp-local :
   LocalImage (Typed.⟪ e ⟫) logicalChannels sigma
     ambientChannel ambientThread C →
   e SourceReduction.⋯→ e′ →
-  LocalStep (Typed.⟪ e′ ⟫) sigma ambientChannel ambientThread C
-U-exp-local {n = n} {m = m} {e = e} {e′ = e′} {logicalChannels = []} {sigma = sigma}
+  ExpStep {e = e} {e′ = e′}
+    (Typed.⟪ e′ ⟫) sigma ambientChannel ambientThread C
+exp-step {n = n} {m = m} {e = e} {e′ = e′} {logicalChannels = []} {sigma = sigma}
   {ambientChannel = ambientChannel} {ambientThread = ambientThread} {C = C}
   Vsigma image red
   with live-thread image zero
@@ -58,9 +85,15 @@ U-exp-local {n = n} {m = m} {e = e} {e′ = e′} {logicalChannels = []} {sigma 
     Translation.T[ e ] sigma SoupExpression.⋯→ Translation.T[ e′ ] sigma
   translatedStep = T[_]-⋯→ Vsigma red
 
-... | present j slotEq lookupEq =
-  identity-step (SoupReduction.RUS-Exp j selectedStep)
-    (λ _ _ → refl) threadsUnchanged targetImage
+... | present j slotEq lookupEq = record
+  { expThread = j
+  ; expSelectedThread = lookupEq
+  ; expSourceStep = red
+  ; expTranslatedStep = selectedStep
+  ; expConfigStep =
+      identity-config-step (SoupReduction.RUS-Exp j selectedStep)
+        (λ _ _ → refl) threadsUnchanged targetImage
+  }
   where
   targetThreads : Vec (Soup.Thread n) m
   targetThreads =
@@ -100,3 +133,25 @@ U-exp-local {n = n} {m = m} {e = e} {e′ = e′} {logicalChannels = []} {sigma 
           (Soup.threads C)
         ■ garbage-thread image l outside notAmbient
     }
+
+U-exp-local :
+  {k n m : ℕ} {e e′ : Source.Tm k}
+  {logicalChannels : Vec (OrientedChannel n) 0}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config n m} →
+  ValueEnv sigma →
+  LocalImage (Typed.⟪ e ⟫) logicalChannels sigma
+    ambientChannel ambientThread C →
+  e SourceReduction.⋯→ e′ →
+  LocalStep (Typed.⟪ e′ ⟫) sigma ambientChannel ambientThread C
+U-exp-local {k = k} {n = n} {m = m} {e = e} {e′ = e′}
+  {logicalChannels = logicalChannels} {sigma = sigma}
+  {ambientChannel = ambientChannel} {ambientThread = ambientThread} {C = C}
+  Vsigma image red =
+  configStep⇒localStep
+    (expConfigStep
+      (exp-step {k = k} {n = n} {m = m} {e = e} {e′ = e′}
+        {logicalChannels = logicalChannels} {sigma = sigma}
+        {ambientChannel = ambientChannel} {ambientThread = ambientThread}
+        {C = C} Vsigma image red))

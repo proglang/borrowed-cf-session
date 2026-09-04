@@ -44,7 +44,53 @@ private
 ------------------------------------------------------------------------
 -- The leaf.
 
-U-fork-local :
+record ForkStep
+  {k n m : ℕ}
+  {E : SourceReduction.Frame* k} {e : Source.Tm k}
+  (P′ : Typed.Proc k)
+  (sigma : Translation.Env k (2 *ℕ n))
+  (ambientChannel : 𝔽 n → Set)
+  (ambientThread : 𝔽 m → Set)
+  (C : Soup.Config n m) : Set where
+  field
+    forkParent : 𝔽 m
+    forkSourceFrame : SourceReduction.Frame* k
+    forkSourceFrame≡ : forkSourceFrame ≡ E
+
+    forkFrame : SoupExpression.Frame* (2 *ℕ n)
+    forkChild : Soup.Thread n
+    forkChild≡ : forkChild ≡ Translation.T[ e ] sigma
+    forkChildValue : SoupExpression.Value forkChild
+    forkSourceValue : SourceReduction.Value e
+
+    forkSelectedSource :
+      lookup (Soup.threads C) forkParent ≡
+      Translation.T[
+        SourceReduction._[_]* E
+          (Source._·¹_ (Source.K Source.`fork) e)
+      ] sigma
+    forkSelectedFork :
+      lookup (Soup.threads C) forkParent ≡
+      SoupExpression._[_]* forkFrame
+        (SoupTerm._·¹_ (SoupTerm.K SoupTerm.`fork)
+          (Translation.T[ e ] sigma))
+
+    forkParentSlot forkChildSlot : 𝔽 (suc m)
+    forkParentSlot≡ : forkParentSlot ≡ Fin.punchIn (suc forkParent) forkParent
+    forkChildSlot≡ : forkChildSlot ≡ suc forkParent
+
+    forkConfigStep :
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config (Soup.channels C)
+          (SoupReduction.insertAfter
+            (SoupReduction.replaceAt (Soup.threads C) forkParent
+              (SoupExpression._[_]* forkFrame SoupTerm.*))
+            forkParent
+            (SoupTerm._·¹_ (Translation.T[ e ] sigma) SoupTerm.*)))
+
+open ForkStep public
+
+fork-step :
   {k n m : ℕ}
   {E : SourceReduction.Frame* k} {e : Source.Tm k}
   {logicalChannels : Vec (OrientedChannel n) 0}
@@ -57,11 +103,11 @@ U-fork-local :
     (Typed.⟪ SourceReduction._[_]* E
                (Source._·¹_ (Source.K Source.`fork) e) ⟫)
     logicalChannels sigma ambientChannel ambientThread C →
-  LocalStep
+  ForkStep {E = E} {e = e}
     (Typed.⟪ SourceReduction._[_]* E Source.* ⟫ Typed.∥
      Typed.⟪ Source._·¹_ e Source.* ⟫)
     sigma ambientChannel ambientThread C
-U-fork-local {n = n} {m = m} {E = E} {e = e}
+fork-step {n = n} {m = m} {E = E} {e = e}
   {logicalChannels = []} {sigma = sigma}
   {ambientChannel = aC} {ambientThread = aT} {C = C} Vsigma Ve image
   with live-thread image 0F
@@ -76,16 +122,29 @@ U-fork-local {n = n} {m = m} {E = E} {e = e}
        ■ expectedEq))
 
 ... | present j slotEq lookupEq = record
-  { n′ = n
-  ; m′ = suc m
-  ; C′ = targetConfig
-  ; step = soupStep
-  ; embedding = emb
-  ; logicalChannels′ = []
-  ; image′ =
-      ambient-resp toChannel fromChannel (λ _ ambient → ambient)
-        (λ _ ambient → ambient)
-        (env-resp (λ x → sym (ren-id (sigma x) (λ _ → refl))) targetImage)
+  { forkParent = j
+  ; forkSourceFrame = E
+  ; forkSourceFrame≡ = refl
+  ; forkFrame = F
+  ; forkChild = Translation.T[ e ] sigma
+  ; forkChild≡ = refl
+  ; forkChildValue = T[_]-Value Ve Vsigma
+  ; forkSourceValue = Ve
+  ; forkSelectedSource = lookupEq
+  ; forkSelectedFork = selected
+  ; forkParentSlot = parentIndex
+  ; forkChildSlot = suc j
+  ; forkParentSlot≡ = refl
+  ; forkChildSlot≡ = refl
+  ; forkConfigStep = record
+      { config-step = soupStep
+      ; config-embedding = emb
+      ; config-logicalChannels′ = []
+      ; config-image′ =
+          ambient-resp toChannel fromChannel (λ _ ambient → ambient)
+            (λ _ ambient → ambient)
+            (env-resp (λ x → sym (ren-id (sigma x) (λ _ → refl))) targetImage)
+      }
   }
   where
   ts : Vec (Soup.Thread n) m
@@ -251,3 +310,31 @@ U-fork-local {n = n} {m = m} {E = E} {e = e}
     ; garbage-channel = garbage-channel image
     ; garbage-thread = targetGarbageThread
     }
+
+U-fork-local :
+  {k n m : ℕ}
+  {E : SourceReduction.Frame* k} {e : Source.Tm k}
+  {logicalChannels : Vec (OrientedChannel n) 0}
+  {sigma : Translation.Env k (2 *ℕ n)}
+  {ambientChannel : 𝔽 n → Set} {ambientThread : 𝔽 m → Set}
+  {C : Soup.Config n m} →
+  ValueEnv sigma →
+  SourceReduction.Value e →
+  LocalImage
+    (Typed.⟪ SourceReduction._[_]* E
+               (Source._·¹_ (Source.K Source.`fork) e) ⟫)
+    logicalChannels sigma ambientChannel ambientThread C →
+  LocalStep
+    (Typed.⟪ SourceReduction._[_]* E Source.* ⟫ Typed.∥
+     Typed.⟪ Source._·¹_ e Source.* ⟫)
+    sigma ambientChannel ambientThread C
+U-fork-local {k = k} {n = n} {m = m} {E = E} {e = e}
+  {logicalChannels = logicalChannels} {sigma = sigma}
+  {ambientChannel = ambientChannel} {ambientThread = ambientThread} {C = C}
+  Vsigma Ve image =
+  configStep⇒localStep
+    (forkConfigStep
+      (fork-step {k = k} {n = n} {m = m} {E = E} {e = e}
+        {logicalChannels = logicalChannels} {sigma = sigma}
+        {ambientChannel = ambientChannel} {ambientThread = ambientThread}
+        {C = C} Vsigma Ve image))

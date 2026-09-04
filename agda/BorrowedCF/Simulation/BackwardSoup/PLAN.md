@@ -432,6 +432,10 @@ P5.8 **`BackwardSoup/SlotBisim.agda`** — `≈¹` commutes with every soup rule
   argument, and plugging function, as well as uniqueness of list splits at
   equal positions.  Both results are constructive and require no proof
   irrelevance for evaluation frames.
+* P5.4 PARTIAL: `Step.agda` indexes the exact target configuration;
+  Com/Choice/Close expose strict synchronization evidence; Exp/Fork expose
+  their selected source thread and exact indexed reduct.  The remaining
+  single-thread leaves still need the same treatment.
 * Forward-leaf structure relevant to P5.4 (checked 2026-09-04): every leaf ends in a local
   `dispatch (present j slotEq lookupEq) = identity-step soupStep … image′` (two `present`s for
   Close/Choice/Com) with `selected : lookup ts j ≡ F [ K c ·¹ arg ]*` and `soupStep = RUS-… j … F …`
