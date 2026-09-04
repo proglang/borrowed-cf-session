@@ -145,6 +145,10 @@ private
       coreHandleLeft : SoupTerm.Tm (2 *ℕ n)
       coreHandleEnd : 𝔽 (2 *ℕ n)
       coreHandleRight : SoupTerm.Tm (2 *ℕ n)
+      coreHandleValue :
+        SoupExpression.Value
+          (Translation.chanTriple
+            (coreHandleLeft , coreHandleEnd , coreHandleRight))
       coreSelected :
         lookup (Soup.threads C) coreThread ≡
         SoupExpression._[_]* coreFrame
@@ -402,6 +406,7 @@ private
       ; coreHandleLeft = e₁
       ; coreHandleEnd = end₁
       ; coreHandleRight = e₂
+      ; coreHandleValue = subst SoupExpression.Value handleSrc (Vsource x₀)
       ; coreSelected = selected
       ; coreReplacement = plugged
       ; coreReplacement≡ = refl
@@ -648,6 +653,10 @@ record LSplitStep
     lsplitHandleLeft : SoupTerm.Tm (2 *ℕ n)
     lsplitHandleEnd : 𝔽 (2 *ℕ n)
     lsplitHandleRight : SoupTerm.Tm (2 *ℕ n)
+    lsplitHandleValue :
+      SoupExpression.Value
+        (Translation.chanTriple
+          (lsplitHandleLeft , lsplitHandleEnd , lsplitHandleRight))
     lsplitSelected :
       lookup (Soup.threads C) lsplitThread ≡
       SoupExpression._[_]* lsplitFrame
@@ -670,6 +679,14 @@ record LSplitStep
         (Soup.config (Soup.channels C)
           (SoupReduction.replaceAt
             (Soup.threads C) lsplitThread lsplitReplacement))
+
+    lsplitConfigStepAt :
+      {j : 𝔽 m} {thread′ : Soup.Thread n} →
+      lsplitThread ≡ j →
+      lsplitReplacement ≡ thread′ →
+      ConfigStep P′ sigma ambientChannel ambientThread C
+        (Soup.config (Soup.channels C)
+          (SoupReduction.replaceAt (Soup.threads C) j thread′))
 
 open LSplitStep public
 
@@ -743,20 +760,13 @@ lsplit-step {k = k} {q = q} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {B = B}
   ; lsplitHandleLeft = LSplitCore.coreHandleLeft core
   ; lsplitHandleEnd = LSplitCore.coreHandleEnd core
   ; lsplitHandleRight = LSplitCore.coreHandleRight core
+  ; lsplitHandleValue = LSplitCore.coreHandleValue core
   ; lsplitSelected = LSplitCore.coreSelected core
   ; lsplitReplacement = LSplitCore.coreReplacement core
   ; lsplitReplacement≡ = LSplitCore.coreReplacement≡ core
-  ; lsplitConfigStep =
-      subst
-        (λ Z →
-          ConfigStep Z sigma aC aT C
-            (Soup.config (Soup.channels C)
-              (SoupReduction.replaceAt
-                (Soup.threads C)
-                (LSplitCore.coreThread core)
-                (LSplitCore.coreReplacement core))))
-        stepEq
-        (LSplitCore.coreConfigStep core)
+  ; lsplitConfigStep = configStep
+  ; lsplitConfigStepAt = λ where
+      refl refl → configStep
   }
   where
   module 𝐒 = Source.SplitRenamings B₁ B₂ (sum B)
@@ -846,6 +856,33 @@ lsplit-step {k = k} {q = q} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂} {B = B}
       (sym Eeq)
       (sym (Typed.fusionₚ P₀ rho lwk)
        ■ cong (λ Z → Typed._⋯ₚ_ Z lwk) (sym Peq))
+
+  configStep :
+    ConfigStep
+      (Typed.ν (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B
+        (Typed.⟪ SourceReduction._[_]*
+          (SourceReduction._⋯ᶠ*_ E lwk)
+          (Source._⊗_
+            (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 0F)))
+            (Source.` (𝐒.atk {q + suc (suc b₁)} {k} (q ↑ʳ 1F)))) ⟫
+         Typed.∥ (Typed._⋯ₚ_ P lwk)))
+      sigma aC aT C
+      (Soup.config (Soup.channels C)
+        (SoupReduction.replaceAt
+          (Soup.threads C)
+          (LSplitCore.coreThread core)
+          (LSplitCore.coreReplacement core)))
+  configStep =
+    subst
+      (λ Z →
+        ConfigStep Z sigma aC aT C
+          (Soup.config (Soup.channels C)
+            (SoupReduction.replaceAt
+              (Soup.threads C)
+              (LSplitCore.coreThread core)
+              (LSplitCore.coreReplacement core))))
+      stepEq
+      (LSplitCore.coreConfigStep core)
 
 U-lsplit-local :
   {k n m q b₁ : ℕ} {Γ : Context.Ctx k} {g : Context.Struct k}
