@@ -93,6 +93,8 @@ record AcqStep
       acqEndpoint ≡ Soup.endpoint acqPhysicalChannel acqPhysicalSide
     acqPhiSlot : ℕ
     acqBeforeFlags acqAfterFlags : List Soup.Flag
+    acqPhiSlotZero : acqPhiSlot ≡ zero
+    acqBeforeFlagsEmpty : acqBeforeFlags ≡ []
 
     acqFrame : SoupExpression.Frame* (2 *ℕ n)
     acqTail acqArgument : Soup.Thread n
@@ -416,6 +418,8 @@ acq-step {k = k} {n = n} {m = m} {b₁ = b₁} {B₁ = B₁} {B₂ = B₂}
       ; acqPhiSlot = 0
       ; acqBeforeFlags = []
       ; acqAfterFlags = tailFlags
+      ; acqPhiSlotZero = refl
+      ; acqBeforeFlagsEmpty = refl
       ; acqFrame = F
       ; acqTail = tail₁
       ; acqArgument = triple₁

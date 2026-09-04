@@ -21,4 +21,5 @@ open import BorrowedCF.Simulation.BackwardSoup.Leaves.Fork public
 open import BorrowedCF.Simulation.BackwardSoup.Leaves.New public
 open import BorrowedCF.Simulation.BackwardSoup.Leaves.Drop public
 open import BorrowedCF.Simulation.BackwardSoup.Leaves.Discard public
+open import BorrowedCF.Simulation.BackwardSoup.Leaves.Acq public
 open import BorrowedCF.Simulation.BackwardSoup.Leaves.LSplit public
