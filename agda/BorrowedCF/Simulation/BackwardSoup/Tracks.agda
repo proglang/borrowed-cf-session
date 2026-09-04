@@ -210,6 +210,16 @@ tracks-cast :
   Tracks d a b → a ≡ a′ → b ≡ b′ → Tracks d a′ b′
 tracks-cast t refl refl = t
 
+-- The NUMERIC form of `tracks-cast`.  `Canonical.agda` describes every
+-- index it meets by its `Fin.toℕ` value, because the exact `Fin` term would
+-- otherwise carry a `Fin.cast` along a `processCount` equation at each step.
+tracks-castℕ :
+  {P Q : 𝐓.Proc n} {d : P 𝐓.≋ Q} {a a′ : 𝔽 (pc P)} {b b′ : 𝔽 (pc Q)} →
+  Tracks d a b → Fin.toℕ a ≡ Fin.toℕ a′ → Fin.toℕ b ≡ Fin.toℕ b′ →
+  Tracks d a′ b′
+tracks-castℕ t ea eb =
+  tracks-cast t (Fin.toℕ-injective ea) (Fin.toℕ-injective eb)
+
 -- The reflexive derivation of a process EQUATION transports the thread
 -- along that equation.
 tracks-≡→≋ :

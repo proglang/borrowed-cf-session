@@ -237,9 +237,9 @@ push₂ :
           σ (wkL₂ bsA bsB (v ↑ˡ mid)) ≡ v ↑ˡ arity bsB (arity bsA mid)))
 push₂ bsA bsB C₁ C₂ {mid} T
   with push bsA C₁ C₂ {mid} (plugL bsB T)
-... | σA , ≋A , hndA
+... | σA , ≋A , hndA , _
   with push bsB C₁ C₂ {arity bsA mid} (T 𝐓.⋯ₚ liftL bsB σA)
-...  | σB , ≋B , hndB =
+...  | σB , ≋B , hndB , _ =
   (λ y → σB (liftL bsB σA y))
   , ( ≋A
       ◅◅ ≋-plugL bsA (𝐓.ν-cong (≡→≋ (plugL-⋯ bsB T σA)))
@@ -294,7 +294,7 @@ private
     (c₁ : ProcessContext k₁ n) (c₂ : ProcessContext k₂ n) →
     Bubble₂ (par₂ c₁ c₂)
   bubblePar c₁ c₂ with bubble c₁ | bubble c₂
-  ... | bubbled bs₁ σ₁ Q₁ eq₁ am₁ | bubbled bs₂ σ₂ Q₂ eq₂ am₂ =
+  ... | bubbled bs₁ σ₁ Q₁ eq₁ am₁ _ | bubbled bs₂ σ₂ Q₂ eq₂ am₂ _ =
     bubbled₂ bs₁ bs₂
       (λ y → wkL bs₂ (σ₁ y))
       (λ y → liftL bs₂ (wkL bs₁) (σ₂ y))
