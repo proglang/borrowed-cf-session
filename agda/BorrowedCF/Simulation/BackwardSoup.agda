@@ -31,3 +31,6 @@ open import BorrowedCF.Simulation.BackwardSoup.Leaves.Com public
 open import BorrowedCF.Simulation.BackwardSoup.Leaves.Choice public
 open import BorrowedCF.Simulation.BackwardSoup.Main public
 open import BorrowedCF.Simulation.BackwardSoup.Compose public
+open import BorrowedCF.Simulation.BackwardSoup.SlotBisim public
+  using (One-Bisim; one-bisim; slot-bisim)
+open import BorrowedCF.Simulation.BackwardSoup.Simulation public
