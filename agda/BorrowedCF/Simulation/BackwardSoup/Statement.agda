@@ -18,14 +18,15 @@
 --     2. packages it as a one-step relation `_≈¹_` on configurations and its
 --        equivalence closure `_≈ˢ_`;
 --     3. STATES the refined backward simulation `Backward-Sim` and the
---        auxiliary `Slot-Bisim` conjecture that reduces it to the case where
+--        auxiliary `Slot-Bisim` theorem that reduces it to the case where
 --        the image is exact;
 --     4. validates the definitions on the F3 example of
 --        `Examples/Splits.agda`: the canonical and the wrong-slot `RUS-RSplit`
 --        reducts are related by a SINGLE `_≈¹_` step;
 --     5. records the proof plan (also appended to `PLAN.md` as §8).
 --
---   No proof of `Backward-Sim` is attempted here.
+--   `SlotBisim.agda` proves the auxiliary theorem; `Simulation.agda` combines
+--   it with exact reflection and exports `backward-sim : Backward-Sim`.
 module BorrowedCF.Simulation.BackwardSoup.Statement where
 
 import Data.Fin.Properties as FinP
@@ -302,11 +303,11 @@ Backward-Sim =
   Σ[ P′ ∈ Typed.Proc 0 ] (P TypedReduction.─→ₚ P′) ×
   Σ[ C₀′ ∈ Soup.Config n′ m′ ] GlobalImage P′ C₀′ × C₀′ ≈ˢ C′
 
--- Auxiliary conjecture.  Every soup rule addresses slots only through the phi
+-- Auxiliary theorem.  Every soup rule addresses slots only through the phi
 -- NAMES it matches (`RUS-Drop`, `RUS-Acquire`, `RUS-RSplit` via
 -- `L.length before`) and through the two global sweeps `consumePhi` /
 -- `insertPhi`; none of them inspects the ORDER of an endpoint's slots.  So a
--- renumbering should be a strong bisimulation for `_─→ₚ_`:
+-- renumbering is a strong bisimulation for `_─→ₚ_`:
 
 Slot-Bisim : Set
 Slot-Bisim =
@@ -321,7 +322,7 @@ Slot-Bisim =
 -- `C₀″ ≈ˢ C′`, solve the exact case, and compose the two `≈ˢ`s with
 -- `≈ˢ-trans`.  Conversely `Slot-Bisim` is the only place where the
 -- commutation of `swapPhi` with `consumePhi`, `insertPhi` and the frame
--- algebra has to be proved; the rest of `Backward-Sim` never sees `_≈¹_`
+-- algebra is proved; the rest of `Backward-Sim` never sees `_≈¹_`
 -- except for the one `RUS-RSplit` slot that the typed rule does not offer.
 
 ------------------------------------------------------------------------

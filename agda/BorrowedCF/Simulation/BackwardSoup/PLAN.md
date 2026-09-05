@@ -168,7 +168,7 @@ would do just as well.  Statement:
       [] ; [] ⊢ₚ P → GlobalImage P C₀ → C₀ ≈ˢ C → C ─→ₚ C′ →
       Σ[ P′ ] P ─→ₚ P′ × Σ[ C₀′ ] GlobalImage P′ C₀′ × C₀′ ≈ˢ C′
 
-plus the auxiliary conjecture `Slot-Bisim : C ≈ˢ D → C ─→ₚ C′ → Σ[ D′ ] D ─→ₚ D′ × C′ ≈ˢ D′`, which
+plus the auxiliary theorem `Slot-Bisim : C ≈ˢ D → C ─→ₚ C′ → Σ[ D′ ] D ─→ₚ D′ × C′ ≈ˢ D′`, which
 reduces `Backward-Sim` to the case `C₀ ≡ C` (the soup rules address slots only through `phi` names,
 `consumePhi` and `insertPhi`, never through their order).  Validation: the F3 pair of
 `Examples/Splits.agda` is a single `≈¹` step — `rsplit-wrong-k-is-a-swap : Crs′ ≈¹ Crs″`, holding by
@@ -394,9 +394,10 @@ leaf, `redex-unique` (⇒ the forward reduct IS the soup reduct), `liftConfigSte
 node) and use `canon-pair`; Com/Close use `PairConfine`.  RSplit returns the forward configuration
 `C″` and `C″ ≈ˢ C′` (slot renumbering between `prefixFlags B₁` and the soup's `before`).  New uses
 the soup's insertion index.  Exp needs no canonicalisation (`step-inversion` + `plug-red`).
-P5.7 **`BackwardSoup/Main.agda`** — `backward-core` (`C₀ ≡ C`) by cases on the eleven rules, and
-`backward-sim : Backward-Sim` from `backward-core` and `Slot-Bisim`.
-P5.8 **`BackwardSoup/SlotBisim.agda`** — `≈¹` commutes with every soup rule (`swapPhi` against
+P5.7 **DONE: `BackwardSoup/Main.agda`, `Compose.agda`, `Simulation.agda`** — `backward-core`
+(`C₀ ≡ C`) by cases on the eleven rules; semantic composition with slot bisimulation; and
+`backward-sim : Backward-Sim`.
+P5.8 **DONE: `BackwardSoup/SlotBisim.agda`** — `≈¹` commutes with every soup rule (`swapPhi` against
 `consumePhi`/`insertPhi`/`_[_]*`/`_⋯ᵣ_`; templates `Local/AcqSupport.agda`, `Local/InsertSupport.agda`).
 
 ### 12.3 P5 progress log
@@ -446,7 +447,7 @@ P5.8 **`BackwardSoup/SlotBisim.agda`** — `≈¹` commutes with every soup rule
   `ProcessContext`, ascends exact `ConfigStep`s through left/right parallel
   and restriction frames, lifts typed reductions through the same contexts,
   and focuses the separation invariant required by global phi sweeps.
-* P5.6 PARTIAL (checkpoints `reflect soup expression steps`, `reflect soup fork
+* P5.6 DONE (starting checkpoints `reflect soup expression steps`, `reflect soup fork
   steps`, `reflect soup channel allocation`): Exp locates the selected source
   thread and eliminates the ill-typed residual expression case.  Fork
   additionally inverts the translated unary redex, reflects the value
@@ -476,3 +477,7 @@ P5.8 **`BackwardSoup/SlotBisim.agda`** — `≈¹` commutes with every soup rule
   in scope, and `threadEmbedding left 0F` is definitionally `threadEmbedding image 0F` (the redex is
   thread `0F` of the binder body); `U-new-local` hard-codes the insertion index `0F` in `targetChannels`,
   `soupStep`, `emb` and `channelContent` only.
+* P5.7/P5.8 DONE (commit `prove backward soup simulation`): `Main.agda` dispatches exact reflection
+  over all eleven soup rules, `SlotBisim.agda` proves one-generator equivariance and lifts it through
+  `_≈ˢ_`, and `Simulation.agda` exports `backward-sim : Backward-Sim`.  The aggregate module checks
+  with no diagnostics, goals, invisible metavariables, postulates, or termination overrides.
