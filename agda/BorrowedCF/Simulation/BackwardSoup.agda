@@ -27,4 +27,5 @@ open import BorrowedCF.Simulation.BackwardSoup.Leaves.Acq public
 open import BorrowedCF.Simulation.BackwardSoup.Leaves.LSplit public
 open import BorrowedCF.Simulation.BackwardSoup.Leaves.RSplit public
 open import BorrowedCF.Simulation.BackwardSoup.Leaves.Close public
+open import BorrowedCF.Simulation.BackwardSoup.Leaves.Com public
 open import BorrowedCF.Simulation.BackwardSoup.Leaves.Choice public
