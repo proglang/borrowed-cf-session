@@ -17,7 +17,7 @@ open import BorrowedCF.Simulation.Support.Theorems.Drop
   using ( Bφ; Bφ-cong; Bφ-⋯; φ-past-Bφ; subst-Bφ; leafσ; Uν-flat
         ; VSub-leafσ; leafσ-shift; assocPush-junc; frame-plug*ᵣ
         ; ≡→≋; ─→-subst
-        ; head-noRet-last; noRet⇒≄ret; ⟨⟩≃; drop-handle-≃ret )
+        ; bodyΓ-0F; head-noRet-last; noRet⇒≄ret; ⟨⟩≃; drop-handle-≃ret )
 
 open import BorrowedCF.Simulation.Support.BlockPerm
   using ( toℕ-weaken*ᵣ; toℕ-reduce≥; toℕ-↑*-ge; toℕ-assoc-mid; toℕ-assoc-ge )
@@ -54,20 +54,20 @@ U-drop→ : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx 
        → U[ TP.ν (suc b₁ ∷ B₁) B₂
              (TP.⟪ (E ⋯ᶠ* weakenᵣ) [ K `drop ·¹ (` 0F) ]* ⟫ TP.∥ (P TP.⋯ₚ weakenᵣ)) ] σ
             UR.─→ₚ U[ TP.ν (b₁ ∷ B₁) B₂ (TP.⟪ E [ * ]* ⟫ TP.∥ P) ] σ
-U-drop→ σ Vσ Γ-S {b₁ = b₁} {B₁ = []} {B₂ = B₂} {E = E} {P = P} ⊢P
+U-drop→ σ Vσ {Γ = Γ} Γ-S {b₁ = b₁} {B₁ = []} {B₂ = B₂} {E = E} {P = P} ⊢P
   with inv-ν ⊢P
-... | _ , _ , sN , _ , N , _ , _ , C , _ , ⊢body
+... | Γ₁ , Γ₂ , sN , _ , N , _ , _ , C , _ , ⊢body
   with inv-∥ ⊢body
 ... | _ , _ , _ , ⊢dropT , _
   with strengthen-frame (E ⋯ᶠ* weakenᵣ) (inv-⟪⟫ ⊢dropT)
 ... | _ , (_ , _ , ⊢plug) , _ , _
   with head-noRet-last (VP._;_ (new⇒noRet N) VP.end) C
 ... | s , Γ0≡ , Ns
-  = ⊥-elim (noRet⇒≄ret Ns (⟨⟩≃ (≃-trans (≃-reflexive (sym Γ0≡)) (drop-handle-≃ret ⊢plug))))
+  = ⊥-elim (noRet⇒≄ret Ns (⟨⟩≃ (≃-trans (≃-reflexive (sym (bodyΓ-0F Γ₁ {B = _ , Γ₂} {C = _ , Γ} Γ₂ Γ ■ Γ0≡))) (drop-handle-≃ret ⊢plug))))
 U-drop→ {m} {n} σ Vσ Γ-S {b₁ = suc b₁} {B₁ = C@(_ ∷ _)} {B₂ = B₂} {E = E} {P = P} ⊢P
   with inv-ν ⊢P
 ... | _ , _ , sN , _ , N , _ , _
-    , cons-ret/acq sh scra Γ≗ (cons s1ʰ s2ʰ ¬sk1 s≃1 Γ≗1 (cons _ _ ¬Ss s≃2 _ _)) _ , _ , ⊢body
+    , cons-ret/acq sh scra Γ≗ (cons s1ʰ s2ʰ ¬sk1 s≃1 (cons _ _ ¬Ss s≃2 _)) _ _ , _ , ⊢body
   with inv-∥ ⊢body
 ... | _ , _ , _ , ⊢dropT , _
   with strengthen-frame (E ⋯ᶠ* weakenᵣ) (inv-⟪⟫ ⊢dropT)
@@ -75,7 +75,7 @@ U-drop→ {m} {n} σ Vσ Γ-S {b₁ = suc b₁} {B₁ = C@(_ ∷ _)} {B₂ = B�
   = ⊥-elim (¬Ss (retTip-Sc-skips rt-borrow head≃ret))
   where
     head≃ret : s1ʰ ≃ ret
-    head≃ret = ⟨⟩≃ (≃-trans (≃-reflexive (sym (sym (Γ≗ 0F) ■ sym (Γ≗1 0F)))) (drop-handle-≃ret ⊢plug))
+    head≃ret = ⟨⟩≃ (drop-handle-≃ret ⊢plug)
     noRet-sh : NoRet sh
     noRet-sh = noRet-;-fst (noRet-≃ (EqC.symmetric _≃𝕊_ scra) (VP._;_ (new⇒noRet N) VP.end))
     rt-borrow : RetTip (s1ʰ ; s2ʰ)

@@ -16,7 +16,7 @@ module BorrowedCF.Simulation.Support.RevGrindC where
 -- handle, so ¬before is trivial).
 
 open import BorrowedCF.Prelude
-open import BorrowedCF.Context.Base using (Struct; _∥_; Ctx)
+open import BorrowedCF.Context.Base using (Struct; _∥_; Ctx; _﹫_)
 import BorrowedCF.Context.Substitution as 𝐂S
 open import Data.Nat.ListAction using (sum)
 open import BorrowedCF.Processes.Typed using (BindGroup; structBinder; structNSeq)
@@ -25,7 +25,7 @@ open import BorrowedCF.Simulation.Support.StructDom
   using (count-structBinder-lt; count-weaken*-lo; count-weaken*-shift; count-⋯ᵣwkʳ-↑ˡ; count-⋯ᵣwkʳ-↑ʳ)
 open import BorrowedCF.Simulation.Support.BeforeOrder
   using (before; before-structNSeq; before-⋯ᵣ-inj)
-open import BorrowedCF.Reduction.Base using (ChanCx)
+open import BorrowedCF.Reduction.Base using (ChanCx; chanCx-lookup)
 open import BorrowedCF.Types using (Unr; ⟨_⟩)
 
 open import Data.Fin.Base using (_↑ˡ_; _↑ʳ_)
@@ -38,8 +38,8 @@ open Fin.Patterns
 open Nat using (_<_; _≤_; s≤s; z≤n; +-identityʳ; m≤m+n; m≤n+m; <-≤-trans; +-suc; +-monoʳ-<)
 
 -- ── channels are never Unr ──
-chanCx-¬Unr : ∀ {N} {Γ : Ctx N} → ChanCx Γ → (x : 𝔽 N) → ¬ Unr (Γ x)
-chanCx-¬Unr Γ-S x u with Γ-S x
+chanCx-¬Unr : ∀ {N} {Γ : Ctx N} → ChanCx Γ → (x : 𝔽 N) → ¬ Unr (Γ ﹫ x)
+chanCx-¬Unr Γ-S x u with chanCx-lookup Γ-S x
 ... | s , eq with subst Unr eq u
 ...   | ⟨ () ⟩
 

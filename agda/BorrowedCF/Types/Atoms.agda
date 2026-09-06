@@ -4,16 +4,15 @@ module BorrowedCF.Types.Atoms (front : Bool) where
 
 open import Data.Bool using () renaming (T to 𝔗)
 open import Data.Bool.Properties
-open import Relation.Binary.Construct.Closure.Equivalence as Eq* using (EqClosure)
-open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (_◅_; _◅◅_) renaming (ε to refl)
-open import Relation.Binary.Construct.Closure.Symmetric as Sym using (SymClosure; fwd; bwd)
 
 
 open import BorrowedCF.Types.Syntax hiding (a)
 open import BorrowedCF.Types.Substitution
 open import BorrowedCF.Types.Equivalence
+open import BorrowedCF.Types.AtomSnoc using (ClosedAtom)
+open import BorrowedCF.Types.AtomUnsnoc using (atom-;-unsnoc; closedatom-atom)
+open import BorrowedCF.Types.AtomCons using (atom-;-cons)
 
-open Bin
 open Nat.Variables
 open ≃-Reasoning
 
@@ -101,7 +100,7 @@ Back-≡ = go front where
 
 private variable a : 𝕊 n
 
--- Cat a x y witnesses the equivalence a ⨟ x ≃ y
+-- Cat a x y witnesses the equivalence a ⨟ x ≃ y.
 
 data Cat (a : 𝕊 n) : 𝕊 n → 𝕊 n → Set where
   here : a ≃ s → Cat a skip s
@@ -132,7 +131,7 @@ cat-sound (front F ∶ x ;₁-) =
 cat-sound (front F ∶ x ;₂ y) = ≃-trans (cat-sound y) (≃-sym (≃-skipsˡ x))
 
 cat-⋯ : {ϕ : m →ₛ n} → Cat a s s′ → Cat (a ⋯ ϕ) (s ⋯ ϕ) (s′ ⋯ ϕ)
-cat-⋯ (here eq) = (here (≃-⋯ eq))
+cat-⋯ (here eq) = here (≃-⋯ eq)
 cat-⋯ (brn x c₁ c₂) = brn x (cat-⋯ c₁) (cat-⋯ c₂)
 cat-⋯ (back B ∶ c ;₁ z) = back B ∶ cat-⋯ c ;₁ skips-⋯ z
 cat-⋯ (back B ∶-;₂ c) = back B ∶-;₂ cat-⋯ c
@@ -155,99 +154,36 @@ cat-¬skips A (back B ∶-;₂ c)    (z₁ ; z₂) = cat-¬skips A c z₂
 cat-¬skips A front F ∶ c ;₁-    (z₁ ; z₂) = cat-¬skips A c z₁
 cat-¬skips A (front F ∶ x ;₂ c) (z₁ ; z₂) = cat-¬skips A c z₂
 
-cat-≃ : Atom a → s₁ ≃ s₂ → Cat a s s₁ → ∃[ s′ ] s ≃ s′ × Cat a s′ s₂
-cat-≃ A refl c = _ , refl , c
-cat-≃ {a = a} A (x ◅ xs) c =
-  let _ , eq₁ , c′ = go x c in
-  let _ , eq₂ , c″ = cat-≃ A xs c′ in
-  _ , ≃-trans eq₁ eq₂ , c″
-  where
-  go : SymClosure _≃𝕊_ s₁ s₂ → Cat a s s₁ → ∃[ s′ ] s ≃ s′ × Cat a s′ s₂
-  go x (here eq) = skip , refl , here (≃-trans eq (Star.return x))
-  go (fwd ≃𝕊-μ) c = _ , ≃-refl , cat-unfold A c
+-- The unfinished cat-≃ transport formerly in this module tried to combine the
+-- front and back atom-peeling arguments under one generic relation.  The two
+-- orientations need different invariants: the front split is only available
+-- for closed non-msg atoms, while the back split works for any atom.  The
+-- public split below therefore delegates to those completed developments and
+-- exposes the strongest common sound interface.
 
-  go (fwd (≃𝕊-brn₁ x)) (brn B c₁ c₂) = Π.map _ (Π.map ≃-brn₁ λ c → brn B c c₂) (go (fwd x) c₁)
-  go (fwd (≃𝕊-brn₂ x)) (brn B c₁ c₂) = Π.map _ (Π.map ≃-brn₂ λ c → brn B c₁ c) (go (fwd x) c₂)
-  go (bwd (≃𝕊-brn₁ x)) (brn B c₁ c₂) = Π.map _ (Π.map ≃-brn₁ λ c → brn B c c₂) (go (bwd x) c₁)
-  go (bwd (≃𝕊-brn₂ x)) (brn B c₁ c₂) = Π.map _ (Π.map ≃-brn₂ λ c → brn B c₁ c) (go (bwd x) c₂)
+atom-drop-front : ClosedAtom a → (∀ {p T} → a ≢ msg p T) →
+  a ; s ≃ s₁ ; s₂ →
+  Skips s₁ ⊎ ∃[ s′ ] a ; s′ ≃ s₁ × s ≃ s′ ; s₂
+atom-drop-front ca nm eq with atom-;-cons ca nm (≃-sym eq)
+... | inj₁ (z₁ , _) = inj₁ z₁
+... | inj₂ (s′ , eq₁ , eq₂) = inj₂ (s′ , ≃-sym eq₁ , ≃-sym eq₂)
 
-  go (fwd (≃𝕊-;₁ x)) (back B ∶ c ;₁ z)  = Π.map _ (Π.map₂ (back B ∶_;₁ z)) (go (fwd x) c)
-  go (fwd (≃𝕊-;₂ x)) (back B ∶ c ;₁ z)  = _ , refl , back B ∶ c ;₁ ≃-skips (Eq*.return x) z
-  go (fwd (≃𝕊-;₁ x)) (back B ∶-;₂ c)    = _ , ≃-; (Eq*.return x) refl , (back B ∶-;₂ c)
-  go (fwd (≃𝕊-;₂ x)) (back B ∶-;₂ c)    = Π.map _ (Π.map (≃-; refl) (back B ∶-;₂_)) (go (fwd x) c)
-  go (fwd (≃𝕊-;₁ x)) front F ∶ c ;₁-    = Π.map _ (Π.map (flip ≃-; refl) front F ∶_;₁-) (go (fwd x) c)
-  go (fwd (≃𝕊-;₂ x)) front F ∶ c ;₁-    = _ , ≃-; refl (Eq*.return x) , front F ∶ c ;₁-
-  go (fwd (≃𝕊-;₁ x)) (front F ∶ z ;₂ c) = _ , refl , front F ∶ ≃-skips (Eq*.return x) z ;₂ c
-  go (fwd (≃𝕊-;₂ x)) (front F ∶ z ;₂ c) = Π.map _ (Π.map₂ (front F ∶ z ;₂_)) (go (fwd x) c)
+atom-drop-back : Atom a →
+  s ; a ≃ s₂ ; s₁ →
+  Skips s₁ ⊎ ∃[ s′ ] s′ ; a ≃ s₁ × s ≃ s₂ ; s′
+atom-drop-back A eq with atom-;-unsnoc A (≃-sym eq)
+... | inj₁ z₁ = inj₁ z₁
+... | inj₂ (s′ , eq₁ , eq₂) = inj₂ (s′ , eq₂ , ≃-sym eq₁)
 
-  go (fwd ≃𝕊-skipˡ) (back B ∶ c ;₁ z)  = contradiction skip (cat-¬skips A c)
-  go (fwd ≃𝕊-skipʳ) (back B ∶ c ;₁ z)  = _ , refl , c
-  go (fwd ≃𝕊-skipˡ) (back B ∶-;₂ c)    = _ , ≃-skipˡ , c
-  go (fwd ≃𝕊-skipʳ) (back B ∶-;₂ c)    = contradiction skip (cat-¬skips A c)
-  go (fwd ≃𝕊-skipˡ) front F ∶ c ;₁-    = contradiction skip (cat-¬skips A c)
-  go (fwd ≃𝕊-skipʳ) front F ∶ c ;₁-    = _ , ≃-skipʳ , c
-  go (fwd ≃𝕊-skipˡ) (front F ∶ z ;₂ c) = _ , refl , c
-  go (fwd ≃𝕊-skipʳ) (front F ∶ z ;₂ c) = contradiction skip (cat-¬skips A c)
+atom-drop′ : ∀ b → ClosedAtom a → (∀ {p T} → a ≢ msg p T) →
+  (if b then a ; s else s ; a) ≃ (if b then s₁ ; s₂ else s₂ ; s₁) →
+  Skips s₁ ⊎
+  ∃[ s′ ] (if b then a ; s′ else s′ ; a) ≃ s₁ ×
+           s ≃ (if b then s′ ; s₂ else s₂ ; s′)
+atom-drop′ true  ca nm eq = atom-drop-front ca nm eq
+atom-drop′ false ca nm eq = atom-drop-back (closedatom-atom ca) eq
 
-  go (fwd ≃𝕊-assoc) (back B ∶ here eq ;₁ z) = _ , refl , here (≃-trans eq (≃-; refl (≃-sym (≃-skipsʳ z))))
-  go (fwd ≃𝕊-assoc) (back B ∶ back B₁ ∶ c ;₁ z₁ ;₁ z₂) = _ , refl , (back B₁ ∶ c ;₁ (z₁ ; z₂))
-  go (fwd ≃𝕊-assoc) (back B ∶ back B₁ ∶-;₂ c ;₁ z) = _ ; _ , refl , (back B₁ ∶-;₂ (back B ∶ c ;₁ z))
-  go (fwd ≃𝕊-assoc) (back B ∶ front F ∶ c ;₁-  ;₁ z) = contradiction F B
-  go (fwd ≃𝕊-assoc) (back B ∶ front F ∶ x ;₂ c ;₁ z) = contradiction F B
-  go (fwd ≃𝕊-assoc) (back B ∶-;₂ c) = _ , ≃-assoc-; , (back B ∶-;₂ (back B ∶-;₂ c))
-  go (fwd ≃𝕊-assoc) (front F ∶ here eq ;₁-) with atom-;⁻ A eq
-  ... | inj₁ (eq′ , z) = _ , ≃-; refl (≃-sym (≃-skipsˡ z)) , front F ∶ here eq′ ;₁-
-  ... | inj₂ (eq′ , z) = _ , refl , front F ∶ z ;₂ front F ∶ here eq′ ;₁-
-  go (fwd ≃𝕊-assoc) front F ∶ back B ∶ c ;₁ z ;₁- = contradiction F B
-  go (fwd ≃𝕊-assoc) front F ∶ back B ∶-;₂ c ;₁- = contradiction F B
-  go (fwd ≃𝕊-assoc) front F ∶ front _ ∶ c ;₁- ;₁- = _ , ≃-assoc-; , front F ∶ c ;₁-
-  go (fwd ≃𝕊-assoc) front F ∶ front _ ∶ z ;₂ c ;₁- = _ , refl , (front F ∶ z ;₂ front F ∶ c ;₁-)
-  go (fwd ≃𝕊-assoc) (front F ∶ z₁ ; z₂ ;₂ c) = _ , refl , (front F ∶ z₁ ;₂ (front F ∶ z₂ ;₂ c))
-
-  go (fwd ≃𝕊-distr) (back B ∶ here eq ;₁ z) = _ , refl , here (≃-trans eq (≃-brn (≃-sym (≃-skipsʳ z)) (≃-sym (≃-skipsʳ z))))
-  go (fwd ≃𝕊-distr) (back B ∶ brn _ c₁ c₂ ;₁ z) = _ , refl , brn B (back B ∶ c₁ ;₁ z) (back B ∶ c₂ ;₁ z)
-  go (fwd ≃𝕊-distr) (back B ∶-;₂ c) = _ , ≃-distr , brn B (back B ∶-;₂ c) (back B ∶-;₂ c)
-  go (fwd ≃𝕊-distr) front F ∶ here eq ;₁- = contradiction eq (atom≄brn A)
-  go (fwd ≃𝕊-distr) front F ∶ brn B c₁ c₂ ;₁- = contradiction F B
-
-  go (bwd (≃𝕊-;₁ x)) (back B ∶ c ;₁ z)  = Π.map _ (Π.map₂ (back B ∶_;₁ z)) (go (bwd x) c)
-  go (bwd (≃𝕊-;₂ x)) (back B ∶ c ;₁ z)  = _ , refl , back B ∶ c ;₁ ≃-skips (≃-sym (Eq*.return x)) z
-  go (bwd (≃𝕊-;₁ x)) (back B ∶-;₂ c)    = _ , ≃-sym (≃-; (Eq*.return x) refl) , (back B ∶-;₂ c)
-  go (bwd (≃𝕊-;₁ x)) front F ∶ c ;₁-    = Π.map _ (Π.map (flip ≃-; refl) front F ∶_;₁-) (go (bwd x) c)
-  go (bwd (≃𝕊-;₁ x)) (front F ∶ z ;₂ c) = _ , refl , front F ∶ ≃-skips (≃-sym (Eq*.return x)) z ;₂ c
-  go (bwd (≃𝕊-;₂ x)) (back B ∶-;₂ c)    = Π.map _ (Π.map (≃-; refl) (back B ∶-;₂_)) (go (bwd x) c)
-  go (bwd (≃𝕊-;₂ x)) front F ∶ c ;₁-    = _ , ≃-sym (≃-; refl (Eq*.return x)) , front F ∶ c ;₁-
-  go (bwd (≃𝕊-;₂ x)) (front F ∶ z ;₂ c) = Π.map _ (Π.map₂ (front F ∶ z ;₂_)) (go (bwd x) c)
-
-  go (bwd ≃𝕊-assoc) (back B ∶ c ;₁ (z₁ ; z₂)) = _ , refl , (back B ∶ back B ∶ c ;₁ z₁ ;₁ z₂)
-  go (bwd ≃𝕊-assoc) (back B ∶-;₂ here eq) with atom-;⁻ A eq
-  ... | inj₁ (eq′ , z) = _ , refl , (back B ∶ back B ∶-;₂ here eq′ ;₁ z)
-  ... | inj₂ (eq′ , z) = _ , ≃-; (≃-sym (≃-skipsʳ z)) refl , (back B ∶-;₂ here eq′)
-  go (bwd ≃𝕊-assoc) (back B ∶-;₂ (back _ ∶ c ;₁ z)) = _ , refl , (back B ∶ back B ∶-;₂ c ;₁ z)
-  go (bwd ≃𝕊-assoc) (back B ∶-;₂ (back _ ∶-;₂ c)) = _ , ≃-sym ≃-assoc-; , (back B ∶-;₂ c)
-  go (bwd ≃𝕊-assoc) (back B ∶-;₂ front F ∶ c ;₁-) = contradiction F B
-  go (bwd ≃𝕊-assoc) (back B ∶-;₂ (front F ∶ z ;₂ c)) = contradiction F B
-  go (bwd ≃𝕊-assoc) front F ∶ c ;₁- = _ , ≃-sym ≃-assoc-; , front F ∶ front F ∶ c ;₁- ;₁-
-  go (bwd ≃𝕊-assoc) (front F ∶ z ;₂ here eq) with atom-;⁻ A eq
-  ... | inj₁ (eq′ , z′) = _ , ≃-sym (≃-skipsʳ z′) , front F ∶ here (≃-trans eq′ (≃-sym (≃-skipsˡ z))) ;₁-
-  ... | inj₂ (eq′ , z′) = _ , refl , front F ∶ z ; z′ ;₂ here eq′
-  go (bwd ≃𝕊-assoc) (front F ∶ z ;₂ (back B ∶ c ;₁ _)) = contradiction F B
-  go (bwd ≃𝕊-assoc) (front F ∶ z ;₂ (back B ∶-;₂ c)) = contradiction F B
-  go (bwd ≃𝕊-assoc) (front F ∶ z ;₂ front _ ∶ c ;₁-) = _ , refl , front F ∶ front F ∶ z ;₂ c ;₁-
-  go (bwd ≃𝕊-assoc) (front F ∶ z₁ ;₂ (front _ ∶ z₂ ;₂ c)) = _ , refl , (front F ∶ z₁ ; z₂ ;₂ c)
-
-  go (bwd ≃𝕊-distr) (brn B (here eq₁) (here eq₂)) = {!!}
-  go (bwd ≃𝕊-distr) (brn B (here x) (back B₁ ∶ c₂ ;₁ x₁)) = {!!}
-  go (bwd ≃𝕊-distr) (brn B (here x) (back B₁ ∶-;₂ c₂)) = {!!}
-  go (bwd ≃𝕊-distr) (brn B (here x) front F ∶ c₂ ;₁-) = {!!}
-  go (bwd ≃𝕊-distr) (brn B (here x) (front F ∶ x₁ ;₂ c₂)) = {!!}
-  go (bwd ≃𝕊-distr) (brn B (back B₁ ∶ c₁ ;₁ x) c₂) = {!!}
-  go (bwd ≃𝕊-distr) (brn B (back B₁ ∶-;₂ c₁) c₂) = {!!}
-  go (bwd ≃𝕊-distr) (brn B front F ∶ c₁ ;₁- c₂) = {!!}
-  go (bwd ≃𝕊-distr) (brn B (front F ∶ x ;₂ c₁) c₂) = {!!}
-
-  go (bwd x) c = {!!}
-
-atom-drop : Atom a → a ⨟ s ≃ s₁ ⨟ s₂ →
-  Skips (if front then s₁ else s₂) ⊎ ∃[ s′ ] a ⨟ s′ ≃ s₁ × s ≃ s′ ⨟ s₂
-atom-drop A eq = {!!}
+atom-drop : ClosedAtom a → (∀ {p T} → a ≢ msg p T) →
+  a ⨟ s ≃ s₁ ⨟ s₂ →
+  Skips s₁ ⊎ ∃[ s′ ] a ⨟ s′ ≃ s₁ × s ≃ s′ ⨟ s₂
+atom-drop = atom-drop′ front

@@ -21,6 +21,22 @@ import BorrowedCF.Context.Substitution as 𝐂
 open Nat.Variables
 open EffProperties
 
+private
+  ctx-ext : ∀ {n} {Γ₁ Γ₂ : Ctx n} → (∀ x → Γ₁ ﹫ x ≡ Γ₂ ﹫ x) → Γ₁ ≡ Γ₂
+  ctx-ext {Γ₁ = Γ₁} {Γ₂ = Γ₂} eq =
+    sym (V.tabulate∘lookup Γ₁)
+    ■ V.tabulate-cong eq
+    ■ V.tabulate∘lookup Γ₂
+
+infix 1 _⊢≗_
+
+_⊢≗_ :
+  ∀ {n} {Γ₁ Γ₂ : Ctx n} {γ : Struct n} {e : Tm n} {T : 𝕋} {ϵ : Eff} →
+  Γ₁ ; γ ⊢ e ∶ T ∣ ϵ →
+  (∀ x → Γ₁ ﹫ x ≡ Γ₂ ﹫ x) →
+  Γ₂ ; γ ⊢ e ∶ T ∣ ϵ
+d ⊢≗ eq = subst (λ Γ → Γ ; _ ⊢ _ ∶ _ ∣ _) (ctx-ext eq) d
+
 private variable
   e e₁ e₂ e₃ e′ e₁′ e₂′ : Tm n
 
@@ -107,7 +123,7 @@ algConst? (`select x) = inj₂ `select
 algConst? `branch     = inj₂ `branch
 
 allMobile : Ctx n → Struct n → List Constraint
-allMobile Γ (` x) = L.[ C-Mob (Γ x) ]
+allMobile Γ (` x) = L.[ C-Mob (Γ ﹫ x) ]
 allMobile Γ [] = []
 allMobile Γ (α ∥ β) = allMobile Γ α ++ allMobile Γ β
 allMobile Γ (α ; β) = allMobile Γ α ++ allMobile Γ β
@@ -138,7 +154,7 @@ data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
   A-Var : ∀ {x} →
     (≤γ : Γ ∶ ` x ≼ γ) →
     ----------------------------------
-    Γ ; γ / m ⊢ ` x ⇒ Γ x ∣ ℙ ↑ [] / m
+    Γ ; γ / m ⊢ ` x ⇒ Γ ﹫ x ∣ ℙ ↑ [] / m
 
   A-Const : ∀ {c} →
     (≤γ : Γ ∶ [] ≼ γ) →
@@ -246,7 +262,8 @@ module _ {σ : UV.Sub} (Sσ : Solving σ) where
   open EffProperties
 
   mobConstraints⇒MobCx : (Γ : Ctx n)(γ : Struct n) → SolvedΔ (allMobile Γ γ) σ → MobCx (subCtx Γ σ) γ
-  mobConstraints⇒MobCx Γ (` x) (px ∷ Sm) = ` px
+  mobConstraints⇒MobCx Γ (` x) (px ∷ Sm) =
+    ` subst Mobile (sym (V.lookup-map x (λ t → subTy t σ) Γ)) px
   mobConstraints⇒MobCx Γ [] Sm = []
   mobConstraints⇒MobCx Γ (α ∥ β) Sm = mobConstraints⇒MobCx Γ α (All.++⁻ˡ (allMobile Γ α) Sm) ∥ mobConstraints⇒MobCx Γ β (All.++⁻ʳ (allMobile Γ α) Sm)
   mobConstraints⇒MobCx Γ (α ; β) Sm = mobConstraints⇒MobCx Γ α (All.++⁻ˡ (allMobile Γ α) Sm) ; mobConstraints⇒MobCx Γ β (All.++⁻ʳ (allMobile Γ α) Sm)
@@ -279,8 +296,9 @@ module _ {σ : UV.Sub} (Sσ : Solving σ) where
   ... | L = T-AppLeft a-dir-eq (x≤y⊔x _ _) (subst-ϵ ec (sound x SΓ SΔ₁)) y′
   ... | R = T-AppRight a-dir-eq (x≤y⊔x _ _) x′ (subst-ϵ ec (sound y SΓ SΔ₂))
 
-  sound (A-Var ≤γ) SΓ SΔ =
-    T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ) (T-Var _ refl)
+  sound {Γ = Γ} (A-Var ≤γ) SΓ SΔ =
+    T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
+             (T-Var _ (V.lookup-map _ (λ t → subTy t σ) Γ))
   sound (A-Const ≤γ Ac ⊢c) SΓ SΔ =
     T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
              (T-Const (subConst-⊢ ⊢c))
@@ -304,12 +322,12 @@ module _ {σ : UV.Sub} (Sσ : Solving σ) where
              (T-LetPair p/s (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ SΔ)))
                             (T-Weaken (;-≼-join p/s) (T-Conv ≃-refl (x≤y⊔x _ _)
                               (sound y (solved-⸴ (subTy-solved T₁ Sσ) (solved-⸴ (subTy-solved T₂ Sσ) SΓ)) (All.++⁻ʳ Δ₁ SΔ)
-                                ⊢≗ λ z → ⸴-dist (flip subTy σ) z ■ ⸴-cong refl (⸴-dist (flip subTy σ)) z))))
+                                ⊢≗ λ _ → refl))))
   sound {Γ = Γ} {γ} (A-Case {e} {e₁} {e₂} p/s j-p/s {ϵ} {ϵ₁} {ϵ₂} {T₁} {T₂} {Δ} {Δ₁} {Δ₂} x y₁ y₂) SΓ (U≃ ∷ SΔ)
     using SΔ₁ , SΔ₂ ← All.++⁻ Δ₁ (All.++⁻ʳ Δ SΔ)
     using x′  ← sound x SΓ (All.++⁻ˡ Δ SΔ)
-    using y₁′ ← sound y₁ (solved-⸴ (subTy-solved T₁ Sσ) SΓ) SΔ₁ ⊢≗ ⸴-dist (flip subTy σ)
-    using y₂′ ← sound y₂ (solved-⸴ (subTy-solved T₂ Sσ) SΓ) SΔ₂ ⊢≗ ⸴-dist (flip subTy σ)
+    using y₁′ ← sound y₁ (solved-⸴ (subTy-solved T₁ Sσ) SΓ) SΔ₁ ⊢≗ λ _ → refl
+    using y₂′ ← sound y₂ (solved-⸴ (subTy-solved T₂ Sσ) SΓ) SΔ₂ ⊢≗ λ _ → refl
     =
     T-Weaken (≼-map⁺ subTy-unr subTy-mobile (join-joinParSeq j-p/s)) $
       T-Case p/s
@@ -317,14 +335,14 @@ module _ {σ : UV.Sub} (Sσ : Solving σ) where
         (T-Conv ≃-refl (x≤y⇒x≤y⊔z ϵ₂ (x≤y⊔x ϵ ϵ₁)) y₁′)
         (T-Conv (≃-sym U≃) (x≤y⊔x _ ϵ₂) y₂′)
   sound {Γ = Γ} {γ = γ} (A-Abs {T = T}{Δ′ = Δ′} unr-Γ ϵ≤ x refl) SΓ SΔ =
-    T-Abs (allCx-gmap subTy-unr ∘ unr-Γ) (λ{ refl → mobConstraints⇒MobCx Γ γ (All.++⁻ˡ Δ′ SΔ) })
+    T-Abs (allCx-map⁺ subTy-unr ∘ unr-Γ) (λ{ refl → mobConstraints⇒MobCx Γ γ (All.++⁻ˡ Δ′ SΔ) })
       $ T-Conv ≃-refl ϵ≤
-      $ sound x (solved-⸴ (subTy-solved T Sσ) SΓ) (All.++⁻ʳ Δ′ SΔ) ⊢≗ sym ∘ ⸴-cons
+      $ sound x (solved-⸴ (subTy-solved T Sσ) SΓ) (All.++⁻ʳ Δ′ SΔ) ⊢≗ λ _ → refl
   sound {Γ = Γ} (A-AbsRec {T = T} {U = U} unr-Γ unr-a ϵ≤ x) SΓ SΔ =
     let open Fin.Patterns in
     let T′  = subTy-solved T Sσ in
     let T→U = T′ ⟨ _ ⟩→ subTy-solved U Sσ in
-    T-AbsRec (allCx-gmap subTy-unr unr-Γ) unr-a
+    T-AbsRec (allCx-map⁺ subTy-unr unr-Γ) unr-a
       $ T-Conv ≃-refl ϵ≤
       $ sound x (solved-⸴ T′ (solved-⸴ T→U SΓ)) SΔ ⊢≗ λ where
           0F → refl
@@ -363,28 +381,28 @@ someSub-solving = subAll-solving (λ ()) end
 
 ⊢-sub : (σ : UV.Sub) → Γ ; γ ⊢ e ∶ T ∣ ϵ → subCtx Γ σ ; γ ⊢ subTm e σ ∶ subTy T σ ∣ ϵ
 ⊢-sub σ (T-Const ⊢c) = T-Const (subConst-⊢ ⊢c)
-⊢-sub σ (T-Var x refl) = T-Var x refl
+⊢-sub {Γ = Γ} σ (T-Var x refl) = T-Var x (V.lookup-map x (λ t → subTy t σ) Γ)
 ⊢-sub σ (T-Abs Γ-unr Γ-mob d) =
-  T-Abs (allCx-gmap subTy-unr ∘ Γ-unr) (allCx-gmap subTy-mobile ∘ Γ-mob)
-        (⊢-sub σ d ⊢≗ ⸴-dist (flip subTy σ))
+  T-Abs (allCx-map⁺ subTy-unr ∘ Γ-unr) (allCx-map⁺ subTy-mobile ∘ Γ-mob)
+        (⊢-sub σ d ⊢≗ λ _ → refl)
 ⊢-sub σ (T-AbsRec Γ-unr a-unr d) =
-  T-AbsRec (allCx-gmap subTy-unr Γ-unr) a-unr
-           (⊢-sub σ d ⊢≗ λ z → ⸴-dist (flip subTy σ) z ■ ⸴-cong refl (⸴-dist (flip subTy σ)) z)
+  T-AbsRec (allCx-map⁺ subTy-unr Γ-unr) a-unr
+           (⊢-sub σ d ⊢≗ λ _ → refl)
 ⊢-sub σ (T-AppUnr a-unr ≤ₐ d₁ d₂) = T-AppUnr a-unr ≤ₐ (⊢-sub σ d₁) (⊢-sub σ d₂)
 ⊢-sub σ (T-AppLin a-par ≤ₐ d₁ d₂) = T-AppLin a-par ≤ₐ (⊢-sub σ d₁) (⊢-sub σ d₂)
 ⊢-sub σ (T-AppLeft aL ≤ₐ d₁ d₂) = T-AppLeft aL ≤ₐ (⊢-sub σ d₁) (⊢-sub σ d₂)
 ⊢-sub σ (T-AppRight aR ≤ₐ d₁ d₂) = T-AppRight aR ≤ₐ (⊢-sub σ d₁) (⊢-sub σ d₂)
 ⊢-sub σ (T-Pair p/s seq⇒p d₁ d₂) = T-Pair p/s seq⇒p (⊢-sub σ d₁) (⊢-sub σ d₂)
-⊢-sub σ (T-Let p/s d₁ d₂) = T-Let p/s (⊢-sub σ d₁) (⊢-sub σ d₂ ⊢≗ ⸴-dist (flip subTy σ))
+⊢-sub σ (T-Let p/s d₁ d₂) = T-Let p/s (⊢-sub σ d₁) (⊢-sub σ d₂ ⊢≗ λ _ → refl)
 ⊢-sub σ (T-Seq unr-T d₁ d₂) = T-Seq (subTy-unr unr-T) (⊢-sub σ d₁) (⊢-sub σ d₂)
 ⊢-sub σ (T-LetPair p/s d₁ d₂) =
   T-LetPair p/s (⊢-sub σ d₁)
-            (⊢-sub σ d₂ ⊢≗ λ z → ⸴-dist (flip subTy σ) z ■ ⸴-cong refl (⸴-dist (flip subTy σ)) z)
+            (⊢-sub σ d₂ ⊢≗ λ _ → refl)
 ⊢-sub σ (T-Inj {i = i} d) =
   T-Inj (subst (_ ; _ ⊢ _ ∶_∣ _) (if-float (flip subTy σ) i) (⊢-sub σ d))
 ⊢-sub σ (T-Case p/s d d₁ d₂) =
   T-Case p/s (⊢-sub σ d)
-             (⊢-sub σ d₁ ⊢≗ ⸴-dist (flip subTy σ))
-             (⊢-sub σ d₂ ⊢≗ ⸴-dist (flip subTy σ))
+             (⊢-sub σ d₁ ⊢≗ λ _ → refl)
+             (⊢-sub σ d₂ ⊢≗ λ _ → refl)
 ⊢-sub σ (T-Conv T≃ ϵ≤ d) = T-Conv (subTy-≃ T≃) ϵ≤ (⊢-sub σ d)
 ⊢-sub σ (T-Weaken γ≤ d) = T-Weaken (≼-map⁺ subTy-unr subTy-mobile γ≤) (⊢-sub σ d)

@@ -29,7 +29,7 @@ open import Data.List using (_∷_; [])
 -- Extra imports for the multi-handle frame strengthening primitive.
 open import BorrowedCF.Terms
 open import BorrowedCF.Types using (𝕋; Eff; Unr)
-open import BorrowedCF.Context.Base using (Ctx; ParSeq) renaming (`_ to `ₛ_)
+open import BorrowedCF.Context.Base using (Ctx; ParSeq; _﹫_) renaming (`_ to `ₛ_)
 open import BorrowedCF.Context.Domain using (dom)
 open import Data.Fin.Subset using (_∉_)
 open import BorrowedCF.Reduction.Base using (ChanCx; Frame; Frame*; _[_]*; _⋯ᶠ*_; _⋯ᵛ_; Value; value-⋯; app₁; app₂; □⊗_; _⊗□; □;_; `let-`in_; `let⊗-`in_; `inj□; `case□`of⟨_;_⟩)
@@ -59,7 +59,7 @@ open import BorrowedCF.Processes.Typed
   using (BindCtx; BindCtx′; inv-⟪⟫)
 open BorrowedCF.Processes.Typed.BindCtx
 open BorrowedCF.Processes.Typed.BindCtx′
-open import BorrowedCF.Reduction.Base using (ChanCx; chanCx-⸴*)
+open import BorrowedCF.Reduction.Base using (ChanCx)
 open import BorrowedCF.Terms using (inv-`)
 open import BorrowedCF.Types using (≃-reflexive)
 open import BorrowedCF.Processes.Typed using (bindCtx⇒chanCtx)
@@ -75,11 +75,11 @@ fn-end-dom (T-Conv (dom≃ `→ cod≃) _ d) = ≃-trans (fn-end-dom d) dom≃
 fn-end-dom (T-Weaken _ d) = fn-end-dom d
 
 close-app-nonUnr : ∀ {N} {Γ : Ctx N} {β : Struct N} {p} {dir} {x : 𝔽 N} {T ϵ}
-  → Γ ; β ⊢ K (`end p) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
+  → Γ ; β ⊢ K (`end p) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (Γ ﹫ x)
 close-app-nonUnr d = go d
   where
     go : ∀ {N} {Γ : Ctx N} {β : Struct N} {p} {dir} {x : 𝔽 N} {T ϵ}
-       → Γ ; β ⊢ K (`end p) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (Γ x)
+       → Γ ; β ⊢ K (`end p) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → ¬ Unr (Γ ﹫ x)
     go (T-AppUnr _ _ ⊢fn ⊢arg) u with unr-≃ (≃-trans (arg-type ⊢arg) (≃-sym (fn-end-dom ⊢fn))) u
     ... | ⟨ () ⟩
     go (T-AppLin _ _ ⊢fn ⊢arg) u with unr-≃ (≃-trans (arg-type ⊢arg) (≃-sym (fn-end-dom ⊢fn))) u
@@ -225,8 +225,8 @@ count-handle-closeᴿ b₁ b₂ {m} γ = cong₂ _+_ (cong₂ _+_ partA partB) p
 strengthen-frame* : ∀ {N} {Γ : Ctx N} {α : Struct N} {t : Tm N} {T ϵ}
   (E : Frame* N) → Γ ; α ⊢ E [ t ]* ∶ T ∣ ϵ → (H : 𝔽 N → Set)
   → Σ[ β ∈ Struct N ] (∃[ T₀ ] ∃[ ϵ₀ ] Γ ; β ⊢ t ∶ T₀ ∣ ϵ₀)
-      × ((h : 𝔽 N) → ¬ Unr (Γ h) → count h β ≤ count h α)
-      × (((h : 𝔽 N) → H h → ¬ Unr (Γ h) × (count h α ≤ count h β))
+      × ((h : 𝔽 N) → ¬ Unr (Γ ﹫ h) → count h β ≤ count h α)
+      × (((h : 𝔽 N) → H h → ¬ Unr (Γ ﹫ h) × (count h α ≤ count h β))
          → {k : ℕ} (ρ : k →ᵣ N) → Inverter* ρ H → Σ[ E₀ ∈ Frame* k ] E ≡ E₀ ⋯ᶠ* ρ)
 strengthen-frame* [] ⊢t H =
   _ , (_ , _ , ⊢t) , (λ h _ → ≤-refl) , (λ _ ρ inv → [] , refl)
@@ -378,15 +378,15 @@ inv-wk2 (suc (suc y')) ¬H = y' , sym (wk2-image y')
 -- borrow is Skips (close-residual-skips), and a `cons` requires ¬ Skips, so the
 -- BindCtx′ tail must be `nil`.  Hence the block width is exactly suc 0.
 bc′-len1 : ∀ {p q} {s : 𝕊 0} {b} {Γ : Ctx (suc b)} {s₀} →
-  New s → BindCtx′ (TS._;_ s (end p)) (suc b) Γ → Γ 0F ≡ ⟨ s₀ ⟩ → s₀ ≃ end q → b ≡ 0
-bc′-len1 N (cons _ _ ¬sk s≃ Γ≗ (nil _)) Γ0 s₀≃ = refl
-bc′-len1 {s₀ = s₀} N (cons sa sb ¬sk s≃ Γ≗ (cons _ _ ¬sk2 s≃2 Γ≗2 tl)) Γ0 s₀≃ =
-  ⊥-elim (¬sk2 (close-residual-skips N s≃ (≃-trans sa≃s₀ s₀≃)))
+  New s → BindCtx′ (TS._;_ s (end p)) Γ → Γ ﹫ 0F ≡ ⟨ s₀ ⟩ → s₀ ≃ end q → b ≡ 0
+bc′-len1 N (cons _ _ _ _ (nil _)) Γ0 s₀≃ = refl
+bc′-len1 {s₀ = s₀} N (cons sa sb _ split (cons _ _ ¬sk2 s≃2 tl)) Γ0 s₀≃ =
+  ⊥-elim (¬sk2 (close-residual-skips N split (≃-trans sa≃s₀ s₀≃)))
   where
     ⟨⟩-inj : ⟨ sa ⟩ ≡ ⟨ s₀ ⟩ → sa ≡ s₀
     ⟨⟩-inj refl = refl
     sa≃s₀ : sa ≃ s₀
-    sa≃s₀ with ⟨⟩-inj (Γ≗ 0F ■ Γ0)
+    sa≃s₀ with ⟨⟩-inj Γ0
     ... | refl = ≃-refl
 
 -- ───────────────────────────────────────────────────────────────────────────
@@ -465,7 +465,7 @@ close-confine {m = m} Γ-S {γ = γ} {F₀ᴸ = F₀ᴸ} {F₀ᴿ = F₀ᴿ} ⊢
 -- (handle at sum (b₁ ∷ [])) is the R endpoint.  Returns b₁ ≡ 1 × b₂ ≡ 1 (the
 -- existential widths the reverse RU-Close clause must pin before close-confine).
 close-handle-end : ∀ {N} {Γ : Ctx N} {β : Struct N} {p} {dir} {x : 𝔽 N} {T ϵ} {s₀}
-  → Γ ; β ⊢ K (`end p) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → Γ x ≡ ⟨ s₀ ⟩ → s₀ ≃ end p
+  → Γ ; β ⊢ K (`end p) ·⟨ dir ⟩ (` x) ∶ T ∣ ϵ → Γ ﹫ x ≡ ⟨ s₀ ⟩ → s₀ ≃ end p
 close-handle-end {x = x} {s₀ = s₀} d Γx = go d
   where
     ≃-tip : ∀ {β₁ β₂ p T U a ϵ₁ ϵ₂} → _ ; β₁ ⊢ K (`end p) ∶ T ⟨ a ⟩→ U ∣ ϵ₁
@@ -490,8 +490,8 @@ close-handle-end {x = x} {s₀ = s₀} d Γx = go d
 -- bc-len1 : the BindCtx-level vacuity wrapper.  A New-derived singleton block
 -- whose handle 0 is typed at the `end` tip has width exactly 1.
 bc-len1 : ∀ {p q} {s : 𝕊 0} {b′} {Γ : Ctx (suc b′ + 0)} {s₀}
-  → New s → BindCtx (TS._;_ s (end p)) (suc b′ ∷ []) Γ → Γ 0F ≡ ⟨ s₀ ⟩ → s₀ ≃ end q → b′ ≡ 0
-bc-len1 N (last bc) Γ0 s₀≃ = bc′-len1 N bc Γ0 s₀≃
+  → New s → BindCtx (TS._;_ s (end p)) (suc b′ ∷ []) Γ → Γ ﹫ 0F ≡ ⟨ s₀ ⟩ → s₀ ≃ end q → b′ ≡ 0
+bc-len1 N (last bc) Γ0 s₀≃ = sym (+-identityʳ _) ■ bc′-len1 N bc Γ0 s₀≃
 
 -- ───────────────────────────────────────────────────────────────────────────
 -- NOTE on the close-block-width vacuity.  bc-len1 (above) is the residual-Skips
@@ -508,4 +508,3 @@ bc-len1 N (last bc) Γ0 s₀≃ = bc′-len1 N bc Γ0 s₀≃
 -- a frame/linearity fact), or a typed rule closing an inner block handle: the
 -- same calculus-level gap as det-lemma-false / simlsplit-lwk-id-false.
 -- bc-len1 / bc′-len1 / close-handle-end are the reusable verified halves.
-

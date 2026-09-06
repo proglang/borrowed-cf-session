@@ -15,7 +15,7 @@ open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
 open import BorrowedCF.Types
 open import BorrowedCF.Context
-open import BorrowedCF.Context.Pattern using (LeftPat; CxPat; _[_]𝓅)
+open import BorrowedCF.Context.Pattern using (CxPat; _[_]𝓅)
 open import BorrowedCF.Reduction.Base
 open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.List.Relation.Unary.All.Properties using (++⁺)
@@ -43,6 +43,11 @@ open import Data.Fin.Properties using (↑ˡ-injective)
 open Nat.Variables
 open Fin.Patterns
 open Nat using (+-assoc; _≤_; ≤-trans; m≤m+n; m≤n+m; +-monoˡ-≤; +-monoʳ-≤; +-comm; n≤0⇒n≡0; s≤s⁻¹)
+
+-- The removed Context.Pattern.LeftPat predicate, kept locally for the reverse
+-- confinement lemmas that still reason by pattern direction.
+LeftPat : CxPat n → Set
+LeftPat = All λ (d , γ) → d ≡ 𝟙 ⊎ d ≡ R
 
 -- ── step 4(a): the send handle's binder-context has 0F ;-before it whenever the
 --    block-1 index z₀ is not the minimal 0F.  The inner binder of
@@ -100,13 +105,13 @@ frame-𝕀 (TF-□⊗ seq seq⇒p x) = refl , (inj₂ refl ∷ [])
 frame-𝕀 (TF-⊗□ par par x) = refl , (inj₁ refl ∷ [])
 frame-𝕀 (TF-⊗□ seq () x)
 frame-𝕀 (TF-; uT x) = refl , (inj₂ refl ∷ [])
-frame-𝕀 (TF-`let par x) = refl , (inj₁ refl ∷ [])
-frame-𝕀 (TF-`let seq x) = refl , (inj₂ refl ∷ [])
-frame-𝕀 (TF-`let⊗ par x) = refl , (inj₁ refl ∷ [])
-frame-𝕀 (TF-`let⊗ seq x) = refl , (inj₂ refl ∷ [])
+frame-𝕀 (TF-`let _ par x) = refl , (inj₁ refl ∷ [])
+frame-𝕀 (TF-`let _ seq x) = refl , (inj₂ refl ∷ [])
+frame-𝕀 (TF-`let⊗ _ par x) = refl , (inj₁ refl ∷ [])
+frame-𝕀 (TF-`let⊗ _ seq x) = refl , (inj₂ refl ∷ [])
 frame-𝕀 (TF-`inj□ i) = refl , []
-frame-𝕀 (TF-`case□ par x₁ x₂) = refl , (inj₁ refl ∷ [])
-frame-𝕀 (TF-`case□ seq x₁ x₂) = refl , (inj₂ refl ∷ [])
+frame-𝕀 (TF-`case□ _ par x₁ x₂) = refl , (inj₁ refl ∷ [])
+frame-𝕀 (TF-`case□ _ seq x₁ x₂) = refl , (inj₂ refl ∷ [])
 
 -- The whole frame stack above an 𝕀 redex is LeftPat (and its top effect is 𝕀).
 frames-𝕀 : ∀ {n} {Γ : Ctx n} {𝒫 : CxPat n} {E* : Frame* n} {U T ϵ} →
@@ -155,25 +160,25 @@ leftPat-¬before {𝒫 = (R , γ) ∷ 𝒫′} {δ} {z} {xS} (inj₂ refl ∷ lp
 -- ── block channels are acq-free: their session is a ≃-factor of the New-derived
 --    `s ; end`, hence NoAcq, hence NOT Mobile.  Proven alongside bindCtx⇒chanCtx so
 --    the extracted session is definitionally the same. ──
-bindCtx′-NoAcq : ∀ {w} {Γ : Ctx w} {s : 𝕊 0} → NoAcq s → (bc : BindCtx′ s w Γ) (i : 𝔽 w)
-               → NoAcq (proj₁ (bindCtx′⇒chanCtx bc i))
-bindCtx′-NoAcq NAs (cons s₁ s₂ ¬sk s≃ Γ≗ b) 0F =
+bindCtx′-NoAcq : ∀ {w} {Γ : Ctx w} {s : 𝕊 0} → NoAcq s → (bc : BindCtx′ s Γ) (i : 𝔽 w)
+               → NoAcq (proj₁ (chanCx-lookup (bindCtx′⇒chanCtx bc) i))
+bindCtx′-NoAcq NAs (cons s₁ s₂ ¬sk s≃ b) 0F =
   noAcq-;-fst (noAcq-≃ (≃-sym s≃) NAs)
-bindCtx′-NoAcq NAs (cons s₁ s₂ ¬sk s≃ Γ≗ b) (suc i) =
+bindCtx′-NoAcq NAs (cons s₁ s₂ ¬sk s≃ b) (suc i) =
   bindCtx′-NoAcq (noAcq-;-snd (noAcq-≃ (≃-sym s≃) NAs)) b i
 
 block-NoAcq : ∀ {s p b} {Γ : Ctx (sum (suc b ∷ []))} → New s
             → (C : BindCtx (s ; end p) (suc b ∷ []) Γ) (x : 𝔽 (sum (suc b ∷ [])))
-            → NoAcq (proj₁ (bindCtx⇒chanCtx C x))
-block-NoAcq N (last b′) x = bindCtx′-NoAcq (new-end⇒noAcq N) b′ (fromInj₁ (λ()) (splitAt _ x))
-block-NoAcq N (cons-ret/acq _ _ _ _ tail) x = ⊥-elim (bindCtx-B≢[] tail)
+            → NoAcq (proj₁ (chanCx-lookup (bindCtx⇒chanCtx C) x))
+block-NoAcq N (last b′) x = bindCtx′-NoAcq (new-end⇒noAcq N) b′ x
+block-NoAcq N (cons-ret/acq _ _ _ _ tail _) x = ⊥-elim (bindCtx-B≢[] tail)
 
 -- ¬ Mobile for a block channel at position i, given a reconciliation T ≡ Γ i
 -- of the full-context lookup with the block-local one.
 ¬mobile-block-at : ∀ {s p b} {Γ : Ctx (sum (suc b ∷ []))} {T : 𝕋} → New s
                  → (C : BindCtx (s ; end p) (suc b ∷ []) Γ) (i : 𝔽 (sum (suc b ∷ [])))
-                 → T ≡ Γ i → ¬ Mobile T
-¬mobile-block-at N C i eq = ¬mobile-of (eq ■ proj₂ (bindCtx⇒chanCtx C i)) (block-NoAcq N C i)
+                 → T ≡ Γ ﹫ i → ¬ Mobile T
+¬mobile-block-at N C i eq = ¬mobile-of (eq ■ proj₂ (chanCx-lookup (bindCtx⇒chanCtx C) i)) (block-NoAcq N C i)
 
 -- ── step 4(b): the ASSEMBLED ;-minimality contradiction.  Given the send handle
 --    xS is a live borrow that (i) is confined to the redex (LeftPat frame stack +
@@ -182,7 +187,7 @@ block-NoAcq N (cons-ret/acq _ _ _ _ tail) x = ⊥-elim (bindCtx-B≢[] tail)
 --    a contradiction.  Contrapositive: a well-typed com send handle is ;-minimal.
 --    Combine with before-com-binderᴸ to force z₀ ≡ 0F. ──
 com-xS-min : ∀ {n} {Γ : Ctx n} {𝒫ˢ : CxPat n} {γrˢ α β γinner : Struct n} {xS y : 𝔽 n}
-  → ¬ Mobile (Γ xS) → ¬ Mobile (Γ y)
+  → ¬ Mobile (Γ ﹫ xS) → ¬ Mobile (Γ ﹫ y)
   → LeftPat 𝒫ˢ
   → Γ ∶ 𝒫ˢ [ γrˢ ]𝓅 ≼ α
   → Γ ∶ α ∥ β ≼ γinner

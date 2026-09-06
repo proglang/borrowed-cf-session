@@ -36,6 +36,7 @@ open import Data.Sum using (inj₁; inj₂)
 open import Data.Product using (proj₁; proj₂)
 open import Data.List using (_∷_; [])
 import BorrowedCF.Processes.Typed as TP
+open import BorrowedCF.Reduction.Base using (ChanCx; chanCx-lookup)
 
 open Fin.Patterns
 
@@ -108,8 +109,8 @@ before-drop-binderᴸ b₁ c b₂ {m} γ (suc z′) z₀≢ =
 
 head-block-NoAcq : ∀ {s p s₁ s₂ b₁} {Γₕ : Ctx (suc b₁)} → New s
   → s₁ ; s₂ ≃ (s ; end p)
-  → (headBC : BindCtx′ (s₁ ; ret) (suc b₁) Γₕ) (x₁ : 𝔽 (suc b₁))
-  → NoAcq (proj₁ (bindCtx′⇒chanCtx headBC x₁))
+  → (headBC : BindCtx′ (s₁ ; ret) Γₕ) (x₁ : 𝔽 (suc b₁))
+  → NoAcq (proj₁ (chanCx-lookup (bindCtx′⇒chanCtx headBC) x₁))
 head-block-NoAcq N s≃ headBC x₁ =
   bindCtx′-NoAcq
     (CV._;_ (noAcq-;-fst (noAcq-≃ (≃-sym s≃) (new-end⇒noAcq N))) CV.ret)

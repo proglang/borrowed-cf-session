@@ -69,10 +69,10 @@ mem-seqL {x = x} {α} {β} = mem-parL {x = x} {α} {β}
 mem-seqR : {α β : Struct n} → x ∈ₘ β → x ∈ₘ (α ; β)
 mem-seqR {x = x} {α} {β} = mem-parR {x = x} {α} {β}
 
-mem-not-unrCx : ¬ Unr (Γ x) → AllCx Unr Γ α → x ∈ₘ α → ⊥
+mem-not-unrCx : ¬ Unr (Γ ﹫ x) → AllCx Unr Γ α → x ∈ₘ α → ⊥
 mem-not-unrCx ¬u U x∈ = x∈ (unrCx⇒count0 ¬u U)
 
-mobCx⇒count0 : ¬ Mobile (Γ x) → MobCx Γ α → count x α ≡ 0
+mobCx⇒count0 : ¬ Mobile (Γ ﹫ x) → MobCx Γ α → count x α ≡ 0
 mobCx⇒count0 ¬m []        = refl
 mobCx⇒count0 ¬m (C₁ ∥ C₂) = cong₂ _+_ (mobCx⇒count0 ¬m C₁) (mobCx⇒count0 ¬m C₂)
 mobCx⇒count0 ¬m (C₁ ; C₂) = cong₂ _+_ (mobCx⇒count0 ¬m C₁) (mobCx⇒count0 ¬m C₂)
@@ -80,13 +80,13 @@ mobCx⇒count0 {x = x} ¬m (`_ {y} py) with x Fin.≟ y
 ... | yes refl = ⊥-elim (¬m py)
 ... | no  _    = refl
 
-mem-not-mobCx : ¬ Mobile (Γ x) → MobCx Γ α → x ∈ₘ α → ⊥
+mem-not-mobCx : ¬ Mobile (Γ ﹫ x) → MobCx Γ α → x ∈ₘ α → ⊥
 mem-not-mobCx ¬m U x∈ = x∈ (mobCx⇒count0 ¬m U)
 
-mem-eq1 : ¬ Unr (Γ x) → Γ ∶ α ≈′ β → x ∈ₘ α → x ∈ₘ β
+mem-eq1 : ¬ Unr (Γ ﹫ x) → Γ ∶ α ≈′ β → x ∈ₘ α → x ∈ₘ β
 mem-eq1 {x = x} {α} {β} ¬u st = mem-resp {x = x} {α} {β} (count-≈′ ¬u st)
 
-mem-eq1ᵇ : ¬ Unr (Γ x) → Γ ∶ α ≈′ β → x ∈ₘ β → x ∈ₘ α
+mem-eq1ᵇ : ¬ Unr (Γ ﹫ x) → Γ ∶ α ≈′ β → x ∈ₘ β → x ∈ₘ α
 mem-eq1ᵇ {x = x} {α} {β} ¬u st = mem-resp {x = x} {β} {α} (sym (count-≈′ ¬u st))
 
 -- ── the ;-order-before predicate. ──
@@ -111,7 +111,7 @@ swap-mid a b c d =
   ■ cong (a +_) (sym (+-assoc b c d) ■ cong (_+ d) (+-comm b c) ■ +-assoc c b d)
   ■ sym (+-assoc a c (b + d))
 
-count-≼-eq : ¬ Unr (Γ x) → Γ ∶ α ≼ β → count x α ≡ count x β
+count-≼-eq : ¬ Unr (Γ ﹫ x) → Γ ∶ α ≼ β → count x α ≡ count x β
 count-≼-eq ¬u (≼-refl eq) = count-≈ ¬u eq
 count-≼-eq ¬u (≼-∅ U) = sym (unrCx⇒count0 ¬u U)
 count-≼-eq {x = x} ¬u (≼-wk {α₁ = a1} {α₂ = a2} {β₁ = b1} {β₂ = b2}) =
@@ -120,12 +120,12 @@ count-≼-eq ¬u (≼-trans p q) = count-≼-eq ¬u p ■ count-≼-eq ¬u q
 count-≼-eq ¬u (≼-cong-; p q) = cong₂ _+_ (count-≼-eq ¬u p) (count-≼-eq ¬u q)
 count-≼-eq ¬u (≼-cong-∥ p q) = cong₂ _+_ (count-≼-eq ¬u p) (count-≼-eq ¬u q)
 
-mem-≼ᵇ : ¬ Unr (Γ x) → Γ ∶ α ≼ β → x ∈ₘ β → x ∈ₘ α
+mem-≼ᵇ : ¬ Unr (Γ ﹫ x) → Γ ∶ α ≼ β → x ∈ₘ β → x ∈ₘ α
 mem-≼ᵇ {x = x} {α = α} {β = β} ¬u le = mem-resp {x = x} {β} {α} (sym (count-≼-eq ¬u le))
 
 
 -- ── before is preserved by a single ≈′ step (forward), both leaves non-Unr. ──
-before-resp-eq1 : ¬ Mobile (Γ x) → ¬ Mobile (Γ y)
+before-resp-eq1 : ¬ Mobile (Γ ﹫ x) → ¬ Mobile (Γ ﹫ y)
                 → Γ ∶ α ≈′ β → before x y α → before x y β
 before-resp-eq1 ¬ux ¬uy (;′-assoc {α = a} {β = b} {γ = c}) (inj₁ (x∈ab , y∈c)) with mem-seqInv {α = a} {b} x∈ab
 ... | inj₁ x∈a = inj₁ (x∈a , mem-seqR {α = b} {c} y∈c)
@@ -154,7 +154,7 @@ before-resp-eq1 ¬ux ¬uy (∥′-tm-; {α = a} {β = b} U) (inj₁ ba) = inj�
 before-resp-eq1 ¬ux ¬uy (∥′-tm-; {α = a} {β = b} U) (inj₂ bb) = inj₂ (inj₂ bb)
 
 -- ── before is preserved by a single ≈′ step (backward). ──
-before-resp-eq1ᵇ : ¬ Mobile (Γ x) → ¬ Mobile (Γ y)
+before-resp-eq1ᵇ : ¬ Mobile (Γ ﹫ x) → ¬ Mobile (Γ ﹫ y)
                  → Γ ∶ α ≈′ β → before x y β → before x y α
 before-resp-eq1ᵇ ¬ux ¬uy (;′-assoc {α = a} {β = b} {γ = c}) (inj₁ (x∈a , y∈bc)) with mem-seqInv {α = b} {c} y∈bc
 ... | inj₁ y∈b = inj₂ (inj₁ (inj₁ (x∈a , y∈b)))
@@ -184,14 +184,14 @@ before-resp-eq1ᵇ ¬ux ¬uy (∥′-tm-; {α = a} {β = b} U) (inj₁ (x∈a ,
 before-resp-eq1ᵇ ¬ux ¬uy (∥′-tm-; {α = a} {β = b} U) (inj₂ (inj₁ ba)) = inj₁ ba
 before-resp-eq1ᵇ ¬ux ¬uy (∥′-tm-; {α = a} {β = b} U) (inj₂ (inj₂ bb)) = inj₂ bb
 
-before-resp-≈ : ¬ Mobile (Γ x) → ¬ Mobile (Γ y)
+before-resp-≈ : ¬ Mobile (Γ ﹫ x) → ¬ Mobile (Γ ﹫ y)
               → Γ ∶ α ≈ β → before x y α → before x y β
 before-resp-≈ ¬ux ¬uy ε b = b
 before-resp-≈ ¬ux ¬uy (fwd st ◅ rest) b = before-resp-≈ ¬ux ¬uy rest (before-resp-eq1 ¬ux ¬uy st b)
 before-resp-≈ ¬ux ¬uy (bwd st ◅ rest) b = before-resp-≈ ¬ux ¬uy rest (before-resp-eq1ᵇ ¬ux ¬uy st b)
 
 -- ── before is monotone DOWNWARD under ≼ (bigger ⟹ smaller), for non-Unr x,y. ──
-before-mono-≼ : ¬ Mobile (Γ x) → ¬ Mobile (Γ y)
+before-mono-≼ : ¬ Mobile (Γ ﹫ x) → ¬ Mobile (Γ ﹫ y)
               → Γ ∶ α ≼ β → before x y β → before x y α
 before-mono-≼ ¬ux ¬uy (≼-refl eq) b = before-resp-≈ ¬ux ¬uy (≈-sym eq) b
 before-mono-≼ ¬ux ¬uy (≼-∅ {α = β} U) b = ⊥-elim (mem-not-unrCx (¬ux ∘ unr⇒mobile) U (fst (before⇒mem β b)))

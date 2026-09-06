@@ -311,7 +311,7 @@ subTm-id (`inj e) = cong (`inj _) (subTm-id e)
 subTm-id {σ = σ} `case e `of⟨ e₁ ; e₂ ⟩ rewrite subTm-id {σ = σ} e = cong₂ `case _ `of⟨_;_⟩ (subTm-id e₁) (subTm-id e₂)
 
 subCtx : Ctx n → UV.Sub → Ctx n
-subCtx Γ σ k = subTy (Γ k) σ
+subCtx Γ σ = V.map (λ t → subTy t σ) Γ
 
 SolvedCst : Constraint → UV.Sub → Set
 SolvedCst (C-Eq t u) σ = subTy t σ ≃ subTy u σ
@@ -322,7 +322,7 @@ SolvedΔ Δ σ = flip All Δ (λ C → SolvedCst C σ)
 
 SolvedΓ : Ctx n → UV.Sub → Set
 SolvedΓ Γ σ = ∀ x →
-  SolvedTy (subTy (Γ x) σ)
+  SolvedTy (subTy (Γ ﹫ x) σ)
 
 solved-⸴ : SolvedTy (subTy T σ) → SolvedΓ Γ σ → SolvedΓ (T ⸴ Γ) σ
 solved-⸴ ST SΓ zero = ST

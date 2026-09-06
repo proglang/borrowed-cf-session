@@ -22,7 +22,7 @@ import BorrowedCF.Reduction.Processes.Typed   as TR
 import BorrowedCF.Reduction.Processes.Untyped as UR
 import Relation.Binary.Construct.Closure.Equivalence as Eq*
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive using (Star; ε; _◅_; _◅◅_) renaming (gmap to ⋆-gmap)
-open import BorrowedCF.Context using (Ctx; Struct)
+open import BorrowedCF.Context using (Ctx; Struct; _﹫_)
 open import BorrowedCF.Simulation.Support.TranslationProperties
   using (UB-nat; mapᶜ; varΘ; U-cong; U-⋯ₚ; ++ₛ-⋯; liftCast; subst₂→; chanTriple-mapᶜ; Ub-nat; Ub-V)
   renaming ( subst-⋯ₚ-dom to TP-subst-⋯ₚ-dom
@@ -600,7 +600,7 @@ fn-drop-dom (T-Weaken _ d)         = fn-drop-dom d
 
 drop-handle-≃ret : ∀ {N} {Δ : Ctx N}{β}{x : 𝔽 N}{U ϵ}
   → Δ ; β ⊢ K `drop ·¹ (` x) ∶ U ∣ ϵ
-  → Δ x ≃ ⟨ ret ⟩
+  → Δ ﹫ x ≃ ⟨ ret ⟩
 drop-handle-≃ret (T-AppUnr   _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-drop-dom ⊢fn))
 drop-handle-≃ret (T-AppLin   _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-drop-dom ⊢fn))
 drop-handle-≃ret (T-Conv _ _ d)            = drop-handle-≃ret d
@@ -612,15 +612,17 @@ drop-handle-≃ret (T-Weaken _ d)            = drop-handle-≃ret d
 -- index 0F of the body context (Γ₁ ⸴* Γ₂) ⸴* γ lands in Γ₁ when Γ₁ is nonempty.
 bodyΓ-0F : ∀ {k} (A : Ctx (suc k)) {B C : Σ ℕ Ctx} →
            ∀ (Bᶜ : Ctx (proj₁ B)) (Cᶜ : Ctx (proj₁ C)) →
-           ((A ⸴* Bᶜ) ⸴* Cᶜ) 0F ≡ A 0F
-bodyΓ-0F A Bᶜ Cᶜ = refl
+           ((A ⸴* Bᶜ) ⸴* Cᶜ) ﹫ 0F ≡ A ﹫ 0F
+bodyΓ-0F A Bᶜ Cᶜ =
+  V.lookup-++ˡ (A ⸴* Bᶜ) Cᶜ 0F
+  ■ V.lookup-++ˡ A Bᶜ 0F
 
 -- head channel 0F of a `last`-block over a NoRet front session is NoRet.
 head-noRet-last : ∀ {sF b}{Γ : Ctx (sum (suc b ∷ []))} →
   NoRet sF → BindCtx sF (suc b ∷ []) Γ →
-  ∃[ s'' ] (Γ 0F ≡ ⟨ s'' ⟩) × NoRet s''
-head-noRet-last ns (last (cons s1 _ ¬sk s≃ Γ≗ _)) =
-  s1 , sym (Γ≗ 0F) , VP.noRet-;-fst (noRet-≃ (EqC.symmetric _≃𝕊_ s≃) ns)
+  ∃[ s'' ] (Γ ﹫ 0F ≡ ⟨ s'' ⟩) × NoRet s''
+head-noRet-last ns (last (cons s1 _ ¬sk s≃ _)) =
+  s1 , refl , VP.noRet-;-fst (noRet-≃ (EqC.symmetric _≃𝕊_ s≃) ns)
 
 noRet⇒≄ret : ∀ {s'' : 𝕊 0} → NoRet s'' → s'' ≃ ret → ⊥
 noRet⇒≄ret ns eq = ¬noRet-ret (noRet-≃ eq ns)
@@ -637,20 +639,20 @@ U-drop : ∀ {m n} (σ : m →ₛ n) → VSub σ → {Γ : Ctx m} → ChanCx Γ
          ⊎ (U[ T.ν (suc b₁ ∷ B₁) B₂
              (T.⟪ (E ⋯ᶠ* weakenᵣ) [ K `drop ·¹ (` 0F) ]* ⟫ T.∥ (P T.⋯ₚ weakenᵣ)) ] σ
             U.≋ U[ T.ν (b₁ ∷ B₁) B₂ (T.⟪ E [ K `unit ]* ⟫ T.∥ P) ] σ)
-U-drop σ Vσ Γ-S {b₁ = b₁} {B₁ = []} {B₂ = B₂} {E = E} {P = P} ⊢P
+U-drop σ Vσ {Γ = Γ} Γ-S {b₁ = b₁} {B₁ = []} {B₂ = B₂} {E = E} {P = P} ⊢P
   with inv-ν ⊢P
-... | _ , _ , sN , _ , N , _ , _ , C , _ , ⊢body
+... | Γ₁ , Γ₂ , sN , _ , N , _ , _ , C , _ , ⊢body
   with inv-∥ ⊢body
 ... | _ , _ , _ , ⊢dropT , _
   with strengthen-frame (E ⋯ᶠ* weakenᵣ) (inv-⟪⟫ ⊢dropT)
 ... | _ , (_ , _ , ⊢plug) , _ , _
   with head-noRet-last (VP._;_ (new⇒noRet N) VP.end) C
 ... | s , Γ0≡ , Ns
-  = ⊥-elim (noRet⇒≄ret Ns (⟨⟩≃ (≃-trans (≃-reflexive (sym Γ0≡)) (drop-handle-≃ret ⊢plug))))
+  = ⊥-elim (noRet⇒≄ret Ns (⟨⟩≃ (≃-trans (≃-reflexive (sym (bodyΓ-0F Γ₁ {B = _ , Γ₂} {C = _ , Γ} Γ₂ Γ ■ Γ0≡))) (drop-handle-≃ret ⊢plug))))
 U-drop {m} {n} σ Vσ Γ-S {b₁ = suc b₁} {B₁ = C@(_ ∷ _)} {B₂ = B₂} {E = E} {P = P} ⊢P
   with inv-ν ⊢P
 ... | _ , _ , sN , _ , N , _ , _
-    , cons-ret/acq sh scra Γ≗ (cons s1ʰ s2ʰ ¬sk1 s≃1 Γ≗1 (cons _ _ ¬Ss s≃2 _ _)) _ , _ , ⊢body
+    , cons-ret/acq sh scra Γ≗ (cons s1ʰ s2ʰ ¬sk1 s≃1 (cons _ _ ¬Ss s≃2 _)) _ _ , _ , ⊢body
   with inv-∥ ⊢body
 ... | _ , _ , _ , ⊢dropT , _
   with strengthen-frame (E ⋯ᶠ* weakenᵣ) (inv-⟪⟫ ⊢dropT)
@@ -658,7 +660,7 @@ U-drop {m} {n} σ Vσ Γ-S {b₁ = suc b₁} {B₁ = C@(_ ∷ _)} {B₂ = B₂} 
   = ⊥-elim (¬Ss (retTip-Sc-skips rt-borrow head≃ret))
   where
     head≃ret : s1ʰ ≃ ret
-    head≃ret = ⟨⟩≃ (≃-trans (≃-reflexive (sym (sym (Γ≗ 0F) ■ sym (Γ≗1 0F)))) (drop-handle-≃ret ⊢plug))
+    head≃ret = ⟨⟩≃ (drop-handle-≃ret ⊢plug)
     noRet-sh : NoRet sh
     noRet-sh = noRet-;-fst (noRet-≃ (EqC.symmetric _≃𝕊_ scra) (VP._;_ (new⇒noRet N) VP.end))
     rt-borrow : RetTip (s1ʰ ; s2ʰ)

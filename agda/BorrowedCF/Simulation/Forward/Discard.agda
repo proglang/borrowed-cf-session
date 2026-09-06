@@ -16,6 +16,7 @@ open import BorrowedCF.Simulation.Support.Frames using (frame-plug*; frame-plug�
 open import BorrowedCF.Simulation.Support.TranslationProperties
   using (≡→≋; UB-cong; UB-cong-─→; U-⋯ₚ; U-cong; ≋-subst)
 open import BorrowedCF.Simulation.Support.InvFrame using (strengthen-frame; arg-type)
+open import BorrowedCF.Context using (_﹫_)
 
 open TP using (cons-ret/acq; cons; nil)
 
@@ -38,7 +39,7 @@ fn-discard-dom (T-Weaken _ d)           = fn-discard-dom d
 
 discard-handle-≃skip : ∀ {N} {Δ : Ctx N}{β}{x : 𝔽 N}{U ϵ}
   → Δ ; β ⊢ K `discard ·¹ (` x) ∶ U ∣ ϵ
-  → Δ x ≃ ⟨ skip ⟩
+  → Δ ﹫ x ≃ ⟨ skip ⟩
 discard-handle-≃skip (T-AppUnr _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-discard-dom ⊢fn))
 discard-handle-≃skip (T-AppLin _ _ ⊢fn ⊢arg) = ≃-trans (arg-type ⊢arg) (≃-sym (fn-discard-dom ⊢fn))
 discard-handle-≃skip (T-Conv _ _ d)          = discard-handle-≃skip d
@@ -52,7 +53,7 @@ disc-b0-vac :
       (TP.⟪ (E ⋯ᶠ* weakenᵣ) [ K `discard ·¹ (` 0F) ]* ⟫ TP.∥ (P TP.⋯ₚ weakenᵣ)) → ⊥
 disc-b0-vac {E = E} ⊢P with inv-ν ⊢P
 ... | _ , _ , _ , _ , _ , _ , _
-    , cons-ret/acq _ scra Γ≗ (cons s1ʰ s2ʰ ¬sk1 s≃1 Γ≗1 (nil skB)) tail
+    , cons-ret/acq _ _ _ (cons s1ʰ s2ʰ ¬sk1 s≃1 (nil skB)) _ _
     , _ , ⊢body
   with inv-∥ ⊢body
 ... | _ , _ , _ , ⊢discT , _
@@ -61,7 +62,7 @@ disc-b0-vac {E = E} ⊢P with inv-ν ⊢P
   = ¬sk1 (≃-skips s≃1 (Ss1 Skips.; skB))
   where
     head≃skip : s1ʰ ≃ skip
-    head≃skip = ⟨⟩≃ (≃-trans (≃-reflexive (sym (sym (Γ≗ 0F) ■ sym (Γ≗1 0F)))) (discard-handle-≃skip ⊢plug))
+    head≃skip = ⟨⟩≃ (discard-handle-≃skip ⊢plug)
     Ss1 : Skips s1ʰ
     Ss1 = ≃-skips (≃-sym head≃skip) Skips.skip
 

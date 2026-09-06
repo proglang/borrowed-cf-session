@@ -25,8 +25,8 @@ open import Data.Nat.Properties using (≤-trans; m≤m+n; m≤n+m; +-mono-≤)
 -- (its channel constructor ⟨_⟩ carries a ⊥).  Mirrors d57a798 (main).
 ------------------------------------------------------------------------
 
-chanCx-¬Unr : ∀ {N} {Γ : Ctx N} → ChanCx Γ → (x : 𝔽 N) → ¬ Unr (Γ x)
-chanCx-¬Unr Γ-S x u with Γ-S x
+chanCx-¬Unr : ∀ {N} {Γ : Ctx N} → ChanCx Γ → (x : 𝔽 N) → ¬ Unr (Γ ﹫ x)
+chanCx-¬Unr Γ-S x u with chanCx-lookup Γ-S x
 ... | s , eq with subst Unr eq u
 ...   | ⟨ () ⟩
 
@@ -80,7 +80,7 @@ invApp-arg (T-AppRight _ _ y) = _ , y
 com-¬before :
   ∀ {N} {Γ : Ctx N} {γrˢ αcom βcom γinner : Struct N} {𝒫ˢ : CxPat N}
     {aS : Tm N} {xS y : 𝔽 N} {U ϵ}
-  → ¬ Mobile (Γ xS) → ¬ Mobile (Γ y)
+  → ¬ Mobile (Γ ﹫ xS) → ¬ Mobile (Γ ﹫ y)
   → Γ ; γrˢ ⊢ K `send ·¹ (aS ⊗ (` xS)) ∶ U ∣ ϵ
   → Γ ∶ 𝒫ˢ [ γrˢ ]𝓅 ≼ αcom
   → Γ ∶ αcom ∥ βcom ≼ γinner
@@ -216,7 +216,7 @@ branch-arg-decomp (T-Weaken _ d) = branch-arg-decomp d
 
 -- bare-variable argument count + precedence ------------------------------
 barevar-arg-count : ∀ {N} {Γ : Ctx N} {γ : Struct N} {x : 𝔽 N} {c U ϵ}
-  → ¬ Unr (Γ x) → Γ ; γ ⊢ K c ·¹ (` x) ∶ U ∣ ϵ → 1 ≤ count x γ
+  → ¬ Unr (Γ ﹫ x) → Γ ; γ ⊢ K c ·¹ (` x) ∶ U ∣ ϵ → 1 ≤ count x γ
 barevar-arg-count {x = x} ¬u ⊢redex
   with aa , α , β , T , join≼ , _ , _ , invapp ← inv-· ⊢redex
   with _ , ⊢x ← invApp-arg invapp =
@@ -227,7 +227,7 @@ barevar-arg-count {x = x} ¬u ⊢redex
   in ≤-trans 1≤β β≤γ
 
 choice-¬before : ∀ {N} {Γ : Ctx N} {γrˢ : Struct N} {x y : 𝔽 N} {c U ϵ}
-  → ¬ Mobile (Γ x) → ¬ Mobile (Γ y)
+  → ¬ Mobile (Γ ﹫ x) → ¬ Mobile (Γ ﹫ y)
   → Γ ; γrˢ ⊢ K c ·¹ (` x) ∶ U ∣ ϵ
   → ¬ before y x γrˢ
 choice-¬before {x = x} {y = y} ¬ux ¬uy ⊢redex bfr
