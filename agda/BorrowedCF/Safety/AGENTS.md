@@ -56,9 +56,8 @@
   and every discrepancy you found between the tex rules and the Agda definitions.
 
 ## Reuse before you prove (added 2026-09-08 17:45)
-The `Simulation/` tree is COMPLETE (170 modules, no --allow-unsolved-metas, no holes except
-Simulation/Backward.agda and Backward/Sketch.agda; one sanctioned postulate `funext` in
-Simulation/Support/Base.agda). Before proving any lemma, search for it: `grep -rn` under
+The maintained strict-soup simulation trees are COMPLETE (no --allow-unsolved-metas and no holes;
+one sanctioned postulate `funext` is in Simulation/Support/Base.agda). Before proving any lemma, search for it: `grep -rn` under
 agda/BorrowedCF and `agda-mcp-call agda_search_about`. Known reusable results:
 - Simulation/Support/Theorems/DropShape.agda: `drop-handle-≃ret`, `discard-handle-≃skip`,
   `fn-drop-dom`, `fn-discard-dom`, `drop-shape` (typing of the R-Drop LHS forces b₁ ≡ 0 and a

@@ -307,7 +307,7 @@ apply them to `resolve ctx x`); `drop-first-group-singleton` needs that, because
 
 Still stale for reasons predating this branch (context-as-function vs. `Vec`): `Algorithmic/Solved.agda`,
 `Simulation/Support/{BeforeOrder,ReverseInv}.agda`, `Simulation/Support/Theorems/Drop.agda`,
-`Simulation/Forward/{Drop,Discard}.agda`, `Simulation/Backward/DropGo.agda`,
+`Simulation/Forward/{Drop,Discard}.agda`, the removed legacy `Simulation/Backward/DropGo.agda`,
 `Simulation/Support/Rev{Com,Drop}Confine.agda`.
 
 Next: P4 (`Canonical.agda`) and P5 (`Leaves/*.agda`) of §9.
