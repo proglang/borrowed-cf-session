@@ -9,7 +9,7 @@ Note: Checking all files may take a serious amount of time (up to half an hour).
 ## Requirements
 
 Agda: [v2.8.0](https://agda.readthedocs.io/en/v2.8.0/getting-started/installation.html)
-Agda `stdlib`: [v2.3](https://agda.readthedocs.io/en/v2.8.0/tools/package-system.html#example-using-the-standard-library)
+Agda `stdlib`: [v2.4](https://agda.readthedocs.io/en/v2.8.0/tools/package-system.html#example-using-the-standard-library)
 
 Register `borrowed-cf.agda-lib` (and `standard-library`) with Agda, then
 type-check any module, e.g. `agda BorrowedCF/Simulation2/Forward.agda`.
