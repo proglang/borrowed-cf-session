@@ -57,6 +57,36 @@
   \Blocked{\PNew{{\BindGroup[1]}}{{\BindGroup[2]}}{\Proc}}
 }
 
+% Precise variant (Blocked+), mechanised in agda/BorrowedCF/Safety/Blocked.agda
+% as Blocked⁺.  B-NuBlockedAcq above is imprecise when BOTH binder groups
+% start with a separator: it declares the process blocked as soon as ONE
+% separator head is not being acquired, although R-Acquire fires on the other
+% head (after C-ResSwap).  Blocked+ replaces B-NuBlockedAcq by the three rules
+% below; every separator-led side must have its head outside AC(P).  Blocked+
+% implies Blocked, so process progress holds for both.
+%
+% \DefRule {NuBlockedAcqLeft} {
+%   \EVar \notin \AC(\Proc) \\
+%   \Blocked{\Proc}
+% }{
+%   \Blocked{\PNew{\BLeadSep{\BSeq{\EVar}{\BindGroup[1]}}}{\BSeq{\EVary}{\BindGroup[2]}}{\Proc}}
+% }
+%
+% \DefRule {NuBlockedAcqRight} {
+%   \EVary \notin \AC(\Proc) \\
+%   \Blocked{\Proc}
+% }{
+%   \Blocked{\PNew{\BSeq{\EVar}{\BindGroup[1]}}{\BLeadSep{\BSeq{\EVary}{\BindGroup[2]}}}{\Proc}}
+% }
+%
+% \DefRule {NuBlockedAcqBoth} {
+%   \EVar \notin \AC(\Proc) \\
+%   \EVary \notin \AC(\Proc) \\
+%   \Blocked{\Proc}
+% }{
+%   \Blocked{\PNew{\BLeadSep{\BSeq{\EVar}{\BindGroup[1]}}}{\BLeadSep{\BSeq{\EVary}{\BindGroup[2]}}}{\Proc}}
+% }
+
 % B-NuBlockedHereAcq
 % \DefRule {NuBlockedAcq} {
 %   \EVary* \in \AC(\Proc)\\ 

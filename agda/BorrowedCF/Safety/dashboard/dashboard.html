@@ -1,0 +1,1361 @@
+<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="20">
+<title>Type safety dashboard</title>
+<style>body{font-family:system-ui,sans-serif;margin:24px;background:#fafafa;color:#222}
+table{border-collapse:collapse;width:100%;margin-bottom:24px;background:#fff} th,td{border:1px solid #ddd;padding:6px 10px;text-align:left;vertical-align:top;font-size:14px}
+th{background:#eee} h1{margin-bottom:4px} .meta{color:#666;font-size:13px} li{margin-bottom:6px}
+.bar{height:14px;background:#ddd;border-radius:7px;overflow:hidden;width:320px;display:inline-block;vertical-align:middle}
+.bar div{height:100%;background:#2e7d32}</style></head><body>
+<h1>Process preservation and progress</h1>
+<div class="meta">state.json updated 2026-09-08 (all agents finished; final clean check running) · page generated 2026-09-08 19:29:06 · auto-refresh 20s</div>
+<p>Lemmas done: 19/19 <span class="bar"><div style="width:100%"></div></span></p>
+<h2>Theorems</h2><table><tr><th>name</th><th>module</th><th>status</th><th>note</th></tr><tr><td>preservationₚ</td><td>Safety/Preservation.agda</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">DONE: all 14 cases proved, no postulates; final clean check running</span></td><td>ChanCx Γ → Γ ; γ ⊢ₚ P → P ─→ₚ Q → Γ ; γ ⊢ₚ Q; assembled by P4 from per-rule lemmas</td></tr><tr><td>progressₚ</td><td>Safety/Progress.agda</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">DONE (verified): progressₚ and progress⁺ₚ, zero goals, no postulates</span></td><td>[] ; γ ⊢ₚ P → (P ≋ ⟪*⟫) ⊎ Blocked P ⊎ ∃ P′. P ─→ₚ P′ (closed processes, confirmed by user); wave 2</td></tr></table>
+<h2>Lemmas</h2><table><tr><th>name</th><th>module</th><th>status</th><th>agent</th></tr><tr><td>Blocked / Blocked⁺ / ∈BC / ∈AC (+ decidability)</td><td>Safety/Blocked.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>F</td></tr><tr><td>progress⁺ (expression progress with constant head)</td><td>Safety/Progress/Expr.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>F</td></tr><tr><td>const-app-dir, stuck-arg-shape</td><td>Safety/Progress/Expr.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>F</td></tr><tr><td>Plug (evaluation-position predicate), plug?, plug-⋯ᵣ(⁻¹)</td><td>Safety/Progress/Expr/Plug.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>F</td></tr><tr><td>∈BC/∈AC/Blocked transport along renamings</td><td>Safety/Blocked.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>F</td></tr><tr><td>pres-Com</td><td>Safety/Preservation/Com.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>P2</td></tr><tr><td>pres-Choice (+ BindCtxInvChoice)</td><td>Safety/Preservation/Choice.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>P2</td></tr><tr><td>≃-dual, dual-unfold, msg-cancel, com-split (dual heads of R-Com are dual msg types)</td><td>Safety/Preservation/Support/{Dual,ConsMsg,MsgSplit}.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>P2</td></tr><tr><td>pres-LSplit (+ BindCtxLsplit)</td><td>Safety/Preservation/LSplit.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>P3c</td></tr><tr><td>pres-RSplit (+ BindCtxRsplit)</td><td>Safety/Preservation/RSplit.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>P3b</td></tr><tr><td>pres-Acq</td><td>Safety/Preservation/Handles/Acq.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>P4b</td></tr><tr><td>bindCtx-lsplit, bindCtx-rsplit (paper&#x27;s BindCtxLsplit/Rsplit) + Ins/InsR/Same plumbing</td><td>Safety/Preservation/Splits/{Chain,Group}.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>P3</td></tr><tr><td>lsplit-binder / rsplit-binder (new binder context + lookups of the two new handles at the rule&#x27;s positions)</td><td>Safety/Preservation/{LSplit,RSplit}.agda, Splits/Redex.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>P3</td></tr><tr><td>pres-Exp, pres-New, pres-Fork</td><td>Safety/Preservation/Basic.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>P4</td></tr><tr><td>pres-Drop, pres-Discard, pres-Close (+ bindCtx-drop, bindCtx-discard, erasure lemmas)</td><td>Safety/Preservation/Handles.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>P4</td></tr><tr><td>R-Par / R-Bind / R-Struct cases + assembly</td><td>Safety/Preservation.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>P4</td></tr><tr><td>∈BC/∈AC ⇒ located thread; reduction under ProcessContext; single-thread redex lemmas</td><td>Safety/Progress/Redex.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>G1</td></tr><tr><td>dual heads lemma; sync redexes com/choice/close ⇒ reduction; plug-typing inversion</td><td>Safety/Progress/Sync.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>G2</td></tr><tr><td>progressₚ induction</td><td>Safety/Progress/Main.agda, Safety/Progress.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>G3</td></tr></table>
+<h2>Agents</h2><table><tr><th>id</th><th>model</th><th>task</th><th>files</th><th>state</th></tr><tr><td>F</td><td>opus</td><td>Blocked predicate (tex-exact + precise), decidability, strengthened expression progress</td><td>Safety/Blocked.agda, Safety/Progress/Expr.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished</span></td></tr><tr><td>P2</td><td>opus</td><td>preservation cases R-Com, R-Choice</td><td>Safety/Preservation/Com.agda, Choice.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished</span></td></tr><tr><td>P3</td><td>opus</td><td>preservation cases R-LSplit, R-RSplit</td><td>Safety/Preservation/LSplit.agda, RSplit.agda</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (binder lemmas done, case assembly handed to P3b)</span></td></tr><tr><td>P4</td><td>opus</td><td>preservation cases Exp/New/Fork/Drop/Acq/Discard/Close/Par/Bind/Struct + assembly</td><td>Safety/Preservation.agda, Preservation/Basic.agda, Handles.agda</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (all cases but R-Acq; assembly done with temporary postulates for Choice/LSplit/RSplit)</span></td></tr><tr><td>G1</td><td>opus</td><td>progress: single-thread process redexes ⇒ reduction exists (new/fork/lsplit/rsplit/drop/discard/acq), located-thread bridge from ∈BC/∈AC, reduction under process contexts</td><td>Safety/Progress/Redex.agda, Progress/Redex/</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished</span></td></tr><tr><td>G2</td><td>opus</td><td>progress: synchronisation redexes (com/choice/close) from two blocked heads ⇒ reduction exists; dual-head lemma; typing inversion through process contexts</td><td>Safety/Progress/Sync.agda, Progress/Sync/</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished</span></td></tr><tr><td>G3</td><td>opus</td><td>progress: main induction over the closed process with a ProcessContext (parametrised over G1/G2 lemma signatures), final theorem progressₚ</td><td>Safety/Progress.agda, Safety/Progress/Main.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished</span></td></tr><tr><td>P3b</td><td>opus</td><td>preservation: assemble pres-LSplit / pres-RSplit from P3&#x27;s binder lemmas (strengthening round trip via SplitConfine, context lemma for lwk/rwk, structure inequality, TP-Res assembly)</td><td>Safety/Preservation/LSplit.agda, RSplit.agda, Splits/</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (pres-RSplit done; pres-LSplit only for immobile handles)</span></td></tr><tr><td>P4b</td><td>opus</td><td>preservation: R-Acq — probe for a counterexample (transmute rule ∥′-tm-; loses mobility after acquire), else prove pres-Acq</td><td>Safety/Preservation/Handles/Acq.agda, AcqProbe.agda</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (pres-Acq proved; counterexample refuted; rules audit: no fix needed)</span></td></tr><tr><td>P3c</td><td>opus</td><td>preservation: pres-LSplit mobile-handle case (handle alone in its group by head-¬mobile; zap + pat-hole route) and premise-free pres-LSplit; final wiring</td><td>Safety/Preservation/LSplit/, LSplit.agda (final lemma), Preservation.agda (last postulate)</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished</span></td></tr></table>
+<h2>Policy</h2><ul><li>At most 6 agents at any time (user raised the cap from 5 on 2026-09-08).</li><li>Disjoint file ownership per agent; generic lemmas are listed in the owner&#x27;s STATUS.md and imported, never edited, by others.</li><li>Reuse before proving: the Simulation/ tree is complete and its lemmas (DropShape, AcqInv, PairConfine, InvFrame, Strengthen, Confine, Inversion, Theorems/*) must be imported, never re-proved. Inventory in AGENTS.md.</li><li>OOM protection: agda runs only through agda-check (now 2 slots, 11 GB heap cap each); watchdog kills the largest agda process below 2.5 GB free and logs it here; the affected agent is told (G1 and G3 were told at 18:03).</li></ul>
+<h2>Issues found (paper / development)</h2><ul><li>Toolchain: HEAD uses `_×?_` (stdlib 2.4); ~/.agda/libraries still names stdlib 2.3. Private AGDA_DIR with stdlib 2.4 used for all checks.</li><li>Paper CT-LSplit/CT-RSplit require only ¬(S₂ ≃ Skip); Agda requires ¬ Skips of both components. Paper B-Seq/B-Drop lack the ¬skips₂ and acqHead premises of Agda&#x27;s BindCtx. The looser paper rules admit the F4 deadlock probes (Simulation/BackwardSoup/Examples/Probes.agda).</li><li>Process progress as stated (arbitrary Γ) fails for open processes: x : ret ⊢ ⟪drop x⟫ neither reduces nor is Blocked. Mechanised for closed processes.</li><li>B-NuBlockedAcq is imprecise when both binder lists start with a separator: it declares the process blocked if ONE separator head is not acquired, even if the other one is (R-Acquire fires after C-ResSwap). Precise variant Blocked⁺ mechanised alongside; Blocked⁺ ⊆ Blocked.</li><li>The first disjunct P ≡ ⟪*⟫ of process progress is subsumed by Blocked (B-ExpValueBlocked + B-ParBlocked).</li><li>Existing Agda expression progress classifies (ƛ e) · v as blocked (Blocked allows any head term); paper says constant. Strengthened version progress⁺ in Safety/Progress/Expr.agda.</li><li>Cosmetic: CT-New lists Term first in tex, Agda&#x27;s `new lists end ⁇ first.</li><li>Decisions (user, 2026-09-08): progress for closed processes is accepted; Blocked⁺ recorded as a commented block below B-NuBlockedAcq in tex/rules/blocked.tex; ~/.agda/libraries stays at stdlib 2.3 for now (private AGDA_DIR only); reviewer feedback will be added to the repo later.</li><li>TP-Res in tex writes Γ ∥ Γ₁ ∥ Γ₂ ⊢ P; Agda orders the concrete context (Γ₁ ⸴* Γ₂) ⸴* Γ (reversed). Cosmetic (P2).</li><li>P3: the extra ¬ Skips s₁ premise of the Agda split constants is NEEDED to re-establish AcqHeadCtx after a split (acqHead-lsplit/rsplit use it); the paper CT-LSplit/CT-RSplit must be tightened accordingly.</li><li>F: tex B-ExpConstBlocked does not exclude the constant `unit` (Agda&#x27;s Const has it); B-NuBlocked&#x27;s set condition {x,y} ∩ BC(P) ≠ {x,y} mechanised as ¬(x ∈ BC × y ∈ BC); Frame carries value side conditions on directed application that the tex F[·] leaves implicit.</li><li>P3: no typed renaming exists for the split renamings lwk/rwk (the consumed handle&#x27;s slot changes type), so R-LSplit/R-RSplit need strengthening (SplitConfine) rather than renaming; Processes/Renamings.⊢wkRSplit is unusable for R-RSplit as written (keeps the old type at the shifted position). The paper&#x27;s context-pattern formulation 𝒢[·] of BindCtxLsplit/Rsplit is replaced by cast-free inductive relations Same/Ins/InsR.</li><li>Mobile on sessions: tex has Te-Acq and Te-Skips (Skip is mobile); Agda&#x27;s Mobile (Types/Predicates.agda:183) has only the acq case.</li><li>P4: tex R-Discard/R-Drop/R-Close differ in generality from Agda (Agda R-Drop drops the head of a group of any width, typing forces width 1 via bindCtx-drop; Agda R-Discard genuinely more general; R-Close realised by weaken* 2).</li><li>G3: progress needs no first disjunct and holds for [] ; γ (every closed structure is ≈ []); a binder group [0] is untypable only because of the BindCtx/end interaction, which neither ⊢ᴮ nor the tex rules state; the acq case of progress needs typing (direction 𝟙) and is not purely structural.</li><li>R-Acq resolved (P4b probe): Mobile ⟨acq ; t⟩ requires Bounded t, i.e. t already carries the group&#x27;s terminator, and nothing may follow a terminator inside a group, so a mobile head is always ALONE in its group (head-¬mobile). The transmute rule can therefore never split a group across threads, and the feared preservation counterexample is untypable. Same fact as Crux&#x27;s mobile-head-alone/group-head-¬mobile.</li><li>G1: Agda diverges (&gt;20 GB) on a `with` that abstracts a Canonical.agda record together with a constructor pattern (the with generalises the threadInContext index); consuming the record in a separate top-level function avoids it. R-Drop/R-Discard/R-Acq must be applied with explicit indices; E is never inferable through _[_]*. R-Par exists only for the left component (right needs R-Struct with ∥-comm).</li><li>P2: paper R-Choice brackets ∥ as E₁ ∥ (E₂ ∥ P) while R-Com uses (E₁ ∥ E₂) ∥ P; Agda uses the left-nested form for both. Paper choice is label-indexed, Agda binary (branch returns ⟨s₁⟩ ⊕ ⟨s₂⟩). ⊢ᴮ and AcqHeadCtx have no counterpart in the paper. New session-type theory needed for Com/Choice: ≃-dual, msg-cancel, brn-cancel (absent from Types/*).</li><li>P4b audit: no proof in the development consumes handle mobility through ∥′-tm-; (its only witnesses are UnrCx⇒MobCx); Te-Acq matters only for T-Abs&#x27;s mobile-closure premise (fork/send). Making the transmute unconditional would break R-Acq preservation for real. Adding the paper&#x27;s Te-Skips to Agda would let a ⟨skip⟩ head sit in a wide group and require restating mobile-head-alone.</li><li>P3b claimed R-LSplit preservation fails for a mobile handle sharing its group with another thread&#x27;s handle; REFUTED by P4b&#x27;s head-¬mobile (a mobile head is alone in its group). The mobile case needs the zap/pat-hole route instead of transporting the derivation through a struct substitution (which would need Mobile of the two new handles).</li><li>G2: the head-duality argument needed new type theory (ConsK front kinds, ≃-invariant, dual-flipped), because Types/Atoms abandoned ≃-transport of a leading brn. Paper R-Com leaves &#x27;x,y not free in F₁,F₂,v,P&#x27; to the binder convention, Agda needs it from linearity (com-confine); R-Close has no residual so it fires only after scope extrusion (ν-ext backwards, sound by close-pair-confine). B-NuBlocked&#x27;s side condition is exactly the converse of sync-redex.</li><li>P3c: Te-Skips (Skip mobile) in the paper would also break handle-interior-¬mobile (a ⟨skip⟩ handle could sit inside a group), so the paper should drop Te-Skips or restate the group lemmas. Mobile is not decidable (quantifies over sessions modulo ≃), so case splits must be syntactic on the rule indices.</li></ul>
+<h2>Memory watchdog log</h2><pre style="background:#fff;border:1px solid #ddd;padding:8px;font-size:13px">2026-09-08 17:42:20 avail=2138MB KILLED agda pid=15866 rss=21715MB cmd: 15866 22236324 agda BorrowedCF/Safety/Progress/Redex/Handles.agda
+2026-09-08 17:47:22 avail=1604MB KILLED agda pid=25345 rss=13271MB cmd: 25345 13590436 agda BorrowedCF/Safety/Progress/Main/TmpCheck.agda
+2026-09-08 17:48:03 avail=1828MB KILLED agda pid=25748 rss=22060MB cmd: 25748 22590084 agda BorrowedCF/Safety/Progress/Redex/Handles.agda
+2026-09-08 17:49:29 avail=1878MB KILLED agda pid=29014 rss=11650MB cmd: 29014 11929744 agda BorrowedCF/Safety/Progress/Main/TmpCheck.agda
+2026-09-08 17:51:41 avail=1696MB KILLED agda pid=31865 rss=23164MB cmd: 31865 23720920 agda BorrowedCF/Safety/Progress/Main/TmpCheck.agda
+</pre>
+<h2>Agent self-reports (STATUS.md files, unverified, refreshed automatically)</h2><h3>Preservation/Acq-STATUS.md <span class=meta>(modified 18:41:13)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># P4b status — R-Acq preservation (`pres-Acq`)
+
+Owner: agent P4b.  Files owned: `Safety/Preservation/Handles/Acq.agda`,
+`Safety/Preservation/Handles/AcqProbe.agda`, this file, and the `pres-Acq`
+postulate block of `Safety/Preservation/Handles.agda`.
+
+Gotcha: every `;` in this development is U+037E, including inside identifiers
+(`acq-;-split`, `≃-;`, `;-unit₁`, the `AllCx` constructor `_;_`, …).
+
+## 1. The probe: P4&#x27;s counterexample does NOT exist
+
+P4&#x27;s obstacle was `∥′-tm-;  : MobCx Γ α ⊎ MobCx Γ β → Γ ∶ α ∥ β ≈′ α ; β`
+(`Context/Equivalence.agda:35`).  It is the only rule that can split the
+sequential frame `structNSeq (suc b₁) = ` 0F ; wk (structNSeq b₁)` of a binder
+group into parallel components, and it needs the split point to be mobile.  If
+the head `x₀ : ⟨ u ⟩`, `u ≃ acq ; t`, of the acquired group were mobile while
+another thread held a later handle of the same group, the LHS would type and
+the reduct (head `⟨ t ⟩`, no longer mobile) would not.
+
+**That configuration is untypable.**  `Mobile ⟨ acq ; t ⟩` unfolds to
+`∃ t′. Bounded t′ × (acq ; t ≃ acq ; t′)`, i.e. to `Bounded t`: the head&#x27;s OWN
+continuation already carries the group&#x27;s terminator (`ret` inside a group
+chain, `end p` for the last group).  `Types/NoTerm.bounded-tail-skips` then
+forces everything after the head in the group to `Skip`, and `BindCtx′.cons`
+demands `¬ Skips`.  So a mobile group head is ALONE in its group; equivalently
+a group of width ≥ 2 has an immobile head.  Formalised as
+
+* `AcqProbe.head-¬mobile` — `BindCtx c (suc (suc b) ∷ B) Γ → ¬ Mobile (Γ ﹫ 0F)`
+  for any chain `c ≃ q ; τ` with `TermAtom τ`, `NoTerm q`;
+* `AcqProbe.acq-head-¬mobile` — its R-Acq instance, `c = acq ; (s ; end p)`,
+  `New s`.
+
+This is the `BindCtx`-local half of `Simulation/BackwardSoup/Position/
+Crux.agda`&#x27;s `mobile-head-alone` (line ~370) / `group-head-¬mobile` (~382);
+their `block-mobile-head-width1` core is `private` and their statements are
+phrased over the `GroupOf` navigation of a whole binder list, so the two
+lemmas above re-derive exactly the instance R-Acq needs, without importing
+`Simulation/BackwardSoup/`.
+
+Concretely, the candidate configuration of the task (side 1 = `0 ∷ 2 ∷ []`,
+`x₀ : ⟨ acq ; msg ‼ `⊤ ⟩`, `x₁ : ⟨ end ‼ ⟩`) fails at the first step:
+`Mobile ⟨ acq ; (msg ‼ `⊤) ⟩` needs `Bounded (msg ‼ `⊤)`, and `Bounded`
+(`Types/Predicates.agda:21`) has no `msg` constructor.  Any repair that makes
+the head mobile (`t` bounded) makes `t` reach the terminator, which by
+`bounded-tail-skips` empties the rest of the group.  `GroupOrder.
+before-mono-≼` is the second, independent lever: with both handles immobile,
+`≼` cannot turn the frame&#x27;s `` ` 0F ; ` 1F `` into a `∥`, so the `TP-Par`
+split of a width-2 group is underivable.  Not needed for the proof below.
+
+**Consequence: process preservation for R-Acq is TRUE and `pres-Acq` is
+provable.**  The simulation development never needed this: the forward case
+(`Simulation/Support/Theorems/Acq.agda`, `U-acq-step`) consumes the typing of
+the REDEX only and produces an untyped reduction of the translation; the
+backward soup case (`Simulation/BackwardSoup/Leaves/Acq.agda`) likewise.  No
+module in `Simulation/` types an R-Acq REDUCT.
+
+## 2. Lemmas
+
+| lemma | statement | status | file |
+|---|---|---|---|
+| `block-width1` | a mobile handle at the front of a `BindCtx′` block ends the block | **proved** (private) | `Handles/AcqProbe.agda` |
+| `head-¬mobile` | the head of a binder group of width ≥ 2 is immobile | **proved** | `Handles/AcqProbe.agda` |
+| `acq-head-¬mobile` | its `acq ; (s ; end p)` / `New s` instance | **proved** | `Handles/AcqProbe.agda` |
+| `mobCx-tr`/`unrCx-tr`/`≈′-tr`/`≈-tr`/`≼-tr` | `¬ Mobile T → (T ⸴ Δ₀) ∶ α ≼ β → (T′ ⸴ Δ₀) ∶ α ≼ β` (and `≈`): a structure relation is replayed verbatim at a new head type as soon as the old head is immobile | **proved** | `Handles/Acq.agda` |
+| `zap`, `zap-⇒`, `zap-fix`, `zap-fix𝓅`, `zap-wk`, `zap-wk𝓅` | the in-place erasing substitution `0F ↦ []`; it is a legal `⇒` between ANY two contexts differing only at `0F`, and fixes everything weakened past `0F` | **proved** | `Handles/Acq.agda` |
+| `pat-hole-≼` | `Γ ∶ 𝒫 [ γ ]𝓅 ≼ γ ∥ 𝒫 [ [] ]𝓅` (uses `≼-wk` for the two `;` cases) | **proved** | `Handles/Acq.agda` |
+| `app-var-≼` | `Γ ; γ ⊢ K c ·¹ (` x) → Γ ∶ ` x ≼ γ` | **proved** | `Handles/Acq.agda` |
+| `acq-cancel` | `acq ; x ≃ acq ; y → x ≃ y` (via `AtomCons.≃-cons`/`cons-suffix-unique`) | **proved** (private) | `Handles/Acq.agda` |
+| `bindCtx-acq` | `(Γ ﹫ 0F) ≃ ⟨ acq ; t ⟩ → BindCtx (acq ; (s ; end p)) (suc b ∷ B) Γ → BindCtx (s ; end p) (suc b ∷ B) (⟨ t ⟩ ⸴ V.tail Γ)` | **proved** | `Handles/Acq.agda` |
+| `FrB`, `fr-0∷`, `fr-split` | the `TP-Res` frame; the leading zero-width group is `≈`-invisible; a width-1 group splits as `` ` 0F ∥ (Fr ⋯ zap) `` | **proved** | `Handles/Acq.agda` |
+| `acq-confine-wk` | `acq-confine` with the thinning taken to be `weakenᵣ` (so `⊢weakenᵣ` can be attached) | **proved** (private) | `Handles/Acq.agda` |
+| `mob-or-thin` | `¬ Mobile (Γ ﹫ 0F) ⊎ b ≡ 0` for the acquired group | **proved** | `Handles/Acq.agda` |
+| `acq-final` | the structure step of R-Acq: the frame bound survives the head-type change, by `≼-tr` (wide group) or by `zap` + `pat-hole-≼` (width-1 group) | **proved** | `Handles/Acq.agda` |
+| `bindCtx-0-inv` | a zero-width leading group is a `cons-acq` node | **proved** | `Handles/Acq.agda` |
+| `pres-Acq′` | R-Acq with `E`, `P` already factored through `weakenᵣ` | **proved** (private) | `Handles/Acq.agda` |
+| `pres-Acq` | `ChanCx Γ → Γ ; γ ⊢ₚ ν (0 ∷ suc b₁ ∷ B₁) B₂ (⟪ E [ acq 0F ] ⟫ ∥ P) → Γ ; γ ⊢ₚ ν (suc b₁ ∷ B₁) B₂ (⟪ E [ ` 0F ] ⟫ ∥ P)` | **proved**, zero holes, no postulates | `Handles/Acq.agda` |
+
+## 2b. Wiring
+
+`Handles.agda`&#x27;s `postulate pres-Acq` block is gone; the file now ends with
+
+```
+open import BorrowedCF.Safety.Preservation.Handles.Acq using (pres-Acq) public
+```
+
+`agda-check BorrowedCF/Safety/Preservation.agda` passes (it re-checks
+`Handles.agda` and `Handles/Acq.agda` on the way), so `preservationₚ`&#x27;s R-Acq
+case is now postulate-free.  The remaining postulates in `Preservation.agda`
+are P4&#x27;s `private` placeholders for `pres-LSplit`/`pres-RSplit`, owned by P3.
+
+## 2c. Performance
+
+The one `refl` that rewrites the process (`E ≡ E₀ ⋯ᶠ* weakenᵣ`, from
+`acq-confine-wk`) is isolated in the two-line top-level `pres-Acq`, which does
+nothing else and hands the already-factored process to `pres-Acq′`; `{E = E}`
+and `{P = P}` are passed explicitly to `acq-confine-wk` (otherwise the
+`Frame*` metavariable blocks the `refl` split, `SplitError.UnificationStuck`).
+`pres-Acq′` then does its inversion `with`-chain on a process that is already
+in `E₀`/`P₀` form.  A full `agda-check` of `Handles/Acq.agda` with cached
+imports is ~10 s and stays well under 1 GB.
+
+## 3. Reused (not re-proved)
+
+* `Types/AtomCons.agda`: `≃-cons`, `cons-suffix-unique`, `acq-;-split`,
+  `acq-;-≄ret`.  `Types/NoTerm.agda`: `bounded-tail-skips`, `noTerm-split`,
+  `noTerm-acq`, `new⇒noTerm`, `TermAtom`.
+* `Safety/Preservation/Handles/Erase.agda` (P4): `app-var-[]≼`;
+  `Safety/Preservation/Handles/Frames.agda` (P4): `fuse2`, `fuse3`.
+* `Simulation/Support/{Confine,InvFrame,Strengthen,AcqInv,AcqHandle}.agda`:
+  the counting half of the confinement (`count`, `≼⇒count≤`,
+  `strengthen-frame`, `strengthen-Proc-gen`, `inv-weakenᵣ`, `acq-app-nonUnr`,
+  `count-handle-acq`).
+
+## 4. Discrepancies tex vs Agda (R-Acq specific)
+
+1. `Types/Predicates.agda:183` gives `Mobile ⟨ s ⟩ = ∃ s′. Bounded s′ ×
+   s ≃ acq ; s′`, i.e. only `Te-Acq`
+   (`tex/rules/bounded-session-types.tex:17`).  The paper ALSO has `Te-Skips`
+   (`\S \SEq \SSkip ⇒ \Mobile\S`, same file line 21), which the Agda
+   `Mobile` drops: a `⟨ skip ⟩` handle is mobile on paper and immobile in
+   Agda.  R-Acq is unaffected — the acquired handle is `⟨ u ⟩` with
+   `u ≃ acq ; t`, and `acq ; t ≃ skip` is impossible
+   (`AtomCons.acq-;-¬skips`) — but under `Te-Skips` a `⟨ skip ⟩` head COULD
+   be split off its group by `∥′-tm-;`, which is worth checking for R-Discard
+   (there the head is exactly `≃ ⟨ skip ⟩`; `pres-Discard` is already proved
+   for the Agda `Mobile`, and adding `Te-Skips` would not invalidate it, since
+   `bindCtx-discard` and its structure step never use immobility).
+2. The paper&#x27;s context equality (`tex/sec/types.tex:84-86`,
+   \cref{fig:syntax-types}) has EXACTLY the Agda rule, in both orientations:
+   `Mobile Γ₁ ⇒ Γ₁ ∥ Γ₂ = Γ₁ ; Γ₂` and `Mobile Γ₂ ⇒ Γ₁ ∥ Γ₂ = Γ₁ ; Γ₂`,
+   plus the CKA exchange law as the only non-`Unr` subcontext axiom.  So the
+   paper has the same rule set and the same argument applies to it: a mobile
+   group head has a `Bounded` continuation, hence ends its group.
+3. tex `R-Acquire` keeps the binder `x` and only deletes the group separator;
+   the Agda rule does the same, but the TYPE of `x` changes from
+   `⟨ acq ; t ⟩` to `⟨ t ⟩`, which the tex rules do not make visible.
+
+## 5. Do the rules need a fix?  No.
+
+The coordinator asked, in case the counterexample were genuine, for the
+minimal principled repair.  It is not genuine, so no rule changes; for the
+record, here is what the audit found.
+
+**Where `∥′-tm-;` is actually used.**  `grep` over `agda/BorrowedCF` for
+`∥′-tm-;`, `∥/;-transmute`, `;-commMob` outside `Context/`: only comments (in
+`Simulation/BackwardSoup/{GroupOrder,Position,Examples/*}`).  Inside
+`Context/Equivalence.agda` the rule has exactly three consumers:
+
+* `;-unit₁`/`;-unit₂` — witness `inj₁ []` / `inj₂ []`, i.e. `MobCx Γ []`,
+  which holds for every context.  These two are used everywhere (every frame
+  computation, `pres-Close`/`Discard`/`Drop`/`Acq`).
+* `;-commMob` and the `∥`/`;` interchange at `Context/Equivalence.agda:196`
+  — witnesses always `UnrCx⇒MobCx`, i.e. mobility of an UNRESTRICTED context.
+
+So no proof in the development consumes `Te-Acq` mobility of a handle.  Its
+role is in the TYPING OF PROGRAMS: `T-Abs`&#x27;s premise
+`Γ-mob : Arr.Mobile a → MobCx Γ γ` (`Terms/Base.agda:196`) is what lets a
+closure that captures a bounded acquired handle be given a mobile arrow, and
+mobile arrows are what `fork`/`send` demand.  Deleting `Te-Acq` would not
+break any proof here but would reject such programs, so it is not a repair
+anyone should want.
+
+**Why the rule is harmless at an acquired handle.**  `∥′-tm-;` can split a
+group&#x27;s `structNSeq` only at a mobile handle, and `Bounded` (the premise of
+`Te-Acq`) says the handle&#x27;s own continuation already reaches the group&#x27;s
+terminator.  `bounded-tail-skips` then empties the rest of the group.  Group
+width one is exactly the case in which the frame contribution is
+`` ` 0F ; [] ``, so the split is available but useless: `` ` 0F ∥ [] ≈ ` 0F ;
+[] `` already follows from the trivial `MobCx []` witness.  That is why
+`acq-final`&#x27;s width-one branch needs no mobility at all — it uses `zap`,
+`pat-hole-≼` and `∥`-laws only.
+
+**What WOULD break it.**  Two hypothetical changes, listed so they are not
+made by accident:
+
+1. Adding the paper&#x27;s `Te-Skips` to `Mobile` (discrepancy 1 above) makes a
+   `⟨ skip ⟩` handle mobile.  A `⟨ skip ⟩` head CAN sit in a group of width
+   ≥ 2 (`BindCtx′.cons` only forbids the whole chain from skipping), so with
+   `Te-Skips` a group really could be split across threads at a skip-typed
+   head.  R-Acq is still safe (its head is acq-headed, never `≃ skip`), but
+   `Simulation/BackwardSoup/Position/Crux.mobile-head-alone` and everything
+   built on it would have to be restated.  If `Te-Skips` is wanted in the
+   mechanisation, the minimal repair is to weaken it to
+   `S ≃ Skip ⇒ Mobile S` only for handles whose group is already exhausted,
+   or to keep the Agda `Mobile` and note the restriction in the paper.
+2. Making `∥′-tm-;` unconditional (or conditioning it on the CONTINUATION
+   rather than the head) would break R-Acq preservation for real, and would
+   also invalidate `GroupOrder.before-mono-≼`, `Position/Crux`, and the whole
+   `Simulation/BackwardSoup/Position` layer, which is the only place the
+   development reasons about `;`-order.
+</pre><h3>Preservation/ComChoice-STATUS.md <span class=meta>(modified 18:16:20)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># P2 — R-Com and R-Choice preservation (status: BOTH DONE)
+
+Owner: agent P2.  Files owned: `Safety/Preservation/Com.agda`,
+`Safety/Preservation/Choice.agda`, `Safety/Preservation/Support/`,
+`Safety/Preservation/Choice/`, `Safety/Preservation/SelfTest.agda`,
+this file.  (`Safety/Preservation/Com/` is empty — the R-Com helpers all
+turned out to be reusable, so they live in `Support/`.)
+
+Everything below type-checks with `agda-check`, **zero goals, zero unsolved
+metas, no postulates, no `TERMINATING`, no `--allow-unsolved-metas`**.
+
+## Two gotchas for everybody
+
+1. Every `_;_` operator in this development (session types, `Struct`, `Tm`,
+   `Skips`, the judgements `_;_⊢_∶_∣_` and `_;_⊢ₚ_`, `≃-;`, `;-unit₁`, …) is
+   spelled with **U+037E GREEK QUESTION MARK**, not with an ASCII semicolon.
+   An ASCII `;` in a pattern gives a bare `[ParseError]` with no useful text.
+2. Calling `pres-Com` needs the two frames named:
+   `preservationₚ Γ-S ⊢P (R-Com {E₁ = E₁} {E₂ = E₂} V) =
+      pres-Com {E₁ = E₁} {E₂ = E₂} Γ-S V ⊢P`.
+   The bare `pres-Com Γ-S V ⊢P` leaves `E₁`, `E₂` unsolved, because `E [ e ]*`
+   is a stuck application and the unifier cannot invert it.  `pres-Choice`
+   takes `E₁ E₂ i` explicitly, so `pres-Choice Γ-S E₁ E₂ i ⊢P` works as is.
+   `Safety/Preservation/SelfTest.agda` contains a compiled `preservationₚ`
+   clause for both rules, so it is the copy-paste source for the assembler.
+
+## Deliverables
+
+| lemma | statement | status | file |
+|---|---|---|---|
+| **`pres-Com`** | `ChanCx Γ → (V : Value e) → Γ ; γ ⊢ₚ LHS(R-Com V) → Γ ; γ ⊢ₚ RHS` | **proved** | `Com.agda` |
+| **`pres-Choice`** | `ChanCx Γ → ∀ E₁ E₂ i → Γ ; γ ⊢ₚ LHS(R-Choice E₁ E₂ i) → Γ ; γ ⊢ₚ RHS` | **proved** | `Choice.agda` |
+| `partial` | a compiled `preservationₚ` clause for `R-Com` and `R-Choice` | proved | `SelfTest.agda` |
+
+## Reusable support (importable by P3/P4; do not edit)
+
+`Safety/Preservation/Support/` — generic session-type and de Bruijn theory.
+
+| lemma | statement | file |
+|---|---|---|
+| `dual-⋯ₛ` | `dual (s ⋯ ϕ) ≡ dual s ⋯ (dual ∘ ϕ)` for a session substitution | `Support/Dual.agda` |
+| `dual-unfold` | `dual (unfold s) ≡ unfold (dual s)` | `Support/Dual.agda` |
+| `≃-dual` | `s₁ ≃ s₂ → dual s₁ ≃ dual s₂` — **missing from `Types/*`** | `Support/Dual.agda` |
+| `≃-consM` | `_≃_` transports `Cons (msg p T) w z`; the payload changes only up to `≃` (the `msg` case that `Types.AtomCons.≃-cons` excludes) | `Support/ConsMsg.agda` |
+| `cons-atom-skip` | `Atom b → Cons a b z → b ≡ a × z ≡ skip` | `Support/ConsMsg.agda` |
+| `msg-;-atom` | `Atom b → b ≃ msg p T ; t → ∃[ T′ ] b ≡ msg p T′` | `Support/ConsMsg.agda` |
+| `msg-;-cons` | the `msg` companion of `Types.AtomCons.atom-;-cons` | `Support/ConsMsg.agda` |
+| `msg-cancel` | `msg p T₁ ; s₁ ≃ msg p T₂ ; s₂ → T₁ ≃ T₂ × s₁ ≃ s₂` | `Support/ConsMsg.agda` |
+| `com-split` | `New s → msg ‼ T₁ ; s₁ ≃ s ; end p → msg ⁇ T₂ ; s₂ ≃ dual s ; end (dualPol p) → ∃ s*. New s* × T₁ ≃ T₂ × s₁ ≃ s* ; end p × s₂ ≃ dual s* ; end (dualPol p)` | `Support/MsgSplit.agda` |
+| `BrnV` / `≃-brnv` | branch-projection view: `BrnV p i w z` = &quot;`w` starts with a `p`-choice whose `i`-th branch, continuation appended, is `z`&quot;; `_≃_` transports it | `Support/BrnView.agda` |
+| `brnv-unique` | the branch is determined up to `≃` | `Support/BrnView.agda` |
+| `brnv-unfold(⁻¹)`, `brnv-⋯(ᵣ⁻¹)`, `brnv⋯⇒brnv`, `brnv-⋯⁻¹` | the μ-unfolding machinery, mirroring `Types.AtomCons` | `Support/BrnView.agda` |
+| `brn-cancel`, `brn-cancel₀` | `brn p X₁ X₂ ; X ≃ brn p Y₁ Y₂ ; Y → Xᵢ ; X ≃ Yᵢ ; Y` — **new session-type theory, nothing comparable in `Types/*`** | `Support/BrnView.agda` |
+| `brnv-dual`, `brnv-new` | `BrnV` commutes with `dual`, preserves `New` | `Support/BrnView.agda` |
+| `⋯ᵣ∘`, `⋯ᵣ⋯ₛ`, `⋯ₛ≗ᵣ`, `⋯ᵣ-cong` | four `Struct` traversal lemmas by direct induction (no Kit instance search) | `Support/ComWeaken.agda` |
+| `wkₚ-A/B/C` | where `wkₚ a c` sends first-block / second-block / ambient variables (transcribed from the private copies in `Simulation.ForwardSoup.Local.Com`) | `Support/ComWeaken.agda` |
+| `split3` | three-way view of `𝔽 (a + c + k)` | `Support/ComWeaken.agda` |
+| `del`, `del-A/B/C/x/y`, `del-wkₚ`, `⋯-wkₚ-del`, `⋯-cancel`, `⋯𝓅-cancel` | the structure substitution erasing the two communicated handles; it undoes `wkₚ` on variables, structures and context patterns | `Support/ComWeaken.agda` |
+| `del-⇒` | `del a c ∶ ((T₁ ⸴ Γ₁) ⸴* (T₂ ⸴ Γ₂)) ⸴* Γ ⇒ (Γ₁ ⸴* Γ₂) ⸴* Γ` — legal because an erased slot is `[]` | `Support/ComWeaken.agda` |
+| `structBinder-suc` | `structBinder (suc b ∷ B) ≡ ((` 0F) ; …) ∥ …` | `Support/ComWeaken.agda` |
+| `Fr`, `Fr-del` | `Fr` is the `TP-Res` structure; `Fr (suc b₁ ∷ B₁) (suc b₂ ∷ B₂) γ ⋯ del ≈ Fr (b₁ ∷ B₁) (b₂ ∷ B₂) γ` | `Support/ComWeaken.agda` |
+
+`Safety/Preservation/Choice/` — R-Choice-specific, but `Retype` and `Count`
+are generic enough for anybody who has to change a context in place.
+
+| lemma | statement | file |
+|---|---|---|
+| `bindCtx-brn` | a group whose first handle starts with a `p`-choice has a session that starts with the same choice, plus a rebuilder that re-types the group with the branch in place of the choice | `Choice/BindCtxBrn.agda` |
+| `choice-split` | both endpoints resolve to dual continuations: produces `s*`, the two new head types, `New s*`, and both re-typed `BindCtx`s | `Choice/Session.agda` |
+| `count-⋯ᵣ-∉`, `count-[-]𝓅`, `count-wkˡ` | multiplicity under renaming / through a context pattern / under `wkˡ` | `Choice/Count.agda` |
+| `count-Fr-x`, `count-Fr-y` | each communicated handle occurs **exactly once** in the `TP-Res` structure | `Choice/Count.agda` |
+| `∉-join-Dir⁻`, `∉-[-]𝓅⁻`, `∉-[-]𝓅-++`, `∉-block`, `∉-wk*` | `∉ dom` bookkeeping | `Choice/Count.agda` |
+| `Retyping`, `↑Rt`, `↑Rt*` | the re-typing datum (contexts agreeing off two positions, both of which are neither `Unr` nor `Mobile`) and its lifts | `Choice/Retype.agda` |
+| `unrCx-re`, `mobCx-re`, `≈-re`, `≼-re` | the structural side conditions transport unconditionally | `Choice/Retype.agda` |
+| `Tm-re`, `F-re`, `F*-re`, `P-re` | a term / frame / frame stack / process that does not mention the two positions keeps its typing | `Choice/Retype.agda` |
+| `agree-two` | the two doubly-blocked contexts of `R-Choice` agree off the two block heads | `Choice/Retype.agda` |
+
+## Reused from elsewhere (nothing re-proved)
+
+* `Types.AtomCons` (`Cons`, `cons-sound`, `cons-unfold(⁻¹)`, `cons-suffix-unique`,
+  `skips⊥cons`, `¬cons-brn`, `cons-atom⁻`, `StartsVar`, `skips⊥startsVar`,
+  `acq-;-¬brn`), `Types.AtomSnoc` (`ClosedAtom`), `Types.AtomUnsnoc`
+  (`atom-;-unsnoc`), `Types.Predicates` (`New`, `new-≃`, `new-⋯`).
+* `Processes.Typed` (`inv-ν`, `inv-∥`, `inv-⟪⟫`, `bindCtx-inv-msg`, `bindCtx-≃`,
+  `bindCtx⇒chanCtx`, `_⊢⋯ₚ⁻¹_/_`), `Reduction.Base` (`⊢[]*⁻¹`, `_⊢⋯ᶠ*⁻¹_/_`),
+  `Reduction.Expressions` (`value⇒pure`, `mobile×value⇒mobCx`),
+  `Terms.Base`/`Terms.SubstitutionInversion` (`inv-K`, `inv-·-unr`, `inv-⊗`,
+  `inv-`, `≃-⊗⁻¹`, `constFnUnr′`, `_⊢⋯⁻¹_/_`), `Processes.Renamings`
+  (`⊢wkₚ`, `wkₚ-inj`), `Context.Pattern` (`pullOutMobile`, `[-]𝓅-≼`, `[-]-dist-⋯`).
+* **`Simulation/Support/Confine.agda`** — imported (cheap: it only depends on
+  `Prelude`, `Types`, `Context.*`): `count`, `count-self`, `≼⇒count≤`,
+  `count0⇒∉dom`, `∉dom⇒count0`, `count-join-Dir/PS`, `∉∪⁻/⁺`,
+  `∉-join-Dir⁺`, `∉-join-PS⁻`, `∉-join-biased⁻`, `∉-abs-ctx-Dir/PS`,
+  `∉-absrec-ctx`, `∉-letpair-ctx`.  This is the only `Simulation/` import.
+* `Simulation/ForwardSoup/Local/Com.agda`&#x27;s private `wkₚ-A/B/C` and
+  `Simulation/ForwardSoup/Renaming.agda`&#x27;s `lift*-↑ˡ/↑ʳ` were **transcribed**
+  (they are private / that tree is far too expensive to import for four lines
+  of Fin arithmetic); the copies are in `Support/ComWeaken.agda` and are
+  credited there.
+* `Simulation/Support/Theorems/ComHelpers2.agda` was read but not imported:
+  `send-handle-≃msg-app` / `recv-handle-≃msg-app` duplicate what the plain
+  inversion cascade already gives, and importing that tree is expensive.
+
+## Discrepancies between `tex/rules/*` and the Agda
+
+1. **CT-New swaps the two endpoints.**  `tex/rules/constant-typing.tex` gives
+   `new_s : 𝟙 → ⟨acq ; (s ; Term)⟩ ⊗ ⟨acq ; (dual s ; Wait)⟩` (Term on the
+   *first* component); Agda&#x27;s `` `new`` gives
+   `` `⊤ →*M ⟨ acq ; (s ; end ⁇) ⟩ ⊗¹ ⟨ acq ; (dual s ; end ‼) ⟩ ``,
+   i.e. `Wait` (`⁇`) on the first component.  The two are mirror images.
+2. **R-Choice brackets the parallel composition differently from R-Com.**
+   In `tex/rules/reduction.tex`, R-Com is `(E₁[…] ∥ E₂[…]) ∥ P` but R-Choice
+   is `E₁[…] ∥ (E₂[…] ∥ P)`.  Agda uses the left-nested form for both, so the
+   Agda `R-Choice` is not literally the paper&#x27;s rule (they are related by
+   `∥-assoc`, which `R-Struct` can absorb, but the paper should be made
+   consistent).
+3. **Binary vs indexed choice.**  CT-Select/CT-Branch are stated over an
+   arbitrary label set `L`; Agda fixes `L = Bool` (`brn p s₁ s₂`,
+   `` `select : Bool → Const ``, and `branch`&#x27;s result is `⟨s₁⟩ ⊕ ⟨s₂⟩`
+   rather than a variant).
+4. **The split constants are strictly stronger in Agda.**  CT-LSplit/CT-RSplit
+   assume only `¬ (s₂ ≃ skip)`; Agda&#x27;s `` `lsplit`` / `` `rsplit`` assume
+   `¬ Skips s` **and** `¬ Skips s′`.  (Flagged for P3; the Agda source
+   documents why.)
+5. **TP-Res orders its premise the other way round.**  The paper writes
+   `Γ ∥ Γ₁ ∥ Γ₂ ⊢ P`; Agda types the body in `(Γ₁ ⸴* Γ₂) ⸴* Γ` with structure
+   `structBinder B₁ ∥ structBinder B₂ ∥ (γ ⋯ weaken*)`, i.e. binders first.
+   Cosmetic, but the de Bruijn indices in the reduction rules depend on it.
+6. **`⊢ᴮ B` is not in the paper.**  Agda&#x27;s TP-Res carries
+   `⊢ᴮ B = Allᴸ NonZero (drop 1 B)` (every sub-block after the first is
+   non-empty).  The paper&#x27;s B-Emp/B-Seq/B-Drop/B-Acq do not state it.
+7. **`AcqHeadCtx` is not in the paper.**  Agda&#x27;s `BindCtx.cons-ret/acq` and
+   `cons-acq` additionally require the first handle of a non-first sub-block to
+   *start* with `acq` (`s ≃ acq ; t`), not merely to be non-skipping.  The
+   Agda source cites a counterexample that the weaker (paper) reading admits.
+8. Minor: the paper&#x27;s binder groups are sequences of variables with two kinds
+   of separator; Agda&#x27;s `BindGroup = List ℕ` records only the sub-block sizes,
+   so `x·B₁` becomes `suc b₁ ∷ B₁`.  The correspondence is faithful but the
+   paper never says which sub-block a bound variable belongs to.
+</pre><h3>Preservation/P4-STATUS.md <span class=meta>(modified 17:42:06)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># P4 status — R-Exp, R-New, R-Fork, R-Close, R-Discard, R-Drop, R-Acq, R-Par, R-Bind, R-Struct + assembly
+
+Owner: agent P4.  Files owned: `Safety/Preservation.agda`,
+`Safety/Preservation/Basic.agda`, `Safety/Preservation/Handles.agda`,
+`Safety/Preservation/Basic/`, `Safety/Preservation/Handles/`, this file.
+
+## Gotcha for everybody
+
+Every `;` in this development is **U+037E GREEK QUESTION MARK**, not ASCII
+`;` — that includes the operator *names* `atom-;-unsnoc`, `noRet-;-fst`,
+`𝐂.;-unit₁`, `NoRet._;_`, …  An ASCII `;` gives a bare `[ParseError]`.
+
+## Lemmas
+
+| lemma | statement | status | file |
+|---|---|---|---|
+| `pres-Exp` | `ChanCx Γ → e₁ ⋯→ e₂ → Γ ; γ ⊢ₚ ⟪ e₁ ⟫ → Γ ; γ ⊢ₚ ⟪ e₂ ⟫` | **proved** | `Preservation/Basic.agda` |
+| `pres-New` | `ChanCx Γ → ∀ {s} E → Γ ; γ ⊢ₚ ⟪ E [ K (`new s) ·¹ * ]* ⟫ → Γ ; γ ⊢ₚ ν (0 ∷ 1 ∷ []) (0 ∷ 1 ∷ []) ⟪ … ⟫` | **proved** | `Preservation/Basic.agda` |
+| `pres-Fork` | `ChanCx Γ → ∀ E (V : Value e) → Γ ; γ ⊢ₚ ⟪ E [ K `fork ·¹ e ]* ⟫ → Γ ; γ ⊢ₚ ⟪ E [ * ]* ⟫ ∥ ⟪ e ·¹ * ⟫` | **proved** | `Preservation/Basic.agda` |
+| `⋯𝓅-wk-conv` | `𝒫 ⋯𝓅 weaken* ⦃Kₛ⦄ k ≡ 𝒫 ⋯𝓅 weaken* ⦃Kᵣ⦄ k` (closes the human&#x27;s &quot;TINY HOLE&quot;) | **proved** (private) | `Preservation/Basic.agda` |
+| `er` / `er-⇒` / `er-wk` / `er-wkₛ` / `er-wk𝓅` | the erasing structure substitution `er k` (first `k` vars ↦ `[]`), its `⇒`-witness and its cancellation of `weaken* k` | **proved** | `Preservation/Handles/Erase.agda` |
+| `app-var-[]≼` | `σ ∶ Γ ⇒ Γ′ → σ x ≡ [] → Γ ; γ ⊢ K c ·¹ (` x) ∶ T ∣ ϵ → Γ′ ∶ [] ≼ γ ⋯ σ` (a consumed handle makes the whole redex structure droppable once erased) | **proved** | `Preservation/Handles/Erase.agda` |
+| `plug-≼` | one consumed-handle thread: bounds the unit-plugged frame by the erased thread structure | **proved** | `Preservation/Handles/Erase.agda` |
+| `er1-fuse`, `fuse2/3/4`, `nseq-er`, `tail-er`, `grp₂-er`, `amb-er` | the `TP-Res` body structure of `ν (suc b₁ ∷ B₁) B₂` erases under `er 1` to that of `ν (b₁ ∷ B₁) B₂` | **proved** | `Preservation/Handles/Frames.agda` |
+| `bindCtx-discard` | `Γ ﹫ 0F ≃ ⟨ skip ⟩ → BindCtx (s ; end p) (suc b₁ ∷ B₁) Γ → BindCtx (s ; end p) (b₁ ∷ B₁) (V.tail Γ)` | **proved** | `Preservation/Handles/BindCtx.agda` |
+| `bindCtx-drop` | `New s → Γ ﹫ 0F ≃ ⟨ ret ⟩ → BindCtx (s ; end p) (suc b₁ ∷ B₁) Γ → BindCtx (s ; end p) (b₁ ∷ B₁) (V.tail Γ)` | **proved** | `Preservation/Handles/BindCtx.agda` |
+| `skips-front` | `sh ; ret ≃ skip ; ret → Skips sh` (via `Types.AtomUnsnoc.atom-;-unsnoc`) | **proved** (private) | `Preservation/Handles/BindCtx.agda` |
+| `pres-Close` | `ChanCx Γ → Γ ; γ ⊢ₚ ν [1] [1] (…end‼…∥…end⁇…) → Γ ; γ ⊢ₚ ⟪ E₁ [ * ]* ⟫ ∥ ⟪ E₂ [ * ]* ⟫` | **proved** | `Preservation/Handles.agda` |
+| `pres-Discard` | `ChanCx Γ → Γ ; γ ⊢ₚ ν (suc b₁ ∷ B₁) B₂ (…discard…) → Γ ; γ ⊢ₚ ν (b₁ ∷ B₁) B₂ (⟪ E [ * ]* ⟫ ∥ P)` | **proved** | `Preservation/Handles.agda` |
+| `pres-Drop` | same with `drop` | **proved** | `Preservation/Handles.agda` |
+| `pres-Acq` | `ChanCx Γ → Γ ; γ ⊢ₚ ν (0 ∷ suc b₁ ∷ B₁) B₂ (⟪ E [ K `acq ·¹ (` 0F) ]* ⟫ ∥ P) → Γ ; γ ⊢ₚ ν (suc b₁ ∷ B₁) B₂ (⟪ E [ ` 0F ]* ⟫ ∥ P)` | **OPEN — currently a `postulate` in `Handles.agda`** | `Preservation/Handles.agda` |
+| `preservationₚ` | `ChanCx Γ → Γ ; γ ⊢ₚ P → P ─→ₚ Q → Γ ; γ ⊢ₚ Q` | assembled and type-checks; R-Exp/R-Struct/R-Par/R-Bind proved here, R-New/R-Fork from `Basic`, R-Close/R-Discard/R-Drop from `Handles`, R-Com from P2 | `Preservation.agda` |
+
+## Postulates currently in delivered files (LOUDLY)
+
+1. `Handles.agda`: `pres-Acq` (the only remaining case of mine).  See the
+   obstacle below.
+2. `Preservation.agda`, in a `private` block marked `TEMPORARY, replaced by
+   P2/P3`: `pres-Choice`, `pres-LSplit`, `pres-RSplit`, stated as the full
+   `ChanCx Γ → Γ ; γ ⊢ₚ P → P ─→ₚ Q → Γ ; γ ⊢ₚ Q`.  Delete them and import
+   `Preservation.{Choice,LSplit,RSplit}` as soon as P2/P3 deliver; the three
+   call sites already pass `Γ-S`, the typing and the reduction.
+   **P2&#x27;s `Preservation.Com.pres-Com` is already wired in** (call site:
+   `pres-Com {E₁ = E₁} {E₂ = E₂} {P = P₀} Γ-S V ⊢P`).
+
+## The `pres-Acq` obstacle (for whoever picks it up)
+
+R-Acq is the only rule whose two sides live in the *same* scope: the binder
+list goes `0 ∷ suc b₁ ∷ B₁ ↝ suc b₁ ∷ B₁`, `sum` is unchanged (`sum (0 ∷ X) ≡
+sum X` definitionally), `E` and `P` are literally the same terms, the two
+`structBinder` frames are `≈` (`structNSeq 0 ≡ []`, `wkˡ 0 ≡ id`) and the
+ambient `γ ⋯ᵣ weaken* _` is syntactically the same.  What changes is only the
+*type* of `0F`: the `BindCtx` head `⟨ u ⟩` with `u ≃ acq ; t` (from
+`AcqHeadCtx`) becomes `⟨ t ⟩`.
+
+* The **`BindCtx` half** is routine: `C` must be `cons-acq C₁ ah` (a
+  `cons-ret/acq` at width `0` would need `Skips (s₁ ; ret)`), and inverting
+  `C₁ : BindCtx (acq ; (s ; end p)) (suc b₁ ∷ B₁) Γ₁` plus `ah : u ≃ acq ; t`
+  and cancelling the leading `acq` (`Types.Atoms.atom-drop-front` at `acq`, or
+  an `acq` analogue of P2&#x27;s `msg-cancel`) gives `t ; v ≃ s ; end p`, hence the
+  same block with head `⟨ t ⟩`.
+* The **typing half** is routine: `Simulation/Support/SplitConfine.acq-confine`
+  factors `E ≡ E₀ ⋯ᶠ* ρ⁻`, `P ≡ P₀ ⋯ₚ ρ⁻` through the thinning that misses
+  `0F`, so `_⊢⋯ᶠ*⁻¹_/_` / `_⊢⋯ₚ⁻¹_/_` pull them back and `_⊢⋯ᶠ*_` / `_⊢⋯ₚ_`
+  push them into `⟨ t ⟩ ⸴ R`; the plugged `` ` 0F `` is `T-Var 0F refl`.
+* The **structure half is the blocker**, and it is a real one.  Both sides want
+  the *same* `≼` derivation; only the context index changes, so one wants
+  `Δ ∶ α ≼ β → Δ′ ∶ α ≼ β` for `Δ = ⟨ u ⟩ ⸴ R`, `Δ′ = ⟨ t ⟩ ⸴ R`.  Inspecting
+  `Context/Equivalence._∶_≈′_` and `Context/Subcontext._∶_≼_`, exactly three
+  rules read the context:
+  - `∥′-dup (U : UnrCx Γ α)` and `≼-∅ (U : UnrCx Γ α)` — transportable: a
+    `UnrCx` cannot mention `0F` at all, because `Unr ⟨ s ⟩` is empty
+    (`Simulation/Support/HeadConfine.¬unr-handle`), and away from `0F` the two
+    contexts agree.
+  - `∥′-tm-; (U : MobCx Γ α ⊎ MobCx Γ β) : α ∥ β ≈′ α ; β` — **not**
+    transportable.  `Mobile ⟨ s ⟩` unfolds (Types/Predicates:183) to
+    `∃ s′. Bounded s′ × s ≃ acq ; s′`, so `Mobile ⟨ u ⟩ ⟺ Bounded t`, while
+    `Mobile ⟨ t ⟩` needs `t ≃ acq ; s″`.  In the smallest R-Acq redex
+    (`b₁ ≡ 0`, `B₁ ≡ []`) one gets `t ≃ s ; end p`, which *is* `Bounded`, so
+    the acq&#x27;d handle really is mobile before the step and really is not after
+    it.
+  So the missing lemma is: *no `∥′-tm-;` step of the LHS derivation is needed
+  at a structure mentioning the consumed handle.*  Note `;-≼-∥ : α ; β ≼ α ∥ β`
+  (Context/Join) is unconditional, so only the `∥ ↝ ;` direction needs
+  mobility, and the frame `structNSeq (suc b₁) = ` 0F ; wk (structNSeq b₁)`
+  is exactly the place that wants a `;` at the handle.  This is the declarative
+  counterpart of `Simulation/BackwardSoup/GroupOrder`&#x27;s `before-mono-≼`.
+
+  **Open question for the paper:** if that lemma is false, R-Acq preservation
+  needs a side condition (or `∥′-tm-;` needs to be restricted so that an
+  acq-headed handle is not mobile), because a thread that consumes the group&#x27;s
+  later borrows *before* `acq x` typechecks on the left using `Mobile ⟨ acq ; t ⟩`
+  and cannot be retyped on the right.  Worth a probe module of the
+  `Simulation/BackwardSoup/Examples/` kind before more proof effort is spent.
+
+## Reused (not re-proved)
+
+* `Simulation/Support/Theorems/DropShape.agda`: `discard-handle-≃skip`,
+  `drop-handle-≃ret`.
+* `Simulation/Support/Theorems/B1VacProbe.agda`: `NoRet`, `new⇒noRet`,
+  `noRet-≃`, `noRet-;-fst`, `¬noRet-ret`, `RetTip`, `noRet-front-cons`,
+  `retTip-Sc-skips`, `retTip-≃`.
+* `Simulation/Support/SplitConfine.agda`: `acq-confine` (for `pres-Acq`).
+* `Simulation/Support/HeadConfine.agda`: `¬unr-handle`.
+* `Types/AtomUnsnoc.agda`: `atom-;-unsnoc`.
+* `Processes/Congruence.agda`: `_/_⊢-≋_`; `Reduction/Expressions.agda`:
+  `preservation`; `Reduction/Base.agda`: `⊢[]*⁻¹`, `_⊢⋯ᶠ*⁻¹_/_`, `⊢⟨_[_]*⟩`;
+  `Processes/Typed.agda`: `inv-ν`, `inv-∥`, `inv-⟪⟫`, `_⊢⋯ₚ⁻¹_/_`,
+  `bindCtx′-≃`, `bindCtx-≃`, `bindCtx⇒chanCtx`; `Terms/Base.agda`: `inv-K`,
+  `inv-\``, `inv-·-unr`, `constFnUnr′`, `⊢weakenᵣ`, `⊢weaken*`.
+* `Safety/Preservation/Com.agda` (agent P2): `pres-Com`.
+
+## Discrepancies tex vs Agda
+
+1. tex `R-Drop` drops the whole first group `x ‖ B₁`; the Agda `R-Drop` drops
+   the head of a first group of arbitrary width `suc b₁`.  The typing forces
+   `b₁ ≡ 0` and `B₁ ≢ []` — `bindCtx-drop` derives exactly that: the `last`
+   block is refuted (its session is `New`-derived, hence `NoRet`, so its first
+   borrow cannot be `≃ ret`) and the two-borrow front block is refuted
+   (`retTip-Sc-skips` makes the remainder skip, contradicting the `cons`
+   `¬ Skips`).  So the two rules agree on typed processes, but only after that
+   lemma.
+2. tex `B-Seq` has no `¬ Skips s₂` premise and tex `B-Drop` has no
+   `AcqHeadCtx` premise; the Agda `BindCtx.cons-ret/acq` carries both
+   (`¬skips₂`, `acqHead`).  `acqHead` is what makes `bindCtx-drop`&#x27;s `cons-acq`
+   reconstruction go through, and it is also what pins the head type in R-Acq.
+3. tex `R-Discard` writes `ν (x B₁) B₂` on the left; the Agda rule works on the
+   head of a group of width `suc b₁`, and `b₁ ≡ 0` is *not* forced here (a
+   discarded `⟨ skip ⟩` head may be followed by further borrows), so the Agda
+   rule is strictly more general than the tex one.  `bindCtx-discard`
+   consequently needs no case analysis at all.
+4. tex `R-Close` uses two named binders `x`, `y`; the Agda rule fixes both
+   groups to `[1]` and weakens the frames by `weaken* 2`, so &quot;the ν
+   disappears&quot; is realised by `structBinder [1] ⋯ er 2 ≈ []`.
+5. tex `TP-Res` writes `Γ ∥ Γ₁ ∥ Γ₂ ⊢ P`; the Agda `TP-Res` orders the concrete
+   context as `(Γ₁ ⸴* Γ₂) ⸴* Γ` and the structure as
+   `structBinder B₁ ∥ structBinder B₂ ∥ (γ ⋯ weaken*)`, and `_∥_` is `infixl`,
+   so it is really `(Fr₁ ∥ Fr₂) ∥ γwk`.
+6. tex `R-Acquire` keeps the binder `x` and only deletes the group separator;
+   the Agda rule does the same, but the *type* of `x` changes from
+   `⟨ acq ; t ⟩` to `⟨ t ⟩`, which the tex rules do not make visible.  See the
+   obstacle section above.
+</pre><h3>Preservation/Splits-STATUS.md <span class=meta>(modified 19:20:19)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># P3 — preservation cases R-LSplit / R-RSplit
+
+Agent P3.  Files owned: `Preservation/LSplit.agda`, `Preservation/RSplit.agda`,
+`Preservation/Splits/`, this file.
+
+## Lemmas
+
+| name | statement (one line) | status | file |
+|---|---|---|---|
+| `¬skips-seqˡ/ʳ`, `¬skips-ret`, `¬skips-acq` | `¬ Skips` propagates through `_;_`, `_ ; ret`, `acq ; _` | proved | Splits/Chain.agda |
+| `Ins T T₁ T₂ Γ Γ′` | cast-free witness: Γ′ is Γ with one `T` entry replaced by `T₁ , T₂` | proved (data) | Splits/Chain.agda |
+| `mkIns` | split a `Ctx (q + suc k)` at offset q and insert; returns the old entry | proved | Splits/Chain.agda |
+| `ins-++ʳ`, `ins-head` | `Ins` is stable under appending a tail; head analysis | proved | Splits/Chain.agda |
+| `chain-lsplit` | `¬ Skips t₂ → Ins ⟨t₁;t₂⟩ ⟨t₁⟩ ⟨t₂⟩ Γ Γ′ → BindCtx′ s Γ → BindCtx′ s Γ′` | proved | Splits/Chain.agda |
+| `InsR T T₁ T₂ Γ Γ₁ Γ₂` | as `Ins`, but the chain is CUT between the two new entries | proved (data) | Splits/Chain.agda |
+| `mkInsR`, `insR-++ʳ`, `insR-head`, `insR-flat` | builder and plumbing for `InsR` | proved | Splits/Chain.agda |
+| `insR-acqHead` | the new group of an `InsR … ⟨acq ; t₂⟩ …` always has an acq head | proved | Splits/Chain.agda |
+| `chain-rsplit` | `InsR ⟨t₁;t₂⟩ ⟨t₁;ret⟩ ⟨acq;t₂⟩ Γ Γ₁ Γ₂ → BindCtx′ s Γ → ∃ u v. u;v ≃ s ∧ ¬Skips v ∧ BindCtx′ (u;ret) Γ₁ ∧ BindCtx′ (acq;v) Γ₂` | proved | Splits/Chain.agda |
+| `++-inj`, `vsplit`, `0&lt;len`, `acqHead-cong` | vector/list plumbing | proved | Splits/Group.agda |
+| `Same B₁ Γc Γc′ Γ Γ′` | Γ and Γ′ agree on the first `|B₁|` binder groups; cast-free | proved (data) | Splits/Group.agda |
+| `same-nil⁻¹`, `same-cons⁻¹`, `mkSame` | inversion and construction of `Same` | proved | Splits/Group.agda |
+| `acqHead-lsplit` / `acqHead-rsplit` | the `AcqHeadCtx` premise survives the split (via `acq-;-split` and `¬ Skips t₁`) | proved | Splits/Group.agda |
+| **`bindCtx-lsplit`** (= paper&#x27;s BindCtxLsplit) | `¬Skips t₁ → ¬Skips t₂ → Ins ⟨t₁;t₂⟩ ⟨t₁⟩ ⟨t₂⟩ Γg Γg′ → BindCtx s (B₁ ++ w ∷ B₂) Γ → Same B₁ … Γ Γ′ → BindCtx s (B₁ ++ w′ ∷ B₂) Γ′` | **proved** | Splits/Group.agda |
+| **`bindCtx-rsplit`** (= paper&#x27;s BindCtxRsplit) | as above with `InsR ⟨t₁;t₂⟩ ⟨t₁;ret⟩ ⟨acq;t₂⟩ Γg Γg₁ Γg₂` and result `BindCtx s (B₁ ++ w₁ ∷ w₂ ∷ B₂) Γ′` | **proved** | Splits/Group.agda |
+| `lsplit-bindCtx` | applies BindCtxLsplit at the position `𝐒.atk (q ↑ʳ 0F)` names: from `Γ₁ ﹫ pos ≡ ⟨ t ⟩` and `t ≃ t₁ ; t₂` build `Γ₁′` with `BindCtx s₀ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) Γ₁′` plus the two new lookups | proved | Splits/Redex.agda |
+| `rsplit-bindCtx` | ditto for `B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂`, new lookups `⟨ t₁ ; ret ⟩` and `⟨ acq ; t₂ ⟩` | proved | Splits/Redex.agda |
+| `atk-lookup` | `((Γ₁ ⸴* Γ₂) ⸴* Γ) ﹫ 𝐒.atk (q ↑ʳ 0F) ≡ Γ₁ ﹫ (flat position sum B₁ + q)` | proved (twice, one per file) | LSplit.agda / RSplit.agda |
+| `⊢ᴮ-lsplit′` / `⊢ᴮ-rsplit′` | `⊢ᴮ` for the exact width shapes `q + suc b ↦ q + suc (suc b)` resp. `q + suc b ↦ (q + 1), suc b` | proved | LSplit.agda / RSplit.agda |
+| **`lsplit-binder`** | from `Γ ; γ ⊢ₚ` the R-LSplit LHS produce `s₀, pol, t₁, t₂, Γ₁′, New s₀, ⊢ᴮ (new list), BindCtx (s₀ ; end pol) (new list) Γ₁′` and the two handle lookups | **proved** | LSplit.agda |
+| **`rsplit-binder`** | same for R-RSplit | **proved** | RSplit.agda |
+| `pres-LSplit` | `ChanCx Γ → Γ ; γ ⊢ₚ LHS(R-LSplit) → Γ ; γ ⊢ₚ RHS(R-LSplit)` | NOT DONE — see &quot;What is missing&quot; | Preservation/LSplit.agda |
+| `pres-RSplit` | `ChanCx Γ → Γ ; γ ⊢ₚ LHS(R-RSplit) → Γ ; γ ⊢ₚ RHS(R-RSplit)` | NOT DONE — see &quot;What is missing&quot; | Preservation/RSplit.agda |
+
+All five delivered files (`Splits/Chain.agda`, `Splits/Group.agda`, `Splits/Redex.agda`,
+`LSplit.agda`, `RSplit.agda`) load with **zero goals, zero unsolved metas, no postulates,
+no TERMINATING pragmas**.
+
+## What is missing for `pres-LSplit` / `pres-RSplit`
+
+The binder-context side (the hard bookkeeping) is finished.  What remains is the
+term/renaming side:
+
+1. **Strengthening round trip.**  `E` and `P` must be re-typed in the NEW binder context,
+   where the slot of the consumed handle has changed type (`⟨ t ⟩ ↦ ⟨ t₁ ⟩` resp.
+   `⟨ t₁ ; ret ⟩`).  A plain typed renaming for `𝐒.lwk` / `𝐒.rwk` does NOT exist, because
+   `_⊢⋯ₚ_` demands lookup agreement at *every* variable.  The route is
+   `Simulation.Support.SplitConfine.lsplit-confine` / `rsplit-confine`, which give
+   `k`, `ρ⁻ : k →ᵣ N` with `∀ y → ρ⁻ y ≢ handle`, and `E ≡ E₀ ⋯ᶠ* ρ⁻`, `P ≡ P₀ ⋯ₚ ρ⁻`.
+   Then: type `E₀`/`P₀` in `Γsmall = tabulate (Γbig ﹫_ ∘ ρ⁻)` via `_⊢⋯ᶠ*⁻¹_/_` and
+   `_⊢⋯ₚ⁻¹_/_` (needs `Inj ρ⁻`), and push them forward along `ρ⁺ = 𝐒.lwk ∘ ρ⁻`.
+2. **The context lemma for `ρ⁺`:** `∀ z → z ≢ handle → Γbig′ ﹫ 𝐒.lwk z ≡ Γbig ﹫ z`
+   (and the `rwk` analogue).  `Simulation.Support.Theorems.SplitsLQ` (`dlwkq`,
+   `dlwkq-lo/hi`, `𝐒lwkq-lo/hi`, `P1q..P3q`) has the matching Fin arithmetic.
+   `Splits/Group.agda` would then need the companion of `same-lookupˡ/ʳ` for the
+   *prefix* positions (`y ↑ˡ _` instead of `sum B₁ ↑ʳ y`), which I did not prove.
+3. **The structure inequality** for `TP-Res` on the new group list: relate
+   `structBinder (B₁ ++ (q + suc (suc b₁)) ∷ B₂)` to `structBinder (B₁ ++ (q + suc b₁) ∷ B₂)`
+   and discharge `TP-Weaken`.  This is the `𝒢[…] ∥ Γ_b ≼ Γ ∥ 𝒢′[…] ∥ Γ₂` step of the
+   handwritten sketch; none of it is mechanised yet.
+4. The final `TP-Res / TP-Par / TP-Expr` assembly, with `T-Pair par par (T-Var …) (T-Var …)`
+   for `(` x₁) ⊗ (` x₂)` — the two `T-Var` premises are exactly the lookup equations that
+   `lsplit-binder` / `rsplit-binder` already return.
+
+## Reused (never edited)
+
+- `BorrowedCF.Types.AtomCons.acq-;-split` — pins the group&#x27;s `acq` to the front of one factor.
+- `BorrowedCF.Types.AtomUnsnoc.atom-;-unsnoc` — pulls the trailing `ret` out of the second
+  half of an r-split group.
+- `BorrowedCF.Processes.Typed.bindCtx-inv-cons`, `bindCtx′-≃`.
+- `BorrowedCF.Reduction.Base.chanCx-lookup`, `⊢[]*⁻¹`; `Terms.Base.{inv-K, inv-·-unr, inv-`,
+  constFnUnr′}`; `Processes.Typed.{inv-ν, inv-∥, inv-⟪⟫, bindCtx⇒chanCtx, ⊢ᴮ-lsplit}`;
+  `Terms.SplitRenamings.atk`.
+- NOT imported (so nothing under `Simulation/` is type-checked by my files): the planned uses
+  are `Simulation.Support.SplitConfine.{lsplit-confine,rsplit-confine}` (E and P factor
+  through a renaming that misses the consumed handle) and
+  `Simulation.Support.Theorems.SplitsLQ` (`dlwkq`, `𝐒lwkq-lo/hi`).  `Processes.Renamings.⊢wkRSplit`
+  turned out NOT to be usable for R-RSplit as it stands: it keeps the consumed handle&#x27;s OLD
+  type at the shifted position (head of `Γb`) and puts a free `T` at the new position, whereas
+  the rule needs `⟨ s ; ret ⟩` at the old position and `⟨ acq ; s′ ⟩` at the shifted one.
+
+## Notes / discrepancies (tex vs Agda)
+
+1. tex `CT-LSplit`/`CT-RSplit` require only `¬(S₂ ≃ Skip)`; Agda&#x27;s `` `lsplit ``/`` `rsplit ``
+   also require `¬ Skips s₁`.  The extra premise is *needed*: without `¬ Skips t₁` the
+   `AcqHeadCtx` premise of `B-Seq`/`cons-ret/acq` cannot be re-established after the split
+   (`acqHead-lsplit`/`acqHead-rsplit` use exactly `¬ Skips t₁`).
+2. tex `B-Seq`/`B-Drop` lack Agda&#x27;s `¬skips₂` and `acqHead` premises on
+   `cons-ret/acq` / `cons-acq`.  Both are discharged here: `¬skips₂` from the split
+   constant&#x27;s `¬ Skips s′`, `acqHead` from `insR-acqHead` / `acq-;-split`.
+3. The paper&#x27;s BindCtxRsplit is stated with a context pattern `𝒢[·]`; the mechanised version
+   replaces the pattern by the two inductive relations `Same` (prefix groups) and
+   `Ins`/`InsR` (position inside the group).  This keeps every `sum-++`/`+-assoc` transport
+   out of the proofs.
+
+---
+
+# P3b — continuation of P3 (assembling `pres-LSplit` / `pres-RSplit`)
+
+## New files / lemmas
+
+| name | statement (one line) | status | file |
+|---|---|---|---|
+| `lookup-toℕ` | lookup only depends on `Fin.toℕ` | proved | Splits/Chain.agda |
+| `Agree p Γ Γ′` | Γ′ is Γ with one slot inserted after position `p`; entries at positions `≠ p` agree (below `p` at the same index, above `p` one further right) | proved (def) | Splits/Chain.agda |
+| `agree-here`, `agree-suc`, `agree-++ˡ` | base / one-step / prefix lifting of `Agree` | proved | Splits/Chain.agda |
+| `mkIns` / `mkInsR` (extended) | now also return `∀ Γr → Agree q (Γ ⸴* Γr) (Γ′ ⸴* Γr)` | proved | Splits/Chain.agda |
+| `same-agree` | `Same B₁ … Γ Γ′ → Agree p Γc Γc′ → Agree (sum B₁ + p) Γ Γ′` | proved | Splits/Group.agda |
+| `lsplit-bindCtx` / `rsplit-bindCtx` (extended) | now also return `Agree (sum B₁ + q) Γ₁ Γ₁′` | proved | Splits/Redex.agda |
+| `split3` | structural three-way split of a ν-body variable | proved | Splits/Shift.agda |
+| `toℕ-dh` | the consumed handle sits at flat position `sum B₁ + q` | proved | Splits/Shift.agda |
+| **`lsplit-lookup`** | `Agree (sum B₁+q) Γ₁ Γ₁′ → z ≢ handle → ((Γ₁′ ⸴* Γ₂) ⸴* Γ) ﹫ 𝐒.lwk z ≡ ((Γ₁ ⸴* Γ₂) ⸴* Γ) ﹫ z` | **proved** | Splits/Shift.agda |
+| **`rsplit-lookup`** | ditto for `𝐒.rwk` | **proved** | Splits/Shift.agda |
+| `⋯ᵣᵣ`, `⋯ᵣₛ`, `⋯ᵣ⇒ₛ`, `⋯ₛ-cong` | Struct traversal plumbing | proved | Splits/Struct.agda |
+| `seqOf`, `seqOf-cong`, `nseq-seqOf` | `structNSeq w ⋯ₛ θ` is the explicit `;`-chain of the `θ`-images | proved | Splits/Struct.agda |
+| `seqOf-lsplit` | one chain entry expands into two sequential entries | proved | Splits/Struct.agda |
+| `seqOf-rsplit` | the chain is cut, the entry becomes two parallel entries (≼ via `≼-wk`) | proved | Splits/Struct.agda |
+| **`sb-lsplit`** | `structBinder (B₁ ++ (q+suc b)∷B₂) ⋯ₛ θ ≈ structBinder (B₁ ++ (q+suc(suc b))∷B₂) ⋯ₛ g` under the three positional clauses | **proved** | Splits/Struct.agda |
+| **`sb-rsplit`** | `… ⋯ₛ θ ≼ structBinder (B₁ ++ (q+1)∷suc b∷B₂) ⋯ₛ g` | **proved** | Splits/Struct.agda |
+| `mk-thin′` | `mk-thin` of `Simulation.Support.Strengthen` plus injectivity of the thinning | proved | Splits/Confine.agda |
+| `lsplit-confine′` / `rsplit-confine′` | `Simulation.Support.SplitConfine.{lsplit,rsplit}-confine` plus `Inj ρ⁻` | proved | Splits/Confine.agda |
+
+## Route actually taken (differs from P3&#x27;s sketch on step 3)
+
+P3&#x27;s step 3 (&quot;structure inequality via `structBinder` of the new list, then
+`TP-Weaken`&quot;) is done through a **struct substitution** rather than a renaming.
+Let `θ` send the consumed handle to `(` x₁) ; (` x₂)` (L-split) resp.
+`(` x₁) ∥ (` x₂)` (R-split) and every other variable `z` to `` ` (lwk z) ``.
+Then
+
+  * `θ ∶ Γbig ⇒ Γbig′` holds for the *implication* reading of `⇒` — only `Unr`
+    and `Mobile` have to be transported.  `Unr ⟨t⟩` is always false
+    (`¬unr-handle`); `Mobile` transports for R-RSplit (`mob-rsplit`) and needs
+    the extra premise for R-LSplit (see the finding below);
+  * `≼-⋯` therefore transports the whole old inequality `δ ≼ γbig` to
+    `δ ⋯ₛ θ ≼ γbig ⋯ₛ θ`;
+  * `sb-lsplit` / `sb-rsplit` say `γbig ⋯ₛ θ ≼ γbig′`.
+
+This avoids ever needing `𝒫`-level &quot;pull out&quot; lemmas, which would have relaxed
+`;` to `∥` in the wrong direction.
+
+## IMPORTANT FINDING — R-LSplit loses `Mobile`, R-RSplit does not
+
+`Mobile ⟨ s ⟩` unfolds to `∃ s′. Bounded s′ × s ≃ acq ; s′` (Types/Predicates.agda:183),
+and `MobCx` is **atom-wise** (`AllCx Mobile`).  The structure equivalence has
+
+    ∥′-tm-; : MobCx Γ α ⊎ MobCx Γ β → Γ ∶ α ∥ β ≈′ α ; β
+
+so a *mobile* handle may be used in parallel with a resource that the binder
+offers only sequentially.  Transporting the ν-body inequality across a split
+therefore needs the mobility of the consumed handle to survive.
+
+* **R-RSplit: it survives.**  If `t ≃ acq ; v` with `Bounded v` and `t ≃ t₁ ; t₂`
+  with `¬ Skips t₁`, `¬ Skips t₂`, then `acq-;-split` gives `t₁ ≃ acq ; h′` and
+  `h′ ; t₂ ≃ v`; hence `Bounded t₂` and
+  `Mobile ⟨ t₁ ; ret ⟩` (witness `h′ ; ret`, `Bounded` by `-;₂ ret`) and
+  `Mobile ⟨ acq ; t₂ ⟩` (witness `t₂`).  Mechanised as `mob-rsplit` (RSplit.agda).
+  `pres-RSplit` therefore needs no extra premise.
+
+* **R-LSplit: it does NOT survive.**  The two halves are `⟨ t₁ ⟩` and `⟨ t₂ ⟩`.
+  `Mobile ⟨ t₁ ⟩` would need `Bounded h′`, which is exactly the disjunct
+  `bounded-;⁻` rules out (we only get `Bounded t₂`), and `Mobile ⟨ t₂ ⟩` would need
+  `t₂` acq-headed.  Concretely `t = acq ; (msg ‼ T ; ret)`, `t₁ = acq ; msg ‼ T`,
+  `t₂ = ret` satisfies every premise of `` `lsplit `` and has `Mobile ⟨ t ⟩` but
+  neither `Mobile ⟨ t₁ ⟩` nor `Mobile ⟨ t₂ ⟩`.
+  With such a handle the RHS is genuinely untypable: for a group `⟨t⟩,⟨c⟩` with a
+  thread doing the lsplit and a parallel `P` using `c`, the LHS needs
+  `` ` h ∥ ` c ≼ ` h ; ` c `` (fine, `h` mobile), while the RHS needs
+  `` (` x₁ ; ` x₂) ∥ ` c ≼ ` x₁ ; ` x₂ ; ` c ``, and no ≼/≈ rule produces a `;`
+  at the top from a `∥` without `MobCx` on one side.
+  **`pres-LSplit` therefore carries one extra premise**
+  `¬mob : ∀ u → ¬ Mobile ⟨ s ; u ⟩` (`s` is the rule&#x27;s own parameter and the
+  consumed handle has type `⟨ t ⟩` with `t ≃ s ; t₂`, so this is exactly
+  &quot;the consumed handle is not mobile&quot;).  This premise is a genuine restriction, not an artefact of
+  the mechanisation; it points at either `MobCx` being too coarse (it cannot see
+  that `` ` x₁ ; ` x₂ `` is jointly the mobile resource `` ` h `` was) or at a
+  missing side condition on `CT-LSplit` in the paper.
+
+## Delivered lemmas (P3b)
+
+| name | statement (one line) | status | file |
+|---|---|---|---|
+| `θL` / `θL-h` / `θL-≢` | struct substitution sending the consumed handle to `(` x₁) ; (` x₂)` and every other variable along `lwk` | proved | LSplit.agda |
+| `¬unr-handle` | `¬ Unr ⟨ s ⟩` | proved | LSplit.agda |
+| `mob-lsplit-absurd` | `t ≃ t₁ ; t₂ → (∀ u → ¬ Mobile ⟨ t₁ ; u ⟩) → ¬ Mobile ⟨ t ⟩` | proved | LSplit.agda |
+| `γbigL` | the ν-binder structure `structBinder Bl ⋯ ∥ structBinder B ⋯ ∥ γ ⋯` of `TP-Res` | definition | LSplit.agda |
+| **`γbig-lsplit`** | `γbigL Bl B γ ⋯ₛ θL ≼ γbigL Bl′ B γ` | **proved** | LSplit.agda |
+| **`θL-⇒`** | `θL ∶ Γbig ⇒ Γbig′` (needs the `¬mob` premise at the handle) | **proved** | LSplit.agda |
+| **`pres-LSplit`** | `ChanCx Γ → (∀ u → ¬ Mobile ⟨ s ; u ⟩) → Γ ; γ ⊢ₚ LHS(R-LSplit) → Γ ; γ ⊢ₚ RHS(R-LSplit)` | **proved** | LSplit.agda |
+| `θR` / `θR-h` / `θR-≢` | the R-RSplit struct substitution (handle ↦ `(` x₁) ∥ (` x₂)`) | proved | RSplit.agda |
+| `toℕ-dhR₁` / `toℕ-dhR₂` | the two new r-split handles sit at flat positions `sum B₁ + q` and `suc (sum B₁ + q)` | proved | RSplit.agda |
+| **`γbig-rsplit`** | `γbigL Bl B γ ⋯ₛ θR ≼ γbigL ((B₁ ++ (q+1) ∷ suc b₁ ∷ B₂)) B γ` | **proved** | RSplit.agda |
+| **`mob-rsplit`** | `Mobile ⟨ t ⟩ → Mobile ⟨ t₁ ; ret ⟩ × Mobile ⟨ acq ; t₂ ⟩` | **proved** | RSplit.agda |
+| **`θR-⇒`** | `θR ∶ Γbig ⇒ Γbig′` (no side condition) | **proved** | RSplit.agda |
+| **`pres-RSplit`** | `ChanCx Γ → Γ ; γ ⊢ₚ LHS(R-RSplit) → Γ ; γ ⊢ₚ RHS(R-RSplit)` | **proved, no extra premise** | RSplit.agda |
+
+## Files delivered (P3b), all loading with zero goals / zero unsolved metas / no postulates
+
+- `Preservation/Splits/Chain.agda`   (extended: `Agree`, `agree-here/suc/++ˡ`, `mkIns`/`mkInsR` return `Agree`)
+- `Preservation/Splits/Group.agda`   (extended: `same-agree`)
+- `Preservation/Splits/Redex.agda`   (extended: both `*-bindCtx` return `Agree (sum B₁ + q) Γ₁ Γ₁′`)
+- `Preservation/Splits/Shift.agda`   (NEW: `split3`, `toℕ-dh`, `lsplit-lookup`, `rsplit-lookup`)
+- `Preservation/Splits/Struct.agda`  (NEW: `seqOf`, `seqOf-lsplit/rsplit`, `sb-lsplit/rsplit`, `σ∘`, `𝓅∘`, `join-unitʳ`)
+- `Preservation/Splits/Confine.agda` (NEW: `mk-thin′`, `lsplit-confine′`, `rsplit-confine′` — `SplitConfine` + `Inj ρ⁻`)
+- `Preservation/LSplit.agda`, `Preservation/RSplit.agda`
+
+Imports from `Simulation/` (all with explicit `using` lists):
+`Support.Theorems.SplitsLQ` (`dlwkq`,`dlwkq-lo/hi`,`P1q`,`P2q`,`P3q`),
+`Support.Theorems.SplitsRQ` (`drwkq`,`drwkq-lo/hi`,`P1rq`,`P2rq`,`P3rq`),
+`Support.FrameRename` (`⋯ᶠ*-fuse`), and (inside `Splits/Confine.agda`)
+`Support.{Base,Confine,InvFrame,Strengthen,HandleCount}`.  This transitively pulls in the
+sanctioned `funext` postulate of `Simulation/Support/Base.agda`; nothing else.
+
+Performance: `LSplit.agda` and `RSplit.agda` each check in ~3 min at ≈4 GB RSS with the
+interfaces cached.  They do use one `with … , refl , … ← *-confine′ …` that rewrites the frame
+`E` and the parallel `P` in the goal — the pattern AGENTS.md warns about — but only ONE such
+`refl`, and all implicit arguments of `*-confine′` are supplied explicitly
+(`{γ = γ} {B₁ = B₁} … {E = E} {P = P}`), without which `E` is not inferable through `_[_]*`.
+
+---
+
+# P3c — removing the `¬mob` premise from `pres-LSplit`
+
+Agent P3c.  Files owned: `Preservation/LSplit/*.agda` (new directory), this
+section.  `LSplit.agda` is touched ONLY to rename P3b&#x27;s lemma to
+`pres-LSplit-immobile`; `Preservation.agda` only to drop the postulate.
+
+## Corrections to the brief, found on reading the code (read these first)
+
+1. **`Mobile` is NOT decidable.**  `Mobile ⟨ s ⟩ = ∃ s′. Bounded s′ × s ≃ acq ; s′`
+   (`Types/Predicates.agda:183`) quantifies over sessions modulo `≃`;
+   `Types/Predicates.tpred?` only lifts a decision procedure for the session
+   part, and none exists.  So the final case split is NOT on `Mobile`.  It is
+   a syntactic split on the two rule indices `q` and `b₁`:
+
+   | clause | route |
+   |---|---|
+   | `q = suc _` | handle is INTERIOR to its group ⇒ immobile ⇒ P3b-style |
+   | `q = 0`, `b₁ = suc _` | group width ≥ 2 at offset 0 ⇒ immobile ⇒ P3b-style |
+   | `q = 0`, `b₁ = 0` | group width 1 ⇒ `zap` route, needs NO mobility fact |
+
+   Pattern matching on `q`/`b₁` avoids every `subst` over the process: in the
+   third clause `q + suc b₁` is literally `1` and `q + suc (suc b₁)` is `2`.
+
+2. **P3b&#x27;s premise is strictly stronger than `¬ Mobile` of the handle.**
+   `∀ u → ¬ Mobile ⟨ s ; u ⟩` is *equivalent* to &quot;`s` is not acq-headed&quot;:
+   `Bounded (h ; ret)` holds for every `h`, so as soon as `s ≃ acq ; h` the
+   instance `u := ret` gives `Mobile ⟨ s ; ret ⟩`.  The head of a NON-FIRST
+   group IS acq-headed (`Crux.laterGroup-head-acq`), so P3b&#x27;s lemma is NOT
+   applicable in the clause `q = 0, b₁ = suc _`, even though the handle there
+   is immobile.  Consequence: the immobile assembly has to be restated with
+   the premise `¬ Mobile ⟨ t ⟩` (`t` the handle&#x27;s own type), which cannot be
+   phrased over the rule&#x27;s `s`.  It is therefore restated in
+   `LSplit/Immobile.agda` with the SHAPE premise (`0 &lt; q ⊎ 0 &lt; b₁`) and the
+   `¬ Mobile ⟨ t ⟩` fact derived internally.  P3b&#x27;s `pres-LSplit-immobile`
+   stays in `LSplit.agda` unchanged but is no longer on the critical path.
+
+3. **The shape lemma needs `Simulation/BackwardSoup/`** — `Position.agda`,
+   `Position/Crux.agda`, `GroupOrder.agda`.  All three have CACHED interfaces
+   in `agda/_build`, load with 0 goals and no pragma, so the import is cheap.
+   Reused: `GroupOf`/`groupIndex`/`groupOffset`/`groupWidth`,
+   `Position.first-group-¬mobile`, `Crux.mobile-head-alone`,
+   `Crux.nonFirstGroup-interior-noAcq`, `GroupOrder.{NoAcq, ¬mobile-noAcq,
+   new-end⇒noAcq, noAcq-;-snd, noAcq-≃}`.
+
+4. **P3b&#x27;s &quot;counterexample&quot; is refuted, but not by a single lemma.**  Its LHS
+   (mobile handle sharing a group with a second handle `c`) needs group width
+   ≥ 2 with a MOBILE handle in it.  `Crux.mobile-head-alone` (offset 0) and
+   `Crux.nonFirstGroup-interior-noAcq` + `Position.first-group-¬mobile`
+   (offset &gt; 0) together say no such configuration is typable.
+
+## Lemmas
+
+| name | statement (one line) | status | file |
+|---|---|---|---|
+| `dpos` | flat position `sum B₁ + q` of the consumed handle in the first binder context | **proved** | LSplit/Shape.agda |
+| `groupAt` | the `GroupOf (B₁ ++ (q+suc b₁) ∷ B₂) dpos` navigation, with `groupOffset ≡ q`, `groupWidth ≡ q + suc b₁`, `groupIndex ≡ length B₁` | **proved** | LSplit/Shape.agda |
+| `laterInterior-noAcq` | re-derivation of `Crux`&#x27;s PRIVATE `laterGroup-interior-noAcq` from the public `nonFirstGroup-interior-noAcq` | **proved** | LSplit/Shape.agda |
+| `handle-interior-¬mobile` | `0 &lt; q → ¬ Mobile (Γ₁ ﹫ dpos …)` | **proved** | LSplit/Shape.agda |
+| `handle-wide-¬mobile` | `q ≡ 0 → 0 &lt; b₁ → ¬ Mobile (Γ₁ ﹫ dpos …)` | **proved** | LSplit/Shape.agda |
+| `θL-⇒′` | `θL ∶ Γbig ⇒ Γbig′` from `¬ Mobile ⟨ t ⟩` instead of P3b&#x27;s `∀ u → ¬ Mobile ⟨ s ; u ⟩` | **proved** | LSplit/Immobile.agda |
+| `pres-LSplit-shape` | R-LSplit preservation under `0 &lt; q ⊎ 0 &lt; b₁` (no mobility premise) | **proved** | LSplit/Immobile.agda |
+| `zapL` / `zapL-⇒` | `dh ↦ []`, `z ↦ ` (lwk z)`; a legal `⇒` with NO side condition | **proved** | LSplit/Mobile.agda |
+| `sb-zap` | `d ∥ (structBinder (B₁ ++ 1 ∷ B₂) ⋯ₛ z) ≈ structBinder (B₁ ++ 2 ∷ B₂) ⋯ₛ g` | **proved** | LSplit/Struct.agda |
+| `γbig-zap` | `((` x₁) ; (` x₂)) ∥ (γbigL Bl B γ ⋯ₛ zapL) ≈ γbigL Bl′ B γ` | **proved** | LSplit/Mobile.agda |
+| `pres-LSplit-mobile` | R-LSplit preservation for `q ≡ 0`, `b₁ ≡ 0` (mobility irrelevant) | **proved** | LSplit/Mobile.agda |
+| `pres-LSplit` | premise-free R-LSplit preservation | **proved** | LSplit/Total.agda |
+
+`pres-LSplit` cannot live in `LSplit.agda` (it must call `LSplit/Shape.agda`
+and `LSplit/Mobile.agda`, both of which import `LSplit.agda` for `θL`,
+`γbigL`, `atk-lookup`, `lsplit-confine′`) — that would be an import cycle.  It
+goes into `LSplit/Total.agda` and `Preservation.agda` imports it from there.
+
+Status 2026-09-08: `LSplit/Shape.agda` (10 s) and `LSplit/Immobile.agda` (34 s) load with zero goals, zero unsolved metas, no postulates.
+
+## Delivered (all load with zero goals, zero unsolved metas, no postulates, no pragmas)
+
+| file | lines | check time (cached imports) |
+|---|---|---|
+| `Preservation/LSplit/Shape.agda` | 165 | 10 s |
+| `Preservation/LSplit/Struct.agda` | 131 | 8 s |
+| `Preservation/LSplit/Immobile.agda` | 172 | 34 s |
+| `Preservation/LSplit/Mobile.agda` | 297 | 31 s |
+| `Preservation/LSplit/Total.agda` | 69 | 12 s |
+
+`LSplit.agda` was touched only to rename `pres-LSplit` to `pres-LSplit-immobile`
+(and to fix the two doc comments that referred to the old name); it re-checks in
+33 s.  `Safety/Preservation.agda` lost its last `postulate` block and now reads
+
+```
+open import BorrowedCF.Safety.Preservation.LSplit.Total using (pres-LSplit)
+…
+preservationₚ Γ-S ⊢P (R-LSplit {B₁ = B₁} … {E = E}) = pres-LSplit {B₁ = B₁} … Γ-S ⊢P
+```
+
+and checks in 52 s.  **`preservationₚ` is now postulate-free for every rule.**
+
+Imports from `Simulation/` added by P3c (all cached in `agda/_build`, all with
+explicit `using` lists): `BackwardSoup.GroupOrder`
+(`NoAcq`, `¬mobile-noAcq`, `new-end⇒noAcq`, `noAcq-;-snd`, `noAcq-≃`),
+`BackwardSoup.Position` (`GroupOf`, `head-group`, `next-group`, `groupIndex`,
+`groupOffset`, `groupWidth`, `first-group-¬mobile`),
+`BackwardSoup.Position.Crux` (`mobile-head-alone`,
+`nonFirstGroup-interior-noAcq`).  Nothing else new.
+
+## Duplication (declared)
+
+`LSplit/Immobile.agda`&#x27;s `pres-LSplit-shape` and `LSplit/Mobile.agda`&#x27;s
+`pres-LSplit-mobile` both repeat P3b&#x27;s assembly (inversion chain, `lsplit-confine′`
+round trip, `TP-Res`/`TP-Par`/`TP-Expr`).  They differ ONLY in the structure step
+(`𝐂.≼-⋯` along `θL` vs along `zapL`, plus `pat-hole-≼`), which depends on
+variables bound inside the `with` chain and therefore cannot be abstracted out
+without threading a dozen local hypotheses.  `LSplit/Shape.agda`&#x27;s
+`laterInterior-noAcq` repeats `Crux`&#x27;s PRIVATE `laterGroup-interior-noAcq`
+(3 clauses, verbatim).
+</pre><h3>Progress/Main-STATUS.md <span class=meta>(modified 19:00:05)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># Process progress: main induction (agent G3, wave 2)
+
+Files owned: `Safety/Progress.agda`, `Safety/Progress/Main.agda`,
+`Safety/Progress/Main/*.agda`, this file.
+No postulates, no pragmas, no holes.  ALL THREE FILES TYPE-CHECK (exit 0).
+
+## Safety/Progress/Main/Shapes.agda -- DONE (0 goals)
+
+VERIFIED: `.agdai` deleted, `agda-check` re-run to completion, exit 0, no errors
+and no warnings.
+
+| lemma | statement | status |
+|---|---|---|
+| `no-unit-app` | `Γ ; γ ⊢ K `unit ·⟨ d ⟩ w ∶ T ∣ ϵ → ⊥` | proved |
+| `bindCtx-single-0` | `¬ BindCtx (s ; end p) (0 ∷ []) Γ` | proved |
+| `bindGroup-0∷0` | `¬ ⊢ᴮ (0 ∷ 0 ∷ B)` | proved |
+| `GroupShape` / `groupShape` | a typable binder group is `suc b ∷ B` or `0 ∷ suc b ∷ B` | proved |
+| `closed-struct` | `(γ : Struct 0) → [] ∶ γ ≈ []` | proved |
+| `close-γ` | `[] ; γ ⊢ₚ P → [] ; [] ⊢ₚ P` (closed processes) | proved |
+
+## Safety/Progress/Main.agda -- DONE (0 goals, 0 metas)
+
+VERIFIED, and the check COMPLETED: `_build/.../Main.agdai` deleted first,
+`agda-check BorrowedCF/Safety/Progress/Main.agda` re-run twice to completion,
+exit 0, no errors, no warnings, peak RSS 1.4 GB (well under the 11 GB cap).
+Nothing below was concluded from a killed run.
+
+Parametrised module; the parameters are the only assumptions.
+
+| lemma | statement | status |
+|---|---|---|
+| `app-dir-in` | a constant application inside a process context has direction `𝟙` | proved |
+| `acq-redexˡ` | `0F ∈AC Q` under `ν (0 ∷ suc b ∷ B₁) B₂` gives a reduction | proved |
+| `acq-redexʳ` | `head₂ B₁ b B₂ ∈AC Q` under `ν B₁ (0 ∷ suc b ∷ B₂)` gives a reduction | proved |
+| `leaf` | thread `⟪ E [ K c ·⟨ d ⟩ v ]* ⟫`: blocked or reduces (12 constants) | proved |
+| `nu` | the four typable binder-group shape combinations | proved |
+| `go` | `(ctx : ProcessContext k 0) (Q : Proc k) → [] ; [] ⊢ₚ plug ctx Q → Blocked⁺ Q ⊎ ∃ P′. plug ctx Q ─→ₚ P′` | proved |
+| `progress⁺ₚ` | `[] ; γ ⊢ₚ P → Blocked⁺ P ⊎ ∃ P′. P ─→ₚ P′` | proved |
+| `progressₚ` | `[] ; γ ⊢ₚ P → (P ≋ ⟪ * ⟫) ⊎ Blocked P ⊎ ∃ P′. P ─→ₚ P′` | proved |
+
+### Module parameter list (exactly)
+
+From G2.  `plug-typing` is VERIFIED: G2&#x27;s `Sync/Locate.plug-typing⁺` (already
+delivered, and more general -- arbitrary `Γ`, `γ`, plus a lookup-agreement
+clause) specialises to it, and `Safety/Progress.agda` now derives it that way;
+a throwaway module doing exactly that derivation type-checks (exit 0).
+
+    plug-typing : ∀ {k} (ctx : ProcessContext k 0) (Q : Proc k) →
+      [] ; [] ⊢ₚ plug ctx Q →
+      Σ[ Δ ∈ Ctx k ] Σ[ σ ∈ Struct k ] ChanCx Δ × (Δ ; σ ⊢ₚ Q)
+
+`sync-redex` is the ONLY parameter whose signature is still a guess (it lives in
+`Safety/Progress/Sync.agda`, which does not exist yet):
+
+    sync-redex : ∀ {k b₁ b₂} {B₁ B₂ : BindGroup}
+      (ctx : ProcessContext k 0)
+      (Q : Proc (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + k)) →
+      [] ; [] ⊢ₚ plug ctx (ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂) Q) →
+      0F ∈BC Q → head₂ (suc b₁ ∷ B₁) b₂ B₂ ∈BC Q →
+      Σ[ P′ ∈ Proc 0 ] (plug ctx (ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂) Q) ─→ₚ P′)
+
+From G1 (`Safety/Progress/Redex.agda`), COPIED VERBATIM from the delivered file:
+`step-in-ctx`, `∈AC⇒located-acq`, `redex-new`, `redex-fork`, `redex-lsplit`,
+`redex-rsplit`, `redex-drop`, `redex-discard`, `redex-acq-exposedˡ`,
+`redex-acq-exposedʳ`.
+
+## Safety/Progress.agda -- DONE (0 goals, 0 metas, no postulates)
+
+VERIFIED, check COMPLETED: `_build/.../Progress.agdai` deleted, `agda-check
+BorrowedCF/Safety/Progress.agda` re-run to completion, exit 0, no errors, no
+warnings, peak RSS 1.4 GB.  The whole chain Shapes -&gt; Main -&gt; Progress is now
+assumption-free: `Main`&#x27;s twelve module parameters are all discharged.
+
+Final statements:
+
+    progressₚ  : {γ : Struct 0} {P : Proc 0} →
+      [] ; γ ⊢ₚ P → (P ≋ ⟪ * ⟫) ⊎ Blocked P ⊎ Σ[ P′ ∈ Proc 0 ] (P ─→ₚ P′)
+
+    progress⁺ₚ : {γ : Struct 0} {P : Proc 0} →
+      [] ; γ ⊢ₚ P → Blocked⁺ P ⊎ Σ[ P′ ∈ Proc 0 ] (P ─→ₚ P′)
+
+Ten of the twelve parameters are G1&#x27;s lemmas verbatim.  The two G2 lemmas are
+adapted by a one-line eta-wrapper each, because G2 states them slightly more
+generally / with a different explicitness:
+
+    plug-typing ctx Q ⊢P            = G2.plug-typing ctx Q []ᴬ ⊢P
+    sync-redex ctx Q ⊢P mem₁ mem₂   = G2.sync-redex ctx ⊢P mem₁ mem₂
+
+## Notes
+
+* `close-γ` is what reconciles the paper statement `[] ; γ ⊢ₚ P` with the
+  `[] ; []` that every `Safety/Progress/Redex.agda` lemma demands.
+* `go` returns `Blocked⁺` (the precise variant of `Safety/Blocked.agda`), not
+  `Blocked`: the case analysis on the two binder groups delivers it for free.
+  `progressₚ` post-composes `Blocked⁺⇒Blocked`.
+</pre><h3>Progress/Redex-STATUS.md <span class=meta>(modified 18:16:34)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># Redex lemmas (agent G1, wave 2)
+
+Files owned: `Safety/Progress/Redex.agda`, `Safety/Progress/Redex/*.agda`, this file.
+No postulates, no pragmas, no holes anywhere below.
+
+## Safety/Progress/Redex/Context.agda -- DONE (0 goals)
+
+| lemma | statement | status |
+|---|---|---|
+| `red-in-ctx` | `(ctx : ProcessContext k n) → Q ─→ₚ Q′ → plug ctx Q ─→ₚ plug ctx Q′` | proved |
+| `step-in-ctx` | `(ctx : ProcessContext k n) → e ⋯→ e′ → plug ctx ⟪ e ⟫ ─→ₚ plug ctx ⟪ e′ ⟫` | proved |
+
+Reused: `Locate.{ProcessContext,plug}`, `Reduction.Processes.Typed.{R-Exp,R-Par,R-Bind,R-Struct}`,
+`Processes.Typed.∥-comm` (needed for `par-right`: there is no right-hand `R-Par`).
+
+## Safety/Progress/Redex/Located.agda -- DONE (0 goals)
+
+| lemma | statement | status |
+|---|---|---|
+| `∈BCe⇒shape` | `x ∈BCe e → ∃ E c d w. e ≡ E [ K c ·⟨ d ⟩ w ]* × BCRedex x (K c ·⟨ d ⟩ w)` | proved |
+| `∈ACe⇒shape` | same for `∈ACe` / `ACRedex` | proved |
+| `∈BC⇒located` | `x ∈BC P → ∃ k ctx E c d w. P ≡ plug ctx ⟪ E [ K c ·⟨ d ⟩ w ]* ⟫ × BCRedex (weakenThrough ctx x) (K c ·⟨ d ⟩ w)` | proved |
+| `∈AC⇒located` | same for `∈AC` / `ACRedex` | proved |
+| `∈AC⇒located-acq` | `x ∈AC P → ∃ k ctx E d. P ≡ plug ctx ⟪ E [ K `acq ·⟨ d ⟩ (` weakenThrough ctx x) ]* ⟫` | proved |
+
+Reused: `Blocked.{_∈BC_,_∈AC_,_∈BCe_,_∈ACe_,BCRedex,ACRedex}` (agent F),
+`Locate.{ProcessContext,plug}`, `Position.weakenThrough`.
+The `res` case is definitional: `weakenThrough (bind B₁ B₂ ctx) x` reduces to
+`weakenThrough ctx ((sum B₁ + sum B₂) ↑ʳ x)`, the index `_∈BC_`&#x27;s `res` uses.
+
+## Safety/Progress/Redex/SplitShape.agda -- DONE (0 goals)
+
+| lemma | statement | status |
+|---|---|---|
+| `split-shape` | `(bnd : Binder ctx x) → SplitShape (Binder.B₁ bnd) (Binder.B₂ bnd) (Binder.local bnd)` | proved |
+
+Re-proof (not import): `Leaves/RSplit.agda` has the identical `split-shape` but inside a
+`private` block. The helpers copied are `fin-split`, `splitIx-toℕ`, `transportSplitShape{ˡ,ʳ}`,
+`{left,right}PrefixIx(-toℕ)`, `head-split-{left,right}-prefix`, `group-split-{left,right}(-prefix)`.
+Reused from `Canonical.agda`: `SplitShape`, `split-l`, `split-r`, `splitIx`;
+from `Position.agda`: `Binder`, `sideOf`, `GroupOf`, `groupOf`.
+
+## Safety/Progress/Redex/Handles.agda -- DONE (0 goals)
+
+| lemma | statement | status |
+|---|---|---|
+| `redex-drop` | `(ctx : ProcessContext k 0) (E : Frame* k) (x : 𝔽 k) → [] ; [] ⊢ₚ plug ctx ⟪ E [ K `drop ·¹ (` x) ]* ⟫ → ∃ P′. plug ctx ⟪ E [ K `drop ·¹ (` x) ]* ⟫ ─→ₚ P′` | proved |
+| `redex-discard` | same with `` `discard `` | proved |
+| `drop-first-group` | `(ctx) (E) (x) → [] ; [] ⊢ₚ … → (binderWidth (resolve ctx x) ≡ 1) × (binderRest (resolve ctx x) ≢ [])` | proved |
+
+Reused: `Canonical.{CanonRedex,canonRedex,canon-drop,canon-discard,headOfFirstGroup⇒shape}`,
+`Position/Crux.{impure-redex-head,drop-first-group-singleton}`,
+`Position.{resolve,binderWidth,binderRest,ImpureHandleConst}`, `Locate.{ProcessContext,plug}`,
+`Redex/Context.red-in-ctx`.
+
+## Safety/Progress/Redex/Acq.agda -- DONE (0 goals)
+
+| lemma | statement | status |
+|---|---|---|
+| `redex-acq` | `(E : Frame* k) (bnd : Binder ctx x) → AcqShape (Binder.B₁ bnd) (Binder.B₂ bnd) (Binder.local bnd) → ∃ P′. plug ctx ⟪ E [ K `acq ·¹ (` x) ]* ⟫ ─→ₚ P′` | proved |
+| `acqBinderˡ` | `(ctx₀ : ProcessContext m 0) (ctx₁ : ProcessContext k (sum (0 ∷ suc b ∷ B₁) + sum B₂ + m)) → Binder (compose ctx₀ (bind (0 ∷ suc b ∷ B₁) B₂ ctx₁)) (weakenThrough ctx₁ 0F)` | proved |
+| `acqBinderʳ` | same for side 2, at `weakenThrough ctx₁ (head₂ B₁ b B₂)` | proved |
+| `redex-acq-exposedˡ` | `(ctx₀) (ctx₁) (E) → ∃ P′. plug ctx₀ (ν (0 ∷ suc b ∷ B₁) B₂ (plug ctx₁ ⟪ E [ K `acq ·¹ (` weakenThrough ctx₁ 0F) ]* ⟫)) ─→ₚ P′` | proved |
+| `redex-acq-exposedʳ` | same for side 2, handle `head₂ B₁ b B₂` | proved |
+| `acq-position` | `(ctx) (E) (x) → [] ; [] ⊢ₚ … → (0 &lt; binderGroup (resolve ctx x)) × (binderPos (resolve ctx x) ≡ 0)` | proved |
+
+Reused: `Canonical.{CanonAcq,canonAcq,canon-acq,AcqShape,acq-l,acq-r}`,
+`Position/Crux.acq-non-first-group-head`, `Position.{Binder,binder,weakenThrough,resolve,
+binderGroup,binderPos}`, `Locate.{bind,compose,plug,plug-compose}`, `Blocked.head₂`,
+`Redex/Context.red-in-ctx`.
+Both `index-eq`s hold by `refl`: `0F ↑ˡ m` reduces to `0F`, and `head₂ B₁ b B₂` unfolds to
+`(sum B₁ ↑ʳ 0F) ↑ˡ m` because `wkˡ`/`wkʳ` of the renaming kit are `_↑ʳ_`/`_↑ˡ_`.
+
+## Safety/Progress/Redex.agda (hub) -- DONE (0 goals)
+
+| lemma | statement | status |
+|---|---|---|
+| `redex-new` | `(ctx : ProcessContext k n) (E : Frame* k) (s : 𝕊 0) → ∃ P′. plug ctx ⟪ E [ K (`new s) ·¹ * ]* ⟫ ─→ₚ P′` | proved |
+| `redex-fork` | `(ctx : ProcessContext k n) (E : Frame* k) → Value e → ∃ P′. plug ctx ⟪ E [ K `fork ·¹ e ]* ⟫ ─→ₚ P′` | proved |
+| `redex-lsplit` | `(ctx : ProcessContext k 0) (E : Frame* k) (s₀ : 𝕊 0) (x : 𝔽 k) → ∃ P′. plug ctx ⟪ E [ K (`lsplit s₀) ·¹ (` x) ]* ⟫ ─→ₚ P′` | proved |
+| `redex-rsplit` | same with `` `rsplit `` | proved |
+
+Re-exports `Redex/{Context,Located,Handles,Acq}`, so one import of
+`BorrowedCF.Safety.Progress.Redex` gives every lemma above.
+
+## Memory footprint
+
+Every module below completes inside a 6 GB heap (`agda-check … +RTS -M6G -RTS`);
+the hub was verified at 8 GB. Two rewrites were needed to get there, both
+recorded under &quot;Notes&quot; -- the naive versions grew past 22 GB and were killed by
+the machine watchdog.
+
+## Notes / discrepancies
+
+* PERFORMANCE GOTCHA 1 (cost me two watchdog kills): do NOT `with`-abstract a
+  `Canonical.agda` record and then match its CONSTRUCTOR
+  (`with canon-drop … | canonRedex bh D₁ D₂ ab E₀ Q₀ ≋r trk`). The
+  with-abstraction has to generalise the `src` index
+  `threadInContext ctx ⟪ E [ K c ·¹ (` x) ]* ⟫ 0F` as well, and Agda then grows
+  without bound (&gt;20 GB) even when the body is the constant `bh`. Consume the
+  record in a separate top-level function whose argument is the record
+  (`fromCanonDrop`, `fromCanonDiscard`, `fromCanonAcq` here), stated for an
+  ARBITRARY closed process, and apply that function. A `with` that binds a plain
+  VARIABLE and uses projections (as `redex-lsplit` does) is fine.
+* PERFORMANCE GOTCHA 2: `R-Drop` / `R-Discard` weaken the residual and the frame
+  (`P ⋯ₚ weakenᵣ`, `E ⋯ᶠ* weakenᵣ`). Applying them with the indices implicit
+  makes Agda try to solve `sum (?b ∷ ?B) + sum ?C + ?n ≡ …`, which is not a
+  pattern. `dropStep` / `discardStep` / `acqStep` give every index explicitly, so
+  the application is a syntactic conversion check.
+* GOTCHA for callers: the frame stack `E` is NOT inferable from a type of the form
+  `… ⊢ₚ plug ctx ⟪ E [ K c ·¹ (` x) ]* ⟫`, because `_[_]*` is a fold over the frame
+  list. `Crux.{impure-redex-head,drop-first-group-singleton,acq-non-first-group-head}`
+  therefore have to be applied with `{E = E}` given; left implicit, Agda blocks on the
+  constraint and its memory grows without bound. `drop-first-group` and `acq-position`
+  take `ctx`, `E`, `x` explicitly for that reason.
+
+* `redex-new`, `redex-fork`, `redex-lsplit`, `redex-rsplit` need NO typing derivation:
+  `R-New` / `R-Fork` fire on a bare thread, and `canon-lsplit` / `canon-rsplit` are purely
+  structural (any group position is a split position). Only `drop` / `discard` need one,
+  because the crux of `Position/Crux.agda` is what puts the handle at `0F`.
+* `Reduction/Processes/Typed.agda` has no right-hand parallel congruence; `∥-comm` twice
+  through `R-Struct` supplies it. Worth noting in the paper&#x27;s rule figure.
+</pre><h3>Progress/STATUS.md <span class=meta>(modified 17:08:27)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># Agent F (foundations) — status
+
+Owner: agent F. Files owned: `Safety/Blocked.agda`, `Safety/Progress/Expr.agda`,
+`Safety/Progress/Expr/**`, `Safety/Progress/STATUS.md`.
+
+Toolchain: `AGDA_DIR=&lt;scratchpad&gt;/agda-dir agda BorrowedCF/Safety/&lt;X&gt;.agda` from `agda/`.
+(The Agda MCP server was unreachable at session start; all checks were done from the CLI.)
+
+## Files delivered so far
+
+| File | Status |
+|---|---|
+| `Safety/Progress/Expr/Plug.agda` | **type-checks, zero goals** |
+| `Safety/Blocked.agda` | **type-checks, zero goals** |
+| `Safety/Progress/Expr.agda` | **type-checks, zero goals** |
+
+## `Safety/Progress/Expr/Plug.agda` (helper; other agents may import, never edit)
+
+Structural presentation of &quot;some subterm at an evaluation position satisfies `Red`&quot;.
+Needed because `E [ r ]*` (`Frame*` plugging) is a stuck application, so Agda cannot
+case-split on it; `Plug` has one constructor per *term* former, so inversion,
+decidability and renaming-inversion are plain structural recursions.
+
+| Lemma | Statement | Status |
+|---|---|---|
+| `value?` | `(e : Tm n) → Dec (Value e)` | proved |
+| `app₁-cond?` / `app₂-cond?` | decide the `Frame` value side conditions | proved |
+| `Plug` | `data Plug (Red : Tm n → Set) : Tm n → Set` | defined |
+| `plug-frame` / `plug-frame*` | `Plug Red e → Plug Red (F [ e ])` / `(E [ e ]*)` | proved |
+| `plug⇒ctx` | `Plug Red e → ∃[ E ] ∃[ r ] Red r × e ≡ E [ r ]*` | proved |
+| `plug?` | `(∀ e → Dec (Red e)) → ∀ e → Dec (Plug Red e)` | proved |
+| `value-⋯ᵣ⁻¹` | `Value (e ⋯ ρ) → Value e` | proved (= `InvFrame.value-reflect`; see Reuse) |
+| `⋯ᶠ-[]` / `⋯ᶠ*-[]*` | `(E [ e ]*) ⋯ ρ ≡ (E ⋯ᶠ* ρ) [ e ⋯ ρ ]*` | proved |
+| `plug-⋯ᵣ` / `plug-⋯ᵣ⁻¹` | Plug transported/reflected along a renaming | proved |
+
+## `Safety/Blocked.agda`
+
+| Item | Statement | Status |
+|---|---|---|
+| `BlockingConst` | constants outside `{new,fork,lsplit,rsplit,drop,discard,unit}` | defined |
+| `blockingConst?` | decidable | proved |
+| `Stuck` | `∃ E c d v. Value v × BlockingConst c × e ≡ E [ K c ·⟨ d ⟩ v ]*` (tex B-ExpConstBlocked) | defined |
+| `StuckRedex`, `stuck⇒plug`, `plug⇒stuck` | `Stuck e ↔ Plug StuckRedex e` | proved |
+| `BCRedex` / `ACRedex` | the BC/AC tables of the tex figure as redex shapes | defined |
+| `_∈BCe_` | `send/recv/select i/branch/end p`, tex BC on threads | defined |
+| `_∈ACe_` | single `acq` constructor, tex AC on threads | defined |
+| `∈BCe⇒plug`,`plug⇒∈BCe`,`∈ACe⇒plug`,`plug⇒∈ACe` | equivalence with `Plug` | proved |
+| `constApp?`,`isVar?`,`sendArg?` | shape decisions on `Tm` | proved |
+| `bcRedex?`,`acRedex?`,`stuckRedex?` | decidable redex shapes | proved |
+| `_∈BCe?_`,`_∈ACe?_`,`stuck?` | decidable at expression level | proved |
+| `_∈BC_` / `_∈AC_` | lifted to `Proc` through `⟪_⟫`, both sides of `∥`, and `ν` | defined |
+| `_∈BC?_` / `_∈AC?_` | `∀ x P → Dec (x ∈BC P)` etc. | proved |
+| `head₂` | first variable of side 2 of a `ν`, spelled as in R-Com | defined |
+| `Blocked` | B-Unit, B-Const, B-Par, B-Nu, B-NuAcqˡ, B-NuAcqʳ | defined |
+| `Blocked⁺` | precise variant: B-NuAcqˡ⁺, B-NuAcqʳ⁺, B-NuAcqˡʳ⁺ | defined |
+| `Blocked⁺⇒Blocked` | `Blocked⁺ P → Blocked P` | proved |
+| `↑*-↑ʳ` / `↑*-↑ˡ` / `↑*-↑ʳ⁻¹` | `ρ ↑* k` acts as `ρ` above the k binders and as the identity on them | proved |
+| `⋯ᵣ-K⁻¹`, `⋯ᵣ-var⁻¹`, `⋯ᵣ-pair⁻¹`, `⋯ᵣ-KApp⁻¹` | a renaming reflects the top term former | proved |
+| `bcRedex-⋯ᵣ` / `acRedex-⋯ᵣ` / `stuckRedex-⋯ᵣ` and `…-⋯ᵣ⁻¹` | redex shapes transport/reflect | proved |
+| `∈BCe-⋯ᵣ` / `∈ACe-⋯ᵣ` / `Stuck-⋯ᵣ` | `x ∈BCe e → ρ x ∈BCe (e ⋯ ρ)` etc. | proved |
+| `∈BCe-⋯ᵣ⁻¹` / `∈ACe-⋯ᵣ⁻¹` / `Stuck-⋯ᵣ⁻¹` | `y ∈BCe (e ⋯ ρ) → ∃ x. ρ x ≡ y × x ∈BCe e` | proved |
+| `∈BC-⋯ᵣ` / `∈AC-⋯ᵣ` | `x ∈BC P → ρ x ∈BC (P ⋯ₚ ρ)` | **proved** |
+| `∈BC-⋯ᵣ⁻¹` / `∈AC-⋯ᵣ⁻¹` | `y ∈BC (P ⋯ₚ ρ) → ∃ x. ρ x ≡ y × x ∈BC P` (no injectivity needed) | **proved** |
+| `⋯ₚ-⟪⟫⁻¹`, `⋯ₚ-∥⁻¹`, `⋯ₚ-ν⁻¹` | a renaming reflects the top process former | proved |
+| `Blocked-⋯ᵣ` | `Inj ρ → Blocked P → Blocked (P ⋯ₚ ρ)` | **proved** |
+| `Blocked-⋯ᵣ⁻¹` | `Blocked (P ⋯ₚ ρ) → Blocked P` (injectivity NOT needed) | **proved** |
+
+## `Safety/Progress/Expr.agda`
+
+All of the following type-check with zero goals.
+
+| Lemma | Statement | Status |
+|---|---|---|
+| `ConstApp` | `∃ E c d v. Value v × e ≡ E [ K c ·⟨ d ⟩ v ]*` (middle case of the paper&#x27;s theorem) | defined |
+| `constApp-frame` | `ConstApp e → ConstApp (F [ e ])` | proved |
+| `stuck⇒constApp` | `Stuck e → ConstApp e` | proved |
+| `const-unr` | `Γ ; γ ⊢ K c ∶ T ⟨ a ⟩→ U ∣ ϵ → Arr.Unr a` | proved |
+| `const-app-dir` | `Γ ; γ ⊢ K c ·⟨ d ⟩ v ∶ T ∣ ϵ → d ≡ 𝟙` | proved |
+| `inv-app-fn/arg` | app inversion that KEEPS the arrow (`Γ;α ⊢ e₁ ∶ T ⟨a⟩→ U`, `Γ;β ⊢ e₂ ∶ T`) | proved |
+| `fn-send-dom` | `⊢ K `send ∶ T ⟨a⟩→ U → ∃ T₀. (T₀ ⊗¹ ⟨ msg ‼ T₀ ⟩) ≃ T` | proved |
+| `fn-recv-dom` | `… → ∃ T₀. ⟨ msg ⁇ T₀ ⟩ ≃ T` | proved |
+| `fn-select-dom` | `… → ∃ (s₁,s₂). ⟨ brn ‼ s₁ s₂ ⟩ ≃ T` | proved |
+| `fn-branch-dom` | `… → ∃ (s₁,s₂). ⟨ brn ⁇ s₁ s₂ ⟩ ≃ T` | proved |
+| `fn-lsplit-dom` / `fn-rsplit-dom` | `… → ∃ s′. ⟨ s ; s′ ⟩ ≃ T` | proved |
+| `fn-new-dom` | `… → `⊤ ≃ T` | proved |
+| `fn-fork-dom` | `… → (`⊤ →1M `⊤ ∣ 𝕀) ≃ T` | proved |
+| `progress⁺` | `Γ ; γ ⊢ e ∶ T ∣ ϵ → Value e ⊎ ConstApp e ⊎ ∃[ e′ ] e ⋯→ e′` | **proved** |
+| `handle-arg` | generic: a value argument of a handle-domain constant is a variable with a `≃`-matching session | proved |
+| `arg-send` | argument is `v₀ ⊗ ` x` with `Γ ﹫ x ≡ ⟨ s ⟩`, `s ≃ msg ‼ T₀` | proved |
+| `arg-recv` | `` ` x``, `s ≃ msg ⁇ T₀` | proved |
+| `arg-select` | `` ` x``, `s ≃ brn ‼ s₁ s₂` | proved |
+| `arg-branch` | `` ` x``, `s ≃ brn ⁇ s₁ s₂` | proved |
+| `arg-end` | `` ` x``, `s ≃ end p₀` | proved |
+| `arg-acq` | `` ` x``, `s ≃ acq ; s₀` | proved |
+| `arg-drop` | `` ` x``, `s ≃ ret` | proved |
+| `arg-discard` | `` ` x``, `s ≃ skip` | proved |
+| `arg-lsplit` / `arg-rsplit` | `` ` x``, `s ≃ s₀ ; s′` | proved |
+| `arg-new` | argument is `K `unit` | proved |
+| `stuck⇒∈BC/AC` | a stuck thread yields `∃ x. x ∈BCe e` (or `∃ x. x ∈ACe e` for `acq`) | **proved** |
+
+`fork` needs no argument-shape lemma: its argument is an arbitrary value of function type,
+`fn-fork-dom` records the domain.
+
+Note: `Safety/Blocked.agda` is 751 lines, above the ~600-line guideline in AGENTS.md.
+Splitting it would force downstream agents to import two modules for one predicate, so it is
+left whole; the renaming section at the end is self-contained if a split becomes necessary.
+
+## Reuse (modules imported, never edited)
+
+- `Simulation/Support/InvFrame.agda`: `arg-type`, `value-reflect`.
+- `Simulation/Support/AcqInv.agda`: `fn-acq-dom`.
+- `Simulation/Support/PairConfine.agda`: `fn-end-dom`.
+- `Simulation/Support/Theorems/DropShape.agda`: `fn-drop-dom`, `fn-discard-dom`.
+- `Reduction/Expressions.agda`: `inv-arr`, `inv-session`, `value×⊗⇒⊗`, `value⇒pure`.
+- `Terms/Base.agda`: `inv-·`, `inv-K`, `inv-⊗`, `inv-`_`, `constFnUnr′`.
+
+Top-level `fn-send-dom`, `fn-recv-dom`, `fn-select-dom`, `fn-branch-dom`,
+`fn-lsplit-dom`, `fn-rsplit-dom`, `fn-new-dom`, `fn-fork-dom` do NOT exist anywhere at
+importable scope (`Position.agda`, `Leaves/Choice.agda` have them only inside `where`
+blocks), so they are proved in `Safety/Progress/Expr.agda` in the same style and are
+free for other agents to import.
+
+## Notes / discrepancies with the tex
+
+1. tex B-ExpConstBlocked excludes `c ∈ {new, fork, lsplit, rsplit, drop, discard}` but
+   not `unit`; the Agda `Const` has `` `unit `` (the value `*`), so `BlockingConst`
+   excludes it too. Otherwise `Blocked ⟪ * ⟫` would be derivable twice.
+2. tex B-NuBlocked reads `{x,y} ∩ BC(P) ≠ {x,y}`. Mechanised as
+   `¬ (x ∈BC P × y ∈BC P)`, which is the same statement for a two-element set.
+3. tex B-NuBlockedAcq quantifies over `i ∈ {1,2}`; mechanised as the two rules
+   `B-NuAcqˡ` / `B-NuAcqʳ`, and refined in `Blocked⁺` (see the comment now in
+   `tex/rules/blocked.tex`).
+</pre><h3>Progress/Sync-STATUS.md <span class=meta>(modified 18:57:05)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># Sync lemmas (agent G2, wave 2)
+
+Files owned: `Safety/Progress/Sync.agda`, `Safety/Progress/Sync/*.agda`, this file.
+No postulates, no pragmas, no holes in anything marked DONE.
+
+## Safety/Progress/Sync/Front.agda -- DONE (type-checks, 0 goals)
+
+The front-kind theory that the dual-heads lemma needs.  `Types/AtomCons.agda`
+peels a leading ATOM (`Cons`), but only for closed non-`msg` atoms, and
+`Types/Atoms.agda` records that the `_≃_` transport for a leading `brn` was
+abandoned.  Forgetting the payload and the branches makes the whole
+development go through.
+
+| lemma | statement | status |
+|---|---|---|
+| `HKind`, `dualKind` | head kinds `kmsg p` / `kbrn p` / `kend p` | defined |
+| `ConsK hk w` | `w` starts with a head of kind `hk` (`hmsg`/`hbrn`/`hend`/`hd`/`tl`/`mu`) | defined |
+| `skips⊥consK` | `Skips w → ConsK hk w → ⊥` | proved |
+| `consK-unique` | `ConsK hk₁ w → ConsK hk₂ w → hk₁ ≡ hk₂` | proved |
+| `consK-;⁻` | `ConsK hk (s₁ ; s₂) → ConsK hk s₁ ⊎ (Skips s₁ × ConsK hk s₂)` | proved |
+| `consK-dual` | `ConsK hk w → ConsK (dualKind hk) (dual w)` | proved |
+| `consK-⋯`, `consK-⋯ᵣ⁻¹`, `consK-⋯⁻¹` | substitution, both directions | proved |
+| `consK-unfold`, `consK-unfold⁻¹` | `ConsK hk (mu s) ↔ ConsK hk (unfold s)` | proved |
+| `≃-consK` | `w₁ ≃ w₂ → ConsK hk w₁ → ConsK hk w₂` | proved |
+| `front-dual` | `ConsK hk₁ (s ; end p) → ConsK hk₂ (dual s ; end (dualPol p)) → hk₂ ≡ dualKind hk₁` | proved |
+
+Reused: `Types.{Syntax,Substitution,Equivalence}` only (`skips-dual⁺`, `skips-⋯`,
+`skips-⋯ᵣ⁻¹`, `skips-⋯⁻¹`, `≃-skips`, `dual-involutive`, `dualPol-involutive`).
+
+## Safety/Progress/Sync/Heads.agda -- DONE (type-checks, 0 goals)
+
+| lemma | statement | status |
+|---|---|---|
+| `bindCtx′-head` | `BindCtx′ s Γ → Γ ﹫ 0F ≡ ⟨ t ⟩ → ConsK hk t → ConsK hk s` (Γ non-empty) | proved |
+| `bindCtx-head` | same for `BindCtx s (suc b ∷ B) Γ` (the borrow&#x27;s `ret` is peeled off) | proved |
+| `head-kinds` | the two endpoints of a `TP-Res` present dual head kinds | proved |
+| `BCShape x hk e` | `_∈BCe_` with the head kind as an INDEX and direction `𝟙` | defined |
+| `shape⇒∈BCe` | back to `_∈BCe_` | proved |
+| `bc-shape` | `ChanCx Γ → Γ ; γ ⊢ e ∶ T ∣ ϵ → x ∈BCe e → ∃ hk s. BCShape x hk e × Γ ﹫ x ≡ ⟨ s ⟩ × ConsK hk s` | proved |
+
+Reused: agent F&#x27;s `arg-send/recv/select/branch/end`, `const-app-dir` (Progress/Expr.agda),
+`⊢[]*⁻¹` (Reduction/Base.agda), `Processes.Typed.{BindCtx,BindCtx′}`.
+
+## Safety/Progress/Sync/Unique.agda -- DONE (type-checks, 0 goals)
+
+| lemma | statement | status |
+|---|---|---|
+| `bcRedex-fn` | a BC redex is `K c ·⟨ d ⟩ w` with `Value w` | proved |
+| `bcRedex-unique`, `plug-value⊥`, `plug-K⊥`, `app-conflict` | auxiliaries | proved |
+| `plug-det` | `Plug (BCRedex x) e → Plug (BCRedex y) e → x ≡ y` | proved |
+| `∈BCe-unique` | `x ∈BCe e → y ∈BCe e → x ≡ y` (a thread blocks on one channel) | proved |
+
+Reused: agent F&#x27;s `Plug`, `∈BCe⇒plug` (Progress/Expr/Plug.agda, Blocked.agda).
+
+## Safety/Progress/Sync/Locate.agda -- DONE (type-checks, 0 goals)
+
+| lemma | statement | status |
+|---|---|---|
+| `Loc₁`, `locate₁` | `x ∈BC P → ∃ ctx e. plug ctx ⟪ e ⟫ ≡ P × weakenThrough ctx x ∈BCe e` | proved |
+| `Loc₂`, `locate₂` | `x ≢ y → x ∈BC P → y ∈BC P → ∃ (c : ProcessContext₂) e₁ e₂. plug₂ c ⟪e₁⟫ ⟪e₂⟫ ≡ P × wt₁ c x ∈BCe e₁ × wt₂ c y ∈BCe e₂` | proved |
+| `swap₂`, `plug-swap₂`, `wt₁-swap₂`, `wt₂-swap₂`, `swapLoc₂` | exchanging the two holes | proved |
+| `plug-typing⁺` | `ChanCx Γ → Γ ; γ ⊢ₚ plug ctx R → ∃ Γ′ γ′. ChanCx Γ′ × Γ′ ; γ′ ⊢ₚ R × (∀ z → Γ′ ﹫ weakenThrough ctx z ≡ Γ ﹫ z)` | proved |
+
+Reused: G1&#x27;s `∈BC⇒located` (Progress/Redex/Located.agda), `Locate.{ProcessContext,plug,compose}`,
+`Position.weakenThrough`, `CanonicalPair.{ProcessContext₂,plug₂,wt₁,wt₂,fill₁,fill₂}`,
+`Processes.Typed.{inv-∥,inv-ν,bindCtx⇒chanCtx}`.
+
+## Safety/Progress/Sync/Choice.agda -- DONE (type-checks, 0 goals)
+
+| lemma | statement | status |
+|---|---|---|
+| `choice-step` | `(bnd : Binder₂ c x₁ x₂) → HeadShape₂ … → (E₁) (i) (E₂) → ∃ P′. plug₂ c ⟪ E₁ [ select i ·¹ ` x₁ ]* ⟫ ⟪ E₂ [ branch ·¹ ` x₂ ]* ⟫ ─→ₚ P′` | proved |
+
+Reused: `CanonicalPair.canon-pair`, G1&#x27;s `red-in-ctx`, F&#x27;s `⋯ᶠ*-[]*`, `Locate.≡→≋`.
+
+## Safety/Progress/Sync/Com.agda -- DONE (type-checks, 0 goals)
+
+| lemma | statement | status |
+|---|---|---|
+| `com-step` | as `choice-step`, for `send`/`recv`, with `[] ; [] ⊢ₚ …` as an extra premise | proved |
+
+Reused: additionally `PairConfine.com-confine`, `Congruence._/_⊢-≋_`, `plug-typing⁺`,
+F&#x27;s `value-⋯ᵣ⁻¹`.
+
+## Safety/Progress/Sync/CloseShape.agda -- DONE (type-checks, 0 goals)
+
+| lemma | statement | status |
+|---|---|---|
+| `new-¬end` | `New s → ¬ ConsK (kend q) s` | proved |
+| `close-shape` | `New s → BindCtx (s ; end p) (suc b ∷ B) Γ → Γ ﹫ 0F ≡ ⟨ t ⟩ → t ≃ end q → b ≡ 0 × B ≡ []` | proved |
+
+Reused: `PairConfine.close-group-width`, `Equivalence.atom-;⁻`, `≃-skipsˡ`.
+
+## Safety/Progress/Sync/Close.agda -- DONE (type-checks, 0 goals)
+
+| lemma | statement | status |
+|---|---|---|
+| `wkₚ00` | `wkₚ 0 0 ≗ weaken* 2` (the renaming `ν-ext′` undoes) | proved |
+| `close-groups` | both binder groups of a closing `ν` are `[ 1 ]` | proved |
+| `close-go₂` | the residual-free canonical form reduces (`close-confine` + `R-Close`) | proved |
+| `close-go` | pushes the residual out of the binder (`ν-ext′` backwards) and calls `close-go₂` | proved |
+| `close-step` | as `com-step`, for `end ‼` / `end ⁇` | proved |
+
+Reused: `PairConfine.{close-handle-end,close-pair-confine,close-confine}`,
+`Processes.Typed.{ν-ext′,ν-cong,∥-comm,⋯ₚ-cong}`, `Locate.≋-plug`.
+
+## Safety/Progress/Sync/Binder.agda -- DONE (type-checks, 0 goals)
+
+| lemma | statement | status |
+|---|---|---|
+| `binderL` | `Binder₂ (compose₂ ctx (bind₂ C₁ C₂ c₀)) (wt₁ c₀ 0F) (wt₂ c₀ head₂)`, locals `0F` / `sum C₁ ↑ʳ 0F` | proved |
+| `binderR` | the same with the two holes exchanged (`swap₂`), locals `sum C₁ ↑ʳ 0F` / `0F` | proved |
+| `plugL` / `plugR` | `plug₂ (compose₂ ctx (bind₂ C₁ C₂ c₀)) R₁ R₂ ≡ plug ctx (ν C₁ C₂ (plug₂ c₀ R₁ R₂))` (and its swapped form) | proved |
+| `0≢head₂` | `0F ≢ head₂ (suc b₁ ∷ B₁) b₂ B₂` | proved |
+
+## Safety/Progress/Sync/Dispatch.agda -- DONE (type-checks, 0 goals, 12 s)
+
+| lemma | statement | status |
+|---|---|---|
+| `transport-red`, `transport-⊢` | rewriting a reduction / a typing along a process equation, by matching `refl` | proved |
+| `dispatch` | the six surviving constant pairs, each firing its rule in the right orientation | proved |
+
+## Safety/Progress/Sync.agda -- DONE (type-checks, 0 goals, 16 s)
+
+| lemma | statement | status |
+|---|---|---|
+| `plug-typing` | `ChanCx Γ → Γ ; γ ⊢ₚ plug ctx Q → ∃ Δ σ. ChanCx Δ × Δ ; σ ⊢ₚ Q` (= `Locate.focusTyping`) | proved |
+| `lookup-fst` / `lookup-snd` | the two head handles of `(Γ₁ ⸴* Γ₂) ⸴* Δ` are `Γ₁ ﹫ 0F` and `Γ₂ ﹫ 0F` | proved |
+| `sync-go` | reads both head kinds off the two threads and calls `dispatch` | proved |
+| `sync-redex` | THE MAIN LEMMA (statement below) | **proved** |
+
+```
+sync-redex : {k : ℕ} (ctx : ProcessContext k 0) {b₁ b₂ : ℕ} {B₁ B₂ : BindGroup}
+  {Q : Proc (sum (suc b₁ ∷ B₁) + sum (suc b₂ ∷ B₂) + k)} →
+  [] ; [] ⊢ₚ plug ctx (ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂) Q) →
+  0F ∈BC Q →
+  head₂ (suc b₁ ∷ B₁) b₂ B₂ ∈BC Q →
+  Σ[ P′ ∈ Proc 0 ] plug ctx (ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂) Q) ─→ₚ P′
+```
+
+## PERFORMANCE (2026-09-08) -- read this before touching these files
+
+The first version of the dispatch rewrote the two process equations with
+`subst (λ z → z ─→ₚ _) eq red` and projected the rule worker&#x27;s result with a
+pattern-`let`.  Agda then unfolds `plug`, `plug₂`, `compose₂` and `fill₂` under
+the equation: ONE such clause reached 10 GB RSS and did not finish; the whole
+module was killed twice (once at 12 GB after 15 min).  Bisecting with a probe
+module showed
+  * importing `Sync/{Com,Choice,Close}` and applying `choice-step (binderL …)
+    (heads-lr …) E₁ i E₂` bare: 11 s;
+  * the same plus the `subst`/pattern-`let` transport: &gt;10 GB, no end.
+The fix is `transport-red` / `transport-⊢` in `Sync/Dispatch.agda`: they take the
+equation and match it with `refl` while both processes are still VARIABLES.
+With them the six clauses check in 12 s and `Sync.agda` in 16 s.
+The same rule applies to the two `plug-fill₂` / `plug-fill₁` rewritings in
+`sync-go` (`transport-⊢` there) -- with `subst` they are just as expensive.
+The three rule workers keep a single `with` on the `CanonPair` record and check
+in one to two minutes each; that pattern is fine as long as the record is
+consumed inside the same clause.
+## Discrepancies found (tex vs Agda)
+
+1. `Types/Atoms.agda` states that the `_≃_` transport of a leading `brn` was
+   abandoned, and `Types/AtomCons.agda` covers only closed non-`msg` atoms.  Both
+   gaps are on the critical path of progress: without them nothing rules out a
+   `select` facing a `select`.  `Sync/Front.agda` closes them by forgetting the
+   payload and the branches -- the FRONT KIND is what the proof needs, and it is
+   `≃`-invariant, unique, and flipped by `dual` (`front-dual`).
+2. tex R-Com writes the frames, the sent value and the residual unchanged on both
+   sides of the rule, leaving &quot;x and y do not occur in them&quot; to the nominal binder
+   convention.  The Agda rule instead demands that all four factor through `wkₚ`.
+   For a well-typed process this is not a restriction (`PairConfine.com-confine`),
+   but a paper proof of progress must say so; it is the only reason `R-Com` fires.
+3. tex R-Close has no parallel residual (`ν x y (F₁[term x] ∥ F₂[wait y])`), so the
+   rule can only fire after `≡` has extruded the residual out of the binder.  The
+   mechanised progress proof does exactly that (`ν-ext′` backwards), and it is
+   sound only because the residual cannot mention the two closing handles
+   (`close-pair-confine`).  Worth a sentence in the paper.
+4. tex brackets the three components differently in R-Com (`(F₁ ∥ F₂) ∥ P`) and in
+   R-Choice (`F₁ ∥ (F₂ ∥ P)`); the Agda rules both use `(F₁ ∥ F₂) ∥ P`.  Cosmetic.
+5. B-NuBlocked&#x27;s side condition is exactly right: `sync-redex` is its converse for
+   the shape `ν (suc b₁ ∷ B₁) (suc b₂ ∷ B₂)`, i.e. when both heads ARE in BC the
+   process reduces.  Nothing else about the two groups is needed -- in particular
+   the `end`/`end` case does NOT have to be assumed to sit at `ν [1] [1]`, that is
+   derived (`Sync/CloseShape.close-shape`).
+</pre>
+</body></html>
