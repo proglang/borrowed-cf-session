@@ -128,7 +128,7 @@ brnv⋯⇒brnv {p = p} {i = i} {ϕ = ϕ} (mu c) ∀¬S {y = y} (mu E) =
   in brnv-⋯ᵣ⁻¹ (subst (λ w → BrnV p i w z′) (sym (wk-`/id (ϕ y))) c′)
 
 brnv-⋯⁻¹ : {ϕ : m →ₛ n} →
-  BrnV p i (s ⋯ ϕ) z →
+  BrnV p i (s ⋯ₛ ϕ) z →
   (∀ x → ¬ Skips (`/id (ϕ x))) →
   (∀ y → StartsVar y s → ∃[ z′ ] BrnV p i s z′) →
   ∃[ z′ ] BrnV p i s z′
