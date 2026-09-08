@@ -115,7 +115,7 @@ consK-⋯ (hd c) = hd (consK-⋯ c)
 consK-⋯ (tl Sk c) = tl (skips-⋯ Sk) (consK-⋯ c)
 consK-⋯ (mu c) = mu (consK-⋯ c)
 
-consK-⋯ᵣ⁻¹ : {ρ : m →ᵣ n} (s : 𝕊 m) → ConsK hk₁ (s ⋯ ρ) → ConsK hk₁ s
+consK-⋯ᵣ⁻¹ : {ρ : m →ᵣ n} (s : 𝕊 m) → ConsK hk₁ (s ⋯ᵣ ρ) → ConsK hk₁ s
 consK-⋯ᵣ⁻¹ (` x) ()
 consK-⋯ᵣ⁻¹ (msg p t) hmsg = hmsg
 consK-⋯ᵣ⁻¹ (brn p s₁ s₂) hbrn = hbrn

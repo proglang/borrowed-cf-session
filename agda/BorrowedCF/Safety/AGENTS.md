@@ -107,3 +107,7 @@ cached in agda/_build). Duplicating a lemma that exists is a failure; cite the m
   the plugging functions under the equation: >10 GB, never finishes. Fix: transport lemmas that
   match the equation with `refl` while both processes are still VARIABLES (`transport-red`,
   `transport-⊢` in Safety/Progress/Sync/Dispatch.agda), applied before anything is unfolded.
+
+## Portability (added 2026-09-08 late)
+
+The development is also checked on a second machine with a different Agda build. There, `s ⋯ ρ` in a type signature with `ρ : m →ᵣ n` and a generalized `s` failed instance search (`No instance of type Kit (λ _ → 𝔽 n)`), although it passes here. In every new signature fix the kit by using the aliases `s ⋯ᵣ ρ` and `s ⋯ₛ ϕ` (both are `_⋯_` with the kit fixed, exported by BorrowedCF.Types.Substitution), or `_⋯_ ⦃ Kᵣ ⦄ s ρ`. Do the same for other instance arguments a reader cannot infer from the renaming alone.

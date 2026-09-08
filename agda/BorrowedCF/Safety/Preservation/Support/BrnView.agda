@@ -91,7 +91,7 @@ brnv-unique (mu {s = s} c₁) (mu c₂) = ≃-⋯ {ϕ = ⦅ mu s ⦆ₛ} (brnv-u
 -- Substitution; the forward μ step.
 ------------------------------------------------------------------------
 
-brnv-⋯ : {ϕ : m →ₛ n} → BrnV p i w z → BrnV p i (w ⋯ ϕ) (z ⋯ ϕ)
+brnv-⋯ : {ϕ : m →ₛ n} → BrnV p i w z → BrnV p i (w ⋯ₛ ϕ) (z ⋯ₛ ϕ)
 brnv-⋯ {i = i} {ϕ = ϕ} (here {Z₁ = Z₁} {Z₂ = Z₂}) =
   subst (BrnV _ i (brn _ (Z₁ ⋯ ϕ) (Z₂ ⋯ ϕ))) (sym (if-⋯ i Z₁ Z₂ ϕ)) here
 brnv-⋯ (hd c) = hd (brnv-⋯ c)
@@ -106,7 +106,7 @@ brnv-unfold (mu c) = brnv-⋯ c
 -- Backward μ un-substitution.
 ------------------------------------------------------------------------
 
-brnv-⋯ᵣ⁻¹ : {ρ : m →ᵣ n} → BrnV p i (s ⋯ ρ) z → ∃[ z₀ ] BrnV p i s z₀
+brnv-⋯ᵣ⁻¹ : {ρ : m →ᵣ n} → BrnV p i (s ⋯ᵣ ρ) z → ∃[ z₀ ] BrnV p i s z₀
 brnv-⋯ᵣ⁻¹ {s = brn q s₁ s₂} here = _ , here
 brnv-⋯ᵣ⁻¹ {s = s₁ ; s₂} (hd c) = Π.map (_; s₂) hd (brnv-⋯ᵣ⁻¹ c)
 brnv-⋯ᵣ⁻¹ {s = s₁ ; s₂} (tl Sk c) = Π.map₂ (tl (skips-⋯ᵣ⁻¹ Sk)) (brnv-⋯ᵣ⁻¹ c)
@@ -114,7 +114,7 @@ brnv-⋯ᵣ⁻¹ {s = mu s₀} (mu c) = Π.map (_⋯ ⦅ mu s₀ ⦆ₛ) mu (brn
 
 -- If `s ⋯ ϕ` starts with a `p`-choice and `s` starts with the variable `y`,
 -- then the image of `y` starts with a `p`-choice.
-brnv⋯⇒brnv : {ϕ : m →ₛ n} → BrnV p i (s ⋯ ϕ) z →
+brnv⋯⇒brnv : {ϕ : m →ₛ n} → BrnV p i (s ⋯ₛ ϕ) z →
   (∀ x → ¬ Skips (`/id (ϕ x))) → ∀ {y} → StartsVar y s → ∃[ z′ ] BrnV p i (`/id (ϕ y)) z′
 brnv⋯⇒brnv c ∀¬S here = _ , c
 brnv⋯⇒brnv (hd c) ∀¬S (hd E) = brnv⋯⇒brnv c ∀¬S E

@@ -1,6 +1,6 @@
 # Algorithmic completeness dashboard
 
-Generated from `dashboard/state.json` (2026-09-08 22:15 (C4 finished: completeness PROVED, verified by orchestrator; C11 closes the SolvedC gap)). Open `dashboard/dashboard.html` for the live view (`dashboard/serve.sh`).
+Generated from `dashboard/state.json` (2026-09-08 final: complete⇒/complete⇐ verified from empty cache, pushed as 3f3c4b3). Open `dashboard/dashboard.html` for the live view (`dashboard/serve.sh`).
 
 ## Theorems
 
@@ -42,7 +42,7 @@ Generated from `dashboard/state.json` (2026-09-08 22:15 (C4 finished: completene
 | C6b | opus | base repair (Finding 2): A-Case restricts branches to their own free variables; soundness case adapted; then add the missing let constructor to SolvedTm (+ subTm-solved/subTm-id cases) | Algorithmic.agda (base) | finished (A-Case per-branch restriction + SolvedTm let, verified) |
 | C6c | opus | base repair (Finding 3): p/s choice in A-LetPair and A-Let mirroring T-LetPair/T-Let; soundness adapted | Algorithmic.agda (base) | finished (p/s in A-LetPair/A-Let, soundness adapted, verified) |
 | C10 | opus | base change (user-approved): constraint-generating subcontext premises in the nine A-rules, definitions moved to Context/SubConstraint.agda, soundness adapted; plus A-Ann restricted to checking forms (ChkForm) | Algorithmic.agda, Context/SubConstraint.agda (base), Completeness/Sub*.agda | finished (≼↑ premises in nine rules, A-Ann restricted, SubConstraint.agda, soundness adapted; verified) |
-| C11 | opus | base edit: SolvedC gains `discard/`select/`branch (+ subConst cases) so the theorem's SolvedTm hypothesis covers those constants | Algorithmic/Solved.agda (base) | running |
+| C11 | opus | base edit: SolvedC gains `discard/`select/`branch (+ subConst cases) so the theorem's SolvedTm hypothesis covers those constants | Algorithmic/Solved.agda (base) | finished |
 
 ## Issues found
 

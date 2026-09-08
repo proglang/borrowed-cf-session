@@ -151,3 +151,7 @@ progress) in addition to `Simulation/`; in particular the Safety tree shows how 
   the elaborated term grows combinatorially (Main/Bind/Case.agda: 11.5 GB, killed twice). Bind
   such packages with `with a , b , … ← r` (tuple patterns only, no refl), or split the steps
   into top-level helpers taking the previous components as explicit arguments.
+
+## Portability (added 2026-09-08 late)
+
+The development is also checked on a second machine with a different Agda build. There, `s ⋯ ρ` in a type signature with `ρ : m →ᵣ n` and a generalized `s` failed instance search (`No instance of type Kit (λ _ → 𝔽 n)`), although it passes here. In every new signature fix the kit by using the aliases `s ⋯ᵣ ρ` and `s ⋯ₛ ϕ` (both are `_⋯_` with the kit fixed, exported by BorrowedCF.Types.Substitution), or `_⋯_ ⦃ Kᵣ ⦄ s ρ`. Do the same for other instance arguments a reader cannot infer from the renaming alone.

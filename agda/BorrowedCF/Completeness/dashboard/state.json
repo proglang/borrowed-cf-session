@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-08 22:15 (C4 finished: completeness PROVED, verified by orchestrator; C11 closes the SolvedC gap)",
+ "updated": "2026-09-08 final: complete⇒/complete⇐ verified from empty cache, pushed as 3f3c4b3",
  "theorems": [
   {
    "name": "complete⇐ : Complete⇐",
@@ -178,7 +178,7 @@
    "model": "opus",
    "task": "base edit: SolvedC gains `discard/`select/`branch (+ subConst cases) so the theorem's SolvedTm hypothesis covers those constants",
    "files": "Algorithmic/Solved.agda (base)",
-   "state": "running"
+   "state": "finished"
   }
  ],
  "policy": [
