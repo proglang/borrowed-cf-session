@@ -1,0 +1,207 @@
+{
+ "updated": "2026-09-08 22:15 (C4 finished: completeness PROVED, verified by orchestrator; C11 closes the SolvedC gap)",
+ "theorems": [
+  {
+   "name": "complete⇐ : Complete⇐",
+   "module": "Completeness.agda / Completeness/Main.agda",
+   "status": "DONE (verified): complete⇐ : Complete⇐ in Completeness.agda, zero goals, no postulates, no assumptions",
+   "note": "SolvedCtx Γ → SolvedTm e → SolvedTy T → LinStruct Γ γ → Γ ; γ ⊢ e ∶ T ∣ ϵ → ∀ m → ∃ ϵ′ Δ k σ. Solving σ × SolvedΔ Δ σ × ϵ′ ≤ϵ ϵ × Γ ; γ / m ⊢ e ⇐ T ∣ ϵ′ ↑ Δ / k"
+  },
+  {
+   "name": "complete⇒ : Complete⇒",
+   "module": "Completeness.agda",
+   "status": "DONE (verified): complete⇒ : Complete⇒ in Completeness.agda",
+   "note": "same with an inferred T̂ and subTy T̂ σ ≃ T"
+  }
+ ],
+ "lemmas": [
+  {
+   "name": "LinStruct lemmas (lin-≼, lin-↓, lin-join⁻, lin-bind)",
+   "module": "Completeness/Split.agda",
+   "status": "done",
+   "agent": "C1"
+  },
+  {
+   "name": "↓-mono-⊆, unr-absorb",
+   "module": "Completeness/Split.agda",
+   "status": "done",
+   "agent": "C1"
+  },
+  {
+   "name": "canon-split (canonical restriction split of an admissible split)",
+   "module": "Completeness/Split.agda",
+   "status": "done",
+   "agent": "C1"
+  },
+  {
+   "name": "canon-core (construction half of the canonical split, from Sep predicates)",
+   "module": "Completeness/Split/Construct.agda",
+   "status": "done",
+   "agent": "C9"
+  },
+  {
+   "name": "UVarsIn, scope (uvars of outputs lie in [m,n))",
+   "module": "Completeness/Scope.agda",
+   "status": "done",
+   "agent": "C2"
+  },
+  {
+   "name": "merge / single substitutions, solvedΔ-merge, subTy-agree",
+   "module": "Completeness/Scope.agda",
+   "status": "done",
+   "agent": "C2"
+  },
+  {
+   "name": "alg-weaken (algorithmic typing closed under ≼ on linear structures)",
+   "module": "Completeness/Weaken.agda",
+   "status": "done",
+   "agent": "C3"
+  },
+  {
+   "name": "fv⊆dom, fv-cover, restrict, restrict-≼",
+   "module": "Completeness/Decl.agda",
+   "status": "done",
+   "agent": "C5"
+  },
+  {
+   "name": "effect / Seq⇒Pure / EffCompat bridges, Solved inversions",
+   "module": "Completeness/Decl.agda",
+   "status": "done",
+   "agent": "C5"
+  },
+  {
+   "name": "main induction (parametrised) + instantiation",
+   "module": "Completeness/Main.agda, Completeness.agda",
+   "status": "done",
+   "agent": "C4"
+  },
+  {
+   "name": "red-team probes (counterexample search)",
+   "module": "Completeness/Probe/",
+   "status": "done",
+   "agent": "C7"
+  },
+  {
+   "name": "≼↑ (constraint-generating subcontext): ≼↑-sound, ≼↑-complete, ≼⇒≼↑/≼↑-erase, base-change probe",
+   "module": "Completeness/Sub.agda, Sub/Probe.agda",
+   "status": "done",
+   "agent": "C8"
+  }
+ ],
+ "agents": [
+  {
+   "id": "C1",
+   "model": "opus",
+   "task": "structure algebra: LinStruct, restriction monotonicity, unrestricted absorption, canonical split lemma",
+   "files": "Completeness/Split.agda, Split/",
+   "state": "finished (canon-split proved, toolkit verified)"
+  },
+  {
+   "id": "C2",
+   "model": "opus",
+   "task": "unification-variable scope invariant, substitution merge/single/agreement",
+   "files": "Completeness/Scope.agda, Scope/",
+   "state": "finished (re-verified after the ≼↑ base change)"
+  },
+  {
+   "id": "C3",
+   "model": "opus",
+   "task": "algorithmic weakening (parametrised over C1)",
+   "files": "Completeness/Weaken.agda, Weaken/",
+   "state": "finished (alg-weaken restated over Γ̂ with Approx, verified)"
+  },
+  {
+   "id": "C4",
+   "model": "opus",
+   "task": "main completeness induction (parametrised over C1/C2/C3/C5), instantiation",
+   "files": "Completeness/Main.agda, Completeness.agda, Main/",
+   "state": "finished (complete⇒/complete⇐ proved, no assumptions; verified)"
+  },
+  {
+   "id": "C5",
+   "model": "opus",
+   "task": "declarative facts: fv⊆dom, fv-cover, restrict, effects, inversions",
+   "files": "Completeness/Decl.agda, Decl/",
+   "state": "finished"
+  },
+  {
+   "id": "C6",
+   "model": "opus",
+   "task": "base edit (user-approved): select/branch via A-Const, new A-Let + soundness case in Algorithmic.agda; parOrSeq? postulate replaced by proof",
+   "files": "Algorithmic.agda, Context/Join.agda (base), BaseRules-STATUS.md",
+   "state": "finished (A-Let + soundness, select/branch in A-Const, parOrSeq? proved; Safety theorems re-checked OK)"
+  },
+  {
+   "id": "C7",
+   "model": "opus",
+   "task": "red team: search for counterexamples to Complete⇐/⇒, canon-split, alg-weaken, and confirm the LinStruct necessity, on concrete Agda-checked examples",
+   "files": "Completeness/Probe/, Probe-STATUS.md",
+   "state": "finished (WF mobility instance mechanised; A-Ann escape found; probes now regression tests)"
+  },
+  {
+   "id": "C8",
+   "model": "opus",
+   "task": "design+validate in isolation the principled fix for Finding 1: constraint-generating subcontext relation ≼↑Δ with soundness and the transfer lemma; write the base-change spec",
+   "files": "Completeness/Sub.agda, Sub/",
+   "state": "finished (≼↑ with soundness, transfer, round trip; base-change spec validated by probe)"
+  },
+  {
+   "id": "C9",
+   "model": "opus",
+   "task": "helper of C1: canon-core (construction half of the canonical split lemma) against C1's Sep predicates",
+   "files": "Completeness/Split/Construct.agda",
+   "state": "finished (canon-core proved, verified)"
+  },
+  {
+   "id": "C6b",
+   "model": "opus",
+   "task": "base repair (Finding 2): A-Case restricts branches to their own free variables; soundness case adapted; then add the missing let constructor to SolvedTm (+ subTm-solved/subTm-id cases)",
+   "files": "Algorithmic.agda (base)",
+   "state": "finished (A-Case per-branch restriction + SolvedTm let, verified)"
+  },
+  {
+   "id": "C6c",
+   "model": "opus",
+   "task": "base repair (Finding 3): p/s choice in A-LetPair and A-Let mirroring T-LetPair/T-Let; soundness adapted",
+   "files": "Algorithmic.agda (base)",
+   "state": "finished (p/s in A-LetPair/A-Let, soundness adapted, verified)"
+  },
+  {
+   "id": "C10",
+   "model": "opus",
+   "task": "base change (user-approved): constraint-generating subcontext premises in the nine A-rules, definitions moved to Context/SubConstraint.agda, soundness adapted; plus A-Ann restricted to checking forms (ChkForm)",
+   "files": "Algorithmic.agda, Context/SubConstraint.agda (base), Completeness/Sub*.agda",
+   "state": "finished (≼↑ premises in nine rules, A-Ann restricted, SubConstraint.agda, soundness adapted; verified)"
+  },
+  {
+   "id": "C11",
+   "model": "opus",
+   "task": "base edit: SolvedC gains `discard/`select/`branch (+ subConst cases) so the theorem's SolvedTm hypothesis covers those constants",
+   "files": "Algorithmic/Solved.agda (base)",
+   "state": "running"
+  }
+ ],
+ "policy": [
+  "At most 9 agents (user raised the cap; use only where it shortens the critical path).",
+  "Disjoint file ownership; generic lemmas listed in the owner's STATUS.md and imported by others.",
+  "Reuse before proving (Simulation/, Safety/, Context/Domain, GroupOrder, Confine).",
+  "OOM protection: agda-check (2 slots, 11 GB cap) + watchdog; findings broadcast to all agents immediately."
+ ],
+ "issues": [
+  "Completeness needs a linearity hypothesis on the structure (LinStruct): under γ = x ∥ x with linear x the declarative T-AppUnr types f x · g x but A-Var cannot derive ` x ≼ x ∥ x. Stated in Base.agda.",
+  "Agda A-Ann switches from checking to inference without an annotation (the paper's A-Annot needs e : T), so the mechanised 'algorithmic' relation guesses types at that rule.",
+  "GAP (being closed, user approved): select/branch had no algorithmic rule and let had no A-Let; C6 adds them to Algorithmic.agda with the soundness case. A full check of the whole development follows.",
+  "FINDING 2 (C4 + C7 independently): A-Case drops every scrutinee variable from the branch structure (∁ (fv e)), so an unrestricted variable shared by scrutinee and branch is untypable algorithmically (witness Probe/CaseUnr.agda). Repair: per-branch restriction like every other rule; C6 implements it in the base (reversible).",
+  "parOrSeq? in Context/Join.agda was a postulate; it is now a one-line proof (join seq is definitionally ;). No postulates remain outside Simulation/Support/Base.funext.",
+  "C2: the scope invariant needs a GuessIn side condition (A-Const's instance type and A-Ann's guessed type are not determined by premises), and SolvedTm cannot be a hypothesis of scope because it has no constructor for let.",
+  "C3: canon-split's Unr side conditions are not derivable for raw X = fv e; call it with X ∩ dom γ₂ (↓-∩). LinStruct as a Π-type blocks unification (Γ under lookup, γ under count): thread a record LinBox instead. Only A-Abs's mobility constraints move under weakening, direction γ₁ ⇒ γ₂.",
+  "Decision memo for the team: Completeness/DECISION-mobility.md (counterexample, proposed constraint-generating subcontext judgment, alternatives, other paper-relevant changes).",
+  "C1: the canonical split lemma is TRUE as stated; the ;-node case needs a mobility witness, obtained by strengthening before-mono-≼ to return `before u v α ⊎ (Mobile u ⊎ Mobile v)`. Signature deviation: X, Y explicit; LinStruct arguments explicit (Π-type blocks inference).",
+  "C5: `_≤ϵ_` has no fixity in Types/Syntax.agda (defaults tighter than `_⊔ϵ_`), so `ϵ₁ ⊔ϵ ϵ₂ ≤ϵ ϵ` misparses; parenthesise or add `infix 4 _≤ϵ_`. `restrict` for T-Abs needs fv-cover because an unused bound variable must be unrestricted.",
+  "Full-development check: the 13 modules of the OLD Simulation/Backward tree (untyped-target development, on hold since July, still has holes) fail at HEAD already: ReverseInv.agda imports chanCx-⸴* from Reduction.Base, which never defined it (the lemma is private to ForwardSoup/Local.agda). Unrelated to today's edits (ReverseInv imports neither Join nor Algorithmic). Everything else green so far.",
+  "FINDING 3 (C7, genuine, Agda and paper): A-LetPair hard-wires `;` between the pair components and the rest of the context; T-LetPair allows par. Witness Probe/LetPairPar.agda (¬ Complete⇐ against the current base). Repair: p/s in A-LetPair and A-Let (C6c). C7 could not break the canonical split lemma, restriction monotonicity, or C8's ≼↑ fix.",
+  "FINDING 1 resolved by decision (user + supervisor, 2026-09-08): the subcontext premises of the algorithmic rules become constraint-generating (Mobile ⟨Acq ; α⟩ = Bounded α emitted as a constraint, validated after solving). The first memo instance was malformed (Acq in the middle; the paper's formation rules never admit Acq/Drop); the well-formed rsplit instance (Probe/MobUvarWF.agda, C7) is the deciding witness. Agda's ⊢ allows acq/ret anywhere and typing never checks annotations: recorded as a discrepancy, not changed (would ripple through T-Abs into every preservation/simulation proof).",
+  "C7: Agda's A-Ann (⇐→⇒ with no annotation) lets the mechanised relation re-type any subterm at a solved type, an escape the paper's A-Annot does not have; the mechanised relation was strictly more permissive than the paper's algorithm. Fix (in C10's base change): A-Ann only on checking forms ƛ/μ/⊗/inj, the positions where the paper needs an annotation.",
+  "C4 design notes: induction on the TERM (T-Conv/T-Weaken absorbed by inversion), inference proved and checking derived via A-Check, algorithmic context only APPROXIMATES the declarative one (subTy (Γ̂ ﹫ x) σ₀ ≃ Γ ﹫ x), substitution threaded not merged (C2's merge and C3's alg-weaken ended up unused by the final proof), scope facts are outputs of the induction. SolvedC lacked `discard/`select/`branch (C11 fixes)."
+ ]
+}

@@ -199,6 +199,9 @@ data SolvedC : Const → Set where
   `new  : SolvedTy s → SolvedC (`new s)
   `lsplit : SolvedTy s → SolvedC (`lsplit s)
   `rsplit : SolvedTy s → SolvedC (`rsplit s)
+  `discard : SolvedC `discard
+  `select : ∀ {k} → SolvedC (`select k)
+  `branch : SolvedC `branch
 
 data SolvedTm {n} : Tm n → Set where
   `_ : (x : 𝔽 n) → SolvedTm (` x)
@@ -208,10 +211,10 @@ data SolvedTm {n} : Tm n → Set where
   _·_ : {e₁ e₂ : Tm n} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (e₁ ·⟨ d ⟩ e₂)
   _;_ : {e₁ e₂ : Tm n} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (e₁ ; e₂)
   _⊗_ : {e₁ e₂ : Tm n} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (e₁ ⊗ e₂)
+  `let_`in_ : {e₁ : Tm n} {e₂ : Tm (1 + n)} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (`let e₁ `in e₂)
   `let⊗_`in_ : {e₁ : Tm n} {e₂ : Tm (2 + n)} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (`let⊗ e₁ `in e₂)
   `inj : {i : Side} {e : Tm n} → SolvedTm e → SolvedTm (`inj i e)
   `case_`of⟨_;_⟩ : {e : Tm n} {e₁ e₂ : Tm (1 + n)} → SolvedTm e → SolvedTm e₁ → SolvedTm e₂ → SolvedTm `case e `of⟨ e₁ ; e₂ ⟩
-  -- `let_`in_ : (e₁ : Tm n) (e₂ : Tm (1 + n)) → Tm n
 
 subConst : Const → UV.Sub → Const
 subConst `unit σ = `unit
@@ -239,6 +242,9 @@ subConst-solved `end = `end
 subConst-solved {σ} (`new s) rewrite subTy-id s {σ} = `new s
 subConst-solved {σ} (`lsplit s) rewrite subTy-id s {σ} = `lsplit s
 subConst-solved {σ} (`rsplit s) rewrite subTy-id s {σ} = `rsplit s
+subConst-solved `discard = `discard
+subConst-solved `select = `select
+subConst-solved `branch = `branch
 
 subConst-id : {c : Const} → SolvedC c → subConst c σ ≡ c
 subConst-id `unit = refl
@@ -251,6 +257,9 @@ subConst-id `end = refl
 subConst-id (`new s) = cong `new (subTy-id s)
 subConst-id (`lsplit s) = cong `lsplit (subTy-id s)
 subConst-id (`rsplit s) = cong `rsplit (subTy-id s)
+subConst-id `discard = refl
+subConst-id `select = refl
+subConst-id `branch = refl
 
 subConst-⊢ : ∀ {c} → ⊢ c ∶ T → ⊢ subConst c σ ∶ subTy T σ
 subConst-⊢ `unit = `unit
@@ -294,6 +303,7 @@ subTm-solved (μ e) = μ (subTm-solved e)
 subTm-solved (e · e₁) = subTm-solved e · subTm-solved e₁
 subTm-solved (e ; e₁) = subTm-solved e ; subTm-solved e₁
 subTm-solved (e ⊗ e₁) = subTm-solved e ⊗ subTm-solved e₁
+subTm-solved (`let e `in e₁) = `let subTm-solved e `in subTm-solved e₁
 subTm-solved (`let⊗ e `in e₁) = `let⊗ subTm-solved e `in subTm-solved e₁
 subTm-solved (`inj e) = `inj (subTm-solved e)
 subTm-solved `case e `of⟨ e₁ ; e₂ ⟩ = `case subTm-solved e `of⟨ subTm-solved e₁ ; subTm-solved e₂ ⟩
@@ -306,6 +316,7 @@ subTm-id (μ e) = cong μ (subTm-id e)
 subTm-id (e · e₁) = cong₂ _·⟨ _ ⟩_ (subTm-id e) (subTm-id e₁)
 subTm-id (e ; e₁) = cong₂ _;_ (subTm-id e) (subTm-id e₁)
 subTm-id (e ⊗ e₁) = cong₂ _⊗_ (subTm-id e) (subTm-id e₁)
+subTm-id (`let e `in e₁) = cong₂ `let_`in_ (subTm-id e) (subTm-id e₁)
 subTm-id (`let⊗ e `in e₁) = cong₂ `let⊗_`in_ (subTm-id e) (subTm-id e₁)
 subTm-id (`inj e) = cong (`inj _) (subTm-id e)
 subTm-id {σ = σ} `case e `of⟨ e₁ ; e₂ ⟩ rewrite subTm-id {σ = σ} e = cong₂ `case _ `of⟨_;_⟩ (subTm-id e₁) (subTm-id e₂)

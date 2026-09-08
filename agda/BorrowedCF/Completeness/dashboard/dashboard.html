@@ -1,0 +1,1952 @@
+<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="20">
+<title>Algorithmic completeness dashboard</title>
+<style>body{font-family:system-ui,sans-serif;margin:24px;background:#fafafa;color:#222}
+table{border-collapse:collapse;width:100%;margin-bottom:24px;background:#fff} th,td{border:1px solid #ddd;padding:6px 10px;text-align:left;vertical-align:top;font-size:14px}
+th{background:#eee} h1{margin-bottom:4px} .meta{color:#666;font-size:13px} li{margin-bottom:6px}
+.bar{height:14px;background:#ddd;border-radius:7px;overflow:hidden;width:320px;display:inline-block;vertical-align:middle}
+.bar div{height:100%;background:#2e7d32}</style></head><body>
+<h1>Algorithmic typing completeness</h1>
+<div class="meta">state.json updated 2026-09-08 22:15 (C4 finished: completeness PROVED, verified by orchestrator; C11 closes the SolvedC gap) · page generated 2026-09-08 21:59:51 · auto-refresh 20s</div>
+<p>Lemmas done: 12/12 <span class="bar"><div style="width:100%"></div></span></p>
+<h2>Theorems</h2><table><tr><th>name</th><th>module</th><th>status</th><th>note</th></tr><tr><td>complete⇐ : Complete⇐</td><td>Completeness.agda / Completeness/Main.agda</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">DONE (verified): complete⇐ : Complete⇐ in Completeness.agda, zero goals, no postulates, no assumptions</span></td><td>SolvedCtx Γ → SolvedTm e → SolvedTy T → LinStruct Γ γ → Γ ; γ ⊢ e ∶ T ∣ ϵ → ∀ m → ∃ ϵ′ Δ k σ. Solving σ × SolvedΔ Δ σ × ϵ′ ≤ϵ ϵ × Γ ; γ / m ⊢ e ⇐ T ∣ ϵ′ ↑ Δ / k</td></tr><tr><td>complete⇒ : Complete⇒</td><td>Completeness.agda</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">DONE (verified): complete⇒ : Complete⇒ in Completeness.agda</span></td><td>same with an inferred T̂ and subTy T̂ σ ≃ T</td></tr></table>
+<h2>Lemmas</h2><table><tr><th>name</th><th>module</th><th>status</th><th>agent</th></tr><tr><td>LinStruct lemmas (lin-≼, lin-↓, lin-join⁻, lin-bind)</td><td>Completeness/Split.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>C1</td></tr><tr><td>↓-mono-⊆, unr-absorb</td><td>Completeness/Split.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>C1</td></tr><tr><td>canon-split (canonical restriction split of an admissible split)</td><td>Completeness/Split.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>C1</td></tr><tr><td>canon-core (construction half of the canonical split, from Sep predicates)</td><td>Completeness/Split/Construct.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>C9</td></tr><tr><td>UVarsIn, scope (uvars of outputs lie in [m,n))</td><td>Completeness/Scope.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>C2</td></tr><tr><td>merge / single substitutions, solvedΔ-merge, subTy-agree</td><td>Completeness/Scope.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>C2</td></tr><tr><td>alg-weaken (algorithmic typing closed under ≼ on linear structures)</td><td>Completeness/Weaken.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>C3</td></tr><tr><td>fv⊆dom, fv-cover, restrict, restrict-≼</td><td>Completeness/Decl.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>C5</td></tr><tr><td>effect / Seq⇒Pure / EffCompat bridges, Solved inversions</td><td>Completeness/Decl.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>C5</td></tr><tr><td>main induction (parametrised) + instantiation</td><td>Completeness/Main.agda, Completeness.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>C4</td></tr><tr><td>red-team probes (counterexample search)</td><td>Completeness/Probe/</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>C7</td></tr><tr><td>≼↑ (constraint-generating subcontext): ≼↑-sound, ≼↑-complete, ≼⇒≼↑/≼↑-erase, base-change probe</td><td>Completeness/Sub.agda, Sub/Probe.agda</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">done</span></td><td>C8</td></tr></table>
+<h2>Agents</h2><table><tr><th>id</th><th>model</th><th>task</th><th>files</th><th>state</th></tr><tr><td>C1</td><td>opus</td><td>structure algebra: LinStruct, restriction monotonicity, unrestricted absorption, canonical split lemma</td><td>Completeness/Split.agda, Split/</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (canon-split proved, toolkit verified)</span></td></tr><tr><td>C2</td><td>opus</td><td>unification-variable scope invariant, substitution merge/single/agreement</td><td>Completeness/Scope.agda, Scope/</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (re-verified after the ≼↑ base change)</span></td></tr><tr><td>C3</td><td>opus</td><td>algorithmic weakening (parametrised over C1)</td><td>Completeness/Weaken.agda, Weaken/</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (alg-weaken restated over Γ̂ with Approx, verified)</span></td></tr><tr><td>C4</td><td>opus</td><td>main completeness induction (parametrised over C1/C2/C3/C5), instantiation</td><td>Completeness/Main.agda, Completeness.agda, Main/</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (complete⇒/complete⇐ proved, no assumptions; verified)</span></td></tr><tr><td>C5</td><td>opus</td><td>declarative facts: fv⊆dom, fv-cover, restrict, effects, inversions</td><td>Completeness/Decl.agda, Decl/</td><td><span style="background:#2e7d32;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished</span></td></tr><tr><td>C6</td><td>opus</td><td>base edit (user-approved): select/branch via A-Const, new A-Let + soundness case in Algorithmic.agda; parOrSeq? postulate replaced by proof</td><td>Algorithmic.agda, Context/Join.agda (base), BaseRules-STATUS.md</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (A-Let + soundness, select/branch in A-Const, parOrSeq? proved; Safety theorems re-checked OK)</span></td></tr><tr><td>C7</td><td>opus</td><td>red team: search for counterexamples to Complete⇐/⇒, canon-split, alg-weaken, and confirm the LinStruct necessity, on concrete Agda-checked examples</td><td>Completeness/Probe/, Probe-STATUS.md</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (WF mobility instance mechanised; A-Ann escape found; probes now regression tests)</span></td></tr><tr><td>C8</td><td>opus</td><td>design+validate in isolation the principled fix for Finding 1: constraint-generating subcontext relation ≼↑Δ with soundness and the transfer lemma; write the base-change spec</td><td>Completeness/Sub.agda, Sub/</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (≼↑ with soundness, transfer, round trip; base-change spec validated by probe)</span></td></tr><tr><td>C9</td><td>opus</td><td>helper of C1: canon-core (construction half of the canonical split lemma) against C1&#x27;s Sep predicates</td><td>Completeness/Split/Construct.agda</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (canon-core proved, verified)</span></td></tr><tr><td>C6b</td><td>opus</td><td>base repair (Finding 2): A-Case restricts branches to their own free variables; soundness case adapted; then add the missing let constructor to SolvedTm (+ subTm-solved/subTm-id cases)</td><td>Algorithmic.agda (base)</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (A-Case per-branch restriction + SolvedTm let, verified)</span></td></tr><tr><td>C6c</td><td>opus</td><td>base repair (Finding 3): p/s choice in A-LetPair and A-Let mirroring T-LetPair/T-Let; soundness adapted</td><td>Algorithmic.agda (base)</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (p/s in A-LetPair/A-Let, soundness adapted, verified)</span></td></tr><tr><td>C10</td><td>opus</td><td>base change (user-approved): constraint-generating subcontext premises in the nine A-rules, definitions moved to Context/SubConstraint.agda, soundness adapted; plus A-Ann restricted to checking forms (ChkForm)</td><td>Algorithmic.agda, Context/SubConstraint.agda (base), Completeness/Sub*.agda</td><td><span style="background:#607d8b;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">finished (≼↑ premises in nine rules, A-Ann restricted, SubConstraint.agda, soundness adapted; verified)</span></td></tr><tr><td>C11</td><td>opus</td><td>base edit: SolvedC gains `discard/`select/`branch (+ subConst cases) so the theorem&#x27;s SolvedTm hypothesis covers those constants</td><td>Algorithmic/Solved.agda (base)</td><td><span style="background:#1565c0;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">running</span></td></tr></table>
+<h2>Policy</h2><ul><li>At most 9 agents (user raised the cap; use only where it shortens the critical path).</li><li>Disjoint file ownership; generic lemmas listed in the owner&#x27;s STATUS.md and imported by others.</li><li>Reuse before proving (Simulation/, Safety/, Context/Domain, GroupOrder, Confine).</li><li>OOM protection: agda-check (2 slots, 11 GB cap) + watchdog; findings broadcast to all agents immediately.</li></ul>
+<h2>Issues found (paper / development)</h2><ul><li>Completeness needs a linearity hypothesis on the structure (LinStruct): under γ = x ∥ x with linear x the declarative T-AppUnr types f x · g x but A-Var cannot derive ` x ≼ x ∥ x. Stated in Base.agda.</li><li>Agda A-Ann switches from checking to inference without an annotation (the paper&#x27;s A-Annot needs e : T), so the mechanised &#x27;algorithmic&#x27; relation guesses types at that rule.</li><li>GAP (being closed, user approved): select/branch had no algorithmic rule and let had no A-Let; C6 adds them to Algorithmic.agda with the soundness case. A full check of the whole development follows.</li><li>FINDING 2 (C4 + C7 independently): A-Case drops every scrutinee variable from the branch structure (∁ (fv e)), so an unrestricted variable shared by scrutinee and branch is untypable algorithmically (witness Probe/CaseUnr.agda). Repair: per-branch restriction like every other rule; C6 implements it in the base (reversible).</li><li>parOrSeq? in Context/Join.agda was a postulate; it is now a one-line proof (join seq is definitionally ;). No postulates remain outside Simulation/Support/Base.funext.</li><li>C2: the scope invariant needs a GuessIn side condition (A-Const&#x27;s instance type and A-Ann&#x27;s guessed type are not determined by premises), and SolvedTm cannot be a hypothesis of scope because it has no constructor for let.</li><li>C3: canon-split&#x27;s Unr side conditions are not derivable for raw X = fv e; call it with X ∩ dom γ₂ (↓-∩). LinStruct as a Π-type blocks unification (Γ under lookup, γ under count): thread a record LinBox instead. Only A-Abs&#x27;s mobility constraints move under weakening, direction γ₁ ⇒ γ₂.</li><li>Decision memo for the team: Completeness/DECISION-mobility.md (counterexample, proposed constraint-generating subcontext judgment, alternatives, other paper-relevant changes).</li><li>C1: the canonical split lemma is TRUE as stated; the ;-node case needs a mobility witness, obtained by strengthening before-mono-≼ to return `before u v α ⊎ (Mobile u ⊎ Mobile v)`. Signature deviation: X, Y explicit; LinStruct arguments explicit (Π-type blocks inference).</li><li>C5: `_≤ϵ_` has no fixity in Types/Syntax.agda (defaults tighter than `_⊔ϵ_`), so `ϵ₁ ⊔ϵ ϵ₂ ≤ϵ ϵ` misparses; parenthesise or add `infix 4 _≤ϵ_`. `restrict` for T-Abs needs fv-cover because an unused bound variable must be unrestricted.</li><li>Full-development check: the 13 modules of the OLD Simulation/Backward tree (untyped-target development, on hold since July, still has holes) fail at HEAD already: ReverseInv.agda imports chanCx-⸴* from Reduction.Base, which never defined it (the lemma is private to ForwardSoup/Local.agda). Unrelated to today&#x27;s edits (ReverseInv imports neither Join nor Algorithmic). Everything else green so far.</li><li>FINDING 3 (C7, genuine, Agda and paper): A-LetPair hard-wires `;` between the pair components and the rest of the context; T-LetPair allows par. Witness Probe/LetPairPar.agda (¬ Complete⇐ against the current base). Repair: p/s in A-LetPair and A-Let (C6c). C7 could not break the canonical split lemma, restriction monotonicity, or C8&#x27;s ≼↑ fix.</li><li>FINDING 1 resolved by decision (user + supervisor, 2026-09-08): the subcontext premises of the algorithmic rules become constraint-generating (Mobile ⟨Acq ; α⟩ = Bounded α emitted as a constraint, validated after solving). The first memo instance was malformed (Acq in the middle; the paper&#x27;s formation rules never admit Acq/Drop); the well-formed rsplit instance (Probe/MobUvarWF.agda, C7) is the deciding witness. Agda&#x27;s ⊢ allows acq/ret anywhere and typing never checks annotations: recorded as a discrepancy, not changed (would ripple through T-Abs into every preservation/simulation proof).</li><li>C7: Agda&#x27;s A-Ann (⇐→⇒ with no annotation) lets the mechanised relation re-type any subterm at a solved type, an escape the paper&#x27;s A-Annot does not have; the mechanised relation was strictly more permissive than the paper&#x27;s algorithm. Fix (in C10&#x27;s base change): A-Ann only on checking forms ƛ/μ/⊗/inj, the positions where the paper needs an annotation.</li><li>C4 design notes: induction on the TERM (T-Conv/T-Weaken absorbed by inversion), inference proved and checking derived via A-Check, algorithmic context only APPROXIMATES the declarative one (subTy (Γ̂ ﹫ x) σ₀ ≃ Γ ﹫ x), substitution threaded not merged (C2&#x27;s merge and C3&#x27;s alg-weaken ended up unused by the final proof), scope facts are outputs of the induction. SolvedC lacked `discard/`select/`branch (C11 fixes).</li></ul>
+<h2>Memory watchdog log</h2><pre style="background:#fff;border:1px solid #ddd;padding:8px;font-size:13px">2026-09-08 17:42:20 avail=2138MB KILLED agda pid=15866 rss=21715MB cmd: 15866 22236324 agda BorrowedCF/Safety/Progress/Redex/Handles.agda
+2026-09-08 17:47:22 avail=1604MB KILLED agda pid=25345 rss=13271MB cmd: 25345 13590436 agda BorrowedCF/Safety/Progress/Main/TmpCheck.agda
+2026-09-08 17:48:03 avail=1828MB KILLED agda pid=25748 rss=22060MB cmd: 25748 22590084 agda BorrowedCF/Safety/Progress/Redex/Handles.agda
+2026-09-08 17:49:29 avail=1878MB KILLED agda pid=29014 rss=11650MB cmd: 29014 11929744 agda BorrowedCF/Safety/Progress/Main/TmpCheck.agda
+2026-09-08 17:51:41 avail=1696MB KILLED agda pid=31865 rss=23164MB cmd: 31865 23720920 agda BorrowedCF/Safety/Progress/Main/TmpCheck.agda
+2026-09-08 21:44:53 orchestrator KILLED agda Bind/Case.agda (C4) at ~11.5 GB: with-abstraction blow-up; agent told
+2026-09-08 21:49:37 orchestrator KILLED agda Bind/Case.agda (C4) again at ~11.5 GB: let-tuple destructuring of IH packages; agent told
+</pre>
+<h2>Agent self-reports (STATUS.md files, unverified, refreshed automatically)</h2><h3>BaseRules-STATUS.md <span class=meta>(modified 21:59:14)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># C6 — base-rule extensions (Algorithmic.agda, Context/Join.agda)
+
+Status: DONE (2026-09-08). Both base files type-check, with no new postulates and no holes.
+
+## Task 1a — `select`/`branch` are algorithmic constants
+`¬AlgConst` now has two constructors only:
+
+    data ¬AlgConst : Const → Set where
+      `lsplit : ¬AlgConst (`lsplit s)
+      `rsplit : ¬AlgConst (`rsplit s)
+
+`algConst?` returns `inj₁ λ()` for `` `select x `` and `` `branch ``.
+`sound (A-Const ≤γ Ac ⊢c)` is unchanged (it only uses `subConst-⊢`), so
+`K (`select i)` and `K `branch` are now inferred by A-Const from the declarative
+constant typing. Justification: A-Const already covers `send`/`recv`/`acq`/`new`/`end`,
+whose constant types are equally non-deterministic. Only `lsplit`/`rsplit` need the
+dedicated A-LSplit/A-RSplit rules that invent a fresh unification variable for the
+second component of the split. done
+
+## Task 1b — A-Let (new rule, right after A-LetPair)
+
+    A-Let :
+      let open Fin.Patterns in
+      let γ₁ = γ ∣fv[ e₁ ] in
+      let γ₂ = γ ↓ fvClose (fv e₂) in
+      (≤γ : Γ ∶ γ₁ ; γ₂ ≼ γ) →
+      Γ ; γ₁ / m ⊢ e₁ ⇒ T ∣ ϵ₁ ↑ Δ₁ / m′ →
+      T ⸴ Γ ; ((` 0F) ; 𝐂.wk γ₂) / m′ ⊢ e₂ ⇒ U ∣ ϵ₂ ↑ Δ₂ / n →
+      -----------------------------------------------------------
+      Γ ; γ / m ⊢ `let e₁ `in e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₁ ++ Δ₂ / n
+
+(all `;` in the rule are U+037E, not ASCII). done
+
+## Task 1c — soundness case for A-Let
+
+    sound (A-Let {T = T} {Δ₁ = Δ₁} ≤γ x y) SΓ SΔ =
+      let p/s , join≼ = parOrSeq? ≤γ in
+      T-Weaken (≼-map⁺ subTy-unr subTy-mobile join≼)
+               (T-Let p/s (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ SΔ)))
+                          (T-Weaken (;-≼-join p/s) (T-Conv ≃-refl (x≤y⊔x _ _)
+                            (sound y (solved-⸴ (subTy-solved T Sσ) SΓ) (All.++⁻ʳ Δ₁ SΔ)
+                              ⊢≗ λ _ → refl))))
+
+Went through exactly as given (the `;-≼-join p/s : Γ ∶ α ; β ≼ join p/s α β` bridges
+`(` 0F) ; 𝐂.wk γ₂` to `join p/s (` zero) (𝐂.wk γ₂)`). done
+
+## Task 2 — `parOrSeq?` is no longer a postulate (Context/Join.agda, end of file)
+
+    parOrSeq? : Γ ∶ α ; β ≼ γ → Σ[ p/s ∈ ParSeq ] Γ ∶ join p/s α β ≼ γ
+    parOrSeq? ≤γ = seq , ≤γ
+
+`joinDir` for ParSeq is `biasedDir`, `biasedDir seq = L`, and `join` with `joinDir a = L`
+is `_;_`, so `join seq α β` reduces to `α ; β` definitionally and the postulate was
+trivially provable. done
+
+## Checks run (agda-check, one at a time)
+- BorrowedCF/Context/Join.agda — OK
+- BorrowedCF/Algorithmic.agda — OK, zero goals, no postulate (the only `postulate` in the
+  file is the commented-out `fv-wk` block, untouched)
+- BorrowedCF/Completeness/Base.agda — OK
+- BorrowedCF/Completeness/Weaken/Support.agda — OK (second importer of Algorithmic)
+- BorrowedCF/Safety/Preservation.agda — OK (5m21s)
+- BorrowedCF/Safety/Progress.agda — OK (6m12s)
+
+Importers of `BorrowedCF.Algorithmic`: Completeness/Base.agda, Completeness/Weaken/Support.agda
+(only these two). `Context.Join` is re-exported by `BorrowedCF.Context`, hence pulled in by
+almost everything, so the two Safety top modules cover it.
+
+---
+
+# C6b — A-Case repair + `SolvedTm` let-constructor (Algorithmic.agda, Algorithmic/Solved.agda)
+
+Status: DONE (2026-09-08). Both files type-check, zero goals, no new postulates.
+
+## Task 1 — A-Case restricted the branches to the COMPLEMENT of the scrutinee
+
+Old premise set (incomplete, refuted by `Completeness/Probe/CaseUnr.agda`): the branch
+structure was `join p/s (` 0F) (𝐂.wk (γ ↓ ∁ (fv e)))`, so every variable of the scrutinee
+was deleted from the branch structure. The declarative `T-Case` splits `γ` into `γ₁`
+(scrutinee) and `γ₂` (both branches) and `T-Weaken` lets the two share an unrestricted
+variable (`∥′-dup`), so a `u : `⊤` free in the scrutinee and in a branch had no algorithmic
+derivation.
+
+New rule (`;` and `⸴` are the U+037E / U+2E34 characters of the development):
+
+    A-Case : (p/s : ParSeq) →
+      let γ₂ = γ ↓ (fvClose (fv e₁) ∪ fvClose (fv e₂)) in
+      (≤γ : Γ ∶ join p/s (γ ∣fv[ e ]) γ₂ ≼ γ) →
+      ∀ {ϵ ϵ₁ ϵ₂ T₁ T₂ Δ Δ₁ Δ₂} →
+      Γ ; γ ∣fv[ e ] / m ⊢ e ⇒ T₁ ⊕ T₂ ∣ ϵ ↑ Δ / m₁ →
+      T₁ ⸴ Γ ; join p/s (` zero) (𝐂.wk γ₂) / m₁ ⊢ e₁ ⇒ U₁ ∣ ϵ₁ ↑ Δ₁ / m₂ →
+      T₂ ⸴ Γ ; join p/s (` zero) (𝐂.wk γ₂) / m₂ ⊢ e₂ ⇒ U₂ ∣ ϵ₂ ↑ Δ₂ / n  →
+      ---------------------------------------------------------------------------------------
+      Γ ; γ / m ⊢ `case e `of⟨ e₁ ; e₂ ⟩ ⇒ U₁ ∣ ϵ ⊔ϵ ϵ₁ ⊔ϵ ϵ₂ ↑ C-Eq U₁ U₂ ∷ Δ ++ Δ₁ ++ Δ₂ / n
+
+The branch structure is now the restriction of `γ` to the branches&#x27; OWN free variables,
+which is the same convention as A-App / A-Seq / A-LetPair / A-Let / A-Pair. The split
+premise is the `≼` itself, not a `JoinParSeq`; this is `A-Case-gen` of Main-STATUS.md
+FINDING 2 with `γ′` instantiated to `γ ↓ (fvClose (fv e₁) ∪ fvClose (fv e₂))`. The old rule
+is subsumed: the two sets `fv e` and `fvClose (fv e₁) ∪ fvClose (fv e₂)` may overlap, and
+they need not cover `γ` (leftover variables are absorbed by `≼`). Arity and argument order
+are unchanged (`A-Case p/s ≤γ x y₁ y₂`), so pattern matches keep working.
+
+`JoinParSeq` and `join-joinParSeq` are LEFT IN PLACE (unused by the rule now, still exported
+and used by `Completeness/Weaken.agda`). Nothing else in Algorithmic.agda changed.
+
+## Task 1b — soundness case for A-Case
+
+Only the binder name and the weakening argument changed; with the explicit premise the
+T-Weaken step is direct:
+
+    sound {Γ = Γ} {γ} (A-Case {e} {e₁} {e₂} p/s ≤γ {ϵ} {ϵ₁} {ϵ₂} {T₁} {T₂} {Δ} {Δ₁} {Δ₂} x y₁ y₂) SΓ (U≃ ∷ SΔ)
+      using SΔ₁ , SΔ₂ ← All.++⁻ Δ₁ (All.++⁻ʳ Δ SΔ)
+      using x′  ← sound x SΓ (All.++⁻ˡ Δ SΔ)
+      using y₁′ ← sound y₁ (solved-⸴ (subTy-solved T₁ Sσ) SΓ) SΔ₁ ⊢≗ λ _ → refl
+      using y₂′ ← sound y₂ (solved-⸴ (subTy-solved T₂ Sσ) SΓ) SΔ₂ ⊢≗ λ _ → refl
+      =
+      T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ) $
+        T-Case p/s
+          (T-Conv ≃-refl (x≤y⇒x≤y⊔z ϵ₂ (x≤x⊔y ϵ ϵ₁)) x′)
+          (T-Conv ≃-refl (x≤y⇒x≤y⊔z ϵ₂ (x≤y⊔x ϵ ϵ₁)) y₁′)
+          (T-Conv (≃-sym U≃) (x≤y⊔x _ ϵ₂) y₂′)
+
+was `T-Weaken (≼-map⁺ subTy-unr subTy-mobile (join-joinParSeq j-p/s))`. The `T-Case` of
+Terms/Base.agda concludes in `join p/s γ₁ γ₂`, which is exactly the left-hand side of the
+new premise, so soundness needs no bridging lemma. done
+
+## Task 2 — `SolvedTm` had no `let` constructor (Algorithmic/Solved.agda)
+
+`data SolvedTm` covered every term former except `` `let_`in_ `` (a commented-out remnant
+sat where the constructor belongs), so `SolvedTm e` was uninhabited for every let-term and
+the completeness hypothesis silently excluded them. Added, in Tm-constructor order right
+before the `let⊗` line:
+
+    `let_`in_ : {e₁ : Tm n} {e₂ : Tm (1 + n)} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (`let e₁ `in e₂)
+
+plus the two mirrored cases
+
+    subTm-solved (`let e `in e₁) = `let subTm-solved e `in subTm-solved e₁
+    subTm-id (`let e `in e₁) = cong₂ `let_`in_ (subTm-id e) (subTm-id e₁)
+
+and deleted the stale comment `-- `let_`in_ : (e₁ : Tm n) (e₂ : Tm (1 + n)) → Tm n`.
+Nothing else in Solved.agda changed. done
+
+## Checks run (agda-check, one at a time, all OK)
+- BorrowedCF/Algorithmic.agda — OK (zero goals, only postulate is the commented-out `fv-wk`)
+- BorrowedCF/Algorithmic/Solved.agda — OK
+- BorrowedCF/Completeness/Base.agda — OK
+- BorrowedCF/Completeness/Weaken/Support.agda — OK
+- BorrowedCF/Completeness/Scope.agda — OK (pattern `A-Case p/s j d d₁ d₂` unaffected)
+- BorrowedCF/Completeness/Weaken.agda — OK (its A-Case case now passes `≤γ` straight to
+  `split-weaken-ps`; `mkJoinParSeq` is no longer needed there)
+
+Importers of `BorrowedCF.Algorithmic` are more than the two recorded above: also
+Completeness/Decl/Eff.agda, Completeness/Main/Base.agda, Completeness/Scope.agda,
+Completeness/Scope/Merge.agda, Completeness/Scope/Smoke.agda, Completeness/Weaken.agda and
+the two Probe modules. Probe/CaseUnr.agda is now STALE by construction: its `no-alg` matches
+`A-Case par _ _ d₁ _` and derives `⊥` from the old branch structure, which the repair
+removes. Checking it now fails with
+
+    Probe/CaseUnr.agda:90.45-47: error: [UnequalTerms]
+    (` 1F) != [] of type (Struct 2)
+    when checking that the expression d₁ has type
+    T₁ ⸴ Γ₀ ; (` 0F) ∥ [] / _ ⊢[ _ ] ` 1F ∶ _ ∣ _ ↑ _ / _
+
+i.e. the branch structure is now `(` 0F) ∥ (` 1F)` and the shared unrestricted variable
+survives, exactly as intended. The completeness agents C2/C3/C4 should target the new rule.
+
+## C6c — A-LetPair and A-Let take a `p/s : ParSeq` (2026-09-08)
+
+Fixes agent C7&#x27;s open counterexample `Probe/LetPairPar.agda`. Both rules hard-wired a
+sequential link between the bound components and the rest of the context, so a body that
+uses an outer variable before a component had no algorithmic derivation while T-LetPair
+with `p/s = par` typed it. Only `agda/BorrowedCF/Algorithmic.agda` changed, in six lines of
+the rule block and in the two `sound` cases.
+
+`p/s` is explicit and FIRST, like A-Case and A-Pair. The `≼` premise moved from
+`γ₁ ; γ₂ ≼ γ` to `join p/s γ₁ γ₂ ≼ γ`, which is the exact left-hand side of the
+declarative conclusion `Γ ; join p/s γ₁ γ₂ ⊢ ...`.
+
+### Final rule texts (Algorithmic.agda, lines 194-212)
+
+    A-LetPair : (p/s : ParSeq) →
+      let open Fin.Patterns in
+      let γ₁ = γ ∣fv[ e₁ ] in
+      let γ₂ = γ ↓ fvClose* 2 (fv e₂) in
+      (≤γ : Γ ∶ join p/s γ₁ γ₂ ≼ γ) →
+      Γ ; γ₁ / m ⊢ e₁ ⇒ T₁ ⊗⟨ d ⟩ T₂ ∣ ϵ₁ ↑ Δ₁ / m′ →
+      T₁ ⸴ T₂ ⸴ Γ ; join p/s (join d (` 0F) (` 1F)) (𝐂.wk (𝐂.wk γ₂)) / m′ ⊢ e₂ ⇒ U ∣ ϵ₂ ↑ Δ₂ / n →
+      -----------------------------------------------------------------------------------
+      Γ ; γ / m ⊢ `let⊗ e₁ `in e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₁ ++ Δ₂ / n
+
+    A-Let : (p/s : ParSeq) →
+      let open Fin.Patterns in
+      let γ₁ = γ ∣fv[ e₁ ] in
+      let γ₂ = γ ↓ fvClose (fv e₂) in
+      (≤γ : Γ ∶ join p/s γ₁ γ₂ ≼ γ) →
+      Γ ; γ₁ / m ⊢ e₁ ⇒ T ∣ ϵ₁ ↑ Δ₁ / m′ →
+      T ⸴ Γ ; join p/s (` 0F) (𝐂.wk γ₂) / m′ ⊢ e₂ ⇒ U ∣ ϵ₂ ↑ Δ₂ / n →
+      -----------------------------------------------------------
+      Γ ; γ / m ⊢ `let e₁ `in e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₁ ++ Δ₂ / n
+
+(the `;` above stands for the U+037E semicolon of the judgment.)
+
+### Changed soundness cases (Algorithmic.agda, lines 327-338)
+
+Neither case needs `parOrSeq?` or `;-≼-join` any more. The rule&#x27;s own `p/s` goes straight
+into `T-LetPair` / `T-Let`, the premise `≤γ` is the T-Weaken witness, and the body
+derivation keeps its `⊢≗ λ _ → refl` for the context mapping.
+
+    sound (A-LetPair {T₁ = T₁} {T₂ = T₂} {Δ₁ = Δ₁} p/s ≤γ x y) SΓ SΔ =
+      T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
+               (T-LetPair p/s (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ SΔ)))
+                              (T-Conv ≃-refl (x≤y⊔x _ _)
+                                (sound y (solved-⸴ (subTy-solved T₁ Sσ) (solved-⸴ (subTy-solved T₂ Sσ) SΓ)) (All.++⁻ʳ Δ₁ SΔ)
+                                  ⊢≗ λ _ → refl)))
+    sound (A-Let {T = T} {Δ₁ = Δ₁} p/s ≤γ x y) SΓ SΔ =
+      T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ)
+               (T-Let p/s (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ SΔ)))
+                          (T-Conv ≃-refl (x≤y⊔x _ _)
+                            (sound y (solved-⸴ (subTy-solved T Sσ) SΓ) (All.++⁻ʳ Δ₁ SΔ)
+                              ⊢≗ λ _ → refl)))
+
+### Checks (agda-check, one at a time)
+
+- BorrowedCF/Algorithmic.agda — OK, zero goals, no new postulate (the only `postulate`
+  keyword in the file is inside the commented-out `fv-wk` block at line 75).
+- BorrowedCF/Completeness/Base.agda — OK, unaffected.
+- BorrowedCF/Completeness/Weaken.agda — OK. Its `alg-weaken-box` already matched
+  `A-LetPair {d = d} p/s ≤γ x y` and `A-Let p/s ≤γ x y` and fed `split-weaken-ps p/s`, so
+  it was written against the generalised rule and now agrees with it.
+- BorrowedCF/Completeness/Weaken/Instance.agda — OK.
+- BorrowedCF/Completeness/Split.agda, Sub.agda, Decl.agda — OK (mention the rules only in
+  comments).
+- BorrowedCF/Completeness/Scope.agda — BREAKS. Four patterns miss the new argument, at
+  lines 106 and 107 (`GuessIn k (A-LetPair ≤γ d₁ d₂)`, `GuessIn k (A-Let ≤γ d₁ d₂)`) and
+  154 and 161 (`scope-gen (A-LetPair ≤γ d₁ d₂) ...`, `scope-gen (A-Let ≤γ d₁ d₂) ...`).
+  Error `[WrongNumberOfConstructorArguments] ... expects 16 arguments ... given 15`. Fix is
+  `A-LetPair p/s ≤γ d₁ d₂` and `A-Let p/s ≤γ d₁ d₂`. Owner C2.
+- BorrowedCF/Completeness/Probe/LetPairPar.agda — BREAKS at line 143 for the same reason.
+  That is the counterexample this repair closes, so the module has to be retired or turned
+  into a positive test the way Probe/CaseUnr.agda was. Owner C7.
+- BorrowedCF/Completeness/Main/Interface.agda — breaks only through its import of
+  Scope.agda. Its `Rules` fields `A-Let-gen` and `A-LetPair-gen` (lines 78-93) now state
+  exactly the new constructors, so they can be discharged by `A-Let` and `A-LetPair`
+  themselves. Everything else under Main/ and Scope/Smoke.agda inherits the Scope.agda
+  failure.
+
+
+# C10 — constraint-generating subcontext premises + restricted A-Ann (2026-09-08)
+
+Status: DONE. `Context/SubConstraint.agda` (new), `Algorithmic.agda`,
+`Completeness/Sub.agda`, `Completeness/Sub/Base.agda` all type-check with
+`agda-check`, zero goals, zero unsolved metas, no new postulate. `Sub/Probe.agda`
+type-checks UNCHANGED, so the four probe obligations pin down the rule shapes.
+
+## 1. New base module `BorrowedCF/Context/SubConstraint.agda`
+
+Imports `Prelude`, `Context`, `Context.Base` (Variables), `Context.Domain` (`_↓_`),
+`Types`, `Types.Unification`, `Algorithmic.Solved`. It does NOT import `Algorithmic`
+(dependency direction: `Algorithmic.Solved` only needs `Context.Base`), and
+`Algorithmic.agda` now does `open import BorrowedCF.Context.SubConstraint public`,
+so every consumer of `allMobile` / `mobConstraints⇒MobCx` through `Algorithmic`
+(`Completeness/Scope.agda`, `Completeness/Weaken/Support.agda`,
+`Completeness/Main/Base.agda`) keeps working unchanged.
+
+Exports (all moved verbatim, names/constructors/fixities unchanged):
+
+| name | origin |
+|---|---|
+| `allMobile : Ctx n → Struct n → List Constraint` | was `Algorithmic.agda` |
+| `_∶_≈′_↑_` (10 constructors, incl. `∥′-tmˡ↑` / `∥′-tmʳ↑`) | was `Completeness/Sub.agda` |
+| `_∶_≈_↑_` (`ε↑`, `_◅ᶠ_`, `_◅ᵇ_`) | was `Completeness/Sub.agda` |
+| `_∶_≼_↑_` (`≼-refl↑`, `≼-∅↑`, `≼-wk↑`, `≼-trans↑`, `≼-cong-sq↑`, `≼-cong-par↑`) | was `Completeness/Sub.agda` |
+| `JoinParSeq↑` (`par↑`, `seq↑`), `join-joinParSeq↑` | was `Completeness/Sub.agda` |
+| `unrCx-sub : UnrCx Γ α → UnrCx (subCtx Γ σ) α` | was `Completeness/Sub/Base.agda` |
+| `mobConstraints⇒MobCx` | was `Algorithmic.agda` (same argument order: `mobConstraints⇒MobCx Sσ Γ γ SΔ`) |
+| `≈′↑-sound`, `≈↑-sound`, `≼↑-sound`, `≼↑-sound-++` | was `Completeness/Sub.agda` |
+| fixities `infix 4 _∶_≈′_↑_ _∶_≈_↑_ _∶_≼_↑_`, `infixr 5 _◅ᶠ_ _◅ᵇ_` | unchanged |
+
+Everything else stays in `Completeness/Sub.agda`, which now opens SubConstraint
+`public`: the derived laws (`transmuteˡ↑`, `sq-commMobˡ↑`, `sq-≼-par↑`, `≼-join↑`,
+`parOrSeq?↑`, …), `≈↑-cast` / `≼↑-cast`, `≼↑-complete`, `≼↑-complete-solved`,
+`MobHolds`, `≼⇒≼↑`, `≼↑-erase`. `Completeness/Sub/Base.agda` now imports
+`allMobile` from `Context.SubConstraint` and no longer defines `unrCx-sub`.
+
+## 2. The nine changed rules of `Algorithmic.agda` (final text)
+
+`private variable Δ₀ : CSet` was added next to the judgment.
+
+```
+
+data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
+  A-Var : ∀ {x} →
+    (≤γ : Γ ∶ ` x ≼ γ ↑ Δ₀) →
+    ----------------------------------
+    Γ ; γ / m ⊢ ` x ⇒ Γ ﹫ x ∣ ℙ ↑ Δ₀ / m
+
+  A-Const : ∀ {c} →
+    (≤γ : Γ ∶ [] ≼ γ ↑ Δ₀) →
+    (Ac : AlgConst c) →
+    ⊢ c ∶ T →
+    --------------------------------
+    Γ ; γ / m ⊢ K c ⇒ T ∣ ℙ ↑ Δ₀ / m
+
+  A-LSplit :
+    let α = UV.fresh m in
+    (≤γ : Γ ∶ [] ≼ γ ↑ Δ₀) →
+    (¬skips : ¬ Skips s) →      -- NEW: the first component of a split must do real work
+    -----------------------------------------------------------------------------------
+    Γ ; γ / m ⊢ K (`lsplit s) ⇒ ⟨ s ; `` α ⟩ →*M ⟨ s ⟩ ⊗ᴸ ⟨ `` α ⟩ ∣ ℙ ∣ ℙ ↑ Δ₀ / suc m
+
+  A-RSplit :
+    let α = record { var = m; pol = ‼ } in
+    (≤γ : Γ ∶ [] ≼ γ ↑ Δ₀) →
+    (¬skips : ¬ Skips s) →      -- NEW: the first component of a split must do real work
+    -----------------------------------------------------------------------------------------------
+    Γ ; γ / m ⊢ K (`rsplit s) ⇒ ⟨ s ; `` α ⟩ →*M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; `` α ⟩ ∣ ℙ ∣ ℙ ↑ Δ₀ / suc m
+
+  A-App :
+    EffCompat (Arr.dir a) ϵ₂ ϵ₁ →
+    (≤γ : Γ ∶ join (Arr.dir a) (γ ∣fv[ e₂ ]) (γ ∣fv[ e₁ ]) ≼ γ ↑ Δ₀) →
+    Γ ; γ ∣fv[ e₁ ] / m  ⊢ e₁ ⇒ T ⟨ a ⟩→ U ∣ ϵ₁ ↑ Δ₁ / m′ →
+    Γ ; γ ∣fv[ e₂ ] / m′ ⊢ e₂ ⇐ T ∣ ϵ₂ ↑ Δ₂ / n →
+    --------------------------------------------------------------
+    Γ ; γ / m ⊢ e₁ ·⟨ Arr.dir a ⟩ e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ⊔ϵ Arr.eff a ↑ Δ₀ ++ Δ₁ ++ Δ₂ / n
+
+  A-Seq :
+    Unr T →
+    (≤γ : Γ ∶ γ ∣fv[ e₁ ] ; γ ∣fv[ e₂ ] ≼ γ ↑ Δ₀) →
+    Γ ; γ ∣fv[ e₁ ] / m  ⊢ e₁ ⇒ T ∣ ϵ₁ ↑ Δ₁ / m′ →
+    Γ ; γ ∣fv[ e₂ ] / m′ ⊢ e₂ ⇒ U ∣ ϵ₂ ↑ Δ₂ / n  →
+    -------------------------------------------------
+    Γ ; γ / m ⊢ e₁ ; e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₀ ++ Δ₁ ++ Δ₂ / n
+
+  A-LetPair : (p/s : ParSeq) →
+    let open Fin.Patterns in
+    let γ₁ = γ ∣fv[ e₁ ] in
+    let γ₂ = γ ↓ fvClose* 2 (fv e₂) in
+    (≤γ : Γ ∶ join p/s γ₁ γ₂ ≼ γ ↑ Δ₀) →
+    Γ ; γ₁ / m ⊢ e₁ ⇒ T₁ ⊗⟨ d ⟩ T₂ ∣ ϵ₁ ↑ Δ₁ / m′ →
+    T₁ ⸴ T₂ ⸴ Γ ; join p/s (join d (` 0F) (` 1F)) (𝐂.wk (𝐂.wk γ₂)) / m′ ⊢ e₂ ⇒ U ∣ ϵ₂ ↑ Δ₂ / n →
+    -----------------------------------------------------------------------------------
+    Γ ; γ / m ⊢ `let⊗ e₁ `in e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₀ ++ Δ₁ ++ Δ₂ / n
+
+  A-Let : (p/s : ParSeq) →
+    let open Fin.Patterns in
+    let γ₁ = γ ∣fv[ e₁ ] in
+    let γ₂ = γ ↓ fvClose (fv e₂) in
+    (≤γ : Γ ∶ join p/s γ₁ γ₂ ≼ γ ↑ Δ₀) →
+    Γ ; γ₁ / m ⊢ e₁ ⇒ T ∣ ϵ₁ ↑ Δ₁ / m′ →
+    T ⸴ Γ ; join p/s (` 0F) (𝐂.wk γ₂) / m′ ⊢ e₂ ⇒ U ∣ ϵ₂ ↑ Δ₂ / n →
+    -----------------------------------------------------------
+    Γ ; γ / m ⊢ `let e₁ `in e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₀ ++ Δ₁ ++ Δ₂ / n
+
+  A-Case : (p/s : ParSeq) →
+    let γ₂ = γ ↓ (fvClose (fv e₁) ∪ fvClose (fv e₂)) in
+    (≤γ : Γ ∶ join p/s (γ ∣fv[ e ]) γ₂ ≼ γ ↑ Δ₀) →
+    ∀ {ϵ ϵ₁ ϵ₂ T₁ T₂ Δ Δ₁ Δ₂} →
+    Γ ; γ ∣fv[ e ] / m ⊢ e ⇒ T₁ ⊕ T₂ ∣ ϵ ↑ Δ / m₁ →
+    T₁ ⸴ Γ ; join p/s (` zero) (𝐂.wk γ₂) / m₁ ⊢ e₁ ⇒ U₁ ∣ ϵ₁ ↑ Δ₁ / m₂ →
+    T₂ ⸴ Γ ; join p/s (` zero) (𝐂.wk γ₂) / m₂ ⊢ e₂ ⇒ U₂ ∣ ϵ₂ ↑ Δ₂ / n  →
+    ---------------------------------------------------------------------------------------
+    Γ ; γ / m ⊢ `case e `of⟨ e₁ ; e₂ ⟩ ⇒ U₁ ∣ ϵ ⊔ϵ ϵ₁ ⊔ϵ ϵ₂ ↑ C-Eq U₁ U₂ ∷ Δ₀ ++ Δ ++ Δ₁ ++ Δ₂ / n
+
+  A-Abs :
+    (Arr.Unr a → UnrCx Γ γ) →
+    ϵ ≤ϵ Arr.eff a →
+    T ⸴ Γ ; join (Arr.dir a) (` zero) (𝐂.wk γ) / m ⊢ e ⇐ U ∣ ϵ ↑ Δ / n →
+    Δ′ ≡ mobConstraints (Arr.mob a) Γ γ →
+    --------------------------------------------------------------------
+    Γ ; γ / m ⊢ ƛ e ⇐ T ⟨ a ⟩→ U ∣ ℙ ↑ Δ′ ++ Δ / n
+
+  A-AbsRec :
+    let open Fin.Patterns in
+    UnrCx Γ γ →
+    Arr.Unr a →
+    ϵ ≤ϵ Arr.eff a →
+    T ⸴ T ⟨ a ⟩→ U ⸴ Γ ; (` 0F) ∥ (` 1F) ∥ 𝐂.wk (𝐂.wk γ) / m ⊢ e ⇐ U ∣ ϵ ↑ Δ / n →
+    ------------------------------------------------------------------------------
+    Γ ; γ / m ⊢ μ (ƛ e) ⇐ T ⟨ a ⟩→ U ∣ ℙ ↑ Δ / n
+
+  A-Pair :
+    ∀ (p/s : ParSeq) {ϵ₁ ϵ₂} →
+    (≤γ : Γ ∶ join p/s (γ ∣fv[ e₁ ]) (γ ∣fv[ e₂ ]) ≼ γ ↑ Δ₀) →
+    (seq⇒pure : p/s ≡ seq → ϵ₂ ≡ ℙ) →
+    Γ ; γ ∣fv[ e₁ ] / m  ⊢ e₁ ⇐ T ∣ ϵ₁ ↑ Δ₁ / m′ →
+    Γ ; γ ∣fv[ e₂ ] / m′ ⊢ e₂ ⇐ U ∣ ϵ₂ ↑ Δ₂ / n  →
+    ----------------------------------------------------------------------
+    Γ ; γ / m ⊢ e₁ ⊗ e₂ ⇐ T ⊗⟨ biasedDir p/s ⟩ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₀ ++ Δ₁ ++ Δ₂ / n
+
+  A-Inj : ∀ {i} →
+    Γ ; γ / m ⊢ e ⇐ if i then T₁ else T₂ ∣ ϵ ↑ Δ / n →
+    --------------------------------------------------
+    Γ ; γ / m ⊢ `inj i e ⇐ T₁ ⊕ T₂ ∣ ϵ ↑ Δ / n
+
+  A-Check :
+    Γ ; γ / m ⊢ e ⇒ U ∣ ϵ ↑ Δ / n →
+    ---------------------------------------
+    Γ ; γ / m ⊢ e ⇐ T ∣ ϵ ↑ C-Eq T U ∷ Δ / n
+
+  A-Ann :
+    ChkForm e →
+    Γ ; γ / m ⊢ e ⇐ T ∣ ϵ ↑ Δ / n →
+    -------------------------------
+    Γ ; γ / m ⊢ e ⇒ T ∣ ϵ ↑ Δ / n
+```
+
+## 3. `sound` (final text of the changed module body)
+
+`≼-map⁺ subTy-unr subTy-mobile ≤γ` is gone from all nine cases; A-Var / A-Const /
+A-LSplit / A-RSplit pass `SΔ` directly (their whole output set is `Δ₀`), the binary
+rules split with `All.++⁻ˡ Δ₀ SΔ` / `All.++⁻ʳ Δ₀ SΔ`, A-Case first strips the leading
+`C-Eq U₁ U₂` and then `Δ₀`.
+
+```
+  sound {Γ = Γ} (A-Var ≤γ) SΓ SΔ =
+    T-Weaken (≼↑-sound Sσ SΔ ≤γ)
+             (T-Var _ (V.lookup-map _ (λ t → subTy t σ) Γ))
+  sound (A-Const ≤γ Ac ⊢c) SΓ SΔ =
+    T-Weaken (≼↑-sound Sσ SΔ ≤γ)
+             (T-Const (subConst-⊢ ⊢c))
+  sound (A-LSplit ≤γ ¬skips) SΓ SΔ =
+    T-Weaken (≼↑-sound Sσ SΔ ≤γ)
+             (T-Const (`lsplit _ _ (¬skips ∘ subTy-skips⁻¹) (UV.ap-¬skips σ _ ∘ skips-⋯ᵣ⁻¹)))
+  sound (A-RSplit ≤γ ¬skips) SΓ SΔ =
+    T-Weaken (≼↑-sound Sσ SΔ ≤γ)
+             (T-Const (`rsplit _ _ (¬skips ∘ subTy-skips⁻¹) (UV.ap-¬skips σ _ ∘ skips-⋯ᵣ⁻¹)))
+  sound (A-App {Δ₀ = Δ₀} {Δ₁ = Δ₁} ec ≤γ x y) SΓ SΔ =
+    T-Weaken (≼↑-sound Sσ (All.++⁻ˡ Δ₀ SΔ) ≤γ)
+             (sound-app ec x y SΓ (All.++⁻ˡ Δ₁ (All.++⁻ʳ Δ₀ SΔ)) (All.++⁻ʳ Δ₁ (All.++⁻ʳ Δ₀ SΔ)))
+  sound (A-Seq {Δ₀ = Δ₀} {Δ₁ = Δ₁} unr-T ≤γ x y) SΓ SΔ =
+    T-Weaken (≼↑-sound Sσ (All.++⁻ˡ Δ₀ SΔ) ≤γ)
+             (T-Seq (subTy-unr unr-T)
+                    (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ (All.++⁻ʳ Δ₀ SΔ))))
+                    (T-Conv ≃-refl (x≤y⊔x _ _) (sound y SΓ (All.++⁻ʳ Δ₁ (All.++⁻ʳ Δ₀ SΔ)))))
+  sound (A-LetPair {Δ₀ = Δ₀} {T₁ = T₁} {T₂ = T₂} {Δ₁ = Δ₁} p/s ≤γ x y) SΓ SΔ =
+    T-Weaken (≼↑-sound Sσ (All.++⁻ˡ Δ₀ SΔ) ≤γ)
+             (T-LetPair p/s (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ (All.++⁻ʳ Δ₀ SΔ))))
+                            (T-Conv ≃-refl (x≤y⊔x _ _)
+                              (sound y (solved-⸴ (subTy-solved T₁ Sσ) (solved-⸴ (subTy-solved T₂ Sσ) SΓ)) (All.++⁻ʳ Δ₁ (All.++⁻ʳ Δ₀ SΔ))
+                                ⊢≗ λ _ → refl)))
+  sound (A-Let {Δ₀ = Δ₀} {T = T} {Δ₁ = Δ₁} p/s ≤γ x y) SΓ SΔ =
+    T-Weaken (≼↑-sound Sσ (All.++⁻ˡ Δ₀ SΔ) ≤γ)
+             (T-Let p/s (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ (All.++⁻ʳ Δ₀ SΔ))))
+                        (T-Conv ≃-refl (x≤y⊔x _ _)
+                          (sound y (solved-⸴ (subTy-solved T Sσ) SΓ) (All.++⁻ʳ Δ₁ (All.++⁻ʳ Δ₀ SΔ))
+                            ⊢≗ λ _ → refl)))
+  sound {Γ = Γ} {γ} (A-Case {Δ₀ = Δ₀} p/s ≤γ {ϵ} {ϵ₁} {ϵ₂} {T₁} {T₂} {Δ} {Δ₁} {Δ₂} x y₁ y₂) SΓ (U≃ ∷ SΔ′)
+    using SΔ ← All.++⁻ʳ Δ₀ SΔ′
+    using SΔ₁ , SΔ₂ ← All.++⁻ Δ₁ (All.++⁻ʳ Δ SΔ)
+    using x′  ← sound x SΓ (All.++⁻ˡ Δ SΔ)
+    using y₁′ ← sound y₁ (solved-⸴ (subTy-solved T₁ Sσ) SΓ) SΔ₁ ⊢≗ λ _ → refl
+    using y₂′ ← sound y₂ (solved-⸴ (subTy-solved T₂ Sσ) SΓ) SΔ₂ ⊢≗ λ _ → refl
+    =
+    T-Weaken (≼↑-sound Sσ (All.++⁻ˡ Δ₀ SΔ′) ≤γ) $
+      T-Case p/s
+        (T-Conv ≃-refl (x≤y⇒x≤y⊔z ϵ₂ (x≤x⊔y ϵ ϵ₁)) x′)
+        (T-Conv ≃-refl (x≤y⇒x≤y⊔z ϵ₂ (x≤y⊔x ϵ ϵ₁)) y₁′)
+        (T-Conv (≃-sym U≃) (x≤y⊔x _ ϵ₂) y₂′)
+  sound {Γ = Γ} {γ = γ} (A-Abs {T = T}{Δ′ = Δ′} unr-Γ ϵ≤ x refl) SΓ SΔ =
+    T-Abs (allCx-map⁺ subTy-unr ∘ unr-Γ) (λ{ refl → mobConstraints⇒MobCx Sσ Γ γ (All.++⁻ˡ Δ′ SΔ) })
+      $ T-Conv ≃-refl ϵ≤
+      $ sound x (solved-⸴ (subTy-solved T Sσ) SΓ) (All.++⁻ʳ Δ′ SΔ) ⊢≗ λ _ → refl
+  sound {Γ = Γ} (A-AbsRec {T = T} {U = U} unr-Γ unr-a ϵ≤ x) SΓ SΔ =
+    let open Fin.Patterns in
+    let T′  = subTy-solved T Sσ in
+    let T→U = T′ ⟨ _ ⟩→ subTy-solved U Sσ in
+    T-AbsRec (allCx-map⁺ subTy-unr unr-Γ) unr-a
+      $ T-Conv ≃-refl ϵ≤
+      $ sound x (solved-⸴ T′ (solved-⸴ T→U SΓ)) SΔ ⊢≗ λ where
+          0F → refl
+          1F → refl
+          (suc (suc k)) → refl
+  sound (A-Pair {Δ₀ = Δ₀} {Δ₁ = Δ₁} p/s {ϵ₁} {ϵ₂} ≤γ seq⇒pure x y) SΓ SΔ =
+    let _ , _ , ≤ϵ₁ , ≤ϵ₂ , ≤ϵ⊔ , S⇒P = mk-seq⇒pure seq⇒pure in
+    T-Weaken (≼↑-sound Sσ (All.++⁻ˡ Δ₀ SΔ) ≤γ)
+      $ T-Conv ≃-refl ≤ϵ⊔
+      $ T-Pair p/s S⇒P
+          (T-Conv ≃-refl ≤ϵ₁ (sound x SΓ (All.++⁻ˡ Δ₁ (All.++⁻ʳ Δ₀ SΔ))))
+          (T-Conv ≃-refl ≤ϵ₂ (sound y SΓ (All.++⁻ʳ Δ₁ (All.++⁻ʳ Δ₀ SΔ))))
+  sound (A-Inj {i = i} x) SΓ SΔ =
+    T-Inj
+      $ subst (_ ; _ ⊢ _ ∶_∣ _) (if-float (flip subTy σ) i)
+      $ sound x SΓ SΔ
+  sound (A-Ann _ x) SΓ SΔ =
+    sound x SΓ SΔ
+  sound (A-Check x) SΓ (eq ∷ SΔ) =
+    T-Conv (≃-sym eq) ≤ϵ-refl
+      $ sound x SΓ SΔ
+```
+
+Two notes on the patterns: `Δ₀` must be given as the FIRST named implicit
+(`A-LetPair {Δ₀ = Δ₀} {T₁ = T₁} …`), because named implicit patterns have to follow
+telescope order and `≤γ` precedes the premise that mentions `T₁`; and `A-Case` binds
+its constraint sets as `SΓ (U≃ ∷ SΔ′)` with `SΔ ← All.++⁻ʳ Δ₀ SΔ′`.
+
+## 4. A-Ann restricted to the checking forms (coordinator addendum)
+
+New base predicate, right before the judgment:
+
+```
+data ChkForm {n} : Tm n → Set where
+  chk-ƛ   : ∀ {e}     → ChkForm (ƛ e)
+  chk-μ   : ∀ {e}     → ChkForm (μ e)
+  chk-⊗   : ∀ {e₁ e₂} → ChkForm (e₁ ⊗ e₂)
+  chk-inj : ∀ {i e}   → ChkForm (`inj i e)
+```
+
+and the rule
+
+```
+  A-Ann :
+    ChkForm e →
+    Γ ; γ / m ⊢ e ⇐ T ∣ ϵ ↑ Δ / n →
+    -------------------------------
+    Γ ; γ / m ⊢ e ⇒ T ∣ ϵ ↑ Δ / n
+```
+
+`sound (A-Ann _ x) SΓ SΔ = sound x SΓ SΔ` (the premise is ignored). With the
+restriction every A-Ann step sits at a term the paper&#x27;s algorithm annotates anyway
+(λ, μ, pair, injection), so completeness against the mechanised relation is
+completeness against the paper&#x27;s algorithm with annotations inserted exactly there.
+Before the change A-Ann could re-type ANY subterm at a guessed type, e.g. an
+application `K (`rsplit s) ·⟨ d ⟩ e` at its fully solved pair type, which the paper&#x27;s
+A-Annot cannot do (agent C7).
+
+## 5. Left alone
+
+* `JoinParSeq` / `join-joinParSeq` (the un-indexed A-Case premise) are now DEAD in
+  `Algorithmic.agda` — A-Case carries the `≼ ↑ Δ₀` premise directly, as instructed,
+  and `JoinParSeq↑` is not used by the rules either. Both are KEPT, because
+  `Completeness/Split.agda` still does `open import BorrowedCF.Algorithmic using
+  (JoinParSeq; par; seq)`; deleting them would break a module owned by another agent.
+* `Context/Subcontext.agda`&#x27;s `postulate _∶_≼?_ : Bin.Decidable (Γ ∶_≼_)` is
+  untouched (out of scope). IT MUST BECOME A PROCEDURE THAT RETURNS THE CONSTRAINT
+  SET, i.e. of the shape
+  `_∶_≼?_↑ : (Γ : Ctx n) (γ₁ γ₂ : Struct n) → Dec (Σ[ Δ ∈ CSet ] Γ ∶ γ₁ ≼ γ₂ ↑ Δ)`,
+  demanding `Mobile` of as few variables as possible; otherwise the decision
+  procedure still performs the mobility checks the rules now only record.
+
+## 6. Checks (agda-check, one at a time)
+
+| module | result |
+|---|---|
+| `BorrowedCF/Context/SubConstraint.agda` | OK |
+| `BorrowedCF/Algorithmic.agda` | OK, zero goals, no new postulate |
+| `BorrowedCF/Completeness/Sub.agda` (+ `Sub/Base.agda`) | OK |
+| `BorrowedCF/Completeness/Sub/Probe.agda` | OK, source unchanged |
+| `BorrowedCF/Completeness/Base.agda` | OK |
+| `BorrowedCF/Completeness/Split.agda`, `Decl.agda`, `Main/Base.agda` | OK (unaffected) |
+| `BorrowedCF/Completeness/Scope.agda` | BREAKS: `Scope.agda:114` `GuessIn k (A-Ann d)` — &quot;constructor A-Ann expects 7 arguments, given 6&quot; (the new `ChkForm` premise). That is only the FIRST error; the scope lemmas over the output sets also have to account for the new `Δ₀` (`A-Var` now outputs `Δ₀`, the binary rules `Δ₀ ++ Δ₁ ++ Δ₂`). Fix: `A-Ann _ d`, and a `UVarsInΔ Δ₀` obligation carried by the `≼ ↑ Δ₀` premise. |
+| `BorrowedCF/Completeness/Weaken.agda` | BREAKS: `Weaken.agda:154` `alg-weaken-box lin w (A-Var ≤γ) = _ , A-Var (≼-trans ≤γ w) , …` — `≼-trans` produces `Γ ∶ α ≼ γ`, the rule now wants `Γ ∶ ` x ≼ γ₂ ↑ Δ₀`. All nine cases need `≼-trans↑` (from `Context.SubConstraint`) and a `Transfer` that accounts for the extra `Δ₀ ++ Δ₀′`. |
+| `BorrowedCF/Completeness/Weaken/Instance.agda` | BREAKS via `Weaken.agda` (same error). |
+| `BorrowedCF/Completeness/Main.agda`, `Main/{Simple,Abs,App,Bin,Bind,Struct,Transfer,Interface}.agda` | BREAK via `Scope.agda:114` only; no error of their own was reached. |
+
+Owners C2/C3/C4 to re-target (per orchestrator); C10 edited none of them.
+
+# C11 — `SolvedC` was missing `discard`/`select`/`branch` (Algorithmic/Solved.agda, 2026-09-08)
+
+Status: DONE. Only `agda/BorrowedCF/Algorithmic/Solved.agda` was edited; nothing under
+`Completeness/` broke.
+
+## The gap
+
+`data SolvedC : Const → Set` had no constructor for `` `discard ``, `` `select k `` or
+`` `branch ``, so `SolvedTm (K c)` was UNINHABITED for those three constants. Every
+completeness theorem whose hypothesis is `SolvedTm e` therefore silently excluded each
+term containing a discard, a selection or a branch, even though `algConst?` puts all
+three in `inj₁` (C6) and `A-Const` infers them.
+
+## Added constructors (Solved.agda, after `` `rsplit ``)
+
+    `discard : SolvedC `discard
+    `select : ∀ {k} → SolvedC (`select k)
+    `branch : SolvedC `branch
+
+`` `select ``&#x27;s index is a `Bool` (`` `select : Bool → Const ``, Terms/Base.agda:21;
+`Side` is the same type, renamed from `Data.Bool`), and no `k`/`i` variable is in scope
+in Solved.agda, so the index is bound by an explicit `∀ {k}`.
+
+## Added function cases
+
+`subConst` already had all three constants (lines 227-229), so only the two lemmas that
+match on `SolvedC` needed cases:
+
+    subConst-solved `discard = `discard
+    subConst-solved `select  = `select
+    subConst-solved `branch  = `branch
+
+    subConst-id `discard = refl
+    subConst-id `select  = refl
+    subConst-id `branch  = refl
+
+`subConst-⊢` already covered the three constants and matches on the typing derivation,
+not on `SolvedC`, so it is untouched.
+
+## Checks (agda-check, one at a time, all OK, zero goals, no new postulate)
+
+| module | result |
+|---|---|
+| `BorrowedCF/Algorithmic/Solved.agda` | OK |
+| `BorrowedCF/Algorithmic.agda` | OK |
+| `BorrowedCF/Completeness/Base.agda` | OK |
+| `BorrowedCF/Completeness/Scope.agda` | OK (`solvedTm-K`, `solvedC-lsplit`, `solvedC-rsplit` unaffected: they match on one constructor each, not exhaustively) |
+| `BorrowedCF/Completeness/Decl.agda` | OK (the `solvedTm-*` inversions in `Decl/Solved.agda` all match a single constructor) |
+| `BorrowedCF/Completeness.agda` | OK (full theorem, whole tree) |
+
+## Coverage note
+
+`const-case` (Main/Simple.agda:52) dispatches on `algConst? c`; the three constants fall
+into the `inj₁ Ac` branch, which builds `A-Const (der Lft) Ac (… subConst-⊢ ⊢c)`. So the
+new `SolvedC` constructors make the completeness theorem apply to those terms and the
+existing proof discharges them with no further case.
+</pre><h3>Decl-STATUS.md <span class=meta>(modified 20:24:15)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># C5 — declarative facts (Completeness/Decl.agda + Decl/)   [COMPLETE]
+
+All four files check with `agda-check`, zero goals, zero unsolved metas, no postulates,
+no `{-# TERMINATING #-}`. `open import BorrowedCF.Completeness.Decl` is enough: it
+re-exports `Decl.Subsets`, `Decl.Eff`, `Decl.Solved`, C1&#x27;s `Split.Lin` and
+`Completeness.Base`&#x27;s `LinStruct` / `SolvedCtx`.
+
+| file | lines | status |
+|---|---|---|
+| `Completeness/Decl/Subsets.agda` | 226 | done |
+| `Completeness/Decl/Eff.agda` | 95 | done |
+| `Completeness/Decl/Solved.agda` | 80 | done |
+| `Completeness/Decl.agda` | 284 | done |
+
+## Decl.agda — the three main statements
+
+| lemma | statement | status |
+|---|---|---|
+| `fv⊆dom` | `Γ ; γ ⊢ e ∶ T ∣ ϵ → fv e ⊆ dom γ` | proved |
+| `fv-cover′` | `Γ ; γ ⊢ e ∶ T ∣ ϵ → y ∈ dom γ → y ∉ fv e → Unr (Γ ﹫ y)` (pointwise) | proved |
+| `fv-cover` | `Γ ; γ ⊢ e ∶ T ∣ ϵ → AllCx Unr Γ (γ ↓ ∁ (fv e))` | proved |
+| `restrict` | `Γ ; γ ⊢ e ∶ T ∣ ϵ → Γ ; γ ↓ fv e ⊢ e ∶ T ∣ ϵ` | proved |
+| `restrict-∣fv` | same, written `γ ∣fv[ e ]` | proved |
+| `restrict-≼` | `Γ ; γ ⊢ e ∶ T ∣ ϵ → Γ ∶ γ ↓ fv e ≼ γ` | proved |
+| `restrict-bind` | `(a) (γ) (X) → fvClose (fv e) ⊆ X → Γ′ ; join a (` 0F) (𝐂.wk γ) ⊢ e ∶ U ∣ ϵ → Γ′ ; join a (` 0F) (𝐂.wk (γ ↓ X)) ⊢ e ∶ U ∣ ϵ` | proved |
+| `restrict-bind²` | same for `join a (join b (` 0F) (` 1F)) (𝐂.wk (𝐂.wk γ))`, hypothesis `fvClose* 2 (fv e) ⊆ X` | proved |
+| `restrict-absrec` | same for `(` 0F) ∥ (` 1F) ∥ 𝐂.wk (𝐂.wk γ)`, hypothesis `fvClose (fvClose (fv e)) ⊆ X` | proved |
+| `lin-join⁻′`, `lin-bind′` | aliases of C1&#x27;s `lin-join⁻` / `lin-bind` (Split/Lin.agda) | proved |
+
+`restrict-bind` is the one-binder tool for T-Abs / T-Let / T-Case and for the new
+A-Let / A-Case: for A-Case take `X := fvClose (fv e₁) ∪ fvClose (fv e₂)`, for A-Let
+`X := fvClose (fv e₂)`, with the `⊆` premise `⊆-refl` resp. `p⊆p∪q _` / `q⊆p∪q _ _`.
+
+## Decl/Subsets.agda — subset / dom / ↓ plumbing
+
+| lemma | statement |
+|---|---|
+| `∈tail⁺`, `∈drop⁺` | `suc x ∈ X → x ∈ tail X`; `m ↑ʳ x ∈ X → x ∈ drop m X` (⁻ directions are in Context.Domain) |
+| `suc∉⁅zero⁆`, `suc²∉⁅zero⁆`, `suc²∉⁅suc-zero⁆` | bound variables are not weakened variables |
+| `∈dom-wk⁺/⁻`, `∈dom-wk²⁺/⁻` | `x ∈ dom γ ↔ suc x ∈ dom (𝐂.wk γ)` |
+| `∈-join⁺/⁻` | `x ∈ dom (join a α β) ↔ x ∈ dom α ⊎ x ∈ dom β`, any `Join` instance |
+| `allCx-↓⁺/⁻` | `AllCx P Γ (γ ↓ X) ↔ (∀ y ∈ dom γ, y ∈ X → P (Γ ﹫ y))` |
+| `↓-≼-↓` | `Y ⊆ X → (z ∈ dom γ → z ∉ Y → Unr (Γ ﹫ z)) → Γ ∶ γ ↓ Y ≼ γ ↓ X` |
+| `↓-bind`, `↓-bind²`, `↓-absrec` | `join a (` 0F) (𝐂.wk γ) ↓ (inside ∷ X) ≡ join a (` 0F) (𝐂.wk (γ ↓ X))` and its two-binder analogues |
+| `⊆-inside∷`, `⊆-inside²∷`, `⊆-inside²∷-tail` | `tail Z ⊆ X → Z ⊆ inside ∷ X` (resp. `drop 2`, `tail ∘ tail`) |
+| `∈-bind⁺/⁻`, `∈-bind²⁺/⁻`, `∈-absrec⁺/⁻` | dom of a binder block vs dom of the body |
+
+## Decl/Eff.agda — effects
+
+Re-exports `x≤x⊔y`, `x≤y⊔x`, `x≤y⇒x≤y⊔z`, `⊔-mono-≤`, `⊔-monoˡ-≤`, `⊔-monoʳ-≤`,
+`⊔-lub`, `⊔-comm`, `⊔-assoc`, `𝕀-maximum`, `ℙ-minimum` from `EffProperties`, plus
+
+| lemma | statement |
+|---|---|
+| `≤ϵ-antisym` | `ϵ₁ ≤ϵ ϵ₂ → ϵ₂ ≤ϵ ϵ₁ → ϵ₁ ≡ ϵ₂` |
+| `≤ϵ-reflexive` | `ϵ₁ ≡ ϵ₂ → ϵ₁ ≤ϵ ϵ₂` |
+| `≤ℙ⇒≡ℙ` | `ϵ ≤ϵ ℙ → ϵ ≡ ℙ` |
+| `⊔³-lub` | `ϵ₁ ≤ϵ ϵ → ϵ₂ ≤ϵ ϵ → ϵ₃ ≤ϵ ϵ → (ϵ₁ ⊔ϵ ϵ₂ ⊔ϵ ϵ₃) ≤ϵ ϵ` (A-App&#x27;s effect) |
+| `⊔ϵ-idem`, `⊔ϵ-ℙ` | `ϵ ⊔ϵ ϵ ≡ ϵ`, `ϵ ⊔ϵ ℙ ≡ ϵ` |
+| `seq⇒pure⇒alg` | `Seq⇒Pure p/s ϵ₁ ϵ₂ → (p/s ≡ seq → ϵ₂ ≡ ℙ)` (declarative ⇒ A-Pair) |
+| `alg⇒seq⇒pure` | `= mk-seq⇒pure` (Context.agda), the other direction |
+| `seq⇒pure-⊔`, `seq⇒pure-≤` | `Seq⇒Pure p/s ϵ₁ ϵ₂ → ϵ₁ ⊔ϵ ϵ₂ ≡ ϵ₁` (A-Pair reports the join, T-Pair reports ϵ₁) |
+| `effCompat-𝟙/L/R` | `d ≡ 𝟙 / L / R → … → EffCompat d ϵ₂ ϵ₁` |
+| `effCompat-L≤`, `effCompat-R≤` | same from `ϵ ≤ϵ ℙ` (what the induction has) |
+| `effCompat-unr`, `effCompat-lin` | from `Arr.Unr a` (via `ω⇒𝟙`) resp. `Arr.Is𝟙 a` |
+
+`EffCompat (Arr.dir a) ϵ₂ ϵ₁` with ϵ₁ the FUNCTION effect and ϵ₂ the ARGUMENT effect:
+for `L` it demands `ϵ₁ ≡ ℙ` (matches T-AppLeft), for `R` it demands `ϵ₂ ≡ ℙ`
+(T-AppRight), for `𝟙` it is `⊤` (T-AppUnr / T-AppLin).
+
+## Decl/Solved.agda — inversions
+
+`solvedTm-ƛ`, `solvedTm-μ`, `solvedTm-·`, `solvedTm-;`, `solvedTm-⊗`, `solvedTm-let`,
+`solvedTm-let⊗`, `solvedTm-inj`, `solvedTm-case`; `solvedTy-→`, `solvedTy-⊗`,
+`solvedTy-⊕`, `solvedTy-⟨⟩`, `solvedTy-if`; `solved-lookup`, `solved-ctx-⸴`.
+`solvedTm-K` is NOT here — it is agent C2&#x27;s, in `Completeness.Scope`.
+
+## Coordination / duplication
+
+- `LinStruct`: C1&#x27;s `Completeness/Split/Lin.agda` landed while I worked and covers
+  everything I needed, so I DELETED my `Decl/Lin.agda` and `Decl.agda` re-exports
+  C1&#x27;s module. `lin-join⁻′` and `lin-bind′` (the names my task fixed) are aliases.
+- `solvedTm-K`, `subTy-ctx-id`, `solvedΓ-of` are C2&#x27;s (Scope.agda), not duplicated.
+- C3&#x27;s `Completeness/Weaken/Lin.agda` duplicates C1&#x27;s binder lemmas; not my file.
+
+## Issues found
+
+1. `_≤ϵ_` has NO fixity declaration (Types/Syntax.agda), so it defaults to `infixl 20`
+   and binds TIGHTER than `_⊔ϵ_` (`infixl 5`). `ϵ₁ ⊔ϵ ϵ₂ ≤ϵ ϵ` therefore parses as
+   `ϵ₁ ⊔ϵ ϵ₂ ⊔ϵ (ϵ₃ ≤ϵ ϵ)` and fails with &quot;Eff should be a sort&quot;. Always parenthesise:
+   `(ϵ₁ ⊔ϵ ϵ₂) ≤ϵ ϵ`. Inside the judgments this never shows because they are `infix 4`.
+   Suggested fix in the base: `infix 4 _≤ϵ_`.
+2. `SolvedTm` had no `` `let `` constructor when I started; agent C6b added it, and
+   `solvedTm-let` is now proved.
+3. `count x (` y)` reduces definitionally (`Fin._≟_` pattern-matches), so the `count-self`
+   / `∉dom⇒count0` rewrites that C1 and C3 use in the binder lemmas are not needed.
+4. Rewriting with `count-join b …` under an ascribed structure `(Struct (2 + _) ∋ ` 0F)`
+   silently fails to fire; state the composite equation as its own lemma instead
+   (see `count-bind²` in the deleted `Decl/Lin.agda`, kept in the scratchpad).
+</pre><h3>Main-STATUS.md <span class=meta>(modified 21:54:08)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># C4 — main completeness induction (`Completeness/Main.agda`, `Completeness.agda`)
+
+Owner: agent C4.  Files: `Completeness/Main.agda`, `Completeness/Main/*`, `Completeness.agda`.
+
+## FINDING 1 — CLOSED by C10&#x27;s base change (was: the theorems are FALSE as stated)
+
+The mechanised algorithmic system checks the structural premises `Γ ∶ … ≼ …` in the
+context that A-LetPair / A-Case build from the **inferred** types of the scrutinee, and
+those types contain unification variables.  `≼` is not a constraint-generating relation:
+`∥′-tm-;` (turn `α ∥ β` into `α ; β`) and `;-commMob` need `MobCx`, and
+
+    Mobile (subTy T̂ σ)  DOES NOT IMPLY  Mobile T̂
+
+(`Mobile ⟨ s ⟩ = ∃ s′. Bounded s′ × s ≃ acq ; s′`; for `T̂ = ⟨ `` α ⟩` with `σ α = acq ; end ‼`
+the instance is mobile, the uvar is not: `` `` α `` is a leaf of `≃𝕊`).  `Unr` *is* reflected
+(`Unr` is `⊥` on all session types), only `Mobile` is not.
+
+### Counterexample
+
+    s  = msg ‼ `⊤            -- NOT mobile:  msg p T ≄ acq ; s′
+    s′ = acq ; end ‼         -- mobile:      Bounded (end ‼)
+    Γ  = ⟨ s ; s′ ⟩ ⸴ [],  γ = ` 0F           (SolvedCtx, LinStruct: count = 1)
+    e  = `let⊗ (K (`lsplit s) ·¹ ` 0F) `in
+            ((K `end ·¹ (K `acq ·¹ ` 1F)) ; (K `send ·¹ (K `unit ⊗ ` 0F)))
+    T  = `⊤,  ϵ = 𝕀          (SolvedTm e, SolvedTy T)
+
+*Declaratively derivable*: the body needs `Γ′ ∶ (` 1F) ; (` 0F) ≼ (` 0F) ; (` 1F)`, granted by
+`;-commMob` because variable `1F : ⟨ acq ; end ‼ ⟩` is mobile.
+
+*Algorithmically underivable*: A-LSplit forces the pair type `⟨ s ⟩ ⊗ᴸ ⟨ `` α ⟩`, so A-LetPair
+types the body in `⟨ s ⟩ ⸴ ⟨ `` α ⟩ ⸴ Γ` with structure `(` 0F) ; (` 1F)`.  A-Seq then needs
+`(` 1F) ; (` 0F) ≼ (` 0F) ; (` 1F)`, i.e. `Mobile ⟨ `` α ⟩` (variable `0F : ⟨ msg ‼ `⊤ ⟩` is not
+mobile), which is underivable.  No other algorithmic derivation exists: `d = L` and the body
+structure are forced by A-LSplit and A-LetPair.
+
+**Repair options** (decision needed, outside `Completeness/`):
+1. make the algorithmic subcontext premise constraint-generating,
+   `Γ ∶ γ₁ ≼ γ₂ ↑ Δ`, emitting `C-Mob (Γ ﹫ x)` for every `∥′-tm-;` / `;-commMob` step
+   (`∥′-dup` needs only `Unr`, which is reflected, so it stays); or
+2. add a premise to `Complete⇒` / `Complete⇐` excluding declarative derivations that use the
+   mobility of a variable bound by `let⊗` / `case` at an unsolved type.
+
+RESOLVED: option 1 was taken (C8&#x27;s design, C10&#x27;s edit).  Every `≼` premise of the A-rules is
+now `Γ ∶ γ₁ ≼ γ₂ ↑ Δ₀` and the Δ₀ joins the rule&#x27;s constraints.  `Main/Transfer.agda` builds it
+with C8&#x27;s `≼↑-complete`; the `mob-reflect` parameter is GONE and `Completeness.agda` is
+unconditional.  `Main/Transfer.agda` additionally proves `uvarsInΔ-≼↑` (the emitted constraints
+are `C-Mob (Γ̂ ﹫ x)`, hence inside the context&#x27;s scope window), which the induction needs to
+carry them past later substitution extensions.
+
+## ⚠ FINDING 2: A-Case is incomplete for variables shared by scrutinee and branches
+
+`A-Case` types the branches in `join p/s (` 0F) (𝐂.wk (γ ↓ ∁ (fv e)))`: the branch context is the
+**complement** of the scrutinee&#x27;s free variables, unlike A-App/A-Seq/A-LetPair/A-Let which use
+`γ ∣fv[ eᵢ ]` per subterm.  An *unrestricted* variable used by both the scrutinee and a branch is
+therefore dropped:
+
+    Γ = (`⊤ ⊕ `⊤) ⸴ [],  γ = ` 0F,  e = `case (` 0F) `of⟨ ` 1F ; ` 1F ⟩,  T = `⊤ ⊕ `⊤
+
+is declaratively derivable (T-Case par with `γ₁ = γ₂ = ` 0F`, closed by `∥′-dup`), but
+`γ ↓ ∁ ⁅ 0F ⁆ = []`, so the branch has to derive `` Γ′ ∶ ` 1F ≼ join p/s (` 0F) [] ``, refuted by
+`dom⊈⇒⋠`.
+
+**Repair** (sound generalisation, subsumes the present rule, for C6):
+
+    A-Case-gen : (p/s : ParSeq) {γ′ : Struct n} →
+      Γ ∶ join p/s (γ ∣fv[ e ]) γ′ ≼ γ →
+      Γ ; γ ∣fv[ e ] / m ⊢ e ⇒ T₁ ⊕ T₂ ∣ ϵ ↑ Δ / m₁ →
+      T₁ ⸴ Γ ; join p/s (` 0F) (𝐂.wk γ′) / m₁ ⊢ e₁ ⇒ U₁ ∣ ϵ₁ ↑ Δ₁ / m₂ →
+      T₂ ⸴ Γ ; join p/s (` 0F) (𝐂.wk γ′) / m₂ ⊢ e₂ ⇒ U₂ ∣ ϵ₂ ↑ Δ₂ / n →
+      Γ ; γ / m ⊢ `case e `of⟨ e₁ ; e₂ ⟩ ⇒ U₁ ∣ ϵ ⊔ϵ ϵ₁ ⊔ϵ ϵ₂ ↑ C-Eq U₁ U₂ ∷ Δ ++ Δ₁ ++ Δ₂ / n
+
+(`soundness` for it is the present A-Case proof with `join-joinParSeq j-p/s` replaced by the new
+premise.)  `Main.agda` takes it as a module parameter `A-Case-gen` until it lands; the proof
+instantiates `γ′ := γ ↓ (fvClose (fv e₁) ∪ fvClose (fv e₂))`.
+
+## ⚠ FINDING 4: A-Let / A-LetPair force the SEQUENTIAL structure, T-Let / T-LetPair do not
+
+`A-LetPair` types the body in `join d (` 0F) (` 1F) ; 𝐂.wk (𝐂.wk γ₂)` and `A-Let` in
+`(` 0F) ; 𝐂.wk γ₂`, always with `;`.  The declarative rules use `join p/s A B` for a FREE
+`p/s`, and `A ∥ B ≼ A ; B` needs `MobCx` of one side (`∥′-tm-;`), so a `par` derivation whose
+body uses the outer context BEFORE the bound variables is lost:
+
+    Γ = ⟨ (msg ‼ `⊤) ; (acq ; end ‼) ⟩ ⸴ ⟨ msg ‼ `⊤ ⟩ ⸴ [],   γ = (` 0F) ∥ (` 1F)
+    e = `let⊗ (K (`lsplit (msg ‼ `⊤)) ·¹ ` 0F) `in ((use ` 2F) ; (use ` 0F , ` 1F))
+
+is declaratively derivable with `p/s = par` (the body needs
+`(` 2F) ; ((` 0F) ; (` 1F)) ≼ ((` 0F) ; (` 1F)) ∥ (` 2F)`, granted by `;-≼-∥` + `∥-comm`),
+but A-LetPair demands `((` 0F) ; (` 1F)) ; (` 2F)`, and both `⟨ msg ‼ `⊤ ⟩` groups are immobile,
+so the two `;`-groups cannot be swapped.
+
+**Repair**: give `A-Let` / `A-LetPair` a `(p/s : ParSeq)` argument, exactly like `A-Case`, with
+`≤γ : Γ ∶ join p/s γ₁ γ₂ ≼ γ` and body structure `join p/s …` (the current rules are the
+`p/s = seq` instances, and `sound` already recovers the ParSeq with `parOrSeq?`).  `Main.agda`
+takes `A-Let-gen` / `A-LetPair-gen` as parameters until they land.
+
+## FINDING 3: `let`, `select`, `branch` are unreachable, not proved
+
+`Algorithmic/Solved.agda` has no `SolvedTm` constructor for `` `let_`in_ `` and no `SolvedC`
+constructor for `` `select i ``, `` `branch ``, `` `discard ``.  Under the theorem&#x27;s `SolvedTm e`
+hypothesis those cases are *vacuous* (absurd patterns), so C6&#x27;s new `A-Let` and the admission of
+`select`/`branch` into `A-Const` are not exercised.  `Main.agda` routes these three through the
+one-line projections `sTm-let`, `sC-select`, `sC-branch` in `Main/Base.agda`, so that adding the
+constructors to `Solved.agda` turns the cases on with a one-line change (the A-Let / A-Const
+proofs are written out and independent of the projection).
+
+## Design of the induction (fixed, 2026-09-08)
+
+Structural induction on the TERM (not on the derivation): the declarative rules T-Conv / T-Weaken
+are absorbed by the inversion lemmas `inv-`` `, `inv-K`, `inv-·`, `inv-⊗`, `inv-;`, `inv-`let`,
+`inv-`let⊗`, `inv-inj`, `inv-`case` of `Terms/Base.agda` (plus `inv-ƛ`, `inv-μ`, which C4 adds in
+`Main/Base.agda`).  Only INFERENCE is proved; checking is `A-Check` on top of it, so
+`Complete⇐ = A-Check ∘ Complete⇒` and the &quot;check e₂ at a type containing e₁&#x27;s uvars&quot; problem
+disappears (the `C-Eq` it generates is discharged at the merged substitution).
+
+Generalised statement (`complete⇒ᵍ`), needed because A-LetPair / A-Case put INFERRED types into
+the context, and because the fresh-variable counter has to be threaded:
+
+    complete⇒ᵍ :
+      (Γ̂ : Ctx n) (σ₀ : UV.Sub) → Solving σ₀ →
+      (∀ x → UvTy m (Γ̂ ﹫ x)) →                    -- uvars of the context are &lt; m
+      (∀ x → subTy (Γ̂ ﹫ x) σ₀ ≃ Γ ﹫ x) →          -- Γ̂ approximates the declarative Γ
+      SolvedTm e → SolvedTy T → LinStruct Γ γ →
+      Γ ; γ ⊢ e ∶ T ∣ ϵ →
+      Σ[ T̂ ] Σ[ ϵ′ ] Σ[ Δ ] Σ[ k ] Σ[ σ ]
+        Solving σ × (σ ≈[ m ] σ₀) × SolvedΔ Δ σ × ϵ′ ≤ϵ ϵ × (subTy T̂ σ ≃ T)
+        × (Γ̂ ; γ / m ⊢ e ⇒ T̂ ∣ ϵ′ ↑ Δ / k)
+
+`σ ≈[ m ] σ₀ = ∀ α → UVar.var α &lt; m → UV.ap σ α ≡ UV.ap σ₀ α`.  Substitutions are THREADED, not
+merged: the right subderivation starts from the left one&#x27;s σ, so C2&#x27;s `merge` is not needed; what
+is needed from C2 is `UvTy`/`UvΔ`, `scope⇒` and `subTy-agree` (to lift `SolvedΔ Δ₁ σ₁` to the
+final σ), plus `single` for A-LSplit/A-RSplit.  C3&#x27;s `alg-weaken` is NOT needed: every subterm&#x27;s
+declarative derivation is moved to the algorithmic structure on the DECLARATIVE side, by
+`restrict` (C5) + `T-Weaken`, before the IH is applied.
+
+`Complete⇒` = `complete⇒ᵍ` at `Γ̂ := Γ`, `σ₀ := UV.someSub`; `Complete⇐` = `A-Check` on it.
+
+## HELPER SPLIT — yes, please spawn both (the types are FIXED and machine-checked)
+
+Everything a helper needs is in `Completeness/Main/Interface.agda` (type-checks, zero goals):
+`Approx`, `Conclusion`, `IH`, `AppCase`, `LetCase`, `LetPairCase`, `CaseCase`, `Rules`,
+`extend`/`extend-agree`/`extend-solving`/`extend-ap`.  A helper module is
+
+    open import BorrowedCF.Completeness.Main.Base        -- C4 preamble (below)
+    open import BorrowedCF.Completeness.Main.Interface
+    module BorrowedCF.Completeness.Main.App (RL : Rules) where
+    open import BorrowedCF.Completeness.Main.Transfer RL -- ≼→ / unrCx→ / mobCx→ / unr→ / mob→
+    app-case : IH → AppCase
+
+and analogously `Main/Bind.agda` with `let-case : IH → LetCase`, `letpair-case : IH → LetPairCase`,
+`case-case : IH → CaseCase`.  C1 (`Completeness.Split`), C2 (`Completeness.Scope`) and C5
+(`Completeness.Decl`) are imported DIRECTLY, not assumed.  `Main/Base.agda` (C4, checks) has:
+`absorbʳ`/`absorbˡ`, `allCx-of-dom`, `dom-↓⁺`, `dom⇒count`, `shared-unr`, `⊔ϵ-lub`, `≤ϵℙ⇒≡ℙ`,
+`arrow-inv`/`pair-inv`/`sum-inv` (invert `subTy T̂ σ ≃ (T ⟨ a ⟩→ U)` etc., the `Arr`/`Dir`
+annotation comes back too), `inv-ƛ`/`inv-μ`, `solve-ty`/`approx-sub`/`lin-sub` (apply
+`⊢-sub UV.someSub` to a subderivation whose type the declarative rule invented, keeping the
+approximation and the linearity), `uvar-subTy`, `allMobile-solved`, `subTy-unr⁻¹`,
+`unr-approx`, `≼-ctx`/`allCx-ctx`.
+
+Recipe for a BINARY node (declarative split `Γ ∶ join d α β ≼ γ`, subterms e₁ at α, e₂ at β):
+
+1. `restrict` (C5) both premises to `α ↓ fv e₁`, `β ↓ fv e₂`.
+2. `↓-strip≼ + fv-cover` (C5) gives `α ↓ fv e₁ ≼ α`, so the restricted split still lies under γ.
+3. `Γ ∶ α ↓ fv e₁ ≼ γ ↓ fv e₁`: restrict the split with `↓-mono-≼` and drop the other side with
+   `absorbʳ`/`absorbˡ` (Main/Base), whose `UnrCx` obligation is `allCx-of-dom` + `shared-unr`
+   (a variable in both sides of a split of a LINEAR structure is unrestricted).  `T-Weaken`
+   moves the declarative premise to the algorithmic structure — C3&#x27;s `alg-weaken` is NOT needed
+   and must not be used here, because it changes Δ and would break the scope bookkeeping.
+4. IH on each side, THREADING the substitution: the right call takes the left call&#x27;s σ as its
+   σ₀ and its exit counter as its entry counter.  Lift the left `SolvedΔ Δ₁ σ₁` to the final σ
+   with `solvedΔ-agree` (C2) and the left `UVarsInΔ 0 m′ Δ₁`; lift `subTy T̂₁ σ₂ ≡ subTy T̂₁ σ₁`
+   with `subTy-agree` (C2).  `Agree` composes by `Agree 0 m σ₂ σ₁` + `Agree 0 m σ₁ σ₀`.
+5. `canon-split` (C1) with `X := fv e₁`, `Y := fv e₂` gives the `≤γ` premise of the algorithmic
+   rule; its two `Unr` side conditions are VACUOUS here because `fv e ⊆ dom (α ↓ fv e)`
+   (`fv⊆dom` + `dom-↓⁺`), so no `X ∩ dom γ` trick is needed.
+6. Effects: `⊔ϵ-lub`, `≤ϵℙ⇒≡ℙ` (for `EffCompat L/R`, where the declarative rule already forces
+   the corresponding premise to be `ℙ`), and C5&#x27;s `Decl.Eff` bridges.
+7. Constraints: never merge — the checking premise&#x27;s `C-Eq` is built at the END, at the final σ,
+   from the two `≃` facts (`subTy T̂₁ σ ≃ subTy T s₀ ≃ subTy Û₂ σ`).
+
+## Lemma status — COMPLETE (2026-09-08)
+
+`agda-check BorrowedCF/Completeness.agda` succeeds: zero goals, zero unsolved metas, no
+postulate, no `{-# TERMINATING #-}`, no assumption.  The two theorems of
+`Completeness/Base.agda` are proved:
+
+    complete⇒ : Complete⇒        complete⇐ : Complete⇐
+
+| case | lemma | status | file |
+|---|---|---|---|
+| preamble | 20 helpers (see below) | PROVED | Main/Base.agda (281 l) |
+| interface | `Conclusion`, `IHAt`/`IH`, the four case types | PROVED | Main/Interface.agda (134 l) |
+| transfer | `≼→` (via C8&#x27;s `≼↑-complete`), `scope-≼↑`, `unr→`, `unrCx→` | PROVED | Main/Transfer.agda (101 l) |
+| binary splits | `canon`, `≼-left`, `≼-right`, `split-left/right/≤γ`, `agree-trans/narrow`, `approx-agree` | PROVED | Main/Bin.agda (131 l) |
+| T-Var, T-Const | `var-case`, `const-case` (A-Const, A-LSplit, A-RSplit) | PROVED | Main/Simple.agda (122 l) |
+| T-Abs, T-AbsRec | `abs-case`, `absrec-case` | PROVED | Main/Abs.agda (114 l) |
+| T-Seq, T-Pair, T-Inj | `seq-case`, `pair-case`, `inj-case` | PROVED | Main/Struct.agda (154 l) |
+| T-App ×4 | `app-case` | PROVED | Main/App.agda (105 l) |
+| T-Let | `let-case` | PROVED | Main/Bind/Let.agda (108 l) |
+| T-LetPair | `letpair-case` | PROVED | Main/Bind/LetPair.agda (119 l) |
+| T-Case | `case-case` | PROVED | Main/Bind/Case.agda (196 l) |
+| dispatch | `complete⇒ᵍ : IH` (11 term formers + 10 absurd `μ` shapes) | PROVED | Main.agda (124 l) |
+| theorems | `complete⇒`, `complete⇐` | PROVED | Main.agda, exported by Completeness.agda |
+
+External inputs, all imported directly (nothing assumed): C1 `Split.agda`, C2 `Scope.agda`,
+C5 `Decl.agda`, C8 `Sub.agda`, and the repaired base (C6/C6b/C6c/C10).  C3&#x27;s `alg-weaken` is
+NOT used: every subterm&#x27;s declarative premise is moved to the algorithmic structure on the
+DECLARATIVE side (`restrict` + `T-Weaken`), which keeps the constraint set untouched.
+
+### Performance notes (for the record)
+
+* `Main/Bind.agda` as ONE module exhausted the 11 GB cap.  Split into
+  `Bind/{Support,Let,LetPair,Case}.agda`; each checks in well under a minute.
+* An irrefutable `let 〈14-tuple〉 = ih …` duplicates the whole right-hand side once per
+  component.  Bind the call to a variable first (`r = ih …` then `a , b , … = r`), or use
+  `with a , b , … ← ih …`.  The three-hypothesis `case-go` needed the `with` form.
+* Never `with`-abstract the inversion package together with the `ParSeq` constructor
+  (`with inv-`case dv … | par , …`): it generalises the induction hypotheses, the
+  approximation and the linearity before the split.  `case-case` binds the package with a
+  `let` and dispatches through a top-level `case-dispatch`.
+* Shared structural facts (`covβ`, `≤L`, `≤R`, `≤γ′`, the confined branches) live in the
+  top-level parametrised module `CS`, not in a `let`: Agda substitutes `let`s at every use.
+</pre><h3>Probe-STATUS.md <span class=meta>(modified 20:55:23)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># C7 (red team) — probe status
+
+# DECIDING ITEM (2026-09-08): the well-formed mobility instance
+
+**File `Probe/MobUvarWF.agda`, type-checks, zero goals, zero metas.**
+
+**Verdict in one line: the instance is well formed and declaratively typable, and
+`⟨ acq ; `` α ⟩` is indeed not Mobile — but it is NOT a counterexample to the Agda
+`Complete⇐`, because A-Ann/A-Check let the algorithm trade the inferred type
+`⟨ !Unit ; ret ⟩ ⊗¹ ⟨ acq ; `` α ⟩` for the SOLVED `⟨ !Unit ; ret ⟩ ⊗¹ ⟨ acq ; end ‼ ⟩`
+at the cost of one solvable `C-Eq`. The same escape kills the original
+DECISION-mobility instance. The mobility gap is real for the PAPER&#x27;s algorithm
+(whose A-Annot needs a source annotation) and is not expressible against the
+mechanised one.**
+
+### (1) Well-formedness, formalised
+
+`Probe/MobUvarWF.agda` §1 defines, by mutual induction,
+
+    Core s   -- s mentions neither acq nor ret, anywhere (msg payloads and brn
+             -- branches included); constructors `_ end msg brn mu _;_ skip ``_
+    CoreTy T -- lifted to 𝕋 through ⟨_⟩, `⊤, ⟨a⟩→, ⊗⟨d⟩, ⊕
+    WF s     -- core (Core s) | ret | acq-head (Core s) | ret-tail (Core s)
+             --               | acq-ret (Core s)
+    WFTy T   -- lifted to 𝕋
+
+i.e. exactly &quot;acq only as the first atom of the top-level `;`-spine, ret only as the
+last, never inside a payload&quot;. Proved there:
+
+| type | role | WF proof |
+|---|---|---|
+| `⟨ msg ‼ `⊤ ; end ‼ ⟩ ⊗ᴸ ⟨ end ⁇ ⟩` | the λ annotation | `wf-Tq  = ⟨ core (msg `⊤ ; end) ⟩ ⊗⟨ L ⟩ ⟨ core end ⟩` |
+| `⟨ msg ‼ `⊤ ; ret ⟩` | rsplit, 1st component | `wf-Tx₁ = ⟨ ret-tail (msg `⊤) ⟩` |
+| `⟨ acq ; end ‼ ⟩` | rsplit, 2nd component | `wf-Tx₂ = ⟨ acq-head end ⟩` |
+| `⟨ msg ‼ `⊤ ⟩` | lsplit, 1st component | `wf-Ty₁ = ⟨ core (msg `⊤) ⟩` |
+| `⟨ ret ⟩` | lsplit, 2nd component | `wf-Ty₂ = ⟨ ret ⟩` |
+| `⟨ acq ; `` α ⟩` | what A-RSplit gives x₂ | `wf-Tx₂-alg = ⟨ acq-head (`` α) ⟩` |
+
+Every type in the instance is WF; no type has anything before `acq` or after `ret`.
+(For comparison: the type of the OLD instance, `⟨ msg ‼ `⊤ ; (acq ; end ‼) ⟩`, is
+NOT WF — `acq` is not the first atom — although the Agda predicate `⊢_`
+(Types/Syntax.agda:296) accepts it, since `⊢_` is purely structural and has
+`acq : ⊢ acq`. The paper&#x27;s session-type-formation.tex has no rule for Acq/Drop at
+all, so neither source enforces the supervisor&#x27;s condition today.)
+
+### (2) Declarative derivation — Agda-checked
+
+    a₀ = ⟨lin 𝟙, dir 𝟙, mob S, eff 𝕀⟩
+    fWF = ƛ (let⊗ q in let⊗ (rsplit_{!Unit} x) in let⊗ (lsplit_{!Unit} x₁) in
+              ((send (unit ⊗ y₁) ; drop y₂) ; (end⁇ z ; end‼ (acq x₂))))
+    decl : [] ; [] ⊢ fWF ∶ (⟨ msg ‼ `⊤ ; end ‼ ⟩ ⊗ᴸ ⟨ end ⁇ ⟩) ⟨ a₀ ⟩→ `⊤ ∣ ℙ
+
+The three `let⊗` all use `p/s = seq`. The body&#x27;s own structure is
+`(y₁ ; y₂) ; (z ; x₂)`; T-LetPair prescribes `(y₁ ; y₂) ; (x₂ ; z)`; the single
+bridging step is `;-commMob (inj₂ (` mobile-x₂))`, i.e. one use of `∥′-tm-;` on
+x₂ : `⟨ acq ; end ‼ ⟩`. Nothing else in the derivation touches mobility.
+`p/s = par` for the outer `let⊗` is not needed (and would need `Mobile ⟨ sQ ⟩`,
+which is false) — the instance is genuinely about `;-commMob`, not about `par`.
+
+### (3) The mobility facts — Agda-checked
+
+* `mobile-x₂ : Mobile ⟨ acq ; end ‼ ⟩` = `⟨ end ‼ , end , ≃-refl ⟩` (Te-Acq, `Bounded end`).
+* `mobile⇒bounded : Mobile ⟨ s ⟩ → Bounded s` — new; `≃-bounded` (Types/Predicates.agda)
+  transports `Bounded (acq ; s′) = -;₂ B` back along `s ≃ acq ; s′`.
+* `¬mobile-acq-uvar : ¬ Mobile ⟨ acq ; `` α ⟩` — new, from the above plus
+  `¬ Bounded (acq ; `` α)` (neither `;₁` nor `-;₂` applies). So the type A-RSplit
+  hands x₂ really is not mobile, as DECISION-mobility.md says.
+
+### (4) Why the algorithmic refutation does NOT go through
+
+    αᵣ = UV.fresh 0
+    Uᵣ = ⟨ msg ‼ `⊤ ; ret ⟩ ⊗¹ ⟨ acq ; `` αᵣ ⟩          -- what A-App infers
+    Δᵣ = C-Eq (Tx₁ ⊗¹ Tx₂) Uᵣ ∷ C-Eq ⟨ msg ‼ `⊤ ; `` αᵣ ⟩ ⟨ msg ‼ `⊤ ; end ‼ ⟩ ∷ []
+
+    alg-rsplit : Cx3 ; (` 0F) / 0 ⊢ rsplit_{!Unit} x ⇒ (Tx₁ ⊗¹ Tx₂) ∣ ℙ ↑ Δᵣ / 1
+    alg-rsplit = A-Ann (A-Check (A-App _ … (A-RSplit …) (A-Check (A-Var …))))
+    solvedΔᵣ : SolvedΔ Δᵣ UV.someSub          -- σ = (α ↦ end ‼); Solving σ is someSub-solving
+
+Both constraints hold by `≃-refl` after `subTy … UV.someSub`. A-LetPair therefore
+binds x₂ at the SOLVED, MOBILE `⟨ acq ; end ‼ ⟩`, and the mobility obstruction is gone.
+
+The escape is general, not ad hoc — also in the file:
+
+    retype : Γ ; γ / m ⊢ e ⇒ U ∣ ϵ ↑ Δ / k → Γ ; γ / m ⊢ e ⇒ G ∣ ϵ ↑ C-Eq G U ∷ Δ / k
+    retype d = A-Ann (A-Check d)
+    retype-solved : subTy G σ ≃ subTy U σ → SolvedΔ Δ σ → SolvedΔ (C-Eq G U ∷ Δ) σ
+
+**No binder of the mechanised algorithm is ever stuck at an unsolved type**: every
+inferred type can be traded for any σ-equivalent one, in particular for a solved one.
+Any counterexample whose obstruction is &quot;the algorithm only knows a unification
+variable here&quot; therefore fails against the Agda system. (Consequence for the memo:
+DECISION-mobility.md §1&#x27;s sentence &quot;No other algorithmic derivation exists, because
+A-LSplit and A-LetPair fix the shapes&quot; is false for the Agda rules as they stand.)
+
+**What I did NOT mechanise:** the full algorithmic derivation of `fWF`. I certified the
+step the memo&#x27;s argument rests on. Strictly, &quot;not a counterexample&quot; would need that
+full derivation; what is proved is that the stated obstruction is removable.
+
+### (5) Recommendation
+
+Two coherent options, and they must be taken together:
+
+1. Keep C8&#x27;s constraint-generating `≼ ↑ Δ` **for the paper**, where A-Annot needs a
+   source annotation and the instance above genuinely has no derivation. Then also
+   fix the Agda A-Ann (add an annotation to `Tm`, or drop A-Ann) — otherwise the Agda
+   `Complete⇐` is proved about a *different, more permissive* algorithm than the one
+   in the paper, and the mechanisation does not support the paper&#x27;s claim.
+2. Or annotate both components of lsplit/rsplit (DECISION-mobility.md alternative B),
+   which removes unification variables from contexts entirely and makes the question
+   moot in both systems.
+
+Adopting C8&#x27;s fix in Agda alone changes nothing that is provable there.
+
+---
+
+## Files
+
+| file | what it is | status |
+|---|---|---|
+| `Probe/MobUvarWF.agda` | WF predicate, the well-formed mobility instance, `¬mobile-acq-uvar`, the A-Ann escape | **deciding item, above** |
+| `Probe/MobUvar.agda` | the original DECISION-mobility instance, declarative side + `¬mobile-uvar` | witness (its type is NOT WF) |
+| `Probe/CaseUnr.agda` | was COUNTEREXAMPLE 1 (A-Case `∁ (fv e)`), now a POSITIVE regression test | fixed in base |
+| `Probe/LetPairPar.agda` | was COUNTEREXAMPLE 2 (A-LetPair&#x27;s `;`-body), now a POSITIVE regression test | fixed by C6c |
+| `Probe/LinNeeded.agda` | `LinStruct` is necessary; the invariant is `count-≼-eq`, not `≼⇒count≤` | confirmed |
+| `Probe/UnrReflect.agda` | `subTy-unr⁻¹` / `unrCx-reflect`: `Unr` is REFLECTED by σ (C8 needs this) | support |
+
+## FIXED — was COUNTEREXAMPLE 2 (A-LetPair hard-wired a sequential body)
+
+`let⊗ p in (z ⊗ c₀)` with `p : ⟨ end ‼ ⟩ ⊗¹ `⊤`, `z : ⟨ end ⁇ ⟩`, `γ = ` p ∥ ` z`:
+declaratively typable with T-LetPair `p/s = par`, algorithmically impossible while
+A-LetPair fixed the body structure to `join d (` 0F) (` 1F) ; wk (wk γ₂)` — every
+component was `before` every outer variable and `before-mono-≼` forbade the body&#x27;s
+`before z c₀`. C6c has landed the `p/s` repair for A-LetPair and A-Let;
+`Probe/LetPairPar.agda` now carries the algorithmic derivation (`alg`, `p/s = par`,
+`Δ₀` = three reflexive `C-Eq`s, `solvedΔ₀`) next to the declarative one and fails to
+compile if the body join regresses to `;`.
+
+## FIXED — was COUNTEREXAMPLE 1 (A-Case restricted the branches by `∁ (fv e)`)
+
+`case (inj_L u) of { _ → u ; _ → u }` with `u : `⊤`. A-Case now restricts the branches
+to `fvClose (fv e₁) ∪ fvClose (fv e₂)`. `Probe/CaseUnr.agda` is a positive regression
+test (declarative derivation, algorithmic `alg`, `solvedΔ₀`).
+
+## `LinStruct` is necessary — and Base.agda&#x27;s comment cites the wrong invariant
+
+`Probe/LinNeeded.agda`: with `h : ⟨ end ‼ ⟩` and `γ = ` 0F ∥ ` 0F`, the declarative
+system types `h ⊗ h` (T-Pair par) and no algorithmic derivation exists, so
+`Complete⇐` without `LinStruct` is refuted (`refute-noLin`).
+`` ` x ≼ ` x ∥ ` x `` is underivable NOT by `≼⇒count≤` (Confine.agda) — `1 ≤ 2` holds —
+but by `count-≼-eq` (Simulation/Support/BeforeOrder.agda:114), which says `≼`
+*preserves* the count of a non-unrestricted variable: `1 ≢ 2`.
+
+## Attack on C8&#x27;s fix (constraint-generating `≼ ↑ Δ`)
+
+Beyond the deciding item above:
+
+* *Mobility only up to `≃`*: no problem, `mobile-≃` already exists.
+* *`∥′-dup` / `≼-∅` keep an `Unr` side condition*: sound only because `Unr` is
+  reflected by σ. Now proved in `Probe/UnrReflect.agda` (`subTy-unr⁻¹`,
+  `unrCx-reflect`, `unrCx-sub`); C8 should import or copy these.
+* *The emitted `Mob(Γ)` covers a whole `∥′-tm-;` side*: matches the declarative
+  `MobCx Γ α ⊎ MobCx Γ β`, so the step-for-step mirroring works (structures carry no
+  types).
+* **Independent of the fix**: `Complete⇐`/`Complete⇒` use ONE context for both
+  judgments and hypothesise `SolvedCtx Γ`, but A-LetPair extends the context with
+  *inferred* types (after A-RSplit the second is `⟨ acq ; `` α ⟩`). The induction
+  hypothesis is not applicable to the body. The statement must be generalised to an
+  algorithmic `Γ̂` with `∀ x → subTy (Γ̂ ﹫ x) σ₀ ≃ Γ ﹫ x`, with the produced σ
+  extending σ₀. Same at A-Let, A-Case and A-Abs. (`retype` does not repair this: it
+  changes the type, not the statement.)
+
+## Smaller findings
+
+* `SolvedTm` had no constructor for `` `let e₁ `in e₂ ``; recorded as fixed in
+  DECISION-mobility.md §4.
+* **`alg-weaken` (C3) cannot preserve `Δ`.** A-Abs emits one `C-Mob (Γ ﹫ x)` per
+  variable of the ambient γ; weakening `γ₁ ≼ γ₂` adds variables, hence constraints.
+  State it as `∃ Δ₂. alg under γ₂ ↑ Δ₂ × SolvedΔ Δ₂ σ`. The extra constraints are always
+  satisfiable: `≼` adds structure only through `≼-∅`, whose side condition is `UnrCx`,
+  and `Unr ⊆ Mobile`.
+* Restriction monotonicity (`γ₁ ≼ γ₂ → γ₁ ↓ X ≼ γ₂ ↓ X`) and C1&#x27;s canonical split
+  lemma resisted attack; `count-≼-eq` and `before-mono-≼` are both consistent with the
+  split lemma (cases `γ = x ; y`, `x ∥ y`, `(x ∥ y) ; z`, `x ; u ; y` with `u`
+  unrestricted, X/Y overlapping on `u`, `d ∈ {𝟙, L, R}`).
+* A-App&#x27;s effect discipline is fine: `Arr.ω⇒𝟙` forces `dir a = 𝟙` when `Arr.Unr a`, and
+  `EffCompat L/R` matches T-AppLeft&#x27;s pure function / T-AppRight&#x27;s pure argument.
+</pre><h3>Scope-STATUS.md <span class=meta>(modified 21:15:13)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># Scope (agent C2) — unification-variable bookkeeping  [COMPLETE]
+
+Files delivered (all check with `agda-check`, zero goals, zero unsolved metas, no postulates,
+no `{-# TERMINATING #-}`):
+
+- `Completeness/Scope/Base.agda`   (159 lines) — the predicate and substitution agreement
+- `Completeness/Scope/Merge.agda`  (139 lines) — merging and singleton substitutions
+- `Completeness/Scope.agda`        (~270 lines) — `GuessIn`, `scope`, context/term facts
+  (re-exports Base and Merge, so `open import BorrowedCF.Completeness.Scope` is enough)
+- `Completeness/Scope/Smoke.agda`  — three usage examples (merge, single, scope⇒); kept as a
+  regression check that the API is usable with the implicits it has.
+
+## Exported statements
+
+### Scope/Base.agda
+- `InRange lo hi α = lo ≤ UV.var α × UV.var α &lt; hi` (polarity irrelevant). proved
+- `inRange-mono : (α : UVar) → m′ ≤ m → n ≤ n′ → InRange m n α → InRange m′ n′ α`. proved
+- `data UVarsIn (lo hi : ℕ) : ∀ {κ x} → Ty κ x → Set` — one constructor per `Ty` constructor
+  (names mirror `SolvedTy`), `` ``_ : InRange lo hi α → UVarsIn lo hi (`` α) ``. proved
+- `uvarsIn-mono : m′ ≤ m → n ≤ n′ → UVarsIn m n t → UVarsIn m′ n′ t`. proved
+- `solved⇒uvarsIn : SolvedTy t → UVarsIn m n t`. proved
+- `data UVarsInC (lo hi : ℕ) : Constraint → Set` with `C-Eq`, `C-Mob`. proved
+- `UVarsInΔ m n Δ = All (UVarsInC m n) Δ`; `uvarsInC-mono`, `uvarsInΔ-mono`, `uvarsInΔ-++`. proved
+- `record Agree (m n : ℕ) (σ₁ σ₂ : UV.Sub)` — constructor `agree`, field
+  `ap≡ : ∀ α → m ≤ UV.var α → UV.var α &lt; n → UV.ap σ₁ α ≡ UV.ap σ₂ α`. proved
+- `agree-sym`, `agree-empty : Agree n n σ₁ σ₂`. proved
+- `subTy-agree : Agree m n σ₁ σ₂ → UVarsIn m n t → subTy t σ₁ ≡ subTy t σ₂`. proved
+- `solvedCst-agree : Agree m n σ₁ σ₂ → UVarsInC m n C → SolvedCst C σ₁ → SolvedCst C σ₂`. proved
+- `solvedΔ-agree : Agree m n σ₁ σ₂ → UVarsInΔ m n Δ → SolvedΔ Δ σ₁ → SolvedΔ Δ σ₂`. proved
+- `solvedΔ-indep : UVarsInΔ n n Δ → SolvedΔ Δ σ₁ → SolvedΔ Δ σ₂`. proved
+
+### Scope/Merge.agda
+- `merge : ℕ → UV.Sub → UV.Sub → UV.Sub` — σ₁ on `var α &lt; k`, σ₂ otherwise; `ap-¬skips` and
+  `ap-dual/dual` inherited (the ⁇-twin has the same index, so it takes the same branch). proved
+- `merge-below : ∀ k σ₁ σ₂ α → UV.var α &lt; k → UV.ap (merge k σ₁ σ₂) α ≡ UV.ap σ₁ α`. proved
+- `merge-above : ∀ k σ₁ σ₂ α → k ≤ UV.var α → UV.ap (merge k σ₁ σ₂) α ≡ UV.ap σ₂ α`. proved
+- `merge-solving : ∀ k σ₁ σ₂ → Solving σ₁ → Solving σ₂ → Solving (merge k σ₁ σ₂)`. proved
+- `merge-agree-below : ∀ k σ₁ σ₂ → Agree m k σ₁ (merge k σ₁ σ₂)`,
+  `merge-agree-above : ∀ k σ₁ σ₂ → Agree k n σ₂ (merge k σ₁ σ₂)`. proved
+- `solvedΔ-∷`, `solvedΔ-++`. proved
+- `solvedΔ-merge : ∀ k σ₁ σ₂ → UVarsInΔ m k Δ₁ → UVarsInΔ k n Δ₂ → SolvedΔ Δ₁ σ₁ →
+   SolvedΔ Δ₂ σ₂ → SolvedΔ (Δ₁ ++ Δ₂) (merge k σ₁ σ₂)`. proved
+- `merge₃ k₁ k₂ σ σ₁ σ₂ = merge k₁ σ (merge k₂ σ₁ σ₂)` and
+  `solvedΔ-merge₃ : ∀ k₁ k₂ σ σ₁ σ₂ → k₁ ≤ k₂ → k₂ ≤ n → UVarsInΔ m k₁ Δ → UVarsInΔ k₁ k₂ Δ₁ →
+   UVarsInΔ k₂ n Δ₂ → SolvedΔ Δ σ → SolvedΔ Δ₁ σ₁ → SolvedΔ Δ₂ σ₂ →
+   SolvedΔ (Δ ++ Δ₁ ++ Δ₂) (merge₃ k₁ k₂ σ σ₁ σ₂)` (A-Case; cons the `C-Eq U₁ U₂` in front with
+  `solvedΔ-∷`). proved
+- `single α s ¬Ss = UV.subAll {s = UV.dual/id α s} …` with `single-ap : UV.ap (single α s ¬Ss) α ≡ s`,
+  `single-ap-dual : UV.ap (single α s ¬Ss) (UV.dual α) ≡ dual s`,
+  `single-solving : SolvedTy s → Solving (single α s ¬Ss)`, `solved-dual/id`. proved
+
+### Scope.agda
+- `uvarsIn-→₁/→₂/⊗₁/⊗₂/⊕₁/⊕₂` — inversions of `UVarsIn` at →, ⊗, ⊕. proved
+- `record UVarsInΓ (lo hi : ℕ) {N} (Γ : Ctx N)` — constructor `ctx`, field
+  `lookupΓ : ∀ x → UVarsIn lo hi (Γ ﹫ x)`; `uvarsInΓ-mono`, `uvarsInΓ-⸴`,
+  `solvedCtx⇒uvarsInΓ`. proved
+- `uvarsInΔ-allMobile`, `uvarsInΔ-mobConstraints`. proved
+- `GuessIn k d : Set` — recursion over the derivation collecting the scope obligation of the
+  two rules whose type is GUESSED: `A-Const` (`UVarsIn k m T`) and `A-Ann` (`UVarsIn k m T`),
+  plus `A-LSplit`/`A-RSplit` (`UVarsIn k m s`, i.e. the split type of the constant); every other
+  rule is the conjunction over its premises (`⊤` for A-Var). proved
+- `ScopeIn : Mode → ℕ → ℕ → 𝕋 → Set`; `ScopeIn inf k m T = ⊤`, `ScopeIn chk k m T = UVarsIn k m T`. proved
+- `scope-gen : (d : Γ ; γ / m ⊢[ ξ ] e ∶ T ∣ ϵ ↑ Δ / n) → GuessIn k d → UVarsInΓ k m Γ →
+   k ≤ m → ScopeIn ξ k m T → m ≤ n × UVarsIn k n T × UVarsInΔ k n Δ`. proved
+- `scope : SolvedCtx Γ → (d : …) → GuessIn m d → ScopeIn ξ m m T →
+   m ≤ n × UVarsIn m n T × UVarsInΔ m n Δ`. proved
+- `scope⇒ : SolvedCtx Γ → (d : … ⇒ …) → GuessIn m d → m ≤ n × UVarsIn m n T × UVarsInΔ m n Δ`. proved
+- `scope⇐ : SolvedCtx Γ → SolvedTy T → (d : … ⇐ …) → GuessIn m d → m ≤ n × UVarsInΔ m n Δ`. proved
+- `mobCx⇒solvedΔ : (γ : Struct N) → SolvedCtx Γ → MobCx Γ γ → SolvedΔ (allMobile Γ γ) σ`,
+  `mobConstraints-solved : (𝓂 : Mob) (γ : Struct N) → SolvedCtx Γ → (𝓂 ≡ M → MobCx Γ γ) →
+   SolvedΔ (mobConstraints 𝓂 Γ γ) σ` (A-Abs). proved
+- `subTy-ctx-id : SolvedCtx Γ → subCtx Γ σ ≡ Γ`, `solvedΓ-of : SolvedCtx Γ → SolvedΓ Γ σ`,
+  `solvedTm-K : SolvedTm (K c) → SolvedC c`, `solvedC-lsplit`, `solvedC-rsplit`,
+  `subTm-id-solved = subTm-id`. proved
+
+## Deviations from the task statement — READ BEFORE USING
+
+1. **`scope` needs `GuessIn k d`, and the `SolvedTm e` argument is gone.**  The statement
+   &quot;`SolvedCtx Γ → SolvedTm e → d → m ≤ n × UVarsIn m n T × UVarsInΔ m n Δ`&quot; is FALSE as written:
+   two rules put a type into the conclusion that no premise determines.
+   * `A-Const`: `⊢ c ∶ T` is a schema; `` `send ``/`` `recv `` carry an arbitrary `T`,
+     `` `acq `` an arbitrary `s`, `` `select ``/`` `branch `` arbitrary `s₁ s₂`.  Nothing stops
+     `T` from mentioning a variable that was never allocated.
+   * `A-Ann` (⇐→⇒) makes the checked type an inferred one, and in checking mode the type is an
+     input, so an inference can conclude any type at all.
+   `GuessIn k d` is the (small) predicate that asks exactly these types to be in scope; it is a
+   nested tuple of `UVarsIn` proofs, and for a derivation built from a SOLVED declarative
+   derivation each component is `solved⇒uvarsIn _`.  Since `GuessIn` also carries the
+   `A-LSplit`/`A-RSplit` obligation (the split type `s` of the constant), the `SolvedTm e`
+   argument became unnecessary — and dropping it is what makes the A-Let case provable, because
+   `SolvedTm` has no constructor for `` `let _ `in _ `` (`Algorithmic/Solved.agda`, outside this
+   tree, has it commented out).
+2. **Checking mode takes the input type&#x27;s scope as a hypothesis** (`ScopeIn chk k m T =
+   UVarsIn k m T`), and the conclusion is uniform: `UVarsIn k n T × UVarsInΔ k n Δ`.  This is the
+   &quot;`UVarsInΔ-with T`&quot; of the task, in the form that composes: in `A-App` the checked type comes
+   from the arrow inferred by the first premise, so its variables are in `[k, m′)`, and A-Check&#x27;s
+   `C-Eq T U` is then in `[k, n)`.  There is a window base `k ≤ m` so that the same statement
+   serves the premises of a rule; `scope` instantiates `k := m`.
+3. `UVarsIn`, `UVarsInC`, `UVarsInΓ` are DATA/RECORD types and `Agree` is a RECORD, never
+   Set-valued functions.  With functions Agda cannot invert `UVarsIn m n ?t =?= UVarsIn m n T`
+   (defined functions are not injective) and every use site leaves unsolved metas; this cost one
+   rewrite of the module.  Consequence for callers: build `Agree` with `agree (λ α lo hi → …)`,
+   read it with `ap≡`; build `UVarsInΓ` with `ctx (λ x → …)`, read it with `lookupΓ`.
+4. `merge`, `merge₃` and their lemmas take `k` (and `k₁ k₂`) and the substitutions as EXPLICIT
+   arguments, for the same inference reason (`UV.Sub` is a record with proof fields, so a σ that
+   occurs only under `SolvedΔ`/`Solving` is not recoverable).
+
+## Notes for other agents
+- The three-way merge for A-Case is `merge₃ m₁ m₂ σ σ₁ σ₂` where `m₁`, `m₂` are the exit counters
+  of the scrutinee and of the first branch; `solvedΔ-merge₃` wants `m₁ ≤ m₂ ≤ n`, all of which
+  come out of `scope`.
+- For A-LSplit/A-RSplit use `merge m (single (UV.fresh m) s′ ¬Ss′) σ-rest`: `single` puts `s′` on
+  the freshly allocated `uvar ‼ m` (and `dual s′` on its ⁇-twin), `merge` at `suc m` keeps it.
+- Nothing here imports anything from `Simulation/`; the only imports are core modules plus
+  `BorrowedCF.Algorithmic` (for `subAll-solving`, reused rather than re-proved) and
+  `Completeness/Base.agda` (for `SolvedCtx`).
+
+## Discrepancies found between the tex rules and the Agda definitions
+- None affecting this module.  The one modelling observation worth recording is the one above:
+  the algorithmic system as mechanised has two rules (A-Const, A-Ann) whose conclusion type is
+  not determined by the term and the premises, so &quot;the algorithmic derivation only mentions
+  variables it allocated&quot; is a property of the derivations the completeness proof BUILDS, not of
+  the judgment.
+
+## Base-change log
+- 2026-09-08, C6c: A-LetPair / A-Let gained an explicit first argument `(p/s : ParSeq)`.
+  Adapted the four patterns (`GuessIn`, `scope-gen`); no statement changed — the scope
+  invariant never inspects the structure `γ`.  All four modules re-checked, exit 0.
+- 2026-09-08, C10: the ≼ premises now emit `Δ₀` (`Γ ∶ γ₁ ≼ γ₂ ↑ Δ₀`, `Context/SubConstraint.agda`),
+  which is prepended to the output set of A-Var, A-Const, A-LSplit, A-RSplit, A-App, A-Seq,
+  A-LetPair, A-Let, A-Case, A-Pair; A-Ann gained a first premise `ChkForm e`; A-Case takes
+  `≤γ` instead of `JoinParSeq`.  Adapted, no exported statement changed.  NEW exported lemmas:
+  * `uvarsInΔ-≈′↑ : UVarsInΓ m n Γ → Γ ∶ γ₁ ≈′ γ₂ ↑ Δ → UVarsInΔ m n Δ`. proved
+  * `uvarsInΔ-≈↑ : UVarsInΓ m n Γ → Γ ∶ γ₁ ≈ γ₂ ↑ Δ → UVarsInΔ m n Δ`. proved
+  * `uvarsInΔ-≼↑ : UVarsInΓ m n Γ → Γ ∶ γ₁ ≼ γ₂ ↑ Δ → UVarsInΔ m n Δ`. proved
+    (only `∥′-tmˡ↑` / `∥′-tmʳ↑` emit anything, namely `allMobile Γ α`, so the scope of Δ₀ is
+    the scope of the context; every other constructor emits `[]` or a concatenation.)
+  `scope-gen` threads Δ₀ with `uvarsInΔ-++` in all ten rules.  All four modules re-checked, exit 0.
+</pre><h3>Split-STATUS.md <span class=meta>(modified 20:22:40)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># C1 — Split.agda (structure-algebra toolkit) — STATUS
+
+Owner: agent C1.  Files: `Completeness/Split.agda`, `Completeness/Split/*.agda`.
+Wrapper: `agda-check BorrowedCF/Completeness/Split/X.agda`.  (The Agda MCP server
+refused to connect for this session: protocol version mismatch, 2025-11-25 vs
+2025-06-18.  Everything below was checked with `agda-check` only.)
+
+## Lemma table
+
+| lemma | statement | status | file |
+|---|---|---|---|
+| `count-↓-∈` | `x ∈ X → count x (γ ↓ X) ≡ count x γ` | proved | Split/Base.agda |
+| `count-↓-∉` | `x ∉ X → count x (γ ↓ X) ≡ 0` | proved | Split/Base.agda |
+| `count-↓` | `count x (γ ↓ X) ≡ (if does (x ∈? X) then count x γ else 0)` | proved | Split/Base.agda |
+| `count-↓≤` | `count x (γ ↓ X) ≤ count x γ` | proved | Split/Base.agda |
+| `mem⇒∈dom` / `∈dom⇒mem` / `mem-self` | `_∈ₘ_` ↔ `dom` | proved | Split/Base.agda |
+| `mem-↓⁻` / `mem-↓⁺` | `x ∈ₘ (γ ↓ X) ↔ x ∈ X × x ∈ₘ γ` | proved | Split/Base.agda |
+| `allCx-mem` | `AllCx P Γ α → x ∈ₘ α → P (Γ ﹫ x)` | proved | Split/Base.agda |
+| `mem-allCx` | `(∀ z → z ∈ₘ α → P (Γ ﹫ z)) → AllCx P Γ α` | proved | Split/Base.agda |
+| `allCx-↓-pointwise` | `(∀ z → z ∈ X → P (Γ ﹫ z)) → AllCx P Γ (γ ↓ X)` | proved | Split/Base.agda |
+| `↓-∥` / `↓-;` / `↓-join` | restriction commutes with `∥` / `;` / `join a` (`↓-join` = `join-↓` of Context/Join.agda) | proved | Split/Base.agda |
+| `↓-wk` | `wk γ ↓ (b ∷ X) ≡ wk (γ ↓ X)` | proved | Split/Base.agda |
+| `↓-wk-tail` | `wk γ ↓ X ≡ wk (γ ↓ V.tail X)` (X : Subset (suc n); `fvClose = V.tail`) | proved | Split/Base.agda |
+| `↓-wk²` | `wk (wk γ) ↓ X ≡ wk (wk (γ ↓ V.drop 2 X))` (`fvClose* 2 = V.drop 2`) | proved | Split/Base.agda |
+| `↓-↓-⊆` | `X ⊆ Y → (γ ↓ Y) ↓ X ≡ γ ↓ X` | proved | Split/Base.agda |
+| `↓-mono-⊆` | `X ⊆ Y → (∀ z → z ∈ Y → z ∉ X → Unr (Γ ﹫ z)) → Γ ∶ γ ↓ X ≼ γ ↓ Y` | proved | Split/Base.agda |
+| `↓-mono-⊆′` | same with `AllCx Unr Γ (γ ↓ Y ↓ ∁ X)` | proved | Split/Base.agda |
+| `mob-dist` | `(∀ u v → u ∈ₘ P → v ∈ₘ Q → Mobile (Γ ﹫ u) ⊎ Mobile (Γ ﹫ v)) → MobCx Γ P ⊎ MobCx Γ Q` | proved | Split/Base.agda |
+| `SepXY` / `SepYX` / `Sep` | separation predicates (records, see below) | defined | Split/Base.agda |
+| `sep-∥ˡ/ʳ`, `sep-;ˡ/ʳ` | `Sep` is inherited by substructures | proved | Split/Base.agda |
+| `count-join` | `count x (join a α β) ≡ count x α + count x β`, generic in the `Join` instance | proved | Split/Lin.agda |
+| `lin-≼` | `LinStruct Γ γ₂ → Γ ∶ γ₁ ≼ γ₂ → LinStruct Γ γ₁` | proved | Split/Lin.agda |
+| `lin-↓` | `(Γ) (γ) (X) → LinStruct Γ γ → LinStruct Γ (γ ↓ X)` | proved | Split/Lin.agda |
+| `lin-join⁻` | `(a) (Γ) (α β) → LinStruct Γ (join a α β) → LinStruct Γ α × LinStruct Γ β` | proved | Split/Lin.agda |
+| `lin-;⁻` / `lin-∥⁻` | the `;` / `∥` instances of `lin-join⁻` | proved | Split/Lin.agda |
+| `lin-wk` | `(T) (Γ) (γ) → LinStruct Γ γ → LinStruct (T ⸴ Γ) (wk γ)` | proved | Split/Lin.agda |
+| `lin-bind` | `(a) (T) (Γ) (γ) → LinStruct Γ γ → LinStruct (T ⸴ Γ) (join a (` 0F) (wk γ))` | proved | Split/Lin.agda |
+| `lin-bind₂` | `(a) (d) (T U) (Γ) (γ) → … → LinStruct (T ⸴ U ⸴ Γ) (join a (join d (` 0F) (` 1F)) (wk (wk γ)))` | proved | Split/Lin.agda |
+| `lin-bind-rec` | `(T U) (Γ) (γ) → … → LinStruct (T ⸴ U ⸴ Γ) ((` 0F) ∥ (` 1F) ∥ wk (wk γ))` | proved | Split/Lin.agda |
+| `unr-mob` | `Unr (Γ ﹫ x) → MobCx Γ (` x)` | proved | Split/Absorb.agda |
+| `unr-extract` | `(γ) → Unr (Γ ﹫ x) → x ∈ₘ γ → Γ ∶ γ ≈ (` x) ∥ γ` | proved | Split/Absorb.agda |
+| `unr-absorb` | `AllCx Unr Γ β → (∀ z → z ∈ₘ β → z ∈ₘ γ) → Γ ∶ γ ∥ β ≼ γ` | proved | Split/Absorb.agda |
+| `unr-absorb-;` | same conclusion `Γ ∶ γ ; β ≼ γ` | proved | Split/Absorb.agda |
+| `unr-absorb-;ˡ` | same conclusion `Γ ∶ β ; γ ≼ γ` | proved | Split/Absorb.agda |
+| `unr-absorb-join` / `unr-absorb-joinˡ` | `Γ ∶ join a γ β ≼ γ` / `Γ ∶ join a β γ ≼ γ` | proved | Split/Absorb.agda |
+| `Esc` | record wrapping `Mobile (Γ ﹫ u) ⊎ Mobile (Γ ﹫ v)` (field `getEsc`) | defined | Split/Order.agda |
+| `before-fwd` | `¬Unr u → ¬Unr v → Γ ∶ α ≈′ β → before u v α → before u v β` | proved | Split/Order.agda |
+| `before-bwd` | `… → Γ ∶ α ≈′ β → before u v β → before u v α ⊎ Esc Γ u v` | proved | Split/Order.agda |
+| `before-≈ᵇ` | same along `≈` | proved | Split/Order.agda |
+| `before-mob-≼` | `¬Unr u → ¬Unr v → Γ ∶ α ≼ β → before u v β → before u v α ⊎ Esc Γ u v` | proved | Split/Order.agda |
+| `canon-disj` | `(a) (X Y) → LinStruct Γ γ → join a α β ≼ γ → dom α ⊆ X → dom β ⊆ Y → (leftovers Unr) → ∀ z → z ∈ X → z ∈ Y → Unr (Γ ﹫ z)` | proved | Split/Extract.agda |
+| `canon-out` | `(a) (X Y) → join a α β ≼ γ → dom α ⊆ X → dom β ⊆ Y → AllCx Unr Γ (γ ↓ ∁ (X ∪ Y))` | proved | Split/Extract.agda |
+| `canon-sep` | `(d) (X Y) → join d α β ≼ γ → dom α ⊆ X → dom β ⊆ Y → disj → Sep d Γ X Y γ` | proved | Split/Extract.agda |
+| `mem⇒∈` | `(δ) → x ∈ₘ δ → dom δ ⊆ X → x ∈ X` | proved | Split/Extract.agda |
+| `canon-core` | the induction on γ (delivered by agent C9, see its section below) | proved | Split/Construct.agda |
+| `canon-split` | THE canonical split, see below | proved | Split.agda |
+| `canon-split-ps` | ParSeq instance | proved | Split.agda |
+| `canon-split-;` / `canon-split-∥` | the `;` / `∥` instances, spelled out | proved | Split.agda |
+| `canon-joinParSeq` | packages the `Y = ∁ X` case as `JoinParSeq Γ γ X p/s` (A-Case) | proved | Split.agda |
+
+### CALLING CONVENTION for the `lin-*` lemmas (important)
+
+`LinStruct Γ γ` unfolds to `∀ x → ¬ Unr (Γ ﹫ x) → count x γ ≤ 1`, a Π-type in
+which Γ sits under `lookup`.  Agda can therefore NEVER solve Γ, γ or a binder
+type from a `LinStruct` argument or goal (the constraint `lookup ?Γ x = lookup Γ x`
+is not invertible).  All those arguments are EXPLICIT in `Split/Lin.agda`, in the
+order shown in the table.  Only `lin-≼` keeps them implicit, because its `≼`
+argument pins them down.
+
+## STATE: COMPLETE.  All eight files load with zero goals, zero unsolved metas,
+no postulate, no TERMINATING, no holes:
+`Split.agda`, `Split/{Base,Lin,Absorb,Order,Extract,Construct,Smoke}.agda`
+(1021 lines + 143 from C9&#x27;s `Construct.agda`).
+
+`Split/Smoke.agda` is a usage example, not a proof obligation: it applies every
+export in the shape the A-rules need (A-Seq, A-App at `R`, A-Pair, the binder
+`LinStruct` lemmas, absorption, `↓-mono-⊆`).  Read it if an argument order is
+unclear.  `Split.agda` also re-exports `count` (Confine), `_∈ₘ_` and `before`
+(GroupOrder), because the `unr-absorb` premises are stated with `_∈ₘ_`.
+
+## THE EXPORTS  (import `BorrowedCF.Completeness.Split`, it re-exports everything)
+
+```agda
+canon-split : (d : Dir) {Γ : Ctx n} (X Y : Subset n) {α β γ : Struct n} →
+  LinStruct Γ γ →
+  Γ ∶ join d α β ≼ γ →
+  dom α ⊆ X → dom β ⊆ Y →
+  (∀ z → z ∈ X → z ∉ dom α → Unr (Γ ﹫ z)) →
+  (∀ z → z ∈ Y → z ∉ dom β → Unr (Γ ﹫ z)) →
+  Γ ∶ join d (γ ↓ X) (γ ↓ Y) ≼ γ
+
+canon-split-ps    : (p/s : ParSeq) … → Γ ∶ join p/s (γ ↓ X) (γ ↓ Y) ≼ γ
+canon-split-;   : … → Γ ∶ α ; β ≼ γ → … → Γ ∶ (γ ↓ X) ; (γ ↓ Y) ≼ γ
+canon-split-∥     : … → Γ ∶ α ∥ β ≼ γ → … → Γ ∶ (γ ↓ X) ∥ (γ ↓ Y) ≼ γ
+canon-joinParSeq  : (p/s : ParSeq) (X : Subset n) → … → dom β ⊆ ∁ X → … → JoinParSeq Γ γ X p/s
+```
+
+X and Y are EXPLICIT (they occur only under `_↓_` and `_∈_`, so Agda cannot
+solve them); Γ, α, β, γ are implicit and are pinned down by the `≼` argument.
+
+HOW TO INSTANTIATE IT for the A-rules (the algorithmic side always restricts to
+`fv e₂` FIRST in A-App):
+
+* `T-AppLeft`  premise `γ₂ ; γ₁ ≼ γ`: `canon-split L (fv e₂) (fv e₁)`, giving
+  `(γ ↓ fv e₂) ; (γ ↓ fv e₁) ≼ γ` = `join L (γ ∣fv[ e₂ ]) (γ ∣fv[ e₁ ]) ≼ γ`.
+* `T-AppRight` premise `γ₁ ; γ₂ ≼ γ`: `canon-split R (fv e₂) (fv e₁)` (α := γ₂,
+  β := γ₁, and `join R α β = β ; α` definitionally).
+* `T-AppUnr` / `T-AppLin` premise `γ₁ ∥ γ₂ ≼ γ`: commute with `∥-comm` first,
+  then `canon-split 𝟙 (fv e₂) (fv e₁)`.
+* `T-Seq` premise `γ₁ ; γ₂ ≼ γ`: `canon-split-; (fv e₁) (fv e₂)`.
+* `T-Pair` / `T-Let` / `T-LetPair` premise `join p/s γ₁ γ₂ ≼ γ`:
+  `canon-split-ps p/s X Y` with the two free-variable sets; for A-LetPair and
+  A-Let, which demand a plain `;`, postcompose with `;-≼-join p/s`
+  (`α ; β ≼ join p/s α β`) — or use `canon-split-;` directly when the
+  declarative premise is already sequential.
+
+The two `dom α ⊆ X` premises and the two &quot;leftover is Unr&quot; premises are what
+the caller has to produce from the declarative derivation; C3/C4 own that
+(`dom γᵢ ⊆ fv eᵢ ∪ {unrestricted junk}` comes from the typing of `eᵢ`).
+
+## HELPER SPLIT  (answer to the coordinator: YES, it split cleanly — DONE, agent C9 delivered `canon-core`)
+
+The canonical split factors into
+
+  (a) EXTRACTION — from `Γ ∶ join d α β ≼ γ` + `LinStruct Γ γ` + the domain side
+      conditions, derive the three inputs `disj`, `out`, `sep` below.  Needs a
+      strengthened `before-mono-≼` (mine, `Split/Order.agda`).
+  (b) CONSTRUCTION — from those three inputs, build the ≼ by induction on γ.
+
+They share NOTHING except the three inputs, which are already type-checked
+definitions in `Split/Base.agda`.  A helper agent can take (b) in
+`BorrowedCF/Completeness/Split/Construct.agda` right now.
+
+### What the helper must prove (exact statement, do not change it)
+
+```agda
+module BorrowedCF.Completeness.Split.Construct where
+
+open import Data.Fin.Subset using (Subset; _∈_; _∉_; _⊆_; _∪_; ∁)
+open import Data.Fin.Subset.Properties using (_∈?_; x∈p∪q⁺; x∈p∪q⁻; x∉p⇒x∈∁p; x∈∁p⇒x∉p)
+open import BorrowedCF.Prelude
+open import BorrowedCF.Types
+open import BorrowedCF.Context
+open import BorrowedCF.Context.Base using (module Variables)
+open import BorrowedCF.Context.Domain
+open import BorrowedCF.Completeness.Split.Base
+
+canon-core : ∀ (d : Dir) {Γ : Ctx n} {X Y : Subset n} (γ : Struct n) →
+  (disj : ∀ z → z ∈ X → z ∈ Y → Unr (Γ ﹫ z)) →
+  (out  : AllCx Unr Γ (γ ↓ ∁ (X ∪ Y))) →
+  (sep  : Sep d Γ X Y γ) →
+  Γ ∶ join d (γ ↓ X) (γ ↓ Y) ≼ γ
+```
+
+`Sep`, `SepXY`, `SepYX`, `mob-dist`, `mem-↓⁻`, `mem-allCx`, `allCx-mem`,
+`sep-∥ˡ/ʳ`, `sep-;ˡ/ʳ` are all exported from `Split/Base.agda` (type-checked).
+`SepXY`/`SepYX` are RECORDS (field `getXY` / `getYX`, constructor `mkSepXY` /
+`mkSepYX`) so that Γ, X, Y stay inferable:
+
+```agda
+record SepXY (Γ : Ctx n) (X Y : Subset n) (γ : Struct n) : Set where
+  field getXY : ∀ u v → u ∈ X → v ∈ Y → before u v γ → Mobile (Γ ﹫ u) ⊎ Mobile (Γ ﹫ v)
+record SepYX (Γ : Ctx n) (X Y : Subset n) (γ : Struct n) : Set where
+  field getYX : ∀ u v → u ∈ Y → v ∈ X → before u v γ → Mobile (Γ ﹫ u) ⊎ Mobile (Γ ﹫ v)
+Sep 𝟙 Γ X Y γ = SepXY Γ X Y γ × SepYX Γ X Y γ
+Sep L Γ X Y γ = SepYX Γ X Y γ
+Sep R Γ X Y γ = SepXY Γ X Y γ
+```
+
+### Proof plan for (b) — worked out, no gaps known
+
+Induction on γ.  Write `A₁ = γ₁ ↓ X`, `A₂ = γ₁ ↓ Y`, `B₁ = γ₂ ↓ X`, `B₂ = γ₂ ↓ Y`.
+
+* `γ = []`: `join d [] [] ≈ []` by `join-[]₁ d`; `≼-refl`.
+* `γ = ; z`: decide `z ∈? X` and `z ∈? Y` (`_∈?_` is decidable).
+  - both: `Unr (Γ ﹫ z)` from `disj`, so `join d (; z) (; z) ≈ ; z`
+    (`∥-dup` for 𝟙, `∥/;-transmute` + `∥-dup` for L/R — `unr⇒mobile`).
+  - only X: `join-[]₂ d`.  Only Y: `join-[]₁ d`.
+  - neither: `z ∈ ∁ (X ∪ Y)`, so `out` gives `Unr (Γ ﹫ z)`; then
+    `join d [] [] ≈ [] ≼ ; z` by `≼-∅`.
+* `γ = γ₁ ∥ γ₂`: `join-distr-∥ d A₁ A₂ B₁ B₂` (Context/Join.agda) gives
+  `join d (A₁ ∥ B₁) (A₂ ∥ B₂) ≼ join d A₁ A₂ ∥ join d B₁ B₂`; finish with
+  `≼-cong-∥ IH₁ IH₂`.  `out` splits by `allCx-∥⁻¹`, `sep` by `sep-∥ˡ/ʳ`.
+* `γ = γ₁ ; γ₂`: THE case.  It suffices to prove
+      `join d (A₁ ; B₁) (A₂ ; B₂) ≈ (join d A₁ A₂) ; (join d B₁ B₂)`
+  and finish with `≼-cong-; IH₁ IH₂`.  Get two mobility disjunctions with
+  `mob-dist` (u ∈ₘ A₁ gives u ∈ X and u ∈ₘ γ₁ by `mem-↓⁻`, so
+  `before u v (γ₁ ; γ₂) = inj₁ (u∈ₘγ₁ , v∈ₘγ₂)` is available):
+      H₁ : MobCx Γ A₁ ⊎ MobCx Γ B₂     (from `getXY sep`, needs d ∈ {𝟙, R})
+      H₂ : MobCx Γ A₂ ⊎ MobCx Γ B₁     (from `getYX sep`, needs d ∈ {𝟙, L})
+  Then
+  - d = L: goal `(A₁ ; B₁) ; (A₂ ; B₂) ≈ (A₁ ; A₂) ; (B₁ ; B₂)`:
+    reassociate with `;-assoc` and swap `B₁` past `A₂` with `;-commMob H₂`.
+  - d = R: mirror image, `join R P Q = Q ; P`, swap `B₂` past `A₁` with
+    `;-commMob H₁`.
+  - d = 𝟙: goal `(A₁ ; B₁) ∥ (A₂ ; B₂) ≈ (A₁ ∥ A₂) ; (B₁ ∥ B₂)`.  Four
+    cases from H₁ × H₂, two chains:
+    * (MobA₁,MobA₂) and (MobB₂,MobB₁): `∥/;-transmute` backwards on both
+      `;`s, `∥-comm₄`, then `∥/;-transmute` forwards using
+      `MobCx (A₁ ∥ A₂)` resp. `MobCx (B₁ ∥ B₂)`.
+    * (MobA₁,MobB₁) and (MobB₂,MobA₂): `∥/;-transmute` forwards on the top
+      `∥` (witness `MobCx (A₁ ; B₁)` resp. `MobCx (A₂ ; B₂)`), then
+      `;-assoc` + `;-commMob` to swap `B₁` past `A₂`, then transmute the two
+      inner `;`s back to `∥`.
+    All four are ≈, so the whole `;`-node is `≼-refl (…)` composed with
+    `≼-cong-;`.
+
+A convenient shape for the 𝟙 case (prove it first, it is context-free):
+
+```agda
+;-shuffle : ∀ {Γ : Ctx n} {A₁ A₂ B₁ B₂ : Struct n} →
+  MobCx Γ A₁ ⊎ MobCx Γ B₂ → MobCx Γ A₂ ⊎ MobCx Γ B₁ →
+  Γ ∶ (A₁ ; B₁) ∥ (A₂ ; B₂) ≈ (A₁ ∥ A₂) ; (B₁ ∥ B₂)
+```
+
+WHY the mobility disjunctions are unavoidable: `Γ = h : ⟨acq ; s⟩, y : ⟨…⟩`,
+`γ = ; h ; ; y`, `X = ⁅y⁆`, `Y = ⁅h⁆`, `α = ; y`, `β = ; h`, `d = 𝟙`.
+Then `α ∥ β ≼ γ` holds only through `∥′-tm-;` with the MOBILITY witness for `h`,
+and the conclusion `(γ ↓ X) ∥ (γ ↓ Y) ≼ γ` needs that same witness.  `Mobile` is
+NOT decidable, so the witness has to be threaded out of the ≼-derivation; that is
+what part (a) (`before-mob-≼`) does, and `mob-dist` is the constructive
+&quot;(∀u∀v. P u ⊎ Q v) → (∀u. P u) ⊎ (∀v. Q v)&quot; that turns the pointwise witnesses
+into the two `MobCx` disjunctions.
+
+## Notes / discrepancies found so far
+
+* `A-Case` (Algorithmic.agda) types both branches at `γ ↓ ∁ (fv e)`.  That is
+  INCOMPLETE for an unrestricted variable shared between the scrutinee and a
+  branch: for `Γ = z : Int` (Unr) and `case e of ⟨ z ; z ⟩` with `z ∈ fv e`, the
+  declarative `T-Case` types the branches at a `γ₂` containing `z` (duplication
+  of an Unr variable is free, `∥′-dup`), while `γ ↓ ∁ (fv e)` deletes `z`, so
+  `A-Var` cannot fire in the branch.  Every other two-subterm A-rule uses two
+  restrictions of γ (never a complement) and is unaffected.  `canon-split` is
+  stated with two independent sets X, Y and therefore does NOT cover the
+  A-Case shape: `dom γ₂ ⊆ ∁ (fv e)` simply fails there.  Suggested fix for
+  whoever owns Algorithmic.agda: use `γ ↓ (fvClose (fv e₁) ∪ fvClose (fv e₂))`
+  for the branches instead of `γ ↓ ∁ (fv e)`.
+* `join seq α β` and `join L α β` reduce to `α ; β` definitionally
+  (`biasedDir seq = L`), so the `;`-shaped premises of A-Seq, A-Let and
+  A-LetPair are literally `canon-split` at `d = L`.  I export an explicit
+  `canon-split-;` anyway so nobody has to rely on that.
+
+------------------------------------------------------------------------
+
+## C9 — `Split/Construct.agda` (CONSTRUCTION half), owned by agent C9
+
+File: `Completeness/Split/Construct.agda`.  Checked with
+`agda-check BorrowedCF/Completeness/Split/Construct.agda`: exit 0, no output,
+zero goals, zero unsolved metas, no postulate / TERMINATING / rewrite.
+`Split/Base.agda` is the only Completeness import; nothing under `Simulation/`
+is imported directly.
+
+| lemma | statement | status |
+|---|---|---|
+| `;-interchange` | `(P₁ ; Q₁) ; (P₂ ; Q₂) ≈ (P₁ ; P₂) ; (Q₁ ; Q₂)` given `MobCx Γ P₂ ⊎ MobCx Γ Q₁` | proved |
+| `;-shuffle` | `(A₁ ; B₁) ∥ (A₂ ; B₂) ≈ (A₁ ∥ A₂) ; (B₁ ∥ B₂)` given `MobCx A₁ ⊎ MobCx B₂` and `MobCx A₂ ⊎ MobCx B₁` | proved |
+| `join-dup` | `(d) (Γ) (α) → UnrCx Γ α → Γ ∶ join d α α ≈ α` | proved |
+| `mob-XY` | `SepXY Γ X Y (γ₁ ; γ₂) → MobCx Γ (γ₁ ↓ X) ⊎ MobCx Γ (γ₂ ↓ Y)` | proved |
+| `mob-YX` | `SepYX Γ X Y (γ₁ ; γ₂) → MobCx Γ (γ₁ ↓ Y) ⊎ MobCx Γ (γ₂ ↓ X)` | proved |
+| `canon-core` | `(d) (γ) → disj → out → Sep d Γ X Y γ → Γ ∶ join d (γ ↓ X) (γ ↓ Y) ≼ γ` | **proved** |
+
+`canon-core` is the EXACT statement of &quot;HELPER SPLIT&quot; above, unchanged, with the
+module header and import list given there (`x∈p∪q⁺`, `_⊆_`, `x∈∁p⇒x∉p` end up
+unused; I left them in so the header stays literally as specified).
+
+All five auxiliaries are PUBLIC (not `private`), so C1 may reuse them; nothing in
+`Split/Base.agda` was touched.
+
+### Case breakdown of `canon-core` (all four done)
+
+* `γ = []` — `≼-refl (join-[]₁ d)`.
+* `γ = ` z` — `with z ∈? X | z ∈? Y`: both `join-dup d (` disj z _ _)`; only X
+  `join-[]₂ d`; only Y `join-[]₁ d`; neither `≼-∅` on the `Unr` read out of `out`
+  with `allCx-mem out (mem-↓⁺ (` z) (x∉p⇒x∈∁p …) (mem-self z))`.
+* `γ = γ₁ ∥ γ₂` — `join-distr-∥ d (γ₁↓X) (γ₁↓Y) (γ₂↓X) (γ₂↓Y)` then
+  `≼-cong-∥ IH₁ IH₂`; `out` splits by pattern `(o₁ ∥ o₂)`, `sep` by `sep-∥ˡ/ʳ d`.
+* `γ = γ₁ ; γ₂` — split on `d`, each direction one `≼-refl` of a ≈-shuffle
+  followed by `≼-cong-; IH₁ IH₂`.
+
+### Deviations from C1&#x27;s plan (three, all simplifications)
+
+1. **`d = L` and `d = R` use `;-interchange`, not an ad-hoc chain.**  Both are the
+   same lemma at different instances: `L` needs
+   `;-interchange (γ₁↓X) (γ₂↓X) (γ₁↓Y) (γ₂↓Y) (mob-YX …)` and `R` needs
+   `;-interchange (γ₁↓Y) (γ₂↓Y) (γ₁↓X) (γ₂↓X) (mob-XY …)`, because
+   `join R α β = β ; α` reduces definitionally.  No `join-flip` and no
+   `;-≼-join` were needed anywhere.
+
+2. **`;-shuffle` has the argument order `A₁ B₁ A₂ B₂`** (row-major: the two
+   factors of the first `;` first), not the `A₁ A₂ B₁ B₂` of the sketch in
+   &quot;HELPER SPLIT&quot;.  Its two hypotheses are exactly the sketch&#x27;s `H₁`, `H₂`.
+   Its Γ, A₁, B₁, A₂, B₂ are explicit for the same reason the `lin-*` lemmas
+   are: `MobCx` hides them under `lookup`.
+
+3. **`≼-wk` is never applied by hand.**  It only enters through
+   `join-distr-∥` (Context/Join.agda), which already covers the `L`/`R` cases of
+   the `∥`-node.  `∥′-dup` enters only through `∥-dup` inside `join-dup`.
+
+Everything else follows the plan verbatim: `mob-dist` on `(γ₁ ↓ ·, γ₂ ↓ ·)` with
+`before u v (γ₁ ; γ₂) = inj₁ (u∈ₘγ₁ , v∈ₘγ₂)` supplied through `mem-↓⁻`, and the
+four `H₁ × H₂` cases of the `𝟙` shuffle in exactly the two chains described
+(column-mobile → `∥-comm₄`; row-mobile → transmute the outer `∥` and reuse
+`;-interchange`).
+
+### No helper was missing from `Split/Base.agda`
+
+`Base.agda` supplied `mob-dist`, `mem-↓⁻`, `mem-↓⁺`, `mem-self`, `allCx-mem`,
+`Sep`/`SepXY`/`SepYX` and `sep-∥ˡ/ʳ`, `sepXY-;ˡ/ʳ`, `sepYX-;ˡ/ʳ` unchanged;
+`mem-allCx`, `allCx-↓-pointwise` and `↓-mono-⊆` turned out not to be needed.
+The three lemmas I added (`;-interchange`, `;-shuffle`, `join-dup`) are pure
+structure algebra with no reference to `_↓_`, so they would sit equally well in
+`Base.agda` if C1 wants them there — say the word and I will move them.
+
+### Note for C1 / the extraction half
+
+`canon-core` uses `sep` ONLY at `;`-nodes of γ, and only through
+`before u v (γ₁ ; γ₂) = inj₁ (…)`, i.e. through the &quot;u in the left factor, v in
+the right factor&quot; disjunct.  A weaker `Sep` that quantifies only over that
+disjunct would still be enough for the construction; the recursive `sep-;ˡ/ʳ`
+projections then have to be re-proved.  I kept the strong (recursive) `Sep`
+because `Base.agda` already has the projections.
+</pre><h3>Sub-STATUS.md <span class=meta>(modified 20:31:22)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># C8 — constraint-generating subcontext relation (`Completeness/Sub.agda`)
+
+Owner: agent C8.  Files: `Completeness/Sub.agda`, `Completeness/Sub/Base.agda`,
+`Completeness/Sub/Probe.agda`.  All three type-check with `agda-check`, **zero goals,
+zero unsolved metas, no postulates**.  Nothing outside `Completeness/` was touched.
+
+NOTE for whoever copies code out of this file: every `;` in an Agda snippet below is
+U+037E, not ASCII `;` (see `Completeness/AGENTS.md`).  Copy the character from
+`Completeness/Sub.agda`, do not retype it.
+
+## What this fixes
+
+C4&#x27;s BLOCKING FINDING 1 (`Completeness/Main-STATUS.md`): the A-rules check
+`Γ ∶ γ₁ ≼ γ₂` in a context whose types still contain unification variables, and the
+rule `∥′-tm-;` of `_∶_≈′_` (Context/Equivalence.agda) — hence `;-commMob`, `;-unit₁`,
+`;-unit₂`, `∥/;-transmute` — needs `MobCx`.  `Mobile` is not reflected along `subTy`
+(`Mobile ⟨ s ⟩` is `∃ s′. Bounded s′ × s ≃ acq ; s′`, and a uvar leaf `` `` α `` is a
+leaf of `≃𝕊`), so completeness is false.  `Unr` *is* reflected (`Unr` is `⊥` on every
+session type), so `∥′-dup` and `≼-∅` are unaffected.
+
+`Completeness/Sub.agda` defines the repaired judgment and proves that it is sound,
+complete for the transfer step, and a conservative refinement of `≼`.
+
+## Delivered definitions
+
+| name | statement | file |
+|---|---|---|
+| `_∶_≈′_↑_` | one-step context equivalence with emitted constraints; 10 rules mirroring `_∶_≈′_` | Sub.agda:52 |
+| `_∶_≈_↑_` | its reflexive/symmetric/transitive closure (`ε↑`, `_◅ᶠ_`, `_◅ᵇ_`), constraint lists concatenated | Sub.agda:67 |
+| `_∶_≼_↑_` | subcontext with emitted constraints; 6 rules mirroring `_∶_≼_` | Sub.agda:72 |
+| `JoinParSeq↑` | the A-Case premise, indexed by its constraint set | Sub.agda:223 |
+| `MobHolds` | `MobHolds (C-Mob T) = Mobile T`, `MobHolds (C-Eq _ _) = ⊤` | Sub.agda:330 |
+| `Approx Γ̂ Γ σ` | `∀ x → subTy (Γ̂ ﹫ x) σ ≃ Γ ﹫ x` | Sub/Base.agda |
+
+The single design decision: `∥′-tm-;`&#x27;s premise `MobCx Γ α ⊎ MobCx Γ β` becomes two
+constructors, `∥′-tmˡ↑ : Γ ∶ α ∥ β ≈′ α ; β ↑ allMobile Γ α` and
+`∥′-tmʳ↑ : Γ ∶ α ∥ β ≈′ α ; β ↑ allMobile Γ β`.  Every other rule emits `[]` or
+concatenates the constraint sets of its premises.  `∥′-dup↑` keeps `UnrCx Γ α`,
+`≼-∅↑` keeps `UnrCx Γ α`.
+
+Because `allMobile Γ [] = []`, the units `sq-unit₁↑ : Γ ∶ [] ; α ≈ α ↑ []` and
+`sq-unit₂↑ : Γ ∶ α ; [] ≈ α ↑ []` are constraint-FREE, and so is `sq-≼-par↑`
+(`; ≼ ∥`) and `sq-≼-join↑`.  Only a genuine `;`-commutation or a genuine
+`∥ ⇝ ;` transmutation costs constraints.
+
+## Lemma status (all `proved`)
+
+| lemma | statement | status |
+|---|---|---|
+| `subTy-unr⁻¹` | `Unr (subTy T σ) → Unr T` | proved (Sub/Base.agda) |
+| `approx-⸴` | `subTy T̂ σ ≃ T → Approx Γ̂ Γ σ → Approx (T̂ ⸴ Γ̂) (T ⸴ Γ) σ` | proved (Sub/Base.agda) |
+| `approx-id` | `SolvedΓ Γ σ → Approx Γ (subCtx Γ σ) σ` | proved (Sub/Base.agda) |
+| `unrCx-approx` | `Approx Γ̂ Γ σ → UnrCx Γ α → UnrCx Γ̂ α` | proved (Sub/Base.agda) |
+| `mobCx⇒solvedΔ` | `Approx Γ̂ Γ σ → MobCx Γ α → SolvedΔ (allMobile Γ̂ α) σ` | proved (Sub/Base.agda) |
+| `unrCx-sub` | `UnrCx Γ α → UnrCx (subCtx Γ σ) α` | proved (Sub/Base.agda) |
+| `≈↑-cast` / `≼↑-cast` | re-index along `Δ ≡ Δ′` | proved |
+| `≈↑-trans` | `α ≈ β ↑ Δ₁ → β ≈ γ ↑ Δ₂ → α ≈ γ ↑ (Δ₁ ++ Δ₂)` | proved |
+| `≈↑-sym` | `α ≈ β ↑ Δ → Σ[ Δ′ ] (β ≈ α ↑ Δ′) × (∀ {σ} → SolvedΔ Δ σ → SolvedΔ Δ′ σ)` | proved |
+| `≈↑-par-cong₁`, `≈↑-sq-cong₁`, `≈↑-sq-cong₂` | congruences preserving Δ | proved |
+| `∥-assoc↑ ∥-comm↑ ∥-unit₁↑ ∥-unit₂↑ ∥-dup↑ sq-assoc↑` (+ the `⁻¹` reverses) | the derived equivalences of Context/Equivalence.agda, all at `↑ []` | proved |
+| `∥-cong↑`, `sq-cong↑` | congruences at `↑ (Δ₁ ++ Δ₂)` | proved |
+| `transmuteˡ↑` / `transmuteʳ↑` | `α ∥ β ≈ α ; β ↑ allMobile Γ α` / `↑ allMobile Γ β` | proved |
+| `sq-unit₁↑`, `sq-unit₂↑` (+ `⁻¹`) | `[] ; α ≈ α ↑ []`, `α ; [] ≈ α ↑ []` | proved |
+| `sq-commMobˡ↑` / `sq-commMobʳ↑` | `α ; β ≈ β ; α ↑ (allMobile Γ α ++ allMobile Γ α)` (resp. β) | proved |
+| `sq-≼-par↑` | `Γ ∶ α ; β ≼ α ∥ β ↑ []` | proved |
+| `sq-≼-join↑`, `join-≼-par↑` | `α ; β ≼ join p/s α β ↑ []`, `join p/s α β ≼ α ∥ β ↑ []` | proved |
+| `≼-join↑` | `≼ ↑ Δ₁ → ≼ ↑ Δ₂ → join p/s … ≼ join p/s … ↑ (Δ₁ ++ Δ₂)` | proved |
+| `parOrSeq?↑` | `Γ ∶ α ; β ≼ γ ↑ Δ → Σ[ p/s ] Γ ∶ join p/s α β ≼ γ ↑ Δ` | proved |
+| `join-joinParSeq↑` | `JoinParSeq↑ Γ γ X p/s Δ → Γ ∶ join p/s (γ ↓ X) (γ ↓ ∁ X) ≼ γ ↑ Δ` | proved |
+| **`≈′↑-sound`** | `Solving σ → SolvedΔ Δ σ → Γ ∶ α ≈′ β ↑ Δ → subCtx Γ σ ∶ α ≈′ β` | proved |
+| **`≈↑-sound`** | `Solving σ → SolvedΔ Δ σ → Γ ∶ α ≈ β ↑ Δ → subCtx Γ σ ∶ α ≈ β` | proved |
+| **`≼↑-sound`** | `Solving σ → SolvedΔ Δ σ → Γ ∶ γ₁ ≼ γ₂ ↑ Δ → subCtx Γ σ ∶ γ₁ ≼ γ₂` | proved |
+| `≼↑-sound-++` | same, splitting `SolvedΔ (Δ ++ Δ′) σ` — the form the A-rules use | proved |
+| **`≈′↑-complete`** | `Solving σ → Approx Γ̂ Γ σ → Γ ∶ α ≈′ β → Σ[ Δ ] (Γ̂ ∶ α ≈′ β ↑ Δ) × SolvedΔ Δ σ` | proved |
+| **`≈↑-complete`** | same for `≈` | proved |
+| **`≼↑-complete`** | `Solving σ → (∀ x → subTy (Γ̂ ﹫ x) σ ≃ Γ ﹫ x) → Γ ∶ γ₁ ≼ γ₂ → Σ[ Δ ] (Γ̂ ∶ γ₁ ≼ γ₂ ↑ Δ) × SolvedΔ Δ σ` | proved |
+| `≼↑-complete-solved` | the `Γ̂ := Γ` instance via `approx-id` | proved |
+| `allMobile-holds` / `allMobile-holds⁻¹` | `MobCx Γ α ↔ All MobHolds (allMobile Γ α)` | proved |
+| **`≼⇒≼↑`** | `Γ ∶ γ₁ ≼ γ₂ → Σ[ Δ ] (Γ ∶ γ₁ ≼ γ₂ ↑ Δ) × All MobHolds Δ` (+ `≈⇒≈↑`, `≈′⇒≈′↑`) | proved |
+| **`≼↑-erase`** | `All MobHolds Δ → Γ ∶ γ₁ ≼ γ₂ ↑ Δ → Γ ∶ γ₁ ≼ γ₂` (+ `≈↑-erase`, `≈′↑-erase`) | proved |
+
+### On `≼↑-weaken-Δ`
+
+Weakening the index (`Γ ∶ γ₁ ≼ γ₂ ↑ Δ → Γ ∶ γ₁ ≼ γ₂ ↑ (Δ ++ Δ′)`) is **not derivable**:
+the constraint set of a derivation is determined by the rules it uses, and no rule can
+emit spurious constraints.  It is also **not needed**.  The A-rule carries the literal
+index `Δ₀` of its own `≼↑` premise into its own output constraints; at the use site the
+`SolvedΔ` is split with `All.++⁻ˡ / ++⁻ʳ`, exactly as the existing `sound` already does
+for `Δ₁ ++ Δ₂`.  The two forms that *are* delivered are `≼↑-cast` (re-index along a
+propositional equality, used to normalise `Δ ++ []`) and `≼↑-sound-++`.
+
+The requested `≼ → ≼ ↑ []` embedding is false whenever the derivation takes a mobility
+step; `≼⇒≼↑` + `≼↑-erase` is the honest replacement (a round trip: `≼` and `≼↑` with
+outright-valid constraints are interderivable).  The fragment that *does* embed at
+`↑ []` is everything below `sq-≼-par↑` / `sq-≼-join↑` / `≼-wk↑` / `≼-∅↑` /
+`≼-refl↑ ε↑` plus the six constraint-free equivalences, listed above.
+
+## PROPOSED BASE CHANGE (for the base-editing agent, after user approval)
+
+### 0. Placement
+
+`allMobile` currently lives in `Algorithmic.agda`, but the relation must be available to
+`Algorithmic.agda`&#x27;s own rules.  Move the 5-line `allMobile` into a new module
+`BorrowedCF/Context/Constraints.agda` (imports `Context.Base` + `Types.Unification`),
+then put the three data types of `Completeness/Sub.agda` into
+`BorrowedCF/Context/SubcontextC.agda`, and let `Algorithmic.agda` import both.
+`Algorithmic.mobConstraints` keeps its definition in terms of the moved `allMobile`.
+The proofs in `Completeness/Sub.agda` move with them unchanged (they use nothing from
+`Completeness/`).
+
+### 1. Rules of `Algorithmic.agda` whose `≼` premise becomes `≼ ↑ Δ₀`
+
+Every occurrence of the named premise gets an extra implicit `Δ₀ : CSet`, and `Δ₀` is
+prepended to the rule&#x27;s output constraint set.
+
+| rule | premise now | premise after | output constraints now | after |
+|---|---|---|---|---|
+| `A-Var` | `≤γ : Γ ∶ ` x ≼ γ` | `≤γ : Γ ∶ ` x ≼ γ ↑ Δ₀` | `[]` | `Δ₀` |
+| `A-Const` | `≤γ : Γ ∶ [] ≼ γ` | `… ↑ Δ₀` | `[]` | `Δ₀` |
+| `A-LSplit` | `≤γ : Γ ∶ [] ≼ γ` | `… ↑ Δ₀` | `[]` | `Δ₀` |
+| `A-RSplit` | `≤γ : Γ ∶ [] ≼ γ` | `… ↑ Δ₀` | `[]` | `Δ₀` |
+| `A-App` | `≤γ : Γ ∶ join (Arr.dir a) (γ ∣fv[ e₂ ]) (γ ∣fv[ e₁ ]) ≼ γ` | `… ↑ Δ₀` | `Δ₁ ++ Δ₂` | `Δ₀ ++ Δ₁ ++ Δ₂` |
+| `A-Seq` | `≤γ : Γ ∶ γ ∣fv[ e₁ ] ; γ ∣fv[ e₂ ] ≼ γ` | `… ↑ Δ₀` | `Δ₁ ++ Δ₂` | `Δ₀ ++ Δ₁ ++ Δ₂` |
+| `A-LetPair` | `≤γ : Γ ∶ γ₁ ; γ₂ ≼ γ` | `… ↑ Δ₀` | `Δ₁ ++ Δ₂` | `Δ₀ ++ Δ₁ ++ Δ₂` |
+| `A-Let` | `≤γ : Γ ∶ γ₁ ; γ₂ ≼ γ` | `… ↑ Δ₀` | `Δ₁ ++ Δ₂` | `Δ₀ ++ Δ₁ ++ Δ₂` |
+| `A-Pair` | `≤γ : Γ ∶ join p/s (γ ∣fv[ e₁ ]) (γ ∣fv[ e₂ ]) ≼ γ` | `… ↑ Δ₀` | `Δ₁ ++ Δ₂` | `Δ₀ ++ Δ₁ ++ Δ₂` |
+| `A-Case` | `JoinParSeq Γ γ (fv e) p/s` | `JoinParSeq↑ Γ γ (fv e) p/s Δ₀` | `C-Eq U₁ U₂ ∷ Δ ++ Δ₁ ++ Δ₂` | `C-Eq U₁ U₂ ∷ Δ₀ ++ Δ ++ Δ₁ ++ Δ₂` |
+
+`A-Abs`, `A-AbsRec`, `A-Inj`, `A-Check`, `A-Ann` are unchanged.  `A-Abs`/`A-AbsRec`
+carry `UnrCx Γ γ` premises, and `Unr` *is* reflected (`subTy-unr⁻¹`), so they stay as
+they are.  `A-Abs` already turns its `Mobile` side condition into `mobConstraints`; the
+change above applies the same treatment to the subcontext premises.
+
+### 2. `sound` in `Algorithmic.agda`
+
+In each of the nine `≼`-premise cases replace
+
+    T-Weaken (≼-map⁺ subTy-unr subTy-mobile ≤γ) …
+
+by
+
+    T-Weaken (≼↑-sound Sσ (All.++⁻ˡ Δ₀ SΔ) ≤γ) …
+
+and shift every existing split by one: `All.++⁻ˡ Δ₁ SΔ` becomes
+`All.++⁻ˡ Δ₁ (All.++⁻ʳ Δ₀ SΔ)`, and likewise for `++⁻ʳ`.  (`≼↑-sound-++ Sσ Δ₀ ≤γ SΔ`
+packages the first step.)  Concretely:
+
+* `A-Var`, `A-Const`, `A-LSplit`, `A-RSplit`: `SΔ : SolvedΔ Δ₀ σ`, so the replacement is
+  just `≼↑-sound Sσ SΔ ≤γ`.
+* `A-App`, `A-Seq`, `A-Pair`: `≼↑-sound Sσ (All.++⁻ˡ Δ₀ SΔ) ≤γ`, then feed
+  `All.++⁻ʳ Δ₀ SΔ` to the existing `Δ₁ / Δ₂` splits.
+* `A-LetPair`, `A-Let`: `let p/s , join≼ = parOrSeq? (≼↑-sound Sσ (All.++⁻ˡ Δ₀ SΔ) ≤γ)`
+  and drop the surrounding `≼-map⁺` (`≼↑-sound` already lands in `subCtx Γ σ`).
+* `A-Case`: `≼↑-sound Sσ (All.++⁻ˡ Δ₀ SΔ′) (join-joinParSeq↑ j-p/s)` where `SΔ′` is the
+  tail after the leading `C-Eq U₁ U₂`.
+
+No other proof in `Algorithmic.agda` changes; `⊢-sub` and the `sound-app` helper are
+untouched.
+
+`Completeness/Sub/Probe.agda` states and proves these four obligations verbatim
+(`probe-nullary`, `probe-binary`, `probe-letpair`, `probe-case`), so the rule shapes in
+the table above are mechanically checked, not guessed.
+
+### 3. Decidability
+
+`Context/Subcontext.agda` postulates `_∶_≼?_`.  The constraint version must *produce* a
+constraint set, so the postulate becomes something of the shape
+
+    _∶_≼?_↑ : (Γ : Ctx n) (γ₁ γ₂ : Struct n) → Dec (Σ[ Δ ∈ CSet ] Γ ∶ γ₁ ≼ γ₂ ↑ Δ)
+
+(“no derivation at all” on the negative side).  The algorithm should return the set with
+`Mobile` demanded of as few variables as possible; the search space is the same as
+before, only the mobility checks are recorded instead of performed.
+
+### 4. Consequence for the paper
+
+Concretely, in `tex/rules/typing-algorithmic.tex` (macro `\SubCtx = \preccurlyeq`,
+`symbols.tex:164`):
+
+| rule | line | premise | becomes |
+|---|---|---|---|
+| A-Const | 8 | `\CtxEmpty \SubCtx \Ctx` | `… \SubCtx \Ctx \csred \CSet[0]`, output `\CSet[0]` |
+| A-LSplit | 16 | same | same |
+| A-RSplit | 27 | same | same |
+| A-Var | 65 | `\CtxVar \EVar \T \SubCtx \Ctx` | same |
+| A-App | 75 | `\CtxAlgJoinCheck{\E[1]}{\E[2]}` | `\CSet[0]` added to the conclusion&#x27;s set |
+| A-Pair | 141 | `\CtxAlgJoinCheck{\E[1]}{\E[2]}` | idem |
+| A-Seq | 166 | `\CtxAlgSeqCheck{\E[1]}{\E[2]}` | idem |
+| A-LetPair | 190 | `\CtxAlgSeqCheck{\E[1]}{\E[2]}` | idem |
+| A-Case | 238 | `\Dir = \CaseJoinDir(\Ctx, \Fv(\E))` | the metafunction hides the same `\SubCtx` check, so it must return a constraint set as well |
+
+The two macros `\CtxAlgJoinCheck` / `\CtxAlgSeqCheck` (`symbols.tex:170,173`) expand to a
+`\SubCtx`, so changing the judgment changes them in one place.  A-Abs (line 115) already
+emits `\CMobile{\T*}` constraints for the mobility of its captured context, which is the
+pattern the subcontext premises have to follow.
+
+
+The paper&#x27;s algorithmic rules carry the same defect: their subcontext premise
+`Γ ⊑ Γ′` is checked on contexts whose types contain unification variables, and the
+context-equality rules behind it have `Mobile` side conditions.  The rules must be
+restated with a constraint-generating subcontext judgment
+
+    Γ ⊑ Γ′ ↑ C
+
+where the `Mobile` side condition of the equality rule that turns `∥` into `;` (and of
+everything derived from it — commutation of `;` for mobile parts) emits a mobility
+constraint `Mob(Γ(x))` for each variable x of the affected part, and the generated `C`
+is added to the constraints of the rule that uses the premise.  The `Unr` side
+conditions (duplication, and adding an unrestricted part) stay side conditions: `Unr` is
+decided syntactically and is preserved *and reflected* by type substitution, whereas
+`Mobile` is only preserved.  Soundness of the algorithm is unaffected (`≼↑-sound`), and
+completeness needs exactly this change (`≼↑-complete`).
+
+### 5. The counterexample of BLOCKING FINDING 1 goes through
+
+With the change, A-Seq&#x27;s premise in C4&#x27;s counterexample becomes
+`` Γ̂ ∶ (` 1F) ; (` 0F) ≼ (` 0F) ; (` 1F) ↑ allMobile Γ̂ (` 1F) ``, i.e. the single
+constraint `` C-Mob ⟨ `` α ⟩ ``, produced by `sq-commMobˡ↑`.  `SolvedCst` for it is
+`` Mobile (subTy ⟨ `` α ⟩ σ) ``, which the substitution `σ α = acq ; end ‼` of the
+example satisfies.  `≼↑-complete` is exactly the general statement of this step: the
+declarative `;-commMob`, justified by `Mobile ⟨ acq ; end ‼ ⟩`, is transported to the
+uvar context as a solvable constraint by `mobCx⇒solvedΔ` (via `mobile-≃`).
+
+## Notes for other agents
+
+* C4: `≼-ctx` becomes `≼↑-complete Sσ ap` where `ap : Approx Γ̂ Γ σ` is built from the
+  IH&#x27;s `∀ x → subTy (Γ̂ ﹫ x) σ ≃ Γ ﹫ x` and extended over binders with `approx-⸴`.
+  The `mob-reflect` module parameter (marked `GAP (false in general)`) can go.
+* The `Δ` produced by `≼↑-complete` is the one that must be appended to the A-rule&#x27;s
+  constraint output, so the ordering in the table above (`Δ₀` first) is what the
+  completeness proof wants: it builds `Δ₀` before the subderivations.
+</pre><h3>Weaken-STATUS.md <span class=meta>(modified 21:24:32)</span></h3><pre style='background:#fff;border:1px solid #ddd;padding:8px;white-space:pre-wrap;font-size:13px'># C3 — algorithmic weakening (`alg-weaken`) — STATUS
+
+Owner: agent C3.  Files: `Completeness/Weaken.agda`, `Completeness/Weaken/{Support,Instance,Smoke}.agda`.
+Checked with `agda-check` only (the Agda MCP server refused to connect this session:
+protocol version 2025-11-25 vs the server&#x27;s 2025-06-18).
+
+**DONE (restated for C10).**  All delivered lemmas type-check with zero goals, zero
+unsolved metas, zero postulates, and `Weaken/Instance.agda` is FULLY INSTANTIATED with
+agent C1&#x27;s `Completeness/Split.agda` — no module parameters and no assumptions are left.
+
+C4 and anyone else: `open import BorrowedCF.Completeness.Weaken.Instance using (alg-weaken)`.
+
+```agda
+alg-weaken :
+  ∀ {σ : UV.Sub} → Solving σ →
+  ∀ {n} {Γ̂ Γ : Ctx n} {γ₁ γ₂ : Struct n} {m k : ℕ} {ξ : Mode}
+    {e : Tm n} {T : 𝕋} {ϵ : Eff} {Δ : CSet} →
+  Approx Γ̂ Γ σ →                      -- ∀ x → subTy (Γ̂ ﹫ x) σ ≃ Γ ﹫ x
+  LinStruct Γ γ₂ →
+  Γ ∶ γ₁ ≼ γ₂ →
+  Γ̂ ; γ₁ / m ⊢[ ξ ] e ∶ T ∣ ϵ ↑ Δ / k →
+  SolvedΔ Δ σ →
+  Σ[ Δ′ ∈ CSet ] (Γ̂ ; γ₂ / m ⊢[ ξ ] e ∶ T ∣ ϵ ↑ Δ′ / k) × SolvedΔ Δ′ σ
+```
+
+NOTE the shape of the last two lines.  `SolvedΔ Δ σ` is an INPUT, not the antecedent of
+a `Transfer` inside the Σ.  Since C10 the new premise `Γ̂ ∶ α′ ≼ γ₂ ↑ Δ₀′` can only be
+BUILT by first bringing the old premise down to the solved context, which needs
+`SolvedΔ Δ₀ σ`; so Δ′ genuinely depends on the solvedness proof and
+`Σ[ Δ′ ] … × (SolvedΔ Δ σ → SolvedΔ Δ′ σ)` is not inhabitable.  The form above is the
+same statement with the arrow pulled out in front, and it is what the main induction
+needs anyway (there one always has σ and the solvedness of what one just built).
+
+## Lemma table
+
+| lemma | statement | status | file |
+|---|---|---|---|
+| `csetOf` / `csetOf≼` | read the emitted constraint set off a derivation / a `≼↑` premise | defined | Weaken.agda |
+| `LinBox` | record wrapper of `LinStruct` (makes Γ, γ inferable) | defined | Weaken.agda |
+| `↓-∩` | `dom γ ⊆ Z → γ ↓ (X ∩ Z) ≡ γ ↓ X` | proved | Weaken/Support.agda |
+| `∈-dom-↓` | `x ∈ dom γ → x ∈ X → x ∈ dom (γ ↓ X)` | proved | Weaken/Support.agda |
+| `∉-dom-↓` | `x ∈ X → x ∉ dom (γ ↓ X) → x ∉ dom γ` | proved | Weaken/Support.agda |
+| `allCx-dom` | `AllCx P Γ γ → x ∈ dom γ → P (Γ ﹫ x)` | proved | Weaken/Support.agda |
+| `extra-unr` | `Γ ∶ γ₁ ≼ γ₂ → x ∈ dom γ₂ → x ∉ dom γ₁ → Unr (Γ ﹫ x)` (pointwise `≼⇒extra-Unr`) | proved | Weaken/Support.agda |
+| `allMobile⇒AllCx` / `AllCx⇒allMobile` | `SolvedΔ (allMobile Γ γ) σ ↔ AllCx (λ T → Mobile (subTy T σ)) Γ γ` | proved | Weaken/Support.agda |
+| `mobConstraints-weaken` | `Approx Γ̂ Γ σ → Γ ∶ γ₁ ≼ γ₂ → SolvedΔ (mobConstraints M Γ̂ γ₁) σ → SolvedΔ (mobConstraints M Γ̂ γ₂) σ` | proved | Weaken/Support.agda |
+| `allCx-transfer` | one pointwise map moves an `AllCx` between two contexts and two predicates | proved | Weaken/Support.agda |
+| `≈′-ctx-≃` / `≈-ctx-≃` / `≼-ctx-≃` | contexts equal up to `≃` prove the same `≈` / `≼` | proved | Weaken/Support.agda |
+| `approx⇒ctxEq` | `Approx Γ̂ Γ σ → CtxEq (subCtx Γ̂ σ) Γ` | proved | Weaken/Support.agda |
+| `unrCx-fwd` | `Approx Γ̂ Γ σ → UnrCx Γ̂ α → UnrCx Γ α` | proved | Weaken/Support.agda |
+| `wk-≼` | `Γ ∶ α ≼ β → (T ⸴ Γ) ∶ 𝐂.wk α ≼ 𝐂.wk β` | proved | Weaken/Support.agda |
+| `split-weaken` | `LinBox Γ γ₂ → Γ ∶ γ₁ ≼ γ₂ → Γ ∶ join d (γ₁ ↓ X) (γ₁ ↓ Y) ≼ γ₁ → Γ ∶ join d (γ₂ ↓ X) (γ₂ ↓ Y) ≼ γ₂` | proved | Weaken.agda |
+| `split-weaken-ps` | same for `join p/s` (A-Pair, A-Case, A-Let, A-LetPair) | proved | Weaken.agda |
+| `split-weaken-seq` | the `d = L` instance (`join L α β = α ; β`), used by A-Seq | proved | Weaken.agda |
+| `≼↑⇒≼` | `Approx Γ̂ Γ σ → SolvedΔ Δ₀ σ → Γ̂ ∶ α ≼ β ↑ Δ₀ → Γ ∶ α ≼ β` (`≼↑-sound` + `≼-ctx-≃`) | proved | Weaken.agda |
+| `lift-≼` | post-compose a solved premise with the weakening and lift back (A-Var/A-Const/A-LSplit/A-RSplit) | proved | Weaken.agda |
+| `lift-split` / `-ps` / `-seq` | down to Γ, canonical split, back up to Γ̂ (the seven two-subterm rules) | proved | Weaken.agda |
+| `unr-weaken` | `Approx Γ̂ Γ σ → Γ ∶ γ₁ ≼ γ₂ → UnrCx Γ̂ γ₁ → UnrCx Γ̂ γ₂` (A-Abs / A-AbsRec) | proved | Weaken.agda |
+| `alg-weaken-box` | the induction (all 15 A-rules incl. A-Let) | proved | Weaken.agda |
+| `alg-weaken` | **`LinStruct Γ γ₂ → Γ ∶ γ₁ ≼ γ₂ → Γ ; γ₁ / m ⊢[ ξ ] e ∶ T ∣ ϵ ↑ Δ / k → Σ[ Δ′ ∈ CSet ] (Γ ; γ₂ / m ⊢[ ξ ] e ∶ T ∣ ϵ ↑ Δ′ / k) × Transfer Δ Δ′`** | proved | Weaken.agda |
+| `WithSplit` | split-agnostic view of `Weakening` (C1&#x27;s `lin-*` already supplied) | proved | Weaken/Instance.agda |
+| `c-split` / `c-split-ps` | C1&#x27;s `canon-split` / `canon-split-ps` with X, Y turned implicit | proved | Weaken/Instance.agda |
+| `alg-weaken` (exported) | the statement above, **no parameters** | proved | Weaken/Instance.agda |
+| `alg-weaken-statement` | regression guard: re-ascribes the exported statement | proved | Weaken/Smoke.agda |
+
+## Module parameters (all discharged)
+
+```agda
+canon-split : ∀ {n} {Γ : Ctx n} {γ α β : Struct n} {X Y : Subset n} (d : Dir) →
+  LinStruct Γ γ → Γ ∶ join d α β ≼ γ → dom α ⊆ X → dom β ⊆ Y →
+  (∀ x → x ∈ X → x ∉ dom α → Unr (Γ ﹫ x)) →
+  (∀ x → x ∈ Y → x ∉ dom β → Unr (Γ ﹫ x)) →
+  Γ ∶ join d (γ ↓ X) (γ ↓ Y) ≼ γ
+canon-split-ps : the same with (p/s : ParSeq) in place of (d : Dir)
+```
+
+C1 states X and Y EXPLICITLY (they occur only under `_↓_` and `_∈_`), `Weakening`
+wants them implicit; `c-split` / `c-split-ps` in `Weaken/Instance.agda` are the whole
+adaptation (`c-split {X = X} {Y = Y} d = Split.canon-split d X Y`).  The `lin-*`
+parameters come from C1&#x27;s `Completeness/Split/Lin.agda` (`lin-↓`, `lin-bind`,
+`lin-bind₂`, `lin-bind-rec`); `lin-bind` is generic in the `Join` instance, so it
+serves the Dir, ParSeq and `join L` (= `_;_`) uses alike.
+
+## Notes for the other agents
+
+* `LinStruct Γ γ` is a Π-type in which Γ sits under `lookup` and γ under `count`,
+  so Agda can never solve Γ or γ from a `LinStruct` argument (C1 hit the same wall).
+  `Weaken.agda` therefore threads the record `LinBox Γ γ` through the induction and
+  only unwraps at the leaves; `alg-weaken` itself takes a plain `LinStruct`.
+* The Unr side conditions of `canon-split` are discharged by calling it with the
+  subsets `X ∩ dom γ₂` and `Y ∩ dom γ₂` (which restrict γ₂ to the same structure,
+  `↓-∩`).  That confines the side conditions to variables of γ₂, exactly the ones
+  `≼⇒extra-Unr` speaks about.  Callers of `canon-split` that use raw `fv e` subsets
+  would need `fv e ⊆ dom γ`, which is NOT available from the ≼ alone.
+
+## Base changes tracked
+
+* C6 (A-Let, `select`/`branch` in A-Const), C6 (A-Case premise `Γ ∶ join p/s (γ ∣fv[ e ])
+  (γ ↓ (fvClose (fv e₁) ∪ fvClose (fv e₂))) ≼ γ`, no more `JoinParSeq`), and C6c
+  (A-LetPair / A-Let take `(p/s : ParSeq)`, premise `Γ ∶ join p/s γ₁ γ₂ ≼ γ`, bodies
+  `join p/s (join d (` 0F) (` 1F)) (wk² γ₂)` resp. `join p/s (` 0F) (wk γ₂)`) are all
+  absorbed.  After C6c, A-Let / A-LetPair are handled exactly like A-Case / A-Pair:
+  `split-weaken-ps p/s` for the premise and `≼-join p/s` for the binder.
+  The `lin-bind-let` parameter disappeared (A-Let&#x27;s binder is now `lin-bind-ps p/s`)
+  and `lin-bind₂` gained the outer `(p/s : ParSeq)`, matching C1&#x27;s
+  `lin-bind₂ : (a) (d) (T U) (Γ) (γ) → …` exactly.
+* C10 (subcontext premises `… ≼ γ ↑ Δ₀` with Δ₀ prepended to the output constraints in
+  the nine structural rules; `ChkForm e` premise on A-Ann) is absorbed.  The route per
+  structural rule is: `All.++⁻ (csetOf≼ ≤γ)` to get `SolvedΔ Δ₀ σ`, `≼↑⇒≼` down to the
+  solved context, `split-weaken*` there, `Sub.≼↑-complete` back up, which also hands
+  back `SolvedΔ Δ₀′ σ`.  A-Abs&#x27;s mobility constraints go through the two-context
+  `mobConstraints-weaken`; A-Abs / A-AbsRec&#x27;s `UnrCx` premises through `unr-weaken`
+  (Unr is reflected along `subTy`, `Mobile` is not — hence the constraints).
+  A-Ann just carries its `ChkForm` premise through.
+* `csetOf` / `csetOf≼` exist so that no `All.++⁻` needs the constructor&#x27;s implicit
+  arguments by name; a future reordering of the generalised implicits of a rule
+  cannot break this file.
+</pre>
+</body></html>
