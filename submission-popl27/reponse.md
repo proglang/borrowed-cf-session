@@ -1,15 +1,21 @@
 Thanks to the reviewers for their thoughtful comments.
 
-We first list the suggested revisions, then answer the specific
-questions of each reviewer, and finally comment on the remaining remarks.
+We first list the proposed revisions, then, for each reviewer, we
+first answer the specific questions of each reviewer and then comment
+on their remaining remarks. 
 
 ## Proposed revisions
 
 * clarify choice of SMP
 * clarify the discussion of effects
-* change notation of `(𝜑𝑧 ↦ 𝜙)𝑃` and expand the explanation
+* revise the writing in 2.4, in particular change the notation of 
+  `(𝜑𝑧 ↦ 𝜙)𝑃` and expand the explanation 
 * clarify F in RU-Discard
+* add a running example to section 3 and 4
 
+These changes can implemented in a week's work.
+We plan to submit the mechanization of all metatheoretical results and
+the typechecker implementation as an artifact.
 
 ## Review A
 
@@ -19,11 +25,8 @@ The low-level calculus of the present work is geared towards shared
 memory multi-processing (SMP) where processes communicate via session-typed
 channels. This is exactly the scenario targeted by channels in Go. The
 same assumption also underlies some work that derives session types
-from separation logic, for example:
+from separation logic, as done in [3].
 
-Jules Jacobs, Jonas Kastberg Hinrichsen, Robbert Krebbers:
-Dependent Session Protocols in Separation Logic from First Principles
-(Functional Pearl). Proc. ACM Program. Lang. 7(ICFP): 768-795 (2023) 
 
 One goal was to see if it was possible to avoid the overhead of
 channel creation in the SMP setting.
@@ -142,7 +145,7 @@ BTW, an lsplit with S2=Skip can be elided.
 
 ## Review B
 
-### New insights over BGV
+### 1) New insights over BGV
 
 The overarching insight with CSTB is the connection of a high-level calculus
 with borrowing with a low-level target calculus operating directly on the
@@ -158,7 +161,7 @@ synchronization primitives.
 The design of the direct semantics as well as arranging the low-level
 calculus with tight simulation results was challenging.
 
-### Formalization
+### 2) Formalization
 
 By the time of the submission, the mechanized proofs of some
 metatheoretical results were still ongoing. There were significant
@@ -166,7 +169,7 @@ difficulties to get the details of the translation and the low-level
 calculus in provable shape. By now, we have completed fully mechanized
 proofs of all results. (see attachment)
 
-### Manifestation of T-Weaken in the dynamics
+### 3) Manifestation of T-Weaken in the dynamics
 
 The T-Weaken rule is not reflected in the semantics. In the
 preservation proof it appears mainly in the inversion lemmas because
@@ -189,6 +192,16 @@ adding sequentiality constraints: if `x : T || y : U` were independent before,
 then they could be required to be used in sequence after T-Weaken:
 `x : T ; y : U`.
 
+### 4) BI contexts
+
+Will adopt your suggestion to use *tree-shaped contexts* instead of
+*BI-contexts*. (In one place 446, we write more accurately 
+*in the style of BI-contexts*.)
+
+### 5) running examples
+
+Good suggestion.
+
 ### Minor comments
 
 > Can the equality rules of Figure 6 be applied anywhere in the context? i.e.,
@@ -200,34 +213,30 @@ equivalence closure of the following axioms."
 > Figure 8, e.g., rule T-AppUnr. Are the two premises required to have the same
 > \epsilon? Why?
 
-If the system there is no need to distinguish $\epsilon$ and $\epsilon'$. Alas,
-CSTB does not have subtyping. T-Conv can relax the effect of the premises to
-some upper bound. For the function arrow no such rule exists. Instead, a
-light-weight form of subtyping is baked into the application rules that allows
-the function arrow to have a smaller effect than the overall expression.
+The rule T-Conv on the premises enables us to assume they have the
+same $\epsilon$ (in the algorithmic system, we use least upper bound).
+As CSTB has no subtyping, we cannot make the same assumption about
+$\epsilon'$ on the arrow; hence the $\epsilon'\le\epsilon$.
 
 > Figure 12, RU-discard: what is F?
 
-The same F as in the un-translated reductions: a process-local context lifting
-an expression into the process level in some expression evaluation context.
-
+The same context F as in the un-translated reductions: a process-local
+context lifting an expression into the process level in some
+expression evaluation context. 
 
 ## Review C
 
 ### Backward simulation
 
-[TODO]
+The specific difficulty of the backwards simulation proof was the
+process congruence in the low-level target calculus, which had too
+many degrees of freedom. We have a complete mechanized backwards
+simulation proof, but for a slightly different presentation of the
+low-level calculus as a soup of processes in place of explicit process
+terms. The presentation is inspired by the paper [2]
 
-### 7.2 heuristic incompleteness
 
-To avoid confusion: the algorithmic system is sound and complete wrt
-the declarative system. In 7.2 we are talking about the implementation
-of constraint solving in the implementation of the algorithmic
-system. The issue is that we are not aware of a unification algorithm
-for the problem as described in 7.2. We designed and implemented the
-heuristic approach explained in 7.2 and, so far, we did not run into
-examples where it failed. Nevertheless, this step in the
-implementation is most likely incomplete.
+### 7.2 heuristic incompleteness (see comments to A)
 
 ### Polymorphism
 
@@ -235,24 +244,35 @@ The choice to exclude polymorphism is deliberate because the situation is more
 complex than in CFST. Constraints that track information about mobility and
 equivalence are necessary, and the interplay of polymorphic variables with the
 unification variables of CSTB and the heuristic for solving them has to be
-investigated.
-
-Polymorphism in FreeST/CFST that exists solely to deal with sessions of
-different continuations can be expressed by CSTB through borrowing.
-
+investigated. We regard the addition of polymorphism as future work.
 
 ### Leaking local borrows
 
-A local borrow can never leak into a fork. Forbidding this is a key point of
-our type system. The type of a local borrow is never `mbl`. There are two ways
-a borrow could escape the local context but either requires the borrow to be
-mobile: a) it is sent over a channel, or b) it is used in an expression that is
-evaluated in a forked thread.
+The type system statically enforces that a local borrow can never leak
+across process boundaries. The type of a local borrow is never mobile
+(`mbl`).  There are two ways a borrow could escape the local context but
+either way the type system statically requires the borrow to be
+mobile: a) it is sent over a channel, or b) it is used in an
+expression that is evaluated in a forked thread.
 
 ### Subtyping
 
-Subtyping as has been described for session types is not a goal for CSTB. The
-usual arguments regarding expressiveness apply. However, a subtype relation
-induced by the effect ordering is obvious. Through the formulation of the
-application rules combined with T-Conv no expressiveness is lost but manual
-coercions may be necessary.
+The original CFST work has no subtyping and CSTB is on par with that
+system (i.e., same expressiveness). As the reviewer writes, CFST
+subtyping is undecible, but nevertheless there is a paper that
+describes a semi-algorithm to check subtyping of CFST [1]. The same
+approach, along with the incomplete procedure from [1] could be
+applied to CSTB, though we haven't investigated the ramifications. 
+
+[1] Gil Silva, Andreia Mordido, Vasco T. Vasconcelos:
+Subtyping context-free session types.
+Theor. Comput. Sci. 1069: 115705 (2026)
+
+[2] Jules Jacobs, Stephanie Balzer, Robbert Krebbers:
+Connectivity graphs: a method for proving deadlock freedom based on
+separation logic.
+Proc. ACM Program. Lang. 6(POPL): 1-33 (2022)
+
+[3] Jules Jacobs, Jonas Kastberg Hinrichsen, Robbert Krebbers:
+Dependent Session Protocols in Separation Logic from First Principles
+(Functional Pearl). Proc. ACM Program. Lang. 7(ICFP): 768-795 (2023) 
