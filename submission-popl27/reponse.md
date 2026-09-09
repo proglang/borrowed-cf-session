@@ -148,19 +148,46 @@ The overarching insight with CSTB is the connection of a high-level calculus
 with borrowing with a low-level target calculus operating directly on the
 resources.
 
-BGV creates channels at every borrow over which the shared resource, the actual
-communication channel, is passed. The new channels pose an unnecessary
-inefficiency. CSTB demonstrates that local borrows don't need any overhead at
-all, while remote borrows can share the underlying resource with some form of
+In BGV, every borrow creates a new channel over which the shared
+resource, the actual communication channel, is passed. The frequent
+creation of new channels pose an unnecessary inefficiency. CSTB
+demonstrates that local borrows can be handled without any overhead, while
+remote borrows can share the underlying resource with some form of
 synchronization primitives.
+
+The design of the direct semantics as well as arranging the low-level
+calculus with tight simulation results was challenging.
 
 ### Formalization
 
-We share the concern and have completed the full formalization in Agda.
+By the time of the submission, the mechanized proofs of some
+metatheoretical results were still ongoing. There were significant
+difficulties to get the details of the translation and the low-level
+calculus in provable shape. By now, we have completed fully mechanized
+proofs of all results. (see attachment)
 
 ### Manifestation of T-Weaken in the dynamics
 
-[TODO: I don't get what B asks here]
+The T-Weaken rule is not reflected in the semantics. In the
+preservation proof it appears mainly in the inversion lemmas because
+this rule is not syntax-driven (module Terms.Base). The progress proof
+by itself just skips over it (module Reduction/Expressions).
+
+> consider a program of the form \nu x[c][d]\ldots, where c = ((x
+> \parallel y)(z \parallel d)). Can the program be rewritten as \nu
+> x[c'][d]\ldots where c' = (xz \parallel yd), or vice versa? 
+
+No, it cannot be rewritten. Changes in the binding compartment can
+only happen by reduction (cf. sections 2.3 / 2.4).
+
+> If so, which rule allows this rewriting? If not, what role does the
+> T-Weaken rule play in the dynamics, and how does it contribute to
+> the progress and preservation theorems?
+
+T-Weaken only rearranges bindings in the environment. It also enables
+adding sequentiality constraints: if `x : T || y : U` were independent before, 
+then they could be required to be used in sequence after T-Weaken:
+`x : T ; y : U`.
 
 ### Minor comments
 
