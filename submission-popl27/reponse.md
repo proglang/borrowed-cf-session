@@ -8,6 +8,7 @@ questions of each reviewer, and finally comment on the remaining remarks.
 * clarify choice of SMP
 * clarify the discussion of effects
 * change notation of `(𝜑𝑧 ↦ 𝜙)𝑃` and expand the explanation
+* clarify F in RU-Discard
 
 
 ## Review A
@@ -137,3 +138,94 @@ See above.
 
 For technical reasons. The restriction arose in a proof.
 BTW, an lsplit with S2=Skip can be elided.
+
+
+## Review B
+
+### New insights over BGV
+
+The overarching insight with CSTB is the connection of a high-level calculus
+with borrowing with a low-level target calculus operating directly on the
+resources.
+
+BGV creates channels at every borrow over which the shared resource, the actual
+communication channel, is passed. The new channels pose an unnecessary
+inefficiency. CSTB demonstrates that local borrows don't need any overhead at
+all, while remote borrows can share the underlying resource with some form of
+synchronization primitives.
+
+### Formalization
+
+We share the concern and have completed the full formalization in Agda.
+
+### Manifestation of T-Weaken in the dynamics
+
+[TODO: I don't get what B asks here]
+
+### Minor comments
+
+> Can the equality rules of Figure 6 be applied anywhere in the context? i.e.,
+> is \Gamma[\Gamma_1]=\Gamma[\Gamma_2], if \Gamma_1=\Gamma_2?
+
+Correct, as stated in the figure "Equality of typing contexts is the
+equivalence closure of the following axioms."
+
+> Figure 8, e.g., rule T-AppUnr. Are the two premises required to have the same
+> \epsilon? Why?
+
+If the system there is no need to distinguish $\epsilon$ and $\epsilon'$. Alas,
+CSTB does not have subtyping. T-Conv can relax the effect of the premises to
+some upper bound. For the function arrow no such rule exists. Instead, a
+light-weight form of subtyping is baked into the application rules that allows
+the function arrow to have a smaller effect than the overall expression.
+
+> Figure 12, RU-discard: what is F?
+
+The same F as in the un-translated reductions: a process-local context lifting
+an expression into the process level in some expression evaluation context.
+
+
+## Review C
+
+### Backward simulation
+
+[TODO]
+
+### 7.2 heuristic incompleteness
+
+To avoid confusion: the algorithmic system is sound and complete wrt
+the declarative system. In 7.2 we are talking about the implementation
+of constraint solving in the implementation of the algorithmic
+system. The issue is that we are not aware of a unification algorithm
+for the problem as described in 7.2. We designed and implemented the
+heuristic approach explained in 7.2 and, so far, we did not run into
+examples where it failed. Nevertheless, this step in the
+implementation is most likely incomplete.
+
+### Polymorphism
+
+The choice to exclude polymorphism is deliberate because the situation is more
+complex than in CFST. Constraints that track information about mobility and
+equivalence are necessary, and the interplay of polymorphic variables with the
+unification variables of CSTB and the heuristic for solving them has to be
+investigated.
+
+Polymorphism in FreeST/CFST that exists solely to deal with sessions of
+different continuations can be expressed by CSTB through borrowing.
+
+
+### Leaking local borrows
+
+A local borrow can never leak into a fork. Forbidding this is a key point of
+our type system. The type of a local borrow is never `mbl`. There are two ways
+a borrow could escape the local context but either requires the borrow to be
+mobile: a) it is sent over a channel, or b) it is used in an expression that is
+evaluated in a forked thread.
+
+### Subtyping
+
+Subtyping as has been described for session types is not a goal for CSTB. The
+usual arguments regarding expressiveness apply. However, a subtype relation
+induced by the effect ordering is obvious. Through the formulation of the
+application rules combined with T-Conv no expressiveness is lost but manual
+coercions may be necessary.
