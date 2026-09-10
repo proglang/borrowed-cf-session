@@ -97,13 +97,15 @@ explicitly.
 
 ### Polymorphic recursion
 
-We never say polymorphic recursion is a problem. 
-We just state that it is needed for resource-passing
-style. In the context of a Hindley-Milner type system,
-it would require type annotations as it would be rejected by
-the standard algorithms.
-In the System-F context, as in CFST, it does not matter because 
-typing must be explicit.
+We agree that polymorphic recursion is a legitimate language feature;
+our wording incorrectly presented it as a defect. The issue is the
+extra overhead on programming and inference: the CFST version must expose a
+continuation-polymorphic type and instantiate it differently at
+recursive calls, which requires annotations in an HM-style
+setting. CSTB removes this continuation plumbing in the example. We
+will replace "amends these problems" with wording that describes this
+as an ergonomic and inference advantage, not a soundness or
+expressiveness problem. 
 
 ### wait/close in example
 
