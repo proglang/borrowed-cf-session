@@ -6,16 +6,22 @@ on their remaining remarks.
 
 ## Proposed revisions
 
-* clarify choice of SMP
-* clarify the discussion of effects
-* revise the writing in 2.4 as explained below, in particular change the notation of 
-  `(𝜑𝑧 ↦ 𝜙)𝑃` and expand the explanation 
-* clarify F in RU-Discard
-* add a running example to section 3 and 4
+We will revise the paper as follows:
 
-These changes can implemented in a week's work.
-We plan to submit the mechanization of all metatheoretical results and
-the typechecker implementation as an artifact.
+- Rewrite Section 2.4 to present synchronization cells as one shared-memory implementation of the remote-borrow handoff, and explain how a one-place asynchronous channel provides an alternative implementation for distributed runtimes.
+- Redraw Figure 2c to show `drop` as an explicit reduction step, and clarify near Figure 2b that the two binder groups of a restriction denote opposite endpoints of the same channel.
+- Simplify the synchronization notation, define optional flag components explicitly, and clarify that `done` in Figure 3 denotes removal of the flag rather than a third stored state.
+- Expand the explanation of the purity side conditions with a concrete example showing how an effectful subexpression could use a residual endpoint before a packaged borrowed prefix has been consumed.
+- Clarify that boundedness concerns safe finite completion rather than excluding infinite protocols, and explain directly why `Te-Seq2` requires only its second component to be bounded.
+- Explain that the side condition on `CT-LSplit` excludes a redundant split with a `Skip` residual and preserves the canonical binder-group representation used by preservation.
+- State explicitly that the implemented constraint solver is sound but incomplete, distinguish this from completeness of constraint generation, and report the scope of our implementation experience.
+- Add running a example to Sections 3 and 4, clarify `F` in `RU-Discard`, and correct the noted typographical and punctuation errors.
+
+Meanwhile, all metatheoretical results (preservation, progress;
+forward and backward simulation; soundness and completeness of
+algorithmic typing) come with mechanized proofs. The revised
+artifact will include the mechanization and Rust typechecker, together
+with its positive and negative examples. 
 
 ## Review A
 
@@ -109,62 +115,65 @@ expressiveness problem.
 
 ### wait/close in example
 
-The $\nu$ restriction is explained in 271-276:
+`nu[B1][B2]P` binds the two endpoint groups of one channel; `close`
+and `wait` can match only when they occur at opposite ends of the same
+restriction. They cannot accidentally synchronize with operations
+belonging to another restriction. We agree this is not evident in
+Figure 2b and will state it directly in the caption and immediately
+before the trace. (cf. explanation in 271-276)
 
-> Execution proceeds by repeatedly exposing the next local prefix of the channel sequence. Figure 2b
-> shows a suffix of its reduction sequence. The 𝜈[c][d] in ... operator is a channel restriction as
-> known from session calculi [Gay and Vasconcelos 2025]. It introduces a communication channel
-> with endpoint names c and d. We generalize channel restriction so that each compartment [c] and
-> [d] contains a binder group: a list of channel names and separator markers. Its working is best
-> illustrated with the example trace.
+### Figure 2c
 
-The occurrence of the || is in 289-290:
-
-> For remote borrowing, we incorporate the acquire primitive and indicate a remote split with the
-> symbol “∥” in the compartment. As an example, we consider the
-> translation of lines 5–7:
-
-Regarding `[drop c1]` in 2c, see 339-341 (admittedly the notation,
-which overloads the brackets may be confusing; we'll change that):
-
-> Executing this code takes the steps shown in fig. 2c (ignoring the activity at the other
-> end of the channel). The bracketed step abbreviates the forked process running renderProf until
-> its final drop c1.
+We agree that `[drop c1]` is indistinguishable from process state in
+the current trace. We will replace the annotated multi-step transition
+with an explicit intermediate configuration showing the forked process
+executing `drop c1`, followed by the separate `acquire c2` step. We
+will also adapt the notation to avoid confusing `[drop c1]` with a
+bindgroup. 
 
 ### the passage from 376-391 is inscrutable.
 
-* optional means that the flag compartments have an option type like
-  `Maybe Flag`
-* Line 379 says "A synchronization binder (𝜑𝑧 ↦ 𝜙)𝑃 binds a flag name
-  𝑧 in 𝑃 and stores one of two states in 𝜙: drop or acq. "
-  So $\varphi z$ introduces the binding for $z$ and $\phi$ is its
-  initial value, which can be drop or acq.
+We agree that the notation obscures a simple one-shot protocol. We
+will first explain it without binders: an optional component is either
+`*` (no handoff) or the name of a handoff cell; `drop` changes that
+cell from `pending` to `ready`; `acquire` waits for `ready` and then
+removes the cell. We will use visibly distinct notation for the
+binder, name, and state, and defer the formal binder syntax to
+Section 6. The `done` label in Figure 3 denotes removal of the cell,
+not a third stored state; we will redraw it accordingly. 
 
-  We agree that the different phis may be confusing and will change
-  the notation.
+We agree that the different phis may be confusing and will change
+the notation.
   
-### discussion of rules
-  
+### Boundedness and `Te-Seq2`
+
 > "without consuming an unbounded residual owned elsewhere" why do we
 > care? servers exist, they are supposed to run forever. Lots of
 > channels are unbounded, they send streams of things. Maybe just a
 > few more words on this. 
 
-We'll improve the wording. Bounded means the session either comes to
-an end in Close, Wait, or Drop; or it does not terminate. Technically,
-we need to make sure that *if* the session comes to an end, then
-either the channel gets closed (Close, Wait) or it was a borrow and
-gets handed off (Drop). 
-  
-> Fig 6 rule Te-Seq2 - why don't you require S1 to be bounded? It
-> seems if S1 is not bounded then the whole thing is not bounded? 
+Here "bounded" does not mean that the protocol cannot run forever. It
+means that every finite completion reaches an explicit
+boundary--`Close`, `Wait`, or `Drop`--so a movable endpoint cannot
+finish silently while leaving an inaccessible residual obligation. For
+`S1;S2`, if `S1` continues forever, control never reaches `S2` and no
+handoff is stranded; if `S1` finishes, the boundary behavior is
+determined by `S2`. This is why `Te-Seq2` requires only `bnd S2`. We
+will revise the terminology and explanation to prevent the natural
+"finite protocol" reading. 
 
-See above.
 
 > fig 7 rule CT-LSplit why can't S2 be Skip?
 
-For technical reasons. The restriction arose in a proof.
-BTW, an lsplit with S2=Skip can be elided.
+The restriction excludes a degenerate split. Because `S1;Skip` is
+equivalent to `S1`, splitting off a `Skip` residual adds no expressive
+power: the second result can only be discarded. Operationally,
+however, `R-LSplit` would introduce a fresh binder for that residual,
+while the binder-group typing represents `Skip` by the empty binder
+group. The side condition preserves this canonical representation and
+the associated preservation invariant. We will explain this
+explicitly; programmers lose no useful split because the operation can
+be elided. 
 
 
 ## Review B
