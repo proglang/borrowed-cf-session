@@ -1,15 +1,15 @@
-Thanks to the reviewers for their thoughtful comments.
-
-We first list the proposed revisions, then, for each reviewer, we
-first answer the specific questions of each reviewer and then comment
-on their remaining remarks. 
+We thank the reviewers for their thoughful comments. The reviews
+identified several places where the presentation obscured the design,
+as well as questions about the scope of the implementation and
+metatheory. We first summarize the concrete revisions and then address
+each reviewer's questions.
 
 ## Proposed revisions
 
 We will revise the paper as follows:
 
 - Rewrite Section 2.4 to present synchronization cells as one shared-memory
-  implementation of the remote-borrow handoff, and explain how a one-place
+  implementation of the remote-borrow handoff, and explain how a one-shot
   asynchronous channel provides an alternative implementation for distributed
   runtimes.
 
@@ -26,11 +26,11 @@ We will revise the paper as follows:
   packaged borrowed prefix has been consumed.
 
 - Clarify that boundedness concerns safe finite completion rather than
-  excluding infinite protocols, and explain directly why `Te-Seq2` requires
+  excluding infinite protocols, and explain why `Te-Seq2` requires
   only its second component to be bounded.
 
-- Explain that the side condition on `CT-LSplit` excludes a redundant split
-  with a `Skip` residual and preserves the canonical binder-group
+- Explain why the side condition on `CT-LSplit` excludes a redundant split
+  with a `Skip` residual and that it preserves the canonical binder-group
   representation used by preservation.
 
 - State explicitly that the implemented constraint solver is sound but
@@ -40,22 +40,25 @@ We will revise the paper as follows:
 - Add a running example to Sections 3 and 4, clarify `F` in `RU-Discard`, and
   correct the noted typographical and punctuation errors.
 
-Meanwhile, all metatheoretical results (preservation, progress;
-forward and backward simulation; soundness and completeness of
-algorithmic typing) come with mechanized proofs. The revised
-artifact will include the mechanization and Rust typechecker, together
-with its positive and negative examples.
+Since submission, we have completed mechanized proofs of expression
+and process preservation and progress, algorithmic soundness and
+completeness, and forward simulation. We have also completed backward
+simulation for a revised, process-soup presentation of the low-level
+calculus. The revision will explain the correspondence between the submitted
+and revised target calculus. The artifact will include the Agda
+development, the Rust typechecker, and its positive and negative
+examples.
 
 ## Review A
 
-### Why synchronization variables?
+### Why synchronization cells?
 
-RTSB should be understood as one shared-memory implementation of the
-abstract handoff in CSTB, not as the only possible implementation. A
-remote borrow needs a one-shot event: either a `drop`/`acquire`
-synchronization cell or a one-shot channel. We chose a synchronization
-cell because it is the minimal primitive needed by a shared-memory
-runtime.
+RTSB provides one shared-memory implementation of the abstract handoff
+in CSTB, but other implementations are possible. A remote borrow needs
+a one-shot event: `drop` signals completion of the borrowed prefix,
+and `acquire` waits for that signal before enabling the residual. We
+chose a two-state synchronization cell because it represents this
+handoff directly in a shared-memory runtime. 
 
 We agree that a one-shot asynchronous channel gives an equally
 natural realization, and that would be the appropriate choice in a
@@ -71,14 +74,14 @@ target and comment on the channel-based realization as an alternative.
 
 ### Explain the purity constraints discussed in 654-633
 
-The effect system works exactly like any other effect system: some operations
-are classified as effect-producing and effects are propagated in the expected
-way with latent effects ending up on function arrows. The additional purity
-premises serve a different purpose: they prevent call-by-value evaluation from
-violating the temporal order imposed by an ordered context.
+The reviewer is right that ordinary effect systems just collect
+effects that occur while evaluating an expression and put latent
+effects on the function arrow. The additional purity premises address
+a separate issue: they prevent call-by-value evaluation from violating
+the temporal use order represented by an ordered context.
 
 For example, suppose `c1` is a borrowed prefix and `c2` its residual. Take the
-ordered pair expression `e = c1 ⊗l recv c2`, for example. Evaluating `e` will
+ordered pair expression `e = c1 ⊗_l recv c2`, for example. Evaluating `e` will
 first evaluate `c1` and then move on to evaluate `recv c2` before packaging the
 result into a pair. An evaluation of `c1` is different from consuming it. If
 the right component were allowed to communicate, pair construction could use
@@ -107,19 +110,20 @@ CFST equivalence and mobility, and is therefore sound, but it may
 reject a typable program when no suitable candidate is syntactically
 exposed.
 
-The submitted manuscript is a bit unclear about completeness: Section
-8.3 announces completeness, but only the soundness theorem is
-actually stated because the proof of the completeness theorem was not quite
-finished at submission time. The revised artifact will contain a mechanized
-completeness theorem for the annotated algorithmic judgment, and we will state
-its precise hypotheses in the revised paper. This theorem is independent of the
-implementation's candidate-selection heuristic, which remains incomplete.
+The submitted manuscript is inconsistent about completeness: Section
+8.3 announces a completeness result, but only algorithmic soundness is
+stated as Theorem 8.7 because the completeness proof was unfinished at
+submission. The revised artifact contains a mechanized completeness
+theorem for the annotated algorithmic judgment, and we will add its
+exact statement and hypotheses to the paper. This result concerns
+constraint generation; it does not make the implementation's
+candidate-selection heuristic complete.
 
 Our current experience is limited to the implementation's test suite
-and the examples in the paper; we have not encountered a failure on
-those programs, but this is evidence of practical coverage rather than
-a completeness result. We will report the scope of that evaluation
-explicitly.
+(16 positive and 6 negative example programs) and the examples in the
+paper; we have not encountered a failure on those programs, but this
+is evidence of practical coverage rather than a completeness
+result. We will report the scope of that evaluation explicitly.
 
 ## Review A - detailed comments
 
@@ -136,7 +140,7 @@ expressiveness problem.
 
 ### wait/close in example
 
-`nu[B1][B2]P` binds the two endpoint groups of one channel; `close`
+`\nu[B_1][B_2]P` binds the two endpoint groups of one channel; `close`
 and `wait` can match only when they occur at opposite ends of the same
 restriction. They cannot accidentally synchronize with operations
 belonging to another restriction. We agree this is not evident in
@@ -162,9 +166,6 @@ binder, name, and state, and defer the formal binder syntax to
 Section 6. The `done` label in Figure 3 denotes removal of the cell,
 not a third stored state; we will redraw it accordingly.
 
-We agree that the different phis may be confusing and will change
-the notation.
-  
 ### Boundedness and `Te-Seq2`
 
 > "without consuming an unbounded residual owned elsewhere" why do we
@@ -199,61 +200,75 @@ can be elided.
 
 ### 1) New insights over BGV
 
-The overarching insight with CSTB is the connection of a high-level calculus
-with borrowing with a low-level target calculus operating directly on the
-resources.
+The move from BGV to CSTB exposes two new issues. 
 
-In BGV, every borrow creates a new channel over which the shared resource, the
-actual communication channel, is passed. The frequent creation of new channels
-introduces unnecessary allocation and synchronization machinery. CSTB
-demonstrates that local borrows can be handled without any overhead, while
-remote borrows can share the underlying resource using an explicit one-shot
-handoff.
+First, borrowing a regular session prefix is a syntactic operation in
+BGV, whereas a CFST split must be discovered modulo associativity,
+`Skip`, distributivity through choices, and recursion.  We obtain the
+residual by solving constraints over CFST equivalence because it
+cannot be obtained by a structural traversal. This is a technical
+consequence of combining borrowing with CFSTs. 
 
-The design of the direct semantics as well as arranging the low-level
-calculus with tight simulation results was challenging.
+Second, separating local from remote borrows reveals that
+synchronization is not intrinsic to borrowing. A local split can
+return two aliases to the same endpoint because ordered typing and
+evaluation ensure that the prefix is consumed before the
+residual. Only a borrow that crosses a process boundary requires a
+run-time handoff. BGV's uniform translation obscures this distinction
+and allocates synchronization machinery for both cases. 
+
+The direct semantics serves as a representation-independent
+specification of this distinction. Binder groups record the ordering
+and handoff boundaries abstractly, while the low-level translation
+realizes them using shared endpoint representations and
+synchronization cells. The simulation results show that this optimized
+realization implements the direct semantics. We will revise the
+introduction and related-work section to present these as the main
+conceptual and technical insights, rather than listing only
+differences from BGV. 
 
 ### 2) Formalization
 
 At submission time, the missing mechanized results were due to ongoing proof
-work. The main difficulties was due to a higher degree of freedom in how
-binders could move in the target calculus and thus relating target calculus
-terms to source terms. By now, we have completed the mechanized proofs of all
-results and will include these in the updated artifact. The results include
-progress and preservation for processes.
+work. The main difficulty regarding the backward simulation was due to
+a higher degree of freedom in how binders could move in the target
+calculus and thus relating target calculus terms to source terms. To
+overcome this issue we revised the target calculus to use a
+process-soup presentation, discussed in the response to reviewer C. By
+now, we have completed the mechanized proofs of all results and will
+include these in the updated artifact. The results include progress
+and preservation for processes. 
 
 ### 3) Manifestation of T-Weaken in the dynamics
 
-The T-Weaken rule is not reflected in the semantics. In the
-preservation proof it appears mainly in the inversion lemmas because
-this rule is not syntax-driven (module Terms.Base). The progress proof
-by itself just skips over it (module Reduction/Expressions).
+`T-Weaken` is purely static and has no corresponding reduction
+rule. It changes the context under which an unchanged expression is
+typed. The order permits two operations: adding unused unrestricted
+assumptions, and replacing independence by a stronger sequential
+ordering. For example, an expression typable under `x:T, y:U` may also
+be typed under `x:T || y:U`, thereby promising to use the two
+resources in that order even though they were independent before. 
 
-> consider a program of the form \nu x[c][d]\ldots, where c = ((x
-> \parallel y)(z \parallel d)). Can the program be rewritten as \nu
-> x[c'][d]\ldots where c' = (xz \parallel yd), or vice versa? 
-
-No, it cannot be rewritten. Changes in the binding compartment can
-only happen by reduction (cf. sections 2.3 / 2.4).
-
-> If so, which rule allows this rewriting? If not, what role does the
-> T-Weaken rule play in the dynamics, and how does it contribute to
-> the progress and preservation theorems?
-
-T-Weaken only rearranges bindings in the environment. It also enables
-adding sequentiality constraints: if `x : T || y : U` were independent before, 
-then they could be required to be used in sequence after T-Weaken:
-`x : T ; y : U`.
+ This static rule does not rewrite a run-time binder group. In
+ particular, the two binder groups in the reviewer's example cannot be
+ transformed into one another by `T-Weaken`; binder groups change only
+ through the reduction rules for communication, splitting, dropping,
+ acquiring, and discarding. 
 
 ### 4) BI contexts
 
-Will adopt your suggestion to use *tree-shaped contexts* instead of
-*BI-contexts*. (In one place 446, we write more accurately 
-*in the style of BI-contexts*.)
+We agree. Our contexts are tree-shaped like BI contexts, but their two
+connectives distinguish ordered from unordered multiplicative
+composition rather than additive from multiplicative composition. We
+will use "tree-shaped context" throughout and mention BI only as a
+structural analogy, with this distinction stated explicitly. 
 
 ### 5) running examples
 
-Good suggestion.
+We will carry a version of the rendering example into
+Sections 3 and 4, using it to introduce mobility, direction and effect
+annotations, ordered versus unordered context composition, and the
+types of `lsplit` and `rsplit` before presenting the general rules.
 
 ### Minor comments
 
@@ -280,30 +295,35 @@ equivalence closure of the following axioms."
 > Figure 8, e.g., rule T-AppUnr. Are the two premises required to have the same
 > \epsilon? Why?
 
-The two premises use the same \epsilon because the declarative rules may raise
-either effect to a common upper bound using T-Conv. Thus the shared annotation
-denotes the join of the two evaluation effects. The separate condition
-$\epsilon' \le epsilon$ ensures that the function body's latent effect is also
-covered by the conclusion. The algorithmic rule computes these upper bounds
-explicitly with a least upper bound.
+The two premises use the same `epsilon` because the declarative rules
+may raise either inferred effect to a common upper bound using
+`T-Conv` and `p <= i`. Thus the shared annotation denotes the join of
+the two evaluation effects. The separate condition `epsilon' <=
+epsilon` ensures that the function body's latent effect is also
+covered by the conclusion. The algorithmic rule computes these upper
+bounds explicitly with a least upper bound. We will explain this near
+Figure 8.
 
 > Figure 12, RU-discard: what is F?
 
-The same context F as in the un-translated reductions: a process-local
-context lifting an expression into the process level in some expression
-evaluation context. We will add an explicit reference before Figure 12.
-
+`F` is a process-local evaluation context obtained by lifting an
+expression evaluation context into a process. It is the same
+metavariable used in the source reduction rules. We will add its
+grammar or an explicit cross-reference before Figure 12. 
 
 ## Review C
 
 ### Backward simulation
 
-The obstacle was inversion through structural congruence in the low-level
-target calculus. The structural congruence of translated process terms resulted
-in too many degrees of freedom. A backward proof must locate the redex in the
-translated source configuration and reconstruct either a matching source step
-or an administrative step; the submitted presentation did not provide a
-sufficiently canonical decomposition for this inversion.
+The obstacle was inversion through structural congruence in the target
+calculus. With explicit process terms, associativity and
+commutativity of parallel composition, scope movement, and reordering
+of independent restrictions a target redex may be exposed in many
+syntactically different ways. A backward proof must locate that redex
+in the translated source configuration and reconstruct either a
+matching source step or an administrative step; the submitted
+presentation did not provide a sufficiently canonical decomposition
+for this inversion. 
 
 We resolved the problem by presenting the target as a soup of processes and
 restricted resources. The soup representation gives each process and
@@ -322,13 +342,15 @@ implementation's candidate-selection heuristic remains sound but incomplete.
 
 ### Polymorphism
 
-The omission is a deliberate choice, not a claim that borrowing subsumes
-polymorphism. Borrowing removes the continuation polymorphism and polymorphic
+The omission is a deliberate choice. Borrowing removes the
+continuation polymorphism and polymorphic 
 recursion needed by the resource-passing versions of our examples, but ordinary
 data and protocol polymorphism remain useful. Adding them to CSTB requires
 studying the interaction between quantified session variables, the unification
 variables introduced for residual inference, mobility constraints, and CFST
-equivalence.
+equivalence. We therefore leave polymorphism to future work and will
+revise the paper to avoid suggesting that borrowing eliminates the
+general need for it. 
 
 ### Leaking local borrows
 
@@ -342,12 +364,17 @@ residual needed for handoff.
 
 ### Subtyping
 
-The original CFST work has no subtyping and CSTB is on par with that
-system (i.e., same expressiveness). As the reviewer writes, CFST
-subtyping is undecidable, but nevertheless there is a paper that
-describes a semi-algorithm to check subtyping of CFST [1]. The same
-approach, along with the incomplete procedure from [1] could be applied to
-CSTB, though we have not investigated the ramifications. 
+CSTB is aligned with the original CFST calculus, which also has type
+equivalence but no subtyping, so borrowing does not remove a feature
+present in CFST. Nevertheless, more
+programs would be typable in a CFST system with
+subtyping, particularly programs relying on width or protocol
+refinements. Since CFST subtyping is undecidable, incorporating it
+would require an incomplete procedure or explicit coercions. The
+semi-decision approach of Silva et al. [1] may provide a starting point,
+but we have not yet studied how it interacts with borrowing and
+residual inference. We will qualify the expressiveness claim
+accordingly.
 
 ### Related work
 
