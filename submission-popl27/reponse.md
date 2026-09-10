@@ -57,33 +57,41 @@ construction could use the residual before the packaged prefix is
 later consumed. Requiring the second component of `T-PairOrd` to be
 pure rules this out. 
 
-The difference is that some constructions, notably pair construction
-and function application, require that one subexpression must be
-effect-free, i.e., pure. Taking the example of pairs:
-
-* unordered pairs (T-PairUnOrd): we know by construction that the contexts of the
-  components are independent `Γ_1 ∥ Γ_2`, so we can just collect the
-  effects.
-* ordered pairs (T-PairOrd): `Γ_1,Γ_2` here the left context may contain a borrow
-  and the right context its residual. If the left component does *not*
-  fully consume the borrow, then it is unsafe for the right component
-  to perfom an operation on the residual. Hence, the rule requires the
-  right component to be pure. This is a crude, but safe approximation.
-  
-Function application is similar, but we have two kinds with different
-evaluation orders, so the purity requirement flips. The first
-subexpression to execute may have an effect, but the second must not.
+Directed application has a similar issue. The purity premise is
+imposed on whichever expression would otherwise perform effects in an
+order inconsistent with the way the arrow places its argument with
+respect to the captured context (cf. T-AbsLeft vs T-AbsRight): the
+function expression in `T-AppLeft`, and the argument in
+`T-AppRight`. This is a conservative approximation; a more refined
+effect system distinguishing phases of resource use could relax it. We
+will add this explanation and example. 
 
 ### 7.2 heuristic incompleteness
 
-To avoid confusion: the algorithmic system is sound and complete wrt
-the declarative system. In 7.2 we are talking about the implementation
-of constraint solving in the implementation of the algorithmic
-system. The issue is that we are not aware of a unification algorithm
-for the problem as described in 7.2. We designed and implemented the
-heuristic approach explained in 7.2 and, so far, we did not run into
-examples where it failed. Nevertheless, this step in the
-implementation is most likely incomplete.
+You are right that the implemented solver is incomplete. There are two
+separate questions here. Constraint generation produces equations
+whose solutions yield declarative typings; the implementation must
+then find such a solution. Our solver only considers candidates
+exposed by simplification, validates every candidate using decidable
+CFST equivalence and mobility, and is therefore sound, but it may
+reject a typable program when no suitable candidate is syntactically
+exposed. 
+
+The submitted manuscript is a bit unclear about completeness: Section
+8.3 announces completeness, but only the soundness theorem is
+actually stated because the proof of the completeness theorem was not
+quite finished at submission time. In the revision, we can resolve
+this inconsistency: The revised artifact contains a mechanized
+completeness theorem for the annotated algorithmic judgment, and we
+will state its precise hypotheses in the revised paper. This theorem
+is independent of the implementation's candidate-selection heuristic,
+which remains incomplete. 
+
+Our current experience is limited to the implementation's test suite
+and the examples in the paper; we have not encountered a failure on
+those programs, but this is evidence of practical coverage rather than
+a completeness result. We will report the scope of that evaluation
+explicitly. 
 
 ## Review A - detailed comments
 
