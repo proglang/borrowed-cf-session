@@ -42,10 +42,20 @@ target and comment on the channel-based realization as an alternative.
 
 ### explain the purity constraints discussed in 654-633
 
-There seems to be a misunderstanding. The effect system works exactly
-like any other effect system: some operations are classified as
-effect-producing, they are propagated in the expected way with latent
-effects ending up on function arrows.
+The effect system works exactly like any other effect system: some
+operations are classified as effect-producing, they are propagated in
+the expected way with latent effects ending up on function arrows.
+The additional purity premises serve a different purpose: they prevent
+call-by-value evaluation from violating the temporal order imposed by
+an ordered context. 
+
+For example, suppose `c1` is a borrowed prefix and `c2` its
+residual. In an ordered pair such as `c1 ⊗l recv c2`, evaluating the
+left component merely packages `c1`; it does not consume the
+prefix. If the right component were allowed to communicate, pair
+construction could use the residual before the packaged prefix is
+later consumed. Requiring the second component of `T-PairOrd` to be
+pure rules this out. 
 
 The difference is that some constructions, notably pair construction
 and function application, require that one subexpression must be
