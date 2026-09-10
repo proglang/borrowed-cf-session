@@ -8,7 +8,7 @@ on their remaining remarks.
 
 * clarify choice of SMP
 * clarify the discussion of effects
-* revise the writing in 2.4, in particular change the notation of 
+* revise the writing in 2.4 as explained below, in particular change the notation of 
   `(𝜑𝑧 ↦ 𝜙)𝑃` and expand the explanation 
 * clarify F in RU-Discard
 * add a running example to section 3 and 4
@@ -21,20 +21,24 @@ the typechecker implementation as an artifact.
 
 ### why synchronization variables?
 
-The low-level calculus of the present work is geared towards shared
-memory multi-processing (SMP) where processes communicate via session-typed
-channels. This is exactly the scenario targeted by channels in Go. The
-same assumption also underlies some work that derives session types
-from separation logic, as done in [3].
+RTSB should be understood as one shared-memory implementation of the
+abstract handoff in CSTB, not as the only possible implementation. A
+remote borrow needs a one-shot event: either a `drop`/`acquire`
+synchronization cell or a one-shot channel. We chose a synchronization
+cell because it is the minimal primitive needed by a shared-memory
+runtime. 
 
+We agree that a one-shot asynchronous channel` gives an equally
+natural realization, and that would be the appropriate choice in a
+distributed runtime (cf. the BST work by Saffrich et al). The
+principal optimization claimed by the paper is independent of this choice: local borrows
+require no synchronization, whereas remote borrows require a handoff
+mechanism. Replacing cells by channels would leave the CSTB source
+calculus, declarative typing, and direct semantics unchanged, while
+requiring a different target translation and simulation argument. 
 
-One goal was to see if it was possible to avoid the overhead of
-channel creation in the SMP setting.
-
-The channel-based encoding suggested by the reviewer was investigated
-in BST [Saffrich et al. 2025b]. We believe that one could swap the
-low-level calculus with the BST solution just by changing the
-translation. All higher level results remain intact.
+We will revise Section 2.4 to scope RTSB explicitly as a shared-memory
+target and comment on the channel-based realization as an alternative.
 
 ### explain the purity constraints discussed in 654-633
 
@@ -273,6 +277,3 @@ Connectivity graphs: a method for proving deadlock freedom based on
 separation logic.
 Proc. ACM Program. Lang. 6(POPL): 1-33 (2022)
 
-[3] Jules Jacobs, Jonas Kastberg Hinrichsen, Robbert Krebbers:
-Dependent Session Protocols in Separation Logic from First Principles
-(Functional Pearl). Proc. ACM Program. Lang. 7(ICFP): 768-795 (2023) 
