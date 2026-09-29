@@ -1,0 +1,761 @@
+%% ODER: format ==         = "\mathrel{==}"
+%% ODER: format /=         = "\neq "
+%
+%
+\makeatletter
+\@ifundefined{lhs2tex.lhs2tex.sty.read}%
+  {\@namedef{lhs2tex.lhs2tex.sty.read}{}%
+   \newcommand\SkipToFmtEnd{}%
+   \newcommand\EndFmtInput{}%
+   \long\def\SkipToFmtEnd#1\EndFmtInput{}%
+  }\SkipToFmtEnd
+
+\newcommand\ReadOnlyOnce[1]{\@ifundefined{#1}{\@namedef{#1}{}}\SkipToFmtEnd}
+\usepackage{newtxmath}
+\usepackage{stmaryrd}
+\DeclareFontFamily{OT1}{cmtex}{}
+\DeclareFontShape{OT1}{cmtex}{m}{n}
+  {<5><6><7><8>cmtex8
+   <9>cmtex9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
+\DeclareFontShape{OT1}{cmtex}{m}{it}
+  {<-> ssub * cmtt/m/it}{}
+\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
+\DeclareFontShape{OT1}{cmtt}{bx}{n}
+  {<5><6><7><8>cmtt8
+   <9>cmbtt9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
+\DeclareFontShape{OT1}{cmtex}{bx}{n}
+  {<-> ssub * cmtt/bx/n}{}
+\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
+
+\newcommand{\Sp}{\hskip.33334em\relax}
+
+
+\newcommand{\Conid}[1]{\mathit{#1}}
+\newcommand{\Varid}[1]{\mathit{#1}}
+\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
+\newcommand{\plus}{\mathbin{+\!\!\!+}}
+\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
+\newcommand{\rbind}{\mathbin{=\mkern-6.7mu<\!\!\!<}}% suggested by Neil Mitchell
+\newcommand{\sequ}{\mathbin{>\!\!\!>}}
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+\usepackage{polytable}
+
+%mathindent has to be defined
+\@ifundefined{mathindent}%
+  {\newdimen\mathindent\mathindent\leftmargini}%
+  {}%
+
+\def\resethooks{%
+  \global\let\SaveRestoreHook\empty
+  \global\let\ColumnHook\empty}
+\newcommand*{\savecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\savecolumns[#1]}}
+\newcommand*{\restorecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\restorecolumns[#1]}}
+\newcommand*{\aligncolumn}[2]%
+  {\g@addto@macro\ColumnHook{\column{#1}{#2}}}
+
+\resethooks
+
+\newcommand{\onelinecommentchars}{\quad-{}- }
+\newcommand{\commentbeginchars}{\enskip\{-}
+\newcommand{\commentendchars}{-\}\enskip}
+
+\newcommand{\visiblecomments}{%
+  \let\onelinecomment=\onelinecommentchars
+  \let\commentbegin=\commentbeginchars
+  \let\commentend=\commentendchars}
+
+\newcommand{\invisiblecomments}{%
+  \let\onelinecomment=\empty
+  \let\commentbegin=\empty
+  \let\commentend=\empty}
+
+\visiblecomments
+
+\newlength{\blanklineskip}
+\setlength{\blanklineskip}{0.66084ex}
+
+\newcommand{\hsindent}[1]{\quad}% default is fixed indentation
+\let\hspre\empty
+\let\hspost\empty
+\newcommand{\NB}{\textbf{NB}}
+\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
+
+\EndFmtInput
+\makeatother
+%
+%
+%
+%
+%
+%
+% This package provides two environments suitable to take the place
+% of hscode, called "plainhscode" and "arrayhscode". 
+%
+% The plain environment surrounds each code block by vertical space,
+% and it uses \abovedisplayskip and \belowdisplayskip to get spacing
+% similar to formulas. Note that if these dimensions are changed,
+% the spacing around displayed math formulas changes as well.
+% All code is indented using \leftskip.
+%
+% Changed 19.08.2004 to reflect changes in colorcode. Should work with
+% CodeGroup.sty.
+%
+\ReadOnlyOnce{polycode.fmt}%
+\makeatletter
+
+\newcommand{\hsnewpar}[1]%
+  {{\parskip=0pt\parindent=0pt\par\vskip #1\noindent}}
+
+% can be used, for instance, to redefine the code size, by setting the
+% command to \small or something alike
+\newcommand{\hscodestyle}{}
+
+% The command \sethscode can be used to switch the code formatting
+% behaviour by mapping the hscode environment in the subst directive
+% to a new LaTeX environment.
+
+\newcommand{\sethscode}[1]%
+  {\expandafter\let\expandafter\hscode\csname #1\endcsname
+   \expandafter\let\expandafter\endhscode\csname end#1\endcsname}
+
+% "compatibility" mode restores the non-polycode.fmt layout.
+
+\newenvironment{compathscode}%
+  {\par\noindent
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed\)%
+   \par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\compaths}{\sethscode{compathscode}}
+
+% "plain" mode is the proposed default.
+% It should now work with \centering.
+% This required some changes. The old version
+% is still available for reference as oldplainhscode.
+
+\newenvironment{plainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newenvironment{oldplainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+% Here, we make plainhscode the default environment.
+
+\newcommand{\plainhs}{\sethscode{plainhscode}}
+\newcommand{\oldplainhs}{\sethscode{oldplainhscode}}
+\plainhs
+
+% The arrayhscode is like plain, but makes use of polytable's
+% parray environment which disallows page breaks in code blocks.
+
+\newenvironment{arrayhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\parray}%
+  {\endparray\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newcommand{\arrayhs}{\sethscode{arrayhscode}}
+
+% The mathhscode environment also makes use of polytable's parray 
+% environment. It is supposed to be used only inside math mode 
+% (I used it to typeset the type rules in my thesis).
+
+\newenvironment{mathhscode}%
+  {\parray}{\endparray}
+
+\newcommand{\mathhs}{\sethscode{mathhscode}}
+
+% texths is similar to mathhs, but works in text mode.
+
+\newenvironment{texthscode}%
+  {\(\parray}{\endparray\)}
+
+\newcommand{\texths}{\sethscode{texthscode}}
+
+% The framed environment places code in a framed box.
+
+\def\codeframewidth{\arrayrulewidth}
+\RequirePackage{calc}
+
+\newenvironment{framedhscode}%
+  {\parskip=\abovedisplayskip\par\noindent
+   \hscodestyle
+   \arrayrulewidth=\codeframewidth
+   \tabular{@{}|p{\linewidth-2\arraycolsep-2\arrayrulewidth-2pt}|@{}}%
+   \hline\framedhslinecorrect\\{-1.5ex}%
+   \let\endoflinesave=\\
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \framedhslinecorrect\endoflinesave{.5ex}\hline
+   \endtabular
+   \parskip=\belowdisplayskip\par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\framedhslinecorrect}[2]%
+  {#1[#2]}
+
+\newcommand{\framedhs}{\sethscode{framedhscode}}
+
+% The inlinehscode environment is an experimental environment
+% that can be used to typeset displayed code inline.
+
+\newenvironment{inlinehscode}%
+  {\(\def\column##1##2{}%
+   \let\>\undefined\let\<\undefined\let\\\undefined
+   \newcommand\>[1][]{}\newcommand\<[1][]{}\newcommand\\[1][]{}%
+   \def\fromto##1##2##3{##3}%
+   \def\nextline{}}{\) }%
+
+\newcommand{\inlinehs}{\sethscode{inlinehscode}}
+
+% The joincode environment is a separate environment that
+% can be used to surround and thereby connect multiple code
+% blocks.
+
+\newenvironment{joincode}%
+  {\let\orighscode=\hscode
+   \let\origendhscode=\endhscode
+   \def\endhscode{\def\hscode{\endgroup\def\@currenvir{hscode}\\}\begingroup}
+   %\let\SaveRestoreHook=\empty
+   %\let\ColumnHook=\empty
+   %\let\resethooks=\empty
+   \orighscode\def\hscode{\endgroup\def\@currenvir{hscode}}}%
+  {\origendhscode
+   \global\let\hscode=\orighscode
+   \global\let\endhscode=\origendhscode}%
+
+\makeatother
+\EndFmtInput
+%
+%
+
+
+%
+%
+%
+%
+%
+\ReadOnlyOnce{lineno.fmt}%
+
+\usepackage{etoolbox}
+
+\makeatletter
+
+\newtoggle{lineno@column}
+\newtoggle{lineno@print}
+\newcounter{lineno@num}
+\newlength\linenowidth
+
+\newcommand\linenoFormat{\footnotesize}
+
+\newcommand\linenoSetup{%
+  \iftoggle{lineno@column}{%
+    \column{lineno}{@{}r}%
+    \column{B}{}
+  }{}%
+}
+
+\newcommand\linenoStart{%
+  \refstepcounter{lineno@num}%
+  \iftoggle{lineno@print}{%
+    \fromto{lineno}{B}{\makebox[\linenowidth][r]{\linenoFormat\arabic{lineno@num}}}%
+  }{}%
+}
+
+\newcommand\linenoon{%
+  \toggletrue{lineno@column}%
+  \toggletrue{lineno@print}%
+}
+
+\newcommand\linenooff{%
+  \togglefalse{lineno@column}%
+  \togglefalse{lineno@print}%
+}
+
+\newcommand\linenoskip{%
+  \toggletrue{lineno@column}%
+  \togglefalse{lineno@print}%
+}
+
+\newcommand\linenoreset[1][1]{%
+  \defcounter{lineno@num}{#1 - 1}%
+}
+
+\newcounter{linenum}
+\newcounter{linestep}
+\newlength{\linetemp}% ugly, remove the need for a dimen register
+
+
+
+
+
+
+
+
+
+
+
+
+
+\newcommand\ApiOld{%
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{54}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\CodeOp{send}{}\<[9]%
+\>[9]{}\mathbin{:}\forall \alpha \;\sigma .\alpha \to \mathord{!}\alpha \mathop{;}\sigma {}\<[54]%
+\>[54]{}\to \sigma {}\<[E]%
+\\
+\linenoStart \>[B]{}\CodeOp{recv}{}\<[9]%
+\>[9]{}\mathbin{:}\forall \alpha \;\sigma .\alpha \to \mathbin{?}\alpha \mathop{;}\sigma {}\<[54]%
+\>[54]{}\to \alpha \;\otimes \;\sigma {}\<[E]%
+\\
+\linenoStart \>[B]{}\CodeOp{select}\;\ell_j {}\<[14]%
+\>[14]{}\mathbin{:}\oplus\{\mkern1mu\relax \ell_i \mathbin{:}\Varid{S}_{\Varid{i}}\mkern1mu\}\to \Varid{S}_{\Varid{j}}{}\<[E]%
+\\
+\linenoStart \>[B]{}\CodeOp{branch}{}\<[14]%
+\>[14]{}\mathbin{:}\&\{\mkern1mu\relax \ell_i \mathbin{:}\Varid{S}_{\Varid{i}}\mkern1mu\}\to \langle\mkern1.5mu\relax \ell_i \mathbin{:}\Varid{S}_{\Varid{i}}\mkern1.5mu\rangle {}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+}
+
+\newcommand\ApiNew{{%
+\BorrowCodeStyle
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{42}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\CodeOp{send}{}\<[9]%
+\>[9]{}\mathbin{:}\forall \alpha .\alpha \to \mathord{!}\alpha {}\<[42]%
+\>[42]{}\to \CodeTy{Unit}{}\<[E]%
+\\
+\linenoStart \>[B]{}\CodeOp{recv}{}\<[9]%
+\>[9]{}\mathbin{:}\forall \alpha .\alpha \to \mathbin{?}\alpha {}\<[42]%
+\>[42]{}\to \alpha {}\<[E]%
+\\
+\linenoStart \>[B]{}\CodeOp{select}\;\ell_j {}\<[14]%
+\>[14]{}\mathbin{:}\oplus\{\mkern1mu\relax \ell_i \mathbin{:}\Varid{S}_{\Varid{i}}\mkern1mu\}\to \Varid{S}_{\Varid{j}}{}\<[E]%
+\\
+\linenoStart \>[B]{}\CodeOp{branch}{}\<[14]%
+\>[14]{}\mathbin{:}\&\{\mkern1mu\relax \ell_i \mathbin{:}\Varid{S}_{\Varid{i}}\mkern1mu\}\to \langle\mkern1.5mu\relax \ell_i \mathbin{:}\Varid{S}_{\Varid{i}}\mkern1.5mu\rangle {}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+}}
+
+\newcommand\HtmlProtocolDefn{{%
+\BorrowCodeStyle
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\CodeKw{type}\;\Conid{HtmlChan}{}\<[17]%
+\>[17]{}\mathrel{=}\oplus\{\mkern1mu\relax \CodeLbl{\Conid{Text}}\mathbin{:}\mathord{!}\Conid{String},\;\CodeLbl{\Conid{Elem}}\mathbin{:}\mathord{!}\Conid{String}\mathop{;}\Conid{ChildChan}\mkern1mu\}{}\<[E]%
+\\
+\linenoStart \>[B]{}\CodeKw{type}\;\Conid{ChildChan}{}\<[17]%
+\>[17]{}\mathrel{=}\oplus\{\mkern1mu\relax \CodeLbl{\Conid{Done}}\mathbin{:}\CodeTy{Skip},\;\CodeLbl{\Conid{Child}}\mathbin{:}\Conid{HtmlChan}\mathop{;}\Conid{ChildChan}\mkern1mu\}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+}}
+
+\newcommand\CodeSendTree{%
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{28}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{33}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{78}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{sendTree}\mathbin{:}\Conid{Tree}\to \forall \sigma .\Conid{TreeChan}\mathop{;}\sigma \to \sigma {}\<[E]%
+\\
+\linenoStart \>[B]{}\Varid{sendTree}\;\Conid{Leaf}\;{}\<[24]%
+\>[24]{}\Varid{c}\mathrel{=}\CodeOp{select}\;\Conid{Leaf}\;\Varid{c}{}\<[E]%
+\\
+\linenoStart \>[B]{}\Varid{sendTree}\;(\Conid{Node}\;\Varid{x}\;\Varid{l}\;\Varid{r})\;{}\<[24]%
+\>[24]{}\Varid{c}\mathrel{=}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeKw{let}\;\Varid{c}_{1}\mathrel{=}\CodeOp{select}\;\Conid{Node}\;\Varid{c}\;{}\<[28]%
+\>[28]{}\CodeKw{in}\;{}\<[33]%
+\>[33]{}\mbox{\commentbegin  \ensuremath{\Varid{c}_{1}\mathbin{:}\mathord{!}\Conid{Int}\mathop{;}\Conid{TreeChan}\mathop{;}\Conid{TreeChan}\mathop{;}\sigma }  \commentend}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeKw{let}\;\Varid{c}_{2}\mathrel{=}\CodeOp{send}\;\Varid{x}\;\Varid{c}_{1}\;{}\<[28]%
+\>[28]{}\CodeKw{in}\;{}\<[33]%
+\>[33]{}\mbox{\commentbegin  \ensuremath{\Varid{c}_{2}\mathbin{:}\Conid{TreeChan}\mathop{;}\Conid{TreeChan}\mathop{;}\sigma }  \commentend}{}\<[78]%
+\>[78]{}\label{ln:sendTree/c2-def}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeKw{let}\;\Varid{c}_{3}\mathrel{=}\Varid{sendTree}\;\Varid{l}\;\Varid{c}_{2}\;{}\<[28]%
+\>[28]{}\CodeKw{in}\;{}\<[33]%
+\>[33]{}\mbox{\commentbegin  \ensuremath{\Varid{c}_{3}\mathbin{:}\Conid{TreeChan}\mathop{;}\sigma }  \commentend}{}\<[78]%
+\>[78]{}\label{ln:sendTree/c2-use}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeKw{let}\;\Varid{c}_{4}\mathrel{=}\Varid{sendTree}\;\Varid{r}\;\Varid{c}_{3}\;{}\<[28]%
+\>[28]{}\CodeKw{in}\;{}\<[33]%
+\>[33]{}\mbox{\commentbegin  \ensuremath{\Varid{c}_{4}\mathbin{:}\sigma }  \commentend}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{c}_{4}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+}
+
+\newcommand\CodeSendTreeB{%
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{25}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{30}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{sendTreeB}\mathbin{:}\Conid{Tree}\to \Conid{TreeChan}\to \CodeTy{Skip}{}\<[E]%
+\\
+\linenoStart \>[B]{}\Varid{sendTreeB}\;\Conid{Leaf}\;{}\<[25]%
+\>[25]{}\Varid{c}\mathrel{=}\CodeOp{select}\;\Conid{Leaf}\;\Varid{c}{}\<[E]%
+\\
+\linenoStart \>[B]{}\Varid{sendTreeB}\;(\Conid{Node}\;\Varid{x}\;\Varid{l}\;\Varid{r})\;{}\<[25]%
+\>[25]{}\Varid{c}\mathrel{=}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeKw{let}\;\Varid{c}\mathrel{=}\CodeOp{select}\;\Conid{Node}\;\Varid{c}\;\CodeKw{in}\;{}\<[30]%
+\>[30]{}\mbox{\commentbegin  \ensuremath{\Varid{c}\mathbin{:}\mathord{!}\Conid{Int}\mathop{;}\Conid{TreeChan}\mathop{;}\Conid{TreeChan}}  \commentend}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeOp{send}\;\Varid{x}\;\mathord{\&\mkern-1mu}\Varid{c};{}\<[30]%
+\>[30]{}\mbox{\commentbegin  \ensuremath{\Varid{c}\mathbin{:}\Conid{TreeChan}\mathop{;}\Conid{TreeChan}}  \commentend}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{sendTreeB}\;\Varid{l}\;\mathord{\&\mkern-1mu}\Varid{c};{}\<[30]%
+\>[30]{}\mbox{\commentbegin  \ensuremath{\Varid{c}\mathbin{:}\Conid{TreeChan}}  \commentend}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{sendTreeB}\;\Varid{r}\;\mathord{\&\mkern-1mu}\Varid{c}{}\<[30]%
+\>[30]{}\mbox{\commentbegin  \ensuremath{\Varid{c}\mathbin{:}\CodeTy{Skip}}  \commentend}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+}
+
+\newcommand\CodeRenderExample{{%
+\SaveColumns{renderExample}%
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{52}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{86}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{renderUser}\mathbin{:}\Conid{User}\to \Conid{HtmlChan}\mathop{;}\CodeTy{Close}\to \CodeTy{Unit}{}\<[E]%
+\\
+\linenoStart \>[B]{}\Varid{renderUser}\;\Varid{user}\;\Varid{c}\mathrel{=}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeKw{let}\;\Varid{c}\mathrel{=}\CodeOp{select}\;\Conid{Elem}\;\Varid{c}\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeOp{send}\;\text{\ttfamily \char34 div\char34}\;\mathord{\&\mkern-1mu}\Varid{c};{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeKw{let}\;\Varid{c}\mathrel{=}\CodeOp{select}\;\Conid{Child}\;\Varid{c}\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeOp{fork}\;(\lambda  ()\to \Varid{renderProf}\;\Varid{user}\;\mathord{\&\mkern-1mu}\Varid{c});{}\<[52]%
+\>[52]{}\mbox{\commentbegin  \ensuremath{\Varid{c}\mathbin{:}\CodeTy{Acq}\mathop{;}\Conid{ChildChan}\mathop{;}\CodeTy{Close}}  \commentend}{}\<[86]%
+\>[86]{}\label{ln:renderExample/transBegin}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeKw{let}\;\Varid{msgs}\mathrel{=}\Varid{getMessages}\;\Varid{user}\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{renderRest}\;\Varid{msgs}\;(\CodeOp{acquire}\;\Varid{c}){}\<[86]%
+\>[86]{}\label{ln:renderExample/transEnd}{}\<[E]%
+\\[\blanklineskip]%
+\linenoStart \>[B]{}\Varid{renderRest}\mathbin{:}\Conid{Messages}\to \Conid{ChildChan}\mathop{;}\CodeTy{Close}\to \CodeTy{Unit}{}\<[E]%
+\\
+\linenoStart \>[B]{}\Varid{renderRest}\;\Varid{msgs}\;\Varid{c}\mathrel{=}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeKw{let}\;\Varid{c}\mathrel{=}\CodeOp{select}\;\Conid{Child}\;\Varid{c}\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{renderMsgArea}\;\Varid{msgs}\;\mathord{\&\mkern-1mu}\Varid{c};{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeOp{close}\;(\CodeOp{select}\;\Conid{Done}\;\Varid{c}){}\<[E]%
+\\[\blanklineskip]%
+\linenoStart \>[B]{}\Varid{renderProf}\mathbin{:}\Conid{User}\to \Conid{HtmlChan}\mathop{;}\CodeTy{Drop}\to \CodeTy{Unit}{}\<[E]%
+\\
+\linenoStart \>[B]{}\Varid{renderProf}\;\Varid{user}\;\Varid{c}\mathrel{=}\;\dots\;\CodeOp{drop}\;\Varid{c}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+}}
+
+\newcommand\CodeRenderExampleSnippet{%
+\RestoreColumns{renderExample}%
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{52}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\CodeOp{fork}\;(\lambda  ()\to \Varid{renderProf}\;\Varid{user}\;\mathord{\&\mkern-1mu}\Varid{c});{}\<[52]%
+\>[52]{}\mbox{\commentbegin  \ensuremath{\Varid{c}\mathbin{:}\CodeTy{Acq}\mathop{;}\Conid{ChildChan}\mathop{;}\CodeTy{Close}}  \commentend}{}\<[E]%
+\\
+\linenoStart \>[3]{}\CodeKw{let}\;\Varid{msgs}\mathrel{=}\Varid{getMessages}\;\Varid{user}\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[3]{}\Varid{renderRest}\;\Varid{msgs}\;(\CodeOp{acquire}\;\Varid{c}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+}
+
+\newcommand\CodeRenderExampleSnippetTrans{{%
+\RestoreColumns{renderExample}%
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{52}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[52]{}\mbox{\commentbegin  \ensuremath{\Varid{c}\mathbin{:}\Conid{HtmlChan}\mathop{;}\Conid{ChildChan}\mathop{;}\CodeTy{Close}}  \commentend}{}\<[E]%
+\\
+\linenoStart \>[3]{}\CodeKw{let}\;\Varid{c}_{1},\Varid{c}_{2}\mathrel{=}\CodeOp{rsplit}\;\Varid{c}\;\CodeKw{in}\;{}\<[52]%
+\>[52]{}\mbox{\commentbegin  \ensuremath{\Varid{c}_{1}\mathbin{:}\Conid{HtmlChan}\mathop{;}\CodeTy{Drop}}  \commentend}{}\<[E]%
+\\
+\linenoStart \>[52]{}\mbox{\commentbegin  \ensuremath{\Varid{c}_{2}\mathbin{:}\CodeTy{Acq}\mathop{;}\Conid{ChildChan}\mathop{;}\CodeTy{Close}}  \commentend}{}\<[E]%
+\\
+\linenoStart \>[3]{}\CodeOp{fork}\;(\lambda  ()\to \Varid{renderProf}\;\Varid{user}\;\Varid{c}_{1});{}\<[E]%
+\\
+\linenoStart \>[3]{}\CodeKw{let}\;\Varid{msgs}\mathrel{=}\Varid{getMessages}\;\Varid{user}\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[3]{}\Varid{renderRest}\;\Varid{msgs}\;(\CodeOp{acquire}\;\Varid{c}_{2}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+}}
+
+\newcommand\CodeRenderRest{
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{renderRest}\;\Varid{msgs}\;\Varid{c}\mathrel{=}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeKw{let}\;\Varid{c}\mathrel{=}\CodeOp{select}\;\Conid{Child}\;\Varid{c}\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeKw{let}\;\Varid{c}_{1},\Varid{c}_{2}\mathrel{=}\CodeOp{lsplit}\;\Varid{c}\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{renderMsgArea}\;\Varid{msgs}\;\Varid{c}_{1};{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeOp{close}\;(\CodeOp{select}\;\Conid{Done}\;\Varid{c}_{2}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+}
+
+\newcommand\LocalSplitReduction{{%
+\setlength{\abovedisplayskip}{0pt}%
+\setlength{\belowdisplayskip}{0pt}%
+\begingroup
+\SaveColumns{localSplit}%
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{8}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\boldsymbol{\nu}[\mkern1mu\relax \Varid{c}\mkern1mu][\mkern1mu\relax \Varid{b}_{1}\mkern1mu]\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}(\Conid{P}_{1}\;{}\<[8]%
+\>[8]{}\mathrel{\|}\;{}\<[13]%
+\>[13]{}\CodeKw{let}\;\Varid{c}\mathrel{=}\CodeOp{select}\;\Conid{Child}\;\Varid{c}\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[13]{}\CodeKw{let}\;\Varid{c}_{1},\Varid{c}_{2}\mathrel{=}\CodeOp{lsplit}\;\Varid{c}\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[13]{}\Varid{renderMsgArea}\;\Varid{msgs}\;\Varid{c}_{1};{}\<[E]%
+\\
+\linenoStart \>[13]{}\CodeOp{close}\;(\CodeOp{select}\;\Conid{Done}\;\Varid{c}_{2})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\endgroup
+\RestoreColumns{localSplit}%
+\ExampleReduction*
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{8}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\boldsymbol{\nu}[\mkern1mu\relax \Varid{c}\mkern1mu][\mkern1mu\relax \Varid{b}_{2}\mkern1mu]\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}(\Conid{P}_{2}\;{}\<[8]%
+\>[8]{}\mathrel{\|}\;{}\<[13]%
+\>[13]{}\CodeKw{let}\;\Varid{c}_{1},\Varid{c}_{2}\mathrel{=}\CodeOp{lsplit}\;\Varid{c}\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[13]{}\Varid{renderMsgArea}\;\Varid{msgs}\;\Varid{c}_{1};{}\<[E]%
+\\
+\linenoStart \>[13]{}\CodeOp{close}\;(\CodeOp{select}\;\Conid{Done}\;\Varid{c}_{2})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\ExampleReduction
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{8}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\boldsymbol{\nu}[\mkern1mu\relax \Varid{c}_{1} \Varid{c}_{2}\mkern1mu][\mkern1mu\relax \Varid{b}_{3}\mkern1mu]\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}(\Conid{P}_{3}\;{}\<[8]%
+\>[8]{}\mathrel{\|}\;{}\<[13]%
+\>[13]{}\Varid{renderMsgArea}\;\Varid{msgs}\;\Varid{c}_{1};{}\<[E]%
+\\
+\linenoStart \>[13]{}\CodeOp{close}\;(\CodeOp{select}\;\Conid{Done}\;\Varid{c}_{2})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\ExampleReduction*
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{8}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\boldsymbol{\nu}[\mkern1mu\relax \Varid{c}_{2}\mkern1mu][\mkern1mu\relax \Varid{b}_{3}\mkern1mu]\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}(\Conid{P}_{3}\;{}\<[8]%
+\>[8]{}\mathrel{\|}\;{}\<[13]%
+\>[13]{}\CodeOp{close}\;(\CodeOp{select}\;\Conid{Done}\;\Varid{c}_{2})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\ExampleReduction
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\boldsymbol{\nu}[\mkern1mu\relax \Varid{c}_{2}\mkern1mu][\mkern1mu\relax \Varid{d}\mkern1mu]\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}(\Conid{P}_{4} [\mskip1.5mu \CodeOp{wait}\;\Varid{d}\mskip1.5mu]\;\mathrel{\|}\;\Varid{c}_{2}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\ExampleReduction
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}(\Conid{P}_{4} [\mskip1.5mu \mathord{*}\mskip1.5mu]\;\mathrel{\|}\;\mathord{*}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+}}
+
+\newcommand\RemoteSplitReduction{{%
+\setlength{\abovedisplayskip}{0pt}%
+\setlength{\belowdisplayskip}{0pt}%
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\boldsymbol{\nu}[\mkern1mu\relax \Varid{c}\mkern1mu][\mkern1mu\relax \dots\mkern1mu]\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeKw{let}\;\Varid{c}_{1},\Varid{c}_{2}\mathrel{=}\CodeOp{rsplit}\;\Varid{c}\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeOp{fork}\;(\lambda  ()\to \Varid{renderProf}\;\Varid{user}\;\Varid{c}_{1});{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeKw{let}\;\Varid{msgs}\mathrel{=}\dots\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{renderRest}\;\Varid{msgs}\;(\CodeOp{acquire}\;\Varid{c}_{2}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\ExampleReduction
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\boldsymbol{\nu}[\mkern1mu\relax \Varid{c}_{1}\mathop{\|}\Varid{c}_{2}\mkern1mu][\mkern1mu\relax \dots\mkern1mu]\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeOp{fork}\;(\lambda  ()\to \Varid{renderProf}\;\Varid{user}\;\Varid{c}_{1});{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\CodeKw{let}\;\Varid{msgs}\mathrel{=}\dots\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{renderRest}\;\Varid{msgs}\;(\CodeOp{acquire}\;\Varid{c}_{2}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\ExampleReduction*
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{8}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\boldsymbol{\nu}[\mkern1mu\relax \Varid{c}_{1}\mathop{\|}\Varid{c}_{2}\mkern1mu][\mkern1mu\relax \dots\mkern1mu]\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}( {}\<[8]%
+\>[8]{}\CodeOp{drop}\;\Varid{c}_{1}\;\mathrel{\|}{}\<[E]%
+\\
+\linenoStart \>[8]{}\Varid{renderRest}\;\Varid{msgs}\;(\CodeOp{acquire}\;\Varid{c}_{2})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\ExampleReduction
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\boldsymbol{\nu}[\mkern1mu\relax \mathop{\|}\Varid{c}_{2}\mkern1mu][\mkern1mu\relax \dots\mkern1mu]\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{renderRest}\;\Varid{msgs}\;(\CodeOp{acquire}\;\Varid{c}_{2}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\ExampleReduction
+\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\boldsymbol{\nu}[\mkern1mu\relax \Varid{c}_{2}\mkern1mu][\mkern1mu\relax \dots\mkern1mu]\;\CodeKw{in}{}\<[E]%
+\\
+\linenoStart \>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{renderRest}\;\Varid{msgs}\;\Varid{c}_{2}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+}}

@@ -455,12 +455,14 @@
 \newcommand*\CtxDiff[2]{{#1} \operatorname{\backslash} {#2}}
 \newcommand*\IfThenElse[3]{\Keyword{if}{#1}\Keyword{then}{#2}\Keyword{else}{#3}}
 
-% Reduction 
-\newcommand{\Reduces}{\rightarrow}
-\newcommand{\EReduce}{\mathrel{\Reduces_e}}
-\newcommand{\PReduce}{\mathrel{\Reduces_p}}
-\newcommand{\TPReduce}{\mathrel{\Reduces'_{\!p}}}
-\newcommand{\IsRed}[2]{{#1}\;{\reduces}\;{#2}}
+% Reduction
+%
+% Use \EReduce (or the other \<X>Reduce macros) for a single step, and \EReduce*
+% for a multi step reduction.
+\NewDocumentCommand\Reduces{O{}ms}{\mathrel{\rightarrow_{#2}^{#1\IfBooleanT{#3}{*}}}}
+\newcommand\EReduce  {\Reduces{\!e}}
+\newcommand\PReduce  {\Reduces{\!p}}
+\newcommand\TPReduce {\Reduces[\prime]{\!p}}
 
 % Operators 
 \newcommand{\Subs}[3]{\termcolor{{#1}[{#2}/{#3}]}}

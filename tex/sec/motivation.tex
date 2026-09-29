@@ -44,29 +44,22 @@ primitive values.
 %   passed, but no pointers.}
 Consider an example from \citet{DBLP:conf/icfp/ThiemannV16} for serializing binary trees of type \lstinline{Tree}.
 \begin{lstlisting}
-type Tree = Leaf | Node int Tree Tree
+type Tree = Leaf | Node Int Tree Tree
 \end{lstlisting}
 Here is the corresponding session type \lstinline{TreeChan}:
 \begin{lstlisting}
-type TreeChan = oplus{ Leaf: Skip, Node: !int; TreeChan; TreeChan }
+type TreeChan = oplus{ Leaf: Skip, Node: !Int;TreeChan;TreeChan }
 \end{lstlisting}
 \begin{figure}[tp]
+  \setlength{\abovedisplayskip}{0pt}
+  \setlength{\belowdisplayskip}{0pt}
   \begin{subfigure}[t]{0.49\linewidth}
-\begin{lstlisting}
-send : forallalphasigma. alpha -> !alpha;sigma -> sigma
-recv : forallalphasigma. ?alpha;sigma -> alphaoxsigma
-select ellj : +{elli: Si} -> Sj
-branch : &{elli: Si} -> <elli: Si>
-\end{lstlisting}
+    \sethscode{tcolorboxcode}%
+    \ApiOld
     \caption{CFST API}\label{lst:cfst-api}
   \end{subfigure}
   \begin{subfigure}[t]{0.49\linewidth}
-\begin{lstlisting}[style=eclipse-new]
-send : forallalpha. alpha -> !alpha -> Unit
-recv : forallalpha. ?alpha -> alpha
-select ellj : +{elli: Si} -> Sj
-branch : &{elli: Si} -> <elli: Si>
-\end{lstlisting}
+    \ApiNew
     \caption{\thecalculus API}\label{lst:bcfst-api}
   \end{subfigure}
   \caption{Session type APIs}
@@ -78,7 +71,7 @@ positions. The \lstinline{Node} alternative is an example where the
 \lstinline{TreeChan} type refers two times in a row to itself. The
 first occurrence of \lstinline{TreeChan} in this
 type is illegal in regular session type systems (e.g.,
-\cite{DBLP:journals/jfp/GayV10,DBLP:conf/esop/LindleyM15,Gay_Vasconcelos_2025}) because
+\citet{DBLP:journals/jfp/GayV10,DBLP:conf/esop/LindleyM15,Gay_Vasconcelos_2025}) because
 they syntactically restrict recursion to tail position. Context-free
 session types lift this restriction as their composition operator $S_1;S_2$ connects
 two sessions sequentially: the composed session comprises the
@@ -96,17 +89,18 @@ offering different labeled alternatives to a variant type with the
 same labeled alternatives. Standard pattern matching suffices to
 decode the chosen alternative and continue.
 Given the types and the CFST API, we can implement the serialization function:
-\begin{lstlisting}[numbers=left]
-sendTree : Tree -> forallsigma.TreeChan;sigma -> sigma
-sendTree Leaf c =
-  select Leaf c
-sendTree (Node x l r) c =
-  let c1 = select Node c   (* c1 : !int; TreeChan; TreeChan; sigma *)
-      c2 = send x c1       (* c2 : TreeChan; TreeChan; sigma *)
-      c3 = sendTree l c2   (* c3 : TreeChan; sigma *)
-      c4 = sendTree r c3   (* c4 : sigma *)
-  in  c4
-\end{lstlisting}
+\NumberedCode\CodeSendTree
+% \begin{lstlisting}[numbers=left]
+% sendTree : Tree -> forallsigma.TreeChan;sigma -> sigma
+% sendTree Leaf c =
+%   select Leaf c
+% sendTree (Node x l r) c =
+%   let c1 = select Node c   (* c1 : !Int;TreeChan;TreeChan;sigma *)
+%       c2 = send x c1       (* c2 : TreeChan;TreeChan;sigma *)
+%       c3 = sendTree l c2   (* c3 : TreeChan;sigma *)
+%       c4 = sendTree r c3   (* c4 : sigma *)
+%   in  c4
+% \end{lstlisting}
 However, there are several catches. First, the channel \lstinline{c}
 is passed explicitly throughout the code; a pattern we call
 \emph{resource-passing style}. This style forces the programmer to
@@ -114,9 +108,9 @@ make the function polymorphic on the continuation type of the channel,
 which is \lstinline{sigma} in this example.
 Second, the \lstinline{Node} branch of \lstinline{sendTree} relies on
 polymorphic recursion. To see this, consider the type of
-\lstinline{c2} in line 6--7. To invoke \lstinline{sendTree}
+\lstinline{c2} in lines \ref*{ln:sendTree/c2-def}--\ref*{ln:sendTree/c2-use}. To invoke \lstinline{sendTree}
 recursively, we need to instantiate the type argument
-\lstinline{sigma} with \lstinline{TreeChan; sigma} rather than just
+\lstinline{sigma} with \lstinline{TreeChan;sigma} rather than just
 \lstinline{sigma}, which is the
 telltale for polymorphic recursion.
 
@@ -128,38 +122,39 @@ the borrowing style, but \lstinline{select} and \lstinline{branch}
 remain in resource-passing style (see \cref{sec:remarks} for the
 reason). To make this switch apparent, we present code
 using the \thecalculus API with grey background and golden keywords.
-\lstset{style=eclipse-new}
-\begin{lstlisting}[numbers=left]
-sendTreeB : Tree -> TreeChan -> Skip
-sendTreeB Leaf c =          (* c : TreeChan *)
-  select Leaf c
-sendTreeB (Node x l r) c =
-  let c = select Node c in  (* c : !Int; TreeChan; TreeChan *)
-  send x &c;                (* c : TreeChan; TreeChan *)
-  sendTreeB l &c;           (* c : TreeChan *)
-  sendTreeB r &c
-\end{lstlisting}
+%
+\BorrowCodeStyle
+\NumberedCode\CodeSendTreeB
+\lstset{style=eclipse-new}%
+% \begin{lstlisting}[numbers=left]
+% sendTreeB : Tree -> TreeChan -> Skip
+% sendTreeB Leaf c =          (* c : TreeChan *)
+%   select Leaf c
+% sendTreeB (Node x l r) c =
+%   let c = select Node c in  (* c : !Int;TreeChan;TreeChan *)
+%   send x &c;                (* c : TreeChan;TreeChan *)
+%   sendTreeB l &c;           (* c : TreeChan *)
+%   sendTreeB r &c
+% \end{lstlisting}
 What has changed? First, the type of \lstinline{sendTreeB} is no longer polymorphic over the
 continuation type. Instead, the channel argument \lstinline{c} starts
 out at type \lstinline{TreeChan} without specifying a
 continuation. The return type is \lstinline{Skip}, which indicates an inactive
 channel. 
-Second, there is no explicit resource
-passing, except for \lstinline{select}. Each use of the borrow notation
-\lstinline{&c} implicitly splits off a prefix of the session type
-according to the function argument and updates \lstinline{c} to the
-suffix. To see this, consider the type of \lstinline{c}---after
-splitting off the borrow in the corresponding line---shown in the
-comments. Before the \lstinline{send} operation (line 5--6), the type
-of \lstinline{c} starts with \lstinline{!Int; ...}. ``Taking the
-borrow'' splits off the borrowed type \lstinline{!Int}---the
-argument type of \lstinline{send x}---and
-updates \lstinline{c} to the type shown in line 6. As the type of
-\lstinline{c} is itself a borrowed type, one could speak of a
-\emph{reborrow}. 
 
-Third, as there is no polymorphism, there is no polymorphic
-recursion, either.
+Second, there is no explicit resource passing, except for
+\lstinline{select}. Each use of the borrow notation \lstinline{&c} implicitly
+splits off a prefix of the session type according to the function argument and
+updates \lstinline{c} to the suffix. To see this, consider the type of
+\lstinline{c}---after splitting off the borrow in the corresponding line---shown
+in the comments. After the \lstinline{select} operation in line 4, the type of
+\lstinline{c} starts with \lstinline{!Int;...}. ``Taking the borrow'' splits off
+the borrowed type \lstinline{!Int}---the argument type of
+\lstinline{send x}---and updates \lstinline{c} to the type shown in line 5. As
+the type of \lstinline{c} is itself a borrowed type, one could speak of a
+\emph{reborrow}.
+
+Third, as there is no polymorphism, there is no polymorphic recursion, either.
 
 Finally, the channel variable \lstinline{c} can be used in a
 non-linear way, as long as its uses are under borrows, as in
@@ -188,11 +183,12 @@ However, in some situations we want to send a borrow to
 another process. As an example, suppose a server-side renderer streams
 HTML nodes to a client instead of constructing a DOM tree in
 memory first. Here is a protocol for such a renderer.
-\begin{lstlisting}
-type HtmlChan  = oplus{ Text: !String, Elem: !String; ChildChan }
-type ChildChan = oplus{ Done: Skip,    Child: HtmlChan; ChildChan }
-\end{lstlisting}
-The \lstinline{Elem} alternative first sends a tag name, and then a sequence of children. The 
+% \begin{lstlisting}
+% type HtmlChan  = oplus{ Text: !String, Elem: !String;ChildChan }
+% type ChildChan = oplus{ Done: Skip,    Child: HtmlChan;ChildChan }
+% \end{lstlisting}
+\HtmlProtocolDefn
+The \lstinline{Elem} alternative first sends a tag name, and then a sequence of children. The
 \lstinline{Child} alternative is context-free in the same sense as the
 \lstinline{Node} alternative of \lstinline{TreeChan}: rendering one
 child consumes an \lstinline{HtmlChan} prefix and then continues with
@@ -202,32 +198,40 @@ Now consider a renderer (\Cref{lst:rendering-example}) that emits a user panel w
 computed by another process while the main process loads user
 messages, say, from a database. We assume that
 \lstinline{renderProf} and \lstinline{renderMsgArea} render
-one HTML node on a channel of type \lstinline{HtmlChan; Drop} and
+one HTML node on a channel of type \lstinline{HtmlChan;Drop} and
 \lstinline{HtmlChan}, respectively. The type \lstinline{Drop}
 is a new session type that comes with a companion type
 \lstinline{Acq}. They indicate the placement of synchronization
 operations that ensure correct handover of ownership from the borrowed session
 to the session's suffix.
-\begin{lstlisting}[numbers=left,float,caption={Rendering example},captionpos=b,label={lst:rendering-example}]
-renderUser : User -> HtmlChan; Close -> Unit
-renderUser user c =
-  let c = select Elem c in
-  send "div" &c;
-  let c = select Child c in
-  fork (lambda() -> renderProf user &c);
-  (* c : Acq; ChildChan; Close *)
-  let msgs = getMessages user in
-  renderRest msgs (acquire c)
+% \begin{lstlisting}[numbers=left,float,caption={Rendering example},captionpos=b,label={lst:rendering-example}]
+% renderUser : User -> HtmlChan;Close -> Unit
+% renderUser user c =
+%   let c = select Elem c in
+%   send "div" &c;
+%   let c = select Child c in
+%   fork (lambda() -> renderProf user &c);
+%   (* c : Acq;ChildChan;Close *)
+%   let msgs = getMessages user in
+%   renderRest msgs (acquire c)
 
-renderRest : Messages -> ChildChan; Close -> Unit
-renderRest msgs c =
-  let c = select Child c in
-  renderMsgArea msgs &c;
-  close (select Done c)
+% renderRest : Messages -> ChildChan;Close -> Unit
+% renderRest msgs c =
+%   let c = select Child c in
+%   renderMsgArea msgs &c;
+%   close (select Done c)
 
-renderProf : User -> HtmlChan;Drop -> Unit
-renderProf user c = ... drop c
-\end{lstlisting}
+% renderProf : User -> HtmlChan;Drop -> Unit
+% renderProf user c = ... drop c
+% \end{lstlisting}
+\begin{Listing}
+  \linenoon
+  \linenoreset
+  \tcbset{force nobeforeafter}
+  \CodeRenderExample
+  \caption{Rendering example}
+  \label{lst:rendering-example}
+\end{Listing}
 The function \lstinline{renderUser} starts an HTML element and then
 opens the child stream. It passes a borrow of the
 first child position to a new process, which renders the user's profile.
@@ -282,139 +286,156 @@ same process elaborate to \lstinline{lsplit} while borrows used across
 we show the translation of \lstinline{renderRest} in
 \thecalculus in \cref{fig:local-split-program}.
 
-Execution proceeds by repeatedly exposing the next local prefix of the
-channel sequence. \Cref{fig:local-split-trace} shows a suffix of its reduction
-sequence.
-The \lstinline{nu[c][d] in ...} operator is a channel restriction as known
-from session calculi \cite{Gay_Vasconcelos_2025}. It introduces a
-communication channel with endpoint names \lstinline{c} and 
-\lstinline{d}. We generalize channel restriction so that each
-compartment \lstinline{[c]} and \lstinline{[d]} contains a
-\emph{binder group}: a list of channel names and separator markers.
-Its working is best illustrated with the example trace.
+Execution proceeds by repeatedly exposing the next local prefix of the channel
+sequence. \Cref{fig:local-split-trace} shows a suffix of its reduction sequence.
+The \lstinline{nu[b_1][b_2] in ...} operator is a channel restriction as known
+from session calculi \cite{Gay_Vasconcelos_2025}. It introduces a communication
+channel but with each compartment \lstinline{[b_i]} containing a \emph{bind
+  group:} a list of channel names and separator markers. The names bound by
+$b_1$ refer to one channel endpoint, the names in $b_2$ refer to the other. The
+workings are best illustrated with the example trace.
 
-To keep the trace short (\cref{fig:local-split-trace}), the
-reduction starts at the local suffix in \lstinline{renderRest}.
 \begin{figure}
-\begin{minipage}[t]{0.49\linewidth}
-\begin{subfigure}[t]{\linewidth}
-\begin{lstlisting}[numbers=left]
-renderRest msgs c =
-  let c2 = select Child c in
-  let c3, c4 = lsplit c2 in
-  renderMsgArea msgs c3;
-  close (select Done c4)
-\end{lstlisting}
-\caption{Local-split program.}
-\label{fig:local-split-program}
-\end{subfigure}
-
-\medskip
-
-\setcounter{subfigure}{2}
-\begin{subfigure}[t]{\linewidth}
-\begin{lstlisting}
-    nu[c][...]
-    let c1, c2 = rsplit c in
-    fork (lambda() -> renderProf user c1);
-    let msgs = ... in
-    renderRest msgs (acquire c2)
-~>
-    nu[c1||c2][...]
-    fork (lambda() -> renderProf user c1);
-    let msgs = ... in
-    renderRest msgs (acquire c2)
-~>*  [ drop c1 ]
-    nu[||c2][...]
-    renderRest msgs (acquire c2)
-~>
-    nu[c2][...]
-    renderRest msgs c2
-\end{lstlisting}
-\caption{Remote split and acquire.}
-\label{fig:remote-split-trace}
-\end{subfigure}
-\end{minipage}\hfill
-\setcounter{subfigure}{1}
-\begin{subfigure}[t]{0.49\linewidth}
-\begin{lstlisting}
-nu[c][d..] in
-  (P_d ||
-   let c2 = select Child c in
-   let c3, c4 = lsplit c2 in
-   renderMsgArea msgs c3;
-   close (select Done c4)
-~> nu[c2][d..] in
-  (P_d ||
-   let c3, c4 = lsplit c2 in
-   renderMsgArea msgs c3;
-   close (select Done c4)
-~> nu[c3;c4][d..] in
-  (P_d ||
-   renderMsgArea msgs c3;
-   close (select Done c4)
-~> nu[c4][d..] in
-  (P_d ||
-   close (select Done c4)
-~> nu[c4][d..] in
-  (P_d ||
-   close c4
-~> nu[c4][d3] in
-  (P_d'[wait d3] ||
-   close c4)
-~> (P_d'[*] || *)
-\end{lstlisting}
-\caption{Local-split reduction suffix.}
-\label{fig:local-split-trace}
-\end{subfigure}
-\setcounter{subfigure}{3}
-\caption{Local and remote splitting in the suffix of \lstinline{renderRest}.
-The processes $P_d$ and $P_d'$ abbreviate client-side
-computation on the other endpoint.}
-\label{fig:local-split-reduction}
+  \begin{subfigure}{.49\linewidth}
+    \tcbset{force nobeforeafter}
+    \linenoon
+    \linenoreset
+    \CodeRenderExampleSnippetTrans
+    \caption{Translation of suffix renderUser}
+  \end{subfigure}\hfill
+  \begin{subfigure}{.49\linewidth}
+    \tcbset{force nobeforeafter}
+    \linenoon
+    \linenoreset
+    \CodeRenderRest
+    \caption{Translation of renderRest}
+  \end{subfigure}
+  \caption{Translations}
 \end{figure}
-The split on \lstinline{c2} following the \lstinline{select} \emph{replaces} the
-binder for \lstinline{c2} with two fresh channel names \lstinline{c3}
-and \lstinline{c4}. That is, both compartments of the \lstinline{nu}
-contain a flat list of channel names, and all operations work on these
-channel names from left to right. To ensure the correct
-sequencing, the semantics does not allow any action on \lstinline{c4} before
-\lstinline{c3} has been consumed. This restriction is supported by
-typing: the \lstinline{lsplit} operation returns an \emph{ordered
-  pair}, whose components must be processed and consumed in
-left-to-right order.
+
+%   \begin{subfigure}[t]{\linewidth}
+%     \tcbset{force nobeforeafter}
+%     \linenoon
+%     \linenoreset
+%     \CodeRenderRest
+% % \begin{lstlisting}[numbers=left,belowskip=0pt]
+% % renderRest msgs c =
+% %   let c = select Child c in
+% %   let c1, c2 = lsplit c in
+% %   renderMsgArea msgs c1;
+% %   close (select Done c2)
+% % \end{lstlisting}
+%     \caption{Local-split program.}
+%     \label{fig:local-split-program}
+%   \end{subfigure}
+
+\begin{figure}
+  \begin{subfigure}{0.49\linewidth}
+    \RemoteSplitReduction
+    \caption{Remote split and acquire.}
+    \label{fig:remote-split-trace}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.49\linewidth}
+    \LocalSplitReduction
+% \begin{lstlisting}[belowskip=\smallskipamount]
+% nu[c][...] in
+%   (P1 || let c = select Child c in
+%         let c1, c2 = lsplit c in
+%         renderMsgArea msgs c3;
+%         close (select Done c4))
+% \end{lstlisting}
+% \quad$\PReduce*$
+% \begin{lstlisting}[aboveskip=\smallskipamount, belowskip=\smallskipamount]
+% nu[c][...] in
+%   (P2 || let c1, c2 = lsplit c in
+%         renderMsgArea msgs c1;
+%         close (select Done c2))
+% \end{lstlisting}
+% \quad$\PReduce$
+% \begin{lstlisting}[aboveskip=\smallskipamount, belowskip=\smallskipamount]
+% nu[c1c2][...] in
+%   (P2 || renderMsgArea msgs c1;
+%         close (select Done c2))
+% \end{lstlisting}
+% \quad$\PReduce*$
+% \begin{lstlisting}[aboveskip=\smallskipamount, belowskip=\smallskipamount]
+% nu[c2][...] in
+%   (P3 || close (select Done c2))
+% \end{lstlisting}
+% \quad$\PReduce$
+% \begin{lstlisting}[aboveskip=\smallskipamount, belowskip=\smallskipamount]
+% nu[c2][d] in
+%   (P4[wait d] || close c2)
+% \end{lstlisting}
+% \quad$\PReduce$
+% \begin{lstlisting}[
+%   aboveskip=\smallskipamount,
+%   belowskip=0pt,
+% ]
+% (P4[*] || *)
+% \end{lstlisting}
+    \caption{Local-split reduction suffix.}
+    \label{fig:local-split-trace}
+  \end{subfigure}
+% \setcounter{subfigure}{3}
+  \caption{Local and remote splitting in the suffix of \lstinline{renderRest}.
+    The processes \lstinline{Pi} abbreviate client-side computation on the other
+    endpoint.}
+  \label{fig:local-split-reduction}
+\end{figure}
+
+To keep the trace short (\cref{fig:local-split-trace}), the reduction starts at
+the local suffix in \lstinline{renderRest}. The split on \lstinline{c} following
+the \lstinline{select} \emph{replaces} the binder for \lstinline{c} with two
+fresh channel names \lstinline{c1} and \lstinline{c2}.
+%
+% All operations work on
+% the channel names in a bind group from left to right.
+%
+% That is, both
+% compartments of the \lstinline{nu} contain a flat list of channel names, and all
+% operations work on these channel names from left to right. To ensure the correct
+% sequencing, the semantics does not allow any action on \lstinline{c2} before
+% \lstinline{c1} has been consumed.
+%
+This restriction is supported by typing: the
+\lstinline{lsplit} operation returns an \emph{ordered pair,} whose components
+must be processed and consumed in left-to-right order.
+
 % The \lstinline{drop} operation (not used in this
 % example) applied to some \lstinline{c} just discards \lstinline{c} if
 % it is the first channel name in the compartment.
 
-On the client side, in the process $P_d$ that holds the other
-channel end \lstinline{d}, 
-splitting can be performed on \lstinline{d} independently of
-the splitting on \lstinline{c}. The only constraint is that, in the
-end, when \lstinline{close} and \lstinline{wait} calls match, the
-reduction requires that only one channel name is left in each
-compartment. Under this condition, the channel can be closed and
-eliminated. The figure does not show the transitions of the client $P_d$, which
-are independent.
+On the client side, in the processes \lstinline{Pi} that hold the other channel end
+\lstinline{d}, splitting can be performed on \lstinline{d} independently of the
+splitting on \lstinline{c}. The only constraint is that, in the end, when
+\lstinline{close} and \lstinline{wait} calls match, the reduction requires that
+only one channel name is left in each compartment. Under this condition, the
+channel can be closed and eliminated. The figure does not show the transitions
+of the client $P_d$, which are independent.
 
 For remote borrowing, we incorporate the 
 \lstinline{acquire} primitive and indicate a remote split with the
 symbol ``\lstinline{||}'' in the compartment. As an example, we consider the translation of
-lines 5--7:
-\begin{lstlisting}
-  fork (lambda() -> renderProf user &c);
-  let msgs = getMessages user in
-  renderRest msgs (acquire c)
-\end{lstlisting}
+lines \ref*{ln:renderExample/transBegin}--\ref*{ln:renderExample/transEnd}:
+% \begin{lstlisting}
+%   fork (lambda() -> renderProf user &c);
+%   let msgs = getMessages user in
+%   renderRest msgs (acquire c)
+% \end{lstlisting}
+\NumberedCode[\getrefnumber{ln:renderExample/transBegin}]{%
+  \CodeRenderExampleSnippet
+}
 It translates to the following \thecalculus code.
-\begin{lstlisting}
-(* initially                  c : HtmlChan; ChildChan; Close *)
-let c1, c2 = rsplit c in   (* c1 : HtmlChan; Drop *)
-                           (* c2 : Acq; ChildChan; Close *)
-fork (lambda() -> renderProf user c1);
-let msgs = getMessages user in
-renderRest msgs (acquire c2)
-\end{lstlisting}
+% \begin{lstlisting}
+% (* initially                  c  : HtmlChan;ChildChan;Close *)
+% let c1, c2 = rsplit c in   (* c1 : HtmlChan;Drop *)
+%                            (* c2 : Acq;ChildChan;Close *)
+% fork (lambda() -> renderProf user c1);
+% let msgs = getMessages user in
+% renderRest msgs (acquire c2)
+% \end{lstlisting}
+\CodeRenderExampleSnippetTrans
 The translation inserts an \lstinline{rsplit} because \lstinline{c1}
 and \lstinline{c2} are used in different processes. The
 \lstinline{rsplit} returns an ordinary (linear) pair of channels
