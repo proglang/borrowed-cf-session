@@ -14,6 +14,7 @@
 *.cb
 *.cb2
 *.rel
+*.ptb
 .*.lb
 
 ## Intermediate documents:

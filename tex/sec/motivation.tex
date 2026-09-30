@@ -1,17 +1,344 @@
+\iffalse
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Do not modify this file directly  !
+! This file has been auto-generated !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+\fi
+
+%% ODER: format ==         = "\mathrel{==}"
+%% ODER: format /=         = "\neq "
+%
+%
+\makeatletter
+\@ifundefined{lhs2tex.lhs2tex.sty.read}%
+  {\@namedef{lhs2tex.lhs2tex.sty.read}{}%
+   \newcommand\SkipToFmtEnd{}%
+   \newcommand\EndFmtInput{}%
+   \long\def\SkipToFmtEnd#1\EndFmtInput{}%
+  }\SkipToFmtEnd
+
+\newcommand\ReadOnlyOnce[1]{\@ifundefined{#1}{\@namedef{#1}{}}\SkipToFmtEnd}
+\usepackage{newtxmath}
+\usepackage{stmaryrd}
+\DeclareFontFamily{OT1}{cmtex}{}
+\DeclareFontShape{OT1}{cmtex}{m}{n}
+  {<5><6><7><8>cmtex8
+   <9>cmtex9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
+\DeclareFontShape{OT1}{cmtex}{m}{it}
+  {<-> ssub * cmtt/m/it}{}
+\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
+\DeclareFontShape{OT1}{cmtt}{bx}{n}
+  {<5><6><7><8>cmtt8
+   <9>cmbtt9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
+\DeclareFontShape{OT1}{cmtex}{bx}{n}
+  {<-> ssub * cmtt/bx/n}{}
+\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
+
+\newcommand{\Sp}{\hskip.33334em\relax}
+
+
+\newcommand{\Conid}[1]{\mathit{#1}}
+\newcommand{\Varid}[1]{\mathit{#1}}
+\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
+\newcommand{\plus}{\mathbin{+\!\!\!+}}
+\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
+\newcommand{\rbind}{\mathbin{=\mkern-6.7mu<\!\!\!<}}% suggested by Neil Mitchell
+\newcommand{\sequ}{\mathbin{>\!\!\!>}}
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+\usepackage{polytable}
+
+%mathindent has to be defined
+\@ifundefined{mathindent}%
+  {\newdimen\mathindent\mathindent\leftmargini}%
+  {}%
+
+\def\resethooks{%
+  \global\let\SaveRestoreHook\empty
+  \global\let\ColumnHook\empty}
+\newcommand*{\savecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\savecolumns[#1]}}
+\newcommand*{\restorecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\restorecolumns[#1]}}
+\newcommand*{\aligncolumn}[2]%
+  {\g@addto@macro\ColumnHook{\column{#1}{#2}}}
+
+\resethooks
+
+\newcommand{\onelinecommentchars}{\quad-{}- }
+\newcommand{\commentbeginchars}{\enskip\{-}
+\newcommand{\commentendchars}{-\}\enskip}
+
+\newcommand{\visiblecomments}{%
+  \let\onelinecomment=\onelinecommentchars
+  \let\commentbegin=\commentbeginchars
+  \let\commentend=\commentendchars}
+
+\newcommand{\invisiblecomments}{%
+  \let\onelinecomment=\empty
+  \let\commentbegin=\empty
+  \let\commentend=\empty}
+
+\visiblecomments
+
+\newlength{\blanklineskip}
+\setlength{\blanklineskip}{0.66084ex}
+
+\newcommand{\hsindent}[1]{\quad}% default is fixed indentation
+\let\hspre\empty
+\let\hspost\empty
+\newcommand{\NB}{\textbf{NB}}
+\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
+
+\EndFmtInput
+\makeatother
+%
+%
+%
+%
+%
+%
+% This package provides two environments suitable to take the place
+% of hscode, called "plainhscode" and "arrayhscode". 
+%
+% The plain environment surrounds each code block by vertical space,
+% and it uses \abovedisplayskip and \belowdisplayskip to get spacing
+% similar to formulas. Note that if these dimensions are changed,
+% the spacing around displayed math formulas changes as well.
+% All code is indented using \leftskip.
+%
+% Changed 19.08.2004 to reflect changes in colorcode. Should work with
+% CodeGroup.sty.
+%
+\ReadOnlyOnce{polycode.fmt}%
+\makeatletter
+
+\newcommand{\hsnewpar}[1]%
+  {{\parskip=0pt\parindent=0pt\par\vskip #1\noindent}}
+
+% can be used, for instance, to redefine the code size, by setting the
+% command to \small or something alike
+\newcommand{\hscodestyle}{}
+
+% The command \sethscode can be used to switch the code formatting
+% behaviour by mapping the hscode environment in the subst directive
+% to a new LaTeX environment.
+
+\newcommand{\sethscode}[1]%
+  {\expandafter\let\expandafter\hscode\csname #1\endcsname
+   \expandafter\let\expandafter\endhscode\csname end#1\endcsname}
+
+% "compatibility" mode restores the non-polycode.fmt layout.
+
+\newenvironment{compathscode}%
+  {\par\noindent
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed\)%
+   \par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\compaths}{\sethscode{compathscode}}
+
+% "plain" mode is the proposed default.
+% It should now work with \centering.
+% This required some changes. The old version
+% is still available for reference as oldplainhscode.
+
+\newenvironment{plainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newenvironment{oldplainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+% Here, we make plainhscode the default environment.
+
+\newcommand{\plainhs}{\sethscode{plainhscode}}
+\newcommand{\oldplainhs}{\sethscode{oldplainhscode}}
+\plainhs
+
+% The arrayhscode is like plain, but makes use of polytable's
+% parray environment which disallows page breaks in code blocks.
+
+\newenvironment{arrayhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\parray}%
+  {\endparray\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newcommand{\arrayhs}{\sethscode{arrayhscode}}
+
+% The mathhscode environment also makes use of polytable's parray 
+% environment. It is supposed to be used only inside math mode 
+% (I used it to typeset the type rules in my thesis).
+
+\newenvironment{mathhscode}%
+  {\parray}{\endparray}
+
+\newcommand{\mathhs}{\sethscode{mathhscode}}
+
+% texths is similar to mathhs, but works in text mode.
+
+\newenvironment{texthscode}%
+  {\(\parray}{\endparray\)}
+
+\newcommand{\texths}{\sethscode{texthscode}}
+
+% The framed environment places code in a framed box.
+
+\def\codeframewidth{\arrayrulewidth}
+\RequirePackage{calc}
+
+\newenvironment{framedhscode}%
+  {\parskip=\abovedisplayskip\par\noindent
+   \hscodestyle
+   \arrayrulewidth=\codeframewidth
+   \tabular{@{}|p{\linewidth-2\arraycolsep-2\arrayrulewidth-2pt}|@{}}%
+   \hline\framedhslinecorrect\\{-1.5ex}%
+   \let\endoflinesave=\\
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \framedhslinecorrect\endoflinesave{.5ex}\hline
+   \endtabular
+   \parskip=\belowdisplayskip\par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\framedhslinecorrect}[2]%
+  {#1[#2]}
+
+\newcommand{\framedhs}{\sethscode{framedhscode}}
+
+% The inlinehscode environment is an experimental environment
+% that can be used to typeset displayed code inline.
+
+\newenvironment{inlinehscode}%
+  {\(\def\column##1##2{}%
+   \let\>\undefined\let\<\undefined\let\\\undefined
+   \newcommand\>[1][]{}\newcommand\<[1][]{}\newcommand\\[1][]{}%
+   \def\fromto##1##2##3{##3}%
+   \def\nextline{}}{\) }%
+
+\newcommand{\inlinehs}{\sethscode{inlinehscode}}
+
+% The joincode environment is a separate environment that
+% can be used to surround and thereby connect multiple code
+% blocks.
+
+\newenvironment{joincode}%
+  {\let\orighscode=\hscode
+   \let\origendhscode=\endhscode
+   \def\endhscode{\def\hscode{\endgroup\def\@currenvir{hscode}\\}\begingroup}
+   %\let\SaveRestoreHook=\empty
+   %\let\ColumnHook=\empty
+   %\let\resethooks=\empty
+   \orighscode\def\hscode{\endgroup\def\@currenvir{hscode}}}%
+  {\origendhscode
+   \global\let\hscode=\orighscode
+   \global\let\endhscode=\origendhscode}%
+
+\makeatother
+\EndFmtInput
+%
+%
+
+
+%
+%
+%
+%
+%
+\ReadOnlyOnce{lineno.fmt}%
+
+\usepackage{etoolbox}
+
+\makeatletter
+
+\newtoggle{lineno@column}
+\newtoggle{lineno@print}
+\newcounter{lineno@num}
+\newlength\linenowidth
+
+\newcommand\linenoFormat{\footnotesize}
+
+\newcommand\linenoSetup{%
+  \iftoggle{lineno@column}{%
+    \column{lineno}{@{}r}%
+    \column{B}{}
+  }{}%
+}
+
+\newcommand\linenoStart{%
+  \refstepcounter{lineno@num}%
+  \iftoggle{lineno@print}{%
+    \fromto{lineno}{B}{\makebox[\linenowidth][r]{\linenoFormat\arabic{lineno@num}}}%
+  }{}%
+}
+
+\newcommand\linenoon{%
+  \toggletrue{lineno@column}%
+  \toggletrue{lineno@print}%
+}
+
+\newcommand\linenooff{%
+  \togglefalse{lineno@column}%
+  \togglefalse{lineno@print}%
+}
+
+\newcommand\linenoskip{%
+  \toggletrue{lineno@column}%
+  \togglefalse{lineno@print}%
+}
+
+\newcommand\linenoreset[1][1]{%
+  \defcounter{lineno@num}{#1 - 1}%
+}
+
+\EndFmtInput
+
+
+
+
+
+
+
+
+
+
+
 
 \section{Motivation}
 \label{sec:motivation}
 
-Context-free session types (CFSTs) extend regular session types with a
-general sequential composition operator. A type $S_1;S_2$ describes a
-session that first behaves as $S_1$ and then continues as $S_2$. 
-Composition is associative with unit \lstinline{Skip}, the inactive session.
-% , that is, \lstinline{Skip};$S = S =
-% S$;\lstinline{Skip} and $(S_1;S_2);S_3 = S_1;(S_2;S_3)$.
-Thus
-\lstinline{Skip} and \lstinline{;} form a monoid up to type
-equality. The types \lstinline{Close} and \lstinline{Wait} indicate
-(active and passive) termination of a session.
+Context-free session types (CFSTs) extend regular session types with a general
+sequential composition operator. A type $S_1;S_2$ describes a session that first
+behaves as $S_1$ and then continues as $S_2$.  Composition is associative with
+unit \ensuremath{\CodeTy{Skip}}, the inactive session.  Thus \ensuremath{\CodeTy{Skip}} and \ensuremath{\mathop{;}} form a monoid up to type
+equality. The types \ensuremath{\CodeTy{Close}} and \ensuremath{\CodeTy{Wait}} indicate (active and passive) termination
+of a session.
 
 Sequential composition also interacts with choice in the expected way.
 Appending a continuation to a choice appends it to every branch:
@@ -35,24 +362,8 @@ supplement in \cref{sec:remarks}.
 \subsection{Borrowing from Context-Free Session Types}
 \label{sec:borr-from-cont}
 
-
-Context-free session types enable writing elegant code for
-serializing tree structures when communication is restricted to
-primitive values.
-% \footnote{We assume session-typed communication over a network
-%   or between sandboxed processes, where only primitive data can be
-%   passed, but no pointers.}
-Consider an example from \citet{DBLP:conf/icfp/ThiemannV16} for serializing binary trees of type \lstinline{Tree}.
-\begin{lstlisting}
-type Tree = Leaf | Node Int Tree Tree
-\end{lstlisting}
-Here is the corresponding session type \lstinline{TreeChan}:
-\begin{lstlisting}
-type TreeChan = oplus{ Leaf: Skip, Node: !Int;TreeChan;TreeChan }
-\end{lstlisting}
 \begin{figure}[tp]
-  \setlength{\abovedisplayskip}{0pt}
-  \setlength{\belowdisplayskip}{0pt}
+  \TightCode
   \begin{subfigure}[t]{0.49\linewidth}
     \sethscode{tcolorboxcode}%
     \ApiOld
@@ -65,11 +376,27 @@ type TreeChan = oplus{ Leaf: Skip, Node: !Int;TreeChan;TreeChan }
   \caption{Session type APIs}
   \label{fig:session-type-apis}
 \end{figure}
-The type \lstinline{TreeChan} is called context-free because it is
+
+Context-free session types enable writing elegant code for
+serializing tree structures when communication is restricted to
+primitive values.
+% \footnote{We assume session-typed communication over a network
+%   or between sandboxed processes, where only primitive data can be
+%   passed, but no pointers.}
+Consider an example from \citet{DBLP:conf/icfp/ThiemannV16} for serializing
+binary trees of type \ensuremath{\Conid{Tree}}.
+%
+\DefnTree
+%
+\noindent Here is the corresponding session type \ensuremath{\Conid{TreeChan}}:
+%
+\DefnTreeChan
+%
+\noindent The type \ensuremath{\Conid{TreeChan}} is called context-free because it is
 recursively defined and the recursion is not restricted to tail
-positions. The \lstinline{Node} alternative is an example where the
-\lstinline{TreeChan} type refers two times in a row to itself. The
-first occurrence of \lstinline{TreeChan} in this
+positions. The \ensuremath{\CodeLbl{\Conid{Node}}} alternative is an example where the
+\ensuremath{\Conid{TreeChan}} type refers two times in a row to itself. The
+first occurrence of \ensuremath{\Conid{TreeChan}} in this
 type is illegal in regular session type systems (e.g.,
 \citet{DBLP:journals/jfp/GayV10,DBLP:conf/esop/LindleyM15,Gay_Vasconcelos_2025}) because
 they syntactically restrict recursion to tail position. Context-free
@@ -81,313 +408,213 @@ actions of $S_1$ followed by the actions of $S_2$.
 %   session types \cite{DBLP:conf/concur/Honda93}, which also features
 %   symmetric composition.}
 
-\Cref{lst:cfst-api} displays the API of CFSTs. The \lstinline{send},
-\lstinline{recv}, and \lstinline{select} operations are standard for
-sending a message, receiving one, and selecting an alternative in a
-branching session type. The \lstinline{branch} operation maps a channel
-offering different labeled alternatives to a variant type with the
-same labeled alternatives. Standard pattern matching suffices to
-decode the chosen alternative and continue.
-Given the types and the CFST API, we can implement the serialization function:
-\NumberedCode\CodeSendTree
-% \begin{lstlisting}[numbers=left]
-% sendTree : Tree -> forallsigma.TreeChan;sigma -> sigma
-% sendTree Leaf c =
-%   select Leaf c
-% sendTree (Node x l r) c =
-%   let c1 = select Node c   (* c1 : !Int;TreeChan;TreeChan;sigma *)
-%       c2 = send x c1       (* c2 : TreeChan;TreeChan;sigma *)
-%       c3 = sendTree l c2   (* c3 : TreeChan;sigma *)
-%       c4 = sendTree r c3   (* c4 : sigma *)
-%   in  c4
-% \end{lstlisting}
-However, there are several catches. First, the channel \lstinline{c}
-is passed explicitly throughout the code; a pattern we call
-\emph{resource-passing style}. This style forces the programmer to
-make the function polymorphic on the continuation type of the channel,
-which is \lstinline{sigma} in this example.
-Second, the \lstinline{Node} branch of \lstinline{sendTree} relies on
-polymorphic recursion. To see this, consider the type of
-\lstinline{c2} in lines \ref*{ln:sendTree/c2-def}--\ref*{ln:sendTree/c2-use}. To invoke \lstinline{sendTree}
-recursively, we need to instantiate the type argument
-\lstinline{sigma} with \lstinline{TreeChan;sigma} rather than just
-\lstinline{sigma}, which is the
-telltale for polymorphic recursion.
-
-Our new language {\thecalculus} amends these problems. The type
-definitions remain unchanged, but the implementation of
-\lstinline{sendTreeB} relies on the session API with borrowing shown in
-\cref{lst:bcfst-api}: the operations \lstinline{send} and \lstinline{recv} adopt
-the borrowing style, but \lstinline{select} and \lstinline{branch}
-remain in resource-passing style (see \cref{sec:remarks} for the
-reason). To make this switch apparent, we present code
-using the \thecalculus API with grey background and golden keywords.
+\Cref{lst:cfst-api} displays the API of CFSTs. The \ensuremath{\CodeOp{send}}, \ensuremath{\CodeOp{recv}}, and \ensuremath{\CodeOp{select}}
+operations are standard for sending a message, receiving one, and selecting an
+alternative in a branching session type. The \ensuremath{\CodeOp{branch}} operation maps a channel
+offering different labeled alternatives to a variant type with the same labeled
+alternatives. Standard pattern matching suffices to decode the chosen
+alternative and continue. Given the types and the CFST API, we can implement the
+serialization function:
 %
-\BorrowCodeStyle
-\NumberedCode\CodeSendTreeB
-\lstset{style=eclipse-new}%
-% \begin{lstlisting}[numbers=left]
-% sendTreeB : Tree -> TreeChan -> Skip
-% sendTreeB Leaf c =          (* c : TreeChan *)
-%   select Leaf c
-% sendTreeB (Node x l r) c =
-%   let c = select Node c in  (* c : !Int;TreeChan;TreeChan *)
-%   send x &c;                (* c : TreeChan;TreeChan *)
-%   sendTreeB l &c;           (* c : TreeChan *)
-%   sendTreeB r &c
-% \end{lstlisting}
-What has changed? First, the type of \lstinline{sendTreeB} is no longer polymorphic over the
-continuation type. Instead, the channel argument \lstinline{c} starts
-out at type \lstinline{TreeChan} without specifying a
-continuation. The return type is \lstinline{Skip}, which indicates an inactive
-channel. 
+\NumberedCode\CodeSendTree
+%
+\noindent However, there are several catches. First, the channel \ensuremath{\Varid{c}} is passed
+explicitly throughout the code; a pattern we call \emph{resource-passing
+  style}. This style forces the programmer to make the function polymorphic on
+the continuation type of the channel, which is \ensuremath{\sigma } in this example. Second,
+the \ensuremath{\CodeLbl{\Conid{Node}}} branch of \ensuremath{\Varid{sendTree}} relies on polymorphic recursion. To see
+this, consider the type of \ensuremath{\Varid{c}_{2}} in
+lines~\ref*{ln:sendTree/c2-def}--\ref*{ln:sendTree/c2-use}. To invoke \ensuremath{\Varid{sendTree}}
+recursively, we need to instantiate the type argument \ensuremath{\sigma } with
+\ensuremath{\Conid{TreeChan}\mathop{;}\sigma } rather than just \ensuremath{\sigma }, which is the telltale for polymorphic
+recursion.
 
-Second, there is no explicit resource passing, except for
-\lstinline{select}. Each use of the borrow notation \lstinline{&c} implicitly
-splits off a prefix of the session type according to the function argument and
-updates \lstinline{c} to the suffix. To see this, consider the type of
-\lstinline{c}---after splitting off the borrow in the corresponding line---shown
-in the comments. After the \lstinline{select} operation in line 4, the type of
-\lstinline{c} starts with \lstinline{!Int;...}. ``Taking the borrow'' splits off
-the borrowed type \lstinline{!Int}---the argument type of
-\lstinline{send x}---and updates \lstinline{c} to the type shown in line 5. As
-the type of \lstinline{c} is itself a borrowed type, one could speak of a
-\emph{reborrow}.
+\BorrowCodeStyle
+
+Our new language {\thecalculus} amends these problems. The type definitions
+remain unchanged, but the implementation of \ensuremath{\Varid{sendTreeB}} relies on the session
+API with borrowing shown in \cref{lst:bcfst-api}: the operations \ensuremath{\CodeOp{send}} and
+\ensuremath{\CodeOp{recv}} adopt the borrowing style, but \ensuremath{\CodeOp{select}} and \ensuremath{\CodeOp{branch}} remain in
+resource-passing style.
+%% Reference is duplicated from start of the section.
+% (see \cref{sec:remarks} for the reason).
+To make the switch apparent, we present code using the \thecalculus{} API with
+grey background and golden primitives.
+%
+\NumberedCode\CodeSendTreeB
+%
+\noindent What has changed? First, the type of \ensuremath{\Varid{sendTreeB}} is no longer
+polymorphic over the continuation type. Instead, the channel argument \ensuremath{\Varid{c}} starts
+out at type \ensuremath{\Conid{TreeChan}} without specifying a continuation. The return type is
+\ensuremath{\CodeTy{Skip}}, which indicates an inactive channel.
+
+Second, there is no explicit resource passing, except for \ensuremath{\CodeOp{select}}. Each use of
+the borrow notation~\ensuremath{\mathord{\&\mkern-1mu}\Varid{c}} implicitly splits off a prefix of the session type
+according to the function argument and updates \ensuremath{\Varid{c}} to the suffix. The comments
+show the type of \ensuremath{\Varid{c}} after the preceding operation. Consider the type of \ensuremath{\Varid{c}}
+after the \ensuremath{\CodeOp{select}} operation in line \ref*{ln:sendTreeB/select}, it starts
+with~\ensuremath{\mathord{!}\Conid{Int}\mathop{;}\dots}. ``Taking the borrow''~\ensuremath{\mathord{\&\mkern-1mu}\Varid{c}} in the next line splits off the
+borrowed type \ensuremath{\mathord{!}\Conid{Int}}---the argument type of \ensuremath{\CodeOp{send}\;\Varid{x}}---and updates \ensuremath{\Varid{c}} to the
+type shown in line \ref*{ln:sendTreeB/send-x}. As the type of \ensuremath{\Varid{c}} is itself a
+borrowed type, one could speak of a \emph{reborrow.}
 
 Third, as there is no polymorphism, there is no polymorphic recursion, either.
 
-Finally, the channel variable \lstinline{c} can be used in a
-non-linear way, as long as its uses are under borrows, as in
-\lstinline{&c}. The understanding is that the borrows are taken and
-processed according to the evaluation order of the program. This view does
-not abandon linearity. Rather, the type system internalizes the
-linear use of the channel: each borrow consumes a distinct prefix of
-the current session type and leaves the residual type for the next use
-of \lstinline{c}.
+Finally, the channel variable \ensuremath{\Varid{c}} can be used in a non-linear way, as long as
+its uses are under borrows, as in \ensuremath{\mathord{\&\mkern-1mu}\Varid{c}}. The understanding is that the borrows
+are taken and processed according to the evaluation order of the program. This
+view does not abandon linearity. Rather, the type system internalizes the linear
+use of the channel: each borrow consumes a distinct prefix of the current
+session type and leaves the residual type for the next use of \ensuremath{\Varid{c}}.
 
 
 \subsection{Local and Remote Borrowing}
 \label{sec:local-remote-borr}
 
-\Cref{sec:borr-from-cont} demonstrated
- \emph{local borrowing}, where the borrows remain in the same
-process and they are processed sequentially, following the evaluation order.
-In this local setting, operations on borrows are
-cheap: borrowing merely names the next prefix of the same channel and
-leaves the suffix for the surrounding computation. No other process can
-race with the continuation, so the evaluation order of the program and
-the left-to-right order enforced by typing already provide the required
-sequencing.
+\Cref{sec:borr-from-cont} demonstrated \emph{local borrowing,} where the borrows
+remain in the same process and are processed sequentially, following the
+evaluation order.  In this local setting, operations on borrows are cheap:
+borrowing merely names the next prefix of the same channel and leaves the suffix
+for the surrounding computation. No other process can race with the
+continuation, so the evaluation order of the program and the left-to-right order
+enforced by typing already provide the required sequencing.
 
 However, in some situations we want to send a borrow to
 another process. As an example, suppose a server-side renderer streams
 HTML nodes to a client instead of constructing a DOM tree in
 memory first. Here is a protocol for such a renderer.
-% \begin{lstlisting}
-% type HtmlChan  = oplus{ Text: !String, Elem: !String;ChildChan }
-% type ChildChan = oplus{ Done: Skip,    Child: HtmlChan;ChildChan }
-% \end{lstlisting}
-\HtmlProtocolDefn
-The \lstinline{Elem} alternative first sends a tag name, and then a sequence of children. The
-\lstinline{Child} alternative is context-free in the same sense as the
-\lstinline{Node} alternative of \lstinline{TreeChan}: rendering one
-child consumes an \lstinline{HtmlChan} prefix and then continues with
-the rest of the child stream.
+%
+{\TightCode[\smallskipamount]\HtmlProtocolDefn}
+%
+\noindent The \ensuremath{\CodeLbl{\Conid{Elem}}} alternative first sends a tag name, and then a sequence
+of children. The \ensuremath{\CodeLbl{\Conid{Child}}} alternative is context-free in the same sense as
+the \ensuremath{\CodeLbl{\Conid{Node}}} alternative of \ensuremath{\Conid{TreeChan}}: rendering one child consumes an
+\ensuremath{\Conid{HtmlChan}} prefix and then continues with the rest of the child stream.
 
-Now consider a renderer (\Cref{lst:rendering-example}) that emits a user panel whose first child is
-computed by another process while the main process loads user
-messages, say, from a database. We assume that
-\lstinline{renderProf} and \lstinline{renderMsgArea} render
-one HTML node on a channel of type \lstinline{HtmlChan;Drop} and
-\lstinline{HtmlChan}, respectively. The type \lstinline{Drop}
-is a new session type that comes with a companion type
-\lstinline{Acq}. They indicate the placement of synchronization
-operations that ensure correct handover of ownership from the borrowed session
-to the session's suffix.
-% \begin{lstlisting}[numbers=left,float,caption={Rendering example},captionpos=b,label={lst:rendering-example}]
-% renderUser : User -> HtmlChan;Close -> Unit
-% renderUser user c =
-%   let c = select Elem c in
-%   send "div" &c;
-%   let c = select Child c in
-%   fork (lambda() -> renderProf user &c);
-%   (* c : Acq;ChildChan;Close *)
-%   let msgs = getMessages user in
-%   renderRest msgs (acquire c)
-
-% renderRest : Messages -> ChildChan;Close -> Unit
-% renderRest msgs c =
-%   let c = select Child c in
-%   renderMsgArea msgs &c;
-%   close (select Done c)
-
-% renderProf : User -> HtmlChan;Drop -> Unit
-% renderProf user c = ... drop c
-% \end{lstlisting}
 \begin{Listing}
   \linenoon
   \linenoreset
-  \tcbset{force nobeforeafter}
+  \TightCode
   \CodeRenderExample
   \caption{Rendering example}
   \label{lst:rendering-example}
 \end{Listing}
-The function \lstinline{renderUser} starts an HTML element and then
-opens the child stream. It passes a borrow of the
-first child position to a new process, which renders the user's profile.
-The continuation renders the remaining children, here a messaging
-area, and then closes the child stream. 
 
-In this case, the borrow under the \lstinline{fork} is a \emph{remote
-  borrow}. Such a borrow must be handled differently as operations on
-the borrow are no longer necessarily ordered: the 
-continuation must \emph{not} start emitting the second child before the
-forked renderer has finished the first child. This synchronization is
-expressed with the \lstinline{acquire} operation, which works on a
-channel of type \lstinline{Acq; ...}. It blocks the
-continuation until the borrowed prefix has been completed by the
-forked process. Conversely, the forked process calls \lstinline{drop}
-on a channel of type \lstinline{Drop} when it has finished working on
-the prefix. Thus \lstinline{drop} and
-\lstinline{acquire} form the synchronization point between the two
-processes; the run-time mechanism that implements this point is
-described in~\cref{sec:impl-local-remote}.
+Now consider the renderer presented in
+\cref{lst:rendering-example}. \ensuremath{\Varid{renderUser}} emits a user panel whose first child
+is computed by another process while the main process loads user messages, say,
+from a database. We assume that \ensuremath{\Varid{renderProf}} and \ensuremath{\Varid{renderMsgArea}} render one HTML
+node on a channel of type \ensuremath{\Conid{HtmlChan}\mathop{;}\CodeTy{Drop}} and \ensuremath{\Conid{HtmlChan}}, respectively. The type
+\ensuremath{\CodeTy{Drop}} is a new session type that comes with a companion type \ensuremath{\CodeTy{Acq}}. They
+indicate the placement of synchronization operations that ensure correct
+handover of ownership from the borrowed session to the session's suffix.
 
-This setup is also reflected in the types that result from a remote
-borrow. Line~7 shows the type of \lstinline{c}'s suffix, which starts
-with an \lstinline{Acq}, and line~16 shows the type of the borrow,
-which ends with \lstinline{Drop}. The types \lstinline{Acq} and
-\lstinline{Drop} only arise from a remote split operation. The
-\emph{only} operation on a channel of type
-\lstinline{Acq; ...} is \lstinline{acquire} and similarly,
-\lstinline{drop} only applies to a channel of type \lstinline{Drop}.
+The function \ensuremath{\Varid{renderUser}} starts an HTML element and then opens the child
+stream. It passes a borrow of the first child position to a new process, which
+renders the user's profile.  The continuation renders the remaining children,
+here a messaging area, and then closes the child stream.
+
+In this case, the borrow under the \ensuremath{\CodeOp{fork}} is a \emph{remote borrow}. Such a
+borrow must be handled differently as operations on the borrow are no longer
+necessarily ordered: the continuation must \emph{not} start emitting the second
+child before the forked renderer has finished the first child. This
+synchronization is expressed with the \ensuremath{\CodeOp{acquire}} operation, which works on a
+channel of type \mbox{\ensuremath{\CodeTy{Acq}\mathop{;}\dots}.} It blocks the continuation until the borrowed
+prefix has been completed by the forked process. Conversely, the forked process
+calls \ensuremath{\CodeOp{drop}} on a channel of type \ensuremath{\CodeTy{Drop}} when it has finished working on the
+prefix. Thus \ensuremath{\CodeOp{drop}} and \ensuremath{\CodeOp{acquire}} form the synchronization point between the two
+processes; the underlying run-time mechanism is described
+in~\cref{sec:impl-local-remote}.
+
+This setup is also reflected in the types that result from a remote borrow. As
+before, the comments show the type of \ensuremath{\Varid{c}} after the preceding
+operation. Line~\ref*{ln:renderExample/fork} shows the type of the borrowed
+segment passed to \ensuremath{\Varid{renderProfile}}. That session ends in \ensuremath{\CodeTy{Drop}}. After the \ensuremath{\CodeOp{fork}}
+the type of \ensuremath{\Varid{c}} starts with \ensuremath{\CodeTy{Acq}}. The types \ensuremath{\CodeTy{Acq}} and \ensuremath{\CodeTy{Drop}} only arise from
+remote borrows. The \emph{only} operation on a channel of type \ensuremath{\CodeTy{Acq}\mathop{;}\dots} is
+\ensuremath{\CodeOp{acquire}} and, similarly, \ensuremath{\CodeOp{drop}} only applies to channels of type \ensuremath{\CodeTy{Drop}}.
 
 Next, we discuss a direct operational semantics of local and remote borrowing
 before we move on to a low level implementation of the two concepts in
 \cref{sec:impl-local-remote}.
 
+
 \subsection{A Direct Semantics for Channel Borrowing}
 \label{sec:direct-semant-chann}
 
-\Cref{sec:borr-from-cont} already suggests an implementation strategy
-for local borrowing. However, we start with an abstract
-specification because it is easier to handle in a correctness
-proof. The specification works on an elaborated core 
-language, \thecalculus, where elaboration replaces borrowing with
-explicit functional splitting 
-operators. This translation is analogous to a translation in previous work
-\cite{DBLP:journals/pacmpl/SaffrichS0V25}, which gives a formal
-presentation along with a correctness proof. The novelty in our work
-is the presence of \emph{two} operators, \lstinline{lsplit} for local
-borrows and \lstinline{rsplit} for remote borrows. Borrows used in the
-same process elaborate to \lstinline{lsplit} while borrows used across
-\lstinline{fork} or sent to another process elaborate to
-\lstinline{rsplit}.  Our discussion starts with the local variant and 
-we show the translation of \lstinline{renderRest} in
-\thecalculus in \cref{fig:local-split-program}.
-
-Execution proceeds by repeatedly exposing the next local prefix of the channel
-sequence. \Cref{fig:local-split-trace} shows a suffix of its reduction sequence.
-The \lstinline{nu[b_1][b_2] in ...} operator is a channel restriction as known
-from session calculi \cite{Gay_Vasconcelos_2025}. It introduces a communication
-channel but with each compartment \lstinline{[b_i]} containing a \emph{bind
-  group:} a list of channel names and separator markers. The names bound by
-$b_1$ refer to one channel endpoint, the names in $b_2$ refer to the other. The
-workings are best illustrated with the example trace.
-
 \begin{figure}
-  \begin{subfigure}{.49\linewidth}
-    \tcbset{force nobeforeafter}
-    \linenoon
-    \linenoreset
-    \CodeRenderExampleSnippetTrans
-    \caption{Translation of suffix renderUser}
-  \end{subfigure}\hfill
-  \begin{subfigure}{.49\linewidth}
-    \tcbset{force nobeforeafter}
+  \TightCode
+  \setlength{\linenowidth}{1em}
+  \begin{subfigure}[t]{.49\linewidth}
     \linenoon
     \linenoreset
     \CodeRenderRest
-    \caption{Translation of renderRest}
+    \caption{Elaboration of \ensuremath{\Varid{renderRest}} to local splits.}
+    \label{fig:rendering-example-elab/local}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{.49\linewidth}
+    \linenoon
+    \linenoreset
+    \CodeRenderExampleSnippetTrans
+    \caption{Elaboration of \ensuremath{\Varid{renderUser}} to remote splits.}
+    \label{fig:rendering-example-elab/remote}
   \end{subfigure}
-  \caption{Translations}
+  \caption{Snippets of the elaborated rendering example from
+    \cref{lst:rendering-example}.}
+  \label{fig:rendering-example-elab}
 \end{figure}
 
-%   \begin{subfigure}[t]{\linewidth}
-%     \tcbset{force nobeforeafter}
-%     \linenoon
-%     \linenoreset
-%     \CodeRenderRest
-% % \begin{lstlisting}[numbers=left,belowskip=0pt]
-% % renderRest msgs c =
-% %   let c = select Child c in
-% %   let c1, c2 = lsplit c in
-% %   renderMsgArea msgs c1;
-% %   close (select Done c2)
-% % \end{lstlisting}
-%     \caption{Local-split program.}
-%     \label{fig:local-split-program}
-%   \end{subfigure}
+\Cref{sec:borr-from-cont} already suggests an implementation strategy for local
+borrowing. However, we start with an abstract specification because it is easier
+to handle in a correctness proof. The specification works on an elaborated core
+language, \thecalculus. Elaboration replaces borrowing with explicit
+functional splitting operators. This translation is analogous to a translation
+in previous work \citep{DBLP:journals/pacmpl/SaffrichS0V25}, which gives a formal
+presentation along with a correctness proof. The novelty in our work is the
+presence of \emph{two} operators, \ensuremath{\CodeOp{lsplit}} for local borrows and \ensuremath{\CodeOp{rsplit}} for
+remote borrows. Borrows used in the same process elaborate to \ensuremath{\CodeOp{lsplit}} while
+borrows used across a \ensuremath{\CodeOp{fork}} or sent to another process elaborate to
+\ensuremath{\CodeOp{rsplit}}. \Cref{fig:rendering-example-elab} shows the (partial) elaboration of
+\ensuremath{\Varid{renderRest}} and \ensuremath{\Varid{renderUser}} from the rendering example
+(\cref{lst:rendering-example}), the former using local splits and the latter
+using remote splits.
+
+{\color{red}Our discussion starts with the local variant.} The translation of \ensuremath{\Varid{renderRest}} is
+shown in \cref{fig:rendering-example-elab/local}. Execution proceeds by
+repeatedly exposing the next local prefix of the channel
+sequence. \Cref{fig:local-split-trace} shows a suffix of its reduction sequence.
+The \mbox{\ensuremath{\boldsymbol{\nu}[\mkern1mu\relax \Varid{b}_{1}\mkern1mu][\mkern1mu\relax \Varid{b}_{2}\mkern1mu]\;\CodeKw{in}\;\dots}} operator is a channel restriction as known from
+session calculi \citep{Gay_Vasconcelos_2025}. It introduces a communication
+channel but with each compartment \ensuremath{[\mkern1mu\relax \Varid{b}_i\mkern1mu]} containing a \emph{bind group:} a
+list of channel names and separator markers. The names bound by \ensuremath{\Varid{b}_{1}} refer to
+one channel endpoint, the names in \ensuremath{\Varid{b}_{2}} to the other. The workings are best
+illustrated with the example trace.
 
 \begin{figure}
-  \begin{subfigure}{0.49\linewidth}
-    \RemoteSplitReduction
-    \caption{Remote split and acquire.}
-    \label{fig:remote-split-trace}
-  \end{subfigure}\hfill
-  \begin{subfigure}{0.49\linewidth}
+  \TightCode
+  \begin{minipage}[t]{0.49\linewidth}
     \LocalSplitReduction
-% \begin{lstlisting}[belowskip=\smallskipamount]
-% nu[c][...] in
-%   (P1 || let c = select Child c in
-%         let c1, c2 = lsplit c in
-%         renderMsgArea msgs c3;
-%         close (select Done c4))
-% \end{lstlisting}
-% \quad$\PReduce*$
-% \begin{lstlisting}[aboveskip=\smallskipamount, belowskip=\smallskipamount]
-% nu[c][...] in
-%   (P2 || let c1, c2 = lsplit c in
-%         renderMsgArea msgs c1;
-%         close (select Done c2))
-% \end{lstlisting}
-% \quad$\PReduce$
-% \begin{lstlisting}[aboveskip=\smallskipamount, belowskip=\smallskipamount]
-% nu[c1c2][...] in
-%   (P2 || renderMsgArea msgs c1;
-%         close (select Done c2))
-% \end{lstlisting}
-% \quad$\PReduce*$
-% \begin{lstlisting}[aboveskip=\smallskipamount, belowskip=\smallskipamount]
-% nu[c2][...] in
-%   (P3 || close (select Done c2))
-% \end{lstlisting}
-% \quad$\PReduce$
-% \begin{lstlisting}[aboveskip=\smallskipamount, belowskip=\smallskipamount]
-% nu[c2][d] in
-%   (P4[wait d] || close c2)
-% \end{lstlisting}
-% \quad$\PReduce$
-% \begin{lstlisting}[
-%   aboveskip=\smallskipamount,
-%   belowskip=0pt,
-% ]
-% (P4[*] || *)
-% \end{lstlisting}
-    \caption{Local-split reduction suffix.}
-    \label{fig:local-split-trace}
-  \end{subfigure}
-% \setcounter{subfigure}{3}
-  \caption{Local and remote splitting in the suffix of \lstinline{renderRest}.
-    The processes \lstinline{Pi} abbreviate client-side computation on the other
-    endpoint.}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.49\linewidth}
+    \RemoteSplitReduction
+  \end{minipage}\\
+  \begin{subcaptiongroup}
+    \parbox{.49\linewidth}{%
+      \caption{Local split reduction suffix.}
+      \label{fig:local-split-trace}}\hfill
+    \parbox{.49\linewidth}{%
+      \caption{Remote split and acquire reduction suffix.}
+      \label{fig:remote-split-trace}}%
+  \end{subcaptiongroup}
+  \caption{Local and remote splitting in the suffixes of \ensuremath{\Varid{renderRest}} and
+    \ensuremath{\Varid{renderUser}}. The processes \ensuremath{\Varid{P}_i} abbreviate client-side computation on the
+    other endpoint.}
   \label{fig:local-split-reduction}
 \end{figure}
 
 To keep the trace short (\cref{fig:local-split-trace}), the reduction starts at
-the local suffix in \lstinline{renderRest}. The split on \lstinline{c} following
-the \lstinline{select} \emph{replaces} the binder for \lstinline{c} with two
-fresh channel names \lstinline{c1} and \lstinline{c2}.
+the local suffix in \ensuremath{\Varid{renderRest}}. The split on \ensuremath{\Varid{c}} following the \ensuremath{\CodeOp{select}}
+\emph{replaces} the binder for \ensuremath{\Varid{c}} with two fresh channel names, \ensuremath{\Varid{c}_{1}} and \ensuremath{\Varid{c}_{2}}.
 %
 % All operations work on
 % the channel names in a bind group from left to right.
@@ -398,259 +625,111 @@ fresh channel names \lstinline{c1} and \lstinline{c2}.
 % sequencing, the semantics does not allow any action on \lstinline{c2} before
 % \lstinline{c1} has been consumed.
 %
-This restriction is supported by typing: the
-\lstinline{lsplit} operation returns an \emph{ordered pair,} whose components
-must be processed and consumed in left-to-right order.
+This restriction is supported by typing: the \ensuremath{\CodeOp{lsplit}} operation returns an
+\emph{ordered pair,} whose components must be processed and consumed in
+left-to-right order.
 
-% The \lstinline{drop} operation (not used in this
-% example) applied to some \lstinline{c} just discards \lstinline{c} if
-% it is the first channel name in the compartment.
+% The |drop| operation (not used in this example) applied to some |c| just
+% discards |c| if it is the first channel name in the compartment.
 
-On the client side, in the processes \lstinline{Pi} that hold the other channel end
-\lstinline{d}, splitting can be performed on \lstinline{d} independently of the
-splitting on \lstinline{c}. The only constraint is that, in the end, when
-\lstinline{close} and \lstinline{wait} calls match, the reduction requires that
+On the client side, in the processes \ensuremath{\Varid{P}_i} that hold the other channel end
+\ensuremath{\Varid{d}}, splitting can be performed on \ensuremath{\Varid{d}} independently of the
+splitting on \ensuremath{\Varid{c}}. The only constraint is that, in the end, when
+\ensuremath{\CodeOp{close}} and \ensuremath{\CodeOp{wait}} calls match, the reduction requires that
 only one channel name is left in each compartment. Under this condition, the
 channel can be closed and eliminated. The figure does not show the transitions
-of the client $P_d$, which are independent.
+of the {\color{red}client $P_d$,} which are independent.
 
-For remote borrowing, we incorporate the 
-\lstinline{acquire} primitive and indicate a remote split with the
-symbol ``\lstinline{||}'' in the compartment. As an example, we consider the translation of
-lines \ref*{ln:renderExample/transBegin}--\ref*{ln:renderExample/transEnd}:
-% \begin{lstlisting}
-%   fork (lambda() -> renderProf user &c);
-%   let msgs = getMessages user in
-%   renderRest msgs (acquire c)
-% \end{lstlisting}
-\NumberedCode[\getrefnumber{ln:renderExample/transBegin}]{%
-  \CodeRenderExampleSnippet
-}
-It translates to the following \thecalculus code.
-% \begin{lstlisting}
-% (* initially                  c  : HtmlChan;ChildChan;Close *)
-% let c1, c2 = rsplit c in   (* c1 : HtmlChan;Drop *)
-%                            (* c2 : Acq;ChildChan;Close *)
-% fork (lambda() -> renderProf user c1);
-% let msgs = getMessages user in
-% renderRest msgs (acquire c2)
-% \end{lstlisting}
-\CodeRenderExampleSnippetTrans
-The translation inserts an \lstinline{rsplit} because \lstinline{c1}
-and \lstinline{c2} are used in different processes. The
-\lstinline{rsplit} returns an ordinary (linear) pair of channels
-because synchronization is made explicit using the \lstinline{Acq} and
-\lstinline{Drop} types.
-Executing this code takes the steps shown  in
-\cref{fig:remote-split-trace}  (ignoring the activity 
-at the other end of the channel). The bracketed step abbreviates the
-forked process running \lstinline{renderProf} until its final
-\lstinline{drop c1}.
-In summary, the \lstinline{rsplit} replaces one channel name by
-\lstinline{[c1||c2]}, where ``\lstinline{||}'' marks a remote split. The
-\lstinline{drop} is only enabled 
-if its argument name comes last before a ``\lstinline{||}''.
-The \lstinline{acquire} is only enabled if the preceding list segment has
-been processed as in \lstinline{[||c2]}. Executing the \lstinline{acquire}
-in the last step removes the exhausted segment and separator, yielding
-\lstinline{[c2]}.
+For remote borrowing, we incorporate the \ensuremath{\CodeOp{acquire}} primitive and indicate a
+remote split with the symbol ``\ensuremath{\mathop{\|}}'' in the compartment. As an example, we
+consider the translation of lines
+\ref*{ln:renderExample/transBegin}--\ref*{ln:renderExample/transEnd} from
+\cref{lst:rendering-example}. The elaboration is shown in
+\cref{fig:render-example-elab/remote}.
+
+The translation inserts an \ensuremath{\CodeOp{rsplit}} because \ensuremath{\Varid{c}_{1}} and \ensuremath{\Varid{c}_{2}} are used in
+different processes. The \ensuremath{\CodeOp{rsplit}} returns an ordinary (linear) pair of channels
+because synchronization is made explicit using the \ensuremath{\CodeTy{Acq}} and \ensuremath{\CodeTy{Drop}}
+types. Executing this code takes the steps shown in
+\cref{fig:remote-split-trace} (ignoring the activity at the other end of the
+channel). The bracketed step abbreviates the forked process running \ensuremath{\Varid{renderProfile}}
+until its final \ensuremath{\CodeOp{drop}\;\Varid{c}_{1}}.  In summary, the \ensuremath{\CodeOp{rsplit}} replaces one channel name
+by \ensuremath{[\mkern1mu\relax \Varid{c}_{1}\mathop{\|}\Varid{c}_{2}\mkern1mu]}, where ``\ensuremath{\mathop{\|}}'' marks a remote split. The \ensuremath{\CodeOp{drop}} is
+only enabled if its argument name comes last before a ``\ensuremath{\mathop{\|}}''.  The
+\ensuremath{\CodeOp{acquire}} is only enabled if the preceding list segment has been processed as in
+\ensuremath{[\mkern1mu\relax \mathop{\|}\Varid{c}_{2}\mkern1mu]}. Executing the \ensuremath{\CodeOp{acquire}} in the last step removes the
+exhausted segment and separator, yielding \ensuremath{[\mkern1mu\relax \Varid{c}_{2}\mkern1mu]}.
+
 
 \subsection{Implementing Local and Remote Borrowing}
 \label{sec:impl-local-remote}
 
-We implement the high-level calculus by translation into
-a low-level run-time session calculus with borrowing, \thertcalculus. The run-time calculus
-is a concurrent 
-lambda calculus with the usual session-style communication
+We implement the high-level calculus by translation into a low-level run-time
+session calculus with borrowing, \thertcalculus. The run-time calculus is a
+concurrent lambda calculus with the usual session-style communication
 primitives. However, \thertcalculus is untyped and it comes equipped with
-asynchronous signaling primitives for implementing \lstinline{drop}/\lstinline{acquire}.
-The direct semantics from~\cref{sec:direct-semant-chann} records ordering constraints in binding
-groups. The run-time translation realizes the same constraints with
-ordinary channel names and optional synchronization flags that
-implement passing of ownership.
+asynchronous signaling primitives for implementing \ensuremath{\CodeOp{drop}}/\ensuremath{\CodeOp{acquire}}.  The direct
+semantics from~\cref{sec:direct-semant-chann} records ordering constraints in
+binding groups. The run-time translation realizes the same constraints with
+ordinary channel names and optional synchronization flags that implement passing
+of ownership.
 
 \Cref{fig:borrow-lifecycle-msc} summarizes the difference between local
 and remote borrowing in the implementation.
 
-\begin{figure}[t]
-\centering
-\begin{subfigure}[t]{0.225\linewidth}
-\centering
-\vspace{0pt}
-\begin{tikzpicture}[
-  >=Stealth,
-  x=0.775cm,
-  y=0.48cm,
-  head/.style={draw, fill=white, minimum width=1.15cm,
-    minimum height=0.42cm, inner sep=1pt, font=\scriptsize},
-  state/.style={draw, fill=blue!5, align=center, inner sep=2pt,
-    font=\scriptsize, text width=1.45cm},
-  inactive/.style={state, fill=black!12},
-  lifeline/.style={dashed, black!55},
-  activation/.style={draw, fill=black!8},
-  msg/.style={->},
-  lab/.style={font=\scriptsize}
-]
-  \node[head] (lp) at (0,-0.65) {$P$};
-  \draw[lifeline] (lp.south) -- (0,-8.15);
-  \draw[activation] (-0.07,-1.15) rectangle (0.07,-8.0);
+\input{split-figure}
 
-  \node[state] at (1.25,-1.25) {$c:S_1;S_2$};
-  \draw[msg] (0.07,-2.25) -- (0.9,-2.25) --
-    node[lab, right] {} (0.9,-2.65) --
-    node[lab, above, yshift=1ex, xshift=0.25em] {\texttt{lsplit}}
-    (0.07,-2.65);
-  \node[state] at (1.25,-3.45) {$c_1:S_1$};
-  \node[inactive] at (1.25,-4.25) {$c_2:S_2$\\inactive};
-  \draw[msg] (0.07,-5.45) -- (0.9,-5.45) --
-    node[lab, right] {} (0.9,-5.85) --
-    node[lab, above, yshift=1ex] {use $c_1$}
-    (0.07,-5.85);
-  \node[state] at (1.25,-6.45) {$c_2:S_2$};
-  \draw[msg] (0.07,-7.45) -- (0.9,-7.45) --
-    node[lab, right] {} (0.9,-7.85) --
-    node[lab, above, yshift=1ex] {use $c_2$}
-    (0.07,-7.85);
-  \node[draw=black!70, fit={(-1.0,-8.15) (3.0,-8.15) (lp)},
-    inner xsep=0pt, inner ysep=0.2ex] {};
-\end{tikzpicture}
-\caption{Local borrow}
-\label{fig:borrow-lifecycle-msc-local}
-\end{subfigure}
-\hfill
-\begin{subfigure}[t]{0.755\linewidth}
-\centering
-\vspace{0pt}
-\begin{tikzpicture}[
-  >=Stealth,
-  x=0.775cm,
-  y=0.52cm,
-  head/.style={draw, fill=white, minimum width=1.25cm,
-    minimum height=0.45cm, inner sep=1pt, font=\scriptsize},
-  flaghead/.style={head, fill=orange!14, draw=orange!65!black},
-  state/.style={draw, fill=blue!5, align=center, inner sep=2pt,
-    font=\scriptsize, text width=1.8cm},
-  flagstate/.style={draw=orange!65!black, fill=orange!14,
-    align=center, inner sep=2pt, font=\scriptsize, text width=1.45cm},
-  lifeline/.style={dashed, black!55},
-  flagline/.style={dashed, orange!65!black},
-  activation/.style={draw, fill=black!8},
-  flagact/.style={draw=orange!65!black, fill=orange!10},
-  msg/.style={->},
-  create/.style={->, dashed},
-  return/.style={->, dashed},
-  lab/.style={font=\scriptsize}
-]
-  \node[head] (rp) at (0,-0.65) {$P$};
-  \draw[lifeline] (rp.south) -- (0,-11.2);
-  \draw[activation] (-0.08,-1.15) rectangle (0.08,-5.15);
-  \draw[activation] (-0.08,-8.8) rectangle (0.08,-11.0);
-  \node[state] at (1.45,-1.25) {$c:S_1;S_2$};
+%
+% Locally format "in" as a variable name
+%
 
-  \node[flaghead] (rz) at (4.8,-2.35) {$\varphi\,z$};
-  \draw[create] (0.08,-2.35) --
-    node[lab, above] {\texttt{rsplit}: create $z$}
-    (rz.west);
-  \draw[flagline] (rz.south) -- (4.8,-11.2);
-  \draw[flagact] (4.72,-2.85) rectangle (4.88,-8.8);
-  \node[flagstate] at (5.85,-3.15) {$z \mapsto \texttt{drop}$};
+Specifically, a channel is represented by a triple \ensuremath{\Varid{in}\otimes \Varid{c}\otimes \Varid{out}}, where \ensuremath{\Varid{c}}
+is a primitive channel name and \ensuremath{\Varid{in}} and \ensuremath{\Varid{out}} are optional names of
+synchronization flags. The incoming flag \ensuremath{\Varid{in}} records whether the channel must
+be acquired before it can be used. The outgoing flag \ensuremath{\Varid{out}} records whether the
+channel must be dropped after use. A synchronization binder
+{\color{red}$(\varphi z \mapsto \phi)P$} binds a flag name \ensuremath{\Varid{z}} in \ensuremath{\Conid{P}} and stores
+one of two states in {\color{red}$\phi$}: \ensuremath{\CodeFlag{drop}} or \ensuremath{\CodeFlag{acq}}.  This flag \ensuremath{\Varid{z}}
+implements the separator in \ensuremath{\boldsymbol{\nu}[\mkern1mu\relax \Varid{c}_{1}\mathop{\|}\Varid{c}_{2}\mkern1mu][\mkern1mu\relax \dots\mkern1mu]}. It is the outgoing flag of
+the borrowed prefix and the incoming flag of the suffix.
 
-  \node[state] at (1.45,-3.55) {$c_2:\texttt{Acq};S_2$};
-  \node[head] (rq) at (9.15,-4.25) {$Q$};
-  \draw[create] (0.08,-4.25) -- node[lab, above] {fork $c_1$} (rq.west);
-  \draw[lifeline] (rq.south) -- (9.15,-8.25);
-  \draw[activation] (9.07,-4.7) rectangle (9.23,-7.9);
+An \ensuremath{\CodeOp{rsplit}} creates a flag in state \ensuremath{\CodeOp{drop}} and a freshly restricted channel sets
+its flag to \ensuremath{\Varid{acq}}. Intuitively, \ensuremath{\CodeFlag{drop}} means that the left, borrowed part of a
+remote split is still active, \ensuremath{\CodeFlag{acq}} means that it has been dropped and the
+right, suffix part may acquire. This mechanism implements an ownership transfer
+of the primitive channel from the borrowed part to the suffix.
 
-  \draw[msg] (0.08,-5.15) -- node[lab, above] {\texttt{acquire} $c_2$}
-    (4.72,-5.15);
-  \node[state, text width=2.2cm] at (10.85,-5.15)
-    {$c_1:S_1;\texttt{Drop}$};
-  \draw[msg] (9.23,-6.45) -- (10.05,-6.45) --
-    node[lab, right] {} (10.05,-6.85) --
-    node[lab, above, yshift=1ex] {use $c_1$}
-    (9.23,-6.85);
-  \draw[msg] (9.07,-7.55) -- node[lab, above] {\texttt{drop} $c_1$}
-    (4.88,-7.55);
-  \node[flagstate] at (5.85,-8.15) {$z \mapsto \texttt{acq}$};
-  \node[flagstate] at (5.85,-8.8) {$z \mapsto \texttt{done}$};
-  \draw[return] (4.72,-8.8) -- node[lab, above] {return} (0.08,-8.8);
+Allocation creates a primitive channel pair and one synchronization flag for
+each endpoint. The fresh endpoints carry incoming flags that are already in the
+\ensuremath{\CodeFlag{acq}} state. Thus, an initial \ensuremath{\CodeOp{acquire}} is required to reduce each channel to
+normal operation, removing the flag from the channel triple by replacing it with
+\ensuremath{\mathord{*}}. Once these optional flag components are absent, communication is just
+ordinary session communication: \ensuremath{\CodeOp{send}}/\ensuremath{\CodeOp{recv}}, \ensuremath{\CodeOp{select}}/\ensuremath{\CodeOp{branch}}, and
+\ensuremath{\CodeOp{close}}/\ensuremath{\CodeOp{wait}} all operate directly on the primitive channel name \ensuremath{\Varid{c}}.
 
-  \node[state] at (1.45,-9.35) {$c_2:S_2$};
-  \draw[msg] (0.08,-10.25) -- (0.9,-10.25) --
-    node[lab, right] {} (0.9,-10.65) --
-    node[lab, above, yshift=1ex] {use $c_2$}
-    (0.08,-10.65);
-  \node[draw=black!70, fit={(-1.0,-11.2) (12.55,-11.2) (rp)},
-    inner xsep=0pt, inner ysep=0.2ex] {};
-\end{tikzpicture}
-\caption{Remote borrow}
-\label{fig:borrow-lifecycle-msc-remote}
-\end{subfigure}
-\caption{Message-sequence view of local and remote borrows. Channel state is shown as
-annotations next to the relevant process or flag lifelines. A local
-split keeps the channel state with the original process lifeline; a
-remote split creates a flag lifeline $\varphi\,z$ and forks a process
-for the borrowed prefix.}
-\label{fig:borrow-lifecycle-msc}
-\end{figure}
+\Cref{fig:borrow-lifecycle-msc-local} shows the lifecycle of a local borrow. The
+rule for \ensuremath{\CodeOp{lsplit}} returns two copies of the same run-time channel triple. No new
+channel is allocated and no synchronization flag is introduced. This simple
+approach has no overhead and is sound because the source type system has already
+established the left-to-right use of the two pieces. The run-time representation
+can therefore be imperative: the two pieces are aliases for the same underlying
+channel object, and using the first piece advances that object to the state
+where the second piece starts.
 
-Specifically, a channel is represented by a triple
-$in \otimes c \otimes out$, where $c$ is a primitive channel name and
-$in$ and $out$ are optional names of synchronization flags. The
-incoming flag $in$ records whether the channel must be acquired before
-it can be used. The outgoing flag $out$ records whether the channel
-must be dropped after use. A synchronization binder
-$(\varphi z \mapsto \phi)P$ binds a flag name $z$ in $P$ and stores
-one of two states in $\phi$: \lstinline{drop} or \lstinline{acq}.
-This flag $z$ implements the separator in
-\lstinline{nu[c1||c2][...]}\!\!. It is the outgoing flag of the
-borrowed prefix and the incoming flag of the suffix.
+Remote splitting is the only place where new synchronization machinery is
+introduced (\cref{fig:borrow-lifecycle-msc-remote}). Splitting a channel \ensuremath{\Varid{in}\otimes \Varid{c}\otimes \Varid{out}} remotely creates a fresh flag \ensuremath{\Varid{z}} in state \ensuremath{\CodeFlag{drop}} and returns two
+channel triples: \ensuremath{\Varid{in}\otimes \Varid{c}\otimes \Varid{z}} for the borrowed prefix, and \ensuremath{\Varid{z}\otimes \Varid{c}\otimes \Varid{out}} for
+the suffix. The prefix therefore carries an outgoing obligation to call \ensuremath{\CodeOp{drop}};
+the suffix carries a matching incoming obligation to call \ensuremath{\CodeOp{acquire}}. Calling
+\ensuremath{\CodeOp{drop}} changes the flag from \ensuremath{\CodeFlag{drop}} to \ensuremath{\CodeFlag{acq}} and returns immediately, so the
+notification is asynchronous. A later \ensuremath{\CodeOp{acquire}} on the suffix can fire only
+after this state change and removes the synchronization flag. Thus a remote
+split pays for exactly the synchronization needed to coordinate the two
+processes operating on the channel, whereas a local split pays nothing beyond
+sharing the channel representation.
 
-An \lstinline{rsplit} creates a flag in state
-\lstinline{drop} and a freshly restricted channel sets its flag to \lstinline{acq}.
-Intuitively, \lstinline{drop} means that the left, borrowed
-part of a remote split is still active, \lstinline{acq} means that it
-has been dropped and the right, suffix part may acquire.
-This mechanism implements an ownership transfer of the
-primitive channel from the borrowed part to the suffix.
-
-Allocation creates a primitive channel pair and one synchronization
-flag for each endpoint. The fresh endpoints carry incoming flags that
-are already in the \lstinline{acq} state. Thus, an initial
-\lstinline{acquire} is required to reduce each channel to normal
-operation, removing the flag from the 
-channel triple by replacing it with \lstinline{*}. Once these optional
-flag components are absent, communication is just ordinary
-session communication: \lstinline{send}/\lstinline{recv},
-\lstinline{select}/\lstinline{branch}, and \lstinline{close}/\lstinline{wait}
-all operate directly on the primitive channel name $c$.
-
-\Cref{fig:borrow-lifecycle-msc-local} shows the lifecycle of a local borrow. The rule for
-\lstinline{lsplit} returns two copies of the same run-time channel
-triple. No new channel is allocated and no synchronization flag
-is introduced. This simple approach has no overhead and is sound
-because the source type system has already established the left-to-right use of the two pieces. The
-run-time representation can therefore be imperative: the two pieces are
-aliases for the same underlying channel object, and using the first
-piece advances that object to the state where the second piece starts.
-
-Remote splitting is the only place where new synchronization
-machinery is introduced
-(\cref{fig:borrow-lifecycle-msc-remote}). Splitting a channel
-$in \otimes c \otimes out$ remotely creates a fresh flag $z$ in state
-\lstinline{drop} and returns two channel triples:
-$in \otimes c \otimes z$ for the borrowed prefix, and
-$z \otimes c \otimes out$ for the suffix. The prefix therefore carries
-an outgoing obligation to call \lstinline{drop}; the suffix carries a
-matching incoming obligation to call \lstinline{acquire}. Calling
-\lstinline{drop} changes the flag from \lstinline{drop} to
-\lstinline{acq} and returns immediately, so the notification is
-asynchronous. A later \lstinline{acquire} on the suffix can fire only
-after this state change and removes the synchronization
-flag. Thus a remote split pays for exactly the
-synchronization needed to coordinate the two processes operating on
-the channel, whereas a local
-split pays nothing beyond sharing the channel representation.
+% End local formatting of "in" as an identifier.
+%
 
 %%% Local Variables:
 %%% mode: latex

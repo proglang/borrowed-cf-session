@@ -8,6 +8,7 @@
 % A listing environment.
 \usepackage{float}
 \newfloat{Listing}{tbp}{lst}
+\crefname{Listing}{Listing}{Listings}
 
 % Reduce the amount of empty space between the listing and the caption.
 \AtBeginEnvironment{Listing}{%
@@ -22,6 +23,7 @@
   % Locally redefine \Conid to typeset its argument as a label using
   % \mathsf and typeset the argument to \CodeLab with this change in place.
   {\renewcommand\Conid[1]{\mathsf{##1}}#1}}
+\newcommand\CodeFlag[1]{\mathsf{#1}}
 
 % The initial color for primitives.
 \colorlet{opcolor}{darkviolet}
@@ -47,8 +49,20 @@
   #2%
 }}
 
+% In some contexts we want to remove vertical space above and below code.
+\newcommand\TightCode[1][0pt]{%
+  \setlength{\abovecodeskip}{#1}%
+  \setlength{\belowcodeskip}{#1}}
+
 % Define the environments and settings for borrow-style code.
 \usepackage{tcolorbox}
+
+\newlength\abovecodeskip
+\newlength\belowcodeskip
+\newlength\codeboxsep
+
+\setlength{\abovecodeskip}{\abovedisplayskip}
+\setlength{\belowcodeskip}{\belowdisplayskip}
 
 \makeatletter
 \newenvironment*{tcolorboxcode}{%
@@ -57,14 +71,14 @@
     colback = codecolor,
     colframe = codecolor,
     boxrule = 0pt,
-    boxsep = .5mm,
+    boxsep = \codeboxsep,
     left = 0pt,
     right = 0pt,
     top = 0pt,
     bottom = 0pt,
     sharp corners = all,
-    before skip = \abovedisplayskip,
-    after skip = \belowdisplayskip,
+    before skip = \abovecodeskip,
+    after skip = \belowcodeskip,
   ]
   \hscodestyle
   \let\hspre\(%
@@ -79,13 +93,16 @@
 \makeatother
 
 \colorlet{codecolor}{white}
+\sethscode{tcolorboxcode}
 
 % Switches to the borrowed code style: golden keywords with a grayish
 % background.
 \newcommand\BorrowCodeStyle{%
-  \sethscode{tcolorboxcode}%
   \colorlet{opcolor}{darkgold}%
-  \colorlet{codecolor}{lightgray!30}%
+  \colorlet{codecolor}{lightgray!25}%
+  \setlength{\codeboxsep}{.5mm}%
+  \addtolength{\abovecodeskip}{2pt plus 1pt}%
+  \addtolength{\belowcodeskip}{2pt plus 1pt}%
 }
 
 \newcommand\SaveColumns[1]{\appto\SaveRestoreHook{\savecolumns[#1]}}

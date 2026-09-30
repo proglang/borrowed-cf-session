@@ -1,0 +1,417 @@
+%include directives.fmt
+
+\section{Motivation}
+\label{sec:motivation}
+
+Context-free session types (CFSTs) extend regular session types with a general
+sequential composition operator. A type $S_1;S_2$ describes a session that first
+behaves as $S_1$ and then continues as $S_2$.  Composition is associative with
+unit |Skip|, the inactive session.  Thus |Skip| and |;| form a monoid up to type
+equality. The types |Close| and |Wait| indicate (active and passive) termination
+of a session.
+
+Sequential composition also interacts with choice in the expected way.
+Appending a continuation to a choice appends it to every branch:
+$(\oplus\{\ell_i:S_i\}_{i\in I});T =
+\oplus\{\ell_i:S_i;T\}_{i\in I}$. The same law holds for external
+choice. These equations make non-tail-recursive protocols
+usable as session types: a continuation can be pushed through
+the structure of a type until it reaches the leaves of a protocol.
+
+As usual for session types, channels are linear resources. A channel
+has to be used exactly once and every communication operation consumes
+the channel at its current type and produces the channel at its
+continuation type. Linearity is what makes the session type track the
+state of the protocol, but it also forces programs to thread channels
+explicitly from one operation to the next.
+
+Additional remarks on design choices in this section, including why
+some operations remain in resource-passing style, are given in the
+supplement in \cref{sec:remarks}.
+
+\subsection{Borrowing from Context-Free Session Types}
+\label{sec:borr-from-cont}
+
+\begin{figure}[tp]
+  \TightCode
+  \begin{subfigure}[t]{0.49\linewidth}
+    \sethscode{tcolorboxcode}%
+    \ApiOld
+    \caption{CFST API}\label{lst:cfst-api}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.49\linewidth}
+    \ApiNew
+    \caption{\thecalculus API}\label{lst:bcfst-api}
+  \end{subfigure}
+  \caption{Session type APIs}
+  \label{fig:session-type-apis}
+\end{figure}
+
+Context-free session types enable writing elegant code for
+serializing tree structures when communication is restricted to
+primitive values.
+% \footnote{We assume session-typed communication over a network
+%   or between sandboxed processes, where only primitive data can be
+%   passed, but no pointers.}
+Consider an example from \citet{DBLP:conf/icfp/ThiemannV16} for serializing
+binary trees of type |Tree|.
+%
+\DefnTree
+%
+\noindent Here is the corresponding session type |TreeChan|:
+%
+\DefnTreeChan
+%
+\noindent The type |TreeChan| is called context-free because it is
+recursively defined and the recursion is not restricted to tail
+positions. The |lab Node| alternative is an example where the
+|TreeChan| type refers two times in a row to itself. The
+first occurrence of |TreeChan| in this
+type is illegal in regular session type systems (e.g.,
+\citet{DBLP:journals/jfp/GayV10,DBLP:conf/esop/LindleyM15,Gay_Vasconcelos_2025}) because
+they syntactically restrict recursion to tail position. Context-free
+session types lift this restriction as their composition operator $S_1;S_2$ connects
+two sessions sequentially: the composed session comprises the
+actions of $S_1$ followed by the actions of $S_2$.
+% \footnote{One
+%   might argue that CFSTs are close to Honda's original vision for
+%   session types \cite{DBLP:conf/concur/Honda93}, which also features
+%   symmetric composition.}
+
+\Cref{lst:cfst-api} displays the API of CFSTs. The |send|, |recv|, and |select|
+operations are standard for sending a message, receiving one, and selecting an
+alternative in a branching session type. The |branch| operation maps a channel
+offering different labeled alternatives to a variant type with the same labeled
+alternatives. Standard pattern matching suffices to decode the chosen
+alternative and continue. Given the types and the CFST API, we can implement the
+serialization function:
+%
+\NumberedCode\CodeSendTree
+%
+\noindent However, there are several catches. First, the channel |c| is passed
+explicitly throughout the code; a pattern we call \emph{resource-passing
+  style}. This style forces the programmer to make the function polymorphic on
+the continuation type of the channel, which is |sigma| in this example. Second,
+the |lab Node| branch of |sendTree| relies on polymorphic recursion. To see
+this, consider the type of |c2| in
+lines~\ref*{ln:sendTree/c2-def}--\ref*{ln:sendTree/c2-use}. To invoke |sendTree|
+recursively, we need to instantiate the type argument |sigma| with
+|TreeChan;sigma| rather than just |sigma|, which is the telltale for polymorphic
+recursion.
+
+\BorrowCodeStyle
+
+Our new language {\thecalculus} amends these problems. The type definitions
+remain unchanged, but the implementation of |sendTreeB| relies on the session
+API with borrowing shown in \cref{lst:bcfst-api}: the operations |send| and
+|recv| adopt the borrowing style, but |select| and |branch| remain in
+resource-passing style.
+%% Reference is duplicated from start of the section.
+% (see \cref{sec:remarks} for the reason).
+To make the switch apparent, we present code using the \thecalculus{} API with
+grey background and golden primitives.
+%
+\NumberedCode\CodeSendTreeB
+%
+\noindent What has changed? First, the type of |sendTreeB| is no longer
+polymorphic over the continuation type. Instead, the channel argument |c| starts
+out at type |TreeChan| without specifying a continuation. The return type is
+|Skip|, which indicates an inactive channel.
+
+Second, there is no explicit resource passing, except for |select|. Each use of
+the borrow notation~|ref c| implicitly splits off a prefix of the session type
+according to the function argument and updates |c| to the suffix. The comments
+show the type of |c| after the preceding operation. Consider the type of |c|
+after the |select| operation in line \ref*{ln:sendTreeB/select}, it starts
+with~|!Int;...|. ``Taking the borrow''~|ref c| in the next line splits off the
+borrowed type |!Int|---the argument type of |send x|---and updates |c| to the
+type shown in line \ref*{ln:sendTreeB/send-x}. As the type of |c| is itself a
+borrowed type, one could speak of a \emph{reborrow.}
+
+Third, as there is no polymorphism, there is no polymorphic recursion, either.
+
+Finally, the channel variable |c| can be used in a non-linear way, as long as
+its uses are under borrows, as in |ref c|. The understanding is that the borrows
+are taken and processed according to the evaluation order of the program. This
+view does not abandon linearity. Rather, the type system internalizes the linear
+use of the channel: each borrow consumes a distinct prefix of the current
+session type and leaves the residual type for the next use of |c|.
+
+
+\subsection{Local and Remote Borrowing}
+\label{sec:local-remote-borr}
+
+\Cref{sec:borr-from-cont} demonstrated \emph{local borrowing,} where the borrows
+remain in the same process and are processed sequentially, following the
+evaluation order.  In this local setting, operations on borrows are cheap:
+borrowing merely names the next prefix of the same channel and leaves the suffix
+for the surrounding computation. No other process can race with the
+continuation, so the evaluation order of the program and the left-to-right order
+enforced by typing already provide the required sequencing.
+
+However, in some situations we want to send a borrow to
+another process. As an example, suppose a server-side renderer streams
+HTML nodes to a client instead of constructing a DOM tree in
+memory first. Here is a protocol for such a renderer.
+%
+{\TightCode[\smallskipamount]\HtmlProtocolDefn}
+%
+\noindent The |lab Elem| alternative first sends a tag name, and then a sequence
+of children. The |lab Child| alternative is context-free in the same sense as
+the |lab Node| alternative of |TreeChan|: rendering one child consumes an
+|HtmlChan| prefix and then continues with the rest of the child stream.
+
+\begin{Listing}
+  \linenoon
+  \linenoreset
+  \TightCode
+  \CodeRenderExample
+  \caption{Rendering example}
+  \label{lst:rendering-example}
+\end{Listing}
+
+Now consider the renderer presented in
+\cref{lst:rendering-example}. |renderUser| emits a user panel whose first child
+is computed by another process while the main process loads user messages, say,
+from a database. We assume that |renderProf| and |renderMsgArea| render one HTML
+node on a channel of type |HtmlChan;Drop| and |HtmlChan|, respectively. The type
+|Drop| is a new session type that comes with a companion type |Acq|. They
+indicate the placement of synchronization operations that ensure correct
+handover of ownership from the borrowed session to the session's suffix.
+
+The function |renderUser| starts an HTML element and then opens the child
+stream. It passes a borrow of the first child position to a new process, which
+renders the user's profile.  The continuation renders the remaining children,
+here a messaging area, and then closes the child stream.
+
+In this case, the borrow under the |fork| is a \emph{remote borrow}. Such a
+borrow must be handled differently as operations on the borrow are no longer
+necessarily ordered: the continuation must \emph{not} start emitting the second
+child before the forked renderer has finished the first child. This
+synchronization is expressed with the |acquire| operation, which works on a
+channel of type \mbox{|Acq; ...|.} It blocks the continuation until the borrowed
+prefix has been completed by the forked process. Conversely, the forked process
+calls |drop| on a channel of type |Drop| when it has finished working on the
+prefix. Thus |drop| and |acquire| form the synchronization point between the two
+processes; the underlying run-time mechanism is described
+in~\cref{sec:impl-local-remote}.
+
+This setup is also reflected in the types that result from a remote borrow. As
+before, the comments show the type of |c| after the preceding
+operation. Line~\ref*{ln:renderExample/fork} shows the type of the borrowed
+segment passed to |renderProfile|. That session ends in |Drop|. After the |fork|
+the type of |c| starts with |Acq|. The types |Acq| and |Drop| only arise from
+remote borrows. The \emph{only} operation on a channel of type |Acq; ...| is
+|acquire| and, similarly, |drop| only applies to channels of type |Drop|.
+
+Next, we discuss a direct operational semantics of local and remote borrowing
+before we move on to a low level implementation of the two concepts in
+\cref{sec:impl-local-remote}.
+
+
+\subsection{A Direct Semantics for Channel Borrowing}
+\label{sec:direct-semant-chann}
+
+\begin{figure}
+  \TightCode
+  \setlength{\linenowidth}{1em}
+  \begin{subfigure}[t]{.49\linewidth}
+    \linenoon
+    \linenoreset
+    \CodeRenderRest
+    \caption{Elaboration of |renderRest| to local splits.}
+    \label{fig:rendering-example-elab/local}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{.49\linewidth}
+    \linenoon
+    \linenoreset
+    \CodeRenderExampleSnippetTrans
+    \caption{Elaboration of |renderUser| to remote splits.}
+    \label{fig:rendering-example-elab/remote}
+  \end{subfigure}
+  \caption{Snippets of the elaborated rendering example from
+    \cref{lst:rendering-example}.}
+  \label{fig:rendering-example-elab}
+\end{figure}
+
+\Cref{sec:borr-from-cont} already suggests an implementation strategy for local
+borrowing. However, we start with an abstract specification because it is easier
+to handle in a correctness proof. The specification works on an elaborated core
+language, \thecalculus. Elaboration replaces borrowing with explicit
+functional splitting operators. This translation is analogous to a translation
+in previous work \citep{DBLP:journals/pacmpl/SaffrichS0V25}, which gives a formal
+presentation along with a correctness proof. The novelty in our work is the
+presence of \emph{two} operators, |lsplit| for local borrows and |rsplit| for
+remote borrows. Borrows used in the same process elaborate to |lsplit| while
+borrows used across a |fork| or sent to another process elaborate to
+|rsplit|. \Cref{fig:rendering-example-elab} shows the (partial) elaboration of
+|renderRest| and |renderUser| from the rendering example
+(\cref{lst:rendering-example}), the former using local splits and the latter
+using remote splits.
+
+{\color{red}Our discussion starts with the local variant.} The translation of |renderRest| is
+shown in \cref{fig:rendering-example-elab/local}. Execution proceeds by
+repeatedly exposing the next local prefix of the channel
+sequence. \Cref{fig:local-split-trace} shows a suffix of its reduction sequence.
+The \mbox{|nu b1 b2 in ^^ ...|} operator is a channel restriction as known from
+session calculi \citep{Gay_Vasconcelos_2025}. It introduces a communication
+channel but with each compartment |bgroup bi| containing a \emph{bind group:} a
+list of channel names and separator markers. The names bound by |b1| refer to
+one channel endpoint, the names in |b2| to the other. The workings are best
+illustrated with the example trace.
+
+\begin{figure}
+  \TightCode
+  \begin{minipage}[t]{0.49\linewidth}
+    \LocalSplitReduction
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.49\linewidth}
+    \RemoteSplitReduction
+  \end{minipage}\\
+  \begin{subcaptiongroup}
+    \parbox{.49\linewidth}{%
+      \caption{Local split reduction suffix.}
+      \label{fig:local-split-trace}}\hfill
+    \parbox{.49\linewidth}{%
+      \caption{Remote split and acquire reduction suffix.}
+      \label{fig:remote-split-trace}}%
+  \end{subcaptiongroup}
+  \caption{Local and remote splitting in the suffixes of |renderRest| and
+    |renderUser|. The processes |Pi| abbreviate client-side computation on the
+    other endpoint.}
+  \label{fig:local-split-reduction}
+\end{figure}
+
+To keep the trace short (\cref{fig:local-split-trace}), the reduction starts at
+the local suffix in |renderRest|. The split on |c| following the |select|
+\emph{replaces} the binder for |c| with two fresh channel names, |c1| and |c2|.
+%
+% All operations work on
+% the channel names in a bind group from left to right.
+%
+% That is, both
+% compartments of the \lstinline{nu} contain a flat list of channel names, and all
+% operations work on these channel names from left to right. To ensure the correct
+% sequencing, the semantics does not allow any action on \lstinline{c2} before
+% \lstinline{c1} has been consumed.
+%
+This restriction is supported by typing: the |lsplit| operation returns an
+\emph{ordered pair,} whose components must be processed and consumed in
+left-to-right order.
+
+% The |drop| operation (not used in this example) applied to some |c| just
+% discards |c| if it is the first channel name in the compartment.
+
+On the client side, in the processes |Pi| that hold the other channel end
+|d|, splitting can be performed on |d| independently of the
+splitting on |c|. The only constraint is that, in the end, when
+|close| and |wait| calls match, the reduction requires that
+only one channel name is left in each compartment. Under this condition, the
+channel can be closed and eliminated. The figure does not show the transitions
+of the {\color{red}client $P_d$,} which are independent.
+
+For remote borrowing, we incorporate the |acquire| primitive and indicate a
+remote split with the symbol ``| |||| |'' in the compartment. As an example, we
+consider the translation of lines
+\ref*{ln:renderExample/transBegin}--\ref*{ln:renderExample/transEnd} from
+\cref{lst:rendering-example}. The elaboration is shown in
+\cref{fig:render-example-elab/remote}.
+
+The translation inserts an |rsplit| because |c1| and |c2| are used in
+different processes. The |rsplit| returns an ordinary (linear) pair of channels
+because synchronization is made explicit using the |Acq| and |Drop|
+types. Executing this code takes the steps shown in
+\cref{fig:remote-split-trace} (ignoring the activity at the other end of the
+channel). The bracketed step abbreviates the forked process running |renderProfile|
+until its final |drop c1|.  In summary, the |rsplit| replaces one channel name
+by |bgroup (c1||||c2)|, where ``| |||| |'' marks a remote split. The |drop| is
+only enabled if its argument name comes last before a ``| |||| |''.  The
+|acquire| is only enabled if the preceding list segment has been processed as in
+|bgroup (||||c2)|. Executing the |acquire| in the last step removes the
+exhausted segment and separator, yielding |bgroup c2|.
+
+
+\subsection{Implementing Local and Remote Borrowing}
+\label{sec:impl-local-remote}
+
+We implement the high-level calculus by translation into a low-level run-time
+session calculus with borrowing, \thertcalculus. The run-time calculus is a
+concurrent lambda calculus with the usual session-style communication
+primitives. However, \thertcalculus is untyped and it comes equipped with
+asynchronous signaling primitives for implementing |drop|/|acquire|.  The direct
+semantics from~\cref{sec:direct-semant-chann} records ordering constraints in
+binding groups. The run-time translation realizes the same constraints with
+ordinary channel names and optional synchronization flags that implement passing
+of ownership.
+
+\Cref{fig:borrow-lifecycle-msc} summarizes the difference between local
+and remote borrowing in the implementation.
+
+% Draws the figure with the local vs remote borrowing. Defines the following
+% labels:
+%
+%   \label{fig:borrow-lifecycle-msc-local}
+%   \label{fig:borrow-lifecycle-msc-remote}
+%   \label{fig:borrow-lifecycle-msc}
+\input{borrow-drawing}
+
+%{
+%
+% Locally format "in" as a variable name
+%
+%format in = "\Varid{in}"
+
+Specifically, a channel is represented by a triple |in *. c *. out|, where |c|
+is a primitive channel name and |in| and |out| are optional names of
+synchronization flags. The incoming flag |in| records whether the channel must
+be acquired before it can be used. The outgoing flag |out| records whether the
+channel must be dropped after use. A synchronization binder
+{\color{red}$(\varphi z \mapsto \phi)P$} binds a flag name |z| in |P| and stores
+one of two states in {\color{red}$\phi$}: |fdrop| or |facq|.  This flag |z|
+implements the separator in |nu (c1||||c2) (...)|. It is the outgoing flag of
+the borrowed prefix and the incoming flag of the suffix.
+
+An |rsplit| creates a flag in state |drop| and a freshly restricted channel sets
+its flag to |acq|. Intuitively, |fdrop| means that the left, borrowed part of a
+remote split is still active, |facq| means that it has been dropped and the
+right, suffix part may acquire. This mechanism implements an ownership transfer
+of the primitive channel from the borrowed part to the suffix.
+
+Allocation creates a primitive channel pair and one synchronization flag for
+each endpoint. The fresh endpoints carry incoming flags that are already in the
+|facq| state. Thus, an initial |acquire| is required to reduce each channel to
+normal operation, removing the flag from the channel triple by replacing it with
+|*|. Once these optional flag components are absent, communication is just
+ordinary session communication: |send|/|recv|, |select|/|branch|, and
+|close|/|wait| all operate directly on the primitive channel name |c|.
+
+\Cref{fig:borrow-lifecycle-msc-local} shows the lifecycle of a local borrow. The
+rule for |lsplit| returns two copies of the same run-time channel triple. No new
+channel is allocated and no synchronization flag is introduced. This simple
+approach has no overhead and is sound because the source type system has already
+established the left-to-right use of the two pieces. The run-time representation
+can therefore be imperative: the two pieces are aliases for the same underlying
+channel object, and using the first piece advances that object to the state
+where the second piece starts.
+
+Remote splitting is the only place where new synchronization machinery is
+introduced (\cref{fig:borrow-lifecycle-msc-remote}). Splitting a channel |in *.
+c *. out| remotely creates a fresh flag |z| in state |fdrop| and returns two
+channel triples: |in *. c *. z| for the borrowed prefix, and |z *. c *. out| for
+the suffix. The prefix therefore carries an outgoing obligation to call |drop|;
+the suffix carries a matching incoming obligation to call |acquire|. Calling
+|drop| changes the flag from |fdrop| to |facq| and returns immediately, so the
+notification is asynchronous. A later |acquire| on the suffix can fire only
+after this state change and removes the synchronization flag. Thus a remote
+split pays for exactly the synchronization needed to coordinate the two
+processes operating on the channel, whereas a local split pays nothing beyond
+sharing the channel representation.
+
+% End local formatting of "in" as an identifier.
+%
+%}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../popl2027.tex"
+%%% End:

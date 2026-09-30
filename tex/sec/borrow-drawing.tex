@@ -1,0 +1,229 @@
+% Make sure that any definitions we do in this file stay local.
+\begingroup
+
+\newlength\msgSelfWidth
+\newlength\msgSelfHeight
+\newlength\msgSelfOffset
+\newlength\activationWidth
+\newlength\firstStateOffset
+
+\msgSelfWidth=0.9cm\relax
+\msgSelfHeight=0.25cm\relax
+\msgSelfOffset=0.15cm\relax
+\activationWidth=0.14cm\relax
+\firstStateOffset=0.08cm\relax
+
+\newsavebox\SplitDrawingLocal
+\newsavebox\SplitDrawingRemote
+
+\newcommand\saveframedtikz[3][]{%
+  \sbox{#2}{%
+    \fbox{%
+      \hspace{1mm}%
+      \begin{tikzpicture}[#1]#3\end{tikzpicture}%
+      \hspace{1mm}%
+    }%
+  }%
+}
+
+\tikzset{
+  >=Stealth,
+  head/.style={draw, minimum width=1.15cm,
+    minimum height=0.42cm, inner sep=1pt, font=\scriptsize},
+  state/.style={draw, fill=blue!5, align=center, inner sep=2pt,
+    font=\scriptsize, text width=1.45cm, xshift = 2pt, anchor = west},
+  flag/.style={draw=orange!65!black, fill=orange!14},
+  inactive/.style={state, fill=black!12},
+  lifeline/.style={dashed, black!55},
+  activation/.style={draw, fill=black!8},
+  msg/.style={->},
+  create/.style={->, dashed},
+  return/.style={->, dashed},
+  lab/.style={font=\scriptsize},
+  lab above/.style={lab,above,anchor=base,yshift=2.4pt},
+  lab right/.style={lab,right,anchor=west,yshift=-.8pt},
+}
+
+\saveframedtikz\SplitDrawingLocal{
+  \node[head] (p) at (0,0) {$P$};
+  %\draw[lifeline] (p.south) -- ++(0,-5.3);
+
+  % Define three points of the activation rectangle: upper right, lower
+  % right and lower left.
+  \path (p.south) ++(0, 0.2pt)
+    ++( 0.5\activationWidth,  0) coordinate (act ur)
+    ++( 0.0,                 -5) coordinate (act lr)
+    ++(-1.0\activationWidth,  0) coordinate (act ll);
+
+  % Draw the activation rectangle.
+  \draw[activation] (act ur) rectangle (act ll);
+
+  % Place nodes along the activation rectangle.
+  \node[state] (c0) at ($(act ur)!.07!(act lr)$) {$c:S_1;S_2$};
+  \node[state] (c1) at ($(act ur)!.35!(act lr)$) {$c_1:S_1$};
+  \node[inactive, anchor = north west, yshift=.4pt] (c2 inactive)
+    at ($(act ur)!(c1.south)!(act lr)$) {$c_2:S_2$\\inactive};
+  \node[state] (c2) at ($(act ur)!.75!(act lr)$) {$c_2:S_2$};
+
+  % Project (c1.north) onto the activation rectangle and draws the arrow
+  % with the dimensions in \msgSelfWidth, \msgSelfHeight, \msgSelfOffset.
+  \draw[msg] ($(act ur)!(c1.north)!(act lr)$)
+    ++(0, \msgSelfOffset) ++(0, \msgSelfHeight)
+    -- node[lab above] {$\CodeOp{lsplit}\,c$} ++(\msgSelfWidth,0)
+    -- ++(0, -\msgSelfHeight)
+    -- ++(-\msgSelfWidth, 0);
+
+  % Repeat for the "use c1" arrow.
+  \draw[msg] ($(act ur)!(c2.north)!(act lr)$)
+    ++(0, \msgSelfOffset) ++(0, \msgSelfHeight)
+    -- node[lab above] {use $c_1$} ++(\msgSelfWidth,0)
+    -- ++(0, -\msgSelfHeight)
+    -- ++(-\msgSelfWidth, 0);
+
+  % Repeat for the "use c2" arrow. The arrow point is set 95% along the
+  % activation rectangle.
+  \draw[msg] ($(act ur)!.95!(act lr)$)
+    ++(0, \msgSelfHeight)
+    -- node[lab above] {use $c_2$} ++(\msgSelfWidth,0)
+    -- ++(0, -\msgSelfHeight)
+    -- ++(-\msgSelfWidth, 0);
+}
+
+\saveframedtikz\SplitDrawingRemote{
+  \node[head] (p) {$P$};
+  \node[head, flag, below right=0.37cm and 2.5cm of p] (z) {$\varphi\,z$};
+  \node[head,       below right=0.61cm and 2.5cm of z] (q) {$Q$};
+
+  % Coordinates for the upper edge of p's first activation.
+  \path (p.south) ++(0, .2pt)
+    + (-.5\activationWidth,  0) coordinate (p1 ul)
+    ++( .5\activationWidth,  0) coordinate (p1 ur)
+    ++(                  0, -1) coordinate (p er);
+
+  % The initial c channel.
+  \path (p1 ur) ++(0, -\firstStateOffset)
+    node[state, anchor=north west] (c) {$c:S_1;S_2$};
+
+  % p's lifeline
+  \draw[lifeline] (p.south) -- ++(0, -5) coordinate (p end);
+
+  % Define three points of p's first activation rectangle: upper right,
+  % lower right and lower left.
+  \path (p1 ur)
+    ++( 0.0,                 -2) coordinate (p1 lr)
+    ++(-1.0\activationWidth,  0) coordinate (p1 ll);
+  \draw[activation] (p1 ur) rectangle (p1 ll);
+
+  % q's activation rectangle
+  \path ($(q.north)!(p end)!(q.south)$)
+    ++(0, .5)
+    +( .5\activationWidth, 0) coordinate (q lr)
+    +(-.5\activationWidth, 0) coordinate (q ll);
+  \path (q.south) +(.5\activationWidth, .2pt) coordinate (q ur);
+  \draw[activation] (q ur) rectangle (q ll);
+
+  % Define coordinates that define the right edge of z's activation
+  % rectangle.
+  \path (z.south) ++(0, .2pt)
+    ++(0.5\activationWidth, 0) coordinate (z ur)
+    ++(0, -1) coordinate (z er);
+
+  % actions and states in Q
+  \path (q ur) ++(0, -\firstStateOffset)
+    node[state, anchor=north west] (c1 at q) {$c_1:S_1;\CodeTy{Drop}$};
+  \draw[msg] ($(q ur)!(c1 at q.south)!(q lr)$)
+    ++ (0, -\msgSelfOffset)
+    -- ++(\msgSelfWidth,0)
+    -- node[lab right] {use $c_1$} ++(0, -\msgSelfHeight)
+    -- ++(-\msgSelfWidth, 0) coordinate (q use end);
+  \path (q use end) ++(0, -\msgSelfOffset)
+    node[state, anchor=north west] (c1 drop) {$c_1:\CodeTy{Drop}$};
+
+  % the "drop" arrow
+  \path ($(q ur)!(c1 drop.south)!(q lr)$)
+    ++(-\activationWidth,-\msgSelfOffset)
+    coordinate (drop origin);
+  \draw[msg] (drop origin) -- node[lab above] {$\CodeOp{drop}\,c_1$}
+    ($(z ur)!(drop origin)!(z er)$) coordinate (drop target);
+
+  % States for the synchronization flag.
+  \path (z ur) ++(0, -\firstStateOffset)
+    node[state, flag, anchor = north west] {$z\mapsto\texttt{drop}$};
+  \path (drop target) ++(0, -\msgSelfOffset)
+    node[state, flag, anchor = north west] (z acq) {$z\mapsto\texttt{acq}$};
+
+  % Define the remaining coordinates for z's activation rectangle.
+  \path (z ur) ++(-\activationWidth, 0) coordinate (z ul);
+  \path ($(z ur)!(z acq.south)!(z er)$)
+    ++(0, -\msgSelfOffset) coordinate (z lr)
+    ++(-\activationWidth, 0) coordinate (z ll);
+  \draw[activation, flag] (z ur) rectangle (z ll);
+
+  % Define three points of p's second activation rectangle: lower right,
+  % lower left and upper right.
+  \path (p end) +( .5\activationWidth, 0) coordinate (p2 lr)
+                +(-.5\activationWidth, 0) coordinate (p2 ll);
+  \coordinate (p2 ur) at ($(p2 lr)!(z ll)!(p1 lr)$);
+  \draw[activation] (p2 ur) rectangle (p2 ll);
+
+  % z's creation arrow
+  \draw[create]
+    ($(p1 ur)!(z.west)!(p1 lr)$) coordinate (rsplit origin)
+    -- node[lab above, near end] {$\CodeOp{rsplit}\,c$}
+       node[lab, below, yshift=2.2pt, near end] {create $z$} (z.west);
+
+  % c1 and c2 immediately after the rsplit
+  \path (rsplit origin) ++(0, -\msgSelfOffset)
+    node[state, anchor = north west] (c1 at p) {$c_1:S_1;\CodeTy{Drop}$};
+  \node[state, anchor = north west, yshift=.4pt] (c1 at p)
+    at ($(p1 ur)!(c1 at p.south)!(p er)$) {$c_2:\mathrlap{\CodeTy{Acq};S_2}\hphantom{S_1;\CodeTy{Drop}}$};
+
+  % Remember the coordinate where the fork arrow starts.
+  \coordinate (fork q) at ($(p1 ur)!(q.west)!(p1 lr)$);
+
+  % q's fork arrow
+  \draw[create] (fork q) -- (q);
+  \path (fork q) -- node[lab above, near end] {$\CodeOp{fork}$}
+                    node[state, below=2pt, near end] {$c_1 : S_1;\CodeTy{Drop}$} (q);
+
+  % the "acquire" arrow
+  \draw[msg] (p1 lr) --
+    node[lab above] {$\CodeOp{acquire}\,c_2$}
+    ($(z ul)!(p1 lr)!(z ll)$);
+  % the "return" arrow
+  \draw[return] (z ll) -- node[lab above] {return} (p2 ur);
+
+  \path (p2 ur) ++(0, -\msgSelfOffset)
+    node[state, anchor=north west] (c2 ret) {$c_2:S_2$};
+  \draw[msg] ($(p2 ur)!(c2 ret.south)!(p2 lr)$) ++(0,-\msgSelfOffset)
+    -- ++(\msgSelfWidth,0)
+    -- node[lab right] {use $c_2$} ++(0,-\msgSelfHeight)
+    -- ++(-\msgSelfWidth,0);
+}
+
+\begin{figure}[t]
+  \begin{subfigure}[t]{\wd\SplitDrawingLocal}
+    \usebox\SplitDrawingLocal
+    \caption{Local borrow}
+    \label{fig:borrow-lifecycle-msc-local}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{\wd\SplitDrawingRemote}
+    \usebox\SplitDrawingRemote
+    \caption{Remote borrow}
+    \label{fig:borrow-lifecycle-msc-remote}
+  \end{subfigure}
+  \caption{Message-sequence view of local and remote borrows. Channel state is
+    shown as annotations next to the relevant process or flag lifelines. A local
+    split keeps the channel state with the original process lifeline; a remote
+    split creates a flag lifeline $\varphi\,z$ and forks a process for the
+    borrowed prefix.}
+  \label{fig:borrow-lifecycle-msc}
+\end{figure}
+
+% Closes the group opened at the start of the file.
+\endgroup
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "popl2027"
+%%% End:
