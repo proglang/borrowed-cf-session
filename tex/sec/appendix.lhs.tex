@@ -1,336 +1,7 @@
-\iffalse
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Do not modify this file directly  !
-! This file has been auto-generated !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-\fi
-
-%% ODER: format ==         = "\mathrel{==}"
-%% ODER: format /=         = "\neq "
-%
-%
-\makeatletter
-\@ifundefined{lhs2tex.lhs2tex.sty.read}%
-  {\@namedef{lhs2tex.lhs2tex.sty.read}{}%
-   \newcommand\SkipToFmtEnd{}%
-   \newcommand\EndFmtInput{}%
-   \long\def\SkipToFmtEnd#1\EndFmtInput{}%
-  }\SkipToFmtEnd
-
-\newcommand\ReadOnlyOnce[1]{\@ifundefined{#1}{\@namedef{#1}{}}\SkipToFmtEnd}
-\usepackage{newtxmath}
-\usepackage{stmaryrd}
-\DeclareFontFamily{OT1}{cmtex}{}
-\DeclareFontShape{OT1}{cmtex}{m}{n}
-  {<5><6><7><8>cmtex8
-   <9>cmtex9
-   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
-\DeclareFontShape{OT1}{cmtex}{m}{it}
-  {<-> ssub * cmtt/m/it}{}
-\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
-\DeclareFontShape{OT1}{cmtt}{bx}{n}
-  {<5><6><7><8>cmtt8
-   <9>cmbtt9
-   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
-\DeclareFontShape{OT1}{cmtex}{bx}{n}
-  {<-> ssub * cmtt/bx/n}{}
-\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
-
-\newcommand{\Sp}{\hskip.33334em\relax}
-
-
-\newcommand{\Conid}[1]{\mathit{#1}}
-\newcommand{\Varid}[1]{\mathit{#1}}
-\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
-\newcommand{\plus}{\mathbin{+\!\!\!+}}
-\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
-\newcommand{\rbind}{\mathbin{=\mkern-6.7mu<\!\!\!<}}% suggested by Neil Mitchell
-\newcommand{\sequ}{\mathbin{>\!\!\!>}}
-\renewcommand{\leq}{\leqslant}
-\renewcommand{\geq}{\geqslant}
-\usepackage{polytable}
-
-%mathindent has to be defined
-\@ifundefined{mathindent}%
-  {\newdimen\mathindent\mathindent\leftmargini}%
-  {}%
-
-\def\resethooks{%
-  \global\let\SaveRestoreHook\empty
-  \global\let\ColumnHook\empty}
-\newcommand*{\savecolumns}[1][default]%
-  {\g@addto@macro\SaveRestoreHook{\savecolumns[#1]}}
-\newcommand*{\restorecolumns}[1][default]%
-  {\g@addto@macro\SaveRestoreHook{\restorecolumns[#1]}}
-\newcommand*{\aligncolumn}[2]%
-  {\g@addto@macro\ColumnHook{\column{#1}{#2}}}
-
-\resethooks
-
-\newcommand{\onelinecommentchars}{\quad-{}- }
-\newcommand{\commentbeginchars}{\enskip\{-}
-\newcommand{\commentendchars}{-\}\enskip}
-
-\newcommand{\visiblecomments}{%
-  \let\onelinecomment=\onelinecommentchars
-  \let\commentbegin=\commentbeginchars
-  \let\commentend=\commentendchars}
-
-\newcommand{\invisiblecomments}{%
-  \let\onelinecomment=\empty
-  \let\commentbegin=\empty
-  \let\commentend=\empty}
-
-\visiblecomments
-
-\newlength{\blanklineskip}
-\setlength{\blanklineskip}{0.66084ex}
-
-\newcommand{\hsindent}[1]{\quad}% default is fixed indentation
-\let\hspre\empty
-\let\hspost\empty
-\newcommand{\NB}{\textbf{NB}}
-\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
-
-\EndFmtInput
-\makeatother
-%
-%
-%
-%
-%
-%
-% This package provides two environments suitable to take the place
-% of hscode, called "plainhscode" and "arrayhscode". 
-%
-% The plain environment surrounds each code block by vertical space,
-% and it uses \abovedisplayskip and \belowdisplayskip to get spacing
-% similar to formulas. Note that if these dimensions are changed,
-% the spacing around displayed math formulas changes as well.
-% All code is indented using \leftskip.
-%
-% Changed 19.08.2004 to reflect changes in colorcode. Should work with
-% CodeGroup.sty.
-%
-\ReadOnlyOnce{polycode.fmt}%
-\makeatletter
-
-\newcommand{\hsnewpar}[1]%
-  {{\parskip=0pt\parindent=0pt\par\vskip #1\noindent}}
-
-% can be used, for instance, to redefine the code size, by setting the
-% command to \small or something alike
-\newcommand{\hscodestyle}{}
-
-% The command \sethscode can be used to switch the code formatting
-% behaviour by mapping the hscode environment in the subst directive
-% to a new LaTeX environment.
-
-\newcommand{\sethscode}[1]%
-  {\expandafter\let\expandafter\hscode\csname #1\endcsname
-   \expandafter\let\expandafter\endhscode\csname end#1\endcsname}
-
-% "compatibility" mode restores the non-polycode.fmt layout.
-
-\newenvironment{compathscode}%
-  {\par\noindent
-   \advance\leftskip\mathindent
-   \hscodestyle
-   \let\\=\@normalcr
-   \let\hspre\(\let\hspost\)%
-   \pboxed}%
-  {\endpboxed\)%
-   \par\noindent
-   \ignorespacesafterend}
-
-\newcommand{\compaths}{\sethscode{compathscode}}
-
-% "plain" mode is the proposed default.
-% It should now work with \centering.
-% This required some changes. The old version
-% is still available for reference as oldplainhscode.
-
-\newenvironment{plainhscode}%
-  {\hsnewpar\abovedisplayskip
-   \advance\leftskip\mathindent
-   \hscodestyle
-   \let\hspre\(\let\hspost\)%
-   \pboxed}%
-  {\endpboxed%
-   \hsnewpar\belowdisplayskip
-   \ignorespacesafterend}
-
-\newenvironment{oldplainhscode}%
-  {\hsnewpar\abovedisplayskip
-   \advance\leftskip\mathindent
-   \hscodestyle
-   \let\\=\@normalcr
-   \(\pboxed}%
-  {\endpboxed\)%
-   \hsnewpar\belowdisplayskip
-   \ignorespacesafterend}
-
-% Here, we make plainhscode the default environment.
-
-\newcommand{\plainhs}{\sethscode{plainhscode}}
-\newcommand{\oldplainhs}{\sethscode{oldplainhscode}}
-\plainhs
-
-% The arrayhscode is like plain, but makes use of polytable's
-% parray environment which disallows page breaks in code blocks.
-
-\newenvironment{arrayhscode}%
-  {\hsnewpar\abovedisplayskip
-   \advance\leftskip\mathindent
-   \hscodestyle
-   \let\\=\@normalcr
-   \(\parray}%
-  {\endparray\)%
-   \hsnewpar\belowdisplayskip
-   \ignorespacesafterend}
-
-\newcommand{\arrayhs}{\sethscode{arrayhscode}}
-
-% The mathhscode environment also makes use of polytable's parray 
-% environment. It is supposed to be used only inside math mode 
-% (I used it to typeset the type rules in my thesis).
-
-\newenvironment{mathhscode}%
-  {\parray}{\endparray}
-
-\newcommand{\mathhs}{\sethscode{mathhscode}}
-
-% texths is similar to mathhs, but works in text mode.
-
-\newenvironment{texthscode}%
-  {\(\parray}{\endparray\)}
-
-\newcommand{\texths}{\sethscode{texthscode}}
-
-% The framed environment places code in a framed box.
-
-\def\codeframewidth{\arrayrulewidth}
-\RequirePackage{calc}
-
-\newenvironment{framedhscode}%
-  {\parskip=\abovedisplayskip\par\noindent
-   \hscodestyle
-   \arrayrulewidth=\codeframewidth
-   \tabular{@{}|p{\linewidth-2\arraycolsep-2\arrayrulewidth-2pt}|@{}}%
-   \hline\framedhslinecorrect\\{-1.5ex}%
-   \let\endoflinesave=\\
-   \let\\=\@normalcr
-   \(\pboxed}%
-  {\endpboxed\)%
-   \framedhslinecorrect\endoflinesave{.5ex}\hline
-   \endtabular
-   \parskip=\belowdisplayskip\par\noindent
-   \ignorespacesafterend}
-
-\newcommand{\framedhslinecorrect}[2]%
-  {#1[#2]}
-
-\newcommand{\framedhs}{\sethscode{framedhscode}}
-
-% The inlinehscode environment is an experimental environment
-% that can be used to typeset displayed code inline.
-
-\newenvironment{inlinehscode}%
-  {\(\def\column##1##2{}%
-   \let\>\undefined\let\<\undefined\let\\\undefined
-   \newcommand\>[1][]{}\newcommand\<[1][]{}\newcommand\\[1][]{}%
-   \def\fromto##1##2##3{##3}%
-   \def\nextline{}}{\) }%
-
-\newcommand{\inlinehs}{\sethscode{inlinehscode}}
-
-% The joincode environment is a separate environment that
-% can be used to surround and thereby connect multiple code
-% blocks.
-
-\newenvironment{joincode}%
-  {\let\orighscode=\hscode
-   \let\origendhscode=\endhscode
-   \def\endhscode{\def\hscode{\endgroup\def\@currenvir{hscode}\\}\begingroup}
-   %\let\SaveRestoreHook=\empty
-   %\let\ColumnHook=\empty
-   %\let\resethooks=\empty
-   \orighscode\def\hscode{\endgroup\def\@currenvir{hscode}}}%
-  {\origendhscode
-   \global\let\hscode=\orighscode
-   \global\let\endhscode=\origendhscode}%
-
-\makeatother
-\EndFmtInput
-%
-%
-
-
-%
-%
-%
-%
-%
-\ReadOnlyOnce{lineno.fmt}%
-
-\usepackage{etoolbox}
-
-\makeatletter
-
-\newtoggle{lineno@column}
-\newtoggle{lineno@print}
-\newcounter{lineno@num}
-\newlength\linenowidth
-
-\newcommand\linenoFormat{\footnotesize}
-
-\newcommand\linenoSetup{%
-  \iftoggle{lineno@column}{%
-    \column{lineno}{@{}r}%
-    \column{B}{}
-  }{}%
-}
-
-\newcommand\linenoStart{%
-  \refstepcounter{lineno@num}%
-  \iftoggle{lineno@print}{%
-    \fromto{lineno}{B}{\makebox[\linenowidth][r]{\linenoFormat\arabic{lineno@num}}}%
-  }{}%
-}
-
-\newcommand\linenoon{%
-  \toggletrue{lineno@column}%
-  \toggletrue{lineno@print}%
-}
-
-\newcommand\linenooff{%
-  \togglefalse{lineno@column}%
-  \togglefalse{lineno@print}%
-}
-
-\newcommand\linenoskip{%
-  \toggletrue{lineno@column}%
-  \togglefalse{lineno@print}%
-}
-
-\newcommand\linenoreset[1][1]{%
-  \defcounter{lineno@num}{#1 - 1}%
-}
-
-\EndFmtInput
-
-
-
-
-
-
-
-
-
-
-
+%include directives.fmt
 
 % Some freest specific formatting directives
+%format linS = "\mathrm{1S}"
 
 \appendix
 
@@ -348,9 +19,9 @@ side-by-side.
 % Switch to the borrow code style for this appendix section
 {\BorrowCodeStyle
 
-The reader may ask why \ensuremath{\CodeOp{select}} still adheres to
+The reader may ask why |select| still adheres to
 resource-passing style. The answer is simplicity of our system. While it
-is possible to define \ensuremath{\CodeOp{select}} with a borrowing-based
+is possible to define |select| with a borrowing-based
 interface, supporting it requires subtyping of session types. While
 subtyping is fine in theory, it turns out that it is undecidable for
 CFST~\cite{DBLP:journals/toplas/Padovani19}. Hence, it cannot be the
@@ -358,10 +29,10 @@ basis for a complete type checker.
 
 For borrowing from regular session
 types~\cite{DBLP:journals/pacmpl/SaffrichS0V25}, a borrowing-style
-\ensuremath{\CodeOp{select}} operation is possible because subtyping for regular
+|select| operation is possible because subtyping for regular
 session types is decidable.
 
-A borrowing-style \ensuremath{\CodeOp{branch}} operator (external choice) cannot be supported in \thecalculus.
+A borrowing-style |branch| operator (external choice) cannot be supported in \thecalculus.
 This operator selects between different continuations at run time and
 the residual channel depends on this run-time choice.
 
@@ -653,40 +324,29 @@ For example, let $\T[1] = \SRec{\SVar}{\SSeq {\SSeq {\SSend{\BInt}} {\SSend {\BS
 {
   \setlength{\blanklineskip}{\medskipamount}
   \TightCode[\bigskipamount]
-\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart
-\column{B}{@{}>{\hspre}c<{\hspost}@{}}%
-\column{BE}{@{}l@{}}%
-\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\qquad {}\<[BE]%
-\>[7]{}\CodeKw{type}\;\Conid{X\char95 T1}\mathbin{:}\mathrm{1S}{}\<[E]%
-\\
-\linenoStart \>[7]{}\CodeKw{type}\;\Conid{X\char95 T1}\mathrel{=}\mathord{!}\Conid{Int}\mathop{;}\mathord{!}\Conid{String}\mathop{;}\Conid{X\char95 T1}{}\<[E]%
-\\[\blanklineskip]%
-\linenoStart \>[7]{}\CodeKw{type}\;\Conid{T1}\mathbin{:}\mathrm{1S}{}\<[E]%
-\\
-\linenoStart \>[7]{}\CodeKw{type}\;\Conid{T1}\mathrel{=}\Conid{X\char95 T1}{}\<[E]%
-\\[\blanklineskip]%
-\linenoStart \>[7]{}\CodeKw{type}\;\Conid{X\char95 T2}\mathbin{:}\mathrm{1S}{}\<[E]%
-\\
-\linenoStart \>[7]{}\CodeKw{type}\;\Conid{X\char95 T2}\mathrel{=}\CodeTy{Skip}\mathop{;}\mathord{!}\Conid{Int}\mathop{;}\mathord{!}\Conid{String}\mathop{;}\Conid{X\char95 T2}{}\<[E]%
-\\[\blanklineskip]%
-\linenoStart \>[7]{}\CodeKw{type}\;\Conid{T2}\mathbin{:}\mathrm{1S}{}\<[E]%
-\\
-\linenoStart \>[7]{}\CodeKw{type}\;\Conid{T2}\mathrel{=}\Conid{X\char95 T2}{}\<[E]%
-\\[\blanklineskip]%
-\linenoStart \>[7]{}\Varid{id}\mathbin{:}\Conid{T1}\to \Conid{T2}{}\<[E]%
-\\
-\linenoStart \>[7]{}\Varid{id}\;\Varid{x}\mathrel{=}\Varid{x}{}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
+\begin{code}
+^^^^  type X_T1 : linS
+      type X_T1 = !Int;!String;X_T1
+
+      type T1 : linS
+      type T1 = X_T1
+
+      type X_T2 : linS
+      type X_T2 = Skip;!Int;!String;X_T2
+
+      type T2 : linS
+      type T2 = X_T2
+
+      id : T1 -> T2
+      id x = x
+\end{code}
 }
 
 \noindent FreeST 5.0 requires specifying kinds for type definitions.
-Kind \ensuremath{\mathrm{1S}} says that the type needs to be a session type.
-If \ensuremath{\Conid{T1}} and \ensuremath{\Conid{T2}} are the translated types from the equivalence constraint,
-it is easy to see that this program only typechecks, if \ensuremath{\Conid{T1}} and
-\ensuremath{\Conid{T2}} are equivalent session types.
+Kind |linS| says that the type needs to be a session type.
+If |T1| and |T2| are the translated types from the equivalence constraint,
+it is easy to see that this program only typechecks, if |T1| and
+|T2| are equivalent session types.
 
 The main parts of the translation are:
 \begin{itemize}

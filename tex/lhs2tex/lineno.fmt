@@ -1,0 +1,78 @@
+%if False
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% lineno.fmt
+%
+% line numbering in lhs2TeX on top of polycode.fmt
+%
+% Permission is granted to include this file (or parts of this file) 
+% literally into other documents, regardless of the conditions or 
+% license applying to these documents.
+%
+% Andres Loeh, February 2011, ver 1.0
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%endif
+%
+%if not lhs2tex_lineno_fmt_read
+%let lhs2tex_lineno_fmt_read = True
+%include polycode.fmt
+%
+%if style /= newcode
+%
+%if False
+% Redefine and extend some subst directives from polycode.fmt.
+%endif
+%
+%subst code a    = "\begin{hscode}\SaveRestoreHook\linenoSetup\linenoStart'n" a "\ColumnHook'n\end{hscode}\resethooks'n"
+%subst newline   = "\\'n\linenoStart "
+%subst blankline = "\\[\blanklineskip]%'n\linenoStart "
+%
+\ReadOnlyOnce{lineno.fmt}%
+
+\usepackage{etoolbox}
+
+\makeatletter
+
+\newtoggle{lineno@@column}
+\newtoggle{lineno@@print}
+\newcounter{lineno@@num}
+\newlength\linenowidth
+
+\newcommand\linenoFormat{\footnotesize}
+
+\newcommand\linenoSetup{%
+  \iftoggle{lineno@@column}{%
+    \column{lineno}{@@{}r}%
+    \column{B}{}
+  }{}%
+}
+
+\newcommand\linenoStart{%
+  \refstepcounter{lineno@@num}%
+  \iftoggle{lineno@@print}{%
+    \fromto{lineno}{B}{\makebox[\linenowidth][r]{\linenoFormat\arabic{lineno@@num}}}%
+  }{}%
+}
+
+\newcommand\linenoon{%
+  \toggletrue{lineno@@column}%
+  \toggletrue{lineno@@print}%
+}
+
+\newcommand\linenooff{%
+  \togglefalse{lineno@@column}%
+  \togglefalse{lineno@@print}%
+}
+
+\newcommand\linenoskip{%
+  \toggletrue{lineno@@column}%
+  \togglefalse{lineno@@print}%
+}
+
+\newcommand\linenoreset[1][1]{%
+  \defcounter{lineno@@num}{#1 - 1}%
+}
+
+\EndFmtInput
+%endif
+%endif

@@ -645,7 +645,7 @@ remote split with the symbol ``\ensuremath{\mathop{\|}}'' in the compartment. As
 consider the translation of lines
 \ref*{ln:renderExample/transBegin}--\ref*{ln:renderExample/transEnd} from
 \cref{lst:rendering-example}. The elaboration is shown in
-\cref{fig:render-example-elab/remote}.
+\cref{fig:rendering-example-elab/remote}.
 
 The translation inserts an \ensuremath{\CodeOp{rsplit}} because \ensuremath{\Varid{c}_{1}} and \ensuremath{\Varid{c}_{2}} are used in
 different processes. The \ensuremath{\CodeOp{rsplit}} returns an ordinary (linear) pair of channels
@@ -677,7 +677,13 @@ of ownership.
 \Cref{fig:borrow-lifecycle-msc} summarizes the difference between local
 and remote borrowing in the implementation.
 
-\input{split-figure}
+% Draws the figure with the local vs remote borrowing. Defines the following
+% labels:
+%
+%   \label{fig:borrow-lifecycle-msc-local}
+%   \label{fig:borrow-lifecycle-msc-remote}
+%   \label{fig:borrow-lifecycle-msc}
+\input{sec/borrow-drawing}
 
 %
 % Locally format "in" as a variable name

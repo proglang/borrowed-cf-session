@@ -1,11 +1,12 @@
-build: code-snippets.tex
+build: lhs2tex
 	latexmk -pdf popl2027-supplement.tex
 	latexmk -pdf popl2027.tex
 
-FMT_FILES := $(wildcard *.fmt)
+FMT_FILES := $(wildcard lhs2tex/*.fmt)
+LHS_FILES := $(wildcard */*.lhs.tex)
 
 .PHONY: lhs2tex
-lhs2tex: code-snippets.tex sec/motivation.tex
+lhs2tex: $(LHS_FILES:%.lhs.tex=%.tex)
 
 %.tex: %.lhs.tex $(FMT_FILES)
-	lhs2TeX $< -o $@
+	lhs2TeX -P :lhs2tex $< -o $@

@@ -11,17 +11,23 @@
 \usepackage{mathtools}
 \usepackage{subcaption}
 \usepackage{cleveref}
-\usepackage{listings}
 \usepackage{tikz}
 \usepackage{xspace}
 \usepackage{xr-hyper}
 \usetikzlibrary{arrows.meta,calc,fit,positioning,shapes.multipart}
 \usepackage{refcount}
 
-\crefname{lstlisting}{listing}{listings}
-\Crefname{lstlisting}{Listing}{Listings}
+\definecolor{verylightgray}{rgb}{0.9,0.9,0.9}
+\definecolor{verylightred}{rgb}{1,0.9,0.9}
+\definecolor{darkgold}{rgb}{0.7,0.5.4,0}
+\definecolor{darkviolet}{rgb}{0.5,0,0.4}
+\definecolor{darkgreen}{rgb}{0,0.4,0.2}
+\definecolor{darkblue}{rgb}{0.1,0.1,0.9}
+\definecolor{darkgrey}{rgb}{0.5,0.5,0.5}
+\definecolor{lightblue}{rgb}{0.4,0.4,1}
 
-\input{lstconfig}
-\input{lstconfig2}
 \input{symbols}
 \input{rules}
+
+% Transitively includes the lhs2tex/code-snippets.
+\input{lhs2tex/config}
