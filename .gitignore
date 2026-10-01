@@ -322,4 +322,7 @@ agda-safe.sh
 CLAUDE.md
 .claude
 
+# direnv
+.direnv
+
 tmp
