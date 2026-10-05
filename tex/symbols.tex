@@ -47,11 +47,6 @@
 \newcommand*\MobMobile{\mobcolor{\textsc m}}
 \newcommand*\MobStationary{\mobcolor{\textsc s}}
 
-% Multiplicities
-\newcommand*\Mul{m}
-\newcommand*\MulLin{1}
-\newcommand*\MulUnr{\omega}
-
 % Directions
 \newcommand*\Dir{\dircolor{d}}
 \newcommand*\DirPrime{\dircolor{d'}}
@@ -87,19 +82,16 @@
 % \newcommand*\TArr[4]{{#3}\overset{{#1};{#2}}\to{#4}}
 \newcommand*\TExists[3][{}]{\typecolor{\exists #2^{#1}. #3}}
 
-% Unrestricted Types
-\newcommand*\M{M}
-
 % Session Types
 \let\S=\undefined % \S is already predefined and \NewMetaVar does not support \renewcommand.
 \NewMetaVar[\typecolor] \S S
 \NewMetaVar[\typecolor] \R R
 \newcommand*\SVar{\typecolor{X}}
 \newcommand*\SSkip{\TypeKeyword{Skip}}
-\newcommand*\SSeq[2]{\typecolor{{#1};{#2}}}
+\newcommand*\SSeq[2]{\typecolor{{#1}\mathbin{;}{#2}}}
 \newcommand*\SWait[1][{}]{\TypeKeyword{Wait}}
-\newcommand*\STerm[1][{}]{\TypeKeyword{Close}} % Term}}
-\newcommand*\SDual[1]{\typecolor{#1}^{\metacolor\bot}} % {\typecolor{\Dual\,({#1})}}
+\newcommand*\STerm[1][{}]{\TypeKeyword{Close}}
+\newcommand*\SDual[1]{\typecolor{#1}^{\metacolor\bot}}
 \newcommand*\STrans[2][{}]{\typecolor{\operatorname{\#}{#2}}}
 \newcommand*\SSend[1]{\typecolor{\operatorname{!}{\!#1}}}
 \newcommand*\SRecv[1]{\typecolor{\operatorname{?}{\!#1}}}
