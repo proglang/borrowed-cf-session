@@ -140,14 +140,14 @@ data ⊢_∶_ : Const → 𝕋 → Set where
 
   `new  : New s → ⊢ `new s ∶ `⊤ →*M ⟨ acq ; (s ; end ⁇) ⟩ ⊗¹ ⟨ acq ; (dual s ; end ‼) ⟩ ∣ ℙ
 
-  -- Both components of a split must do real work: a split never produces a bare
-  -- skip handle.  In particular the head of a non-first group keeps its `acq`
-  -- under both splits; for `rsplit the condition on s is what stops
-  -- ⟨ acq ; t ⟩ ≃ ⟨ skip ; (acq ; t) ⟩ from turning the head into an
-  -- unreleasable ⟨ ret ⟩ whose `acq` has moved into the new group.
-  `lsplit : (s s′ : 𝕊 0) → ¬ Skips s → ¬ Skips s′ →
-    ⊢ `lsplit s ∶ ⟨ s ; s′ ⟩ →*M ⟨ s ⟩       ⊗ᴸ ⟨ s′ ⟩       ∣ ℙ
-  `rsplit : (s s′ : 𝕊 0) → ¬ Skips s → ¬ Skips s′ →
+  -- Don't let the user introduce `skip` sessions. The `Wf` requirement
+  -- guarantees that there are no `acq` somewhere other than the head of the
+  -- session.
+  `lsplit : (s s′ : 𝕊 0) → ¬ Skips s → Local s′ → ¬ Skips s′ →
+    ⊢ `lsplit s ∶ ⟨ s ; s′ ⟩ →*M ⟨ s ⟩ ⊗ᴸ ⟨ s′ ⟩ ∣ ℙ
+
+  -- s′ must not start with `acq`: our system can't deal with `acq;acq;...`.
+  `rsplit : (s s′ : 𝕊 0) → Local s′ → ¬ Skips s′ →
     ⊢ `rsplit s ∶ ⟨ s ; s′ ⟩ →*M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; s′ ⟩ ∣ ℙ
 
   `drop : ⊢ `drop ∶ ⟨ ret ⟩     →*M `⊤    ∣ 𝕀
@@ -164,18 +164,18 @@ data ⊢_∶_ : Const → 𝕋 → Set where
   `end  : ⊢ `end p ∶ ⟨ end p ⟩ →*M `⊤ ∣ 𝕀
 
 constFnUnr : ∀ {c} → ⊢ c ∶ T ⟨ a ⟩→ U → Arr.Unr a
-constFnUnr `fork = refl
-constFnUnr (`new x) = refl
-constFnUnr (`lsplit x s′ _ _) = refl
-constFnUnr (`rsplit x s′ _ _) = refl
-constFnUnr `drop = refl
-constFnUnr `discard = refl
-constFnUnr `acq = refl
+constFnUnr `fork     = refl
+constFnUnr (`new x)  = refl
+constFnUnr `drop     = refl
+constFnUnr `discard  = refl
+constFnUnr `acq      = refl
 constFnUnr (`send x) = refl
 constFnUnr (`recv x) = refl
-constFnUnr `select = refl
-constFnUnr `branch = refl
-constFnUnr `end = refl
+constFnUnr `select   = refl
+constFnUnr `branch   = refl
+constFnUnr `end      = refl
+constFnUnr (`lsplit x _ _ _ _) = refl
+constFnUnr (`rsplit x _ _ _)   = refl
 
 constFnUnr′ : ∀ {c} → T ≃ U₁ ⟨ a ⟩→ U₂ → ⊢ c ∶ T → Arr.Unr a
 constFnUnr′ (_ `→ _) = constFnUnr

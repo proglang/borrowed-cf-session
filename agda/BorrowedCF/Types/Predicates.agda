@@ -419,3 +419,99 @@ new-dual skip = skip
 
 ¬new-end : ¬ New (s ; end p)
 ¬new-end (x ; ())
+
+data NonLocal {n} : 𝕊 n → Set where
+  acq : NonLocal acq
+  _;₁- : NonLocal s₁ → NonLocal (s₁ ; s₂)
+  _;₂_ : Skips s₁ → NonLocal s₂ → NonLocal (s₁ ; s₂)
+
+Local : 𝕊 n → Set
+Local s = ¬ NonLocal s
+
+nonLocal-dual⁺ : NonLocal s → NonLocal (dual s)
+nonLocal-dual⁺ acq = acq
+nonLocal-dual⁺ (x ;₁-) = nonLocal-dual⁺ x ;₁-
+nonLocal-dual⁺ (x ;₂ x₁) = skips-dual⁺ x ;₂ nonLocal-dual⁺ x₁
+
+nonLocal-dual⁻ : NonLocal (dual s) → NonLocal s
+nonLocal-dual⁻ {s = s₁ ; s₂} (x ;₁-) = nonLocal-dual⁻ x ;₁-
+nonLocal-dual⁻ {s = s₁ ; s₂} (x ;₂ x₁) = skips-dual⁻ x ;₂ nonLocal-dual⁻ x₁
+nonLocal-dual⁻ {s = acq} x = x
+
+nonLocal-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} → NonLocal s → NonLocal (s ⋯ ϕ)
+nonLocal-⋯ acq = acq
+nonLocal-⋯ (x ;₁-) = nonLocal-⋯ x ;₁-
+nonLocal-⋯ (x ;₂ x₁) = skips-⋯ x ;₂ nonLocal-⋯ x₁
+
+nonLocal-⋯ᵣ⁻¹ : {ϕ : m →ᵣ n} → NonLocal (s ⋯ ϕ) → NonLocal s
+nonLocal-⋯ᵣ⁻¹ {s = s₁ ; s₂} (x ;₁-) = nonLocal-⋯ᵣ⁻¹ x ;₁-
+nonLocal-⋯ᵣ⁻¹ {s = s₁ ; s₂} (x ;₂ x₁) = skips-⋯ᵣ⁻¹ x ;₂ nonLocal-⋯ᵣ⁻¹ x₁
+nonLocal-⋯ᵣ⁻¹ {s = acq} x = acq
+
+local-⋯ᵣ : {ϕ : m →ᵣ n} → Local s → Local (s ⋯ ϕ)
+local-⋯ᵣ Ls = Ls ∘ nonLocal-⋯ᵣ⁻¹
+
+local-⋯ᵣ⁻¹ : {ϕ : m →ᵣ n} → Local (s ⋯ ϕ) → Local s
+local-⋯ᵣ⁻¹ Ls′ = Ls′ ∘ nonLocal-⋯
+
+local-dual⁺ : Local s → Local (dual s)
+local-dual⁺ Ls = Ls ∘ nonLocal-dual⁻
+
+skips⇒local : Skips s → Local s
+skips⇒local (Ss ; Ss₁) (¬Ls ;₁-) = skips⇒local Ss ¬Ls
+skips⇒local (Ss ; Ss₁) (x ;₂ ¬Ls) = skips⇒local Ss₁ ¬Ls
+
+
+data Wfₛ {n} : 𝕊 n → Set
+
+Wf : ∀ {κ x} → Ty κ x → Set
+Wf {κ = 𝕤} = Wfₛ
+Wf {κ = 𝕥} = TPred (const ⊤) Wfₛ
+
+data Wfₛ where
+  `-   : ∀ {x} → Wf (` x)
+  ``_  : ∀ α → Wf (`` α)
+  msg  : Wf T → Wf (msg p T)
+  end  : Wf (end p)
+  brn  : Wf s₁ → Wf s₂ → Wf (brn p s₁ s₂)
+  mu   : Wf s → Wf (mu s)
+  skip : Wf skip
+  ret  : Wf ret
+  acq  : Wf acq
+  _;[_]_  : Wf s₁ → Skips s₁ ⊎ Local s₂ → Wf s₂ → Wf (s₁ ; s₂)
+
+wf-⋯ᵣ : {ϕ : m →ᵣ n} → Wf s → Wf (s ⋯ ϕ)
+wf-⋯ᵣ `- = `-
+wf-⋯ᵣ (`` α) = `` α
+wf-⋯ᵣ (msg x) = msg x
+wf-⋯ᵣ end = end
+wf-⋯ᵣ (brn x x₁) = brn (wf-⋯ᵣ x) (wf-⋯ᵣ x₁)
+wf-⋯ᵣ (mu x) = mu (wf-⋯ᵣ x)
+wf-⋯ᵣ skip = skip
+wf-⋯ᵣ ret = ret
+wf-⋯ᵣ acq = acq
+wf-⋯ᵣ (x₁ ;[ x ] x₂) = wf-⋯ᵣ x₁ ;[ Sum.map skips-⋯ local-⋯ᵣ x ] wf-⋯ᵣ x₂
+
+wf-⋯ᵣ⁻¹ : {ϕ : m →ᵣ n} → Wf (s ⋯ ϕ) → Wf s
+wf-⋯ᵣ⁻¹ {s = ` _} x = `-
+wf-⋯ᵣ⁻¹ {s = end p} x = end
+wf-⋯ᵣ⁻¹ {s = msg p t} (msg x) = msg x
+wf-⋯ᵣ⁻¹ {s = brn p s₁ s₂} (brn x x₁) = brn (wf-⋯ᵣ⁻¹ x) (wf-⋯ᵣ⁻¹ x₁)
+wf-⋯ᵣ⁻¹ {s = mu s} (mu x) = mu (wf-⋯ᵣ⁻¹ x)
+wf-⋯ᵣ⁻¹ {s = s₁ ; s₂} (x₁ ;[ x ] x₂) = wf-⋯ᵣ⁻¹ x₁ ;[ Sum.map skips-⋯ᵣ⁻¹ local-⋯ᵣ⁻¹ x ] wf-⋯ᵣ⁻¹ x₂
+wf-⋯ᵣ⁻¹ {s = skip} x = skip
+wf-⋯ᵣ⁻¹ {s = ret} x = ret
+wf-⋯ᵣ⁻¹ {s = acq} x = acq
+wf-⋯ᵣ⁻¹ {s = `` α} x = `` α
+
+wf-dual⁺ : Wf s → Wf (dual s)
+wf-dual⁺ `- = `-
+wf-dual⁺ (`` α) = `` _
+wf-dual⁺ (msg x) = msg x
+wf-dual⁺ end = end
+wf-dual⁺ (brn x x₁) = brn (wf-dual⁺ x) (wf-dual⁺ x₁)
+wf-dual⁺ (mu x) = mu (wf-dual⁺ x)
+wf-dual⁺ skip = skip
+wf-dual⁺ ret = ret
+wf-dual⁺ acq = acq
+wf-dual⁺ (x₁ ;[ x ] x₂) = (wf-dual⁺ x₁) ;[ Sum.map skips-dual⁺ local-dual⁺ x ] (wf-dual⁺ x₂)

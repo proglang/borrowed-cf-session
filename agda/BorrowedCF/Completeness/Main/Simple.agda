@@ -67,56 +67,50 @@ const-case {Γ̂ = Γ̂} {γ = γ} {c = c} {T = T} {m = m} {σ₀ = σ₀} Sσ u
     A-Const (der Lft) Ac
       (subst (λ z → ⊢ z ∶ subTy U s₀) (subConst-id (solvedTm-K Se)) (subConst-⊢ ⊢c))
 ... | inj₂ `lsplit
-  with `lsplit s s′ ¬Ss ¬Ss′ ← ⊢c
+  with `lsplit s₁ s₂ ¬S₁ L₂ ¬S₂ ← ⊢c
   with Ss ← solvedC-lsplit (solvedTm-K Se)
   =
-  let ¬Ss′₀ = ¬Ss′ ∘ subTy-skips⁻¹
-      σ     = extend σ₀ m (subTy s′ s₀) ¬Ss′₀
-      eqα   : subTy {𝕤} {0} (`` UV.fresh m) σ ≡ subTy s′ s₀
-      eqα   = uvar-subTy (UV.fresh m) σ ■ extend-ap σ₀ m (subTy s′ s₀) ¬Ss′₀
-      eqs   : subTy s σ ≡ subTy s s₀
-      eqs   = subTy-id Ss ■ sym (subTy-id Ss)
-      eqT̂   : (⟨ subTy s σ ; subTy {𝕤} {0} (`` UV.fresh m) σ ⟩ →*M
-                 ⟨ subTy s σ ⟩ ⊗ᴸ ⟨ subTy {𝕤} {0} (`` UV.fresh m) σ ⟩ ∣ ℙ)
-              ≡ subTy U s₀
-      eqT̂   = cong₂ (λ x y → ⟨ x ; y ⟩ →*M ⟨ x ⟩ ⊗ᴸ ⟨ y ⟩ ∣ ℙ) eqs eqα
-      Lft   = ≼→ Sσ ap uΓ ≤γ
-  in ⟨ s ; `` UV.fresh m ⟩ →*M ⟨ s ⟩ ⊗ᴸ ⟨ `` UV.fresh m ⟩ ∣ ℙ ,
+  let ¬S₂′ = ¬S₂ ∘ subTy-skips⁻¹
+      σ    = extend σ₀ m (subTy-local L₂) ¬S₂′
+      eqα  : subTy {𝕤} {0} (`` UV.fresh m) σ ≡ subTy s₂ s₀
+      eqα  = uvar-subTy (UV.fresh m) σ ■ extend-ap σ₀ m (subTy-local L₂) ¬S₂′
+      eqs  : subTy s₁ σ ≡ subTy s₁ s₀
+      eqs  = subTy-id Ss ■ sym (subTy-id Ss)
+      eqT̂  = cong₂ (λ x y → ⟨ x ; y ⟩ →*M ⟨ x ⟩ ⊗ᴸ ⟨ y ⟩ ∣ ℙ) eqs eqα
+      Lft  = ≼→ Sσ ap uΓ ≤γ
+  in ⟨ s₁ ; `` UV.fresh m ⟩ →*M ⟨ s₁ ⟩ ⊗ᴸ ⟨ `` UV.fresh m ⟩ ∣ ℙ ,
      ℙ , cs Lft , suc m , σ ,
-     extend-solving σ₀ m (subTy s′ s₀) ¬Ss′₀ Sσ (subTy-solved s′ s₀-solving) ,
-     extend-agree σ₀ m (subTy s′ s₀) ¬Ss′₀ ,
-     solvedΔ-agree (agree-sym (extend-agree σ₀ m (subTy s′ s₀) ¬Ss′₀)) (csc Lft) (sol Lft) ,
+     (extend-solving σ₀ m (subTy-local L₂) ¬S₂′ Sσ (subTy-solved s₂ s₀-solving)) ,
+     extend-agree σ₀ m (subTy-local L₂) ¬S₂′ ,
+     solvedΔ-agree (agree-sym (extend-agree σ₀ m (subTy-local L₂) ¬S₂′)) (csc Lft) (sol Lft) ,
      ℙ≤ϵ ,
      subst (_≃ T) (sym eqT̂) (≃-trans (subTy-≃ U≃T) (≃-reflexive (subTy-id ST))) ,
      Nat.n≤1+n m ,
      (⟨ solved⇒uvarsIn Ss ; `` (Nat.z≤n , Nat.≤-refl) ⟩) ⟨ _ ⟩→
        (⟨ solved⇒uvarsIn Ss ⟩ ⊗⟨ L ⟩ ⟨ `` (Nat.z≤n , Nat.≤-refl) ⟩) ,
      uvarsInΔ-mono Nat.≤-refl (Nat.n≤1+n m) (csc Lft) ,
-     A-LSplit (der Lft) ¬Ss
+     A-LSplit (der Lft) ¬S₁
 ... | inj₂ `rsplit
-  with `rsplit s s′ ¬Ss ¬Ss′ ← ⊢c
+  with `rsplit s₁ s₂ L₂ ¬S₂ ← ⊢c
   with Ss ← solvedC-rsplit (solvedTm-K Se)
   =
-  let ¬Ss′₀ = ¬Ss′ ∘ subTy-skips⁻¹
-      σ     = extend σ₀ m (subTy s′ s₀) ¬Ss′₀
-      eqα   : subTy {𝕤} {0} (`` UV.fresh m) σ ≡ subTy s′ s₀
-      eqα   = uvar-subTy (UV.fresh m) σ ■ extend-ap σ₀ m (subTy s′ s₀) ¬Ss′₀
-      eqs   : subTy s σ ≡ subTy s s₀
+  let ¬S₂′  = ¬S₂ ∘ subTy-skips⁻¹
+      σ     = extend σ₀ m (subTy-local L₂) ¬S₂′
+      eqα   : subTy {𝕤} {0} (`` UV.fresh m) σ ≡ subTy s₂ s₀
+      eqα   = uvar-subTy (UV.fresh m) σ ■ extend-ap σ₀ m (subTy-local L₂) ¬S₂′
+      eqs   : subTy s₁ σ ≡ subTy s₁ s₀
       eqs   = subTy-id Ss ■ sym (subTy-id Ss)
-      eqT̂   : (⟨ subTy s σ ; subTy {𝕤} {0} (`` UV.fresh m) σ ⟩ →*M
-                 ⟨ subTy s σ ; ret ⟩ ⊗¹ ⟨ acq ; subTy {𝕤} {0} (`` UV.fresh m) σ ⟩ ∣ ℙ)
-              ≡ subTy U s₀
       eqT̂   = cong₂ (λ x y → ⟨ x ; y ⟩ →*M ⟨ x ; ret ⟩ ⊗¹ ⟨ acq ; y ⟩ ∣ ℙ) eqs eqα
       Lft   = ≼→ Sσ ap uΓ ≤γ
-  in ⟨ s ; `` UV.fresh m ⟩ →*M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; `` UV.fresh m ⟩ ∣ ℙ ,
+  in ⟨ s₁ ; `` UV.fresh m ⟩ →*M ⟨ s₁ ; ret ⟩ ⊗¹ ⟨ acq ; `` UV.fresh m ⟩ ∣ ℙ ,
      ℙ , cs Lft , suc m , σ ,
-     extend-solving σ₀ m (subTy s′ s₀) ¬Ss′₀ Sσ (subTy-solved s′ s₀-solving) ,
-     extend-agree σ₀ m (subTy s′ s₀) ¬Ss′₀ ,
-     solvedΔ-agree (agree-sym (extend-agree σ₀ m (subTy s′ s₀) ¬Ss′₀)) (csc Lft) (sol Lft) ,
+     extend-solving σ₀ m (subTy-local L₂) ¬S₂′ Sσ (subTy-solved s₂ s₀-solving) ,
+     extend-agree σ₀ m (subTy-local L₂) ¬S₂′ ,
+     solvedΔ-agree (agree-sym (extend-agree σ₀ m (subTy-local L₂) ¬S₂′)) (csc Lft) (sol Lft) ,
      ℙ≤ϵ ,
      subst (_≃ T) (sym eqT̂) (≃-trans (subTy-≃ U≃T) (≃-reflexive (subTy-id ST))) ,
      Nat.n≤1+n m ,
      (⟨ solved⇒uvarsIn Ss ; `` (Nat.z≤n , Nat.≤-refl) ⟩) ⟨ _ ⟩→
        (⟨ solved⇒uvarsIn Ss ; ret ⟩ ⊗⟨ 𝟙 ⟩ ⟨ acq ; `` (Nat.z≤n , Nat.≤-refl) ⟩) ,
      uvarsInΔ-mono Nat.≤-refl (Nat.n≤1+n m) (csc Lft) ,
-     A-RSplit (der Lft) ¬Ss
+     A-RSplit (der Lft)

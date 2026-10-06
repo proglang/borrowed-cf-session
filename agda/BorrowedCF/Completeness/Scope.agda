@@ -130,8 +130,8 @@ GuessIn : {Γ : Ctx N} {γ : Struct N} {e : Tm N} {T : 𝕋} {ϵ : Eff} {Δ : CS
   (k : ℕ) → Γ ; γ / m ⊢[ ξ ] e ∶ T ∣ ϵ ↑ Δ / n → Set
 GuessIn k (A-Var ≤γ) = ⊤
 GuessIn {T = T} {m = m} k (A-Const ≤γ Ac ⊢c) = UVarsIn k m T
-GuessIn {m = m} k (A-LSplit {s = s} ≤γ ¬sk) = UVarsIn k m s
-GuessIn {m = m} k (A-RSplit {s = s} ≤γ ¬sk) = UVarsIn k m s
+GuessIn {m = m} k (A-LSplit {s = s} ≤γ ¬S) = UVarsIn k m s
+GuessIn {m = m} k (A-RSplit {s = s} ≤γ) = UVarsIn k m s
 GuessIn k (A-App ec ≤γ d₁ d₂) = GuessIn k d₁ × GuessIn k d₂
 GuessIn k (A-Seq unrT ≤γ d₁ d₂) = GuessIn k d₁ × GuessIn k d₂
 GuessIn k (A-LetPair p/s ≤γ d₁ d₂) = GuessIn k d₁ × GuessIn k d₂
@@ -168,7 +168,7 @@ scope-gen {k = k} {m = m} (A-LSplit ≤γ ¬sk) g uΓ k≤m sI =
   in m≤1+m
    , (⟨ us ; uα ⟩ ⟨ _ ⟩→ (⟨ us ⟩ ⊗⟨ L ⟩ ⟨ uα ⟩))
    , uvarsInΔ-mono Nat.≤-refl m≤1+m (uvarsInΔ-≼↑ uΓ ≤γ)
-scope-gen {k = k} {m = m} (A-RSplit ≤γ ¬sk) g uΓ k≤m sI =
+scope-gen {k = k} {m = m} (A-RSplit ≤γ) g uΓ k≤m sI =
   let m≤1+m = Nat.n≤1+n m
       us = uvarsIn-mono Nat.≤-refl m≤1+m g
       uα = ``_ {α = UV.fresh m} (k≤m , Nat.≤-refl)

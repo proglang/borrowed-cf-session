@@ -48,21 +48,23 @@ private variable
 -- `Agree 0 m σ σ₀` (C2) is that relation; `extend σ₀ m s` assigns the freshly allocated
 -- variable `m` and keeps everything below it.
 
-extend : UV.Sub → ℕ → (s : 𝕊 0) → ¬ Skips s → UV.Sub
-extend σ₀ m s ¬Ss = merge m σ₀ (single (UV.fresh m) s ¬Ss)
+extend : {s : 𝕊 0} → UV.Sub → ℕ → Local s → ¬ Skips s → UV.Sub
+extend σ₀ m Ls ¬Ss = merge m σ₀ (UV.subAll Ls ¬Ss)
 
-extend-agree : ∀ σ₀ m s (¬Ss : ¬ Skips s) → Agree 0 m (extend σ₀ m s ¬Ss) σ₀
-extend-agree σ₀ m s ¬Ss = agree-sym (merge-agree-below m σ₀ (single (UV.fresh m) s ¬Ss))
+extend-agree : ∀ σ₀ m (Ls : Local s) (¬Ss : ¬ Skips s) →
+  Agree 0 m (extend σ₀ m Ls ¬Ss) σ₀
+extend-agree σ₀ m Ls ¬Ss =
+  agree-sym (merge-agree-below m σ₀ _)
 
-extend-solving : ∀ σ₀ m s (¬Ss : ¬ Skips s) →
-  Solving σ₀ → SolvedTy s → Solving (extend σ₀ m s ¬Ss)
-extend-solving σ₀ m s ¬Ss Sσ Ss =
-  merge-solving m σ₀ (single (UV.fresh m) s ¬Ss) Sσ (single-solving (UV.fresh m) s ¬Ss Ss)
+extend-solving : ∀ σ₀ m (Ls : Local s) (¬Ss : ¬ Skips s) →
+  Solving σ₀ → SolvedTy s → Solving (extend σ₀ m Ls ¬Ss)
+extend-solving σ₀ m Ls ¬Ss Sσ Ss =
+  merge-solving m σ₀ (UV.subAll Ls ¬Ss) Sσ (subAll-solving Ls ¬Ss Ss)
 
-extend-ap : ∀ σ₀ m s (¬Ss : ¬ Skips s) → UV.ap (extend σ₀ m s ¬Ss) (UV.fresh m) ≡ s
-extend-ap σ₀ m s ¬Ss =
-  merge-above m σ₀ (single (UV.fresh m) s ¬Ss) (UV.fresh m) Nat.≤-refl
-    ■ single-ap (UV.fresh m) s ¬Ss
+extend-ap : ∀ σ₀ m (Ls : Local s) (¬Ss : ¬ Skips s) →
+  UV.ap (extend σ₀ m Ls ¬Ss) (UV.fresh m) ≡ s
+extend-ap σ₀ m Ls ¬Ss =
+  merge-above m σ₀ (UV.subAll Ls ¬Ss) (UV.fresh m) Nat.≤-refl
 
 ------------------------------------------------------------------------
 -- The one repair the base system still needs (Main-STATUS.md).  FINDINGS 2 and 4 have

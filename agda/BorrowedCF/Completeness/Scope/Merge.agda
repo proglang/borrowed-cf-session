@@ -26,8 +26,8 @@ open Nat.Variables
 -- Implementation detail: a `with` on the comparison would not reduce inside the
 -- record fields, so the branch is taken by an explicitly applied helper.
 choose : ∀ {a} {A : Set a} {P : Set} → Dec P → A → A → A
-choose (yes _) x y = x
-choose (no _) x y = y
+choose (true because _) x y = x
+choose (false because _) x y = y
 
 mergeAp : ℕ → UV.Sub → UV.Sub → UVar → 𝕊 0
 mergeAp k σ₁ σ₂ α = choose (UV.var α Nat.<? k) (UV.ap σ₁ α) (UV.ap σ₂ α)
@@ -35,7 +35,8 @@ mergeAp k σ₁ σ₂ α = choose (UV.var α Nat.<? k) (UV.ap σ₁ α) (UV.ap �
 merge : ℕ → UV.Sub → UV.Sub → UV.Sub
 merge k σ₁ σ₂ = record
   { ap = mergeAp k σ₁ σ₂
-  ; ap-¬skips = ¬sk
+  ; ap-¬skips    = ¬sk
+  ; ap-local     = loc
   ; ap-dual/dual = dd
   }
   where
@@ -43,8 +44,15 @@ merge k σ₁ σ₂ = record
     ¬sk α = go (UV.var α Nat.<? k)
       where
         go : (D : Dec (UV.var α Nat.< k)) → ¬ Skips (choose D (UV.ap σ₁ α) (UV.ap σ₂ α))
-        go (yes _) = UV.ap-¬skips σ₁ α
-        go (no _)  = UV.ap-¬skips σ₂ α
+        go (true because _) = UV.ap-¬skips σ₁ α
+        go (false because _)  = UV.ap-¬skips σ₂ α
+
+    loc : ∀ α → Local (mergeAp k σ₁ σ₂ α)
+    loc α = go _
+      where
+      go : (D : Dec (UV.var α Nat.< k)) → Local (choose D (UV.ap σ₁ α) (UV.ap σ₂ α))
+      go (true because _) = UV.ap-local σ₁ α
+      go (false because _) = UV.ap-local σ₂ α
 
     dd : ∀ α → dual (mergeAp k σ₁ σ₂ α) ≡ mergeAp k σ₁ σ₂ (UV.dual α)
     dd α = go (UV.var α Nat.<? k)
@@ -52,8 +60,8 @@ merge k σ₁ σ₂ = record
         go : (D : Dec (UV.var α Nat.< k)) →
              dual (choose D (UV.ap σ₁ α) (UV.ap σ₂ α)) ≡
              choose D (UV.ap σ₁ (UV.dual α)) (UV.ap σ₂ (UV.dual α))
-        go (yes _) = UV.ap-dual/dual σ₁ α
-        go (no _)  = UV.ap-dual/dual σ₂ α
+        go (true because _) = UV.ap-dual/dual σ₁ α
+        go (false because _)  = UV.ap-dual/dual σ₂ α
 
 merge-below : ∀ k (σ₁ σ₂ : UV.Sub) α → UV.var α Nat.< k →
   UV.ap (merge k σ₁ σ₂) α ≡ UV.ap σ₁ α
@@ -114,26 +122,3 @@ solvedΔ-merge₃ k₁ k₂ σ σ₁ σ₂ k₁≤k₂ k₂≤n u u₁ u₂ s s�
   solvedΔ-merge k₁ σ (merge k₂ σ₁ σ₂) u
     (uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl k₂≤n u₁) (uvarsInΔ-mono k₁≤k₂ Nat.≤-refl u₂))
     s (solvedΔ-merge k₂ σ₁ σ₂ u₁ u₂ s₁ s₂)
-
-------------------------------------------------------------------------
--- Singleton substitutions (A-LSplit / A-RSplit)
-
-solved-dual/id : ∀ (α : UVar) {s : 𝕊 0} → SolvedTy s → SolvedTy (UV.dual/id α s)
-solved-dual/id (uvar ‼ v) Ss = Ss
-solved-dual/id (uvar ⁇ v) Ss = solved-dual Ss
-
-single : (α : UVar) (s : 𝕊 0) → ¬ Skips s → UV.Sub
-single α s ¬Ss = UV.subAll {s = UV.dual/id α s} (¬Ss ∘ UV.skips-dual/id⁻ α)
-
-single-ap : ∀ (α : UVar) (s : 𝕊 0) (¬Ss : ¬ Skips s) → UV.ap (single α s ¬Ss) α ≡ s
-single-ap (uvar ‼ v) s ¬Ss = refl
-single-ap (uvar ⁇ v) s ¬Ss = dual-involutive s
-
-single-ap-dual : ∀ (α : UVar) (s : 𝕊 0) (¬Ss : ¬ Skips s) →
-  UV.ap (single α s ¬Ss) (UV.dual α) ≡ dual s
-single-ap-dual (uvar ‼ v) s ¬Ss = refl
-single-ap-dual (uvar ⁇ v) s ¬Ss = refl
-
-single-solving : ∀ (α : UVar) (s : 𝕊 0) (¬Ss : ¬ Skips s) →
-  SolvedTy s → Solving (single α s ¬Ss)
-single-solving α s ¬Ss Ss = subAll-solving (¬Ss ∘ UV.skips-dual/id⁻ α) (solved-dual/id α Ss)

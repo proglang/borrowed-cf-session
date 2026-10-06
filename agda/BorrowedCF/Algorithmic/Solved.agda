@@ -157,12 +157,6 @@ subTy-skips⁻¹ {s = s₁ ; s₂} (x₁ ; x₂) = subTy-skips⁻¹ x₁ ; su
 subTy-skips⁻¹ {s = skip} x = x
 subTy-skips⁻¹ {s = `` α} {σ = σ} x = contradiction (skips-⋯ᵣ⁻¹ x) (UV.ap-¬skips σ α)
 
-subTy-unr : Unr T → Unr (subTy T σ)
-subTy-unr `⊤ = `⊤
-subTy-unr (U ⊗ U₁) = subTy-unr U ⊗ subTy-unr U₁
-subTy-unr (U ⊕ U₁) = subTy-unr U ⊕ subTy-unr U₁
-subTy-unr (arr x) = arr x
-
 subTy-bounded : Bounded s → Bounded (subTy s σ)
 subTy-bounded end = end
 subTy-bounded ret = ret
@@ -171,12 +165,19 @@ subTy-bounded (-;₂ b) = -;₂ subTy-bounded b
 subTy-bounded (mu x) = mu (subTy-bounded x)
 subTy-bounded (brn x x₁) = brn (subTy-bounded x) (subTy-bounded x₁)
 
+module _ {PA : Arr → Set} {PS : 𝕊 0 → Set} where
+  subTy-tpred : (∀ {s} → PS s → PS (subTy s σ)) → TPred PA PS T → TPred PA PS (subTy T σ)
+  subTy-tpred ps `⊤ = `⊤
+  subTy-tpred ps (arr x) = arr x
+  subTy-tpred ps (x ⊗ x₁) = subTy-tpred ps x ⊗ subTy-tpred ps x₁
+  subTy-tpred ps (x ⊕ x₁) = subTy-tpred ps x ⊕ subTy-tpred ps x₁
+  subTy-tpred ps ⟨ x ⟩ = ⟨ ps x ⟩
+
+subTy-unr : Unr T → Unr (subTy T σ)
+subTy-unr = subTy-tpred id
+
 subTy-mobile : Mobile T → Mobile (subTy T σ)
-subTy-mobile `⊤ = `⊤
-subTy-mobile (arr x) = arr x
-subTy-mobile (m₁ ⊗ m₂) = subTy-mobile m₁ ⊗ subTy-mobile m₂
-subTy-mobile (m₁ ⊕ m₂) = subTy-mobile m₁ ⊕ subTy-mobile m₂
-subTy-mobile ⟨ (s , Bs , eq) ⟩ = ⟨ (_ , subTy-bounded Bs , subTy-≃ eq) ⟩
+subTy-mobile = subTy-tpred λ (s , Bs , eq) → (_ , subTy-bounded Bs , subTy-≃ eq)
 
 subTy-new : New s → New (subTy s σ)
 subTy-new `- = `-
@@ -185,6 +186,12 @@ subTy-new (brn x x₁) = brn (subTy-new x) (subTy-new x₁)
 subTy-new (mu x) = mu (subTy-new x)
 subTy-new (x ; x₁) = subTy-new x ; subTy-new x₁
 subTy-new skip = skip
+
+subTy-local : Local s → Local (subTy s σ)
+subTy-local {s = acq}      Ls = Ls
+subTy-local {s = `` α} {σ} Ls = local-⋯ᵣ (UV.ap-local σ α)
+subTy-local {s = _ ; _}    Ls (¬Lσs ;₁-) = subTy-local (λ x → Ls (x ;₁-)) ¬Lσs
+subTy-local {s = _ ; _}    Ls (Ss ;₂ ¬Lσs) = subTy-local (λ x → Ls (subTy-skips⁻¹ Ss ;₂ x)) ¬Lσs
 
 open import BorrowedCF.Terms
 
@@ -267,10 +274,8 @@ subConst-⊢ `fork = `fork
 subConst-⊢ {σ = σ} (`new {s = s} N)
   rewrite sym (subTy-dual {σ = σ} s)
   = `new (subTy-new N)
-subConst-⊢ (`lsplit s s′ ¬s ¬s′) = `lsplit (subTy s _) (subTy s′ _) (¬s ∘ subTy-skips⁻¹) (¬s′ ∘ subTy-skips⁻¹)
-subConst-⊢ (`rsplit s s′ ¬s ¬s′) = `rsplit (subTy s _) (subTy s′ _) (¬s ∘ subTy-skips⁻¹) (¬s′ ∘ subTy-skips⁻¹)
--- subConst-⊢ (`lsplit ¬skipₛ s′) = `lsplit (¬skipₛ ∘ subTy-skips⁻¹) (subTy s′ _)
--- subConst-⊢ (`rsplit ¬skipₛ s′) = `rsplit (¬skipₛ ∘ subTy-skips⁻¹) (subTy s′ _)
+subConst-⊢ (`lsplit _ _ ¬S₁ L₂ ¬S₂) = `lsplit _ _ (¬S₁ ∘ subTy-skips⁻¹) (subTy-local L₂) (¬S₂ ∘ subTy-skips⁻¹)
+subConst-⊢ (`rsplit _ _ L₂ ¬S₂) = `rsplit _ _ (subTy-local L₂) (¬S₂ ∘ subTy-skips⁻¹)
 subConst-⊢ `drop = `drop
 subConst-⊢ `acq = `acq
 subConst-⊢ (`send m) = `send (subTy-mobile m)

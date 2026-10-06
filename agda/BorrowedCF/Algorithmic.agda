@@ -72,23 +72,6 @@ fv-subTm (`let⊗ e `in e₁) = cong₂ _∪_ (fv-subTm e) (cong (fvClose* 2) (f
 fv-subTm (`inj i e) = fv-subTm e
 fv-subTm `case e `of⟨ e₁ ; e₂ ⟩ = cong₂ _∪_ (fv-subTm e) (cong₂ _∪_ (cong fvClose (fv-subTm e₁)) (cong fvClose (fv-subTm e₂)))
 
-{-
-postulate
-  fv-wk : (e : Tm n) → fv (wk e) ≡ outside ∷ fv e
-fv[wk ` x ] = refl
-fv[wk K c ] = refl
-fv[wk ƛ e ] = {!!}
-fv[wk μ e ] = {!!}
-fv[wk e₁ · e₂ ] rewrite fv[wk e₁ ] | fv[wk e₂ ] = refl
-fv[wk e₁ ; e₂ ] rewrite fv[wk e₁ ] | fv[wk e₂ ] = refl
-fv[wk e₁ ⊗ e₂ ] rewrite fv[wk e₁ ] | fv[wk e₂ ] = refl
-fv[wk `let e `in e₁ ] = {!!}
-fv[wk `let⊗ e `in e₁ ] = {!!}
-fv[wk `inj i e ] = fv[wk e ]
-fv[wk `case e `of⟨ e₁ ; e₂ ⟩ ] = {!!}
--}
-
-
 data Mode : Set where
   chk inf : Mode
 
@@ -177,7 +160,6 @@ data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
   A-RSplit :
     let α = record { var = m; pol = ‼ } in
     (≤γ : Γ ∶ [] ≼ γ ↑ Δ₀) →
-    (¬skips : ¬ Skips s) →      -- NEW: the first component of a split must do real work
     -----------------------------------------------------------------------------------------------
     Γ ; γ / m ⊢ K (`rsplit s) ⇒ ⟨ s ; `` α ⟩ →*M ⟨ s ; ret ⟩ ⊗¹ ⟨ acq ; `` α ⟩ ∣ ℙ ∣ ℙ ↑ Δ₀ / suc m
 
@@ -310,12 +292,15 @@ module _ {σ : UV.Sub} (Sσ : Solving σ) where
   sound (A-Const ≤γ Ac ⊢c) SΓ SΔ =
     T-Weaken (≼↑-sound Sσ SΔ ≤γ)
              (T-Const (subConst-⊢ ⊢c))
-  sound (A-LSplit ≤γ ¬skips) SΓ SΔ =
+  sound {m = m} (A-LSplit ≤γ ¬skips) SΓ SΔ =
     T-Weaken (≼↑-sound Sσ SΔ ≤γ)
-             (T-Const (`lsplit _ _ (¬skips ∘ subTy-skips⁻¹) (UV.ap-¬skips σ _ ∘ skips-⋯ᵣ⁻¹)))
-  sound (A-RSplit ≤γ ¬skips) SΓ SΔ =
+             (T-Const (`lsplit _ _ (¬skips ∘ subTy-skips⁻¹)
+                                   (local-⋯ᵣ (UV.ap-local σ _))
+                                   (UV.ap-¬skips σ _ ∘ skips-⋯ᵣ⁻¹)))
+  sound (A-RSplit ≤γ) SΓ SΔ =
     T-Weaken (≼↑-sound Sσ SΔ ≤γ)
-             (T-Const (`rsplit _ _ (¬skips ∘ subTy-skips⁻¹) (UV.ap-¬skips σ _ ∘ skips-⋯ᵣ⁻¹)))
+             (T-Const (`rsplit _ _ (local-⋯ᵣ (UV.ap-local σ _))
+                                   (UV.ap-¬skips σ _ ∘ skips-⋯ᵣ⁻¹)))
   sound (A-App {Δ₀ = Δ₀} {Δ₁ = Δ₁} ec ≤γ x y) SΓ SΔ =
     T-Weaken (≼↑-sound Sσ (All.++⁻ˡ Δ₀ SΔ) ≤γ)
              (sound-app ec x y SΓ (All.++⁻ˡ Δ₁ (All.++⁻ʳ Δ₀ SΔ)) (All.++⁻ʳ Δ₁ (All.++⁻ʳ Δ₀ SΔ)))
@@ -379,12 +364,12 @@ module _ {σ : UV.Sub} (Sσ : Solving σ) where
     T-Conv (≃-sym eq) ≤ϵ-refl
       $ sound x SΓ SΔ
 
-subAll-solving : (¬Ss : ¬ Skips s) → SolvedTy s → Solving (UV.subAll ¬Ss)
-subAll-solving ¬Ss x (uvar ‼ var) = x
-subAll-solving ¬Ss x (uvar ⁇ var) = solved-dual x
+subAll-solving : (Ls : Local s) (¬Ss : ¬ Skips s) → SolvedTy s → Solving (UV.subAll Ls ¬Ss)
+subAll-solving _ _ x (uvar ‼ var) = x
+subAll-solving _ _ x (uvar ⁇ var) = solved-dual x
 
 someSub-solving : Solving UV.someSub
-someSub-solving = subAll-solving (λ ()) end
+someSub-solving = subAll-solving (λ ()) (λ ()) end
 
 ------------------------------------------------------------------------
 -- Type (unification-variable) substitution preserves declarative typing.
