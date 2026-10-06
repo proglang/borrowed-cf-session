@@ -298,19 +298,19 @@
   }{}%
 }
 
-\newcommand\linenoon{%
-  \toggletrue{lineno@column}%
-  \toggletrue{lineno@print}%
+\newcommand\linenoon[1][]{%
+  #1\toggletrue{lineno@column}%
+  #1\toggletrue{lineno@print}%
 }
 
-\newcommand\linenooff{%
-  \togglefalse{lineno@column}%
-  \togglefalse{lineno@print}%
+\newcommand\linenooff[1][]{%
+  #1\togglefalse{lineno@column}%
+  #1\togglefalse{lineno@print}%
 }
 
-\newcommand\linenoskip{%
-  \toggletrue{lineno@column}%
-  \togglefalse{lineno@print}%
+\newcommand\linenoskip[1][]{%
+  #1\toggletrue{lineno@column}%
+  #1\togglefalse{lineno@print}%
 }
 
 \newcommand\linenoreset[1][1]{%
@@ -363,11 +363,11 @@ recursive types almost from the beginning \cite{HondaVK98}. Since
 then, most work has concentrated on \emph{regular} recursive session
 types, where recursion is restricted to tail positions in the
 type. For example, here is the type
-\ensuremath{\mu  \alpha .\&\{\mkern1mu\relax \CodeLbl{\Conid{Next}}\mathbin{:}\mathbin{?}\Conid{Int}.\alpha ,\CodeLbl{\Conid{Quit}}\mathbin{:}\CodeTy{Close}\mkern1mu\}}
+\ensuremath{\mu  \alpha .\&\{\mkern1mu\relax \CodeLbl{\Conid{Next}}\mathbin{:}\mathord{?}\Conid{Int}.\alpha ,\CodeLbl{\Conid{Quit}}\mathbin{:}\CodeTy{Close}\mkern1mu\}}
 of a server that receives a list of integers. The occurrence of
 the recursive \ensuremath{\alpha } is syntactically restricted to tail
 position because regular session types are built by composing prefixes
-using syntax constructors like \ensuremath{\mathbin{?}\Conid{Int}.\anonymous }. Context-free session types
+using syntax constructors like \ensuremath{\mathord{?}\Conid{Int}.\anonymous }. Context-free session types
 \cite{DBLP:conf/icfp/ThiemannV16,DBLP:journals/iandc/AlmeidaMTV22} (CFSTs)
 have lifted this restriction by adopting a symmetric composition
 operator \ensuremath{\anonymous \mathop{;}\anonymous } instead. This operator

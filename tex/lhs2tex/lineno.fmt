@@ -54,19 +54,19 @@
   }{}%
 }
 
-\newcommand\linenoon{%
-  \toggletrue{lineno@@column}%
-  \toggletrue{lineno@@print}%
+\newcommand\linenoon[1][]{%
+  #1\toggletrue{lineno@@column}%
+  #1\toggletrue{lineno@@print}%
 }
 
-\newcommand\linenooff{%
-  \togglefalse{lineno@@column}%
-  \togglefalse{lineno@@print}%
+\newcommand\linenooff[1][]{%
+  #1\togglefalse{lineno@@column}%
+  #1\togglefalse{lineno@@print}%
 }
 
-\newcommand\linenoskip{%
-  \toggletrue{lineno@@column}%
-  \togglefalse{lineno@@print}%
+\newcommand\linenoskip[1][]{%
+  #1\toggletrue{lineno@@column}%
+  #1\togglefalse{lineno@@print}%
 }
 
 \newcommand\linenoreset[1][1]{%

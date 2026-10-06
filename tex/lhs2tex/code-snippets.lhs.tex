@@ -2,8 +2,8 @@
 
 \newcommand\ApiOld{%
 \begin{code}
-send    : forall alpha sigma. alpha -> !alpha;sigma  -> sigma
-recv    : forall alpha sigma. alpha -> ?alpha;sigma  -> alpha *. sigma
+send    : forall alpha ^ sigma. alpha -> !alpha;sigma  -> sigma
+recv    : forall alpha ^ sigma. alpha -> ?alpha;sigma  -> alpha *. sigma
 select ellj  : brOut (elli : Si) -> Sj
 branch       : brIn (elli : Si) -> variant (elli : Si)
 \end{code}
@@ -72,7 +72,7 @@ sendTreeB (Node x l r)  c =
 \newcommand\tyi  {|xc    : !String;ChildChan;Close|}
 \newcommand\tyii {|xc    : ChildChan;Close|}
 \newcommand\tyiii{|xc    : HtmlChan;ChildChan;Close|}
-\newcommand\tyiv {|ref c : HtmlChan;Close|}
+\newcommand\tyiv {|ref c : HtmlChan;Drop|}
 \newcommand\tyv  {|xc    : Acq;ChildChan;Close|}
 \newcommand\printTy[1]{\rlap{\csname ty\romannumeral ##1\endcsname}\hphantom{\tyiii}}
 \begin{code}
@@ -83,7 +83,7 @@ renderUser user c =
   let c = select (lab Child) c in                     {- \printTy3 -}
   fork (lambda ^ () -> renderProfile user (ref c)) ~  {- \printTy4\label{ln:renderExample/transBegin}\label{ln:renderExample/fork}-}
                                                       {- \printTy5 -}
-  let msgs = getMessages user in
+  let msgs = loadMessages user in
   renderRest msgs (acquire c)                         {-"\label{ln:renderExample/transEnd}"-}
 
 renderRest : Messages -> ChildChan;Close -> Unit
@@ -98,43 +98,43 @@ renderProfile user c = ^^ ... ^^ drop c
 }}
 %}
 
-\newcommand\CodeRenderExampleSnippet{%
-\RestoreColumns{renderExample}%
+\newcommand\CodeRenderRestElab{{%
+\newcommand\tyi {|c1 : HtmlChan|}
+\newcommand\tyii{|c2 : ChildChan;Close|}
+\newcommand\printTy[1]{\rlap{\csname ty\romannumeral ##1\endcsname}\hphantom{\tyii}}
 \begin{code}
-  fork (lambda ^ () -> renderProfile user (ref c)) ~  {- |c : Acq;ChildChan;Close| -}
-  let msgs = getMessages user in
-  renderRest msgs (acquire c)
-\end{code}
-}
+renderRest msgs c =
+  let c = select (lab Child) c in
 
-\newcommand\CodeRenderExampleSnippetTrans{{%
-    % \RestoreColumns{renderExample}%
-    % {- |c : HtmlChan;ChildChan;Close| -}
-    % {- |c1 : HtmlChan;Drop| -}
-    % {- |c2 : Acq;ChildChan;Close| -}
+  {- |c : HtmlChan;ChildChan;Close| -}
+  let c1,c2 = lsplit c in
+  {- \printTy1 -}
+  {- \printTy2 -}
+
+  renderMsgArea msgs c1 ~
+  close (select (lab Done) c2)
+\end{code}
+}}
+
+\newcommand\CodeRenderUserElab{{
+\newcommand\tyi {|c1 : HtmlChan;Drop|}
+\newcommand\tyii{|c2 : Acq;ChildChan;Close|}
+\newcommand\printTy[1]{\rlap{\csname ty\romannumeral ##1\endcsname}\hphantom{\tyii}}
 \begin{code}
-renderUser user c =
-  ...
+renderUser user c = ...
+
+  {- |c : HtmlChan;ChildChan;Close| -}
   let c1,c2 = rsplit c in
+  {- \printTy1 -}
+  {- \printTy2 -}
+
   fork (lambda ^ () -> renderProfile user c1) ~
-  let msgs = getMessages user in
+  let msgs = loadMessages user in
   renderRest msgs (acquire c2)
 \end{code}
 }}
 
-\newcommand\CodeRenderRest{
-\begin{code}
-renderRest msgs c =
-  let c = select (lab Child) c in
-  let c1,c2 = lsplit c in
-  renderMsgArea msgs c1 ~
-  close (select (lab Done) c2)
-\end{code}
-}
-
-\newcommand\LocalSplitReduction{{%
-\begingroup
-\SaveColumns{localSplit}%
+\newcommand\LocalSplitReduction{\begin{reductionexample}{localSplit}
 \begin{code}
 nu c b1 in
   (P1  par  let c = select (lab Child) c in
@@ -142,8 +142,6 @@ nu c b1 in
             renderMsgArea msgs c1 ~
             close (select (lab Done) c2))
 \end{code}
-\endgroup
-\RestoreColumns{localSplit}%
 \ExampleReduction*
 \begin{code}
 nu c b2 in
@@ -151,10 +149,10 @@ nu c b2 in
             renderMsgArea msgs c1 ~
             close (select (lab Done) c2))
 \end{code}
-\ExampleReduction
+\ExampleReduction*
 \begin{code}
-nu (c1 ^ c2) b3 in
-  (P3  par  renderMsgArea msgs c1 ~
+nu (c1 ^ c2) b2 in
+  (P2  par  renderMsgArea msgs c1 ~
             close (select (lab Done) c2))
 \end{code}
 \ExampleReduction*
@@ -165,43 +163,56 @@ nu c2 b3 in
 \ExampleReduction
 \begin{code}
 nu c2 d in
-  (P4 ^ [wait d] par c2)
+  (P4 ^ [wait d] par close c2)
 \end{code}
 \ExampleReduction
 \begin{code}
 (P4 ^ [*] par ^^ *)
 \end{code}
-}}
+\end{reductionexample}}
 
-\newcommand\RemoteSplitReduction{{%
+\newcommand\RemoteSplitReduction{\begin{reductionexample}{remoteSplit}
 \begin{code}
-nu c (...) in
-  let c1,c2 = rsplit c in
-  fork (lambda ^ () -> renderProfile user c1) ~
-  let msgs = ... in
-  renderRest msgs (acquire c2)
+nu c b1 in
+  (P1  par  let c1,c2 = rsplit c in
+            fork (lambda ^ () -> renderProfile user c1) ~
+            let msgs = ... ^^ in
+            renderRest msgs (acquire c2))
 \end{code}
 \ExampleReduction
 \begin{code}
-nu (c1||c2) (...) in
-  fork (lambda ^ () -> renderProfile user c1) ~
-  let msgs = ... in
-  renderRest msgs (acquire c2)
+nu (c1||c2) b1 in
+  (P1  par  fork (lambda ^ () -> renderProfile user c1) ~
+            let msgs = ... ^^ in
+            renderRest msgs (acquire c2))
 \end{code}
 \ExampleReduction*
 \begin{code}
-nu (c1||c2) (...) in
-  ( ^  drop c1 par
-       renderRest msgs (acquire c2))
+nu (c1||c2) b2 in
+  (P2  par  renderRest msgs (acquire c2)  par drop c1)
 \end{code}
 \ExampleReduction
 \begin{code}
-nu (||c2) (...) in
-  renderRest msgs (acquire c2)
+nu (||c2) b2 in
+  (P2  par  renderRest msgs (acquire c2)  par *)
 \end{code}
 \ExampleReduction
 \begin{code}
-nu c2 (...) in
-  renderRest msgs c2
+nu c2 b2 in
+  (P2  par  renderRest msgs c2            par *)
 \end{code}
-}}
+\end{reductionexample}}
+
+\newcommand\FnRenderUser{|renderUser|}
+\newcommand\FnRenderRest{|renderRest|}
+\newcommand\FnRenderProfile{|renderProfile|}
+
+\newcommand\TyUser{|User|}
+\newcommand\TyHtmlChan{|HtmlChan|}
+\newcommand\TyChildChan{|ChildChan|}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../popl2027.tex"
+%%% End:

@@ -9,6 +9,10 @@ LHS_FILES := $(wildcard */*.lhs.tex)
 .PHONY: lhs2tex
 lhs2tex: $(LHS_FILES:%.lhs.tex=%.tex)
 
+.PHONY: lhs2tex-watch
+lhs2tex-watch:
+	for f in $(FMT_FILES) $(LHS_FILES); do echo $$f; done | entr $(MAKE) lhs2tex
+
 %.tex: %.lhs.tex $(FMT_FILES)
 	lhs2TeX -P :lhs2tex $< -o $@
 

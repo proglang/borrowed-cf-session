@@ -9,6 +9,8 @@
 \usepackage{float}
 \newfloat{Listing}{tbp}{lst}
 \crefname{Listing}{Listing}{Listings}
+\crefname{subListing}{Listing}{Listings}
+\DeclareCaptionSubType{Listing}
 
 % Reduce the amount of empty space between the listing and the caption.
 \AtBeginEnvironment{Listing}{%
@@ -35,7 +37,9 @@
 %
 % Uses a grayish colour and uses (* ... *) to surround the comment. Before the
 % comment some horizontal space (\qquad) is inserted.
-\renewcommand\commentbegin{\qquad\begingroup\color{black!80}\((\!*\)~}
+\newlength\commentindent
+\setlength\commentindent{2em}
+\renewcommand\commentbegin{\hspace{\commentindent}\begingroup\color{black!80}\((\!*\)~}
 \renewcommand\commentend{\(*\!)\)\endgroup}
 
 \usepackage{etoolbox}
@@ -64,22 +68,30 @@
 \setlength{\abovecodeskip}{\abovedisplayskip}
 \setlength{\belowcodeskip}{\belowdisplayskip}
 
+% Can be locally redefined to pass additional arguments to a {tcolorbox}
+% constructed through a {tcolorboxcode} environment. This is especially
+% necessary when using this environment through the lhs2TeX machinery as there
+% it is not possible to pass additional arguments to the underlying environment.
+\newcommand\tcolorboxcodeargs{}
+
 \makeatletter
 \newenvironment*{tcolorboxcode}{%
-  \tcolorbox[
+  \edef\tcolorboxcodeargs{[
     savedelimiter = hscode,
     colback = codecolor,
     colframe = codecolor,
     boxrule = 0pt,
-    boxsep = \codeboxsep,
+    boxsep = \noexpand\codeboxsep,
     left = 0pt,
     right = 0pt,
     top = 0pt,
     bottom = 0pt,
     sharp corners = all,
-    before skip = \abovecodeskip,
-    after skip = \belowcodeskip,
-  ]
+    before skip = \noexpand\abovecodeskip,
+    after skip = \noexpand\belowcodeskip,
+    \unexpanded\expandafter{\tcolorboxcodeargs}
+  ]}%
+  \expandafter\tcolorbox\tcolorboxcodeargs
   \hscodestyle
   \let\hspre\(%
   \let\hspost\)%
@@ -109,13 +121,40 @@
 \newcommand\RestoreColumns[1]{\appto\SaveRestoreHook{\restorecolumns[#1]}}
 \renewcommand\resethooks{\global\let\ColumnHook\empty}
 
+% Used internally by the `reductionexample` environment.
+\newcommand\reductioncolumnhook{}
+
+\newcounter{reductionstep}
+\newenvironment{reductionexample}[1]{%
+  \setcounter{reductionstep}{0}%
+  \begingroup
+  \def\reductioncolumnhook{%
+    \endgroup
+    \RestoreColumns{#1}%
+    \global\let\reductioncolumnhook\empty
+  }
+  \SaveColumns{#1}%
+  \ignorespaces
+}{%
+%  \endgroup
+  \reductioncolumnhook
+  \ignorespacesafterend
+}
+
+\newcommand\stepref[1]{(\romannumeral #1\relax)}
+
 \NewDocumentCommand\ExampleReduction{s}{%
+  \reductioncolumnhook
+  \smallskip
   \quad
-  \strut\(\IfBooleanTF{#1}{\PReduce*}{\PReduce}\)%
+  \stepcounter{reductionstep}%
+  \strut\(\IfBooleanTF{#1}{\PReduce*}{\PReduce}\)\hfill\small(\roman{reductionstep})\,%
   \smallskip
 }
 
+
+
 %%% Local Variables:
 %%% mode: LaTeX
-%%% TeX-master: "popl2027"
+%%% TeX-master: "../popl2027"
 %%% End:
