@@ -192,16 +192,16 @@ bindCtx-lsplit (b₀ ∷ B₁) ¬Sm₁ ¬Sm₂ teq I C Sm
 
 bindCtx-rsplit : ∀ (B₁ : BindGroup) {B₂ w w₁ w₂ s} {Γg : Ctx w} {Γg₁ : Ctx w₁}
   {Γg₂ : Ctx w₂} {Γr : Ctx (sum B₂)} {Γ Γ′} →
-  ¬ Skips t₁ → ¬ Skips t₂ → t ≃ t₁ ; t₂ →
+  Local t₂ → ¬ Skips t₂ → t ≃ t₁ ; t₂ →
   InsR (⟨ t ⟩) (⟨ t₁ ; ret ⟩) (⟨ acq ; t₂ ⟩) Γg Γg₁ Γg₂ →
   BindCtx s (B₁ ++ w ∷ B₂) Γ →
   Same B₁ {w ∷ B₂} {w₁ ∷ w₂ ∷ B₂} {Γg ⸴* Γr} {Γg₁ ⸴* (Γg₂ ⸴* Γr)} Γ Γ′ →
   BindCtx s (B₁ ++ w₁ ∷ w₂ ∷ B₂) Γ′
-bindCtx-rsplit [] {Γr = Γr} ¬Sm₁ ¬Sm₂ teq I (last C) Sm
+bindCtx-rsplit [] {Γr = Γr} L₂ ¬Sm₂ teq I (last C) Sm
   with refl , refl ← same-nil⁻¹ Sm
   with u , v , uv≃ , ¬Sv , CL , CR ← chain-rsplit teq ¬Sm₂ (insR-++ʳ Γr I) C
   = cons-ret/acq u uv≃ ¬Sv CL (last CR) (insR-acqHead (insR-++ʳ Γr I))
-bindCtx-rsplit [] {Γg = Γg} {Γg₁} {Γg₂} {Γr} ¬Sm₁ ¬Sm₂ teq I
+bindCtx-rsplit [] {Γg = Γg} {Γg₁} {Γg₂} {Γr} L₂ ¬Sm₂ teq I
                (cons-ret/acq s₁ {Γ₁ = Γ₁} s≃ ¬sk₂ C₁ C₂ ah) Sm
   with eq , refl ← same-nil⁻¹ Sm
   with refl , refl ← ++-inj Γ₁ Γg eq
@@ -217,14 +217,15 @@ bindCtx-rsplit [] {Γg = Γg} {Γg₁} {Γg₂} {Γr} ¬Sm₁ ¬Sm₂ teq I
       (bindCtx′-≃ (≃-sym (≃-trans ≃-assoc-; (≃-; ≃-refl v₀ret≃))) CR)
       C₂ ah)
     (insR-acqHead (insR-++ʳ Γr I))
-bindCtx-rsplit [] ¬Sm₁ ¬Sm₂ teq () (cons-acq C ah) Sm
-bindCtx-rsplit (b₀ ∷ B₁) ¬Sm₁ ¬Sm₂ teq I C Sm
+bindCtx-rsplit [] L₂ ¬Sm₂ teq () (cons-acq C ah) Sm
+bindCtx-rsplit (b₀ ∷ B₁) L₂ ¬Sm₂ teq I C Sm
   with bindCtx-inv-cons (0<len B₁) C
 ... | inj₁ (s₁ , s₂ , Γ₁ , Γ₂ , s≃ , Γeq , C₁ , C₂ , ¬sk₂ , ah)
       with Γ₀ , Γa , Γa′ , refl , refl , Sm′ ← same-cons⁻¹ Sm
       with refl , refl ← ++-inj Γ₁ Γ₀ Γeq
-      = cons-ret/acq s₁ s≃ ¬sk₂ C₁ (bindCtx-rsplit B₁ ¬Sm₁ ¬Sm₂ teq I C₂ Sm′)
-          (acqHead-rsplit ¬Sm₁ teq I Sm′ ah)
+      = cons-ret/acq s₁ s≃ ¬sk₂ C₁ (bindCtx-rsplit B₁ L₂ ¬Sm₂ teq I C₂ Sm′)
+          {!!}
+          --(acqHead-rsplit L₂ teq I Sm′ ah)
 ... | inj₂ (refl , C₂ , ah)
       with V.[] , Γa , Γa′ , refl , refl , Sm′ ← same-cons⁻¹ Sm
-      = cons-acq (bindCtx-rsplit B₁ ¬Sm₁ ¬Sm₂ teq I C₂ Sm′) (acqHead-rsplit ¬Sm₁ teq I Sm′ ah)
+      = cons-acq (bindCtx-rsplit B₁ L₂ ¬Sm₂ teq I C₂ Sm′) {!!} --(acqHead-rsplit ¬Sm₁ teq I Sm′ ah)

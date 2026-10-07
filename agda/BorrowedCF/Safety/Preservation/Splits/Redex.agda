@@ -67,7 +67,7 @@ lsplit-bindCtx B₁ {B₂} {q} {b₁} {t₁ = t₁} {t₂} {Γ₁} ¬S₁ ¬S₂
 
 rsplit-bindCtx : ∀ (B₁ : BindGroup) {B₂ q b₁} {s₀ t t₁ t₂ : 𝕊 0}
   {Γ₁ : Ctx (sum (B₁ ++ (q + suc b₁) ∷ B₂))} →
-  ¬ Skips t₁ → ¬ Skips t₂ → t ≃ t₁ ; t₂ →
+  Local t₂ → ¬ Skips t₂ → t ≃ t₁ ; t₂ →
   Γ₁ ﹫ Fin.cast (sym (sum-++ B₁ ((q + suc b₁) ∷ B₂)))
                 (sum B₁ ↑ʳ ((q ↑ʳ 0F) ↑ˡ sum B₂))
     ≡ (⟨ t ⟩) →

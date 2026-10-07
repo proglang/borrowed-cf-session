@@ -91,7 +91,7 @@ rsplit-binder {m} {Γ} {γ} {B₁} {B₂} {B} {q} {b₁} {s} {E} ⊢P
      ← ⊢[]*⁻¹ E _ (inv-⟪⟫ ⊢thread)
   with a , γc , γx , _ , ≤γ″ , ≤ₐ , refl , ⊢const , ⊢var
      ← inv-·-unr ⊢app (λ x → constFnUnr′ (inv-K x .proj₂ .proj₁) (inv-K x .proj₂ .proj₂ .proj₂))
-  with _ , eq₁ `→ eq₂ , []≤ , `rsplit t₁ t₂ ¬S₁ ¬S₂ ← inv-K ⊢const
+  with _ , eq₁ `→ eq₂ , []≤ , `rsplit t₁ t₂ L₂ ¬S₂ ← inv-K ⊢const
   with T≃ , x≤ ← inv-` ⊢var
   with t , eqpos ← chanCx-lookup (bindCtx⇒chanCtx C₁) _
   with ⟨ teq ⟩ ← subst ((⟨ t₁ ; t₂ ⟩) ≃_) (atk-lookup B₁ B₂ B Γ₁ Γ₂ Γ ■ eqpos) (≃-trans eq₁ T≃)
