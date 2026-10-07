@@ -170,14 +170,15 @@ the |lab Node| alternative of |TreeChan|: rendering one child consumes an
   \label{lst:rendering-example}
 \end{Listing}
 
-Now consider the renderer presented in
-\cref{lst:rendering-example}. |renderUser| emits a user panel whose first child
-is computed by another process while the main process loads user messages, say,
-from a database. We assume that |renderProf| and |renderMsgArea| render one HTML
-node on a channel of type |HtmlChan;Drop| and |HtmlChan|, respectively. The type
-|Drop| is a new session type that comes with a companion type |Acq|. They
-indicate the placement of synchronization operations that ensure correct
-handover of ownership from the borrowed session to the session's suffix.
+Now consider the renderer presented in \cref{lst:rendering-example}. Via a
+channel of type |HtmlChan;Close| the function  |renderUser| emits a user panel
+whose first child is computed by another process while the main process loads
+user messages, say, from a database. We assume that |renderProf| and
+|renderMsgArea| render one HTML node on a channel of type |HtmlChan;Drop| and
+|HtmlChan|, respectively. The type |Drop| is a new session type that comes with
+a companion type |Acq|. They indicate the placement of synchronization
+operations that ensure correct handover of ownership from the borrowed session
+to the session's suffix.
 
 The function |renderUser| starts an HTML element and then opens the child
 stream. It passes a borrow of the first child position to a new process, which
@@ -186,20 +187,19 @@ here a messaging area, and then closes the child stream.
 
 In this case, the borrow under the |fork| is a \emph{remote borrow}. Such a
 borrow must be handled differently as operations on the borrow are no longer
-necessarily ordered: the continuation must \emph{not} start emitting the second
-child before the forked renderer has finished the first child. This
-synchronization is expressed with the |acquire| operation, which works on a
-channel of type \mbox{|Acq; ...|.} It blocks the continuation until the borrowed
-prefix has been completed by the forked process. Conversely, the forked process
-calls |drop| on a channel of type |Drop| when it has finished working on the
-prefix. Thus |drop| and |acquire| form the synchronization point between the two
-processes; the underlying run-time mechanism is described
-in~\cref{sec:impl-local-remote}.
+necessarily ordered: the continuation must not start emitting the second child
+before the forked renderer has finished the first child. This synchronization is
+expressed with the |acquire| operation, which works on a channel of type
+\mbox{|Acq; ...|.} It blocks the continuation until the borrowed prefix has been
+completed by the forked process. Conversely, the forked process calls |drop| on
+a channel of type |Drop| when it has finished working on the prefix. Thus |drop|
+and |acquire| form the synchronization point between the two processes; the
+underlying run-time mechanism is described in~\cref{sec:impl-local-remote}.
 
 This setup is also reflected in the types that result from a remote borrow. As
-before, the comments show the type of |c| after the preceding
-operation. Line~\ref*{ln:renderExample/fork} shows the type of the borrowed
-segment passed to |renderProfile|. That session ends in |Drop|. After the |fork|
+before, comments show the type of |c| after the preceding operation. The type of
+the borrowed session passed to |renderProfile| is shown in
+line~\ref*{ln:renderExample/fork}. That session ends in |Drop|. After the |fork|
 the type of |c| starts with |Acq|. The types |Acq| and |Drop| only arise from
 remote borrows. The \emph{only} operation on a channel of type |Acq; ...| is
 |acquire| and, similarly, |drop| only applies to channels of type |Drop|.
@@ -212,67 +212,48 @@ before we move on to a low level implementation of the two concepts in
 \subsection{A Direct Semantics for Channel Borrowing}
 \label{sec:direct-semant-chann}
 
-\begin{figure}
+\begin{Listing}
   \TightCode
-  \setlength{\linenowidth}{1em}
-  \begin{subfigure}[t]{.49\linewidth}
-    \linenoon
+  \linenoon
+  \setlength\linenowidth{1em}
+  \setlength\commentindent{.75em}
+  \setlength\blanklineskip{\medskipamount}
+  \begin{minipage}[t]{.48\linewidth}
     \linenoreset
-    \CodeRenderRest
-    \caption{Elaboration of |renderRest| to local splits.}
-    \label{fig:rendering-example-elab/local}
-  \end{subfigure}\hfill
-  \begin{subfigure}[t]{.49\linewidth}
-    \linenoon
+    \CodeRenderRestElab
+  \end{minipage}\hfill
+  \begin{minipage}[t]{.48\linewidth}
     \linenoreset
-    \CodeRenderExampleSnippetTrans
-    \caption{Elaboration of |renderUser| to remote splits.}
-    \label{fig:rendering-example-elab/remote}
-  \end{subfigure}
-  \caption{Snippets of the elaborated rendering example from
-    \cref{lst:rendering-example}.}
+    \CodeRenderUserElab
+  \end{minipage}\\
+  \begin{subcaptiongroup}
+    \parbox{.48\linewidth}{%
+      \caption{The translation of |renderRest| uses |lsplit|. The concatenated
+        type of |c1| and |c2| is equal to the original type of |c|.}
+      \label{fig:rendering-example-elab/local}}\hfill
+    \parbox{.48\linewidth}{%
+      \caption{The translation of |renderUser| uses |rsplit|. Proper synchronization
+        between |c1| and |c2| is ensured by the additional |Drop| and |Acq|
+        session types.}
+      \label{fig:rendering-example-elab/remote}}%
+  \end{subcaptiongroup}
+  \caption{Snippets of the rendering example elaborated to explicit split operations.}
   \label{fig:rendering-example-elab}
-\end{figure}
-
-\Cref{sec:borr-from-cont} already suggests an implementation strategy for local
-borrowing. However, we start with an abstract specification because it is easier
-to handle in a correctness proof. The specification works on an elaborated core
-language, \thecalculus. Elaboration replaces borrowing with explicit
-functional splitting operators. This translation is analogous to a translation
-in previous work \citep{DBLP:journals/pacmpl/SaffrichS0V25}, which gives a formal
-presentation along with a correctness proof. The novelty in our work is the
-presence of \emph{two} operators, |lsplit| for local borrows and |rsplit| for
-remote borrows. Borrows used in the same process elaborate to |lsplit| while
-borrows used across a |fork| or sent to another process elaborate to
-|rsplit|. \Cref{fig:rendering-example-elab} shows the (partial) elaboration of
-|renderRest| and |renderUser| from the rendering example
-(\cref{lst:rendering-example}), the former using local splits and the latter
-using remote splits.
-
-{\color{red}Our discussion starts with the local variant.} The translation of |renderRest| is
-shown in \cref{fig:rendering-example-elab/local}. Execution proceeds by
-repeatedly exposing the next local prefix of the channel
-sequence. \Cref{fig:local-split-trace} shows a suffix of its reduction sequence.
-The \mbox{|nu b1 b2 in ^^ ...|} operator is a channel restriction as known from
-session calculi \citep{Gay_Vasconcelos_2025}. It introduces a communication
-channel but with each compartment |bgroup bi| containing a \emph{bind group:} a
-list of channel names and separator markers. The names bound by |b1| refer to
-one channel endpoint, the names in |b2| to the other. The workings are best
-illustrated with the example trace.
+\end{Listing}
 
 \begin{figure}
   \TightCode
-  \begin{minipage}[t]{0.49\linewidth}
+  \begin{minipage}[t]{0.48\linewidth}
     \LocalSplitReduction
   \end{minipage}\hfill
-  \begin{minipage}[t]{0.49\linewidth}
+  \begin{minipage}[t]{0.48\linewidth}
     \RemoteSplitReduction
   \end{minipage}\\
   \begin{subcaptiongroup}
     \parbox{.49\linewidth}{%
       \caption{Local split reduction suffix.}
       \label{fig:local-split-trace}}\hfill
-    \parbox{.49\linewidth}{%
+    \parbox{.48\linewidth}{%
       \caption{Remote split and acquire reduction suffix.}
       \label{fig:remote-split-trace}}%
   \end{subcaptiongroup}
@@ -282,53 +263,80 @@ illustrated with the example trace.
   \label{fig:local-split-reduction}
 \end{figure}
 
+\Cref{sec:borr-from-cont} already suggests an implementation strategy for local
+borrowing. However, we start with an abstract specification because it is easier
+to handle in a correctness proof. The specification works on an elaborated core
+language, \thecalculus. Elaboration replaces borrowing with explicit functional
+splitting operators. This translation is analogous to a translation in previous
+work \citep{DBLP:journals/pacmpl/SaffrichS0V25}, which gives a formal
+presentation along with a correctness proof. The novelty in our work is the
+presence of \emph{two} operators, |lsplit| for local borrows and |rsplit| for
+remote borrows. Borrows used in the same process elaborate to |lsplit| while
+borrows used across a |fork| or sent to another process elaborate to |rsplit|.
+\Cref{fig:rendering-example-elab} shows the (partial) elaboration of
+|renderRest| and |renderUser| from the example in \cref{lst:rendering-example}.
+The former is translated to local splits while the latter is using remote
+splits. Our discussion starts with the local variant.
+
+Execution proceeds by repeatedly exposing the next local prefix of the channel
+sequence. \Cref{fig:local-split-trace} shows a suffix of |renderRest|'s
+reduction sequence. The \mbox{|nu b1 b2 in ^^ ...|} operator is a channel
+restriction as known from session calculi \citep{Gay_Vasconcelos_2025}. It
+introduces a communication channel but with each compartment |bgroup bi|
+containing a \emph{binder group:} a list of channel names and separator markers.
+The names bound by |b1| refer to one channel endpoint, the names in |b2| to the
+other. Its working is best illustrated with the example trace.
+
 To keep the trace short (\cref{fig:local-split-trace}), the reduction starts at
-the local suffix in |renderRest|. The split on |c| following the |select|
-\emph{replaces} the binder for |c| with two fresh channel names, |c1| and |c2|.
-%
-% All operations work on
-% the channel names in a bind group from left to right.
-%
-% That is, both
-% compartments of the \lstinline{nu} contain a flat list of channel names, and all
-% operations work on these channel names from left to right. To ensure the correct
-% sequencing, the semantics does not allow any action on \lstinline{c2} before
-% \lstinline{c1} has been consumed.
-%
-This restriction is supported by typing: the |lsplit| operation returns an
+the local suffix in |renderRest|. Step~\stepref{2}, the split on |c| following
+the |select|, \emph{replaces} the binder for |c| with two fresh channel names,
+|c1| and |c2|. Step~\stepref{3} consumes |c1| leaving only |c2|. The binder
+group |c1 ^ c2| is a flat list of channel names, and all operations work on
+these channel names from left to right. To ensure the correct sequencing, the
+semantics does not allow any action on |c2| before |c1| has been consumed. This
+restriction is supported by typing: the |lsplit| operation returns an
 \emph{ordered pair,} whose components must be processed and consumed in
 left-to-right order.
 
 % The |drop| operation (not used in this example) applied to some |c| just
 % discards |c| if it is the first channel name in the compartment.
 
-On the client side, in the processes |Pi| that hold the other channel end
-|d|, splitting can be performed on |d| independently of the
-splitting on |c|. The only constraint is that, in the end, when
-|close| and |wait| calls match, the reduction requires that
-only one channel name is left in each compartment. Under this condition, the
-channel can be closed and eliminated. The figure does not show the transitions
-of the {\color{red}client $P_d$,} which are independent.
+On the client side, the processes |Pi| match the communication operations
+performed by |renderRest|. The bind groups |bi| can be evolved through splitting
+independently of the splitting on |c|. The only constraint is that, in the end,
+when |close| and |wait| calls match, only one channel name is left in each
+compartment. If so, |close| and |wait| reduce, and the channel is closed and
+eliminated.
 
 For remote borrowing, we incorporate the |acquire| primitive and indicate a
 remote split with the symbol ``| |||| |'' in the compartment. As an example, we
 consider the translation of lines
 \ref*{ln:renderExample/transBegin}--\ref*{ln:renderExample/transEnd} from
-\cref{lst:rendering-example}. The elaboration is shown in
+\cref{lst:rendering-example}. Their elaboration is shown in
 \cref{fig:rendering-example-elab/remote}.
 
-The translation inserts an |rsplit| because |c1| and |c2| are used in
-different processes. The |rsplit| returns an ordinary (linear) pair of channels
-because synchronization is made explicit using the |Acq| and |Drop|
-types. Executing this code takes the steps shown in
-\cref{fig:remote-split-trace} (ignoring the activity at the other end of the
-channel). The bracketed step abbreviates the forked process running |renderProfile|
-until its final |drop c1|.  In summary, the |rsplit| replaces one channel name
-by |bgroup (c1||||c2)|, where ``| |||| |'' marks a remote split. The |drop| is
-only enabled if its argument name comes last before a ``| |||| |''.  The
-|acquire| is only enabled if the preceding list segment has been processed as in
-|bgroup (||||c2)|. Executing the |acquire| in the last step removes the
-exhausted segment and separator, yielding |bgroup c2|.
+The translation inserts an |rsplit| because |c1| and |c2| are used in different
+processes. The |rsplit| returns an ordinary (linear) pair of channels because
+synchronization is made explicit using the |Acq| and |Drop| types.
+
+Executing
+this code takes the steps shown in \cref{fig:remote-split-trace}. First, the
+|rsplit| replaces one channel name by two fresh names separated by ``| |||| |''
+marking a remote split.
+Step~\stepref{2} reduces the |fork| and the body of |renderProfile| until only
+|drop c1| remains. In the next step, |drop c1| reduces to |*| and |c1| is
+removed from the binder group which leaves ``| |||| |'' as the first item in the
+compartment. Now, in step~\stepref{4}, the reduction of |acquire c2| drops the
+leading separator.
+
+{\color{red}\itshape Structure suggested by old text: first concrete example,
+  then more abstract explanation.} The bracketed step abbreviates the forked
+process running |renderProfile| until its final |drop c1|. In summary, the
+|rsplit| replaces one channel name by |bgroup (c1||||c2)|, where ``| |||| |''
+marks a remote split. The |drop| is only enabled if its argument name comes last
+before a ``| |||| |''. The |acquire| is only enabled if the preceding list
+segment has been processed as in |bgroup (||||c2)|. Executing the |acquire| in
+the last step removes the exhausted segment and separator, yielding |bgroup c2|.
 
 
 \subsection{Implementing Local and Remote Borrowing}

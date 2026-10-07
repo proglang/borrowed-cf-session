@@ -500,14 +500,15 @@ the \ensuremath{\CodeLbl{\Conid{Node}}} alternative of \ensuremath{\Conid{TreeCh
   \label{lst:rendering-example}
 \end{Listing}
 
-Now consider the renderer presented in
-\cref{lst:rendering-example}. \ensuremath{\Varid{renderUser}} emits a user panel whose first child
-is computed by another process while the main process loads user messages, say,
-from a database. We assume that \ensuremath{\Varid{renderProf}} and \ensuremath{\Varid{renderMsgArea}} render one HTML
-node on a channel of type \ensuremath{\Conid{HtmlChan}\mathop{;}\CodeTy{Drop}} and \ensuremath{\Conid{HtmlChan}}, respectively. The type
-\ensuremath{\CodeTy{Drop}} is a new session type that comes with a companion type \ensuremath{\CodeTy{Acq}}. They
-indicate the placement of synchronization operations that ensure correct
-handover of ownership from the borrowed session to the session's suffix.
+Now consider the renderer presented in \cref{lst:rendering-example}. Via a
+channel of type \ensuremath{\Conid{HtmlChan}\mathop{;}\CodeTy{Close}} the function  \ensuremath{\Varid{renderUser}} emits a user panel
+whose first child is computed by another process while the main process loads
+user messages, say, from a database. We assume that \ensuremath{\Varid{renderProf}} and
+\ensuremath{\Varid{renderMsgArea}} render one HTML node on a channel of type \ensuremath{\Conid{HtmlChan}\mathop{;}\CodeTy{Drop}} and
+\ensuremath{\Conid{HtmlChan}}, respectively. The type \ensuremath{\CodeTy{Drop}} is a new session type that comes with
+a companion type \ensuremath{\CodeTy{Acq}}. They indicate the placement of synchronization
+operations that ensure correct handover of ownership from the borrowed session
+to the session's suffix.
 
 The function \ensuremath{\Varid{renderUser}} starts an HTML element and then opens the child
 stream. It passes a borrow of the first child position to a new process, which
@@ -516,20 +517,19 @@ here a messaging area, and then closes the child stream.
 
 In this case, the borrow under the \ensuremath{\CodeOp{fork}} is a \emph{remote borrow}. Such a
 borrow must be handled differently as operations on the borrow are no longer
-necessarily ordered: the continuation must \emph{not} start emitting the second
-child before the forked renderer has finished the first child. This
-synchronization is expressed with the \ensuremath{\CodeOp{acquire}} operation, which works on a
-channel of type \mbox{\ensuremath{\CodeTy{Acq}\mathop{;}\dots}.} It blocks the continuation until the borrowed
-prefix has been completed by the forked process. Conversely, the forked process
-calls \ensuremath{\CodeOp{drop}} on a channel of type \ensuremath{\CodeTy{Drop}} when it has finished working on the
-prefix. Thus \ensuremath{\CodeOp{drop}} and \ensuremath{\CodeOp{acquire}} form the synchronization point between the two
-processes; the underlying run-time mechanism is described
-in~\cref{sec:impl-local-remote}.
+necessarily ordered: the continuation must not start emitting the second child
+before the forked renderer has finished the first child. This synchronization is
+expressed with the \ensuremath{\CodeOp{acquire}} operation, which works on a channel of type
+\mbox{\ensuremath{\CodeTy{Acq}\mathop{;}\dots}.} It blocks the continuation until the borrowed prefix has been
+completed by the forked process. Conversely, the forked process calls \ensuremath{\CodeOp{drop}} on
+a channel of type \ensuremath{\CodeTy{Drop}} when it has finished working on the prefix. Thus \ensuremath{\CodeOp{drop}}
+and \ensuremath{\CodeOp{acquire}} form the synchronization point between the two processes; the
+underlying run-time mechanism is described in~\cref{sec:impl-local-remote}.
 
 This setup is also reflected in the types that result from a remote borrow. As
-before, the comments show the type of \ensuremath{\Varid{c}} after the preceding
-operation. Line~\ref*{ln:renderExample/fork} shows the type of the borrowed
-segment passed to \ensuremath{\Varid{renderProfile}}. That session ends in \ensuremath{\CodeTy{Drop}}. After the \ensuremath{\CodeOp{fork}}
+before, comments show the type of \ensuremath{\Varid{c}} after the preceding operation. The type of
+the borrowed session passed to \ensuremath{\Varid{renderProfile}} is shown in
+line~\ref*{ln:renderExample/fork}. That session ends in \ensuremath{\CodeTy{Drop}}. After the \ensuremath{\CodeOp{fork}}
 the type of \ensuremath{\Varid{c}} starts with \ensuremath{\CodeTy{Acq}}. The types \ensuremath{\CodeTy{Acq}} and \ensuremath{\CodeTy{Drop}} only arise from
 remote borrows. The \emph{only} operation on a channel of type \ensuremath{\CodeTy{Acq}\mathop{;}\dots} is
 \ensuremath{\CodeOp{acquire}} and, similarly, \ensuremath{\CodeOp{drop}} only applies to channels of type \ensuremath{\CodeTy{Drop}}.
@@ -542,67 +542,48 @@ before we move on to a low level implementation of the two concepts in
 \subsection{A Direct Semantics for Channel Borrowing}
 \label{sec:direct-semant-chann}
 
-\begin{figure}
+\begin{Listing}
   \TightCode
-  \setlength{\linenowidth}{1em}
-  \begin{subfigure}[t]{.49\linewidth}
-    \linenoon
+  \linenoon
+  \setlength\linenowidth{1em}
+  \setlength\commentindent{.75em}
+  \setlength\blanklineskip{\medskipamount}
+  \begin{minipage}[t]{.48\linewidth}
     \linenoreset
-    \CodeRenderRest
-    \caption{Elaboration of \ensuremath{\Varid{renderRest}} to local splits.}
-    \label{fig:rendering-example-elab/local}
-  \end{subfigure}\hfill
-  \begin{subfigure}[t]{.49\linewidth}
-    \linenoon
+    \CodeRenderRestElab
+  \end{minipage}\hfill
+  \begin{minipage}[t]{.48\linewidth}
     \linenoreset
-    \CodeRenderExampleSnippetTrans
-    \caption{Elaboration of \ensuremath{\Varid{renderUser}} to remote splits.}
-    \label{fig:rendering-example-elab/remote}
-  \end{subfigure}
-  \caption{Snippets of the elaborated rendering example from
-    \cref{lst:rendering-example}.}
+    \CodeRenderUserElab
+  \end{minipage}\\
+  \begin{subcaptiongroup}
+    \parbox{.48\linewidth}{%
+      \caption{The translation of \ensuremath{\Varid{renderRest}} uses \ensuremath{\CodeOp{lsplit}}. The concatenated
+        type of \ensuremath{\Varid{c}_{1}} and \ensuremath{\Varid{c}_{2}} is equal to the original type of \ensuremath{\Varid{c}}.}
+      \label{fig:rendering-example-elab/local}}\hfill
+    \parbox{.48\linewidth}{%
+      \caption{The translation of \ensuremath{\Varid{renderUser}} uses \ensuremath{\CodeOp{rsplit}}. Proper synchronization
+        between \ensuremath{\Varid{c}_{1}} and \ensuremath{\Varid{c}_{2}} is ensured by the additional \ensuremath{\CodeTy{Drop}} and \ensuremath{\CodeTy{Acq}}
+        session types.}
+      \label{fig:rendering-example-elab/remote}}%
+  \end{subcaptiongroup}
+  \caption{Snippets of the rendering example elaborated to explicit split operations.}
   \label{fig:rendering-example-elab}
-\end{figure}
-
-\Cref{sec:borr-from-cont} already suggests an implementation strategy for local
-borrowing. However, we start with an abstract specification because it is easier
-to handle in a correctness proof. The specification works on an elaborated core
-language, \thecalculus. Elaboration replaces borrowing with explicit
-functional splitting operators. This translation is analogous to a translation
-in previous work \citep{DBLP:journals/pacmpl/SaffrichS0V25}, which gives a formal
-presentation along with a correctness proof. The novelty in our work is the
-presence of \emph{two} operators, \ensuremath{\CodeOp{lsplit}} for local borrows and \ensuremath{\CodeOp{rsplit}} for
-remote borrows. Borrows used in the same process elaborate to \ensuremath{\CodeOp{lsplit}} while
-borrows used across a \ensuremath{\CodeOp{fork}} or sent to another process elaborate to
-\ensuremath{\CodeOp{rsplit}}. \Cref{fig:rendering-example-elab} shows the (partial) elaboration of
-\ensuremath{\Varid{renderRest}} and \ensuremath{\Varid{renderUser}} from the rendering example
-(\cref{lst:rendering-example}), the former using local splits and the latter
-using remote splits.
-
-{\color{red}Our discussion starts with the local variant.} The translation of \ensuremath{\Varid{renderRest}} is
-shown in \cref{fig:rendering-example-elab/local}. Execution proceeds by
-repeatedly exposing the next local prefix of the channel
-sequence. \Cref{fig:local-split-trace} shows a suffix of its reduction sequence.
-The \mbox{\ensuremath{\boldsymbol{\nu}[\mkern1mu\relax \Varid{b}_{1}\mkern1mu][\mkern1mu\relax \Varid{b}_{2}\mkern1mu]\;\CodeKw{in}\;\dots}} operator is a channel restriction as known from
-session calculi \citep{Gay_Vasconcelos_2025}. It introduces a communication
-channel but with each compartment \ensuremath{[\mkern1mu\relax \Varid{b}_i\mkern1mu]} containing a \emph{bind group:} a
-list of channel names and separator markers. The names bound by \ensuremath{\Varid{b}_{1}} refer to
-one channel endpoint, the names in \ensuremath{\Varid{b}_{2}} to the other. The workings are best
-illustrated with the example trace.
+\end{Listing}
 
 \begin{figure}
   \TightCode
-  \begin{minipage}[t]{0.49\linewidth}
+  \begin{minipage}[t]{0.48\linewidth}
     \LocalSplitReduction
   \end{minipage}\hfill
-  \begin{minipage}[t]{0.49\linewidth}
+  \begin{minipage}[t]{0.48\linewidth}
     \RemoteSplitReduction
   \end{minipage}\\
   \begin{subcaptiongroup}
     \parbox{.49\linewidth}{%
       \caption{Local split reduction suffix.}
       \label{fig:local-split-trace}}\hfill
-    \parbox{.49\linewidth}{%
+    \parbox{.48\linewidth}{%
       \caption{Remote split and acquire reduction suffix.}
       \label{fig:remote-split-trace}}%
   \end{subcaptiongroup}
@@ -612,53 +593,80 @@ illustrated with the example trace.
   \label{fig:local-split-reduction}
 \end{figure}
 
+\Cref{sec:borr-from-cont} already suggests an implementation strategy for local
+borrowing. However, we start with an abstract specification because it is easier
+to handle in a correctness proof. The specification works on an elaborated core
+language, \thecalculus. Elaboration replaces borrowing with explicit functional
+splitting operators. This translation is analogous to a translation in previous
+work \citep{DBLP:journals/pacmpl/SaffrichS0V25}, which gives a formal
+presentation along with a correctness proof. The novelty in our work is the
+presence of \emph{two} operators, \ensuremath{\CodeOp{lsplit}} for local borrows and \ensuremath{\CodeOp{rsplit}} for
+remote borrows. Borrows used in the same process elaborate to \ensuremath{\CodeOp{lsplit}} while
+borrows used across a \ensuremath{\CodeOp{fork}} or sent to another process elaborate to \ensuremath{\CodeOp{rsplit}}.
+\Cref{fig:rendering-example-elab} shows the (partial) elaboration of
+\ensuremath{\Varid{renderRest}} and \ensuremath{\Varid{renderUser}} from the example in \cref{lst:rendering-example}.
+The former is translated to local splits while the latter is using remote
+splits. Our discussion starts with the local variant.
+
+Execution proceeds by repeatedly exposing the next local prefix of the channel
+sequence. \Cref{fig:local-split-trace} shows a suffix of \ensuremath{\Varid{renderRest}}'s
+reduction sequence. The \mbox{\ensuremath{\boldsymbol{\nu[}\mkern1mu\relax \Varid{b}_{1}\mkern1mu\boldsymbol{][}\mkern1mu\relax \Varid{b}_{2}\mkern1mu\boldsymbol{]}\;\CodeKw{in}\;\dots}} operator is a channel
+restriction as known from session calculi \citep{Gay_Vasconcelos_2025}. It
+introduces a communication channel but with each compartment \ensuremath{[\mkern1mu\relax \Varid{b}_i\mkern1mu]}
+containing a \emph{binder group:} a list of channel names and separator markers.
+The names bound by \ensuremath{\Varid{b}_{1}} refer to one channel endpoint, the names in \ensuremath{\Varid{b}_{2}} to the
+other. Its working is best illustrated with the example trace.
+
 To keep the trace short (\cref{fig:local-split-trace}), the reduction starts at
-the local suffix in \ensuremath{\Varid{renderRest}}. The split on \ensuremath{\Varid{c}} following the \ensuremath{\CodeOp{select}}
-\emph{replaces} the binder for \ensuremath{\Varid{c}} with two fresh channel names, \ensuremath{\Varid{c}_{1}} and \ensuremath{\Varid{c}_{2}}.
-%
-% All operations work on
-% the channel names in a bind group from left to right.
-%
-% That is, both
-% compartments of the \lstinline{nu} contain a flat list of channel names, and all
-% operations work on these channel names from left to right. To ensure the correct
-% sequencing, the semantics does not allow any action on \lstinline{c2} before
-% \lstinline{c1} has been consumed.
-%
-This restriction is supported by typing: the \ensuremath{\CodeOp{lsplit}} operation returns an
+the local suffix in \ensuremath{\Varid{renderRest}}. Step~\stepref{2}, the split on \ensuremath{\Varid{c}} following
+the \ensuremath{\CodeOp{select}}, \emph{replaces} the binder for \ensuremath{\Varid{c}} with two fresh channel names,
+\ensuremath{\Varid{c}_{1}} and \ensuremath{\Varid{c}_{2}}. Step~\stepref{3} consumes \ensuremath{\Varid{c}_{1}} leaving only \ensuremath{\Varid{c}_{2}}. The binder
+group \ensuremath{\Varid{c}_{1} \Varid{c}_{2}} is a flat list of channel names, and all operations work on
+these channel names from left to right. To ensure the correct sequencing, the
+semantics does not allow any action on \ensuremath{\Varid{c}_{2}} before \ensuremath{\Varid{c}_{1}} has been consumed. This
+restriction is supported by typing: the \ensuremath{\CodeOp{lsplit}} operation returns an
 \emph{ordered pair,} whose components must be processed and consumed in
 left-to-right order.
 
 % The |drop| operation (not used in this example) applied to some |c| just
 % discards |c| if it is the first channel name in the compartment.
 
-On the client side, in the processes \ensuremath{\Varid{P}_i} that hold the other channel end
-\ensuremath{\Varid{d}}, splitting can be performed on \ensuremath{\Varid{d}} independently of the
-splitting on \ensuremath{\Varid{c}}. The only constraint is that, in the end, when
-\ensuremath{\CodeOp{close}} and \ensuremath{\CodeOp{wait}} calls match, the reduction requires that
-only one channel name is left in each compartment. Under this condition, the
-channel can be closed and eliminated. The figure does not show the transitions
-of the {\color{red}client $P_d$,} which are independent.
+On the client side, the processes \ensuremath{\Varid{P}_i} match the communication operations
+performed by \ensuremath{\Varid{renderRest}}. The bind groups \ensuremath{\Varid{b}_i} can be evolved through splitting
+independently of the splitting on \ensuremath{\Varid{c}}. The only constraint is that, in the end,
+when \ensuremath{\CodeOp{close}} and \ensuremath{\CodeOp{wait}} calls match, only one channel name is left in each
+compartment. If so, \ensuremath{\CodeOp{close}} and \ensuremath{\CodeOp{wait}} reduce, and the channel is closed and
+eliminated.
 
 For remote borrowing, we incorporate the \ensuremath{\CodeOp{acquire}} primitive and indicate a
 remote split with the symbol ``\ensuremath{\mathop{\|}}'' in the compartment. As an example, we
 consider the translation of lines
 \ref*{ln:renderExample/transBegin}--\ref*{ln:renderExample/transEnd} from
-\cref{lst:rendering-example}. The elaboration is shown in
+\cref{lst:rendering-example}. Their elaboration is shown in
 \cref{fig:rendering-example-elab/remote}.
 
-The translation inserts an \ensuremath{\CodeOp{rsplit}} because \ensuremath{\Varid{c}_{1}} and \ensuremath{\Varid{c}_{2}} are used in
-different processes. The \ensuremath{\CodeOp{rsplit}} returns an ordinary (linear) pair of channels
-because synchronization is made explicit using the \ensuremath{\CodeTy{Acq}} and \ensuremath{\CodeTy{Drop}}
-types. Executing this code takes the steps shown in
-\cref{fig:remote-split-trace} (ignoring the activity at the other end of the
-channel). The bracketed step abbreviates the forked process running \ensuremath{\Varid{renderProfile}}
-until its final \ensuremath{\CodeOp{drop}\;\Varid{c}_{1}}.  In summary, the \ensuremath{\CodeOp{rsplit}} replaces one channel name
-by \ensuremath{[\mkern1mu\relax \Varid{c}_{1}\mathop{\|}\Varid{c}_{2}\mkern1mu]}, where ``\ensuremath{\mathop{\|}}'' marks a remote split. The \ensuremath{\CodeOp{drop}} is
-only enabled if its argument name comes last before a ``\ensuremath{\mathop{\|}}''.  The
-\ensuremath{\CodeOp{acquire}} is only enabled if the preceding list segment has been processed as in
-\ensuremath{[\mkern1mu\relax \mathop{\|}\Varid{c}_{2}\mkern1mu]}. Executing the \ensuremath{\CodeOp{acquire}} in the last step removes the
-exhausted segment and separator, yielding \ensuremath{[\mkern1mu\relax \Varid{c}_{2}\mkern1mu]}.
+The translation inserts an \ensuremath{\CodeOp{rsplit}} because \ensuremath{\Varid{c}_{1}} and \ensuremath{\Varid{c}_{2}} are used in different
+processes. The \ensuremath{\CodeOp{rsplit}} returns an ordinary (linear) pair of channels because
+synchronization is made explicit using the \ensuremath{\CodeTy{Acq}} and \ensuremath{\CodeTy{Drop}} types.
+
+Executing
+this code takes the steps shown in \cref{fig:remote-split-trace}. First, the
+\ensuremath{\CodeOp{rsplit}} replaces one channel name by two fresh names separated by ``\ensuremath{\mathop{\|}}''
+marking a remote split.
+Step~\stepref{2} reduces the \ensuremath{\CodeOp{fork}} and the body of \ensuremath{\Varid{renderProfile}} until only
+\ensuremath{\CodeOp{drop}\;\Varid{c}_{1}} remains. In the next step, \ensuremath{\CodeOp{drop}\;\Varid{c}_{1}} reduces to \ensuremath{\mathord{*}} and \ensuremath{\Varid{c}_{1}} is
+removed from the binder group which leaves ``\ensuremath{\mathop{\|}}'' as the first item in the
+compartment. Now, in step~\stepref{4}, the reduction of \ensuremath{\CodeOp{acquire}\;\Varid{c}_{2}} drops the
+leading separator.
+
+{\color{red}\itshape Structure suggested by old text: first concrete example,
+  then more abstract explanation.} The bracketed step abbreviates the forked
+process running \ensuremath{\Varid{renderProfile}} until its final \ensuremath{\CodeOp{drop}\;\Varid{c}_{1}}. In summary, the
+\ensuremath{\CodeOp{rsplit}} replaces one channel name by \ensuremath{[\mkern1mu\relax \Varid{c}_{1}\mathop{\|}\Varid{c}_{2}\mkern1mu]}, where ``\ensuremath{\mathop{\|}}''
+marks a remote split. The \ensuremath{\CodeOp{drop}} is only enabled if its argument name comes last
+before a ``\ensuremath{\mathop{\|}}''. The \ensuremath{\CodeOp{acquire}} is only enabled if the preceding list
+segment has been processed as in \ensuremath{[\mkern1mu\relax \mathop{\|}\Varid{c}_{2}\mkern1mu]}. Executing the \ensuremath{\CodeOp{acquire}} in
+the last step removes the exhausted segment and separator, yielding \ensuremath{[\mkern1mu\relax \Varid{c}_{2}\mkern1mu]}.
 
 
 \subsection{Implementing Local and Remote Borrowing}
@@ -696,7 +704,7 @@ be acquired before it can be used. The outgoing flag \ensuremath{\Varid{out}} re
 channel must be dropped after use. A synchronization binder
 {\color{red}$(\varphi z \mapsto \phi)P$} binds a flag name \ensuremath{\Varid{z}} in \ensuremath{\Conid{P}} and stores
 one of two states in {\color{red}$\phi$}: \ensuremath{\CodeFlag{drop}} or \ensuremath{\CodeFlag{acq}}.  This flag \ensuremath{\Varid{z}}
-implements the separator in \ensuremath{\boldsymbol{\nu}[\mkern1mu\relax \Varid{c}_{1}\mathop{\|}\Varid{c}_{2}\mkern1mu][\mkern1mu\relax \dots\mkern1mu]}. It is the outgoing flag of
+implements the separator in \ensuremath{\boldsymbol{\nu[}\mkern1mu\relax \Varid{c}_{1}\mathop{\|}\Varid{c}_{2}\mkern1mu\boldsymbol{][}\mkern1mu\relax \dots\mkern1mu\boldsymbol{]}}. It is the outgoing flag of
 the borrowed prefix and the incoming flag of the suffix.
 
 An \ensuremath{\CodeOp{rsplit}} creates a flag in state \ensuremath{\CodeOp{drop}} and a freshly restricted channel sets
