@@ -110,3 +110,82 @@ cached in agda/_build). Duplicating a lemma that exists is a failure; cite the m
 ## Portability (added 2026-09-08 late)
 
 The development is also checked on a second machine with a different Agda build. There, `s ⋯ ρ` in a type signature with `ρ : m →ᵣ n` and a generalized `s` failed instance search (`No instance of type Kit (λ _ → 𝔽 n)`), although it passes here. In every new signature fix the kit by using the aliases `s ⋯ᵣ ρ` and `s ⋯ₛ ϕ` (both are `_⋯_` with the kit fixed, exported by BorrowedCF.Types.Substitution), or `_⋯_ ⦃ Kᵣ ⦄ s ρ`. Do the same for other instance arguments a reader cannot infer from the renaming alone.
+
+## rsplit relaxation campaign (added 2026-10-07)
+
+Upstream (Janek, commits 469f079 + 85720a8) relaxed the splits:
+- `lsplit : (s s′ : 𝕊 0) → ¬ Skips s → Local s′ → ¬ Skips s′ → …` (one NEW argument `Local s′`).
+- `rsplit : (s s′ : 𝕊 0) → Local s′ → ¬ Skips s′ → …` (`¬ Skips s` REMOVED, `Local s′` added; Skip is
+  now allowed as the first type of an rsplit).
+- New predicates in `BorrowedCF.Types.Predicates`: `NonLocal` (starts with acq: `acq`, `_;₁-`,
+  `Skips s₁ ;₂ NonLocal s₂`) and `Local s = ¬ NonLocal s`, with lemmas `nonLocal-dual⁺/⁻`,
+  `nonLocal-⋯`, `nonLocal-⋯ᵣ⁻¹`, `local-⋯ᵣ`, `local-⋯ᵣ⁻¹`, `local-dual⁺`, `skips⇒local`.
+- `Wf` for `s₁ ; s₂` now takes `Skips s₁ ⊎ Local s₂`.
+Proof sites that relied on the removed `¬ Skips s` evidence of rsplit are broken; the `Local s′`
+evidence is what replaces it. Typical repair: where `¬Sm₁ Sk` refuted the `Skips t₁` branch, that
+branch now really happens, and the danger it used to signal (a second `acq` appearing behind the
+fresh `acq` of the right part, `acq ; t₂` with `t₂ ≃ acq ; …`) is refuted by `Local t₂` instead,
+via a lemma of the shape `s ≃ acq ; u → NonLocal s` (check `Types/AtomCons`/head machinery before
+proving one).
+
+All earlier sections of this file still apply: U+037E semicolons, `agda-check`, no `with` on
+packages whose refl rewrites the plug index, STATUS file updates after every proved piece.
+
+### Campaign findings (broadcast 2026-10-07, from agent R1)
+
+- RESOLVED 2026-10-07 (agent R3): `NonLocal` now HAS a `mu` constructor, so
+  `Local t₂` really does refute `t₂ ≃ acq ; u`; `local⇒¬acqHead` in
+  Splits/Group.agda is fully proved, Group.agda has zero holes and no pragma.
+  A `λ ()` proof of `Local (mu …)` no longer type-checks — add a `mu` clause
+  instead. History: Splits/DECISION-local-mu.md, Probe/LocalMuGap.agda.
+- Group.agda's public `bindCtx-rsplit` now takes `Local t₂ → ¬ Skips t₂ → …`
+  (the old `¬ Skips t₁` is gone). Redex.agda:92 still passes the old
+  arguments.
+- In `using (…)` lists of import statements the separator is ASCII `;`; a
+  blanket replace to U+037E breaks the import with a ParseError.
+- Do not name a bound variable `L`; a constructor `L` is in scope and pattern
+  matching then fails with "Cannot split on argument of non-datatype".
+
+### Decision (2026-10-07, MW): Local gets a `mu` constructor
+
+Option 1 of Splits/DECISION-local-mu.md is being applied by agent R3:
+`NonLocal` gains `mu : NonLocal s → NonLocal (mu s)` (Types/Predicates.agda),
+with `mu` clauses in the transport lemmas and the decider, Group.agda's hole
+closes and its temporary pragma goes away. Consequences for everyone else:
+a `λ ()` proof of `Local (mu …)` no longer type-checks (by design); `Local`
+proofs for non-μ head constructors are unaffected.
+
+## Annotation campaign, Phase A landed (2026-10-07)
+
+Both term languages now have `_⦂_ : (e : Tm n) (T : 𝕋) → Tm n` (U+2982, `infixl 5`,
+same level as `_⋯_`, so `e ⋯ ϕ ⦂ T` parses as `(e ⋯ ϕ) ⦂ T`). Facts for all later phases:
+- Declarative rule `T-Ann : Γ ; γ ⊢ e ∶ T ∣ ϵ → Γ ; γ ⊢ e ⦂ T ∶ T ∣ ϵ` (Terms/Base.agda);
+  inversion `inv-⦂ : Γ ; γ ⊢ e ⦂ T ∶ U ∣ ϵ → T ≃ U × Γ ; γ ⊢ e ∶ T ∣ ϵ` provided there.
+- Step `E-Ann : (e ⦂ T) ─→ e` in Reduction/Expressions.agda AND Reduction/ExpressionsSoup.agda.
+  `(e ⦂ T)` is NOT a Value; there is NO annotation Frame; an annotated term steps at the root.
+- `strip : Tm n → Tm n` (Terms/Base.agda) removes all annotations.
+- Translations are homomorphic BY DEFINITION: `T[ e ⦂ T ] σ = T[ e ] σ ⦂ T` (soup) and the tree
+  translation goes through `⋯`. Do not erase annotations anywhere.
+- Typed and soup `_⦂_` are distinct overloaded constructors; a module opening both unqualified
+  may need qualification.
+- Any function deciding value/plug/blocked over Tm needs an `e ⦂ T` clause: not a value, not a
+  plug, root-steps by E-Ann. First known sites: Safety/Progress/Expr/Plug.agda `value?`, `plug?`,
+  `plug-⋯ᵣ⁻¹` (CoverageIssue).
+- `fv` lives in Algorithmic.agda and still lacks the `⦂` clause (Phase B3 adds `fv (e ⦂ T) = fv e`).
+
+### Annotation campaign, D1 landed (ForwardSoup green)
+
+Lock-step confirmed: the source E-Ann maps to the soup E-Ann with no `subst`
+(`T[ e ⦂ T ] σ = T[ e ] σ ⦂ T` is definitional). Pattern for structural
+lemmas over terms: copy the `` `inj `` clause and wrap with `cong (_⦂ ty)`.
+Soup-side `consumePhi`/`insertPhi` already carry their ⦂ clauses
+(Reduction/Processes/UntypedSoup.agda ~71/~102). Annotation-constructor
+injectivity helper: `ann-inj` (local in ForwardSoup/Local/InsertSupport.agda);
+make a local copy where needed.
+
+### C2 gotcha (broadcast): `where` and `with`
+
+`where` definitions are not in scope inside `with` expressions, only in the
+final clause. For a function that needs helpers across `with` steps, split it:
+a `*-go` with the small structural `let`s and a `*-go′` taking the `with`
+results (template: Completeness/Main/Bind/Let.agda, LetPair.agda).

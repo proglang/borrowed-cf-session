@@ -172,6 +172,7 @@ Tm-re Rt x∉ y∉ (T-Case p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e ⊢e₁ ⊢e
        (Tm-re (↑Rt Rt) (∉-abs-ctx-PS p/s γ₂ x₂) (∉-abs-ctx-PS p/s γ₂ y₂) ⊢e₁)
        (Tm-re (↑Rt Rt) (∉-abs-ctx-PS p/s γ₂ x₂) (∉-abs-ctx-PS p/s γ₂ y₂) ⊢e₂)
 Tm-re Rt x∉ y∉ (T-Conv T≃ ϵ≤ ⊢e) = T-Conv T≃ ϵ≤ (Tm-re Rt x∉ y∉ ⊢e)
+Tm-re Rt x∉ y∉ (T-Ann ⊢e) = T-Ann (Tm-re Rt x∉ y∉ ⊢e)
 Tm-re Rt x∉ y∉ (T-Weaken γ≤ ⊢e) =
   T-Weaken (≼-re Rt γ≤) (Tm-re Rt (x∉ ∘ ≼⇒dom⊆ γ≤) (y∉ ∘ ≼⇒dom⊆ γ≤) ⊢e)
 

@@ -97,5 +97,54 @@ parOrSeq? ≤γ = seq , ≤γ
 ## Not changed
 Declarative typing (Terms/Base.agda), process typing and reduction, Types/*, all of Simulation/.
 
+## Discrepancies with the paper (recorded 2026-10-06)
+
+| Paper | Agda |
+|---|---|
+| Algorithmic rules normalise types (`\NormaliseType` in A-Var, A-App, A-Annot, A-Abs, A-AbsRec, A-Select, A-Pair, A-Inj) | No rule normalises. The constant types of `select`/`branch` ([Terms/Base.agda:159](BorrowedCF/Terms/Base.agda#L159)) take arbitrary branch types, and A-Check emits `C-Eq T U`, solved modulo `≃` ([Solved.agda:328](BorrowedCF/Algorithmic/Solved.agda#L328)). Design of the original algorithmic system (Janek Spaderna, June 2026), never changed. Proven: this normalisation-free system is sound and complete. Every paper derivation with normalisation maps to an Agda derivation up to `≃`; the converse fails when `select`/`branch` act on a channel whose type is a unification variable (continuation of a split). The paper was aligned on 2026-10-06: A-Select, A-Branch and all normalisation premises removed, `select`/`branch` typed by A-Const. |
+| Labelled choice `⊕{ℓ : S_ℓ}_{ℓ∈L}` | Binary choice `brn p s₁ s₂`, `select : Bool → Const`. |
+| A-Annot reads an annotation `e : T` | No annotation syntax. `A-Ann : ChkForm e → … ⇐ T … → … ⇒ T …` receives `T` directly ([Algorithmic.agda:266](BorrowedCF/Algorithmic.agda#L266)). Inference completeness therefore reads, on paper, "every checking form in inference position is annotated with its declarative type". |
+| Process progress for any session context | `progressₚ`/`progress⁺ₚ` are for closed processes (`[] ; γ ⊢ₚ P`, `γ : Struct 0`). |
+| Blocked with B-NuBlockedAcq | Figure now shows B-NuBlockedAcqLeft/Right/Both, i.e. `Blocked⁺` ([Safety/Blocked.agda:374](BorrowedCF/Safety/Blocked.agda#L374)), proved by `progress⁺ₚ`. |
+| Weak simulation up to administrative steps, tree-shaped target | Lock-step forward and backward simulation for the process soup, backward up to slot renumbering `_≈ˢ_` ([BackwardSoup/Statement.agda:222](BorrowedCF/Simulation/BackwardSoup/Statement.agda#L222)). |
+
+## 2026-10-07: repair of the relaxed splits
+
+Upstream relaxed the splits (commits 469f079, 85720a8): `rsplit` accepts `skip` as first type, both
+splits require `Local s′` ([Types/Predicates.agda](BorrowedCF/Types/Predicates.agda): `NonLocal`, `Local = ¬ NonLocal`).
+
+| Change | Location |
+|---|---|
+| Counterexample: `mu (acq ; ` 0)` was `Local` yet `≃ acq ; …`; breaks the acq-head invariant under the relaxed `rsplit` | [BorrowedCF/Safety/Probe/LocalMuGap.agda](BorrowedCF/Safety/Probe/LocalMuGap.agda), memo [Splits/DECISION-local-mu.md](BorrowedCF/Safety/Preservation/Splits/DECISION-local-mu.md) |
+| Fix: `mu : NonLocal s → NonLocal (mu s)`; μ clauses in `nonLocal-⋯`, `nonLocal-⋯ᵣ⁻¹`, `nonLocal-dual⁺`, `nonLocal-dual⁻`, `skips⇒local` | [BorrowedCF/Types/Predicates.agda](BorrowedCF/Types/Predicates.agda) |
+| μ clause of `subTy-local` | [BorrowedCF/Algorithmic/Solved.agda](BorrowedCF/Algorithmic/Solved.agda#L195) |
+| `acqHead-rsplit` now takes `∀ u → ¬ (t₂ ≃ acq ; u)` (from `Local t₂` via `local⇒¬acqHead`); `bindCtx-rsplit` takes `Local t₂ → ¬ Skips t₂` | [Splits/Group.agda](BorrowedCF/Safety/Preservation/Splits/Group.agda) |
+| `local⇒¬acqHead′ : Local t₂ → ¬ Skips t₂ → ∀ u → ¬ (t₂ ≃ acq ; u)` (new module) | [Splits/LocalHead.agda](BorrowedCF/Safety/Preservation/Splits/LocalHead.agda) |
+| New split arities threaded (patterns `` `lsplit t₁ t₂ ¬S₁ L₂ ¬S₂ ``, `` `rsplit t₁ t₂ L₂ ¬S₂ ``); `mob-rsplit`, `θR-⇒` take `Local t₂` | Safety/Progress/Expr.agda, Safety/Preservation/{RSplit,LSplit/Immobile,LSplit/Mobile}.agda, Splits/Redex.agda |
+| `chanCx-⸴*` exported (fixes `Simulation/Forward.agda` and dependents) | [BorrowedCF/Reduction/Base.agda](BorrowedCF/Reduction/Base.agda) |
+| Deleted dead modules of the removed tree-shaped backward proof | `Simulation/Support/ReverseInv.agda`, `Simulation/Support/RevComImage.agda` |
+
+`Completeness/Probe/MobUvar.agda` is deleted (2026-10-07): the relaxed `lsplit` requires `Local` on
+the split continuation, which makes that probe's term untypable, so its counterexample claim is void;
+[Probe/MobUvarWF.agda](BorrowedCF/Completeness/Probe/MobUvarWF.agda) supersedes it.
+
+## 2026-10-07: syntactic type annotation
+
+The term languages gained a type-annotation construct, so the algorithmic rule A-Ann is now
+syntax-directed; the dynamics erase the annotation in one step and both simulations stay lock-step.
+
+| Change | Location |
+|---|---|
+| `_⦂_ : (e : Tm n) (T : 𝕋) → Tm n` (infixl 5) in BOTH term languages; `strip` | [Terms/Base.agda](BorrowedCF/Terms/Base.agda), [Terms/BaseSoup.agda](BorrowedCF/Terms/BaseSoup.agda) |
+| `T-Ann : Γ ; γ ⊢ e ∶ T ∣ ϵ → Γ ; γ ⊢ e ⦂ T ∶ T ∣ ϵ`; inversion `inv-⦂` | [Terms/Base.agda](BorrowedCF/Terms/Base.agda) |
+| `E-Ann : (e ⦂ T) ─→ e` in both expression reductions; `(e ⦂ T)` is not a value, no new frame | [Reduction/Expressions.agda](BorrowedCF/Reduction/Expressions.agda), [Reduction/ExpressionsSoup.agda](BorrowedCF/Reduction/ExpressionsSoup.agda) |
+| Translations homomorphic: `T[ e ⦂ T ] σ = T[ e ] σ ⦂ T` (definitional) | [Processes/TranslationSoup.agda](BorrowedCF/Processes/TranslationSoup.agda) |
+| `A-Ann : Γ ; γ / m ⊢ e ⇐ T ∣ ϵ ↑ Δ / n → Γ ; γ / m ⊢ (e ⦂ T) ⇒ T ∣ ϵ ↑ Δ / n` (ChkForm premise gone; ChkForm kept as the completeness insertion guide) | [Algorithmic.agda](BorrowedCF/Algorithmic.agda) |
+| `SolvedTm` case `_⦂_`; `subTm (e ⦂ T) σ = subTm e σ ⦂ subTy T σ` | [Algorithmic/Solved.agda](BorrowedCF/Algorithmic/Solved.agda) |
+| Annotation relation `_⊑_` (congruences + `ann : e ⊑ ê → ∀ T → e ⊑ (ê ⦂ T)`), `fv-⊑ : e ⊑ ê → fv ê ≡ fv e` | [Completeness/Base.agda](BorrowedCF/Completeness/Base.agda) |
+| Completeness statements now conclude `Σ[ ê ∈ Tm n ] e ⊑ ê × (… ⊢ ê ⇐/⇒ …)` (annotations inserted at checking forms in inference position) | [Completeness/Base.agda](BorrowedCF/Completeness/Base.agda), proofs in [Completeness/Main.agda](BorrowedCF/Completeness/Main.agda) and Main/* |
+| Safety: annotated terms are never values, plugs, or blocked; progress steps them by E-Ann; preservation passes T-Ann through | Safety/Progress/Expr/Plug.agda, Safety/Blocked.agda, Safety/Preservation/Choice/Retype.agda |
+| Simulations: E-Ann maps to E-Ann (forward) and reflects (backward, `T-ann-inv`, `head-inversion`); lock-step statements unchanged | Simulation/ForwardSoup/Expressions.agda, Simulation/BackwardSoup/Inversion.agda, SlotBisim.agda, Support/{Strengthen,Frames}.agda |
+
 ## Verification
-Every module under `Safety/` and `Completeness/` re-checked from an empty interface cache with Agda 2.8.0 and stdlib 2.4: zero goals, no `postulate`, no pragmas. The only axiom reachable is `funext` in `Simulation/Support/Base.agda` (pre-existing). A check of every other module of the development passes except 17 modules of `Simulation/Backward/`, `Simulation/Forward.agda`, `Simulation/Support/ReverseInv.agda` and `RevComImage.agda`, which fail at HEAD before these changes: they use `chanCx-⸴*` from `Reduction.Base`, which never defined it. `Simulation/BackwardSoup` and `ForwardSoup` pass. The incomplete legacy `Simulation/Backward` namespace referenced above was subsequently removed; the strict-soup backward proof is the maintained result.
+Every module under `Safety/` and `Completeness/` re-checked from an empty interface cache with Agda 2.8.0 and stdlib 2.4: zero goals, no `postulate`, no pragmas. The only axiom reachable is `funext` in `Simulation/Support/Base.agda` (pre-existing). `chanCx-⸴*` is now defined in `Reduction.Base`; `Simulation/Forward.agda` checks, and the two dead support modules that also used it are deleted (2026-10-07). `Simulation/BackwardSoup` and `ForwardSoup` pass. The incomplete legacy `Simulation/Backward` namespace referenced above was subsequently removed; the strict-soup backward proof is the maintained result.

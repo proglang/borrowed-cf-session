@@ -160,6 +160,9 @@ strengthen-Tm-gen (T-Case p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e ⊢e₁ ⊢e�
       e₁₀ , eq₁ = strengthen-Tm-gen ⊢e₁ (ρ ↑) (suc h) (inv↑ inv) (∉-abs-ctx-PS p/s γ₂ x₂)
       e₂₀ , eq₂ = strengthen-Tm-gen ⊢e₂ (ρ ↑) (suc h) (inv↑ inv) (∉-abs-ctx-PS p/s γ₂ x₂)
   in `case e₀ `of⟨ e₁₀ ; e₂₀ ⟩ , cong₃ (λ a b c → `case a `of⟨ b ; c ⟩) eq eq₁ eq₂
+strengthen-Tm-gen (T-Ann {T = T} ⊢e) ρ h inv h∉ =
+  let e₀ , eq = strengthen-Tm-gen ⊢e ρ h inv h∉
+  in e₀ ⦂ T , cong (_⦂ T) eq
 strengthen-Tm-gen (T-Conv _ _ ⊢e) ρ h inv h∉ = strengthen-Tm-gen ⊢e ρ h inv h∉
 strengthen-Tm-gen (T-Weaken γ≤ ⊢e) ρ h inv h∉ = strengthen-Tm-gen ⊢e ρ h inv (λ x∈ → h∉ (≼⇒dom⊆ γ≤ x∈))
 
@@ -223,6 +226,9 @@ strengthen-Tm (T-Case p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e ⊢e₁ ⊢e₂) 
       e₂₀ , eq₂ = strengthen-Tm ⊢e₂ (suc x) (∉-abs-ctx-PS p/s γ₂ x₂)
   in `case e₀ `of⟨ e₁₀ ; e₂₀ ⟩ ,
      cong₃ (λ a b c → `case a `of⟨ b ; c ⟩) eq (eq₁ ■ ⋯-cong e₁₀ (pin x)) (eq₂ ■ ⋯-cong e₂₀ (pin x))
+strengthen-Tm (T-Ann {T = T} ⊢e) x x∉ =
+  let e₀ , eq = strengthen-Tm ⊢e x x∉
+  in e₀ ⦂ T , cong (_⦂ T) eq
 strengthen-Tm (T-Conv _ _ ⊢e) x x∉ = strengthen-Tm ⊢e x x∉
 strengthen-Tm (T-Weaken γ≤ ⊢e) x x∉ = strengthen-Tm ⊢e x (λ x∈ → x∉ (≼⇒dom⊆ γ≤ x∈))
 
@@ -356,6 +362,9 @@ strengthen-Tm-gen* (T-Case p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e ⊢e₁ ⊢e
       e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ (ρ ↑) (H↑ H) (invH↑ inv)
                     (λ { (suc z) hz → ∉-abs-ctx-PS p/s γ₂ (let _ , b = ∉-join-PS⁻ p/s γ₁ γ₂ (H∉ z hz) in b) })
   in `case e₀ `of⟨ e₁₀ ; e₂₀ ⟩ , cong₃ (λ a b c → `case a `of⟨ b ; c ⟩) eq eq₁ eq₂
+strengthen-Tm-gen* (T-Ann {T = T} ⊢e) ρ H inv H∉ =
+  let e₀ , eq = strengthen-Tm-gen* ⊢e ρ H inv H∉
+  in e₀ ⦂ T , cong (_⦂ T) eq
 strengthen-Tm-gen* (T-Conv _ _ ⊢e) ρ H inv H∉ = strengthen-Tm-gen* ⊢e ρ H inv H∉
 strengthen-Tm-gen* (T-Weaken γ≤ ⊢e) ρ H inv H∉ =
   strengthen-Tm-gen* ⊢e ρ H inv (λ z hz x∈ → H∉ z hz (≼⇒dom⊆ γ≤ x∈))

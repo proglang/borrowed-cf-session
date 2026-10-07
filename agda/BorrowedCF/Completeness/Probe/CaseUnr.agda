@@ -24,6 +24,7 @@ open import BorrowedCF.Types.Unification
 open import BorrowedCF.Algorithmic
 open import BorrowedCF.Algorithmic.Solved
 open import BorrowedCF.Completeness.Base
+open import BorrowedCF.Completeness.Sub using (≼⇒≼↑)
 
 open Fin.Patterns
 
@@ -78,17 +79,30 @@ linear 0F ¬u = ⊥-elim (¬u `⊤)
 Δ₀ : CSet
 Δ₀ = C-Eq `⊤ `⊤ ∷ C-Eq `⊤ `⊤ ∷ C-Eq `⊤ `⊤ ∷ []
 
+-- The algorithmic rules take the constraint-emitting `_∶_≼_↑_`; none of the
+-- structural steps below uses mobility, so the emitted set computes to [].
+↑′ : ∀ {n} {Γ : Ctx n} {α β : Struct n} (d : Γ ∶ α ≼ β) → Γ ∶ α ≼ β ↑ proj₁ (≼⇒≼↑ d)
+↑′ d = proj₁ (proj₂ (≼⇒≼↑ d))
+
+-- Annotation campaign (2026-10-07): A-Ann fires only on a syntactic `_⦂_`, so the
+-- algorithm types the annotated version ê₀ ⊒ e₀ (scrutinee annotated).
+ê₀ : Tm 1
+ê₀ = `case ((`inj L (` 0F)) ⦂ (`⊤ ⊕ `⊤)) `of⟨ ` 1F ; ` 1F ⟩
+
+e₀⊑ê₀ : e₀ ⊑ ê₀
+e₀⊑ê₀ = ⊑-case (ann ⊑-refl (`⊤ ⊕ `⊤)) ⊑-refl ⊑-refl
+
 -- scrutinee: A-Inj is a checking rule, so the inference goes through A-Ann.
-scrut : Γ₀ ; γ₀ / 0 ⊢ (`inj L (` 0F)) ⇒ `⊤ ⊕ `⊤ ∣ ℙ ↑ C-Eq `⊤ `⊤ ∷ [] / 0
-scrut = A-Ann (A-Inj {i = L} (A-Check (A-Var (≼-refl ≈-refl))))
+scrut : Γ₀ ; γ₀ / 0 ⊢ ((`inj L (` 0F)) ⦂ (`⊤ ⊕ `⊤)) ⇒ `⊤ ⊕ `⊤ ∣ ℙ ↑ C-Eq `⊤ `⊤ ∷ [] / 0
+scrut = A-Ann (A-Inj {i = L} (A-Check (A-Var (↑′ (≼-refl ≈-refl)))))
 
 -- the branch keeps `u` (index 1F under the binder) in its structure
 brc : (`⊤ ⸴ Γ₀) ; ((` 0F) ∥ (` 1F)) / 0 ⊢ (` 1F) ⇒ `⊤ ∣ ℙ ↑ [] / 0
-brc = A-Var (≼-trans (≼-refl (≈-sym ∥-unit₁))
-                     (≼-cong-∥ (≼-∅ (` `⊤)) (≼-refl ≈-refl)))
+brc = A-Var (↑′ (≼-trans (≼-refl (≈-sym ∥-unit₁))
+                         (≼-cong-∥ (≼-∅ (` `⊤)) (≼-refl ≈-refl))))
 
-alg : Γ₀ ; γ₀ / 0 ⊢ e₀ ⇐ `⊤ ∣ ℙ ↑ Δ₀ / 0
-alg = A-Check (A-Case par (≼-refl (≈-sym (∥-dup (` unr-⊤)))) scrut brc brc)
+alg : Γ₀ ; γ₀ / 0 ⊢ ê₀ ⇐ `⊤ ∣ ℙ ↑ Δ₀ / 0
+alg = A-Check (A-Case par (↑′ (≼-refl (≈-sym (∥-dup (` unr-⊤))))) scrut brc brc)
 
 solvedΔ₀ : ∀ {σ} → SolvedΔ Δ₀ σ
 solvedΔ₀ = `⊤ ∷ `⊤ ∷ `⊤ ∷ []

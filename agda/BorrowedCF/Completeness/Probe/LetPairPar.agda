@@ -24,6 +24,7 @@ open import BorrowedCF.Algorithmic.Solved
 open import BorrowedCF.Simulation.BackwardSoup.GroupOrder
   using (before; _∈ₘ_; before-mono-≼; ¬mobile-noAcq; NoAcq)
 open import BorrowedCF.Completeness.Base
+open import BorrowedCF.Completeness.Sub using (≼⇒≼↑)
 
 open Fin.Patterns
 open Nat.Variables
@@ -102,22 +103,35 @@ cA = ≈-trans (∥-cong ∥-unit₁ ∥-unit₁) ∥-unit₁
 cB : ∀ {Γ′ : Ctx 4} → Γ′ ∶ (((` 0F) ∥ []) ∥ ([] ∥ [])) ≈ (` 0F)
 cB = ≈-trans (∥-cong ∥-unit₂ ∥-unit₁) ∥-unit₂
 
-body-alg : (⟨ end ‼ ⟩ ⸴ `⊤ ⸴ Γ₀) ; (((` 0F) ∥ (` 1F)) ∥ ([] ∥ (` 3F))) / 0
-             ⊢ ((` 3F) ⊗ (` 0F)) ⇒ T₀ ∣ ℙ ↑ (C-Eq ⟨ end ⁇ ⟩ ⟨ end ⁇ ⟩ ∷ C-Eq ⟨ end ‼ ⟩ ⟨ end ‼ ⟩ ∷ []) / 0
-body-alg = A-Ann (A-Pair seq
-  (≼-trans (≼-refl (;-cong cA cB))
-    (≼-trans ;-≼-∥
-      (≼-trans (≼-refl ∥-comm)
-        (≼-cong-∥ (≼-trans (≼-refl (≈-sym ∥-unit₂))
-                           (≼-cong-∥ (≼-refl ≈-refl) (≼-∅ (` `⊤))))
-                  (≼-refl (≈-sym ∥-unit₁))))))
-  (λ _ → refl)
-  (A-Check (A-Var (≼-refl (≈-sym cA))))
-  (A-Check (A-Var (≼-refl (≈-sym cB)))))
+-- The algorithmic rules take the constraint-emitting `_∶_≼_↑_`; none of the
+-- structural steps below uses mobility, so the emitted set computes to [].
+↑′ : ∀ {n} {Γ : Ctx n} {α β : Struct n} (d : Γ ∶ α ≼ β) → Γ ∶ α ≼ β ↑ proj₁ (≼⇒≼↑ d)
+↑′ d = proj₁ (proj₂ (≼⇒≼↑ d))
 
-alg : Γ₀ ; γ₀ / 0 ⊢ e₀ ⇐ T₀ ∣ ℙ ↑ Δ₀ / 0
-alg = A-Check (A-LetPair par (≼-refl (∥-cong ∥-unit₂ ∥-unit₁))
-                 (A-Var (≼-refl (≈-sym ∥-unit₂)))
+-- Annotation campaign (2026-10-07): A-Ann fires only on a syntactic `_⦂_`, so the
+-- algorithm types the annotated version ê₀ ⊒ e₀ (the pair body annotated with T₀).
+ê₀ : Tm 2
+ê₀ = `let⊗ (` 0F) `in (((` 3F) ⊗ (` 0F)) ⦂ T₀)
+
+e₀⊑ê₀ : e₀ ⊑ ê₀
+e₀⊑ê₀ = ⊑-let⊗ ⊑-var (ann ⊑-refl T₀)
+
+body-alg : (⟨ end ‼ ⟩ ⸴ `⊤ ⸴ Γ₀) ; (((` 0F) ∥ (` 1F)) ∥ ([] ∥ (` 3F))) / 0
+             ⊢ (((` 3F) ⊗ (` 0F)) ⦂ T₀) ⇒ T₀ ∣ ℙ ↑ (C-Eq ⟨ end ⁇ ⟩ ⟨ end ⁇ ⟩ ∷ C-Eq ⟨ end ‼ ⟩ ⟨ end ‼ ⟩ ∷ []) / 0
+body-alg = A-Ann (A-Pair seq
+  (↑′ (≼-trans (≼-refl (;-cong cA cB))
+        (≼-trans ;-≼-∥
+          (≼-trans (≼-refl ∥-comm)
+            (≼-cong-∥ (≼-trans (≼-refl (≈-sym ∥-unit₂))
+                               (≼-cong-∥ (≼-refl ≈-refl) (≼-∅ (` `⊤))))
+                      (≼-refl (≈-sym ∥-unit₁)))))))
+  (λ _ → refl)
+  (A-Check (A-Var (↑′ (≼-refl (≈-sym cA)))))
+  (A-Check (A-Var (↑′ (≼-refl (≈-sym cB))))))
+
+alg : Γ₀ ; γ₀ / 0 ⊢ ê₀ ⇐ T₀ ∣ ℙ ↑ Δ₀ / 0
+alg = A-Check (A-LetPair par (↑′ (≼-refl (∥-cong ∥-unit₂ ∥-unit₁)))
+                 (A-Var (↑′ (≼-refl (≈-sym ∥-unit₂))))
                  body-alg)
 
 solvedΔ₀ : ∀ {σ} → SolvedΔ Δ₀ σ

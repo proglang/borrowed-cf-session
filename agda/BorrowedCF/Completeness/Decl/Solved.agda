@@ -50,6 +50,9 @@ solvedTm-let : {e₁ : Tm n} {e₂ : Tm (suc n)} →
   SolvedTm (`let e₁ `in e₂) → SolvedTm e₁ × SolvedTm e₂
 solvedTm-let (`let s₁ `in s₂) = s₁ , s₂
 
+solvedTm-⦂ : {e : Tm n} {T : 𝕋} → SolvedTm (e ⦂ T) → SolvedTm e × SolvedTy T
+solvedTm-⦂ (s ⦂ t) = s , t
+
 ------------------------------------------------------------------------
 -- Types
 

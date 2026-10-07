@@ -50,24 +50,25 @@ private
     Γ ; β ⊢ e₂ ∶ T₀ ∣ ϵ₂ᵈ →
     Conclusion Γ̂ γ (e₁ ·⟨ Arr.dir a ⟩ e₂) U ϵ m σ₀
   go {Γ = Γ} {Γ̂ = Γ̂} {γ = γ} {e₁ = e₁} {e₂ = e₂} {T₀ = T₀} {U = U} {a = a} {m = m}
-     ih₁ ih₂ Sσ uΓ ap Se₁ Se₂ SU lin ≤γ effa≤ ec ≤₁ ≤₂ dv₁ dv₂ =
-    let T̂ , ϵ₁ , Δ₁ , m′ , σ₁ , Sσ₁ , ag₁ , SΔ₁ , ϵ₁≤ , ≃₁ , m≤m′ , uvT̂₀ , uvΔ₁ , der₁₀ =
-          ih₁ Sσ uΓ (approx-sub {Γ̂ = Γ̂} {Γ = Γ} Sσ ap) Se₁
+     ih₁ ih₂ Sσ uΓ ap Se₁ Se₂ SU lin ≤γ effa≤ ec ≤₁ ≤₂ dv₁ dv₂
+    with ê₁ , p₁ , T̂ , ϵ₁ , Δ₁ , m′ , σ₁ , Sσ₁ , ag₁ , SΔ₁ , ϵ₁≤ , ≃₁ , m≤m′ , uvT̂₀ , uvΔ₁ , der₁₀
+       ← ih₁ Sσ uΓ (approx-sub {Γ̂ = Γ̂} {Γ = Γ} Sσ ap) Se₁
               (subTy-solved T₀ s₀-solving ⟨ a ⟩→ subTy-solved U s₀-solving)
               (lin-sub Γ (γ ↓ (fv e₁)) (lin-↓ Γ γ (fv e₁) lin))
               (solve-ty Se₁ (split-right (Arr.dir a) lin ≤γ dv₂ dv₁))
-        T̂₁ , T̂₂ , eqT̂ , ≃dom , ≃cod = arrow-inv ≃₁
-        uvT̂  = subst (UVarsIn 0 m′) eqT̂ uvT̂₀
-        der₁ = subst (λ z → Γ̂ ; γ ∣fv[ e₁ ] / m ⊢ e₁ ⇒ z ∣ ϵ₁ ↑ Δ₁ / m′) eqT̂ der₁₀
-        Û₂ , ϵ₂ , Δ₂ , k , σ₂ , Sσ₂ , ag₂ , SΔ₂ , ϵ₂≤ , ≃₂ , m′≤k , uvÛ₂ , uvΔ₂ , der₂ =
-          ih₂ Sσ₁ (uvarsInΓ-mono Nat.≤-refl m≤m′ uΓ)
+    with T̂₁ , T̂₂ , eqT̂ , ≃dom , ≃cod ← arrow-inv ≃₁
+    with ê₂ , p₂ , Û₂ , ϵ₂ , Δ₂ , k , σ₂ , Sσ₂ , ag₂ , SΔ₂ , ϵ₂≤ , ≃₂ , m′≤k , uvÛ₂ , uvΔ₂ , der₂
+       ← ih₂ Sσ₁ (uvarsInΓ-mono Nat.≤-refl m≤m′ uΓ)
               (approx-agree {Γ = subCtx Γ s₀} {Γ̂ = Γ̂} uΓ ag₁ (approx-sub {Γ̂ = Γ̂} {Γ = Γ} Sσ ap)) Se₂
               (subTy-solved T₀ s₀-solving)
               (lin-sub Γ (γ ↓ (fv e₂)) (lin-↓ Γ γ (fv e₂) lin))
               (solve-ty Se₂ (split-left (Arr.dir a) lin ≤γ dv₂ dv₁))
-        Lft = ≼→ Sσ ap uΓ (split-≤γ (Arr.dir a) lin ≤γ dv₂ dv₁)
-        AG  = agree-trans (agree-narrow m≤m′ ag₂) ag₁
-    in _ , _ , _ , k , σ₂ , Sσ₂ , AG ,
+    = let uvT̂  = subst (UVarsIn 0 m′) eqT̂ uvT̂₀
+          der₁ = subst (λ z → Γ̂ ; γ ∣fv[ e₁ ] / m ⊢ ê₁ ⇒ z ∣ ϵ₁ ↑ Δ₁ / m′) eqT̂ der₁₀
+          Lft  = ≼→ Sσ ap uΓ (split-≤γ (Arr.dir a) lin ≤γ dv₂ dv₁)
+          AG   = agree-trans (agree-narrow m≤m′ ag₂) ag₁
+    in (ê₁ ·⟨ Arr.dir a ⟩ ê₂) , ⊑-app (Arr.dir a) p₁ p₂ ,
+       _ , _ , _ , k , σ₂ , Sσ₂ , AG ,
        solvedΔ-++ (solvedΔ-agree (agree-sym AG) (csc Lft) (sol Lft))
          (solvedΔ-++ (solvedΔ-agree (agree-sym ag₂) uvΔ₁ SΔ₁)
                      (≃-trans (≃-reflexive (subTy-agree ag₂ (uvarsIn-→₁ uvT̂)))
@@ -79,7 +80,10 @@ private
        uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl (Nat.≤-trans m≤m′ m′≤k) (csc Lft))
          (uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl m′≤k uvΔ₁)
                       (C-Eq (uvarsIn-mono Nat.≤-refl m′≤k (uvarsIn-→₁ uvT̂)) uvÛ₂ ∷ uvΔ₂)) ,
-       A-App (ec ϵ₁≤ ϵ₂≤) (der Lft) der₁ (A-Check der₂)
+       A-App (ec ϵ₁≤ ϵ₂≤)
+         (re-≼ (λ X Y → join (Arr.dir a) (γ ↓ X) (γ ↓ Y)) (fv-⊑ p₂) (fv-⊑ p₁) (der Lft))
+         (re-⊢ (λ X → γ ↓ X) (fv-⊑ p₁) der₁)
+         (re-⊢ (λ X → γ ↓ X) (fv-⊑ p₂) (A-Check der₂))
 
 ------------------------------------------------------------------------
 -- The four declarative application rules.

@@ -172,6 +172,8 @@ insertPhi-ren {ρ = ρ} inj x k (SoupTerm.`let⊗ t₁ `in t₂) =
       (liftRen-injective (liftRen-injective inj)) (suc (suc x)) k t₂)
 insertPhi-ren inj x k (SoupTerm.`inj i t) =
   cong (SoupTerm.`inj i) (insertPhi-ren inj x k t)
+insertPhi-ren inj x k (t SoupTerm.⦂ ty) =
+  cong (SoupTerm._⦂ ty) (insertPhi-ren inj x k t)
 insertPhi-ren {ρ = ρ} inj x k (SoupTerm.`case t `of⟨ t₁ ; t₂ ⟩) =
   cong₂ (λ u us → SoupTerm.`case u `of⟨ proj₁ us ; proj₂ us ⟩)
     (insertPhi-ren inj x k t)
@@ -247,6 +249,8 @@ insertPhi-T x k (Source.`let⊗ e₁ `in e₂) sigma =
     )
 insertPhi-T x k (Source.`inj i e) sigma =
   cong (SoupTerm.`inj i) (insertPhi-T x k e sigma)
+insertPhi-T x k (e Source.⦂ ty) sigma =
+  cong (SoupTerm._⦂ ty) (insertPhi-T x k e sigma)
 insertPhi-T x k (Source.`case e `of⟨ e₁ ; e₂ ⟩) sigma =
   cong₂ (λ u us → SoupTerm.`case u `of⟨ proj₁ us ; proj₂ us ⟩)
     (insertPhi-T x k e sigma)
@@ -515,6 +519,11 @@ private
     SoupTerm.`inj i t ≡ SoupTerm.`inj i u → t ≡ u
   inj-inj refl = refl
 
+  ann-inj :
+    ∀ {ty} {t u : SoupTerm.Tm d} →
+    (t SoupTerm.⦂ ty) ≡ (u SoupTerm.⦂ ty) → t ≡ u
+  ann-inj refl = refl
+
   case-inj :
     {t u : SoupTerm.Tm d} {t₁ u₁ t₂ u₂ : SoupTerm.Tm (suc d)} →
     (SoupTerm.`case t `of⟨ t₁ ; t₂ ⟩) ≡
@@ -580,6 +589,9 @@ consumePhi-fixed⇒insertPhi-fixed x (SoupTerm.`let⊗ t₁ `in t₂) fixed k =
 consumePhi-fixed⇒insertPhi-fixed x (SoupTerm.`inj i t) fixed k =
   cong (SoupTerm.`inj i)
     (consumePhi-fixed⇒insertPhi-fixed x t (λ l → inj-inj (fixed l)) k)
+consumePhi-fixed⇒insertPhi-fixed x (t SoupTerm.⦂ ty) fixed k =
+  cong (SoupTerm._⦂ ty)
+    (consumePhi-fixed⇒insertPhi-fixed x t (λ l → ann-inj (fixed l)) k)
 consumePhi-fixed⇒insertPhi-fixed x
   (SoupTerm.`case t `of⟨ t₁ ; t₂ ⟩) fixed k =
   cong₂ (λ u us → SoupTerm.`case u `of⟨ proj₁ us ; proj₂ us ⟩)

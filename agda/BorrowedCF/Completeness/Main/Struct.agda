@@ -48,23 +48,25 @@ seq-case : ∀ {n} {e₁ e₂ : Tm n} → IHAt e₁ → IHAt e₂ →
   Conclusion Γ̂ γ (e₁ ; e₂) T ϵ m σ₀
 seq-case {e₁ = e₁} {e₂ = e₂} ih₁ ih₂ {Γ = Γ} {Γ̂ = Γ̂} {γ = γ} {m = m} Sσ uΓ ap Se₁ Se₂ ST lin d
   with α , β , T₀ , unrT₀ , ≤γ , d₁ , d₂ ← inv-; d
-  with T̂₁ , ϵ₁ , Δ₁ , m′ , σ₁ , Sσ₁ , ag₁ , SΔ₁ , ϵ₁≤ , ≃₁ , m≤m′ , uvT̂₁ , uvΔ₁ , der₁
+  with ê₁ , p₁ , T̂₁ , ϵ₁ , Δ₁ , m′ , σ₁ , Sσ₁ , ag₁ , SΔ₁ , ϵ₁≤ , ≃₁ , m≤m′ , uvT̂₁ , uvΔ₁ , der₁
      ← ih₁ Sσ uΓ (approx-sub {Γ̂ = Γ̂} {Γ = Γ} Sσ ap) Se₁ (subTy-solved T₀ s₀-solving)
           (lin-sub Γ (γ ↓ (fv e₁)) (lin-↓ Γ γ (fv e₁) lin))
           (solve-ty Se₁ (split-left L lin ≤γ d₁ d₂))
-  with T̂₂ , ϵ₂ , Δ₂ , k , σ₂ , Sσ₂ , ag₂ , SΔ₂ , ϵ₂≤ , ≃₂ , m′≤k , uvT̂₂ , uvΔ₂ , der₂
+  with ê₂ , p₂ , T̂₂ , ϵ₂ , Δ₂ , k , σ₂ , Sσ₂ , ag₂ , SΔ₂ , ϵ₂≤ , ≃₂ , m′≤k , uvT̂₂ , uvΔ₂ , der₂
      ← ih₂ Sσ₁ (uvarsInΓ-mono Nat.≤-refl m≤m′ uΓ) (approx-agree {Γ = Γ} {Γ̂ = Γ̂} uΓ ag₁ ap) Se₂ ST
           (lin-↓ Γ γ (fv e₂) lin)
           (split-right L lin ≤γ d₁ d₂)
   = let Lft = ≼→ Sσ ap uΓ (split-≤γ L lin ≤γ d₁ d₂)
         AG  = agree-trans (agree-narrow m≤m′ ag₂) ag₁
-    in _ , _ , _ , k , σ₂ , Sσ₂ , AG ,
+    in (ê₁ ; ê₂) , ⊑-seq p₁ p₂ , _ , _ , _ , k , σ₂ , Sσ₂ , AG ,
        solvedΔ-++ (solvedΔ-agree (agree-sym AG) (csc Lft) (sol Lft))
                   (solvedΔ-++ (solvedΔ-agree (agree-sym ag₂) uvΔ₁ SΔ₁) SΔ₂) ,
        ⊔ϵ-lub ϵ₁≤ ϵ₂≤ , ≃₂ , Nat.≤-trans m≤m′ m′≤k , uvT̂₂ ,
        uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl (Nat.≤-trans m≤m′ m′≤k) (csc Lft))
                    (uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl m′≤k uvΔ₁) uvΔ₂) ,
-       A-Seq (unr-approx ≃₁ (subTy-unr unrT₀)) (der Lft) der₁ der₂
+       A-Seq (unr-approx ≃₁ (subTy-unr unrT₀))
+         (re-≼ (λ X Y → (γ ↓ X) ; (γ ↓ Y)) (fv-⊑ p₁) (fv-⊑ p₂) (der Lft))
+         (re-⊢ (λ X → γ ↓ X) (fv-⊑ p₁) der₁) (re-⊢ (λ X → γ ↓ X) (fv-⊑ p₂) der₂)
 
 ------------------------------------------------------------------------
 -- T-Pair.
@@ -80,16 +82,16 @@ pair-case {e₁ = e₁} {e₂ = e₂} ih₁ ih₂ {Γ = Γ} {Γ̂ = Γ̂} {γ = 
   with inv-⊗ d
 ... | par , α , β , T₁ , T₂ , ϵ₁₀ , ϵ₂₀ , ≤γ , (eq₁ ⊗ eq₂) , ϵ≤ , par , d₁ , d₂
   with ST₁ ⊗⟨ _ ⟩ ST₂ ← ST
-  with T̂₁ , ϵ₁ , Δ₁ , m′ , σ₁ , Sσ₁ , ag₁ , SΔ₁ , ϵ₁≤ , ≃₁ , m≤m′ , uvT̂₁ , uvΔ₁ , der₁
+  with ê₁ , p₁ , T̂₁ , ϵ₁ , Δ₁ , m′ , σ₁ , Sσ₁ , ag₁ , SΔ₁ , ϵ₁≤ , ≃₁ , m≤m′ , uvT̂₁ , uvΔ₁ , der₁
      ← ih₁ Sσ uΓ ap Se₁ ST₁ (lin-↓ Γ γ (fv e₁) lin)
           (T-Conv eq₁ ≤ϵ-refl (split-left 𝟙 lin ≤γ d₁ d₂))
-  with T̂₂ , ϵ₂ , Δ₂ , k , σ₂ , Sσ₂ , ag₂ , SΔ₂ , ϵ₂≤ , ≃₂ , m′≤k , uvT̂₂ , uvΔ₂ , der₂
+  with ê₂ , p₂ , T̂₂ , ϵ₂ , Δ₂ , k , σ₂ , Sσ₂ , ag₂ , SΔ₂ , ϵ₂≤ , ≃₂ , m′≤k , uvT̂₂ , uvΔ₂ , der₂
      ← ih₂ Sσ₁ (uvarsInΓ-mono Nat.≤-refl m≤m′ uΓ) (approx-agree {Γ = Γ} {Γ̂ = Γ̂} uΓ ag₁ ap) Se₂ ST₂
           (lin-↓ Γ γ (fv e₂) lin)
           (T-Conv eq₂ ≤ϵ-refl (split-right 𝟙 lin ≤γ d₁ d₂))
   = let Lft = ≼→ Sσ ap uΓ (split-≤γ 𝟙 lin ≤γ d₁ d₂)
         AG  = agree-trans (agree-narrow m≤m′ ag₂) ag₁
-    in _ , _ , _ , k , σ₂ , Sσ₂ , AG ,
+    in (ê₁ ⊗ ê₂) ⦂ _ , ann (⊑-⊗ p₁ p₂) _ , _ , _ , _ , k , σ₂ , Sσ₂ , AG ,
        solvedΔ-++ (solvedΔ-agree (agree-sym AG) (csc Lft) (sol Lft))
          (solvedΔ-++
            (solvedΔ-agree (agree-sym ag₂) (C-Eq (solved⇒uvarsIn ST₁) uvT̂₁ ∷ uvΔ₁)
@@ -101,20 +103,21 @@ pair-case {e₁ = e₁} {e₂ = e₂} ih₁ ih₂ {Γ = Γ} {Γ̂ = Γ̂} {γ = 
          (uvarsInΔ-++
            (uvarsInΔ-mono Nat.≤-refl m′≤k (C-Eq (solved⇒uvarsIn ST₁) uvT̂₁ ∷ uvΔ₁))
            (C-Eq (solved⇒uvarsIn ST₂) uvT̂₂ ∷ uvΔ₂)) ,
-       A-Ann chk-⊗ (A-Pair par (der Lft) (λ ()) (A-Check der₁) (A-Check der₂))
+       A-Ann (A-Pair par (re-≼ (λ X Y → join 𝟙 (γ ↓ X) (γ ↓ Y)) (fv-⊑ p₁) (fv-⊑ p₂) (der Lft)) (λ ())
+         (re-⊢ (λ X → γ ↓ X) (fv-⊑ p₁) (A-Check der₁)) (re-⊢ (λ X → γ ↓ X) (fv-⊑ p₂) (A-Check der₂)))
 pair-case {e₁ = e₁} {e₂ = e₂} ih₁ ih₂ {Γ = Γ} {Γ̂ = Γ̂} {γ = γ} {m = m} Sσ uΓ ap Se₁ Se₂ ST lin d
   | seq , α , β , T₁ , T₂ , ϵ₁₀ , ϵ₂₀ , ≤γ , (eq₁ ⊗ eq₂) , ϵ≤ , seq , d₁ , d₂
   with ST₁ ⊗⟨ _ ⟩ ST₂ ← ST
-  with T̂₁ , ϵ₁ , Δ₁ , m′ , σ₁ , Sσ₁ , ag₁ , SΔ₁ , ϵ₁≤ , ≃₁ , m≤m′ , uvT̂₁ , uvΔ₁ , der₁
+  with ê₁ , p₁ , T̂₁ , ϵ₁ , Δ₁ , m′ , σ₁ , Sσ₁ , ag₁ , SΔ₁ , ϵ₁≤ , ≃₁ , m≤m′ , uvT̂₁ , uvΔ₁ , der₁
      ← ih₁ Sσ uΓ ap Se₁ ST₁ (lin-↓ Γ γ (fv e₁) lin)
           (T-Conv eq₁ ≤ϵ-refl (split-left L lin ≤γ d₁ d₂))
-  with T̂₂ , ϵ₂ , Δ₂ , k , σ₂ , Sσ₂ , ag₂ , SΔ₂ , ϵ₂≤ , ≃₂ , m′≤k , uvT̂₂ , uvΔ₂ , der₂
+  with ê₂ , p₂ , T̂₂ , ϵ₂ , Δ₂ , k , σ₂ , Sσ₂ , ag₂ , SΔ₂ , ϵ₂≤ , ≃₂ , m′≤k , uvT̂₂ , uvΔ₂ , der₂
      ← ih₂ Sσ₁ (uvarsInΓ-mono Nat.≤-refl m≤m′ uΓ) (approx-agree {Γ = Γ} {Γ̂ = Γ̂} uΓ ag₁ ap) Se₂ ST₂
           (lin-↓ Γ γ (fv e₂) lin)
           (T-Conv eq₂ ≤ϵ-refl (split-right L lin ≤γ d₁ d₂))
   = let Lft = ≼→ Sσ ap uΓ (split-≤γ L lin ≤γ d₁ d₂)
         AG  = agree-trans (agree-narrow m≤m′ ag₂) ag₁
-    in _ , _ , _ , k , σ₂ , Sσ₂ , AG ,
+    in (ê₁ ⊗ ê₂) ⦂ _ , ann (⊑-⊗ p₁ p₂) _ , _ , _ , _ , k , σ₂ , Sσ₂ , AG ,
        solvedΔ-++ (solvedΔ-agree (agree-sym AG) (csc Lft) (sol Lft))
          (solvedΔ-++
            (solvedΔ-agree (agree-sym ag₂) (C-Eq (solved⇒uvarsIn ST₁) uvT̂₁ ∷ uvΔ₁)
@@ -126,8 +129,9 @@ pair-case {e₁ = e₁} {e₂ = e₂} ih₁ ih₂ {Γ = Γ} {Γ̂ = Γ̂} {γ = 
          (uvarsInΔ-++
            (uvarsInΔ-mono Nat.≤-refl m′≤k (C-Eq (solved⇒uvarsIn ST₁) uvT̂₁ ∷ uvΔ₁))
            (C-Eq (solved⇒uvarsIn ST₂) uvT̂₂ ∷ uvΔ₂)) ,
-       A-Ann chk-⊗ (A-Pair seq (der Lft)
-                  (λ _ → ≤ϵℙ⇒≡ℙ ϵ₂≤) (A-Check der₁) (A-Check der₂))
+       A-Ann (A-Pair seq (re-≼ (λ X Y → join L (γ ↓ X) (γ ↓ Y)) (fv-⊑ p₁) (fv-⊑ p₂) (der Lft))
+         (λ _ → ≤ϵℙ⇒≡ℙ ϵ₂≤)
+         (re-⊢ (λ X → γ ↓ X) (fv-⊑ p₁) (A-Check der₁)) (re-⊢ (λ X → γ ↓ X) (fv-⊑ p₂) (A-Check der₂)))
 
 ------------------------------------------------------------------------
 -- T-Inj.
@@ -143,12 +147,34 @@ inj-case ih {Γ̂ = Γ̂} {i = i} {m = m} Sσ uΓ ap Se ST lin d
   with inv-inj d
 ... | T₁ , T₂ , (eq₁ ⊕ eq₂) , dbody
   with ST₁ ⊕ ST₂ ← ST
-  with T̂ , ϵ′ , Δ , k , σ , Sσ′ , ag , SΔ , ϵ≤ , ≃b , m≤k , uvT̂ , uvΔ , der
+  with ê′ , p , T̂ , ϵ′ , Δ , k , σ , Sσ′ , ag , SΔ , ϵ≤ , ≃b , m≤k , uvT̂ , uvΔ , der
      ← ih Sσ uΓ ap Se (if[ SolvedTy ] i then ST₁ else ST₂) lin
           (T-Conv (if-≃ i eq₁ eq₂) ≤ϵ-refl dbody)
-  = _ , _ , _ , k , σ , Sσ′ , ag ,
+  = (`inj i ê′) ⦂ _ , ann (⊑-inj i p) _ , _ , _ , _ , k , σ , Sσ′ , ag ,
     (subst (_≃ subTy T̂ σ) (sym (subTy-id (if[ SolvedTy ] i then ST₁ else ST₂)))
            (≃-sym ≃b) ∷ SΔ) ,
     ϵ≤ , ≃-reflexive (subTy-id ST) , m≤k , solved⇒uvarsIn ST ,
     (C-Eq (solved⇒uvarsIn (if[ SolvedTy ] i then ST₁ else ST₂)) uvT̂ ∷ uvΔ) ,
-    A-Ann chk-inj (A-Inj (A-Check der))
+    A-Ann (A-Inj (A-Check der))
+
+------------------------------------------------------------------------
+-- T-Ann (annotation campaign).  A source annotation `e ⦂ T′` is kept: A-Ann checks the body
+-- against the (solved) annotation, and A-Check discharges the comparison with the body's
+-- inferred type under the body's substitution.
+
+ann-case : ∀ {n} {e : Tm n} {T′ : 𝕋} → IHAt e →
+  ∀ {Γ Γ̂ : Ctx n} {γ : Struct n} {T : 𝕋} {ϵ : Eff} {m : ℕ}
+    {σ₀ : UV.Sub} →
+  Solving σ₀ → UVarsInΓ 0 m Γ̂ → Approx Γ̂ Γ σ₀ →
+  SolvedTm e → SolvedTy T′ → LinStruct Γ γ →
+  Γ ; γ ⊢ e ⦂ T′ ∶ T ∣ ϵ →
+  Conclusion Γ̂ γ (e ⦂ T′) T ϵ m σ₀
+ann-case {T′ = T′} ih Sσ uΓ ap Se ST′ lin d
+  with T′≃T , dbody ← inv-⦂ d
+  with ê , p , T̂ , ϵ′ , Δ , k , σ , Sσ′ , ag , SΔ , ϵ≤ , ≃b , m≤k , uvT̂ , uvΔ , der
+     ← ih Sσ uΓ ap Se ST′ lin dbody
+  = ê ⦂ T′ , ⊑-⦂ p T′ , T′ , ϵ′ , C-Eq T′ T̂ ∷ Δ , k , σ , Sσ′ , ag ,
+    (subst (_≃ subTy T̂ σ) (sym (subTy-id ST′)) (≃-sym ≃b) ∷ SΔ) ,
+    ϵ≤ , ≃-trans (≃-reflexive (subTy-id ST′)) T′≃T , m≤k , solved⇒uvarsIn ST′ ,
+    (C-Eq (solved⇒uvarsIn ST′) uvT̂ ∷ uvΔ) ,
+    A-Ann (A-Check der)

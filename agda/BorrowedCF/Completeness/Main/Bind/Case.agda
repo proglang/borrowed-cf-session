@@ -54,6 +54,10 @@ open Fin.Patterns
 caseY : ∀ {n} → Tm (suc n) → Tm (suc n) → Subset n
 caseY e₁ e₂ = fvClose (fv e₁) ∪ fvClose (fv e₂)
 
+-- annotating the branches does not change the branch set
+caseY-⊑ : ∀ {n} {e₁ ê₁ e₂ ê₂ : Tm (suc n)} → e₁ ⊑ ê₁ → e₂ ⊑ ê₂ → caseY ê₁ ê₂ ≡ caseY e₁ e₂
+caseY-⊑ p₁ p₂ = cong₂ _∪_ (cong fvClose (fv-⊑ p₁)) (cong fvClose (fv-⊑ p₂))
+
 module CS {n : ℕ} {Γ : Ctx n} {γ α β : Struct n} {e : Tm n} {e₁ e₂ : Tm (suc n)}
           {T₁ T₂ U : 𝕋} {ϵ : Eff}
           (d : Dir) (lin : LinStruct Γ γ) (≤γ : Γ ∶ join d α β ≼ γ)
@@ -97,13 +101,14 @@ private
     Solving σ₀ → UVarsInΓ 0 m Γ̂ → Approx Γ̂ Γ σ₀ →
     SolvedTm e → SolvedTm e₁ → SolvedTm e₂ → SolvedTy U → LinStruct Γ γ →
     (d : Dir) →
-    (mk : ∀ {T̂₁ T̂₂ Û₁ Û₂ : 𝕋} {ϵ′ ϵ₁ ϵ₂ : Eff} {Δ₀ Δ Δ₁ Δ₂ : CSet} {m₁ m₂ k : ℕ} →
-       let γ₂ = γ ↓ (fvClose (fv e₁) ∪ fvClose (fv e₂)) in
-       Γ̂ ∶ join d (γ ∣fv[ e ]) γ₂ ≼ γ ↑ Δ₀ →
-       Γ̂ ; γ ∣fv[ e ] / m ⊢ e ⇒ T̂₁ ⊕ T̂₂ ∣ ϵ′ ↑ Δ / m₁ →
-       T̂₁ ⸴ Γ̂ ; join d (` 0F) (𝐂.wk γ₂) / m₁ ⊢ e₁ ⇒ Û₁ ∣ ϵ₁ ↑ Δ₁ / m₂ →
-       T̂₂ ⸴ Γ̂ ; join d (` 0F) (𝐂.wk γ₂) / m₂ ⊢ e₂ ⇒ Û₂ ∣ ϵ₂ ↑ Δ₂ / k →
-       Γ̂ ; γ / m ⊢ `case e `of⟨ e₁ ; e₂ ⟩ ⇒ Û₁ ∣ ϵ′ ⊔ϵ ϵ₁ ⊔ϵ ϵ₂
+    (mk : ∀ {ê : Tm n} {ê₁ ê₂ : Tm (suc n)}
+            {T̂₁ T̂₂ Û₁ Û₂ : 𝕋} {ϵ′ ϵ₁ ϵ₂ : Eff} {Δ₀ Δ Δ₁ Δ₂ : CSet} {m₁ m₂ k : ℕ} →
+       let γ₂ = γ ↓ (fvClose (fv ê₁) ∪ fvClose (fv ê₂)) in
+       Γ̂ ∶ join d (γ ∣fv[ ê ]) γ₂ ≼ γ ↑ Δ₀ →
+       Γ̂ ; γ ∣fv[ ê ] / m ⊢ ê ⇒ T̂₁ ⊕ T̂₂ ∣ ϵ′ ↑ Δ / m₁ →
+       T̂₁ ⸴ Γ̂ ; join d (` 0F) (𝐂.wk γ₂) / m₁ ⊢ ê₁ ⇒ Û₁ ∣ ϵ₁ ↑ Δ₁ / m₂ →
+       T̂₂ ⸴ Γ̂ ; join d (` 0F) (𝐂.wk γ₂) / m₂ ⊢ ê₂ ⇒ Û₂ ∣ ϵ₂ ↑ Δ₂ / k →
+       Γ̂ ; γ / m ⊢ `case ê `of⟨ ê₁ ; ê₂ ⟩ ⇒ Û₁ ∣ ϵ′ ⊔ϵ ϵ₁ ⊔ϵ ϵ₂
          ↑ C-Eq Û₁ Û₂ ∷ Δ₀ ++ Δ ++ Δ₁ ++ Δ₂ / k) →
     Γ ∶ join d α β ≼ γ →
     Γ ; α ⊢ e ∶ T₁ ⊕ T₂ ∣ ϵ →
@@ -113,13 +118,13 @@ private
   case-go {Γ = Γ} {Γ̂ = Γ̂} {γ = γ} {α = α} {β = β} {e = e} {e₁ = e₁} {e₂ = e₂}
           {T₁ = T₁} {T₂ = T₂} {U = U}
           ihe ih₁ ih₂ Sσ uΓ ap Se Se₁ Se₂ SU lin d mk ≤γ dve dv₁ dv₂
-    with T̂ , ϵ₀ , Δ , m₁ , σ₁ , Sσ₁ , ag₁ , SΔ , ϵ₀≤ , ≃₀ , m≤m₁ , uvT̂₀ , uvΔ , der₀
+    with ê₀ , p₀ , T̂ , ϵ₀ , Δ , m₁ , σ₁ , Sσ₁ , ag₁ , SΔ , ϵ₀≤ , ≃₀ , m≤m₁ , uvT̂₀ , uvΔ , der₀
        ← ihe Sσ uΓ (approx-sub {Γ̂ = Γ̂} {Γ = Γ} Sσ ap) Se
              (subTy-solved T₁ s₀-solving ⊕ subTy-solved T₂ s₀-solving)
              (lin-sub Γ (γ ↓ (fv e)) (lin-↓ Γ γ (fv e) lin))
              (solve-ty Se (CS.scr d lin ≤γ dve dv₁ dv₂))
     with T̂₁ , T̂₂ , eqT̂ , ≃t₁ , ≃t₂ ← sum-inv ≃₀
-    with Û₁ , ϵ₁ , Δ₁ , m₂ , σ₂ , Sσ₂ , ag₂ , SΔ₁ , ϵ₁≤ , ≃b₁ , m₁≤m₂ , uvÛ₁ , uvΔ₁ , derb₁
+    with ê₁ , p₁ , Û₁ , ϵ₁ , Δ₁ , m₂ , σ₂ , Sσ₂ , ag₂ , SΔ₁ , ϵ₁≤ , ≃b₁ , m₁≤m₂ , uvÛ₁ , uvΔ₁ , derb₁
        ← ih₁ {Γ̂ = T̂₁ ⸴ Γ̂} Sσ₁
              (uvarsInΓ-⸴ (uvarsIn-⊕₁ (subst (UVarsIn 0 m₁) eqT̂ uvT̂₀))
                          (uvarsInΓ-mono Nat.≤-refl m≤m₁ uΓ))
@@ -131,7 +136,7 @@ private
              (lin-bind d (subTy T₁ s₀) (subCtx Γ s₀) (γ ↓ caseY e₁ e₂)
                        (lin-sub Γ (γ ↓ caseY e₁ e₂) (lin-↓ Γ γ (caseY e₁ e₂) lin)))
              (solve-ty Se₁ (CS.br₁ d lin ≤γ dve dv₁ dv₂))
-    with Û₂ , ϵ₂ , Δ₂ , k , σ₃ , Sσ₃ , ag₃ , SΔ₂ , ϵ₂≤ , ≃b₂ , m₂≤k , uvÛ₂ , uvΔ₂ , derb₂
+    with ê₂ , p₂ , Û₂ , ϵ₂ , Δ₂ , k , σ₃ , Sσ₃ , ag₃ , SΔ₂ , ϵ₂≤ , ≃b₂ , m₂≤k , uvÛ₂ , uvΔ₂ , derb₂
        ← ih₂ {Γ̂ = T̂₂ ⸴ Γ̂} Sσ₂
              (uvarsInΓ-⸴ (uvarsIn-mono Nat.≤-refl m₁≤m₂
                            (uvarsIn-⊕₂ (subst (UVarsIn 0 m₁) eqT̂ uvT̂₀)))
@@ -150,7 +155,7 @@ private
     with Lft ← ≼→ Sσ ap uΓ (CS.≤γ′ d lin ≤γ dve dv₁ dv₂)
     with AG ← agree-trans (agree-narrow m≤m₁ (agree-trans (agree-narrow m₁≤m₂ ag₃) ag₂)) ag₁
     with m≤k ← Nat.≤-trans m≤m₁ (Nat.≤-trans m₁≤m₂ m₂≤k)
-    = _ , _ , _ , k , σ₃ , Sσ₃ , AG ,
+    = `case ê₀ `of⟨ ê₁ ; ê₂ ⟩ , ⊑-case p₀ p₁ p₂ , _ , _ , _ , k , σ₃ , Sσ₃ , AG ,
       solvedΔ-∷
         (≃-trans (≃-reflexive (subTy-agree ag₃ uvÛ₁)) (≃-trans ≃b₁ (≃-sym ≃b₂)))
         (solvedΔ-++ (solvedΔ-agree (agree-sym AG) (csc Lft) (sol Lft))
@@ -165,9 +170,11 @@ private
         uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl m≤k (csc Lft))
           (uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl (Nat.≤-trans m₁≤m₂ m₂≤k) uvΔ)
                        (uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl m₂≤k uvΔ₁) uvΔ₂)) ,
-      mk (der Lft)
-         (subst (λ z → Γ̂ ; γ ∣fv[ e ] / _ ⊢ e ⇒ z ∣ ϵ₀ ↑ Δ / m₁) eqT̂ der₀)
-         derb₁ derb₂
+      mk (re-≼ (λ X Z → join d (γ ↓ X) (γ ↓ Z)) (fv-⊑ p₀) (caseY-⊑ p₁ p₂) (der Lft))
+         (re-⊢ (λ X → γ ↓ X) (fv-⊑ p₀)
+               (subst (λ z → Γ̂ ; γ ∣fv[ e ] / _ ⊢ ê₀ ⇒ z ∣ ϵ₀ ↑ Δ / m₁) eqT̂ der₀))
+         (re-⊢ (λ Z → join d (` 0F) (𝐂.wk (γ ↓ Z))) (caseY-⊑ p₁ p₂) derb₁)
+         (re-⊢ (λ Z → join d (` 0F) (𝐂.wk (γ ↓ Z))) (caseY-⊑ p₁ p₂) derb₂)
 
   case-dispatch : ∀ {n} {Γ Γ̂ : Ctx n} {γ α β : Struct n} {e : Tm n} {e₁ e₂ : Tm (suc n)}
                     {T₁ T₂ U : 𝕋} {ϵ : Eff} {m : ℕ} {σ₀ : UV.Sub} →

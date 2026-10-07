@@ -68,6 +68,7 @@ consumePhi x k (`inj side e) = `inj side (consumePhi x k e)
 consumePhi x k (`case e `of⟨ e₁ ; e₂ ⟩) =
   `case consumePhi x k e
     `of⟨ consumePhi (suc x) k e₁ ; consumePhi (suc x) k e₂ ⟩
+consumePhi x k (e ⦂ T) = consumePhi x k e ⦂ T
 
 -- Insert one phi cell.  `insertSlot k l` is the dual of `shiftSlot`: slots
 -- below `k` keep their number, slots at or above `k` move up by one.
@@ -98,6 +99,7 @@ insertPhi x k (`inj side e) = `inj side (insertPhi x k e)
 insertPhi x k (`case e `of⟨ e₁ ; e₂ ⟩) =
   `case insertPhi x k e
     `of⟨ insertPhi (suc x) k e₁ ; insertPhi (suc x) k e₂ ⟩
+insertPhi x k (e ⦂ T) = insertPhi x k e ⦂ T
 
 insertPhi-Value :
   (x : 𝔽 n) (k : ℕ) {e : Tm n} → Value e → Value (insertPhi x k e)

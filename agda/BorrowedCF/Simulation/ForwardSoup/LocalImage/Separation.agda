@@ -137,6 +137,8 @@ consumePhi-ren {ρ = ρ} inj x k (SoupTerm.`let⊗ t₁ `in t₂) =
       (liftRen-injective (liftRen-injective inj)) (suc (suc x)) k t₂)
 consumePhi-ren inj x k (SoupTerm.`inj i t) =
   cong (SoupTerm.`inj i) (consumePhi-ren inj x k t)
+consumePhi-ren inj x k (t SoupTerm.⦂ ty) =
+  cong (SoupTerm._⦂ ty) (consumePhi-ren inj x k t)
 consumePhi-ren {ρ = ρ} inj x k (SoupTerm.`case t `of⟨ t₁ ; t₂ ⟩) =
   cong₂ (λ u us → SoupTerm.`case u `of⟨ proj₁ us ; proj₂ us ⟩)
     (consumePhi-ren inj x k t)
@@ -206,6 +208,8 @@ consumePhi-T x k (Source.`let⊗ e₁ `in e₂) σ =
      T[_]-Env-cong e₂ (consumePhi-liftEnv₂ x k σ))
 consumePhi-T x k (Source.`inj i e) σ =
   cong (SoupTerm.`inj i) (consumePhi-T x k e σ)
+consumePhi-T x k (e Source.⦂ ty) σ =
+  cong (SoupTerm._⦂ ty) (consumePhi-T x k e σ)
 consumePhi-T x k (Source.`case e `of⟨ e₁ ; e₂ ⟩) σ =
   cong₂ (λ u us → SoupTerm.`case u `of⟨ proj₁ us ; proj₂ us ⟩)
     (consumePhi-T x k e σ)

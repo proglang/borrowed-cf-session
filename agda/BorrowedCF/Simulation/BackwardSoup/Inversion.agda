@@ -47,7 +47,7 @@ import BorrowedCF.Reduction.ExpressionsSoup as SoupRed
 import BorrowedCF.Terms.Base as Source
 import BorrowedCF.Terms.BaseSoup as SoupTerm
 
-open import BorrowedCF.Types using (Dir)
+open import BorrowedCF.Types using (Dir; 𝕋)
 
 open import BorrowedCF.Simulation.ForwardSoup.Expressions
   using ( ValueEnv; T[_]-Value; Tᶠ[_]; Tᶠ*[_]
@@ -289,6 +289,19 @@ T-mu-inv (`let e₁ `in e₂) σ Vσ ()
 T-mu-inv (`let⊗ e₁ `in e₂) σ Vσ ()
 T-mu-inv (`inj j e) σ Vσ ()
 T-mu-inv (`case e `of⟨ e₁ ; e₂ ⟩) σ Vσ ()
+
+-- An annotated soup term is the translation of an annotated source term:
+-- a variable translates to a value, and `t ⦂ T` is not a value.
+T-ann-inv :
+  {n n′ : ℕ} (e : Source.Tm n) (σ : Translation.Env n n′) → ValueEnv σ →
+  {u : SoupTerm.Tm n′} {T : 𝕋} →
+  Translation.T[ e ] σ ≡ u SoupTerm.⦂ T →
+  Σ[ e₀ ∈ Source.Tm n ]
+    (e ≡ e₀ Source.⦂ T) × (Translation.T[ e₀ ] σ ≡ u)
+T-ann-inv (` x) σ Vσ equal
+  with subst SoupRed.Value equal (Vσ x)
+... | ()
+T-ann-inv (e₀ Source.⦂ T) σ Vσ refl = e₀ , refl , refl
 
 -- The four shapes a VALUE can have.  A variable of the environment may
 -- legitimately carry them, so these return a disjunction.
@@ -743,6 +756,13 @@ head-inversion e σ Vσ Pσ equal SoupRed.E-Unfold
         (sym eEq) (SourceRed.E-□ SourceRed.E-Unfold)
     , ( T[_]-⦅⦆ b (μ b) σ ■
         cong₂ SoupRed.subst₀ (cong SoupTerm.μ bEq) bEq ) )
+head-inversion e σ Vσ Pσ equal SoupRed.E-Ann
+  with T-ann-inv e σ Vσ equal
+... | e₀ , eEq , e₀Eq =
+  inj₁
+    ( e₀
+    , subst (λ z → z SourceRed.⋯→ e₀) (sym eEq) (SourceRed.E-□ SourceRed.E-Ann)
+    , e₀Eq )
 
 -- The specialisation with `t` the translation itself.
 step-inversion′ :

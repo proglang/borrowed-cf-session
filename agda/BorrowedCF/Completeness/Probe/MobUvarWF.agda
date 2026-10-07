@@ -4,7 +4,8 @@
 --   give the instance and its declarative derivation, using only WF types
 --   produced by the system's own `rsplit`/`lsplit`; §5 the mobility facts;
 --   §6 the ANSWER: the algorithmic system as mechanised does NOT reject the
---   term, because A-Ann re-infers the rsplit result at the SOLVED type.
+--   term, because A-Ann re-infers the rsplit result at the SOLVED type (since
+--   2026-10-07 given the annotation `_⦂ Tx₁ ⊗¹ Tx₂`, which completeness may insert).
 module BorrowedCF.Completeness.Probe.MobUvarWF where
 
 open import Data.List.Relation.Unary.All as All using (All; []; _∷_)
@@ -16,6 +17,7 @@ open import BorrowedCF.Types renaming (Solved to SolvedTy)
 open import BorrowedCF.Types.Unification
 open import BorrowedCF.Algorithmic
 open import BorrowedCF.Algorithmic.Solved
+open import BorrowedCF.Completeness.Sub using (≼⇒≼↑)
 
 open Fin.Patterns
 open Nat.Variables
@@ -172,6 +174,12 @@ app-const ⊢c ≤a d = T-AppUnr (constFnUnr ⊢c) ≤a (T-Conv ≃-refl ℙ≤�
 ¬skips-end : ¬ Skips (end {0} ‼)
 ¬skips-end ()
 
+local-ret : Local (ret {0})
+local-ret ()
+
+local-end : Local (end {0} ‼)
+local-end ()
+
 body-decl : Cx7 ; (((` 0F) ; (` 1F)) ; ((` 3F) ; (` 5F))) ⊢ bodyE ∶ `⊤ ∣ 𝕀
 body-decl = T-Weaken
   (≼-refl (≈-trans (;-cong (;-cong (≈-trans ∥-unit₁ ∥-unit₁) ∥-unit₁)
@@ -187,7 +195,7 @@ body-decl = T-Weaken
 
 eLsplit-decl : Cx5 ; (` 0F) ⊢ eLsplit ∶ Ty₁ ⊗⟨ L ⟩ Ty₂ ∣ 𝕀
 eLsplit-decl = T-Weaken (≼-refl ∥-unit₁)
-  (app-const (`lsplit sM ret ¬skips-sM ¬skips-ret) ℙ≤ϵ
+  (app-const (`lsplit sM ret ¬skips-sM local-ret ¬skips-ret) ℙ≤ϵ
              (T-Conv ≃-refl ℙ≤ϵ (T-Var 0F refl)))
 
 lsplit-decl : Cx5 ; (((` 0F) ∥ (` 1F)) ; (` 3F)) ⊢ (`let⊗ eLsplit `in bodyE) ∶ `⊤ ∣ 𝕀
@@ -197,7 +205,7 @@ lsplit-decl = T-Weaken
 
 eRsplit-decl : Cx3 ; (` 0F) ⊢ eRsplit ∶ Tx₁ ⊗⟨ 𝟙 ⟩ Tx₂ ∣ 𝕀
 eRsplit-decl = T-Weaken (≼-refl ∥-unit₁)
-  (app-const (`rsplit sM (end ‼) ¬skips-sM ¬skips-end) ℙ≤ϵ
+  (app-const (`rsplit sM (end ‼) local-end ¬skips-end) ℙ≤ϵ
              (T-Conv ≃-refl ℙ≤ϵ (T-Var 0F refl)))
 
 rsplit-decl : Cx3 ; (((` 0F) ; (` 1F)) ; []) ⊢ (`let⊗ eRsplit `in (`let⊗ eLsplit `in bodyE)) ∶ `⊤ ∣ 𝕀
@@ -221,6 +229,13 @@ decl = T-Abs (λ()) (λ())
 --   the algorithmic derivation mirrors the declarative one.  So the instance is
 --   a counterexample to the PAPER's algorithm (whose A-Annot needs a source
 --   annotation) but NOT to the Agda `Complete⇐`.
+--
+--   Annotation campaign (2026-10-07): A-Ann now reads a SYNTACTIC annotation, so
+--   the escape needs the source annotation `eRsplit ⦂ (Tx₁ ⊗¹ Tx₂)` (exactly the
+--   paper's A-Annot).  `Complete⇐` now concludes with an annotated ê ⊒ e, so the
+--   completeness proof may insert that annotation itself: the instance is still
+--   NOT a counterexample to the Agda statement, and it shows the annotation the
+--   proof has to insert at this rsplit.
 
 αᵣ : UVar
 αᵣ = UV.fresh 0                       -- the variable A-RSplit invents at m = 0
@@ -234,20 +249,24 @@ Uᵣ = ⟨ sM ; ret ⟩ ⊗⟨ 𝟙 ⟩ ⟨ acq ; `` αᵣ ⟩
 Δᵣ : CSet
 Δᵣ = C-Eq (Tx₁ ⊗⟨ 𝟙 ⟩ Tx₂) Uᵣ ∷ C-Eq ⟨ sM ; `` αᵣ ⟩ ⟨ sQ ⟩ ∷ []
 
-alg-rsplit : Cx3 ; (` 0F) / 0 ⊢ eRsplit ⇒ (Tx₁ ⊗⟨ 𝟙 ⟩ Tx₂) ∣ ℙ ↑ Δᵣ / 1
+↑′ : ∀ {n} {Γ : Ctx n} {α β : Struct n} (d : Γ ∶ α ≼ β) → Γ ∶ α ≼ β ↑ proj₁ (≼⇒≼↑ d)
+↑′ d = proj₁ (proj₂ (≼⇒≼↑ d))
+
+alg-rsplit : Cx3 ; (` 0F) / 0 ⊢ (eRsplit ⦂ (Tx₁ ⊗⟨ 𝟙 ⟩ Tx₂)) ⇒ (Tx₁ ⊗⟨ 𝟙 ⟩ Tx₂) ∣ ℙ ↑ Δᵣ / 1
 alg-rsplit =
-  A-Ann (A-Check (A-App _ (≼-refl ∥-unit₂)
-                         (A-RSplit (≼-refl ≈-refl) ¬skips-sM)
-                         (A-Check (A-Var (≼-refl ≈-refl)))))
+  A-Ann (A-Check (A-App _ (↑′ (≼-refl ∥-unit₂))
+                         (A-RSplit (↑′ (≼-refl ≈-refl)))
+                         (A-Check (A-Var (↑′ (≼-refl ≈-refl))))))
 
 solvedΔᵣ : SolvedΔ Δᵣ UV.someSub
 solvedΔᵣ = ≃-refl ∷ ≃-refl ∷ []
 
 --  The escape is not special to this term.  A-Ann/A-Check let the algorithm
---  replace ANY inferred type by ANY σ-equivalent one, at the cost of one C-Eq:
+--  replace ANY inferred type by ANY σ-equivalent one, at the cost of one C-Eq
+--  and (since 2026-10-07) one syntactic annotation `_⦂ G`:
 retype : ∀ {n} {Γ : Ctx n} {γ : Struct n} {e : Tm n} {m U G ϵ Δ k} →
          Γ ; γ / m ⊢ e ⇒ U ∣ ϵ ↑ Δ / k →
-         Γ ; γ / m ⊢ e ⇒ G ∣ ϵ ↑ C-Eq G U ∷ Δ / k
+         Γ ; γ / m ⊢ (e ⦂ G) ⇒ G ∣ ϵ ↑ C-Eq G U ∷ Δ / k
 retype d = A-Ann (A-Check d)
 
 retype-solved : ∀ {σ Δ U G} → subTy G σ ≃ subTy U σ → SolvedΔ Δ σ →

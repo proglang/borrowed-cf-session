@@ -13,10 +13,12 @@
 --
 --   Owner: agent C4.
 open import Data.List.Relation.Unary.All using ([]; _∷_)
+open import Data.Fin.Subset using (Subset)
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Context
 open import BorrowedCF.Context.SubConstraint
+open import BorrowedCF.Terms
 open import BorrowedCF.Types renaming (Solved to SolvedTy)
 open import BorrowedCF.Types.Unification
 open import BorrowedCF.Algorithmic
@@ -99,3 +101,19 @@ unr→ ap x = unr-approx (ap x)
 unrCx→ : ∀ {n} {Γ Γ̂ : Ctx n} {α : Struct n} {σ₀ : UV.Sub} →
   Approx Γ̂ Γ σ₀ → UnrCx Γ α → UnrCx Γ̂ α
 unrCx→ {Γ = Γ} {Γ̂ = Γ̂} ap U = allCx-ctx {Γ₁ = Γ} {Γ₂ = Γ̂} (unr→ {Γ = Γ} {Γ̂ = Γ̂} ap) U
+
+------------------------------------------------------------------------
+-- Annotation transport (annotation campaign).  `γ ↓ fv ê` does not reduce for an abstract
+-- annotated term ê, so a derivation built at the restriction to `fv e` moves to `fv ê` along
+-- `fv-⊑ p : fv ê ≡ fv e`.  Both helpers match `refl` while the two sets are still VARIABLES;
+-- `F` names the position of the set inside the structure.
+
+re-⊢ : ∀ {n k} {Γ̂ : Ctx n} (F : Subset k → Struct n) {X X′ : Subset k} {m j : ℕ}
+         {ξ : Mode} {ê : Tm n} {T : 𝕋} {ϵ : Eff} {Δ : CSet} →
+  X′ ≡ X → Γ̂ ; F X / m ⊢[ ξ ] ê ∶ T ∣ ϵ ↑ Δ / j → Γ̂ ; F X′ / m ⊢[ ξ ] ê ∶ T ∣ ϵ ↑ Δ / j
+re-⊢ F refl d = d
+
+re-≼ : ∀ {n k₁ k₂} {Γ̂ : Ctx n} (F : Subset k₁ → Subset k₂ → Struct n)
+         {X X′ : Subset k₁} {Y Y′ : Subset k₂} {γ : Struct n} {Δ : CSet} →
+  X′ ≡ X → Y′ ≡ Y → Γ̂ ∶ F X Y ≼ γ ↑ Δ → Γ̂ ∶ F X′ Y′ ≼ γ ↑ Δ
+re-≼ F refl refl d = d

@@ -70,6 +70,8 @@ swapPhi-insertPhi x k (SoupTerm.`let⊗ t₁ `in t₂) =
     (swapPhi-insertPhi (suc (suc x)) k t₂)
 swapPhi-insertPhi x k (SoupTerm.`inj side t) =
   cong (SoupTerm.`inj side) (swapPhi-insertPhi x k t)
+swapPhi-insertPhi x k (t SoupTerm.⦂ T) =
+  cong (SoupTerm._⦂ T) (swapPhi-insertPhi x k t)
 swapPhi-insertPhi x k (SoupTerm.`case t `of⟨ t₁ ; t₂ ⟩) =
   cong₃ SoupTerm.`case_`of⟨_;_⟩
     (swapPhi-insertPhi x k t)

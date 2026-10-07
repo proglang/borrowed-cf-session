@@ -142,7 +142,7 @@ GuessIn k (A-AbsRec unrΓ ωa ϵ≤ d) = GuessIn k d
 GuessIn k (A-Pair p/s ≤γ sp d₁ d₂) = GuessIn k d₁ × GuessIn k d₂
 GuessIn k (A-Inj d) = GuessIn k d
 GuessIn k (A-Check d) = GuessIn k d
-GuessIn {T = T} {m = m} k (A-Ann cf d) = UVarsIn k m T × GuessIn k d
+GuessIn {T = T} {m = m} k (A-Ann d) = UVarsIn k m T × GuessIn k d
 
 -- What the mode contributes on the way in: in checking mode the type is an INPUT,
 -- and A-Check turns it into the constraint `C-Eq T U`, so its variables must be in
@@ -255,7 +255,7 @@ scope-gen (A-Check d) g uΓ k≤m sI =
   let m≤n , uU , uΔ = scope-gen d g uΓ k≤m tt
       uT = uvarsIn-mono Nat.≤-refl m≤n sI
   in m≤n , uT , C-Eq uT uU ∷ uΔ
-scope-gen (A-Ann cf d) (gT , g) uΓ k≤m sI = scope-gen d g uΓ k≤m gT
+scope-gen (A-Ann d) (gT , g) uΓ k≤m sI = scope-gen d g uΓ k≤m gT
 
 -- The theorem as used by the main proof: a solved context, the window starting at
 -- the entry counter m.

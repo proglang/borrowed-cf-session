@@ -31,6 +31,10 @@ data Tm (n : ℕ) : Set where
   `inj : (i : Side) (e : Tm n) → Tm n
   `case_`of⟨_;_⟩ :
     (e : Tm n) (e₁ e₂ : Tm (1 + n)) → Tm n
+  -- Syntactic type annotation, as in BorrowedCF.Terms.Base (U+2982).
+  _⦂_ : (e : Tm n) (T : 𝕋) → Tm n
+
+infixl 5 _⦂_
 
 pattern * = K `unit
 pattern _·ᴸ_ e₁ e₂ = e₁ ·⟨ L ⟩ e₂
@@ -63,6 +67,7 @@ K c ⋯ᵣ ρ = K c
 (`inj i e) ⋯ᵣ ρ = `inj i (e ⋯ᵣ ρ)
 (`case e `of⟨ e₁ ; e₂ ⟩) ⋯ᵣ ρ =
   `case (e ⋯ᵣ ρ) `of⟨ (e₁ ⋯ᵣ liftRen ρ) ; (e₂ ⋯ᵣ liftRen ρ) ⟩
+(e ⦂ T) ⋯ᵣ ρ = (e ⋯ᵣ ρ) ⦂ T
 
 wk : Tm n → Tm (1 + n)
 wk e = e ⋯ᵣ suc
@@ -106,6 +111,7 @@ K c ⋯ₛ σ = K c
 (`inj i e) ⋯ₛ σ = `inj i (e ⋯ₛ σ)
 (`case e `of⟨ e₁ ; e₂ ⟩) ⋯ₛ σ =
   `case (e ⋯ₛ σ) `of⟨ (e₁ ⋯ₛ liftSub σ) ; (e₂ ⋯ₛ liftSub σ) ⟩
+(e ⦂ T) ⋯ₛ σ = (e ⋯ₛ σ) ⦂ T
 
 ResolvedPhiRef : ℕ → Set
 ResolvedPhiRef n = Maybe (PhiRef n)
@@ -137,6 +143,7 @@ phiRefsFrom d (`case e `of⟨ e₁ ; e₂ ⟩) =
   phiRefsFrom d e ++
   phiRefsFrom (suc d) e₁ ++
   phiRefsFrom (suc d) e₂
+phiRefsFrom d (e ⦂ T) = phiRefsFrom d e
 
 phiRefs : Tm n → List (ResolvedPhiRef n)
 phiRefs = phiRefsFrom 0

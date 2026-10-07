@@ -56,7 +56,7 @@ abs-case ih {Γ = Γ} {Γ̂ = Γ̂} {γ = γ} {m = m} {σ₀ = σ₀} Sσ uΓ ap
   with inv-ƛ d
 ... | T₁ , a , U , γ₀ , (eq₁ `→ eq₂) , ≤γ₀ , Γ-unr , Γ-mob , dbody
   with ST₁ ⟨ _ ⟩→ ST₂ ← ST
-  with T̂b , ϵb , Δb , k , σ , Sσ′ , ag , SΔb , ϵb≤ , ≃b , m≤k , uvT̂b , uvΔb , derb
+  with êb , pb , T̂b , ϵb , Δb , k , σ , Sσ′ , ag , SΔb , ϵb≤ , ≃b , m≤k , uvT̂b , uvΔb , derb
      ← ih {Γ = T₁ ⸴ Γ} {Γ̂ = _ ⸴ Γ̂} Sσ
          (uvarsInΓ-⸴ (solved⇒uvarsIn ST₁) uΓ)
          (λ where
@@ -66,7 +66,7 @@ abs-case ih {Γ = Γ} {Γ̂ = Γ̂} {γ = γ} {m = m} {σ₀ = σ₀} Sσ uΓ ap
          (lin-bind (Arr.dir a) T₁ Γ γ lin)
          (T-Conv eq₂ ≤ϵ-refl
            (T-Weaken (≼-join (Arr.dir a) (≼-refl ≈-refl) (wk≼ ≤γ₀)) dbody))
-  = _ , ℙ , _ , k , σ , Sσ′ , ag ,
+  = (ƛ êb) ⦂ _ , ann (⊑-ƛ pb) _ , _ , ℙ , _ , k , σ , Sσ′ , ag ,
     solvedΔ-++
       (mobΔ (Arr.mob a) (λ mob≡ → allCx-weaken unr⇒mobile ≤γ₀ (Γ-mob mob≡)))
       (subst (_≃ subTy T̂b σ) (sym (subTy-id ST₂)) (≃-sym ≃b) ∷ SΔb) ,
@@ -74,7 +74,7 @@ abs-case ih {Γ = Γ} {Γ̂ = Γ̂} {γ = γ} {m = m} {σ₀ = σ₀} Sσ uΓ ap
     uvarsInΔ-++
       (uvarsInΔ-mono Nat.≤-refl m≤k (uvarsInΔ-mobConstraints (Arr.mob a) Γ̂ γ uΓ))
       (C-Eq (solved⇒uvarsIn ST₂) uvT̂b ∷ uvΔb) ,
-    A-Ann chk-ƛ (A-Abs (λ u → unrCx→ ap (unrCx-weaken ≤γ₀ (Γ-unr u))) ϵb≤ (A-Check derb) refl)
+    A-Ann (A-Abs (λ u → unrCx→ ap (unrCx-weaken ≤γ₀ (Γ-unr u))) ϵb≤ (A-Check derb) refl)
   where
     -- the mobility constraints of A-Abs.  The declarative `MobCx` transports along the
     -- context approximation (`Mobile` respects `≃`), so this does NOT use `mob-reflect`.
@@ -97,7 +97,7 @@ absrec-case ih {Γ = Γ} {Γ̂ = Γ̂} {γ = γ} {m = m} {σ₀ = σ₀} Sσ uΓ
   with inv-μ d
 ... | _ , T₁ , a , U , γ₀ , refl , (eq₁ `→ eq₂) , ≤γ₀ , Γ-unr , a-unr , dbody
   with ST₁ ⟨ _ ⟩→ ST₂ ← ST
-  with T̂b , ϵb , Δb , k , σ , Sσ′ , ag , SΔb , ϵb≤ , ≃b , m≤k , uvT̂b , uvΔb , derb
+  with êb , pb , T̂b , ϵb , Δb , k , σ , Sσ′ , ag , SΔb , ϵb≤ , ≃b , m≤k , uvT̂b , uvΔb , derb
      ← ih {Γ = T₁ ⸴ (T₁ ⟨ a ⟩→ U) ⸴ Γ} {Γ̂ = _ ⸴ _ ⸴ Γ̂} Sσ
          (uvarsInΓ-⸴ (solved⇒uvarsIn ST₁) (uvarsInΓ-⸴ (solved⇒uvarsIn ST) uΓ))
          (λ where
@@ -107,8 +107,8 @@ absrec-case ih {Γ = Γ} {Γ̂ = Γ̂} {γ = γ} {m = m} {σ₀ = σ₀} Sσ uΓ
          (solvedTm-ƛ Se) ST₂
          (lin-bind-rec T₁ (T₁ ⟨ a ⟩→ U) Γ γ lin)
          (T-Conv eq₂ ≤ϵ-refl (T-Weaken (≼-cong-∥ (≼-refl ≈-refl) (wk²≼ ≤γ₀)) dbody))
-  = _ , ℙ , _ , k , σ , Sσ′ , ag ,
+  = μ (ƛ êb) ⦂ _ , ann (⊑-μ (⊑-ƛ pb)) _ , _ , ℙ , _ , k , σ , Sσ′ , ag ,
     (subst (_≃ subTy T̂b σ) (sym (subTy-id ST₂)) (≃-sym ≃b) ∷ SΔb) ,
     ℙ≤ϵ , ≃-reflexive (subTy-id ST) , m≤k , solved⇒uvarsIn ST ,
     (C-Eq (solved⇒uvarsIn ST₂) uvT̂b ∷ uvΔb) ,
-    A-Ann chk-μ (A-AbsRec (unrCx→ ap (unrCx-weaken ≤γ₀ Γ-unr)) a-unr ϵb≤ (A-Check derb))
+    A-Ann (A-AbsRec (unrCx→ ap (unrCx-weaken ≤γ₀ Γ-unr)) a-unr ϵb≤ (A-Check derb))

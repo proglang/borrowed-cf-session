@@ -25,6 +25,7 @@ data _─→_ {n} : Tm n → Tm n → Set where
   E-PairElim : (V₁ : Value e₁) (V₂ : Value e₂) → `let⊗ (e₁ ⊗ e₂) `in e ─→ e ⋯ ⦅ wk e₁ ⦆ ⋯ ⦅ e₂ ⦆
   E-SumElim : ∀ {i} (V : Value e) → `case `inj i e `of⟨ e₁ ; e₂ ⟩ ─→ (if i then e₁ else e₂) ⋯ ⦅ e ⦆
   E-Unfold : μ e ─→ e ⋯ ⦅ μ e ⦆
+  E-Ann : ∀ {T} → (e ⦂ T) ─→ e
 
 data _⋯→_ {n} : Tm n → Tm n → Set where
   E-□   : e₁ ─→ e₂ → e₁ ⋯→ e₂
@@ -238,6 +239,7 @@ module _ (Γ-S : ChanCx Γ) where
   ... | R =
     let e″ = (T-Conv eq₂ ≤ϵ-refl e′)
     in T-Weaken γ≡ $ e₂ ⊢⋯ₛ ⊢subₛ e″ (λ U → unr×value⇒unrCx U V e″) (λ m → mobile×value⇒mobCx m V e″)
+  preservation′ (T-Ann e) E-Ann = e
   preservation′ (T-Weaken γ≤ e) x =
     T-Weaken γ≤ (preservation′ e x)
   preservation′ (T-Conv eq ϵ≤ e) x =
@@ -381,5 +383,6 @@ module _ (Γ-S : ChanCx Γ) where
     with _ , _ , refl ← value×⊕⇒`inj V-e e
     with V-⊕ V ← V-e
     = inj₂ (inj₂ (_ , E-□ (E-SumElim V)))
+  progress (T-Ann e) = inj₂ (inj₂ (_ , E-□ E-Ann))
   progress (T-Weaken γ≤ e) = progress e
   progress (T-Conv eq ϵ≤ e) = progress e

@@ -2,7 +2,7 @@ module BorrowedCF.Reduction.ExpressionsSoup where
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms.BaseSoup
-open import BorrowedCF.Types using (Dir; L; R; 𝟙)
+open import BorrowedCF.Types using (Dir; L; R; 𝟙; 𝕋)
 
 open Nat.Variables
 
@@ -110,6 +110,7 @@ data _─→_ {n} : Tm n → Tm n → Set where
   E-SumElim : ∀ {i} → Value e →
     `case `inj i e `of⟨ e₁ ; e₂ ⟩ ─→ subst₀ e (if i then e₁ else e₂)
   E-Unfold : μ e ─→ subst₀ (μ e) e
+  E-Ann : ∀ {T : 𝕋} → (e ⦂ T) ─→ e
 
 data _⋯→_ {n} : Tm n → Tm n → Set where
   E-□ : e₁ ─→ e₂ → e₁ ⋯→ e₂

@@ -17,6 +17,8 @@ open import BorrowedCF.Context
 open import BorrowedCF.Processes.Typed
 open import BorrowedCF.Types
 open import BorrowedCF.Types.AtomCons using (acq-;-split)
+import BorrowedCF.Types.AtomCons as AC
+import BorrowedCF.Types.AtomSnoc as ASn
 open import BorrowedCF.Types.AtomUnsnoc using (atom-;-unsnoc)
 
 open import BorrowedCF.Safety.Preservation.Splits.Chain
@@ -143,19 +145,34 @@ acqHead-lsplit ¬Sm₁ teq (there U I) nilS ah = acqHead-cong U ah
 acqHead-lsplit ¬Sm₁ teq I (consS V.[] Sm)     ah = acqHead-lsplit ¬Sm₁ teq I Sm ah
 acqHead-lsplit ¬Sm₁ teq I (consS (U ⸴ Γ₀) Sm) ah = acqHead-cong U ah
 
+-- `Local t₂` says that t₂ does not start with acq, up to ≃.  Every way an
+-- acq can head t₂ (AC.Cons) is a NonLocal witness, including the `mu` case
+-- (NonLocal.mu, added per DECISION-local-mu.md option 1).
+private
+  cons-acq⇒nonLocal : ∀ {w z : 𝕊 n} → AC.Cons acq w z → NonLocal w
+  cons-acq⇒nonLocal AC.here      = acq
+  cons-acq⇒nonLocal (AC.hd c)    = cons-acq⇒nonLocal c ;₁-
+  cons-acq⇒nonLocal (AC.tl Sk c) = Sk ;₂ cons-acq⇒nonLocal c
+  cons-acq⇒nonLocal (AC.mu c)    = mu (cons-acq⇒nonLocal c)
+
+  local⇒¬acqHead : Local t₂ → ∀ u → ¬ (t₂ ≃ acq ; u)
+  local⇒¬acqHead Lt _ eq =
+    let _ , c , _ = AC.≃-cons ASn.acq (λ ()) (≃-sym eq) (AC.hd AC.here) in
+    Lt (cons-acq⇒nonLocal c)
+
 acqHead-rsplit : ∀ {B₁ B₂ w w₁ w₂} {Γg : Ctx w} {Γg₁ : Ctx w₁} {Γg₂ : Ctx w₂}
   {Γr : Ctx (sum B₂)} {Γ Γ′} →
-  ¬ Skips t₁ → t ≃ t₁ ; t₂ →
+  (∀ u → ¬ (t₂ ≃ acq ; u)) → t ≃ t₁ ; t₂ →
   InsR (⟨ t ⟩) (⟨ t₁ ; ret ⟩) (⟨ acq ; t₂ ⟩) Γg Γg₁ Γg₂ →
   Same B₁ {w ∷ B₂} {w₁ ∷ w₂ ∷ B₂} {Γg ⸴* Γr} {Γg₁ ⸴* (Γg₂ ⸴* Γr)} Γ Γ′ →
   AcqHeadCtx Γ → AcqHeadCtx Γ′
-acqHead-rsplit ¬Sm₁ teq here nilS (h , eq)
+acqHead-rsplit ¬A₂ teq here nilS (h , eq)
   with acq-;-split (≃-trans (≃-sym teq) eq)
-... | inj₁ (Sk , _)       = ⊥-elim (¬Sm₁ Sk)
+... | inj₁ (_ , eq₂)      = ⊥-elim (¬A₂ _ eq₂)
 ... | inj₂ (h′ , eq′ , _) = (h′ ; ret) , ≃-trans (≃-; eq′ ≃-refl) ≃-assoc-;
-acqHead-rsplit ¬Sm₁ teq (there U I) nilS ah = acqHead-cong U ah
-acqHead-rsplit ¬Sm₁ teq I (consS V.[] Sm)     ah = acqHead-rsplit ¬Sm₁ teq I Sm ah
-acqHead-rsplit ¬Sm₁ teq I (consS (U ⸴ Γ₀) Sm) ah = acqHead-cong U ah
+acqHead-rsplit ¬A₂ teq (there U I) nilS ah = acqHead-cong U ah
+acqHead-rsplit ¬A₂ teq I (consS V.[] Sm)     ah = acqHead-rsplit ¬A₂ teq I Sm ah
+acqHead-rsplit ¬A₂ teq I (consS (U ⸴ Γ₀) Sm) ah = acqHead-cong U ah
 
 ------------------------------------------------------------------------
 -- BindCtxLsplit
@@ -224,8 +241,7 @@ bindCtx-rsplit (b₀ ∷ B₁) L₂ ¬Sm₂ teq I C Sm
       with Γ₀ , Γa , Γa′ , refl , refl , Sm′ ← same-cons⁻¹ Sm
       with refl , refl ← ++-inj Γ₁ Γ₀ Γeq
       = cons-ret/acq s₁ s≃ ¬sk₂ C₁ (bindCtx-rsplit B₁ L₂ ¬Sm₂ teq I C₂ Sm′)
-          {!!}
-          --(acqHead-rsplit L₂ teq I Sm′ ah)
+          (acqHead-rsplit (local⇒¬acqHead L₂) teq I Sm′ ah)
 ... | inj₂ (refl , C₂ , ah)
       with V.[] , Γa , Γa′ , refl , refl , Sm′ ← same-cons⁻¹ Sm
-      = cons-acq (bindCtx-rsplit B₁ L₂ ¬Sm₂ teq I C₂ Sm′) {!!} --(acqHead-rsplit ¬Sm₁ teq I Sm′ ah)
+      = cons-acq (bindCtx-rsplit B₁ L₂ ¬Sm₂ teq I C₂ Sm′) (acqHead-rsplit (local⇒¬acqHead L₂) teq I Sm′ ah)

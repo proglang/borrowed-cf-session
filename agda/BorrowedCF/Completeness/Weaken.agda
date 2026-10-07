@@ -209,9 +209,9 @@ module Weakening
     alg-weaken-box ap lin w (A-LSplit ≤γ ¬skips) SΔ
       using Δ₀′ , ≤γ′ , S₀ ← lift-≼ ap w SΔ ≤γ
       = Δ₀′ , A-LSplit ≤γ′ ¬skips , S₀
-    alg-weaken-box ap lin w (A-RSplit ≤γ ¬skips) SΔ
+    alg-weaken-box ap lin w (A-RSplit ≤γ) SΔ
       using Δ₀′ , ≤γ′ , S₀ ← lift-≼ ap w SΔ ≤γ
-      = Δ₀′ , A-RSplit ≤γ′ ¬skips , S₀
+      = Δ₀′ , A-RSplit ≤γ′ , S₀
 
     alg-weaken-box ap lin w (A-App {a = a} ec ≤γ x y) SΔ
       using S₀ , S₁₂ ← All.++⁻ (csetOf≼ ≤γ) SΔ
@@ -306,9 +306,9 @@ module Weakening
       using Δ′ , x′ , tr ← alg-weaken-box ap lin w x SΔ
       = _ ∷ Δ′ , A-Check x′ , eq ∷ tr
 
-    alg-weaken-box ap lin w (A-Ann cf x) SΔ
+    alg-weaken-box ap lin w (A-Ann x) SΔ
       using Δ′ , x′ , tr ← alg-weaken-box ap lin w x SΔ
-      = Δ′ , A-Ann cf x′ , tr
+      = Δ′ , A-Ann x′ , tr
 
     -- | ALGORITHMIC WEAKENING (the deliverable).
     alg-weaken : ∀ {n} {Γ̂ Γ : Ctx n} {γ₁ γ₂ : Struct n} {m k : ℕ} {ξ : Mode}

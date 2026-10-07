@@ -82,6 +82,7 @@ fv⊆dom (T-Case p/s {γ₁} {γ₂} d d₁ d₂) y∈ =
                     (x∈p∪q⁻ _ _ p))
              (x∈p∪q⁻ _ _ y∈))
 fv⊆dom (T-Conv T≃ ϵ≤ d) y∈ = fv⊆dom d y∈
+fv⊆dom (T-Ann d) y∈ = fv⊆dom d y∈
 fv⊆dom (T-Weaken γ≤ d)  y∈ = ≼⇒dom⊆ γ≤ (fv⊆dom d y∈)
 
 ------------------------------------------------------------------------
@@ -130,6 +131,7 @@ fv-cover′ (T-Case p/s {γ₁} {γ₂} d d₁ d₂) y∈ y∉ =
                         (λ q → y∉ (x∈p∪q⁺ (inj₂ (x∈p∪q⁺ (inj₁ (∈tail⁺ q))))))) ]′
     (∈-join⁻ p/s γ₁ γ₂ y∈)
 fv-cover′ (T-Conv T≃ ϵ≤ d) y∈ y∉ = fv-cover′ d y∈ y∉
+fv-cover′ (T-Ann d) y∈ y∉ = fv-cover′ d y∈ y∉
 fv-cover′ {Γ = Γ} (T-Weaken {γ₁ = γ₁} {γ₂ = γ₂} γ≤ d) {y} y∈ y∉ with y ∈? dom γ₁
 ... | yes y∈₁ = fv-cover′ d y∈₁ y∉
 ... | no  y∉₁ = allCx-↓⁻ γ₂ (≼⇒extra-Unr γ≤) y∈ (x∉p⇒x∈∁p y∉₁)
@@ -218,6 +220,7 @@ restrict (T-Case {e = e} {e₁ = e₁} {e₂ = e₂} p/s {γ₁} {γ₂} d d₁ 
                             (restrict d₂))))
   where fvE = fv e ∪ fvClose (fv e₁) ∪ fvClose (fv e₂)
 restrict (T-Conv T≃ ϵ≤ d) = T-Conv T≃ ϵ≤ (restrict d)
+restrict (T-Ann d) = T-Ann (restrict d)
 restrict (T-Weaken γ≤ d)  = T-Weaken (↓-mono-≼ γ≤) (restrict d)
 
 -- The same statement in the notation the algorithmic rules use.

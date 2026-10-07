@@ -93,11 +93,11 @@ brnv-unique (mu {s = s} c₁) (mu c₂) = ≃-⋯ {ϕ = ⦅ mu s ⦆ₛ} (brnv-u
 
 brnv-⋯ : {ϕ : m →ₛ n} → BrnV p i w z → BrnV p i (w ⋯ₛ ϕ) (z ⋯ₛ ϕ)
 brnv-⋯ {i = i} {ϕ = ϕ} (here {Z₁ = Z₁} {Z₂ = Z₂}) =
-  subst (BrnV _ i (brn _ (Z₁ ⋯ ϕ) (Z₂ ⋯ ϕ))) (sym (if-⋯ i Z₁ Z₂ ϕ)) here
+  subst (BrnV _ i (brn _ (Z₁ ⋯ₛ ϕ) (Z₂ ⋯ₛ ϕ))) (sym (if-⋯ i Z₁ Z₂ ϕ)) here
 brnv-⋯ (hd c) = hd (brnv-⋯ c)
 brnv-⋯ (tl Sk c) = tl (skips-⋯ Sk) (brnv-⋯ c)
 brnv-⋯ {ϕ = ϕ} (mu {s = s} {z = z} c) =
-  subst (BrnV _ _ (mu (s ⋯ ϕ ↑))) (sym (dist-↑-⦅⦆-⋯ z (mu s) ϕ)) (mu (brnv-⋯ c))
+  subst (BrnV _ _ (mu (s ⋯ₛ ϕ ↑))) (sym (dist-↑-⦅⦆-⋯ z (mu s) ϕ)) (mu (brnv-⋯ c))
 
 brnv-unfold : BrnV p i (mu s) z → BrnV p i (unfold s) z
 brnv-unfold (mu c) = brnv-⋯ c

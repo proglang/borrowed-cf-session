@@ -113,7 +113,7 @@ fn-branch-dom (T-Weaken _ d)               = fn-branch-dom d
 
 fn-lsplit-dom : ∀ {Γ : Ctx n} {β : Struct n} {s : 𝕊 0} {T U : 𝕋} {a ϵ} →
   Γ ; β ⊢ K (`lsplit s) ∶ T ⟨ a ⟩→ U ∣ ϵ → Σ[ s′ ∈ 𝕊 0 ] ⟨ s ; s′ ⟩ ≃ T
-fn-lsplit-dom (T-Const (`lsplit _ _ _ _))  = _ , ≃-refl
+fn-lsplit-dom (T-Const (`lsplit _ _ _ _ _)) = _ , ≃-refl
 fn-lsplit-dom (T-Conv (dom≃ `→ cod≃) _ d)  = let s′ , eq = fn-lsplit-dom d in s′ , ≃-trans eq dom≃
 fn-lsplit-dom (T-Weaken _ d)               = fn-lsplit-dom d
 
@@ -236,6 +236,7 @@ module _ {n} {Γ : Ctx n} (Γ-S : ChanCx Γ) where
     with _ , _ , refl ← value×⊕⇒`inj Γ-S V-e e
     with V-⊕ V ← V-e
     = inj₂ (inj₂ (_ , E-□ (E-SumElim V)))
+  progress⁺ (T-Ann e)        = inj₂ (inj₂ (_ , E-□ E-Ann))
   progress⁺ (T-Weaken γ≤ e)  = progress⁺ e
   progress⁺ (T-Conv eq ϵ≤ e) = progress⁺ e
 

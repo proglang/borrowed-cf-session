@@ -23,11 +23,8 @@ merge-use : ∀ {Δ₁ Δ₂ : CSet} {m k n : ℕ} {σ₁ σ₂ : UV.Sub} →
 merge-use {k = k} {σ₁ = σ₁} {σ₂ = σ₂} u₁ u₂ S₁ S₂ s₁ s₂ =
   merge k σ₁ σ₂ , merge-solving k σ₁ σ₂ S₁ S₂ , solvedΔ-merge k σ₁ σ₂ u₁ u₂ s₁ s₂
 
--- the A-LSplit shape: solve the fresh variable with the second component
-single-use : ∀ {s : 𝕊 0} (m : ℕ) (¬Ss : ¬ Skips s) → SolvedTy s →
-  Σ[ σ ∈ UV.Sub ] (Solving σ × (UV.ap σ (UV.fresh m) ≡ s))
-single-use {s = s} m ¬Ss Ss =
-  single (UV.fresh m) s ¬Ss , single-solving (UV.fresh m) s ¬Ss Ss , single-ap (UV.fresh m) s ¬Ss
+-- (`single-use` removed 2026-10-07: upstream commit 469f079 deleted the singleton
+--  substitutions `single`/`single-solving`/`single-ap` from Scope/Merge.agda.)
 
 -- scope of an inference derivation under a solved context
 scope-use : ∀ {N} {Γ : Ctx N} {γ : Struct N} {e : Tm N} {T : 𝕋} {ϵ : Eff} {Δ : CSet} {m n} →

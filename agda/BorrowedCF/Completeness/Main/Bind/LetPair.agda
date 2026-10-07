@@ -48,19 +48,74 @@ open Fin.Patterns
 -- T-LetPair.
 
 private
+  -- the induction steps, given the canonical structural premises (computed by `letpair-go`)
+  letpair-go′ : ∀ {n} {Γ Γ̂ : Ctx n} {γ : Struct n} {e₁ : Tm n} {e₂ : Tm (suc (suc n))}
+                  {T₁ T₂ U : 𝕋} {dp : Dir} {ϵ : Eff} {m : ℕ} {σ₀ : UV.Sub} →
+    IHAt e₁ → IHAt e₂ →
+    Solving σ₀ → UVarsInΓ 0 m Γ̂ → Approx Γ̂ Γ σ₀ →
+    SolvedTm e₁ → SolvedTm e₂ → SolvedTy U → LinStruct Γ γ →
+    (d : Dir) →
+    (mk : ∀ {ê₁ : Tm n} {ê₂ : Tm (suc (suc n))} {T̂₁ T̂₂ Û : 𝕋} {ϵ₁ ϵ₂ : Eff} {Δ₀ Δ₁ Δ₂ : CSet} {m′ k : ℕ} →
+       Γ̂ ∶ join d (γ ∣fv[ ê₁ ]) (γ ↓ fvClose* 2 (fv ê₂)) ≼ γ ↑ Δ₀ →
+       Γ̂ ; γ ∣fv[ ê₁ ] / m ⊢ ê₁ ⇒ T̂₁ ⊗⟨ dp ⟩ T̂₂ ∣ ϵ₁ ↑ Δ₁ / m′ →
+       T̂₁ ⸴ T̂₂ ⸴ Γ̂ ;
+         join d (join dp (` 0F) (` 1F)) (𝐂.wk (𝐂.wk (γ ↓ fvClose* 2 (fv ê₂)))) / m′
+         ⊢ ê₂ ⇒ Û ∣ ϵ₂ ↑ Δ₂ / k →
+       Γ̂ ; γ / m ⊢ `let⊗ ê₁ `in ê₂ ⇒ Û ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₀ ++ Δ₁ ++ Δ₂ / k) →
+    Γ ∶ join d (γ ↓ fv e₁) (γ ↓ fvClose* 2 (fv e₂)) ≼ γ →
+    Γ ; γ ↓ fv e₁ ⊢ e₁ ∶ T₁ ⊗⟨ dp ⟩ T₂ ∣ ϵ →
+    (T₁ ⸴ T₂ ⸴ Γ) ; join d (join dp (` 0F) (` 1F)) (𝐂.wk (𝐂.wk (γ ↓ fvClose* 2 (fv e₂)))) ⊢ e₂ ∶ U ∣ ϵ →
+    Conclusion Γ̂ γ (`let⊗ e₁ `in e₂) U ϵ m σ₀
+  letpair-go′ {Γ = Γ} {Γ̂ = Γ̂} {γ = γ} {e₁ = e₁} {e₂ = e₂}
+              {T₁ = T₁} {T₂ = T₂} {U = U} {dp = dp} {m = m}
+              ih₁ ih₂ Sσ uΓ ap Se₁ Se₂ SU lin d mk ≤γ′ dv₁′ dv₂′
+    with ê₁ , p₁ , T̂ , ϵ₁ , Δ₁ , m′ , σ₁ , Sσ₁ , ag₁ , SΔ₁ , ϵ₁≤ , ≃₁ , m≤m′ , uvT̂₀ , uvΔ₁ , der₁₀
+       ← ih₁ Sσ uΓ (approx-sub {Γ̂ = Γ̂} {Γ = Γ} Sσ ap) Se₁
+              (subTy-solved T₁ s₀-solving ⊗⟨ dp ⟩ subTy-solved T₂ s₀-solving)
+              (lin-sub Γ (γ ↓ (fv e₁)) (lin-↓ Γ γ (fv e₁) lin))
+              (solve-ty Se₁ dv₁′)
+    with T̂₁ , T̂₂ , eqT̂ , ≃t₁ , ≃t₂ ← pair-inv ≃₁
+    with ê₂ , p₂ , Û , ϵ₂ , Δ₂ , k , σ₂ , Sσ₂ , ag₂ , SΔ₂ , ϵ₂≤ , ≃₂ , m′≤k , uvÛ , uvΔ₂ , der₂
+       ← ih₂ {Γ̂ = T̂₁ ⸴ T̂₂ ⸴ Γ̂} Sσ₁
+              (uvarsInΓ-⸴ (uvarsIn-⊗₁ (subst (UVarsIn 0 m′) eqT̂ uvT̂₀))
+                (uvarsInΓ-⸴ (uvarsIn-⊗₂ (subst (UVarsIn 0 m′) eqT̂ uvT̂₀))
+                  (uvarsInΓ-mono Nat.≤-refl m≤m′ uΓ)))
+              (λ where
+                 zero          → ≃t₁
+                 (suc zero)    → ≃t₂
+                 (suc (suc x)) → approx-agree {Γ = subCtx Γ s₀} {Γ̂ = Γ̂} uΓ ag₁ (approx-sub {Γ̂ = Γ̂} {Γ = Γ} Sσ ap) x)
+              Se₂ (subTy-solved U s₀-solving)
+              (lin-bind₂ d dp (subTy T₁ s₀) (subTy T₂ s₀) (subCtx Γ s₀) (γ ↓ fvClose* 2 (fv e₂))
+                         (lin-sub Γ (γ ↓ fvClose* 2 (fv e₂)) (lin-↓ Γ γ (fvClose* 2 (fv e₂)) lin)))
+              (solve-ty Se₂ dv₂′)
+    = let der₁ = subst (λ z → Γ̂ ; γ ∣fv[ e₁ ] / m ⊢ ê₁ ⇒ z ∣ ϵ₁ ↑ Δ₁ / m′) eqT̂ der₁₀
+          Lft  = ≼→ Sσ ap uΓ ≤γ′
+          AG   = agree-trans (agree-narrow m≤m′ ag₂) ag₁
+      in (`let⊗ ê₁ `in ê₂) , ⊑-let⊗ p₁ p₂ , _ , _ , _ , k , σ₂ , Sσ₂ , AG ,
+         solvedΔ-++ (solvedΔ-agree (agree-sym AG) (csc Lft) (sol Lft))
+           (solvedΔ-++ (solvedΔ-agree (agree-sym ag₂) uvΔ₁ SΔ₁) SΔ₂) ,
+         ⊔ϵ-lub ϵ₁≤ ϵ₂≤ , ≃-trans ≃₂ (≃-reflexive (subTy-id SU)) ,
+         Nat.≤-trans m≤m′ m′≤k , uvÛ ,
+         uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl (Nat.≤-trans m≤m′ m′≤k) (csc Lft))
+           (uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl m′≤k uvΔ₁) uvΔ₂) ,
+         mk (re-≼ (λ X Z → join d (γ ↓ X) (γ ↓ fvClose* 2 Z)) (fv-⊑ p₁) (fv-⊑ p₂) (der Lft))
+            (re-⊢ (λ X → γ ↓ X) (fv-⊑ p₁) der₁)
+            (re-⊢ (λ Z → join d (join dp (` 0F) (` 1F)) (𝐂.wk (𝐂.wk (γ ↓ fvClose* 2 Z))))
+                  (fv-⊑ p₂) der₂)
+
   letpair-go : ∀ {n} {Γ Γ̂ : Ctx n} {γ α β : Struct n} {e₁ : Tm n} {e₂ : Tm (suc (suc n))}
                  {T₁ T₂ U : 𝕋} {dp : Dir} {ϵ : Eff} {m : ℕ} {σ₀ : UV.Sub} →
     IHAt e₁ → IHAt e₂ →
     Solving σ₀ → UVarsInΓ 0 m Γ̂ → Approx Γ̂ Γ σ₀ →
     SolvedTm e₁ → SolvedTm e₂ → SolvedTy U → LinStruct Γ γ →
     (d : Dir) →
-    (mk : ∀ {T̂₁ T̂₂ Û : 𝕋} {ϵ₁ ϵ₂ : Eff} {Δ₀ Δ₁ Δ₂ : CSet} {m′ k : ℕ} →
-       Γ̂ ∶ join d (γ ∣fv[ e₁ ]) (γ ↓ fvClose* 2 (fv e₂)) ≼ γ ↑ Δ₀ →
-       Γ̂ ; γ ∣fv[ e₁ ] / m ⊢ e₁ ⇒ T̂₁ ⊗⟨ dp ⟩ T̂₂ ∣ ϵ₁ ↑ Δ₁ / m′ →
+    (mk : ∀ {ê₁ : Tm n} {ê₂ : Tm (suc (suc n))} {T̂₁ T̂₂ Û : 𝕋} {ϵ₁ ϵ₂ : Eff} {Δ₀ Δ₁ Δ₂ : CSet} {m′ k : ℕ} →
+       Γ̂ ∶ join d (γ ∣fv[ ê₁ ]) (γ ↓ fvClose* 2 (fv ê₂)) ≼ γ ↑ Δ₀ →
+       Γ̂ ; γ ∣fv[ ê₁ ] / m ⊢ ê₁ ⇒ T̂₁ ⊗⟨ dp ⟩ T̂₂ ∣ ϵ₁ ↑ Δ₁ / m′ →
        T̂₁ ⸴ T̂₂ ⸴ Γ̂ ;
-         join d (join dp (` 0F) (` 1F)) (𝐂.wk (𝐂.wk (γ ↓ fvClose* 2 (fv e₂)))) / m′
-         ⊢ e₂ ⇒ Û ∣ ϵ₂ ↑ Δ₂ / k →
-       Γ̂ ; γ / m ⊢ `let⊗ e₁ `in e₂ ⇒ Û ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₀ ++ Δ₁ ++ Δ₂ / k) →
+         join d (join dp (` 0F) (` 1F)) (𝐂.wk (𝐂.wk (γ ↓ fvClose* 2 (fv ê₂)))) / m′
+         ⊢ ê₂ ⇒ Û ∣ ϵ₂ ↑ Δ₂ / k →
+       Γ̂ ; γ / m ⊢ `let⊗ ê₁ `in ê₂ ⇒ Û ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₀ ++ Δ₁ ++ Δ₂ / k) →
     Γ ∶ join d α β ≼ γ →
     Γ ; α ⊢ e₁ ∶ T₁ ⊗⟨ dp ⟩ T₂ ∣ ϵ →
     (T₁ ⸴ T₂ ⸴ Γ) ; join d (join dp (` 0F) (` 1F)) (𝐂.wk (𝐂.wk β)) ⊢ e₂ ∶ U ∣ ϵ →
@@ -74,40 +129,10 @@ private
         ≤L   = ≼-left d (fv e₁) Y lin ≤γ (fv-cover dv₁) covβ (fv⊆dom dv₁) Y⊆β
         ≤R   = ≼-right d (fv e₁) Y lin ≤γ (fv-cover dv₁) covβ (fv⊆dom dv₁) Y⊆β
         ≤γ′  = canon d (fv e₁) Y lin ≤γ (fv-cover dv₁) covβ (fv⊆dom dv₁) Y⊆β
-        r3 =
-          ih₁ Sσ uΓ (approx-sub {Γ̂ = Γ̂} {Γ = Γ} Sσ ap) Se₁
-              (subTy-solved T₁ s₀-solving ⊗⟨ dp ⟩ subTy-solved T₂ s₀-solving)
-              (lin-sub Γ (γ ↓ (fv e₁)) (lin-↓ Γ γ (fv e₁) lin))
-              (solve-ty Se₁ (T-Weaken ≤L (restrict dv₁)))
-        T̂ , ϵ₁ , Δ₁ , m′ , σ₁ , Sσ₁ , ag₁ , SΔ₁ , ϵ₁≤ , ≃₁ , m≤m′ , uvT̂₀ , uvΔ₁ , der₁₀ = r3
-        T̂₁ , T̂₂ , eqT̂ , ≃t₁ , ≃t₂ = pair-inv ≃₁
-        uvT̂  = subst (UVarsIn 0 m′) eqT̂ uvT̂₀
-        der₁ = subst (λ z → Γ̂ ; γ ∣fv[ e₁ ] / m ⊢ e₁ ⇒ z ∣ ϵ₁ ↑ Δ₁ / m′) eqT̂ der₁₀
-        r4 =
-          ih₂ {Γ̂ = T̂₁ ⸴ T̂₂ ⸴ Γ̂} Sσ₁
-              (uvarsInΓ-⸴ (uvarsIn-⊗₁ uvT̂)
-                (uvarsInΓ-⸴ (uvarsIn-⊗₂ uvT̂) (uvarsInΓ-mono Nat.≤-refl m≤m′ uΓ)))
-              (λ where
-                 zero          → ≃t₁
-                 (suc zero)    → ≃t₂
-                 (suc (suc x)) → approx-agree {Γ = subCtx Γ s₀} {Γ̂ = Γ̂} uΓ ag₁ (approx-sub {Γ̂ = Γ̂} {Γ = Γ} Sσ ap) x)
-              Se₂ (subTy-solved U s₀-solving)
-              (lin-bind₂ d dp (subTy T₁ s₀) (subTy T₂ s₀) (subCtx Γ s₀) (γ ↓ Y)
-                         (lin-sub Γ (γ ↓ Y) (lin-↓ Γ γ Y lin)))
-              (solve-ty Se₂
-                (T-Weaken (≼-join d (≼-refl ≈-refl) (wk²≼ ≤R))
-                          (restrict-bind² d dp β Y ⊆-refl dv₂)))
-        Û , ϵ₂ , Δ₂ , k , σ₂ , Sσ₂ , ag₂ , SΔ₂ , ϵ₂≤ , ≃₂ , m′≤k , uvÛ , uvΔ₂ , der₂ = r4
-        Lft = ≼→ Sσ ap uΓ ≤γ′
-        AG  = agree-trans (agree-narrow m≤m′ ag₂) ag₁
-    in _ , _ , _ , k , σ₂ , Sσ₂ , AG ,
-       solvedΔ-++ (solvedΔ-agree (agree-sym AG) (csc Lft) (sol Lft))
-         (solvedΔ-++ (solvedΔ-agree (agree-sym ag₂) uvΔ₁ SΔ₁) SΔ₂) ,
-       ⊔ϵ-lub ϵ₁≤ ϵ₂≤ , ≃-trans ≃₂ (≃-reflexive (subTy-id SU)) ,
-       Nat.≤-trans m≤m′ m′≤k , uvÛ ,
-       uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl (Nat.≤-trans m≤m′ m′≤k) (csc Lft))
-         (uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl m′≤k uvΔ₁) uvΔ₂) ,
-       mk (der Lft) der₁ der₂
+    in letpair-go′ ih₁ ih₂ Sσ uΓ ap Se₁ Se₂ SU lin d mk ≤γ′
+                   (T-Weaken ≤L (restrict dv₁))
+                   (T-Weaken (≼-join d (≼-refl ≈-refl) (wk²≼ ≤R))
+                             (restrict-bind² d dp β Y ⊆-refl dv₂))
 
 letpair-case : LetPairCase
 letpair-case ih₁ ih₂ Sσ uΓ ap Se₁ Se₂ ST lin dv

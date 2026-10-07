@@ -45,6 +45,7 @@ frame-plug₁ (`case□`of⟨ e₁ ; e₂ ⟩) ϕ Vϕ = refl
     ... | false = sym (dist-↑-⦅⦆-⋯ e₂ e σ)
 ─→-⋯ₛ σ Vσ (E-Unfold {e}) =
   subst₂ _─→_ refl (sym (dist-↑-⦅⦆-⋯ e (μ e) σ)) E-Unfold
+─→-⋯ₛ σ Vσ E-Ann = E-Ann
 
 -- Substitution commutes with recursive (Frame*) plugging.
 

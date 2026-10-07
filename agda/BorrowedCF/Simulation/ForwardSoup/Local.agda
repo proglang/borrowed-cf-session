@@ -28,7 +28,7 @@ import BorrowedCF.Terms.BaseSoup as SoupTerm
 
 import BorrowedCF.Simulation.Support.Theorems.ComHelpers2 as ComHelpers
 
-open import BorrowedCF.Reduction.Base using (ChanCx)
+open import BorrowedCF.Reduction.Base using (ChanCx; chanCx-⸴*)
 open import BorrowedCF.Processes.Congruence using (_/_⊢-≋_)
 open Typed using (_;_⊢ₚ_)
 open Typed using (inv-∥; inv-ν; bindCtx⇒chanCtx)
@@ -87,12 +87,6 @@ private
     Σ[ source ∈ 𝔽 a ] (slot ≡ just source × threadRho source ≡ l)
   mapMaybe-just threadRho (just source) refl = source , refl , refl
   mapMaybe-just threadRho nothing ()
-
-  -- The channel-context of a binder-extended scope.
-  chanCx-⸴* :
-    {Γ₁ : Context.Ctx a} {Γ₂ : Context.Ctx b} →
-    ChanCx Γ₁ → ChanCx Γ₂ → ChanCx (Γ₁ Context.⸴* Γ₂)
-  chanCx-⸴* = AllVP.++⁺
 
 ------------------------------------------------------------------------
 -- The local simulation statement.

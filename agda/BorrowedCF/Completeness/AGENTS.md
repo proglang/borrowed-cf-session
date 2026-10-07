@@ -154,3 +154,14 @@ progress) in addition to `Simulation/`; in particular the Safety tree shows how 
 ## Portability (added 2026-09-08 late)
 
 The development is also checked on a second machine with a different Agda build. There, `s ⋯ ρ` in a type signature with `ρ : m →ᵣ n` and a generalized `s` failed instance search (`No instance of type Kit (λ _ → 𝔽 n)`), although it passes here. In every new signature fix the kit by using the aliases `s ⋯ᵣ ρ` and `s ⋯ₛ ϕ` (both are `_⋯_` with the kit fixed, exported by BorrowedCF.Types.Substitution), or `_⋯_ ⦃ Kᵣ ⦄ s ρ`. Do the same for other instance arguments a reader cannot infer from the renaming alone.
+
+## Annotation campaign, completeness statements (agent C1, 2026-10-07)
+- `Complete⇐`/`Complete⇒` (Base.agda) now conclude `Σ[ ê ∈ Tm n ] e ⊑ ê × (old Σ-chain over ê)`.
+  `_⊑_` ("ê annotates e") has one congruence per Tm constructor (`⊑-var ⊑-K ⊑-ƛ ⊑-μ ⊑-app d
+  ⊑-seq ⊑-⊗ ⊑-let ⊑-let⊗ ⊑-inj i ⊑-case ⊑-⦂`) plus `ann : e ⊑ ê → ∀ T → e ⊑ (ê ⦂ T)`;
+  `⊑-refl`, `fv-⊑ : e ⊑ ê → fv ê ≡ fv e`. Restrictions `γ ↓ fv ê` do NOT reduce for an abstract
+  ê: transport with `subst (λ X → … γ ↓ X …) (fv-⊑ p)` (see Probe/LinNeeded.agda `bad-⊑`).
+- Lifting a closed concrete `≼` derivation to the `≼↑` the A-rules take:
+  `↑′ d = proj₁ (proj₂ (≼⇒≼↑ d))` (Completeness.Sub); without mobility steps its Δ computes to [].
+- `solvedTm-⦂` is in Decl/Solved.agda. Probe/MobUvar.agda is dead since the rsplit relaxation
+  (lsplit needs `Local s′`); MobUvarWF.agda supersedes it.

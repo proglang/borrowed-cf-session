@@ -79,7 +79,7 @@ rsplit-bindCtx : ∀ (B₁ : BindGroup) {B₂ q b₁} {s₀ t t₁ t₂ : 𝕊 0
     × (Γ₁′ ﹫ Fin.cast (sym (sum-++ B₁ ((q + 1) ∷ suc b₁ ∷ B₂)))
                       (sum B₁ ↑ʳ ((q + 1) ↑ʳ 0F)) ≡ ⟨ acq ; t₂ ⟩)
     × Agree (sum B₁ + q) Γ₁ Γ₁′
-rsplit-bindCtx B₁ {B₂} {q} {b₁} {t₁ = t₁} {t₂} {Γ₁} ¬S₁ ¬S₂ teq eqT C
+rsplit-bindCtx B₁ {B₂} {q} {b₁} {t₁ = t₁} {t₂} {Γ₁} L₂ ¬S₂ teq eqT C
   with Γc , f ← mkSame B₁ Γ₁
   with Γg , Γr , refl ← vsplit (q + suc b₁) Γc
   with T , Γg₁ , Γg₂ , eqg , eqg₁ , eqg₂ , I , Ag ← mkInsR q Γg ⟨ t₁ ; ret ⟩ ⟨ acq ; t₂ ⟩
@@ -89,7 +89,7 @@ rsplit-bindCtx B₁ {B₂} {q} {b₁} {t₁ = t₁} {t₂} {Γ₁} ¬S₁ ¬S₂
              ■ sym (same-lookupˡ B₁ Sm ((q ↑ʳ 0F) ↑ˡ sum B₂))
              ■ eqT
   = Γ₁′
-  , bindCtx-rsplit B₁ ¬S₁ ¬S₂ teq I C Sm
+  , bindCtx-rsplit B₁ L₂ ¬S₂ teq I C Sm
   , (same-lookupʳ B₁ Sm ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂))
       ■ V.lookup-++ˡ Γg₁ (Γg₂ ⸴* Γr) (q ↑ʳ 0F) ■ eqg₁)
   , (same-lookupʳ B₁ Sm ((q + 1) ↑ʳ 0F)

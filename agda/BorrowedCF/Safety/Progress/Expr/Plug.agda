@@ -34,6 +34,7 @@ value? (` x)                    = yes V-`
 value? (K c)                    = yes V-K
 value? (ƛ e)                    = yes V-λ
 value? (μ e)                    = no λ()
+value? (e ⦂ T)                  = no λ()
 value? (e₁ ·⟨ d ⟩ e₂)           = no λ()
 value? (e₁ ; e₂)                = no λ()
 value? (`let e₁ `in e₂)         = no λ()
@@ -139,6 +140,9 @@ plug? R? (ƛ e) with R? (ƛ e)
 plug? R? (μ e) with R? (μ e)
 ... | yes r = yes (here r)
 ... | no ¬r = no λ{ (here r) → ¬r r }
+plug? R? (e ⦂ T) with R? (e ⦂ T)
+... | yes r = yes (here r)
+... | no ¬r = no λ{ (here r) → ¬r r }
 plug? R? (e₁ ·⟨ d ⟩ e₂)
   with R? (e₁ ·⟨ d ⟩ e₂)
      | app₁-cond? d e₂ ×? plug? R? e₁
@@ -228,6 +232,7 @@ plug-⋯ᵣ⁻¹ ρ f (` x) (here r) = here (f (` x) r)
 plug-⋯ᵣ⁻¹ ρ f (K c) (here r) = here (f (K c) r)
 plug-⋯ᵣ⁻¹ ρ f (ƛ e) (here r) = here (f (ƛ e) r)
 plug-⋯ᵣ⁻¹ ρ f (μ e) (here r) = here (f (μ e) r)
+plug-⋯ᵣ⁻¹ ρ f (e ⦂ T) (here r) = here (f (e ⦂ T) r)
 plug-⋯ᵣ⁻¹ ρ f (e₁ ·⟨ d ⟩ e₂) (here r)     = here (f _ r)
 plug-⋯ᵣ⁻¹ ρ f (e₁ ·⟨ d ⟩ e₂) (appˡ V? p)  =
   appˡ (λ eq → value-⋯ᵣ⁻¹ e₂ ρ (V? eq)) (plug-⋯ᵣ⁻¹ ρ f e₁ p)

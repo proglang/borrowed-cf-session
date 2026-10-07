@@ -150,6 +150,8 @@ swapPhi-ren {ρ = ρ} inj x k (Term.`let⊗ t₁ `in t₂) =
       (liftRen-injective (liftRen-injective inj)) (suc (suc x)) k t₂)
 swapPhi-ren inj x k (Term.`inj i t) =
   cong (Term.`inj i) (swapPhi-ren inj x k t)
+swapPhi-ren inj x k (t Term.⦂ T) =
+  cong (Term._⦂ T) (swapPhi-ren inj x k t)
 swapPhi-ren {ρ = ρ} inj x k (Term.`case t `of⟨ t₁ ; t₂ ⟩) =
   cong₃ Term.`case_`of⟨_;_⟩
     (swapPhi-ren inj x k t)
@@ -243,6 +245,8 @@ swapPhi-as-sub x k (Term.`let⊗ t₁ `in t₂) =
      sym (sub-cong t₂ (slotSub-liftEq₂ x k)))
 swapPhi-as-sub x k (Term.`inj i t) =
   cong (Term.`inj i) (swapPhi-as-sub x k t)
+swapPhi-as-sub x k (t Term.⦂ T) =
+  cong (Term._⦂ T) (swapPhi-as-sub x k t)
 swapPhi-as-sub x k (Term.`case t `of⟨ t₁ ; t₂ ⟩) =
   cong₃ Term.`case_`of⟨_;_⟩
     (swapPhi-as-sub x k t)
@@ -322,6 +326,8 @@ sub-sub (Term.`let⊗ t₁ `in t₂) σ τ =
      sub-cong t₂ (compSub-liftEq₂ σ τ))
 sub-sub (Term.`inj i t) σ τ =
   cong (Term.`inj i) (sub-sub t σ τ)
+sub-sub (t Term.⦂ T) σ τ =
+  cong (Term._⦂ T) (sub-sub t σ τ)
 sub-sub (Term.`case t `of⟨ t₁ ; t₂ ⟩) σ τ =
   cong₃ Term.`case_`of⟨_;_⟩
     (sub-sub t σ τ)
@@ -430,6 +436,7 @@ swapPhi-─→ x k {Term.μ e} {.(Expr.subst₀ (Term.μ e) e)}
     (swapPhi x k (Term.μ e) Expr.─→_)
     (sym (swapPhi-subst₀ x k (Term.μ e) e))
     Expr.E-Unfold
+swapPhi-─→ x k Expr.E-Ann = Expr.E-Ann
 
 swapPhi-⋯→ :
   (x : 𝔽 n) (k : ℕ) {e e′ : Term.Tm n} →
@@ -1212,6 +1219,15 @@ consumePhi-swapPhi x h k (Term.`inj side t) with residualSwap h k in resEq
   cong (Term.`inj side)
     (consumePhi-swapPhi x h k t
     ■ cong (λ res → applyResidualPhi x res (RUS.consumePhi x k t)) resEq)
+consumePhi-swapPhi x h k (t Term.⦂ T) with residualSwap h k in resEq
+... | none =
+  cong (Term._⦂ T)
+    (consumePhi-swapPhi x h k t
+    ■ cong (λ res → applyResidualPhi x res (RUS.consumePhi x k t)) resEq)
+... | some q =
+  cong (Term._⦂ T)
+    (consumePhi-swapPhi x h k t
+    ■ cong (λ res → applyResidualPhi x res (RUS.consumePhi x k t)) resEq)
 consumePhi-swapPhi x h k (Term.`case t `of⟨ t₁ ; t₂ ⟩)
   with residualSwap h k in resEq
 ... | none =
@@ -1287,6 +1303,8 @@ swapPhi-consumePhi-miss {x = x} {y = y} apart h k (Term.`let⊗ t₁ `in t₂) =
       (apart ∘ Fin.suc-injective ∘ Fin.suc-injective) h k t₂)
 swapPhi-consumePhi-miss apart h k (Term.`inj side t) =
   cong (Term.`inj side) (swapPhi-consumePhi-miss apart h k t)
+swapPhi-consumePhi-miss apart h k (t Term.⦂ T) =
+  cong (Term._⦂ T) (swapPhi-consumePhi-miss apart h k t)
 swapPhi-consumePhi-miss {x = x} {y = y} apart h k
   (Term.`case t `of⟨ t₁ ; t₂ ⟩) =
   cong₃ Term.`case_`of⟨_;_⟩
@@ -1483,6 +1501,8 @@ swapPhi-insertPhi-miss {x = x} {y = y} apart h k (Term.`let⊗ t₁ `in t₂) =
       (apart ∘ Fin.suc-injective ∘ Fin.suc-injective) h k t₂)
 swapPhi-insertPhi-miss apart h k (Term.`inj side t) =
   cong (Term.`inj side) (swapPhi-insertPhi-miss apart h k t)
+swapPhi-insertPhi-miss apart h k (t Term.⦂ T) =
+  cong (Term._⦂ T) (swapPhi-insertPhi-miss apart h k t)
 swapPhi-insertPhi-miss {x = x} {y = y} apart h k
   (Term.`case t `of⟨ t₁ ; t₂ ⟩) =
   cong₃ Term.`case_`of⟨_;_⟩
@@ -1608,6 +1628,8 @@ swapPhi-insertPhi-past x h k (Term.`let⊗ t₁ `in t₂) lt =
     (swapPhi-insertPhi-past (suc (suc x)) h k t₂ lt)
 swapPhi-insertPhi-past x h k (Term.`inj side t) lt =
   cong (Term.`inj side) (swapPhi-insertPhi-past x h k t lt)
+swapPhi-insertPhi-past x h k (t Term.⦂ T) lt =
+  cong (Term._⦂ T) (swapPhi-insertPhi-past x h k t lt)
 swapPhi-insertPhi-past x h k (Term.`case t `of⟨ t₁ ; t₂ ⟩) lt =
   cong₃ Term.`case_`of⟨_;_⟩
     (swapPhi-insertPhi-past x h k t lt)

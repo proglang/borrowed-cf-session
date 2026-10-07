@@ -3,6 +3,7 @@ module BorrowedCF.Reduction.Base where
 open import Data.Fin.Subset renaming (⊥ to ⁅⁆)
 open import Data.Vec.Relation.Unary.All as All using (All; []; _∷_)
 open import Data.Vec.Membership.Propositional.Properties
+import Data.Vec.Relation.Unary.All.Properties as AllVP
 
 import Data.Fin.Subset.Properties as S
 
@@ -37,6 +38,10 @@ chanCx-lookup Γ-S x = All.lookup Γ-S (∈-lookup x _)
 
 chanCx-contradiction : ∀ {a} {A : Set a} → ChanCx Γ → (x : 𝔽 n) → Γ ﹫ x ≡ T → (∀ {s} → T ≢ ⟨ s ⟩) → A
 chanCx-contradiction Γ-S x eq notS = ⊥-elim (notS (sym eq ■ chanCx-lookup Γ-S x .proj₂))
+
+-- The channel context of a binder-extended scope.
+chanCx-⸴* : {Γ₁ : Ctx m} {Γ₂ : Ctx n} → ChanCx Γ₁ → ChanCx Γ₂ → ChanCx (Γ₁ ⸴* Γ₂)
+chanCx-⸴* = AllVP.++⁺
 
 data Value {n} : Tm n → Set where
   V-` : ∀ {x} → Value (` x)

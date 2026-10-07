@@ -102,6 +102,7 @@ brₛ↑↑ ⊢ϕ γ = sym (𝐂.conv-⋯ᵣₛ γ) ■ 𝐂.⋯-cong γ (lift-d
 ⊢⋯⁻¹ {e = μ (`let⊗ e₁ `in e₂)} inj p ⊢ϕ with _ , () ← μ-ƛ p
 ⊢⋯⁻¹ {e = μ (`inj i e)} inj p ⊢ϕ with _ , () ← μ-ƛ p
 ⊢⋯⁻¹ {e = μ (`case e `of⟨ e₁ ; e₂ ⟩)} inj p ⊢ϕ with _ , () ← μ-ƛ p
+⊢⋯⁻¹ {e = μ (e ⦂ T₀)} inj p ⊢ϕ with _ , () ← μ-ƛ p
 ⊢⋯⁻¹ {e = e₁ ·⟨ d ⟩ e₂} inj p ⊢ϕ with inv-· p
 ... | a , α , β , _ , ≤γ , d≡ , eff≤ , T-AppUnr a-unr x y =
   let α′ , ≼α , x′ = ⊢⋯⁻¹ inj x ⊢ϕ
@@ -184,6 +185,10 @@ brₛ↑↑ ⊢ϕ γ = sym (𝐂.conv-⋯ᵣₛ γ) ■ 𝐂.⋯-cong γ (lift-d
       out≼ = subst (λ z → _ ∶ z ≼ _) (sym (join-⋯ p/s γ₁′ γr))
                (≼-trans (≼-join p/s ≼₁ (subst (λ z → _ ∶ z ≼ γ₂) (brₛ ⊢ϕ γr) p2)) ≤)
   in join p/s γ₁′ γr , out≼ , T-Case p/s e′ (T-Weaken p1ₐ pe₁) (T-Weaken p1ᵦ pe₂)
+⊢⋯⁻¹ {e = e ⦂ T₀} inj p ⊢ϕ =
+  let ty≃ , d = inv-⦂ p
+      γ′ , ≼₀ , d′ = ⊢⋯⁻¹ inj d ⊢ϕ
+  in γ′ , ≼₀ , T-Conv ty≃ ≤ϵ-refl (T-Ann d′)
 
 infixl 5 _⊢⋯⁻¹_/_
 

@@ -33,6 +33,7 @@ open import BorrowedCF.Safety.Preservation.Splits.Redex
 open import BorrowedCF.Safety.Preservation.Splits.Shift
 open import BorrowedCF.Safety.Preservation.Splits.Struct
 open import BorrowedCF.Safety.Preservation.Splits.Confine
+open import BorrowedCF.Safety.Preservation.Splits.LocalHead using (local⇒¬acqHead′)
 open import BorrowedCF.Safety.Preservation.LSplit using (γbigL; ¬unr-handle)
 
 open import BorrowedCF.Simulation.Support.FrameRename using (⋯ᶠ*-fuse)
@@ -95,7 +96,7 @@ rsplit-binder {m} {Γ} {γ} {B₁} {B₂} {B} {q} {b₁} {s} {E} ⊢P
   with T≃ , x≤ ← inv-` ⊢var
   with t , eqpos ← chanCx-lookup (bindCtx⇒chanCtx C₁) _
   with ⟨ teq ⟩ ← subst ((⟨ t₁ ; t₂ ⟩) ≃_) (atk-lookup B₁ B₂ B Γ₁ Γ₂ Γ ■ eqpos) (≃-trans eq₁ T≃)
-  with Γ₁′ , C₁′ , spec₁ , spec₂ , _ ← rsplit-bindCtx B₁ ¬S₁ ¬S₂ (≃-sym teq) eqpos C₁
+  with Γ₁′ , C₁′ , spec₁ , spec₂ , _ ← rsplit-bindCtx B₁ L₂ ¬S₂ (≃-sym teq) eqpos C₁
   = s₀ , pol , t₁ , t₂ , Γ₁′ , N , ⊢ᴮ-rsplit′ B₁ q b₁ ⊢B₁ , C₁′ , spec₁ , spec₂
 
 ------------------------------------------------------------------------
@@ -243,11 +244,11 @@ toℕ-dhR₂ B₁ B₂ q b₁ =
 ------------------------------------------------------------------------
 -- Mobility survives an r-split.
 
-mob-rsplit : ∀ {t t₁ t₂ : 𝕊 0} → t ≃ t₁ ; t₂ → ¬ Skips t₁ → ¬ Skips t₂ →
+mob-rsplit : ∀ {t t₁ t₂ : 𝕊 0} → t ≃ t₁ ; t₂ → Local t₂ → ¬ Skips t₂ →
   Mobile ⟨ t ⟩ → Mobile ⟨ t₁ ; ret ⟩ × Mobile ⟨ acq ; t₂ ⟩
-mob-rsplit {t₂ = t₂} teq ¬S₁ ¬S₂ ⟨ v , Bv , t≃ ⟩
+mob-rsplit {t₂ = t₂} teq L₂ ¬S₂ ⟨ v , Bv , t≃ ⟩
   with acq-;-split (≃-trans (≃-sym teq) t≃)
-... | inj₁ (Sk , _)      = ⊥-elim (¬S₁ Sk)
+... | inj₁ (_ , e₂)      = ⊥-elim (local⇒¬acqHead′ L₂ ¬S₂ _ e₂)
 ... | inj₂ (h′ , t₁≃ , e) =
       ⟨ (h′ ; ret) , -;₂ ret , ≃-trans (≃-; t₁≃ ≃-refl) ≃-assoc-; ⟩
     , ⟨ t₂ , bt₂ , ≃-refl ⟩
@@ -267,14 +268,14 @@ mob-rsplit {t₂ = t₂} teq ¬S₁ ¬S₂ ⟨ v , Bv , t≃ ⟩
       ((q ↑ʳ 0F) ↑ˡ (suc b₁ + sum B₂)) ≡ ⟨ t₁ ; ret ⟩) →
   (((Γ₁′ ⸴* Γ₂) ⸴* Γ) ﹫ SplitRenamings.inj B₁ B₂ (sum B) {(q + 1) ∷ suc b₁ ∷ []} {m}
       ((q + 1) ↑ʳ 0F) ≡ ⟨ acq ; t₂ ⟩) →
-  t ≃ t₁ ; t₂ → ¬ Skips t₁ → ¬ Skips t₂ →
+  t ≃ t₁ ; t₂ → Local t₂ → ¬ Skips t₂ →
   𝐂._∶_⇒_ (θR B₁ B₂ B q b₁ m) ((Γ₁ ⸴* Γ₂) ⸴* Γ) ((Γ₁′ ⸴* Γ₂) ⸴* Γ)
-θR-⇒ B₁ B₂ B {q} {b₁} {m} {Γ = Γ} Γ₁ Γ₁′ Γ₂ Ag eqh lk₁ lk₂ teq ¬S₁ ¬S₂ z =
+θR-⇒ B₁ B₂ B {q} {b₁} {m} {Γ = Γ} Γ₁ Γ₁′ Γ₂ Ag eqh lk₁ lk₂ teq L₂ ¬S₂ z =
   case z Fin.≟ SplitRenamings.atk B₁ B₂ (sum B) {q + suc b₁} {m} (q ↑ʳ 0F) of λ where
     (yes p) →
       subst Mot (sym (cong (θR B₁ B₂ B q b₁ m) p ■ θR-h B₁ B₂ B q b₁ m))
         ( (λ u  → ⊥-elim (¬unr-handle (subst Unr (cong (((Γ₁ ⸴* Γ₂) ⸴* Γ) ﹫_) p ■ eqh) u)))
-        , (λ mo → let mm = mob-rsplit teq ¬S₁ ¬S₂
+        , (λ mo → let mm = mob-rsplit teq L₂ ¬S₂
                              (subst Mobile (cong (((Γ₁ ⸴* Γ₂) ⸴* Γ) ﹫_) p ■ eqh) mo)
                   in (` subst Mobile (sym lk₁) (mm .proj₁))
                    ∥ (` subst Mobile (sym lk₂) (mm .proj₂))) )
@@ -313,11 +314,11 @@ pres-RSplit {m} {Γ} {γ} {B₁} {B₂} {B} {q} {b₁} {s} {E} {P} Γ-S ⊢P
      ← ⊢[]*⁻¹ (E₀ ⋯ᶠ* ρ⁻) _ (inv-⟪⟫ ⊢thread)
   with a , γc , γx , _ , ≤γ″ , ≤ₐ , refl , ⊢const , ⊢var
      ← inv-·-unr ⊢app (λ x → constFnUnr′ (inv-K x .proj₂ .proj₁) (inv-K x .proj₂ .proj₂ .proj₂))
-  with _ , eq₁ `→ eq₂ , []≤ , `rsplit t₁ t₂ ¬S₁ ¬S₂ ← inv-K ⊢const
+  with _ , eq₁ `→ eq₂ , []≤ , `rsplit t₁ t₂ L₂ ¬S₂ ← inv-K ⊢const
   with T≃ , x≤ ← inv-` ⊢var
   with t , eqpos ← chanCx-lookup (bindCtx⇒chanCtx C₁) _
   with ⟨ teq ⟩ ← subst ((⟨ t₁ ; t₂ ⟩) ≃_) (atk-lookup B₁ B₂ B Γ₁ Γ₂ Γ ■ eqpos) (≃-trans eq₁ T≃)
-  with Γ₁′ , C₁′ , spec₁ , spec₂ , Ag ← rsplit-bindCtx B₁ ¬S₁ ¬S₂ (≃-sym teq) eqpos C₁
+  with Γ₁′ , C₁′ , spec₁ , spec₂ , Ag ← rsplit-bindCtx B₁ L₂ ¬S₂ (≃-sym teq) eqpos C₁
   = let
       rwk = SplitRenamings.rwk B₁ B₂ (sum B) {q} {b₁} {m}
       θ   = θR B₁ B₂ B q b₁ m
@@ -364,7 +365,7 @@ pres-RSplit {m} {Γ} {γ} {B₁} {B₂} {B} {q} {b₁} {s} {E} {P} Γ-S ⊢P
               (σ∘ β₀ ρ⁻ θ (λ y → rwk (ρ⁻ y)) pwρ)
 
       ineq = ≼-trans (≼-refl (≈-reflexive (sym Deq)))
-                     (≼-trans (𝐂.≼-⋯ (θR-⇒ B₁ B₂ B Γ₁ Γ₁′ Γ₂ Ag eqh lk₁ lk₂ (≃-sym teq) ¬S₁ ¬S₂) old≼)
+                     (≼-trans (𝐂.≼-⋯ (θR-⇒ B₁ B₂ B Γ₁ Γ₁′ Γ₂ Ag eqh lk₁ lk₂ (≃-sym teq) L₂ ¬S₂) old≼)
                               (γbig-rsplit B₁ B₂ B {γ = γ} Γ₁′ Γ₂))
     in
     subst₂ (λ F Q → Γ ; γ ⊢ₚ ν (B₁ ++ (q + 1) ∷ suc b₁ ∷ B₂) B

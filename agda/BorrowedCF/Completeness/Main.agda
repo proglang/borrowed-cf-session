@@ -16,6 +16,10 @@
 --     * the substitution is THREADED: each subderivation starts from the previous one's
 --       substitution and agrees with it below the entry counter (`Agree 0 m σ σ₀`).
 --
+--   Annotation campaign (agent C2): every case OUTPUTS an annotated term ê with `e ⊑ ê`
+--   (`Conclusion` in `Main/Interface.agda`).  The checking forms ƛ, μ, ⊗ and inj get `_⦂ T`
+--   with T the solved declarative type; a source annotation `e ⦂ T′` stays (`ann-case`).
+--
 --   The module is parametrised only over the two heavy groups of cases, which live in
 --   `Main/App.agda` and `Main/Bind.agda` (a module cannot depend on itself, and the cases need
 --   the induction hypothesis).  `Completeness.agda` instantiates it.  NOTHING else is assumed:
@@ -83,6 +87,8 @@ complete⇒ᵍ {e = `inj i e} Sσ uΓ ap Se ST lin dv =
 complete⇒ᵍ {e = `case e `of⟨ e₁ ; e₂ ⟩} Sσ uΓ ap Se ST lin dv =
   case-case (complete⇒ᵍ {e = e}) (complete⇒ᵍ {e = e₁}) (complete⇒ᵍ {e = e₂}) Sσ uΓ ap
             (proj₁ (solvedTm-case Se)) (proj₁ (proj₂ (solvedTm-case Se))) (proj₂ (proj₂ (solvedTm-case Se))) ST lin dv
+complete⇒ᵍ {e = e ⦂ T′} Sσ uΓ ap Se ST lin dv =
+  ann-case (complete⇒ᵍ {e = e}) Sσ uΓ ap (proj₁ (solvedTm-⦂ Se)) (proj₂ (solvedTm-⦂ Se)) lin dv
 
 -- `μ e` is typable only for `e ≡ ƛ _` (T-AbsRec is the only rule for `μ`).
 complete⇒ᵍ {e = μ (` x)} Sσ uΓ ap Se ST lin dv with inv-μ dv
@@ -105,20 +111,22 @@ complete⇒ᵍ {e = μ (`inj i e)} Sσ uΓ ap Se ST lin dv with inv-μ dv
 ... | _ , _ , _ , _ , _ , () , _
 complete⇒ᵍ {e = μ `case e `of⟨ e₁ ; e₂ ⟩} Sσ uΓ ap Se ST lin dv with inv-μ dv
 ... | _ , _ , _ , _ , _ , () , _
+complete⇒ᵍ {e = μ (e ⦂ T′)} Sσ uΓ ap Se ST lin dv with inv-μ dv
+... | _ , _ , _ , _ , _ , () , _
 
 ------------------------------------------------------------------------
 -- The two theorems of `Completeness/Base.agda`.
 
 complete⇒ : Complete⇒
 complete⇒ {Γ = Γ} {γ = γ} {T = T} SΓ Se ST lin dv m
-  with T̂ , ϵ′ , Δ , k , σ , Sσ , ag , SΔ , ϵ≤ , ≃T , m≤k , uvT̂ , uvΔ , der
+  with ê , ê⊑ , T̂ , ϵ′ , Δ , k , σ , Sσ , ag , SΔ , ϵ≤ , ≃T , m≤k , uvT̂ , uvΔ , der
      ← complete⇒ᵍ {Γ̂ = Γ} {m = m} s₀-solving (solvedCtx⇒uvarsInΓ SΓ)
          (λ x → ≃-reflexive (subTy-id (SΓ x) {s₀})) Se ST lin dv
-  = T̂ , ϵ′ , Δ , k , σ , Sσ , SΔ , ϵ≤ , ≃T , der
+  = ê , ê⊑ , T̂ , ϵ′ , Δ , k , σ , Sσ , SΔ , ϵ≤ , ≃T , der
 
 complete⇐ : Complete⇐
 complete⇐ {Γ = Γ} {γ = γ} {T = T} SΓ Se ST lin dv m
-  with T̂ , ϵ′ , Δ , k , σ , Sσ , SΔ , ϵ≤ , ≃T , der ← complete⇒ SΓ Se ST lin dv m
-  = ϵ′ , C-Eq T T̂ ∷ Δ , k , σ , Sσ ,
+  with ê , ê⊑ , T̂ , ϵ′ , Δ , k , σ , Sσ , SΔ , ϵ≤ , ≃T , der ← complete⇒ SΓ Se ST lin dv m
+  = ê , ê⊑ , ϵ′ , C-Eq T T̂ ∷ Δ , k , σ , Sσ ,
     (subst (_≃ subTy T̂ σ) (sym (subTy-id ST)) (≃-sym ≃T) ∷ SΔ) ,
     ϵ≤ , A-Check der

@@ -46,7 +46,7 @@ import BorrowedCF.Terms.Base as Source
 import BorrowedCF.Terms.BaseSoup as SoupTerm
 
 open import BorrowedCF.Types using (`⊤; 𝕀)
-open import BorrowedCF.Reduction.Base using (ChanCx)
+open import BorrowedCF.Reduction.Base using (ChanCx; chanCx-⸴*)
 
 open import BorrowedCF.Simulation.ForwardSoup.Expressions using (ValueEnv)
 open import BorrowedCF.Simulation.ForwardSoup.LocalImage
@@ -96,13 +96,6 @@ private
 
   nothing≢just : {A : Set} {x : A} → nothing ≢ just x
   nothing≢just ()
-
-  -- The channel context of a binder-extended scope (a copy of the private
-  -- helper of `ForwardSoup/Local.agda`).
-  chanCx-⸴* :
-    {Γ₁ : Context.Ctx a} {Γ₂ : Context.Ctx b} →
-    ChanCx Γ₁ → ChanCx Γ₂ → ChanCx (Γ₁ Context.⸴* Γ₂)
-  chanCx-⸴* = AllVP.++⁺
 
 ------------------------------------------------------------------------
 -- 1.  Process contexts.

@@ -32,6 +32,10 @@ data Tm (n : ℕ) : Set where
   `let⊗_`in_ : (e₁ : Tm n) (e₂ : Tm (2 + n)) → Tm n
   `inj : (i : Side) (e : Tm n) → Tm n
   `case_`of⟨_;_⟩ : (e : Tm n) (e₁ e₂ : Tm (1 + n)) → Tm n
+  -- Syntactic type annotation (⦂ is U+2982, not the typing colon ∶).
+  _⦂_ : (e : Tm n) (T : 𝕋) → Tm n
+
+infixl 5 _⦂_
 
 pattern * = K `unit
 pattern _·ᴸ_ e₁ e₂ = e₁ ·⟨ L ⟩ e₂
@@ -64,6 +68,7 @@ K c ⋯ ϕ = K c
 (`let⊗ e `in e₁) ⋯ ϕ = `let⊗ (e ⋯ ϕ) `in (e₁ ⋯ ϕ ↑ ↑)
 `inj i e ⋯ ϕ = `inj i (e ⋯ ϕ)
 `case e `of⟨ e₁ ; e₂ ⟩ ⋯ ϕ = `case (e ⋯ ϕ) `of⟨ (e₁ ⋯ ϕ ↑) ; (e₂ ⋯ ϕ ↑) ⟩
+(e ⦂ T) ⋯ ϕ = (e ⋯ ϕ) ⦂ T
 
 ⋯-id : ⦃ K : Kit 𝓕 ⦄ (e : Tm n) {ϕ : n –[ K ]→ n} → ϕ ≗ idₖ → e ⋯ ϕ ≡ e
 ⋯-id (` x) eq = cong `/id (eq x) ■ `/`-is-` x
@@ -79,6 +84,7 @@ K c ⋯ ϕ = K c
 ⋯-id (`case e `of⟨ e₁ ; e₂ ⟩) eq
   rewrite ⋯-id e eq | ⋯-id e₁ (id↑ eq) | ⋯-id e₂ (id↑ eq)
   = refl
+⋯-id (e ⦂ T) eq = cong (_⦂ T) (⋯-id e eq)
 
 ⋯-cong : ⦃ K : Kit 𝓕 ⦄ (e : Tm m) {ϕ₁ ϕ₂ : m –[ K ]→ n} → ϕ₁ ≗ ϕ₂ → e ⋯ ϕ₁ ≡ e ⋯ ϕ₂
 ⋯-cong (` x) eq = cong `/id (eq x)
@@ -94,6 +100,7 @@ K c ⋯ ϕ = K c
 ⋯-cong (`case e `of⟨ e₁ ; e₂ ⟩) eq
   rewrite ⋯-cong e eq | ⋯-cong e₁ (eq ~↑) | ⋯-cong e₂ (eq ~↑)
   = refl
+⋯-cong (e ⦂ T) eq = cong (_⦂ T) (⋯-cong e eq)
 
 open module Traversal = Syntax.Traversal record
   { _⋯_ = _⋯_
@@ -125,10 +132,26 @@ fusion (`case e `of⟨ e₁ ; e₂ ⟩) ϕ₁ ϕ₂ rewrite fusion e ϕ₁ ϕ�
   cong₂ (`case _ `of⟨_;_⟩)
     (fusion e₁ (ϕ₁ ↑) (ϕ₂ ↑) ■ ⋯-cong e₁ (sym ∘ dist-↑-· ϕ₁ ϕ₂))
     (fusion e₂ (ϕ₁ ↑) (ϕ₂ ↑) ■ ⋯-cong e₂ (sym ∘ dist-↑-· ϕ₁ ϕ₂))
+fusion (e ⦂ T) ϕ₁ ϕ₂ = cong (_⦂ T) (fusion e ϕ₁ ϕ₂)
 
 open module CTraversal = Traversal.CTraversal record { fusion = fusion }
   hiding (fusion)
   public
+
+-- Erase every type annotation.
+strip : Tm n → Tm n
+strip (` x) = ` x
+strip (K c) = K c
+strip (ƛ e) = ƛ (strip e)
+strip (μ e) = μ (strip e)
+strip (e₁ ·⟨ d ⟩ e₂) = strip e₁ ·⟨ d ⟩ strip e₂
+strip (e₁ ; e₂) = strip e₁ ; strip e₂
+strip (e₁ ⊗ e₂) = strip e₁ ⊗ strip e₂
+strip (`let e₁ `in e₂) = `let strip e₁ `in strip e₂
+strip (`let⊗ e₁ `in e₂) = `let⊗ strip e₁ `in strip e₂
+strip (`inj i e) = `inj i (strip e)
+strip (`case e `of⟨ e₁ ; e₂ ⟩) = `case strip e `of⟨ strip e₁ ; strip e₂ ⟩
+strip (e ⦂ T) = strip e
 
 infix 4 ⊢_∶_
 
@@ -283,6 +306,11 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
     ---------------------------------------------------
     Γ ; join p/s γ₁ γ₂ ⊢ `case e `of⟨ e₁ ; e₂ ⟩ ∶ U ∣ ϵ
 
+  T-Ann :
+    Γ ; γ ⊢ e ∶ T ∣ ϵ →
+    -----------------------
+    Γ ; γ ⊢ e ⦂ T ∶ T ∣ ϵ
+
   T-Conv :
     (T≃ : T ≃ U) →
     (ϵ≤ : ϵ₁ ≤ϵ ϵ₂) →
@@ -420,6 +448,7 @@ _⊢⋯_ {σ = σ} (T-Case p/s {γ₁} {γ₂} x x₁ x₂) ⊢ϕ =
   subst-γ (sym (join-⋯ p/s γ₁ γ₂)) $ T-Case p/s (x ⊢⋯ ⊢ϕ)
     (subst-γ (join-⋯ p/s _ _ ■ cong (join p/s _) (sym (𝐂.⋯-↑-wk γ₂ σ))) (x₁ ⊢⋯ ⊢↑ ⊢ϕ))
     (subst-γ (join-⋯ p/s _ _ ■ cong (join p/s _) (sym (𝐂.⋯-↑-wk γ₂ σ))) (x₂ ⊢⋯ ⊢↑ ⊢ϕ))
+T-Ann x ⊢⋯ ⊢ϕ = T-Ann (x ⊢⋯ ⊢ϕ)
 T-Conv eq ϵ≤ x ⊢⋯ ⊢ϕ = T-Conv eq ϵ≤ (x ⊢⋯ ⊢ϕ)
 T-Weaken γ≤ x ⊢⋯ ⊢ϕ = T-Weaken (𝐂.≼-⋯ (TKit.&-⇒ ⊢ϕ) γ≤) (x ⊢⋯ ⊢ϕ)
 
@@ -671,3 +700,12 @@ inv-`case (T-Conv T≃ ϵ≤ x) =
 inv-`case (T-Weaken γ≤ x) =
   let p/s , _ , _ , _ , _ , ≤γ , x′ = inv-`case x in
   p/s , _ , _ , _ , _ , ≼-trans ≤γ γ≤ , x′
+
+inv-⦂ : Γ ; γ ⊢ e ⦂ T ∶ U ∣ ϵ → T ≃ U × Γ ; γ ⊢ e ∶ T ∣ ϵ
+inv-⦂ (T-Ann x) = ≃-refl , x
+inv-⦂ (T-Conv T≃ ϵ≤ x) =
+  let eq , x′ = inv-⦂ x in
+  ≃-trans eq T≃ , T-Conv ≃-refl ϵ≤ x′
+inv-⦂ (T-Weaken γ≤ x) =
+  let eq , x′ = inv-⦂ x in
+  eq , T-Weaken γ≤ x′

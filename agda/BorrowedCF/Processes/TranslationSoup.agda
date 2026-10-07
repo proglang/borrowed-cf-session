@@ -39,6 +39,7 @@ T[ 𝐓Tm.`inj i e ] σ = 𝐒Tm.`inj i (T[ e ] σ)
 T[ 𝐓Tm.`case e `of⟨ e₁ ; e₂ ⟩ ] σ =
   𝐒Tm.`case (T[ e ] σ) `of⟨ (T[ e₁ ] (liftEnv σ))
                                ; (T[ e₂ ] (liftEnv σ)) ⟩
+T[ e 𝐓Tm.⦂ T ] σ = (T[ e ] σ) 𝐒Tm.⦂ T
 
 UChan : ℕ → Set
 UChan n = 𝐒Tm.Tm n × 𝔽 n × 𝐒Tm.Tm n

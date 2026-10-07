@@ -38,7 +38,7 @@ var-case : ∀ {n} {Γ Γ̂ : Ctx n} {γ : Struct n} {x : 𝔽 n} {T : 𝕋} {ϵ
 var-case {Γ̂ = Γ̂} {x = x} {m = m} {σ₀ = σ₀} Sσ uΓ ap d =
   let T≃ , ≤γ = inv-` d
       Lft     = ≼→ Sσ ap uΓ ≤γ
-  in Γ̂ ﹫ x , ℙ , cs Lft , m , σ₀ ,
+  in ` x , ⊑-var , Γ̂ ﹫ x , ℙ , cs Lft , m , σ₀ ,
      Sσ , agree (λ _ _ _ → refl) , sol Lft , ℙ≤ϵ , ≃-trans (ap x) (≃-sym T≃) ,
      Nat.≤-refl , lookupΓ uΓ x , csc Lft ,
      A-Var (der Lft)
@@ -59,7 +59,7 @@ const-case {Γ̂ = Γ̂} {γ = γ} {c = c} {T = T} {m = m} {σ₀ = σ₀} Sσ u
   with algConst? c
 ... | inj₁ Ac =
   let Lft = ≼→ Sσ ap uΓ ≤γ in
-  subTy U s₀ , ℙ , cs Lft , m , σ₀ ,
+  K c , ⊑-K , subTy U s₀ , ℙ , cs Lft , m , σ₀ ,
     Sσ , agree (λ _ _ _ → refl) , sol Lft , ℙ≤ϵ ,
     subst (_≃ T) (sym (subTy-id (subTy-solved U s₀-solving)))
           (≃-trans (subTy-≃ U≃T) (≃-reflexive (subTy-id ST))) ,
@@ -78,7 +78,7 @@ const-case {Γ̂ = Γ̂} {γ = γ} {c = c} {T = T} {m = m} {σ₀ = σ₀} Sσ u
       eqs  = subTy-id Ss ■ sym (subTy-id Ss)
       eqT̂  = cong₂ (λ x y → ⟨ x ; y ⟩ →*M ⟨ x ⟩ ⊗ᴸ ⟨ y ⟩ ∣ ℙ) eqs eqα
       Lft  = ≼→ Sσ ap uΓ ≤γ
-  in ⟨ s₁ ; `` UV.fresh m ⟩ →*M ⟨ s₁ ⟩ ⊗ᴸ ⟨ `` UV.fresh m ⟩ ∣ ℙ ,
+  in K _ , ⊑-K , ⟨ s₁ ; `` UV.fresh m ⟩ →*M ⟨ s₁ ⟩ ⊗ᴸ ⟨ `` UV.fresh m ⟩ ∣ ℙ ,
      ℙ , cs Lft , suc m , σ ,
      (extend-solving σ₀ m (subTy-local L₂) ¬S₂′ Sσ (subTy-solved s₂ s₀-solving)) ,
      extend-agree σ₀ m (subTy-local L₂) ¬S₂′ ,
@@ -102,7 +102,7 @@ const-case {Γ̂ = Γ̂} {γ = γ} {c = c} {T = T} {m = m} {σ₀ = σ₀} Sσ u
       eqs   = subTy-id Ss ■ sym (subTy-id Ss)
       eqT̂   = cong₂ (λ x y → ⟨ x ; y ⟩ →*M ⟨ x ; ret ⟩ ⊗¹ ⟨ acq ; y ⟩ ∣ ℙ) eqs eqα
       Lft   = ≼→ Sσ ap uΓ ≤γ
-  in ⟨ s₁ ; `` UV.fresh m ⟩ →*M ⟨ s₁ ; ret ⟩ ⊗¹ ⟨ acq ; `` UV.fresh m ⟩ ∣ ℙ ,
+  in K _ , ⊑-K , ⟨ s₁ ; `` UV.fresh m ⟩ →*M ⟨ s₁ ; ret ⟩ ⊗¹ ⟨ acq ; `` UV.fresh m ⟩ ∣ ℙ ,
      ℙ , cs Lft , suc m , σ ,
      extend-solving σ₀ m (subTy-local L₂) ¬S₂′ Sσ (subTy-solved s₂ s₀-solving) ,
      extend-agree σ₀ m (subTy-local L₂) ¬S₂′ ,

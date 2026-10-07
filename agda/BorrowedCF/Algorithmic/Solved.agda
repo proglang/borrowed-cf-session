@@ -192,6 +192,7 @@ subTy-local {s = acq}      Ls = Ls
 subTy-local {s = `` α} {σ} Ls = local-⋯ᵣ (UV.ap-local σ α)
 subTy-local {s = _ ; _}    Ls (¬Lσs ;₁-) = subTy-local (λ x → Ls (x ;₁-)) ¬Lσs
 subTy-local {s = _ ; _}    Ls (Ss ;₂ ¬Lσs) = subTy-local (λ x → Ls (subTy-skips⁻¹ Ss ;₂ x)) ¬Lσs
+subTy-local {s = mu _}    Ls (mu ¬Lσs) = subTy-local (λ x → Ls (mu x)) ¬Lσs
 
 open import BorrowedCF.Terms
 
@@ -222,6 +223,9 @@ data SolvedTm {n} : Tm n → Set where
   `let⊗_`in_ : {e₁ : Tm n} {e₂ : Tm (2 + n)} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (`let⊗ e₁ `in e₂)
   `inj : {i : Side} {e : Tm n} → SolvedTm e → SolvedTm (`inj i e)
   `case_`of⟨_;_⟩ : {e : Tm n} {e₁ e₂ : Tm (1 + n)} → SolvedTm e → SolvedTm e₁ → SolvedTm e₂ → SolvedTm `case e `of⟨ e₁ ; e₂ ⟩
+  _⦂_ : {e : Tm n} {T : 𝕋} → SolvedTm e → SolvedTy T → SolvedTm (e ⦂ T)
+
+infixl 5 _⦂_
 
 subConst : Const → UV.Sub → Const
 subConst `unit σ = `unit
@@ -299,6 +303,7 @@ subTm (`let e `in e₁) σ = `let subTm e σ `in subTm e₁ σ
 subTm (`let⊗ e `in e₁) σ = `let⊗ subTm e σ `in subTm e₁ σ
 subTm (`inj i e) σ = `inj i (subTm e σ)
 subTm `case e `of⟨ e₁ ; e₂ ⟩ σ = `case subTm e σ `of⟨ subTm e₁ σ ; subTm e₂ σ ⟩
+subTm (e ⦂ T) σ = subTm e σ ⦂ subTy T σ
 
 subTm-solved : {e : Tm n} → SolvedTm e → SolvedTm (subTm e σ)
 subTm-solved (` x) = ` x
@@ -312,6 +317,7 @@ subTm-solved (`let e `in e₁) = `let subTm-solved e `in subTm-solved e₁
 subTm-solved (`let⊗ e `in e₁) = `let⊗ subTm-solved e `in subTm-solved e₁
 subTm-solved (`inj e) = `inj (subTm-solved e)
 subTm-solved `case e `of⟨ e₁ ; e₂ ⟩ = `case subTm-solved e `of⟨ subTm-solved e₁ ; subTm-solved e₂ ⟩
+subTm-solved {σ = σ} (e ⦂ T) = subTm-solved e ⦂ subst SolvedTy (sym (subTy-id T {σ})) T
 
 subTm-id : {e : Tm n} → SolvedTm e → subTm e σ ≡ e
 subTm-id (` x) = refl
@@ -325,6 +331,7 @@ subTm-id (`let e `in e₁) = cong₂ `let_`in_ (subTm-id e) (subTm-id e₁)
 subTm-id (`let⊗ e `in e₁) = cong₂ `let⊗_`in_ (subTm-id e) (subTm-id e₁)
 subTm-id (`inj e) = cong (`inj _) (subTm-id e)
 subTm-id {σ = σ} `case e `of⟨ e₁ ; e₂ ⟩ rewrite subTm-id {σ = σ} e = cong₂ `case _ `of⟨_;_⟩ (subTm-id e₁) (subTm-id e₂)
+subTm-id (e ⦂ T) = cong₂ _⦂_ (subTm-id e) (subTy-id T)
 
 subCtx : Ctx n → UV.Sub → Ctx n
 subCtx Γ σ = V.map (λ t → subTy t σ) Γ

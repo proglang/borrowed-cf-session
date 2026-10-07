@@ -77,12 +77,19 @@ extend-ap σ₀ m Ls ¬Ss =
 -- it with the incoming `σ₀` gives `Γ` up to `≃`.  It differs from `Γ` exactly at
 -- A-LetPair / A-Case, which extend the context with an INFERRED type.
 
-Conclusion : {n : ℕ} → Ctx n → Struct n → Tm n → 𝕋 → Eff → ℕ → UV.Sub → Set
-Conclusion Γ̂ γ e T ϵ m σ₀ =
+-- `Infers` is the algorithmic half for a FIXED (annotated) term ê.
+Infers : {n : ℕ} → Ctx n → Struct n → Tm n → 𝕋 → Eff → ℕ → UV.Sub → Set
+Infers Γ̂ γ e T ϵ m σ₀ =
   Σ[ T̂ ∈ 𝕋 ] Σ[ ϵ′ ∈ Eff ] Σ[ Δ ∈ CSet ] Σ[ k ∈ ℕ ] Σ[ σ ∈ UV.Sub ]
     Solving σ × Agree 0 m σ σ₀ × SolvedΔ Δ σ × ϵ′ ≤ϵ ϵ × (subTy T̂ σ ≃ T)
       × (m Nat.≤ k) × UVarsIn 0 k T̂ × UVarsInΔ 0 k Δ
       × (Γ̂ ; γ / m ⊢ e ⇒ T̂ ∣ ϵ′ ↑ Δ / k)
+
+-- The induction OUTPUTS the annotated term ê (annotation campaign): the algorithm needs
+-- `_⦂ T` at checking forms in inference position, and the cases insert them.
+-- Tuple shape: `ê , ê⊑ , T̂ , ϵ′ , Δ , k , σ , Sσ , ag , SΔ , ϵ≤ , ≃T , m≤k , uvT̂ , uvΔ , der`.
+Conclusion : {n : ℕ} → Ctx n → Struct n → Tm n → 𝕋 → Eff → ℕ → UV.Sub → Set
+Conclusion {n} Γ̂ γ e T ϵ m σ₀ = Σ[ ê ∈ Tm n ] e ⊑ ê × Infers Γ̂ γ ê T ϵ m σ₀
 
 -- The induction hypothesis for ONE fixed subterm.  Passing the hypothesis per subterm (rather
 -- than universally quantified) is what lets Agda see the structural recursion through the

@@ -424,6 +424,7 @@ data NonLocal {n} : 𝕊 n → Set where
   acq : NonLocal acq
   _;₁- : NonLocal s₁ → NonLocal (s₁ ; s₂)
   _;₂_ : Skips s₁ → NonLocal s₂ → NonLocal (s₁ ; s₂)
+  mu   : NonLocal s → NonLocal (mu s)
 
 Local : 𝕊 n → Set
 Local s = ¬ NonLocal s
@@ -432,21 +433,25 @@ nonLocal-dual⁺ : NonLocal s → NonLocal (dual s)
 nonLocal-dual⁺ acq = acq
 nonLocal-dual⁺ (x ;₁-) = nonLocal-dual⁺ x ;₁-
 nonLocal-dual⁺ (x ;₂ x₁) = skips-dual⁺ x ;₂ nonLocal-dual⁺ x₁
+nonLocal-dual⁺ (mu x) = mu (nonLocal-dual⁺ x)
 
 nonLocal-dual⁻ : NonLocal (dual s) → NonLocal s
 nonLocal-dual⁻ {s = s₁ ; s₂} (x ;₁-) = nonLocal-dual⁻ x ;₁-
 nonLocal-dual⁻ {s = s₁ ; s₂} (x ;₂ x₁) = skips-dual⁻ x ;₂ nonLocal-dual⁻ x₁
 nonLocal-dual⁻ {s = acq} x = x
+nonLocal-dual⁻ {s = mu s} (mu x) = mu (nonLocal-dual⁻ x)
 
 nonLocal-⋯ : ⦃ K : Kit 𝓕 ⦄ {ϕ : m –[ K ]→ n} → NonLocal s → NonLocal (s ⋯ ϕ)
 nonLocal-⋯ acq = acq
 nonLocal-⋯ (x ;₁-) = nonLocal-⋯ x ;₁-
 nonLocal-⋯ (x ;₂ x₁) = skips-⋯ x ;₂ nonLocal-⋯ x₁
+nonLocal-⋯ (mu x) = mu (nonLocal-⋯ x)
 
 nonLocal-⋯ᵣ⁻¹ : {ϕ : m →ᵣ n} → NonLocal (s ⋯ ϕ) → NonLocal s
 nonLocal-⋯ᵣ⁻¹ {s = s₁ ; s₂} (x ;₁-) = nonLocal-⋯ᵣ⁻¹ x ;₁-
 nonLocal-⋯ᵣ⁻¹ {s = s₁ ; s₂} (x ;₂ x₁) = skips-⋯ᵣ⁻¹ x ;₂ nonLocal-⋯ᵣ⁻¹ x₁
 nonLocal-⋯ᵣ⁻¹ {s = acq} x = acq
+nonLocal-⋯ᵣ⁻¹ {s = mu s} (mu x) = mu (nonLocal-⋯ᵣ⁻¹ x)
 
 local-⋯ᵣ : {ϕ : m →ᵣ n} → Local s → Local (s ⋯ ϕ)
 local-⋯ᵣ Ls = Ls ∘ nonLocal-⋯ᵣ⁻¹
@@ -460,6 +465,7 @@ local-dual⁺ Ls = Ls ∘ nonLocal-dual⁻
 skips⇒local : Skips s → Local s
 skips⇒local (Ss ; Ss₁) (¬Ls ;₁-) = skips⇒local Ss ¬Ls
 skips⇒local (Ss ; Ss₁) (x ;₂ ¬Ls) = skips⇒local Ss₁ ¬Ls
+skips⇒local (mu Ss) (mu ¬Ls) = skips⇒local Ss ¬Ls
 
 
 data Wfₛ {n} : 𝕊 n → Set

@@ -171,6 +171,7 @@ ren-id (SoupTerm.`let⊗ t₁ `in t₂) eq =
       (suc zero) → refl
       (suc (suc x)) → cong suc (cong suc (eq x)))
 ren-id (SoupTerm.`inj side t) eq = cong (SoupTerm.`inj side) (ren-id t eq)
+ren-id (t SoupTerm.⦂ ty) eq = cong (SoupTerm._⦂ ty) (ren-id t eq)
 ren-id (SoupTerm.`case t `of⟨ t₁ ; t₂ ⟩) eq =
   cong₂ (λ head branches →
           SoupTerm.`case head `of⟨ proj₁ branches ; proj₂ branches ⟩)

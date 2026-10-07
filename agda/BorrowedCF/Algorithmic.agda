@@ -55,6 +55,7 @@ fv (`let e₁ `in e₂) = fv e₁ ∪ fvClose (fv e₂)
 fv (`let⊗ e₁ `in e₂) = fv e₁ ∪ fvClose* 2 (fv e₂)
 fv (`inj i e) = fv e
 fv (`case e `of⟨ e₁ ; e₂ ⟩) = fv e ∪ fvClose (fv e₁) ∪ fvClose (fv e₂)
+fv (e ⦂ T) = fv e
 
 _∣fv[_] : Struct n → Tm n → Struct n
 γ ∣fv[ e ] = γ ↓ fv e
@@ -71,6 +72,7 @@ fv-subTm (`let e `in e₁) = cong₂ _∪_ (fv-subTm e) (cong fvClose (fv-subTm 
 fv-subTm (`let⊗ e `in e₁) = cong₂ _∪_ (fv-subTm e) (cong (fvClose* 2) (fv-subTm e₁))
 fv-subTm (`inj i e) = fv-subTm e
 fv-subTm `case e `of⟨ e₁ ; e₂ ⟩ = cong₂ _∪_ (fv-subTm e) (cong₂ _∪_ (cong fvClose (fv-subTm e₁)) (cong fvClose (fv-subTm e₂)))
+fv-subTm (e ⦂ T) = fv-subTm e
 
 data Mode : Set where
   chk inf : Mode
@@ -119,8 +121,8 @@ join-joinParSeq (seq x) = x
 private variable Δ₀ : CSet
 
 -- The CHECKING FORMS: exactly the terms at which the paper's algorithm needs a type
--- annotation.  A-Ann is restricted to them, so it cannot re-type an arbitrary
--- subterm (e.g. an application) at a guessed type.
+-- annotation.  A-Ann reads a syntactic annotation `e ⦂ T` and no longer takes this
+-- premise; completeness uses ChkForm to decide where it inserts annotations.
 data ChkForm {n} : Tm n → Set where
   chk-ƛ   : ∀ {e}     → ChkForm (ƛ e)
   chk-μ   : ∀ {e}     → ChkForm (μ e)
@@ -246,10 +248,9 @@ data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
     Γ ; γ / m ⊢ e ⇐ T ∣ ϵ ↑ C-Eq T U ∷ Δ / n
 
   A-Ann :
-    ChkForm e →
     Γ ; γ / m ⊢ e ⇐ T ∣ ϵ ↑ Δ / n →
-    -------------------------------
-    Γ ; γ / m ⊢ e ⇒ T ∣ ϵ ↑ Δ / n
+    -------------------------------------
+    Γ ; γ / m ⊢ (e ⦂ T) ⇒ T ∣ ϵ ↑ Δ / n
 
 private
   ty : Γ ; γ / m ⊢[ ξ ] e ∶ T ∣ ϵ ↑ Δ / n → 𝕋
@@ -358,8 +359,8 @@ module _ {σ : UV.Sub} (Sσ : Solving σ) where
     T-Inj
       $ subst (_ ; _ ⊢ _ ∶_∣ _) (if-float (flip subTy σ) i)
       $ sound x SΓ SΔ
-  sound (A-Ann _ x) SΓ SΔ =
-    sound x SΓ SΔ
+  sound (A-Ann x) SΓ SΔ =
+    T-Ann (sound x SΓ SΔ)
   sound (A-Check x) SΓ (eq ∷ SΔ) =
     T-Conv (≃-sym eq) ≤ϵ-refl
       $ sound x SΓ SΔ
@@ -403,5 +404,6 @@ someSub-solving = subAll-solving (λ ()) (λ ()) end
   T-Case p/s (⊢-sub σ d)
              (⊢-sub σ d₁ ⊢≗ λ _ → refl)
              (⊢-sub σ d₂ ⊢≗ λ _ → refl)
+⊢-sub σ (T-Ann d) = T-Ann (⊢-sub σ d)
 ⊢-sub σ (T-Conv T≃ ϵ≤ d) = T-Conv (subTy-≃ T≃) ϵ≤ (⊢-sub σ d)
 ⊢-sub σ (T-Weaken γ≤ d) = T-Weaken (≼-map⁺ subTy-unr subTy-mobile γ≤) (⊢-sub σ d)
