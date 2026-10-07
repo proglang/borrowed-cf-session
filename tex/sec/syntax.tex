@@ -1,11 +1,6 @@
 \section{Syntax}
 \label{sec:expr-proc}
 
-% Figures in this section: syntax of expressions (\cref{fig:syntax-expressions}),
-% run-time syntax (\cref{fig:syntax-runtime}), reduction (expressions:
-% \cref{fig:expression-reduction}, processes: \cref{fig:process-reduction}),
-% process congruence (\cref{fig:configuration-congruence}).
-
 \begin{figure}
   \begin{align*}
     \shortintertext{\textbf{Types}}
@@ -40,7 +35,8 @@
     \\
     \Ctx \grmeq
               & \CtxEmpty \grmor \CtxVar \EVar\T \grmor \Ctx\CtxSeq\Ctx \grmor \Ctx\CtxPar\Ctx
-    \tag{Typing environments}                                                                  \\
+                \tag{Typing environments}
+    \\[\medskipamount]
     \shortintertext{\textbf{Expressions}}
     \C \grmeq
               & \CUnit
@@ -69,7 +65,7 @@
     % & \grmor \EMatch{\E}{\ell:\E_\ell}{\ell\in L}
     % \grmor \EFork\E \grmor \ELet\EVar\E\E
     \tag{Expressions}
-    \\
+    \\[\medskipamount]
     \shortintertext{\textbf{Processes}}
     \BindGroup \grmeq
               & (\EVar \grmor \BSep)^*
@@ -105,6 +101,18 @@ session types $\S$. Session types are either $\SSkip$ or use
 sequential composition $\SSeq\S\S$ as their central
 connective. They include communication, branching/selection,
 closing/waiting, drop/acquire (new to this work), and recursion.
+
+The type of $\FnRenderUser$ from \cref{lst:rendering-example} is written
+$\TArr{\MobMobile}{\DirNone,\EffPure}{\TyUser}{\TArr{\MobMobile}{\DirNone,\EffImpure}{\SSeq
+    \TyHtmlChan \STerm}{\BUnit}}$. The first arrow is mobile ($\MobMobile$) and
+unrestricted ($\DirNone$) because $\FnRenderUser$ is a top-level function, which
+can be shared and duplicated at will. The arrow is also marked pure ($\EffPure$)
+because application of the $\TyUser$ argument does not perform any channel
+operations. Providing the second argument evaluates the function body. Therefore
+the second arrow is marked impure ($\EffImpure$). The second arrow is still
+mobile and unrestricted assuming that type $\TyUser$ is mobile and unrestricted
+itself.
+
 Typing environments $\Ctx$ combine variable bindings using ordered ($\Ctx\CtxSeq\Ctx$) and
 unordered ($\Ctx\CtxPar\Ctx$) composition in the style of BI-contexts
 \cite{DBLP:journals/bsl/OHearnP99}, but with different semantics.

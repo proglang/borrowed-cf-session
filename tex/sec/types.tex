@@ -58,7 +58,7 @@ acquire marks the suffix of a remotely borrowed endpoint, and boundedness ensure
 borrowed prefix can be completed without consuming an unbounded residual owned
 elsewhere. This is the essential case: a borrowed endpoint may move across
 processes because its protocol is a finite, bounded
-obligation. Mobility extends from sessions to ordinary values: Unit is mobile;
+obligation. Mobility extends from sessions to ordinary values: $\BUnit$ is mobile;
 products and variants are mobile pointwise; a function value is mobile if its
 arrow carries the mobile annotation, which in turn means the function 
 closes over mobile values only. Context mobility is pointwise, so a process may
@@ -167,6 +167,13 @@ constants consume exactly the session prefix they implement: send and receive
 advance through $\SSend\T$ and $\SRecv\T$, selection advances an internal
 choice, and branching returns a variant over external branches. These
 constants are impure because they communicate.
+
+The argument to $\CFork$ in $\FnRenderUser$
+(\cref{lst:rendering-example,lst:rendering-example-elab/remote}) is mobile
+because the two captured variables $\Varid{user}$ and $\Varid{c}_1$ have mobile
+types.
+
+The argument to $\CFork$ in $\FnRenderUser$ must be a mobile function.
 
 The split constants are pure. Local splitting, $\CSplit$, decomposes
 $\SSeq{\S[1]}{\S[2]}$ into an ordered pair containing the borrowed prefix and
