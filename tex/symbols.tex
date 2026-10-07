@@ -478,6 +478,8 @@
 % Process translation as a function: the run-time configuration of a well-typed
 % source process #2 under the value substitution #1 (default \Sub).
 \newcommand*\TransP[2][\Sub]{\metacolor{\llbracket #2 \rrbracket_{#1}}}
+% Image relation of the metatheory: P \ImageRel Q reads "Q is an image of P".
+\newcommand*\ImageRel{\mathrel{\metacolor{\vartriangleright}}}
 \NewDocumentCommand\TransBind{O{\E} m o}{\stackrel{\targettermcolor{#1}}{\TrRel{}} #2 \IfValueT{#3}{\mid #3}}
 
 \newcommand*\TA[2]{\metacolor{\llbracket #1;#2 \rrbracket_{\Gamma}}}

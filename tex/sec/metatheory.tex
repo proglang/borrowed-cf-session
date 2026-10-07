@@ -1,10 +1,11 @@
 \section{Metatheory}
 \label{sec:metatheory}
 
-This section summarizes the main metatheoretical results for \thecalculus. All
-definitions from the previous sections have been formalized in
-Agda. We mark the theorems we proved mechanically with a little Agda bird after
-the theorem name. Non-mechanized proofs are shown in the supplement.
+This section states the main metatheoretical results for \thecalculus. All
+definitions from the previous sections and all theorems of this section are
+formalized and proved in Agda. We mark each mechanized theorem with a little
+Agda bird after the theorem name. The supplement names the Agda module of each
+theorem.
 
 \subsection{Type Safety for Declarative Typing}
 
@@ -16,7 +17,7 @@ yields the usual safety invariant across reduction steps.
   $\HasType \SessCtx {\E*} \T$.
 \end{theorem}
 
-\begin{theorem}[Process preservation]
+\begin{theorem}[Process preservation\;\AgdaBird]
   If\/ $\ProcHasType \SessCtx \Proc$ and $\Proc \PReduce \Proc*$, then
   $\ProcHasType \SessCtx {\Proc*}$.
 \end{theorem}
@@ -32,46 +33,45 @@ reduction of constants is part of the process semantics.
   $\E=\ECapp{\EApp\C\V}$, or there exists an $\E*$ such that $\E \EReduce \E*$.
 \end{theorem}
 
-A process is concurrently blocked, if the active threads are blocked and no
-channel pair can synchronize. The formal blocked-process
-predicate is given in \cref{fig:blocked-expr-proc}.
-Process progress guarantees reduction only for non-blocked
-configurations. Thus, deadlocks remain possible.
+A process is blocked if every thread is blocked and no restriction can fire a
+channel rule. The blocked-process predicate $\Blocked\Proc$ is defined in
+\cref{fig:blocked-expr-proc}. Progress holds for closed processes and
+guarantees reduction only for processes that are not blocked. Thus, deadlocks
+remain possible.
 
-\begin{theorem}[Process progress]
+\begin{theorem}[Process progress\;\AgdaBird]
   \label{thm:process-progress}
-  If\/ $\ProcHasType \SessCtx \Proc$, then either $\Proc \Congruent \PExp{\CUnit}$ or an expression in $\Proc$ is blocked on concurrent actions or
-    there exists an $\Proc*$ such that $\Proc \PReduce \Proc*$.
+  If\/ $\ProcHasType \CtxEmpty \Proc$, then $\Proc \Congruent \PExp{\CUnit}$,
+  or $\Blocked\Proc$, or there exists a $\Proc*$ such that
+  $\Proc \PReduce \Proc*$.
 \end{theorem}
-The proof is deferred to \cref{sec:appendix-metatheory-ts}.
 
-\subsection{Weak Simulation for Translation}
+\subsection{Simulation for the Translation}
 
-We relate source and target reduction through the process translation
-$\TransP\Proc$, which maps a well-typed process $\ProcHasType \Ctx \Proc$ to its
-run-time configuration under a value substitution $\Sub$ over the channel context
-$\SessCtx$ of $\Ctx$. The translation introduces administrative
-synchronization steps, hence both directions only hold up to a weak bisimilarity $\Bisim$,
-which identifies run-time configurations that differ only by administrative
-drop and acquire steps, channel discards, and the reordering of
-independent binders.
+We relate source and target reduction through the image relation
+$\Proc \ImageRel \TProcQ$, which holds when the configuration $\TProcQ$
+represents the closed, well-typed process $\Proc$ up to the renaming of
+primitive channels and the ordering of threads. The translation produces an
+image, $\Proc \ImageRel \TransP\Proc$. Both simulations match one source
+step with one target step.
 
 \begin{theorem}[Forward simulation\;\AgdaBird]
-  If $\Proc \PReduce \Proc*$\!, then there exists
-  $\TProcQ$ such that $\TransP\Proc \TPReduce^{*} \TProcQ$ and
-  $\TProcQ \Bisim \TransP{\Proc*}$.
+  If\/ $\ProcHasType \CtxEmpty \Proc$, $\Proc \ImageRel \TProcQ$, and
+  $\Proc \PReduce \Proc*$, then there exists $\TProcQ*$ such that
+  $\TProcQ \TPReduce \TProcQ*$ and $\Proc* \ImageRel \TProcQ*$.
 \end{theorem}
 
-The converse direction matches every target step by a finite source computation,
-again up to $\Bisim$.
+The converse direction holds up to the equivalence $\Bisim$ that identifies
+configurations differing only in the numbering of the synchronization slots of
+one endpoint. The target rule for a right split may place its new slot at any
+position, whereas the source rule \textsc{R-RSplit} fixes that position.
 
-\begin{conjecture}[Backward simulation]
-  For all $\TProcR$ and $\TProcQ$ with
-  $\TProcR \Bisim \TransP\Proc$, if $\TProcR \TPReduce \TProcQ$, then there
-  exists a source process $\Proc*$ such that $\Proc \PReduce^{*} \Proc*$ and
-  $\TProcQ \Bisim \TransP{\Proc*}$.
-\end{conjecture}
-A proof sketch is provided in the supplement.
+\begin{theorem}[Backward simulation\;\AgdaBird]
+  If\/ $\ProcHasType \CtxEmpty \Proc$, $\Proc \ImageRel \TProcQ$,
+  $\TProcQ \Bisim \TProcR$, and $\TProcR \TPReduce \TProcR*$, then there
+  exist $\Proc*$ and $\TProcQ*$ such that $\Proc \PReduce \Proc*$,
+  $\Proc* \ImageRel \TProcQ*$, and $\TProcQ* \Bisim \TProcR*$.
+\end{theorem}
 
 
 \subsection{Soundness and Completeness for Algorithmic Typing}
@@ -82,24 +82,34 @@ completeness says that declarative typings can be reconstructed algorithmically.
 
 \begin{theorem}[Algorithmic typing soundness\;\AgdaBird]
   If either $\CheckType \E \AT \Eff$ or $\InferType \E \AT \Eff$
-  and $\sigma \models \CSet$ is a closing
-  substitution such that $\Fv(\AT) \subseteq \dom(\sigma)$, then
-  $\HasType \Ctx \E {\AT{[\sigma]}}$.
+  and $\sigma \models \CSet$ is a closing substitution for the unification
+  variables of $\Ctx$, $\E$ and $\AT$, then
+  $\HasType[\Eff] {\Ctx{[\sigma]}} {\E{[\sigma]}} {\AT{[\sigma]}}$.
 \end{theorem}
 
-% For completeness, we again first cover checking and then synthesis.
-% 
-% \begin{theorem}[Expression checking completeness]
-%   If $\HasType \Ctx \E \T$, then
-%   $\CheckType \E \AT \Eff$ for some type $\AT$, set of constraints $\CSet$,
-%   and closing substitution $\sigma$ such that $\T = \AT{[\sigma]}$.
-% \end{theorem}
-% 
-% \begin{theorem}[Expression inference completeness]
-%   If $\HasType \Ctx \E \T$ and $\E$ is in synthesis form, then
-%   $\InferType \E \AT \Eff$ for some type $\AT$, set of constraints $\CSet$,
-%   and closing substitution $\sigma$ such that $\T = \AT{[\sigma]}$.
-% \end{theorem}
+Completeness starts from a context, an expression and a type without
+unification variables. It requires that every variable of linear type occurs
+at most once in $\Ctx$. This condition is necessary, because the restriction
+of $\Ctx$ to the free variables of a subexpression keeps every occurrence of
+a repeated variable, which no algorithmic rule for variables can consume. The
+supplement gives a counterexample. Both theorems produce an \emph{annotated
+variant} $\E*$ of $\E$, which adds type annotations $\E:\T$ to subterms and
+leaves $\E$ otherwise unchanged; the proofs insert them exactly at checking
+forms in inference position, with the declarative type of that subterm.
+
+\begin{theorem}[Checking completeness\;\AgdaBird]
+  If\/ $\HasType[\Eff] \Ctx \E \T$, then there is an annotated variant
+  $\E*$ of $\E$ with $\CheckType {\E*} \T {\Eff*}$ for some
+  constraint set $\CSet$, effect $\Eff* \le \Eff$, and closing substitution
+  $\sigma \models \CSet$.
+\end{theorem}
+
+\begin{theorem}[Inference completeness\;\AgdaBird]
+  If\/ $\HasType[\Eff] \Ctx \E \T$, then there is an annotated variant
+  $\E*$ of $\E$ with $\InferType {\E*} \AT {\Eff*}$ for some type $\AT$,
+  constraint set $\CSet$, effect $\Eff* \le \Eff$, and closing substitution
+  $\sigma \models \CSet$ with $\AT{[\sigma]} \simeq \T$.
+\end{theorem}
 
 %%% Local Variables:
 %%% mode: latex

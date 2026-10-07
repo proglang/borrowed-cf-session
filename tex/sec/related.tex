@@ -44,8 +44,8 @@ synchronization required by remote borrows. Third, splitting CFSTs
 requires constraint generation modulo type equivalence rather than the
 direct splitting algorithm available for traditional, tail-recursive
 session types; we discharge these constraints with FreeST. Finally, we
-define a low-level target calculus and prove a simulation result for
-the translation, giving an implementation-oriented account of the
+define a low-level target calculus and prove forward and backward
+simulation for the translation, giving an implementation-oriented account of the
 run-time synchronization protocol. The metatheory is mechanized in
 Agda~\cite{Agda}.
 

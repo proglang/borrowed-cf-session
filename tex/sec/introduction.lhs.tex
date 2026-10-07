@@ -120,14 +120,14 @@ The remaining contributions are mainly technical.
 \item We define a declarative type system with ordered contexts inspired by
   Bunched Implications \cite{DBLP:journals/bsl/OHearnP99}, effects, mobility, and
   boundedness.
-\item We present a constraint-based algorithmic typing judgment, together with
-  soundness and completeness statements against the declarative system.
+\item We present a constraint-based algorithmic typing judgment and prove it
+  sound and complete with respect to the declarative system.
 \item We define a low-level run-time calculus with explicit channel
   representations and synchronization flags, and translate typed
   \thecalculus processes to this calculus.
-\item We state the metatheoretic obligations connecting the layers,
-  including type soundness for the direct semantics and a weak simulation
-  result for the translation.
+\item We prove type soundness for the direct semantics and forward and
+  backward simulation for the translation. All results of the paper are
+  mechanized in Agda.
 \item We describe an implementation path for type checking that
   leverages the implementation of FreeST
   \cite{almeida26:_frees_concur_progr_languag_with,DBLP:journals/corr/abs-1904-01284}.
