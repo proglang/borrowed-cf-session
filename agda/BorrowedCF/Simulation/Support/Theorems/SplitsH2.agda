@@ -124,8 +124,7 @@ leafσ-lwk-id : ∀ {m n} (σ : m →ₛ n) (B₁ B₂ B : BindGroup) (q b₁ : 
 leafσ-lwk-id {m} {n} σ B₁ B₂ B q b₁ i i≢
   with Fin.splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) i in seqo
 ... | inj₂ u
-  rewrite leafσ-tail {n = n} σ (B₁ ++ (q + suc b₁) ∷ B₂) B i u seqo
-        | leafσ-tail {n = n} σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} i) u
+  rewrite leafσ-tail {n = n} σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} i) u
             (cong (Fin.splitAt (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B))
                (cong (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo) ■ P3q B₁ B₂ B {q} {b₁} {m} u)
             ■ Fin.splitAt-↑ʳ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B) m u) = σ-coh
@@ -144,8 +143,7 @@ leafσ-lwk-id {m} {n} σ B₁ B₂ B q b₁ i i≢
             cohh refl = refl
 ... | inj₁ db with Fin.splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) db in seqi
 ...   | inj₂ w
-  rewrite leafσ-B₁ σ (B₁ ++ (q + suc b₁) ∷ B₂) B i db w seqo seqi
-        | leafσ-B₁ σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} i) (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) ↑ʳ w) w
+  rewrite leafσ-B₁ σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} i) (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) ↑ʳ w) w
             (cong (Fin.splitAt (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B)) (cong (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B)) seqi)) ■ P2q B₁ B₂ B {q} {b₁} {m} w)
              ■ Fin.splitAt-↑ˡ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B) (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) ↑ʳ w) m)
             (Fin.splitAt-↑ʳ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂)) (sum B) w) = canonB-coh
@@ -160,8 +158,7 @@ leafσ-lwk-id {m} {n} σ B₁ B₂ B q b₁ i i≢
       where cohh : ∀ {s′} (eq : sA ≡ s′) → subst (λ j → Tm (sB + (j + (2 + n)))) eq (cfn sA) ≡ cfn s′
             cohh refl = refl
 ...   | inj₁ d
-  rewrite leafσ-A₁ σ (B₁ ++ (q + suc b₁) ∷ B₂) B i db d seqo seqi
-        | leafσ-A₁ σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} i) (dlwkq B₁ q b₁ B₂ d ↑ˡ sum B) (dlwkq B₁ q b₁ B₂ d)
+  rewrite leafσ-A₁ σ (B₁ ++ (q + suc (suc b₁)) ∷ B₂) B (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m} i) (dlwkq B₁ q b₁ B₂ d ↑ˡ sum B) (dlwkq B₁ q b₁ B₂ d)
             (cong (Fin.splitAt (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B)) (cong (SplitRenamings.lwk B₁ B₂ (sum B) {q} {b₁} {m}) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m i) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂) + sum B) m) seqo ■ cong (_↑ˡ m) (sym (Fin.join-splitAt (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B) db) ■ cong (Fin.join (sum (B₁ ++ (q + suc b₁) ∷ B₂)) (sum B)) seqi)) ■ P1q B₁ B₂ B {q} {b₁} {m} d)
              ■ Fin.splitAt-↑ˡ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂) + sum B) (dlwkq B₁ q b₁ B₂ d ↑ˡ sum B) m)
             (Fin.splitAt-↑ˡ (sum (B₁ ++ (q + suc (suc b₁)) ∷ B₂)) (dlwkq B₁ q b₁ B₂ d) (sum B)) =
