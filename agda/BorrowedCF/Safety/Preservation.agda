@@ -22,7 +22,7 @@ open import BorrowedCF.Processes.Congruence
 open import BorrowedCF.Processes.Typed
 open import BorrowedCF.Reduction.Base
 open import BorrowedCF.Reduction.Expressions
-open import BorrowedCF.Reduction.Processes.Typed hiding (preservationₚ)
+open import BorrowedCF.Reduction.Processes.Typed
 open import BorrowedCF.Terms as Terms hiding (wk)
 open import BorrowedCF.Types
 

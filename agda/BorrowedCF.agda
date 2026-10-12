@@ -17,7 +17,7 @@ import BorrowedCF.Reduction.Expressions
 --
 -- Definitions
 import BorrowedCF.Processes.Typed
-import BorrowedCF.Reduction.Processes.Typed  -- !! ATTENTION: --allow-unsolved-metas
+import BorrowedCF.Reduction.Processes.Typed
 -- Safety
 import BorrowedCF.Safety.Preservation
 import BorrowedCF.Safety.Progress
