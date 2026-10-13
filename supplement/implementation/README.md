@@ -1,4 +1,4 @@
-# Context-Free Session Types with Borrowing
+# Implementation Supplement for *Context-Free Session Types with Borrowing*
 
 This repository contains an implementation of a typechecker
 for the language from the paper *Context-Free Session Types with Borrowing*.
