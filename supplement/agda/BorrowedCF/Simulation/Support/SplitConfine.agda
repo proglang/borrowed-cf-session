@@ -9,7 +9,6 @@ open import BorrowedCF.Terms using (module SplitRenamings)
 
 open import BorrowedCF.Simulation.Support.Base
 import BorrowedCF.Processes.Typed as 𝐓
-import BorrowedCF.Reduction.Processes.Typed as 𝐓R
 open import BorrowedCF.Context using (Ctx; Struct)
 open 𝐓 using (_;_⊢ₚ_; inv-∥; inv-ν; inv-⟪⟫)
 open import BorrowedCF.Simulation.Support.Confine using (count; count-self; count0⇒∉dom; ≼⇒count≤)

@@ -56,6 +56,8 @@ P [ γ ]𝓅 = L.foldr foldPattern γ P
   join d (γ′ ⋯ ϕ) (P [ γ ]𝓅 ⋯ ϕ)         ≡⟨ cong (join d _) ([-]-dist-⋯ P γ ϕ) ⟩
   join d (γ′ ⋯ ϕ) ((P ⋯𝓅 ϕ) [ γ ⋯ ϕ ]𝓅)  ∎
 
+infix 4 _∶_≈𝓅_
+
 _∶_≈𝓅_ : Ctx n → Rel (CxPat n) _
 Γ ∶ P₁ ≈𝓅 P₂ = ∀ {α β} → Γ ∶ α ≈ β → Γ ∶ P₁ [ α ]𝓅 ≈ P₂ [ β ]𝓅
 
@@ -77,6 +79,8 @@ _∶_≈𝓅_ : Ctx n → Rel (CxPat n) _
 
 ≈𝓅-setoid : Ctx n → Setoid _ _
 ≈𝓅-setoid Γ = record { isEquivalence = ≈𝓅-isEquivalence Γ }
+
+infix 4 _∶_≼𝓅_
 
 _∶_≼𝓅_ : Ctx n → Rel (CxPat n) _
 Γ ∶ P₁ ≼𝓅 P₂ = ∀ {α β} → Γ ∶ α ≼ β → Γ ∶ P₁ [ α ]𝓅 ≼ P₂ [ β ]𝓅
@@ -100,17 +104,6 @@ _∶_≼𝓅_ : Ctx n → Rel (CxPat n) _
 
 ≼𝓅-preorder : (Γ : Ctx n) → Bin.Preorder _ _ _
 ≼𝓅-preorder Γ = record { isPreorder = ≼𝓅-isPreorder Γ }
-
--- LeftPat: hole is on the left, d specifies the side γ goes
-LeftPat : CxPat n → Set
-LeftPat = All λ (d , γ) → d ≡ 𝟙 ⊎ d ≡ R
-
-{-
-leftPat-pullOut-∥ : LeftPat 𝒫 → Γ ∶ 𝒫 [ α ∥ β ]𝓅 ≈ α ∥ 𝒫 [ β ]𝓅
-leftPat-pullOut-∥ [] = refl
-leftPat-pullOut-∥ (inj₁ refl ∷ L𝒫) = {!!}
-leftPat-pullOut-∥ (inj₂ refl ∷ L𝒫) = {!!}
--}
 
 open ≼-Reasoning
 

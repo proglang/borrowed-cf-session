@@ -36,7 +36,7 @@ count x (α ; β) = count x α + count x β
 
 -- A variable whose type is NOT unrestricted does not occur in an unrestricted
 -- context, hence has count 0 there.
-unrCx⇒count0 : ¬ Unr (Γ x) → UnrCx Γ α → count x α ≡ 0
+unrCx⇒count0 : ¬ Unr (Γ ﹫ x) → UnrCx Γ α → count x α ≡ 0
 unrCx⇒count0 ¬u []        = refl
 unrCx⇒count0 ¬u (C₁ ∥ C₂) = cong₂ _+_ (unrCx⇒count0 ¬u C₁) (unrCx⇒count0 ¬u C₂)
 unrCx⇒count0 ¬u (C₁ ; C₂) = cong₂ _+_ (unrCx⇒count0 ¬u C₁) (unrCx⇒count0 ¬u C₂)
@@ -46,7 +46,7 @@ unrCx⇒count0 {x = x} ¬u (`_ {y} py) with x Fin.≟ y
 
 -- `count x` is invariant under one-step ≈ — provided x is non-unrestricted, so
 -- that the only duplicating rule (∥′-dup, on an UnrCx) leaves it untouched.
-count-≈′ : ¬ Unr (Γ x) → Γ ∶ α ≈′ β → count x α ≡ count x β
+count-≈′ : ¬ Unr (Γ ﹫ x) → Γ ∶ α ≈′ β → count x α ≡ count x β
 count-≈′ {x = x} ¬u (;′-assoc {α} {β} {γ}) = +-assoc (count x α) (count x β) (count x γ)
 count-≈′ ¬u (;′-cong₁ s) = cong (_+ _) (count-≈′ ¬u s)
 count-≈′ ¬u (;′-cong₂ s) = cong (_ +_) (count-≈′ ¬u s)
@@ -58,14 +58,14 @@ count-≈′ {x = x} ¬u (∥′-dup {α} U) =
   unrCx⇒count0 ¬u U ■ sym (cong₂ _+_ (unrCx⇒count0 ¬u U) (unrCx⇒count0 ¬u U))
 count-≈′ ¬u (∥′-tm-; _) = refl
 
-count-≈ : ¬ Unr (Γ x) → Γ ∶ α ≈ β → count x α ≡ count x β
+count-≈ : ¬ Unr (Γ ﹫ x) → Γ ∶ α ≈ β → count x α ≡ count x β
 count-≈ ¬u ε             = refl
 count-≈ ¬u (fwd s ◅ rest) = count-≈′ ¬u s ■ count-≈ ¬u rest
 count-≈ ¬u (bwd s ◅ rest) = sym (count-≈′ ¬u s) ■ count-≈ ¬u rest
 
 -- The linearity lever: ≼ never increases the multiplicity of a non-unrestricted
 -- variable (≼-∅ drops, ≼-wk rearranges, ≼-refl is ≈).  Count analogue of ≼⇒dom⊆.
-≼⇒count≤ : ¬ Unr (Γ x) → Γ ∶ α ≼ β → count x α ≤ count x β
+≼⇒count≤ : ¬ Unr (Γ ﹫ x) → Γ ∶ α ≼ β → count x α ≤ count x β
 ≼⇒count≤ ¬u (≼-refl eq) = ≤-reflexive (count-≈ ¬u eq)
 ≼⇒count≤ ¬u (≼-∅ _)     = z≤n
 ≼⇒count≤ {x = x} ¬u (≼-wk {α₁} {α₂} {β₁} {β₂}) = ≤-reflexive (lemma (count x α₁) (count x α₂) (count x β₁) (count x β₂))

@@ -1,11 +1,18 @@
 module BorrowedCF.Reduction.Base where
 
-open import Data.List.Relation.Unary.All as All using (All; []; _∷_)
+open import Data.Fin.Subset renaming (⊥ to ⁅⁆)
+open import Data.Vec.Relation.Unary.All as All using (All; []; _∷_)
+open import Data.Vec.Membership.Propositional.Properties
+import Data.Vec.Relation.Unary.All.Properties as AllVP
+
+import Data.Fin.Subset.Properties as S
 
 open import BorrowedCF.Prelude
 open import BorrowedCF.Terms
+open import BorrowedCF.Terms.DescendAbs
 open import BorrowedCF.Types
 open import BorrowedCF.Context
+open import BorrowedCF.Context.Domain
 open import BorrowedCF.Context.Pattern
 
 import BorrowedCF.Context.Substitution as 𝐂
@@ -24,12 +31,17 @@ open Variables
 -- context Γ where `ChanCx Γ` holds.
 
 ChanCx : Ctx n → Set
-ChanCx Γ = ∀ x → ∃ λ s → Γ x ≡ ⟨ s ⟩
+ChanCx = All λ T → ∃[ s ] T ≡ ⟨ s ⟩
 
-chanCx-⸴* : ChanCx Γ₁ → ChanCx Γ₂ → ChanCx (Γ₁ ⸴* Γ₂)
-chanCx-⸴* {m} Γ₁-S Γ₂-S i with splitAt m i
-... | inj₁ i₁ = Γ₁-S i₁
-... | inj₂ i₂ = Γ₂-S i₂
+chanCx-lookup : ChanCx Γ → (x : 𝔽 n) → ∃[ s ] Γ ﹫ x ≡ ⟨ s ⟩
+chanCx-lookup Γ-S x = All.lookup Γ-S (∈-lookup x _)
+
+chanCx-contradiction : ∀ {a} {A : Set a} → ChanCx Γ → (x : 𝔽 n) → Γ ﹫ x ≡ T → (∀ {s} → T ≢ ⟨ s ⟩) → A
+chanCx-contradiction Γ-S x eq notS = ⊥-elim (notS (sym eq ■ chanCx-lookup Γ-S x .proj₂))
+
+-- The channel context of a binder-extended scope.
+chanCx-⸴* : {Γ₁ : Ctx m} {Γ₂ : Ctx n} → ChanCx Γ₁ → ChanCx Γ₂ → ChanCx (Γ₁ ⸴* Γ₂)
+chanCx-⸴* = AllVP.++⁺
 
 data Value {n} : Tm n → Set where
   V-` : ∀ {x} → Value (` x)
@@ -57,7 +69,6 @@ data Frame n : Set where
   □⊗_ : (e₂ : Tm n) → Frame n
   _⊗□ : {e₁ : Tm n} (V₁ : Value e₁) → Frame n
   □;_ : (e₂ : Tm n) → Frame n
-  `let-`in_ : (e′ : Tm (1 + n)) → Frame n
   `let⊗-`in_ : (e′ : Tm (2 + n)) → Frame n
   `inj□      : (i : Side) → Frame n
   `case□`of⟨_;_⟩ : (e₁ e₂ : Tm (suc n)) → Frame n
@@ -70,7 +81,6 @@ app₂ e d V? [ e₀ ] = e ·⟨ d ⟩ e₀
 (□⊗ e) [ e₀ ] = e₀ ⊗ e
 (V ⊗□) [ e₀ ] = vTm V ⊗ e₀
 (□; e) [ e₀ ] = e₀ ; e
-(`let-`in e) [ e₀ ] = `let e₀ `in e
 (`let⊗-`in e) [ e₀ ] = `let⊗ e₀ `in e
 `inj□ i [ e₀ ] = `inj i e₀
 `case□`of⟨ e₁ ; e₂ ⟩ [ e₀ ] = `case e₀ `of⟨ e₁ ; e₂ ⟩
@@ -91,7 +101,6 @@ frame-⋯ (app₂ e d V?) ϕ Vϕ = app₂ (e ⋯ ϕ) d λ x → value-⋯ (V? x)
 frame-⋯ (□⊗ e₂) ϕ Vϕ = □⊗ (e₂ ⋯ ϕ)
 frame-⋯ (V₁ ⊗□) ϕ Vϕ = (value-⋯ V₁ ϕ Vϕ) ⊗□
 frame-⋯ (□; e₂) ϕ Vϕ = □; (e₂ ⋯ ϕ)
-frame-⋯ (`let-`in e′) ϕ Vϕ = `let-`in (e′ ⋯ ϕ ↑)
 frame-⋯ (`let⊗-`in e′) ϕ Vϕ = `let⊗-`in (e′ ⋯ ϕ ↑ ↑)
 frame-⋯ (`inj□ i) ϕ Vϕ = `inj□ i
 frame-⋯ (`case□`of⟨ e₁ ; e₂ ⟩) ϕ Vϕ = `case□`of⟨ (e₁ ⋯ ϕ ↑) ; (e₂ ⋯ ϕ ↑) ⟩
@@ -140,18 +149,15 @@ data _;_⊢_∶_∣_⟶_∣_ (Γ : Ctx n) : CxPat n → Frame n → 𝕋 → Ef
     Γ ; γ ⊢ e₂ ∶ U ∣ ϵ →
     Γ ; 𝒫[ R , γ ] ⊢ □; e₂ ∶ T ∣ ϵ ⟶ U ∣ ϵ
 
-  TF-`let : (p/s : ParSeq) →
-    T ⸴ Γ ; join p/s (` 0F) (𝐂.wk γ) ⊢ e₂ ∶ U ∣ ϵ →
-    Γ ; 𝒫[ flipDir (biasedDir p/s) , γ ] ⊢ `let-`in e₂ ∶ T ∣ ϵ ⟶ U ∣ ϵ
 
-  TF-`let⊗ : (p/s : ParSeq) →
+  TF-`let⊗ : ∀ γ (p/s : ParSeq) →
     T₁ ⸴ T₂ ⸴ Γ ; join p/s (join d (` 0F) (` 1F)) (𝐂.wk (𝐂.wk γ)) ⊢ e₂ ∶ U ∣ ϵ →
     Γ ; 𝒫[ flipDir (biasedDir p/s) , γ ] ⊢ `let⊗-`in e₂ ∶ T₁ ⊗⟨ d ⟩ T₂ ∣ ϵ ⟶ U ∣ ϵ
 
   TF-`inj□ : ∀ i →
     Γ ; [] ⊢ `inj□ i ∶ if i then T₁ else T₂ ∣ ϵ ⟶ T₁ ⊕ T₂ ∣ ϵ
 
-  TF-`case□ : (p/s : ParSeq) →
+  TF-`case□ : ∀ γ (p/s : ParSeq) →
     let γ′ = join p/s (` 0F) (𝐂.wk γ) in
     T₁ ⸴ Γ ; γ′ ⊢ e₁ ∶ U ∣ ϵ →
     T₂ ⸴ Γ ; γ′ ⊢ e₂ ∶ U ∣ ϵ →
@@ -183,12 +189,11 @@ data _;_⊢_∶_∣_⟶_∣_ (Γ : Ctx n) : CxPat n → Frame n → 𝕋 → Ef
 ⊢⟨ TF-□⊗ p/s seq⇒p x [ e ]⟩ = T-Weaken (≼-refl (≈-sym (join-flip (biasedDir p/s)))) $ T-Pair p/s seq⇒p e x
 ⊢⟨ TF-⊗□ p/s seq⇒p x [ e ]⟩ = T-Pair p/s seq⇒p x e
 ⊢⟨ TF-; uT x [ e ]⟩ = T-Seq uT e x
-⊢⟨ TF-`let p/s x [ e ]⟩ = T-Weaken (≼-refl (≈-sym (join-flip (biasedDir p/s)))) $ T-Let p/s e x
-⊢⟨ TF-`let⊗ p/s x [ e ]⟩ = T-Weaken (≼-refl (≈-sym (join-flip (biasedDir p/s)))) $ T-LetPair p/s e x
+⊢⟨ TF-`let⊗ γ p/s x [ e ]⟩ = T-Weaken (≼-refl (≈-sym (join-flip (biasedDir p/s)))) $ T-LetPair p/s e x
 ⊢⟨ TF-`inj□ i [ e ]⟩ = T-Inj e
-⊢⟨ TF-`case□ p/s x₁ x₂ [ e ]⟩ = T-Weaken (≼-refl (≈-sym (join-flip (biasedDir p/s)))) $ T-Case p/s e x₁ x₂
+⊢⟨ TF-`case□ γ p/s x₁ x₂ [ e ]⟩ = T-Weaken (≼-refl (≈-sym (join-flip (biasedDir p/s)))) $ T-Case p/s e x₁ x₂
 
-infixl 5 _⊢⋯ᶠ_
+infixl 5 _⊢⋯ᶠ_ _⊢⋯ᶠ⁻¹_/_
 
 _⊢⋯ᶠ_ : {E : Frame m} {P : CxPat m} → Γ₁ ; P ⊢ E ∶ T ∣ ϵ ⟶ U ∣ ϵ′ → ∀ {ϕ : m →ᵣ n} {σ} → ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ →
   Γ₂ ; P ⋯𝓅 σ ⊢ E ⋯ᶠ ϕ ∶ T ∣ ϵ ⟶ U ∣ ϵ′
@@ -197,21 +202,73 @@ TF-app₂ ≤ₐ appPar appLeft appRight x ⊢⋯ᶠ ⊢ϕ = TF-app₂ ≤ₐ ap
 TF-□⊗ p/s seq⇒p x ⊢⋯ᶠ ⊢ϕ = TF-□⊗ p/s seq⇒p (x ⊢⋯ ⊢ϕ)
 TF-⊗□ p/s seq⇒p x ⊢⋯ᶠ ⊢ϕ = TF-⊗□ p/s seq⇒p (x ⊢⋯ ⊢ϕ)
 TF-; x x₁ ⊢⋯ᶠ ⊢ϕ = TF-; x (x₁ ⊢⋯ ⊢ϕ)
-_⊢⋯ᶠ_ (TF-`let {γ = γ} p/s x) {σ = σ} ⊢ϕ =
-  let eq = join-⋯ p/s (` 0F) (𝐂.wk γ) ■ cong (join p/s (` 0F)) (sym (𝐂.⋯-↑-wk γ σ)) in
-  TF-`let p/s $ subst-γ eq $ x ⊢⋯ ⊢↑ ⊢ϕ
-_⊢⋯ᶠ_ (TF-`let⊗ {d = d} {γ = γ} p/s x) {σ = σ} ⊢ϕ =
+_⊢⋯ᶠ_ (TF-`let⊗ {d = d} γ p/s x) {σ = σ} ⊢ϕ =
   let eq = join-⋯ p/s (join d (` 0F) (` 1F)) _
              ■ cong₂ (join p/s) (join-⋯ d _ _)
                      (sym (cong 𝐂.wk (𝐂.⋯-↑-wk γ σ) ■ 𝐂.⋯-↑-wk (𝐂.wk γ) (σ 𝐂.↑)))
   in
-  TF-`let⊗ p/s $ subst-γ eq $ x ⊢⋯ ⊢↑ (⊢↑ ⊢ϕ)
+  TF-`let⊗ _ p/s $ subst-γ eq $ x ⊢⋯ ⊢↑ (⊢↑ ⊢ϕ)
 TF-`inj□ i ⊢⋯ᶠ ⊢ϕ = TF-`inj□ i
-_⊢⋯ᶠ_ (TF-`case□ {γ} p/s x₁ x₂) {σ = σ} ⊢ϕ =
+_⊢⋯ᶠ_ (TF-`case□ γ p/s x₁ x₂) {σ = σ} ⊢ϕ =
   let eq = join-⋯ p/s _ _ ■ cong (join p/s _) (sym (𝐂.⋯-↑-wk γ σ)) in
-  TF-`case□ p/s
+  TF-`case□ _ p/s
     (subst-γ eq $ x₁ ⊢⋯ ⊢↑ ⊢ϕ)
     (subst-γ eq $ x₂ ⊢⋯ ⊢↑ ⊢ϕ)
+
+_⊢⋯ᶠ⁻¹_/_ : ∀ {E : Frame m} {𝒫 : CxPat n} {ϕ : m →ᵣ n} {σ} →
+  Γ₂ ; 𝒫 ⊢ E ⋯ᶠ ϕ ∶ T ∣ ϵ₁ ⟶ U ∣ ϵ₂ →
+  ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ →
+  Inj ϕ →
+  ∃[ 𝒫′ ] Γ₂ ∶ 𝒫′ ⋯𝓅 σ ≼𝓅 𝒫 × Γ₁ ; 𝒫′ ⊢ E ∶ T ∣ ϵ₁ ⟶ U ∣ ϵ₂
+_⊢⋯ᶠ⁻¹_/_ {E = app₁ _ d _} (TF-app₁ ≤ₐ appPar appLeft appRight x) ⊢ϕ inj =
+  let _ , ≤γ , x′ = x ⊢⋯⁻¹ ⊢ϕ / inj in
+  _ , ≼-join d ≤γ , TF-app₁ ≤ₐ appPar appLeft appRight x′
+_⊢⋯ᶠ⁻¹_/_ {E = app₂ _ d _} (TF-app₂ ≤ₐ appPar appLeft appRight x) ⊢ϕ inj =
+  let _ , ≤γ , x′ = x ⊢⋯⁻¹ ⊢ϕ / inj in
+  _ , ≼-join (flipDir d) ≤γ , TF-app₂ ≤ₐ appPar appLeft appRight x′
+_⊢⋯ᶠ⁻¹_/_ {E = □⊗ _} (TF-□⊗ p/s seq⇒p x) ⊢ϕ inj =
+  let _ , ≤γ , x′ = x ⊢⋯⁻¹ ⊢ϕ / inj in
+  _ , ≼-join (flipDir (biasedDir p/s)) ≤γ , TF-□⊗ p/s seq⇒p x′
+_⊢⋯ᶠ⁻¹_/_ {E = _ ⊗□} (TF-⊗□ p/s seq⇒p x) ⊢ϕ inj =
+  let _ , ≤γ , x′ = x ⊢⋯⁻¹ ⊢ϕ / inj in
+  _ , ≼-join p/s ≤γ , TF-⊗□ p/s seq⇒p x′
+_⊢⋯ᶠ⁻¹_/_ {E = □; _} (TF-; U x) ⊢ϕ inj =
+  let _ , ≤γ , x′ = x ⊢⋯⁻¹ ⊢ϕ / inj in
+  _ , flip ≼-cong-; ≤γ , TF-; U x′
+_⊢⋯ᶠ⁻¹_/_ {E = `let⊗-`in _} {ϕ = ϕ} {σ} (TF-`let⊗ {d = d} γ p/s x) ⊢ϕ inj =
+  let α , ≤γ , x′ = x ⊢⋯⁻¹ ⊢↑ (⊢↑ ⊢ϕ) / ↑-inj (↑-inj inj) in
+  let γ′ , α≤ , γ′≤ = descend-abs² inj (⊢ren-ϕ⇔ ⊢ϕ) p/s γ (join d (` 0F) (` 1F)) α
+        (S.⊆-reflexive (cong dom (join-⋯ d (` 0F) (` 1F)) ■ dom-join d (` 0F) (` 1F)))
+        (subst₂ (_ ∶_≼_)
+          (𝐂.⋯-congᶜ α {σ 𝐂.↑ 𝐂.↑} {ϕ 𝐂.↑ 𝐂.↑} (λ where
+            0F → refl
+            1F → refl
+            (suc (suc z)) → cong (𝐂.wk ∘ 𝐂.wk) (sym (⊢ren-ϕ≗σ ⊢ϕ z))))
+          (cong (λ x → join p/s x (𝐂.wk (𝐂.wk γ))) (sym (join-⋯ d (` 0F) (` 1F))))
+          ≤γ)
+  in
+  _ , ≼-join (flipDir (biasedDir p/s)) (subst (_ ∶_≼ γ) (𝐂.⋯-congᶜ γ′ {ϕ} {σ} (⊢ren-ϕ≗σ ⊢ϕ)) γ′≤)
+    , TF-`let⊗ γ′ p/s (T-Weaken α≤ x′)
+_⊢⋯ᶠ⁻¹_/_ {E = `inj□ _} (TF-`inj□ i) ⊢ϕ inj =
+  [] , id , TF-`inj□ i
+_⊢⋯ᶠ⁻¹_/_ {Γ₂ = Γ₂}{Γ₁ = Γ₁}{E = `case□`of⟨ _ ; _ ⟩} {ϕ = ϕ}{σ} (TF-`case□ {T₁ = T₁} {T₂ = T₂} γ p/s x y) ⊢ϕ inj =
+  let α , α≤ , x′ = x ⊢⋯⁻¹ ⊢↑ ⊢ϕ / ↑-inj inj in
+  let β , β≤ , y′ = y ⊢⋯⁻¹ ⊢↑ ⊢ϕ / ↑-inj inj in
+  let γ′ , α≤′ , γ′≤γ = descend-abs-⊆ {Γ₁ = Γ₁} inj (⊢ren-ϕ⇔ ⊢ϕ) p/s γ α
+       (dom (α 𝐂.⋯ ϕ 𝐂.↑) ∪ dom (β 𝐂.⋯ ϕ 𝐂.↑))
+       ([ 𝐂.∈dom⋯⇒∈img α , 𝐂.∈dom⋯⇒∈img β ] ∘ S.x∈p∪q⁻ _ _)
+       (S.p⊆p∪q _)
+       (subst (_ ∶_≼ _) (𝐂.⋯-congᶜ α {σ 𝐂.↑} {ϕ 𝐂.↑} (λ{ zero → refl; (suc z) → cong 𝐂.wk (sym (⊢ren-ϕ≗σ ⊢ϕ z)) })) α≤)
+  in
+  let _ , β≤′ , _ = descend-abs-⊆ {Γ₁ = Γ₁} inj (⊢ren-ϕ⇔ ⊢ϕ) p/s γ β
+       (dom (α 𝐂.⋯ ϕ 𝐂.↑) ∪ dom (β 𝐂.⋯ ϕ 𝐂.↑))
+       ([ 𝐂.∈dom⋯⇒∈img α , 𝐂.∈dom⋯⇒∈img β ] ∘ S.x∈p∪q⁻ _ _)
+       (S.q⊆p∪q _ _)
+       (subst (_ ∶_≼ _) (𝐂.⋯-congᶜ β {σ 𝐂.↑} {ϕ 𝐂.↑} (λ{ zero → refl; (suc z) → cong 𝐂.wk (sym (⊢ren-ϕ≗σ ⊢ϕ z)) })) β≤)
+  in
+  _ , ≼-join (flipDir (biasedDir p/s)) (subst (_ ∶_≼ γ) (𝐂.⋯-congᶜ γ′ {ϕ} {σ} (⊢ren-ϕ≗σ ⊢ϕ)) γ′≤γ)
+    , TF-`case□ γ′ p/s (T-Weaken α≤′ x′) (T-Weaken β≤′ y′)
+
 
 Frame* : ℕ → Set
 Frame* n = List (Frame n)
@@ -222,7 +279,7 @@ _[_]* : Frame* n → Tm n → Tm n
 [] [ e ]* = e
 (E ∷ E*) [ e ]* = E [ E* [ e ]* ]
 
-infixl 5 _⋯ᶠ*_
+infixl 5 _⋯ᶠ*_ _⊢⋯ᶠ*_ _⊢⋯ᶠ*⁻¹_/_
 
 _⋯ᶠ*_ : Frame* m → (ϕ : m →ᵣ n) → Frame* n
 E* ⋯ᶠ* ϕ = L.map (_⋯ᶠ ϕ) E*
@@ -248,6 +305,19 @@ _⊢⋯ᶠ*_ : {E : Frame* m} {P : CxPat m} → Γ₁ ; P ⊢* E ∶ T ∣ ϵ �
 [] ⊢⋯ᶠ* ⊢ϕ = []
 _⊢⋯ᶠ*_ {Γ₂ = Γ₂} (_∷⟨_⟩_ {𝒫₁} {𝒫₂ = 𝒫₂} E x E*) ⊢ϕ =
   subst (Γ₂ ;_⊢* _ ∶ _ ∣ _ ⟶ _ ∣ _) (sym (⋯𝓅-dist-++ 𝒫₁ 𝒫₂ _)) $ (E ⊢⋯ᶠ ⊢ϕ) ∷⟨ x ⟩ (E* ⊢⋯ᶠ* ⊢ϕ)
+
+_⊢⋯ᶠ*⁻¹_/_ : ∀ {E : Frame* m} {𝒫 : CxPat n} {ϕ : m →ᵣ n} {σ} →
+  Γ₂ ; 𝒫 ⊢* E ⋯ᶠ* ϕ ∶ T ∣ ϵ₁ ⟶ U ∣ ϵ₂ →
+  ϕ ∶ σ ⊢[ TKᵣ ] Γ₁ ⇒ Γ₂ →
+  Inj ϕ →
+  ∃[ 𝒫′ ] Γ₂ ∶ 𝒫′ ⋯𝓅 σ ≼𝓅 𝒫 × Γ₁ ; 𝒫′ ⊢* E ∶ T ∣ ϵ₁ ⟶ U ∣ ϵ₂
+_⊢⋯ᶠ*⁻¹_/_ {E = []} [] ⊢ϕ inj = [] , id , []
+_⊢⋯ᶠ*⁻¹_/_ {E = _ ∷ _} {σ = σ} (_∷⟨_⟩_ {𝒫₁} {𝒫₂ = 𝒫₂} x step xs) ⊢ϕ inj =
+  let 𝒫₁′ , ≤𝒫₁ , x′  = x  ⊢⋯ᶠ⁻¹  ⊢ϕ / inj in
+  let 𝒫₂′ , ≤𝒫₂ , xs′ = xs ⊢⋯ᶠ*⁻¹ ⊢ϕ / inj in
+  let eq₁ γ = cong _[ γ ]𝓅 (⋯𝓅-dist-++ 𝒫₁′ 𝒫₂′ σ) ■ [-]𝓅-dist-++ (𝒫₁′ ⋯𝓅 σ) (𝒫₂′ ⋯𝓅 σ) γ in
+  let eq₂ γ = [-]𝓅-dist-++ 𝒫₁ 𝒫₂ γ in
+  _ , subst₂ (_ ∶_≼_) (sym (eq₁ _)) (sym (eq₂ _)) ∘ ≤𝒫₁ ∘ ≤𝒫₂ , x′ ∷⟨ step ⟩ xs′
 
 FullBlocked : Tm n → Set
 FullBlocked {n} e = ∀ E (e′ : Tm n) → e ≡ E [ e′ ] → Blocked e′
@@ -324,18 +394,15 @@ Value⊥Blocked (() , _ , _ , _ , _ , refl)
 ⊢[]⁻¹ (□; e₂) e x
   using _ , _ , _ , uT , ≤γ , x₁ , x₂ ← inv-; x
   = _ , _ , _ , _ , _ , _ , ≤γ , ≃-refl , ≤ϵ-refl , TF-; uT x₂ , x₁
-⊢[]⁻¹ (`let-`in e′) e x
-  using p/s , _ , _ , _ , ≤γ , x₁ , x₂ ← inv-`let x
-  = _ , _ , _ , _ , _ , _ , ≼-trans (≼-refl (join-flip (biasedDir p/s))) ≤γ , ≃-refl , ≤ϵ-refl , TF-`let p/s x₂ , x₁
 ⊢[]⁻¹ (`let⊗-`in e′) e x
   using p/s , _ , _ , _ , _ , _ , ≤γ , x₁ , x₂ ← inv-`let⊗ x
-  = _ , _ , _ , _ , _ , _ , ≼-trans (≼-refl (join-flip (biasedDir p/s))) ≤γ , ≃-refl , ≤ϵ-refl , TF-`let⊗ p/s x₂ , x₁
+  = _ , _ , _ , _ , _ , _ , ≼-trans (≼-refl (join-flip (biasedDir p/s))) ≤γ , ≃-refl , ≤ϵ-refl , TF-`let⊗ _ p/s x₂ , x₁
 ⊢[]⁻¹ (`inj□ i) e x
   using _ , _ , eq , x′ ← inv-inj x
   = [] , _ , _ , _ , _ , _ , ≼-refl refl , eq , ≤ϵ-refl , TF-`inj□ i , x′
 ⊢[]⁻¹ `case□`of⟨ e₁ ; e₂ ⟩ e x
   using p/s , _ , _ , _ , _ , ≤γ , x , x₁ , x₂ ← inv-`case x
-  = _ , _ , _ , _ , _ , _ , ≼-trans (≼-refl (join-flip (biasedDir p/s))) ≤γ , ≃-refl , ≤ϵ-refl , TF-`case□ p/s x₁ x₂ , x
+  = _ , _ , _ , _ , _ , _ , ≼-trans (≼-refl (join-flip (biasedDir p/s))) ≤γ , ≃-refl , ≤ϵ-refl , TF-`case□ _ p/s x₁ x₂ , x
 
 ⊢[]*⁻¹ : (E : Frame* n) (e : Tm n) →
   Γ ; γ ⊢ E [ e ]* ∶ T ∣ ϵ →

@@ -121,9 +121,9 @@ noRet-;-snd (_ ; y) = y
 -- can NEVER be ret -> the dropped handle 0F : ⟨ ret ⟩ forces b₁ = 0
 -- (there is no place for a second cons because there is no ret to peel).
 
-first-borrow-noRet : ∀ {b Γ} → NoRet s → BindCtx′ s (suc b) Γ →
+first-borrow-noRet : ∀ {n} {Γ : Ctx n} {s₀} → NoRet s → BindCtx′ s (⟨ s₀ ⟩ ∷ Γ) →
                      ∃[ s₁ ] ∃[ s₂ ] (s₁ ; s₂ ≃ s) × NoRet s₁
-first-borrow-noRet ns (cons _ _ _ s≃ _ _) = _ , _ , s≃ , noRet-;-fst (noRet-≃ (Eq*.symmetric _≃𝕊_ s≃) ns)
+first-borrow-noRet ns (cons _ _ _ s≃ _) = _ , _ , s≃ , noRet-;-fst (noRet-≃ (Eq*.symmetric _≃𝕊_ s≃) ns)
 
 
 ------------------------------------------------------------------------
@@ -145,7 +145,7 @@ noRet-front-last N = new⇒noRet N ; end
 -- to s ; end ⁇ this says the dropped handle (0F) cannot be typed at all
 -- in the `last` branch.
 last-first-borrow-≄ret :
-  ∀ {b Γ a r} → New s → BindCtx′ (s ; end ⁇) (suc b) Γ →
+  ∀ {n} {Γ : Ctx n} {a r} → New s → BindCtx′ (s ; end ⁇) Γ →
   (a ; r ≃ s ; end ⁇) → a ≄ ret
 last-first-borrow-≄ret N _ eqv a≃ret =
   ¬noRet-ret (noRet-≃ a≃ret (noRet-;-fst (noRet-≃ (Eq*.symmetric _≃𝕊_ eqv) (noRet-front-last N))))
@@ -330,9 +330,9 @@ mentions? : ∀ {n} (i : 𝔽 n) (s : 𝕊 n) → Dec (Mentions i s)
 mentions? i (` x)        = i Fin.≟ x
 mentions? i (end p)      = no λ()
 mentions? i (msg p T)    = no λ()
-mentions? i (brn p s₁ s₂) = mentions? i s₁ ⊎-dec mentions? i s₂
+mentions? i (brn p s₁ s₂) = mentions? i s₁ ⊎? mentions? i s₂
 mentions? i (mu s)       = mentions? (suc i) s
-mentions? i (s₁ ; s₂)    = mentions? i s₁ ⊎-dec mentions? i s₂
+mentions? i (s₁ ; s₂)    = mentions? i s₁ ⊎? mentions? i s₂
 mentions? i skip         = no λ()
 mentions? i ret          = no λ()
 mentions? i acq          = no λ()

@@ -49,15 +49,6 @@ module ≼-Reasoning {n} {Γ : Ctx n} = PreorderReasoning (≼-preorder Γ)
         (α ; []) ∥ ([] ; β)  ≈⟨ ∥-cong ;-unit₂ ;-unit₁ ⟩
         α        ∥ β         ∎
 
-
-≼-≗ : Γ₁ ≗ Γ₂ → Γ₁ ∶ α ≼ β → Γ₂ ∶ α ≼ β
-≼-≗ eq (≼-refl x) = ≼-refl (≈-≗ eq x)
-≼-≗ eq (≼-∅ x) = ≼-∅ (allCx-≗ eq x)
-≼-≗ eq ≼-wk = ≼-wk
-≼-≗ eq (≼-trans x x₁) = ≼-trans (≼-≗ eq x) (≼-≗ eq x₁)
-≼-≗ eq (≼-cong-; x x₁) = ≼-cong-; (≼-≗ eq x) (≼-≗ eq x₁)
-≼-≗ eq (≼-cong-∥ x x₁) = ≼-cong-∥ (≼-≗ eq x) (≼-≗ eq x₁)
-
 module _ where
   open Un using (_⊆_)
 
@@ -80,9 +71,9 @@ module _ where
   unrCx-weaken : Γ ∶ α ≼ β → UnrCx Γ α → UnrCx Γ β
   unrCx-weaken = allCx-weaken id
 
-  ≼-map⁺ : {f : 𝕋 → 𝕋} → (Unr ⊆ Unr ∘ f) → (Mobile ⊆ Mobile ∘ f) → Γ ∶ α ≼ β → f ∘ Γ ∶ α ≼ β
+  ≼-map⁺ : {f : 𝕋 → 𝕋} → (Unr ⊆ Unr ∘ f) → (Mobile ⊆ Mobile ∘ f) → Γ ∶ α ≼ β → V.map f Γ ∶ α ≼ β
   ≼-map⁺ Uf Mf (≼-refl x) = ≼-refl (≈-map⁺ Uf Mf x)
-  ≼-map⁺ Uf Mf (≼-∅ x) = ≼-∅ (allCx-gmap Uf x)
+  ≼-map⁺ Uf Mf (≼-∅ x) = ≼-∅ (allCx-map⁺ Uf x)
   ≼-map⁺ Uf Mf ≼-wk = ≼-wk
   ≼-map⁺ Uf Mf (≼-trans x x₁)  = ≼-trans  (≼-map⁺ Uf Mf x) (≼-map⁺ Uf Mf x₁)
   ≼-map⁺ Uf Mf (≼-cong-; x x₁) = ≼-cong-; (≼-map⁺ Uf Mf x) (≼-map⁺ Uf Mf x₁)
