@@ -13,7 +13,7 @@ if ! test -f "$root/agda/borrowed-cf.agda-lib"; then
     exit 1
 fi
 
-rsync -az \
+rsync -rptlzh \
       --exclude '_build/'        \
       --exclude 'util/'          \
       --include '*/'             \
@@ -22,6 +22,7 @@ rsync -az \
       --include '*.lagda.*'      \
       --include '*.agda-lib'     \
       --exclude '*'              \
-      --info=progress,stats,name \
+      --delete                   \
+      --info=progress2,stats     \
       "$root/agda"               \
       "$1@uc3.scc.kit.edu:borrowed-cf/"
