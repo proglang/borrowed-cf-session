@@ -649,25 +649,17 @@ The translation inserts an \ensuremath{\CodeOp{rsplit}} because \ensuremath{\Var
 processes. The \ensuremath{\CodeOp{rsplit}} returns an ordinary (linear) pair of channels because
 synchronization is made explicit using the \ensuremath{\CodeTy{Acq}} and \ensuremath{\CodeTy{Drop}} types.
 
-Executing
-this code takes the steps shown in \cref{fig:remote-split-trace}. First, the
-\ensuremath{\CodeOp{rsplit}} replaces one channel name by two fresh names separated by ``\ensuremath{\mathop{\|}}''
-marking a remote split.
+Executing this code takes the steps shown in
+\cref{fig:remote-split-trace}. First, the \ensuremath{\CodeOp{rsplit}} replaces one channel name by
+two fresh names separated by ``\ensuremath{\mathop{\|}}'' marking a remote split.
 Step~\stepref{2} reduces the \ensuremath{\CodeOp{fork}} and the body of \ensuremath{\Varid{renderProfile}} until only
 \ensuremath{\CodeOp{drop}\;\Varid{c}_{1}} remains. In the next step, \ensuremath{\CodeOp{drop}\;\Varid{c}_{1}} reduces to \ensuremath{\mathord{*}} and \ensuremath{\Varid{c}_{1}} is
 removed from the binder group which leaves ``\ensuremath{\mathop{\|}}'' as the first item in the
 compartment. Now, in step~\stepref{4}, the reduction of \ensuremath{\CodeOp{acquire}\;\Varid{c}_{2}} drops the
-leading separator.
-
-{\color{red}\itshape Structure suggested by old text: first concrete example,
-  then more abstract explanation.} The bracketed step abbreviates the forked
-process running \ensuremath{\Varid{renderProfile}} until its final \ensuremath{\CodeOp{drop}\;\Varid{c}_{1}}. In summary, the
-\ensuremath{\CodeOp{rsplit}} replaces one channel name by \ensuremath{[\mkern1mu\relax \Varid{c}_{1}\mathop{\|}\Varid{c}_{2}\mkern1mu]}, where ``\ensuremath{\mathop{\|}}''
-marks a remote split. The \ensuremath{\CodeOp{drop}} is only enabled if its argument name comes last
-before a ``\ensuremath{\mathop{\|}}''. The \ensuremath{\CodeOp{acquire}} is only enabled if the preceding list
-segment has been processed as in \ensuremath{[\mkern1mu\relax \mathop{\|}\Varid{c}_{2}\mkern1mu]}. Executing the \ensuremath{\CodeOp{acquire}} in
-the last step removes the exhausted segment and separator, yielding \ensuremath{[\mkern1mu\relax \Varid{c}_{2}\mkern1mu]}.
-
+leading separator. In summary, \ensuremath{\CodeOp{rsplit}} replaces one channel name by two fresh
+names separated by ``\ensuremath{\mathop{\|}}'', the marker for a remote split.  \ensuremath{\CodeOp{drop}} is only
+enabled if its argument name comes last before a ``\ensuremath{\mathop{\|}}''. \ensuremath{\CodeOp{acquire}} is only
+enabled if the preceding list segment has been processed as in \ensuremath{[\mkern1mu\relax \mathop{\|}\Varid{c}_{2}\mkern1mu]}.
 
 \subsection{Implementing Local and Remote Borrowing}
 \label{sec:impl-local-remote}
@@ -702,10 +694,10 @@ is a primitive channel name and \ensuremath{\Varid{in}} and \ensuremath{\Varid{o
 synchronization flags. The incoming flag \ensuremath{\Varid{in}} records whether the channel must
 be acquired before it can be used. The outgoing flag \ensuremath{\Varid{out}} records whether the
 channel must be dropped after use. A synchronization binder
-{\color{red}$(\varphi z \mapsto \phi)P$} binds a flag name \ensuremath{\Varid{z}} in \ensuremath{\Conid{P}} and stores
-one of two states in {\color{red}$\phi$}: \ensuremath{\CodeFlag{drop}} or \ensuremath{\CodeFlag{acq}}.  This flag \ensuremath{\Varid{z}}
-implements the separator in \ensuremath{\boldsymbol{\nu[}\mkern1mu\relax \Varid{c}_{1}\mathop{\|}\Varid{c}_{2}\mkern1mu\boldsymbol{][}\mkern1mu\relax \dots\mkern1mu\boldsymbol{]}}. It is the outgoing flag of
-the borrowed prefix and the incoming flag of the suffix.
+$(\varphi z \mapsto \phi)P$ binds a flag name \ensuremath{\Varid{z}} in \ensuremath{\Conid{P}} and stores one of two
+states in $\phi$: \ensuremath{\CodeFlag{drop}} or \ensuremath{\CodeFlag{acq}}.  This flag \ensuremath{\Varid{z}} implements the separator in
+\ensuremath{\boldsymbol{\nu[}\mkern1mu\relax \Varid{c}_{1}\mathop{\|}\Varid{c}_{2}\mkern1mu\boldsymbol{][}\mkern1mu\relax \dots\mkern1mu\boldsymbol{]}}. It is the outgoing flag of the borrowed prefix and the
+incoming flag of the suffix.
 
 An \ensuremath{\CodeOp{rsplit}} creates a flag in state \ensuremath{\CodeOp{drop}} and a freshly restricted channel sets
 its flag to \ensuremath{\Varid{acq}}. Intuitively, \ensuremath{\CodeFlag{drop}} means that the left, borrowed part of a

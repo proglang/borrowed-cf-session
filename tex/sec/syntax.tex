@@ -104,16 +104,16 @@ sequential composition $\SSeq\S\S$ as their central
 connective. They include communication, branching/selection,
 closing/waiting, drop/acquire (new to this work), and recursion.
 
-The type of $\FnRenderUser$ from \cref{lst:rendering-example} is written
-$\TArr{\MobMobile}{\DirNone,\EffPure}{\TyUser}{\TArr{\MobMobile}{\DirNone,\EffImpure}{\SSeq
-    \TyHtmlChan \STerm}{\BUnit}}$. The first arrow is mobile ($\MobMobile$) and
-unrestricted ($\DirNone$) because $\FnRenderUser$ is a top-level function, which
-can be shared and duplicated at will. The arrow is also marked pure ($\EffPure$)
-because application of the $\TyUser$ argument does not perform any channel
-operations. Providing the second argument evaluates the function body. Therefore
-the second arrow is marked impure ($\EffImpure$). The second arrow is still
-mobile and unrestricted assuming that type $\TyUser$ is mobile and unrestricted
-itself.
+The full type of $\FnRenderUser$ from \cref{lst:rendering-example} is
+$ \typecolor{\TyUser} \TArrx[m,u,p] \SSeq \TyHtmlChan \STerm \TArrx[m,u,i]
+\BUnit $.  The first arrow is mobile ($\MobMobile$) and unrestricted
+($\DirNone$) because $\FnRenderUser$ is a top-level function, which can be
+shared and duplicated at will. The arrow is also marked pure ($\EffPure$)
+because application of the $\TyUser$ argument returns a closure but does not
+perform any channel operations. The closure contains only unrestricted, mobile
+types which makes it unrestricted and mobile itself. Applying the channel
+argument $\SSeq \TyHtmlChan \STerm$ evaluates the function body, resulting in
+communication operations. As such, the second arrow is impure ($\EffImpure$).
 
 Typing environments $\Ctx$ combine variable bindings using ordered ($\Ctx\CtxSeq\Ctx$) and
 unordered ($\Ctx\CtxPar\Ctx$) composition in the style of BI-contexts

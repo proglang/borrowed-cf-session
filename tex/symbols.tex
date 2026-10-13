@@ -82,6 +82,35 @@
 % \newcommand*\TArr[4]{{#3}\overset{{#1};{#2}}\to{#4}}
 \newcommand*\TExists[3][{}]{\typecolor{\exists #2^{#1}. #3}}
 
+\makeatletter
+\usepackage{keyval}
+
+\newcommand\@tarr@flag[3]{
+  \@namedef{KV@tarr@#2@default}{\@nameuse{KV@tarr@#1}{#3}}
+  \@namedef{KV@tarr@#2}##1{%
+    \PackageError {TArrx} {unexpected argument `##1' to flag `#2'.}%
+    \nameuse{KV@tarr@#2@default}}
+}
+
+\define@key{tarr}{m}[\MobMobile]{\def\@tarr@m{#1}}
+\@tarr@flag m s \MobStationary
+
+\define@key{tarr}{e}{\def\@tarr@e{#1}}
+\@tarr@flag e p \EffPure
+\@tarr@flag e i \EffImpure
+
+\define@key{tarr}{d}{\def\@tarr@d{#1}}
+\@tarr@flag d 1 \DirUnord
+\@tarr@flag d l \DirLeft
+\@tarr@flag d r \DirRight
+\@tarr@flag d u \DirNone
+
+\newcommand*\TArrx[1][]{%
+  \setkeys{tarr}{m=\Mob,e=\Eff,d=\Dir,#1}%
+  \typecolor{\to^{\@tarr@m}_{\@tarr@d,\@tarr@e}}%
+}
+\makeatother
+
 % Session Types
 \let\S=\undefined % \S is already predefined and \NewMetaVar does not support \renewcommand.
 \NewMetaVar[\typecolor] \S S

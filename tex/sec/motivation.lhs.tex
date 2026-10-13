@@ -319,25 +319,18 @@ The translation inserts an |rsplit| because |c1| and |c2| are used in different
 processes. The |rsplit| returns an ordinary (linear) pair of channels because
 synchronization is made explicit using the |Acq| and |Drop| types.
 
-Executing
-this code takes the steps shown in \cref{fig:remote-split-trace}. First, the
-|rsplit| replaces one channel name by two fresh names separated by ``| |||| |''
-marking a remote split.
+Executing this code takes the steps shown in
+\cref{fig:remote-split-trace}. First, the |rsplit| replaces one channel name by
+two fresh names separated by ``| |||| |'' marking a remote split.
 Step~\stepref{2} reduces the |fork| and the body of |renderProfile| until only
 |drop c1| remains. In the next step, |drop c1| reduces to |*| and |c1| is
 removed from the binder group which leaves ``| |||| |'' as the first item in the
 compartment. Now, in step~\stepref{4}, the reduction of |acquire c2| drops the
-leading separator.
-
-{\color{red}\itshape Structure suggested by old text: first concrete example,
-  then more abstract explanation.} The bracketed step abbreviates the forked
-process running |renderProfile| until its final |drop c1|. In summary, the
-|rsplit| replaces one channel name by |bgroup (c1||||c2)|, where ``| |||| |''
-marks a remote split. The |drop| is only enabled if its argument name comes last
-before a ``| |||| |''. The |acquire| is only enabled if the preceding list
-segment has been processed as in |bgroup (||||c2)|. Executing the |acquire| in
-the last step removes the exhausted segment and separator, yielding |bgroup c2|.
-
+leading separator. In summary, |rsplit| replaces one channel name by two fresh
+names separated by ``| |||| |'', the marker for a remote split.  |drop| is only
+enabled if its argument name comes last before a ``| |||| |''. |acquire| is only
+enabled if the preceding list segment has been processed as in |bgroup
+(||||c2)|.
 
 \subsection{Implementing Local and Remote Borrowing}
 \label{sec:impl-local-remote}
@@ -374,10 +367,10 @@ is a primitive channel name and |in| and |out| are optional names of
 synchronization flags. The incoming flag |in| records whether the channel must
 be acquired before it can be used. The outgoing flag |out| records whether the
 channel must be dropped after use. A synchronization binder
-{\color{red}$(\varphi z \mapsto \phi)P$} binds a flag name |z| in |P| and stores
-one of two states in {\color{red}$\phi$}: |fdrop| or |facq|.  This flag |z|
-implements the separator in |nu (c1||||c2) (...)|. It is the outgoing flag of
-the borrowed prefix and the incoming flag of the suffix.
+$(\varphi z \mapsto \phi)P$ binds a flag name |z| in |P| and stores one of two
+states in $\phi$: |fdrop| or |facq|.  This flag |z| implements the separator in
+|nu (c1||||c2) (...)|. It is the outgoing flag of the borrowed prefix and the
+incoming flag of the suffix.
 
 An |rsplit| creates a flag in state |drop| and a freshly restricted channel sets
 its flag to |acq|. Intuitively, |fdrop| means that the left, borrowed part of a
