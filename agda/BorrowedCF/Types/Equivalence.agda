@@ -363,57 +363,6 @@ skips⊥endsIn (s ; s₁) (-;₂ e) = skips⊥endsIn s₁ e
 skips⊥endsIn (mu s) (mu e) = skips⊥endsIn s e
 skips⊥endsIn {A = A} skip here = ⊥-elim-irr (case A of λ())
 
-{-
-endsIn-⋯ : ∀ ⦃ K : Kit 𝓕 ⦄ ⦃ W : WkKit K ⦄ {c} {a : 𝕊 m} .{A : Atom a} {ϕ : m –[ K ]→ n} →
-  .(A′ : Atom (a ⋯ ϕ)) →
-  EndsIn c A s → EndsIn c A′ (s ⋯ ϕ)
-endsIn-⋯ A′ here = here
-endsIn-⋯ A′ (e ;₁ s) = endsIn-⋯ A′ e ;₁ skips-⋯ s
-endsIn-⋯ A′ (-;₂ e) = -;₂ endsIn-⋯ A′ e
-endsIn-⋯ A′ (brn e) = {!!}
-endsIn-⋯ {c = c} {a} {ϕ = ϕ} A′ (mu e) = EndsIn.mu
-  $ subst (λ s → EndsIn c {s} _ _) {!!}
-  $ endsIn-⋯ {ϕ = ϕ ↑} {!(atom-⋯ᵣ A′ {weaken})!} e
-
-endsIn-≃ : ∀ {c} {a : 𝕊 n} {A : Atom a} → EndsIn c A Respects _≃_
-endsIn-≃ refl = id
-endsIn-≃ (x ◅ xs) = endsIn-≃ xs ∘ go x
-  where
-  go : ∀ {c} {a : 𝕊 n} {A : Atom a} → EndsIn c A Respects SymClosure _≃𝕊_
-  go (fwd (≃𝕊-;₁ x)) (e ;₁ s) = go (fwd x) e ;₁ s
-  go (fwd (≃𝕊-;₁ x)) (-;₂ e) = -;₂ e
-  go (fwd (≃𝕊-;₂ x)) (e ;₁ s) = e ;₁ ≃-skips (Eq*.return x) s
-  go (fwd (≃𝕊-;₂ x)) (-;₂ e) = -;₂ go (fwd x) e
-  go (fwd ≃𝕊-skipˡ) (e ;₁ x) = ⊥-elim (skips⊥endsIn skip e)
-  go (fwd ≃𝕊-skipˡ) (-;₂ e) = e
-  go (fwd ≃𝕊-skipʳ) (e ;₁ x) = e
-  go (fwd ≃𝕊-skipʳ) (-;₂ e) = ⊥-elim (skips⊥endsIn skip e)
-  go (fwd ≃𝕊-μ) e = {!e!}
-  go (fwd ≃𝕊-assoc) ((e ;₁ x₁) ;₁ x) = e ;₁ (x₁ ; x)
-  go (fwd ≃𝕊-assoc) ((-;₂ e) ;₁ x) = -;₂ (e ;₁ x)
-  go (fwd ≃𝕊-assoc) (-;₂ e) = -;₂ (-;₂ e)
-  go (fwd ≃𝕊-distr) (brn e ;₁ x) = brn (all/one-map _ (_;₁ x) (_;₁ x) e)
-  go (fwd ≃𝕊-distr) (-;₂ e) = brn (all/one-mk _ (-;₂ e) (-;₂ e))
-  go (bwd (≃𝕊-;₁ x)) (e ;₁ x₁) = go (bwd x) e ;₁ x₁
-  go (bwd (≃𝕊-;₁ x)) (-;₂ e) = -;₂ e
-  go (bwd (≃𝕊-;₂ x)) (e ;₁ x₁) = e ;₁ ≃-skips (≃-sym (Eq*.return x)) x₁
-  go (bwd (≃𝕊-;₂ x)) (-;₂ e) = -;₂ go (bwd x) e
-  go (bwd ≃𝕊-skipˡ) e = -;₂ e
-  go (bwd ≃𝕊-skipʳ) e = e ;₁ skip
-  go (bwd ≃𝕊-μ) e = {!!}
-  go (bwd ≃𝕊-assoc) (e ;₁ (x ; x₁)) = (e ;₁ x) ;₁ x₁
-  go (bwd ≃𝕊-assoc) (-;₂ (e ;₁ x)) = (-;₂ e) ;₁ x
-  go (bwd ≃𝕊-assoc) (-;₂ (-;₂ e)) = -;₂ e
-  go {c = all} (bwd ≃𝕊-distr) (brn ((e₁ ;₁ s₁) , (e₂ ;₁ s₂))) = brn (e₁ , e₂) ;₁ s₂
-  go {c = all} (bwd ≃𝕊-distr) (brn ((e₁ ;₁ s₁) , (-;₂ e₂))) = -;₂ e₂
-  go {c = all} (bwd ≃𝕊-distr) (brn ((-;₂ e₁) , (e₂ ;₁ s₂))) = -;₂ e₁
-  go {c = all} (bwd ≃𝕊-distr) (brn ((-;₂ e₁) , (-;₂ e₂))) = -;₂ e₁
-  go {c = one} (bwd ≃𝕊-distr) (brn (inj₁ (x ;₁ x₁))) = brn (inj₁ x) ;₁ x₁
-  go {c = one} (bwd ≃𝕊-distr) (brn (inj₁ (-;₂ x))) = -;₂ x
-  go {c = one} (bwd ≃𝕊-distr) (brn (inj₂ (y ;₁ x))) = brn (inj₂ y) ;₁ x
-  go {c = one} (bwd ≃𝕊-distr) (brn (inj₂ (-;₂ y))) = -;₂ y
--}
-
 private
   endsVar : 𝔽 n → 𝕊 n → Set
   endsVar x = EndsIn one {` x} `-

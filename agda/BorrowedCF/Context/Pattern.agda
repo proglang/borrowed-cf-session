@@ -105,13 +105,6 @@ _∶_≼𝓅_ : Ctx n → Rel (CxPat n) _
 ≼𝓅-preorder : (Γ : Ctx n) → Bin.Preorder _ _ _
 ≼𝓅-preorder Γ = record { isPreorder = ≼𝓅-isPreorder Γ }
 
-{-
-≼𝓅-++⁺ : ∀ {Γ : Ctx n} P₁ {P₂} Q₁ {Q₂} → Γ ∶ P₁ ≼𝓅 Q₁ → Γ ∶ P₂ ≼𝓅 Q₂ → Γ ∶ P₁ ++ P₂ ≼𝓅 Q₁ ++ Q₂
-≼𝓅-++⁺ [] [] ≤₁ ≤₂ x = ≤₂ x
-≼𝓅-++⁺ [] (x₁ ∷ Q₁) ≤₁ ≤₂ x = {!!}
-≼𝓅-++⁺ (x₁ ∷ P₁) Q₁ ≤₁ ≤₂ x = {!!}
--}
-
 open ≼-Reasoning
 
 pullOutMobile : (𝒫 : CxPat n) {γ : Struct n} → MobCx Γ γ → Γ ∶ 𝒫 [ γ ]𝓅 ≈ γ ∥ 𝒫 [ [] ]𝓅
