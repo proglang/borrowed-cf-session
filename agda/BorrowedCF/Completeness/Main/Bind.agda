@@ -6,6 +6,5 @@
 --   Owner: agent C4.
 module BorrowedCF.Completeness.Main.Bind where
 
-open import BorrowedCF.Completeness.Main.Bind.Let public using (let-case)
 open import BorrowedCF.Completeness.Main.Bind.LetPair public using (letpair-case)
 open import BorrowedCF.Completeness.Main.Bind.Case public using (case-case)

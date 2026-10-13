@@ -285,12 +285,6 @@ Tᶠ-plug-consumePhi (SourceReduction.□; e) {sigma = sigma}
   Vsigma x k Vconsumed t =
   cong (λ z → SoupReduction.consumePhi x k t SoupTerm.; z)
     (consumePhi-T x k e sigma)
-Tᶠ-plug-consumePhi (SourceReduction.`let-`in e) {sigma = sigma}
-  Vsigma x k Vconsumed t =
-  cong (λ z → SoupTerm.`let SoupReduction.consumePhi x k t `in z)
-    ( consumePhi-T (suc x) k e (Translation.liftEnv sigma)
-    ■ T[ e ]-Env-cong (consumePhi-liftEnv x k sigma)
-    )
 Tᶠ-plug-consumePhi (SourceReduction.`let⊗-`in e) {sigma = sigma}
   Vsigma x k Vconsumed t =
   cong (λ z → SoupTerm.`let⊗ SoupReduction.consumePhi x k t `in z)

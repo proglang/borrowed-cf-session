@@ -34,7 +34,7 @@ import BorrowedCF.Context.Substitution as 𝐂S
 open import BorrowedCF.Simulation.Support.Confine
   using (count; count-self; count0⇒∉dom; ≼⇒count≤)
 open import BorrowedCF.Simulation.Support.InvFrame
-  using ( inv-app; inv-pair; inv-seq; inv-let; inv-letpair; inv-case
+  using ( inv-app; inv-pair; inv-seq; inv-letpair; inv-case
         ; inv-var-count; value-reflect; app₁-cong; app₂-cong; ⊗□-cong
         ; +≤ˡ⇒0; +≤ʳ⇒0; arg-type)
   renaming (inv-inj to inv-injᶠ)
@@ -211,22 +211,6 @@ strengthen-frame* (L._∷_ (□; e₂) E') ⊢E =
             E₀' , E'eq = factor' ρ H inv Hu rec
             e₂₀ , e₂eq = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz → count0⇒∉dom α₂ (zer z hz))
         in (L._∷_ (□; e₂₀) E₀') , cong₂ L._∷_ (cong □;_ e₂eq) E'eq)
-strengthen-frame* (L._∷_ (`let-`in e') E') ⊢E =
-  let γ₁ , γ₂ , p/s , (_ , _ , ⊢e₁) , (_ , _ , _ , ⊢e₂) , cle = inv-let ⊢E
-      β , pt , support' , factor' = strengthen-frame* E' ⊢e₁
-  in β , pt ,
-     (λ h ¬u → ≤-trans (support' h ¬u) (≤-trans (m≤m+n (count h γ₁) (count h γ₂)) (cle h ¬u))) ,
-     (λ ρ H inv Hu Hc →
-        let rec = λ h hh → ≤-trans (≤-trans (m≤m+n (count h γ₁) (count h γ₂)) (cle h (Hu h hh))) (Hc h hh)
-            zer = λ h hh → +≤ˡ⇒0 (count h γ₁)
-                    (≤-trans (≤-trans (cle h (Hu h hh)) (Hc h hh)) (support' h (Hu h hh)))
-            E₀' , E'eq = factor' ρ H inv Hu rec
-            e₂₀ , e₂eq = strengthen-Tm-gen* ⊢e₂ (ρ ↑) (H↑ H) (invH↑ inv)
-                           (λ { (suc z) hz →
-                              count0⇒∉dom (join p/s (` zero) (𝐂S.wk γ₂))
-                                (count-join-PS p/s (suc z) (` zero) (𝐂S.wk γ₂)
-                                 ■ count-wk-suc γ₂ z ■ zer z hz) })
-        in (L._∷_ (`let-`in e₂₀) E₀') , cong₂ L._∷_ (cong `let-`in_ e₂eq) E'eq)
 strengthen-frame* (L._∷_ (`let⊗-`in e') E') ⊢E =
   let γ₁ , γ₂ , p/s , d , (_ , _ , ⊢e₁) , (_ , _ , _ , _ , ⊢e₂) , cle = inv-letpair ⊢E
       β , pt , support' , factor' = strengthen-frame* E' ⊢e₁

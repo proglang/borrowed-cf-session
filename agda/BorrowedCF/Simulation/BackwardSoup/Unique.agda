@@ -33,11 +33,6 @@ private
     (e₁ ≡ e₁′) × (e₂ ≡ e₂′)
   seq-injective refl = refl , refl
 
-  let-injective :
-    {n : ℕ} {e₁ e₁′ : SoupTerm.Tm n} {e₂ e₂′ : SoupTerm.Tm (1 + n)} →
-    SoupTerm.`let e₁ `in e₂ ≡ SoupTerm.`let e₁′ `in e₂′ →
-    (e₁ ≡ e₁′) × (e₂ ≡ e₂′)
-  let-injective refl = refl , refl
 
   letpair-injective :
     {n : ℕ} {e₁ e₁′ : SoupTerm.Tm n} {e₂ e₂′ : SoupTerm.Tm (2 + n)} →
@@ -97,7 +92,6 @@ redex-unique {F = []} {F′ = SoupRed.app₂ e 𝟙 V? ∷ F′} V V′ eq
 redex-unique {F = []} {F′ = SoupRed.□⊗ e ∷ F′} V V′ ()
 redex-unique {F = []} {F′ = V₀ SoupRed.⊗□ ∷ F′} V V′ ()
 redex-unique {F = []} {F′ = SoupRed.□; e ∷ F′} V V′ ()
-redex-unique {F = []} {F′ = SoupRed.`let-`in e ∷ F′} V V′ ()
 redex-unique {F = []} {F′ = SoupRed.`let⊗-`in e ∷ F′} V V′ ()
 redex-unique {F = []} {F′ = SoupRed.`inj□ i ∷ F′} V V′ ()
 redex-unique {F = []} {F′ = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F′} V V′ ()
@@ -117,7 +111,6 @@ redex-unique {F = SoupRed.app₂ e 𝟙 V? ∷ F} {F′ = []} V V′ eq
 redex-unique {F = SoupRed.□⊗ e ∷ F} {F′ = []} V V′ ()
 redex-unique {F = V₀ SoupRed.⊗□ ∷ F} {F′ = []} V V′ ()
 redex-unique {F = SoupRed.□; e ∷ F} {F′ = []} V V′ ()
-redex-unique {F = SoupRed.`let-`in e ∷ F} {F′ = []} V V′ ()
 redex-unique {F = SoupRed.`let⊗-`in e ∷ F} {F′ = []} V V′ ()
 redex-unique {F = SoupRed.`inj□ i ∷ F} {F′ = []} V V′ ()
 redex-unique {F = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F} {F′ = []} V V′ ()
@@ -204,7 +197,6 @@ redex-unique {F = SoupRed.app₁ e R V? ∷ F} {F′ = SoupRed.app₁ e′ R V?�
 redex-unique {F = SoupRed.app₁ e d V? ∷ F} {F′ = SoupRed.□⊗ e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₁ e d V? ∷ F} {F′ = V₀ SoupRed.⊗□ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₁ e d V? ∷ F} {F′ = SoupRed.□; e′ ∷ F′} V V′ ()
-redex-unique {F = SoupRed.app₁ e d V? ∷ F} {F′ = SoupRed.`let-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₁ e d V? ∷ F} {F′ = SoupRed.`let⊗-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₁ e d V? ∷ F} {F′ = SoupRed.`inj□ i ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₁ e d V? ∷ F} {F′ = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F′} V V′ ()
@@ -245,7 +237,6 @@ redex-unique {F = SoupRed.app₂ e R V? ∷ F} {F′ = SoupRed.app₂ e′ R V?�
 redex-unique {F = SoupRed.app₂ e d V? ∷ F} {F′ = SoupRed.□⊗ e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₂ e d V? ∷ F} {F′ = V₀ SoupRed.⊗□ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₂ e d V? ∷ F} {F′ = SoupRed.□; e′ ∷ F′} V V′ ()
-redex-unique {F = SoupRed.app₂ e d V? ∷ F} {F′ = SoupRed.`let-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₂ e d V? ∷ F} {F′ = SoupRed.`let⊗-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₂ e d V? ∷ F} {F′ = SoupRed.`inj□ i ∷ F′} V V′ ()
 redex-unique {F = SoupRed.app₂ e d V? ∷ F} {F′ = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F′} V V′ ()
@@ -262,7 +253,6 @@ redex-unique {F = SoupRed.□⊗ e ∷ F} {F′ = SoupRed.□⊗ e′ ∷ F′} 
   , λ x k t → cong₂ (λ a b → a SoupTerm.⊗ b)
       (insert≡ x k t) (cong (SoupReduction.insertPhi x k) e≡)
 redex-unique {F = SoupRed.□⊗ e ∷ F} {F′ = SoupRed.□; e′ ∷ F′} V V′ ()
-redex-unique {F = SoupRed.□⊗ e ∷ F} {F′ = SoupRed.`let-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.□⊗ e ∷ F} {F′ = SoupRed.`let⊗-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.□⊗ e ∷ F} {F′ = SoupRed.`inj□ i ∷ F′} V V′ ()
 redex-unique {F = SoupRed.□⊗ e ∷ F} {F′ = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F′} V V′ ()
@@ -279,7 +269,6 @@ redex-unique {F = V₀ SoupRed.⊗□ ∷ F} {F′ = V₁ SoupRed.⊗□ ∷ F�
   , λ x k t → cong₂ (λ a b → a SoupTerm.⊗ b)
       (cong (SoupReduction.insertPhi x k) v≡) (insert≡ x k t)
 redex-unique {F = V₀ SoupRed.⊗□ ∷ F} {F′ = SoupRed.□; e′ ∷ F′} V V′ ()
-redex-unique {F = V₀ SoupRed.⊗□ ∷ F} {F′ = SoupRed.`let-`in e′ ∷ F′} V V′ ()
 redex-unique {F = V₀ SoupRed.⊗□ ∷ F} {F′ = SoupRed.`let⊗-`in e′ ∷ F′} V V′ ()
 redex-unique {F = V₀ SoupRed.⊗□ ∷ F} {F′ = SoupRed.`inj□ i ∷ F′} V V′ ()
 redex-unique {F = V₀ SoupRed.⊗□ ∷ F} {F′ = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F′} V V′ ()
@@ -297,35 +286,16 @@ redex-unique {F = SoupRed.□; e ∷ F} {F′ = SoupRed.□; e′ ∷ F′} V 
   , (λ t → cong₂ (λ a b → a SoupTerm.; b) (plug≡ t) e≡)
   , λ x k t → cong₂ (λ a b → a SoupTerm.; b)
       (insert≡ x k t) (cong (SoupReduction.insertPhi x k) e≡)
-redex-unique {F = SoupRed.□; e ∷ F} {F′ = SoupRed.`let-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.□; e ∷ F} {F′ = SoupRed.`let⊗-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.□; e ∷ F} {F′ = SoupRed.`inj□ i ∷ F′} V V′ ()
 redex-unique {F = SoupRed.□; e ∷ F} {F′ = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F′} V V′ ()
 
-redex-unique {F = SoupRed.`let-`in e ∷ F} {F′ = SoupRed.app₁ e′ d V?′ ∷ F′} V V′ ()
-redex-unique {F = SoupRed.`let-`in e ∷ F} {F′ = SoupRed.app₂ e′ d V?′ ∷ F′} V V′ ()
-redex-unique {F = SoupRed.`let-`in e ∷ F} {F′ = SoupRed.□⊗ e′ ∷ F′} V V′ ()
-redex-unique {F = SoupRed.`let-`in e ∷ F} {F′ = V₀ SoupRed.⊗□ ∷ F′} V V′ ()
-redex-unique {F = SoupRed.`let-`in e ∷ F} {F′ = SoupRed.□; e′ ∷ F′} V V′ ()
-redex-unique {F = SoupRed.`let-`in e ∷ F} {F′ = SoupRed.`let-`in e′ ∷ F′} V V′ eq
-  with let-injective eq
-... | inner≡ , e≡
-  with redex-unique {F = F} {F′ = F′} V V′ inner≡
-...   | c≡ , v≡ , plug≡ , insert≡ =
-  c≡ , v≡
-  , (λ t → cong₂ (λ a b → SoupTerm.`let a `in b) (plug≡ t) e≡)
-  , λ x k t → cong₂ (λ a b → SoupTerm.`let a `in b)
-      (insert≡ x k t) (cong (SoupReduction.insertPhi (suc x) k) e≡)
-redex-unique {F = SoupRed.`let-`in e ∷ F} {F′ = SoupRed.`let⊗-`in e′ ∷ F′} V V′ ()
-redex-unique {F = SoupRed.`let-`in e ∷ F} {F′ = SoupRed.`inj□ i ∷ F′} V V′ ()
-redex-unique {F = SoupRed.`let-`in e ∷ F} {F′ = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F′} V V′ ()
 
 redex-unique {F = SoupRed.`let⊗-`in e ∷ F} {F′ = SoupRed.app₁ e′ d V?′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`let⊗-`in e ∷ F} {F′ = SoupRed.app₂ e′ d V?′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`let⊗-`in e ∷ F} {F′ = SoupRed.□⊗ e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`let⊗-`in e ∷ F} {F′ = V₀ SoupRed.⊗□ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`let⊗-`in e ∷ F} {F′ = SoupRed.□; e′ ∷ F′} V V′ ()
-redex-unique {F = SoupRed.`let⊗-`in e ∷ F} {F′ = SoupRed.`let-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`let⊗-`in e ∷ F} {F′ = SoupRed.`let⊗-`in e′ ∷ F′} V V′ eq
   with letpair-injective eq
 ... | inner≡ , e≡
@@ -344,7 +314,6 @@ redex-unique {F = SoupRed.`inj□ i ∷ F} {F′ = SoupRed.app₂ e′ d V?′ �
 redex-unique {F = SoupRed.`inj□ i ∷ F} {F′ = SoupRed.□⊗ e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`inj□ i ∷ F} {F′ = V₀ SoupRed.⊗□ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`inj□ i ∷ F} {F′ = SoupRed.□; e′ ∷ F′} V V′ ()
-redex-unique {F = SoupRed.`inj□ i ∷ F} {F′ = SoupRed.`let-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`inj□ i ∷ F} {F′ = SoupRed.`let⊗-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`inj□ true ∷ F} {F′ = SoupRed.`inj□ true ∷ F′} V V′ eq
   with inj-injective eq
@@ -371,7 +340,6 @@ redex-unique {F = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F} {F′ = SoupRed
 redex-unique {F = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F} {F′ = SoupRed.□⊗ e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F} {F′ = V₀ SoupRed.⊗□ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F} {F′ = SoupRed.□; e′ ∷ F′} V V′ ()
-redex-unique {F = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F} {F′ = SoupRed.`let-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F} {F′ = SoupRed.`let⊗-`in e′ ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F} {F′ = SoupRed.`inj□ i ∷ F′} V V′ ()
 redex-unique {F = SoupRed.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F} {F′ = SoupRed.`case□`of⟨ e₁′ ; e₂′ ⟩ ∷ F′} V V′ eq

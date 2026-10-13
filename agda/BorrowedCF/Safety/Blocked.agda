@@ -154,7 +154,6 @@ constApp? (μ e)                          = no λ{ (_ , _ , _ , ()) }
 constApp? (e ⦂ T)                        = no λ{ (_ , _ , _ , ()) }
 constApp? (e₁ ; e₂)                      = no λ{ (_ , _ , _ , ()) }
 constApp? (e₁ ⊗ e₂)                      = no λ{ (_ , _ , _ , ()) }
-constApp? (`let e₁ `in e₂)               = no λ{ (_ , _ , _ , ()) }
 constApp? (`let⊗ e₁ `in e₂)              = no λ{ (_ , _ , _ , ()) }
 constApp? (`inj i e)                     = no λ{ (_ , _ , _ , ()) }
 constApp? (`case e `of⟨ e₁ ; e₂ ⟩)       = no λ{ (_ , _ , _ , ()) }
@@ -166,7 +165,6 @@ constApp? ((e ⦂ T) ·⟨ d ⟩ e₂)            = no λ{ (_ , _ , _ , ()) }
 constApp? ((e ·⟨ d′ ⟩ e′) ·⟨ d ⟩ e₂)     = no λ{ (_ , _ , _ , ()) }
 constApp? ((e ; e′) ·⟨ d ⟩ e₂)           = no λ{ (_ , _ , _ , ()) }
 constApp? ((e ⊗ e′) ·⟨ d ⟩ e₂)           = no λ{ (_ , _ , _ , ()) }
-constApp? ((`let e `in e′) ·⟨ d ⟩ e₂)    = no λ{ (_ , _ , _ , ()) }
 constApp? ((`let⊗ e `in e′) ·⟨ d ⟩ e₂)   = no λ{ (_ , _ , _ , ()) }
 constApp? ((`inj i e) ·⟨ d ⟩ e₂)         = no λ{ (_ , _ , _ , ()) }
 constApp? ((`case e `of⟨ e′ ; e″ ⟩) ·⟨ d ⟩ e₂) = no λ{ (_ , _ , _ , ()) }
@@ -179,7 +177,6 @@ isVar? x (e ⦂ T)                   = no λ()
 isVar? x (e₁ ·⟨ d ⟩ e₂)            = no λ()
 isVar? x (e₁ ; e₂)                 = no λ()
 isVar? x (e₁ ⊗ e₂)                 = no λ()
-isVar? x (`let e₁ `in e₂)          = no λ()
 isVar? x (`let⊗ e₁ `in e₂)         = no λ()
 isVar? x (`inj i e)                = no λ()
 isVar? x (`case e `of⟨ e₁ ; e₂ ⟩)  = no λ()
@@ -198,7 +195,6 @@ sendArg? x (μ e)                     = no λ{ (_ , _ , ()) }
 sendArg? x (e ⦂ T)                   = no λ{ (_ , _ , ()) }
 sendArg? x (e₁ ·⟨ d ⟩ e₂)            = no λ{ (_ , _ , ()) }
 sendArg? x (e₁ ; e₂)                 = no λ{ (_ , _ , ()) }
-sendArg? x (`let e₁ `in e₂)          = no λ{ (_ , _ , ()) }
 sendArg? x (`let⊗ e₁ `in e₂)         = no λ{ (_ , _ , ()) }
 sendArg? x (`inj i e)                = no λ{ (_ , _ , ()) }
 sendArg? x (`case e `of⟨ e₁ ; e₂ ⟩)  = no λ{ (_ , _ , ()) }
@@ -454,7 +450,6 @@ private
 ⋯ᵣ-K⁻¹ ρ (e₁ ·⟨ d ⟩ e₂)            ()
 ⋯ᵣ-K⁻¹ ρ (e₁ ; e₂)                 ()
 ⋯ᵣ-K⁻¹ ρ (e₁ ⊗ e₂)                 ()
-⋯ᵣ-K⁻¹ ρ (`let e₁ `in e₂)          ()
 ⋯ᵣ-K⁻¹ ρ (`let⊗ e₁ `in e₂)         ()
 ⋯ᵣ-K⁻¹ ρ (`inj i e)                ()
 ⋯ᵣ-K⁻¹ ρ (`case e `of⟨ e₁ ; e₂ ⟩)  ()
@@ -467,7 +462,6 @@ private
 ⋯ᵣ-var⁻¹ ρ (e₁ ·⟨ d ⟩ e₂)            ()
 ⋯ᵣ-var⁻¹ ρ (e₁ ; e₂)                 ()
 ⋯ᵣ-var⁻¹ ρ (e₁ ⊗ e₂)                 ()
-⋯ᵣ-var⁻¹ ρ (`let e₁ `in e₂)          ()
 ⋯ᵣ-var⁻¹ ρ (`let⊗ e₁ `in e₂)         ()
 ⋯ᵣ-var⁻¹ ρ (`inj i e)                ()
 ⋯ᵣ-var⁻¹ ρ (`case e `of⟨ e₁ ; e₂ ⟩)  ()
@@ -481,7 +475,6 @@ private
 ⋯ᵣ-pair⁻¹ ρ (μ e)                     ()
 ⋯ᵣ-pair⁻¹ ρ (e₁ ·⟨ d ⟩ e₂)            ()
 ⋯ᵣ-pair⁻¹ ρ (e₁ ; e₂)                 ()
-⋯ᵣ-pair⁻¹ ρ (`let e₁ `in e₂)          ()
 ⋯ᵣ-pair⁻¹ ρ (`let⊗ e₁ `in e₂)         ()
 ⋯ᵣ-pair⁻¹ ρ (`inj i e)                ()
 ⋯ᵣ-pair⁻¹ ρ (`case e `of⟨ e₁ ; e₂ ⟩)  ()
@@ -497,7 +490,6 @@ private
 ⋯ᵣ-KApp⁻¹ ρ (μ e)                     ()
 ⋯ᵣ-KApp⁻¹ ρ (e₁ ; e₂)                 ()
 ⋯ᵣ-KApp⁻¹ ρ (e₁ ⊗ e₂)                 ()
-⋯ᵣ-KApp⁻¹ ρ (`let e₁ `in e₂)          ()
 ⋯ᵣ-KApp⁻¹ ρ (`let⊗ e₁ `in e₂)         ()
 ⋯ᵣ-KApp⁻¹ ρ (`inj i e)                ()
 ⋯ᵣ-KApp⁻¹ ρ (`case e `of⟨ e₁ ; e₂ ⟩)  ()

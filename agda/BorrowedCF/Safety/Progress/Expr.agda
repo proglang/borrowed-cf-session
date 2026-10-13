@@ -205,11 +205,6 @@ module _ {n} {Γ : Ctx n} (Γ-S : ChanCx Γ) where
   ... | inj₁ V-e₂             = inj₁ (V-⊗ V-e₁ V-e₂)
   ... | inj₂ (inj₁ ca)        = inj₂ (inj₁ (constApp-frame (V-e₁ ⊗□) ca))
   ... | inj₂ (inj₂ (_ , e₂→)) = inj₂ (inj₂ (_ , E-Ctx (V-e₁ ⊗□) e₂→))
-  progress⁺ (T-Let p/s e e′)
-    with progress⁺ e
-  ... | inj₁ V-e              = inj₂ (inj₂ (_ , E-□ (E-Let V-e)))
-  ... | inj₂ (inj₁ ca)        = inj₂ (inj₁ (constApp-frame (`let-`in _) ca))
-  ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (`let-`in _) e₁→))
   progress⁺ (T-Seq unr-T e e′)
     with progress⁺ e
   ... | inj₁ V-e              = inj₂ (inj₂ (_ , E-□ (E-Seq V-e)))

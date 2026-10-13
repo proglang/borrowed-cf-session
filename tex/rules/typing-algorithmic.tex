@@ -5,32 +5,33 @@
 
 % A-Const
 \DefRule [\C \notin \{\CSplit,\CSSplit\}] {Const} {
-  \CtxEmpty \SubCtx \Ctx \\
+  \CtxEmpty \SubCtx \Ctx \uparrow \CSet[0] \\
   \HasCType \C \T
 }{
-  \InferType \C \T \EffPure [\CSEmpty]
+  \InferType \C \T \EffPure [\CSet[0]]
 }
 
 % A-LSplit
 \DefRule {LSplit} {
-  \CtxEmpty \SubCtx \Ctx \\
+  \CtxEmpty \SubCtx \Ctx \uparrow \CSet[0] \\
+  \neg (\S \SEq \SSkip) \\
   \TVar\ \text{fresh}
 }{
   \InferType {\CSplit_{\S}}
   {\TArr{\MobMobile}{\DirUnord,\EffPure} {\SSeq\S\TVar} {\TPairOrd{\S}{\TVar}}}
     \EffPure
-    [\CSEmpty]
+    [\CSet[0]]
 }
 
 % A-RSplit
 \DefRule {RSplit} {
-  \CtxEmpty \SubCtx \Ctx \\
+  \CtxEmpty \SubCtx \Ctx \uparrow \CSet[0] \\
   \TVar\ \text{fresh}
 }{
   \InferType {\CSSplit_{\S}}
   {\TArr{\MobMobile}{\DirUnord,\EffPure} {\SSeq\S\TVar} {\TPairUnord{\SSeq{\S}{\SDrop}}{\SSeq\SAcq\TVar}}}
     \EffPure
-    [\CSEmpty]
+    [\CSet[0]]
 }
 
 % A-Select and A-Branch, superseded: select/branch are typed by A-Const.
@@ -63,9 +64,9 @@
 %
 % A-Var
 \DefRule {Var} {
-  \CtxVar \EVar \T \SubCtx \Ctx
+  \CtxVar \EVar \T \SubCtx \Ctx \uparrow \CSet[0]
 } {
-  \InferType \EVar {\T} \EffPure [\CSEmpty]
+  \InferType \EVar {\T} \EffPure [\CSet[0]]
 }
 
 % A-App
@@ -76,7 +77,7 @@
   \InferType [\CtxRestrict{\E[1]}] {\E[1]} {\TArr{\Mob}{\Dir,\Eff[3]} \T \TU} {\Eff[1]} [\CSet[1]] \\
   \CheckType [\CtxRestrict{\E[2]}] {\E[2]} {\T} {\Eff[2]} [\CSet[2]]
 }{
-  \InferType {\EAppD{\E[1]}{\E[2]}{\DirPrime}} {\TU} {\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]} [\CSet[1] \CSJoin \CSet[2]]
+  \InferType {\EAppD{\E[1]}{\E[2]}{\DirPrime}} {\TU} {\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]} [\CSet[0] \CSJoin \CSet[1] \CSJoin \CSet[2]]
 }
 
 
@@ -150,7 +151,7 @@
     {\EPair {\E[1]} {\E[2]}}
     {\T \TPair \TU}
     {\Eff[1] \EffJoin \Eff[2]}
-    [\CSet[1] \CSJoin \CSet[2]]
+    [\CSet[0] \CSJoin \CSet[1] \CSJoin \CSet[2]]
 }
 
 % A-Seq
@@ -174,19 +175,19 @@
     {\ESeq{\E[1]}{\E[2]}}
     {\TU}
     {\Eff[1] \EffJoin \Eff[2]}
-    [\CSet[1] \CSJoin \CSet[2]]
+    [\CSet[0] \CSJoin \CSet[1] \CSJoin \CSet[2]]
 }
 
 % A-LetPair
 \DefRule {LetPair} {
-  \CtxAlgSeqCheck{\E[1]}{\E[2]} \\
+  \CtxAlgPatCheck{\E[1]}{\E[2]} \\
   \InferType[\CtxRestrict{\E[1]}]
     {\E[1]}
     {\T[1] \TPair \T[2]}
     {\Eff[1]}
     [\CSet[1]]
   \\
-  \InferType[(\CtxVar x {\T[1]} \CtxJoin \CtxVar y {\T[2]}) \CtxSeq \CtxRestrict{\E[2]}]
+  \InferType[(\CtxVar x {\T[1]} \CtxJoin \CtxVar y {\T[2]}) \CtxPatOp \CtxRestrict{\E[2]}]
     {\E[2]}
     {\TU}
     {\Eff[2]}
@@ -196,7 +197,7 @@
      {\ELetPair xy{\E[1]}{\E[2]}}
      {\TU}
      {\Eff[1] \EffJoin \Eff[2]}
-     [\CSet[1] \CSJoin \CSet[2]]
+     [\CSet[0] \CSJoin \CSet[1] \CSJoin \CSet[2]]
 }
 
 % A-Inj
@@ -219,13 +220,14 @@
     {\TVariant{\ell:\T[\ell]}}
     {\Eff}
   \\
-  \InferType[\CtxVar {\EVar[\ell]} {\T[\ell]} \CtxJoin \CtxRestrict*{\Fv(\E)^C}]
+  \InferType[\CtxVar {\EVar[\ell]} {\T[\ell]} \CtxPatOp \CtxRestrict*{X}]
     {\E[\ell]}
     {\TU[\ell]}
     {\Eff[\ell]}
     [\CSet[\ell]]
   \\
-  \Dir = \CaseJoinDir(\Ctx, \Fv(\E))
+  X = \textstyle\bigcup_{\ell\in L} \Fv(\E[\ell]) \\
+  \CtxRestrict{\E} \CtxPatOp \CtxRestrict*{X} \SubCtx \Ctx \uparrow \CSet[0]
   \\
   \ell' \in L
 }{
@@ -233,7 +235,7 @@
     {\ECase[\ell\in L] \E \ECaseBranchDef}
     {\TU[\ell']}
     {\Eff \EffJoin \Eff[1] \EffJoin \Eff[2]}
-    [\CSet \CSJoin \bigcup_{\ell\in L} \CSet[\ell] \CSJoin \left\{\TU[k] \CEq \TU[k'] \mid k,k' \in L \right\}]
+    [\CSet[0] \CSJoin \CSet \CSJoin \bigcup_{\ell\in L} \CSet[\ell] \CSJoin \left\{\TU[k] \CEq \TU[k'] \mid k,k' \in L \right\}]
 }
 
 % \newcommand*\RuleTMatch{

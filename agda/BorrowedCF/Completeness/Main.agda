@@ -44,7 +44,6 @@ open import BorrowedCF.Completeness.Main.Interface
 
 module BorrowedCF.Completeness.Main
   (app-case     : AppCase)
-  (let-case     : LetCase)
   (letpair-case : LetPairCase)
   (case-case    : CaseCase)
   where
@@ -76,9 +75,6 @@ complete⇒ᵍ {e = e₁ ; e₂} Sσ uΓ ap Se ST lin dv =
 complete⇒ᵍ {e = e₁ ⊗ e₂} Sσ uΓ ap Se ST lin dv =
   pair-case (complete⇒ᵍ {e = e₁}) (complete⇒ᵍ {e = e₂}) Sσ uΓ ap
             (proj₁ (solvedTm-⊗ Se)) (proj₂ (solvedTm-⊗ Se)) ST lin dv
-complete⇒ᵍ {e = `let e₁ `in e₂} Sσ uΓ ap Se ST lin dv =
-  let-case (complete⇒ᵍ {e = e₁}) (complete⇒ᵍ {e = e₂}) Sσ uΓ ap
-           (proj₁ (solvedTm-let Se)) (proj₂ (solvedTm-let Se)) ST lin dv
 complete⇒ᵍ {e = `let⊗ e₁ `in e₂} Sσ uΓ ap Se ST lin dv =
   letpair-case (complete⇒ᵍ {e = e₁}) (complete⇒ᵍ {e = e₂}) Sσ uΓ ap
                (proj₁ (solvedTm-let⊗ Se)) (proj₂ (solvedTm-let⊗ Se)) ST lin dv
@@ -102,8 +98,6 @@ complete⇒ᵍ {e = μ (e₁ ·⟨ dr ⟩ e₂)} Sσ uΓ ap Se ST lin dv with in
 complete⇒ᵍ {e = μ (e₁ ; e₂)} Sσ uΓ ap Se ST lin dv with inv-μ dv
 ... | _ , _ , _ , _ , _ , () , _
 complete⇒ᵍ {e = μ (e₁ ⊗ e₂)} Sσ uΓ ap Se ST lin dv with inv-μ dv
-... | _ , _ , _ , _ , _ , () , _
-complete⇒ᵍ {e = μ (`let e₁ `in e₂)} Sσ uΓ ap Se ST lin dv with inv-μ dv
 ... | _ , _ , _ , _ , _ , () , _
 complete⇒ᵍ {e = μ (`let⊗ e₁ `in e₂)} Sσ uΓ ap Se ST lin dv with inv-μ dv
 ... | _ , _ , _ , _ , _ , () , _

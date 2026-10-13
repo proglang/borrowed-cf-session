@@ -60,8 +60,6 @@ consumePhi x k (e₁ ·⟨ d ⟩ e₂) =
   consumePhi x k e₁ ·⟨ d ⟩ consumePhi x k e₂
 consumePhi x k (e₁ ; e₂) = consumePhi x k e₁ ; consumePhi x k e₂
 consumePhi x k (e₁ ⊗ e₂) = consumePhi x k e₁ ⊗ consumePhi x k e₂
-consumePhi x k (`let e₁ `in e₂) =
-  `let consumePhi x k e₁ `in consumePhi (suc x) k e₂
 consumePhi x k (`let⊗ e₁ `in e₂) =
   `let⊗ consumePhi x k e₁ `in consumePhi (suc (suc x)) k e₂
 consumePhi x k (`inj side e) = `inj side (consumePhi x k e)
@@ -91,8 +89,6 @@ insertPhi x k (e₁ ·⟨ d ⟩ e₂) =
   insertPhi x k e₁ ·⟨ d ⟩ insertPhi x k e₂
 insertPhi x k (e₁ ; e₂) = insertPhi x k e₁ ; insertPhi x k e₂
 insertPhi x k (e₁ ⊗ e₂) = insertPhi x k e₁ ⊗ insertPhi x k e₂
-insertPhi x k (`let e₁ `in e₂) =
-  `let insertPhi x k e₁ `in insertPhi (suc x) k e₂
 insertPhi x k (`let⊗ e₁ `in e₂) =
   `let⊗ insertPhi x k e₁ `in insertPhi (suc (suc x)) k e₂
 insertPhi x k (`inj side e) = `inj side (insertPhi x k e)
@@ -121,7 +117,6 @@ insertPhi-frame x k (app₂ e d V?) =
 insertPhi-frame x k (□⊗ e) = □⊗ (insertPhi x k e)
 insertPhi-frame x k (V ⊗□) = insertPhi-Value x k V ⊗□
 insertPhi-frame x k (□; e) = □; (insertPhi x k e)
-insertPhi-frame x k (`let-`in e) = `let-`in (insertPhi (suc x) k e)
 insertPhi-frame x k (`let⊗-`in e) = `let⊗-`in (insertPhi (suc (suc x)) k e)
 insertPhi-frame x k (`inj□ i) = `inj□ i
 insertPhi-frame x k (`case□`of⟨ e₁ ; e₂ ⟩) =
@@ -140,7 +135,6 @@ insertPhi-plug x k (app₂ e d V?) t = refl
 insertPhi-plug x k (□⊗ e) t = refl
 insertPhi-plug x k (V ⊗□) t = refl
 insertPhi-plug x k (□; e) t = refl
-insertPhi-plug x k (`let-`in e) t = refl
 insertPhi-plug x k (`let⊗-`in e) t = refl
 insertPhi-plug x k (`inj□ i) t = refl
 insertPhi-plug x k (`case□`of⟨ e₁ ; e₂ ⟩) t = refl

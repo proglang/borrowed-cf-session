@@ -31,8 +31,6 @@ T[ e₁ 𝐓Tm.·⟨ d ⟩ e₂ ] σ =
   (T[ e₁ ] σ) 𝐒Tm.·⟨ d ⟩ (T[ e₂ ] σ)
 T[ e₁ 𝐓Tm.; e₂ ] σ = (T[ e₁ ] σ) 𝐒Tm.; (T[ e₂ ] σ)
 T[ e₁ 𝐓Tm.⊗ e₂ ] σ = (T[ e₁ ] σ) 𝐒Tm.⊗ (T[ e₂ ] σ)
-T[ 𝐓Tm.`let e₁ `in e₂ ] σ =
-  𝐒Tm.`let (T[ e₁ ] σ) `in (T[ e₂ ] (liftEnv σ))
 T[ 𝐓Tm.`let⊗ e₁ `in e₂ ] σ =
   𝐒Tm.`let⊗ (T[ e₁ ] σ) `in (T[ e₂ ] (liftEnv (liftEnv σ)))
 T[ 𝐓Tm.`inj i e ] σ = 𝐒Tm.`inj i (T[ e ] σ)

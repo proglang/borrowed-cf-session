@@ -98,7 +98,6 @@ brₛ↑↑ ⊢ϕ γ = sym (𝐂.conv-⋯ᵣₛ γ) ■ 𝐂.⋯-cong γ (lift-d
 ⊢⋯⁻¹ {e = μ (e₁ ·⟨ d ⟩ e₂)} inj p ⊢ϕ with _ , () ← μ-ƛ p
 ⊢⋯⁻¹ {e = μ (e₁ ; e₂)} inj p ⊢ϕ with _ , () ← μ-ƛ p
 ⊢⋯⁻¹ {e = μ (e₁ ⊗ e₂)} inj p ⊢ϕ with _ , () ← μ-ƛ p
-⊢⋯⁻¹ {e = μ (`let e₁ `in e₂)} inj p ⊢ϕ with _ , () ← μ-ƛ p
 ⊢⋯⁻¹ {e = μ (`let⊗ e₁ `in e₂)} inj p ⊢ϕ with _ , () ← μ-ƛ p
 ⊢⋯⁻¹ {e = μ (`inj i e)} inj p ⊢ϕ with _ , () ← μ-ƛ p
 ⊢⋯⁻¹ {e = μ (`case e `of⟨ e₁ ; e₂ ⟩)} inj p ⊢ϕ with _ , () ← μ-ƛ p
@@ -140,15 +139,6 @@ brₛ↑↑ ⊢ϕ γ = sym (𝐂.conv-⋯ᵣₛ γ) ■ 𝐂.⋯-cong γ (lift-d
   in join (biasedDir p/s) γ₁′ γ₂′
    , subst (λ z → _ ∶ z ≼ _) (sym (join-⋯ (biasedDir p/s) γ₁′ γ₂′)) (≼-trans (≼-join (biasedDir p/s) ≼₁ ≼₂) ≤)
    , T-Conv ty≃ e≤ (T-Pair p/s s⇒p x′ y′)
-⊢⋯⁻¹ {e = `let e₁ `in e₂} {ϕ = ρ} inj p ⊢ϕ =
-  let p/s , γ₁ , γ₂ , T , ≤ , x , y = inv-`let p
-      γ₁′ , ≼₁ , x′ = ⊢⋯⁻¹ inj x ⊢ϕ
-      γ₂b , ≼₂ , y′ = ⊢⋯⁻¹ {e = e₂} {ϕ = ρ ↑ᵣ} (↑-inj inj) y (⊢↑ ⊢ϕ)
-      ≼₂ᵣ = subst (λ z → _ ∶ z ≼ _) (sym (brₛ↑ ⊢ϕ γ₂b)) ≼₂
-      γr , p1 , p2 = descend-abs inj (⊢ren-ϕ⇔ ⊢ϕ) p/s γ₂ γ₂b ≼₂ᵣ
-      out≼ = subst (λ z → _ ∶ z ≼ _) (sym (join-⋯ p/s γ₁′ γr))
-               (≼-trans (≼-join p/s ≼₁ (subst (λ z → _ ∶ z ≼ γ₂) (brₛ ⊢ϕ γr) p2)) ≤)
-  in join p/s γ₁′ γr , out≼ , T-Let p/s x′ (T-Weaken p1 y′)
 ⊢⋯⁻¹ {Γ₂ = Γ₂} {e = `let⊗ e₁ `in e₂} {ϕ = ρ} inj p ⊢ϕ =
   let p/s , d , γ₁ , γ₂ , T₁ , T₂ , ≤ , x , y = inv-`let⊗ p
       γ₁′ , ≼₁ , x′ = ⊢⋯⁻¹ inj x ⊢ϕ

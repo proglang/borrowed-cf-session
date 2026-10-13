@@ -21,7 +21,6 @@ infix 4 _─→_ _⋯→_
 data _─→_ {n} : Tm n → Tm n → Set where
   E-App : (V : Value e₂) → (ƛ e₁) ·⟨ d ⟩ e₂ ─→ e₁ ⋯ ⦅ e₂ ⦆
   E-Seq : (V : Value e₁) → e₁ ; e₂ ─→ e₂
-  E-Let : Value e₁ → `let e₁ `in e₂ ─→ e₂ ⋯ ⦅ e₁ ⦆
   E-PairElim : (V₁ : Value e₁) (V₂ : Value e₂) → `let⊗ (e₁ ⊗ e₂) `in e ─→ e ⋯ ⦅ wk e₁ ⦆ ⋯ ⦅ e₂ ⦆
   E-SumElim : ∀ {i} (V : Value e) → `case `inj i e `of⟨ e₁ ; e₂ ⟩ ─→ (if i then e₁ else e₂) ⋯ ⦅ e ⦆
   E-Unfold : μ e ─→ e ⋯ ⦅ μ e ⦆
@@ -172,11 +171,6 @@ module _ (Γ-S : ChanCx Γ) where
         $ f′ ⊢⋯ₛ ⊢subₛ (value⇒pure V (T-Conv T≃ ≤ϵ-refl e))
                        (λ U → unr×value⇒unrCx (unr-≃ (≃-sym T≃) U) V e)
                        (λ m → mobile×value⇒mobCx (mobile-≃ (≃-sym T≃) m) V e)
-  preservation′ (T-Let p/s {γ₁} {γ₂} e₁ e₂) (E-Let V-e₁) =
-    let eq = join-⋯ p/s {𝐂.⦅ γ₁ ⦆} (` zero) (𝐂.wk γ₂)
-               ■ cong (join p/s γ₁) (𝐂.wk-cancels-⦅⦆-⋯ γ₂ γ₁)
-    in
-    subst-γ eq (e₂ ⊢⋯ₛ ⊢subₛ (value⇒pure V-e₁ e₁) (λ U → unr×value⇒unrCx U V-e₁ e₁) (λ m → mobile×value⇒mobCx m V-e₁ e₁))
   preservation′ (T-Seq {γ₁ = γ₁} {γ₂} unr-T e₁ e₂) (E-Seq V) =
     let γ≤ = begin  γ₂       ≈⟨ ;-unit₁ ⟨
                     [] ; γ₂  ≲⟨ ≼-cong-; (≼-∅ (inv-unr V unr-T e₁)) (≼-refl refl) ⟩
@@ -273,10 +267,6 @@ module _ (Γ-S : ChanCx Γ) where
   ... | T-Seq unr-T e₁ e₂ = T-Seq unr-T (preservation e₁ E₁) e₂
   ... | T-Weaken γ≤ e′  = T-Weaken γ≤ (preservation e′ E)
   ... | T-Conv eq ϵ≤ e′ = T-Conv eq ϵ≤ (preservation e′ E)
-  preservation e E@(E-Ctx (`let-`in _) E₁) with e
-  ... | T-Let p/s e₁ e₂ = T-Let p/s (preservation e₁ E₁) e₂
-  ... | T-Weaken γ≤ e′  = T-Weaken γ≤ (preservation e′ E)
-  ... | T-Conv eq ϵ≤ e′ = T-Conv eq ϵ≤ (preservation e′ E)
   preservation e E@(E-Ctx (`let⊗-`in _) E₁) with e
   ... | T-LetPair p/s e₁ e₂ = T-LetPair p/s (preservation e₁ E₁) e₂
   ... | T-Weaken γ≤ e′  = T-Weaken γ≤ (preservation e′ E)
@@ -352,11 +342,6 @@ module _ (Γ-S : ChanCx Γ) where
   ... | inj₁ V-e₂             = inj₁ (V-⊗ V-e₁ V-e₂)
   ... | inj₂ (inj₁ e₂↛)       = inj₂ (inj₁ (E-Ctx (V-e₁ ⊗□) e₂↛))
   ... | inj₂ (inj₂ (_ , e₂→)) = inj₂ (inj₂ (_ , E-Ctx (V-e₁ ⊗□) e₂→))
-  progress (T-Let p/s e e′)
-    with progress e
-  ... | inj₁ V-e              = inj₂ (inj₂ (_ , E-□ (E-Let V-e)))
-  ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (`let-`in _) e₁↛))
-  ... | inj₂ (inj₂ (_ , e₁→)) = inj₂ (inj₂ (_ , E-Ctx (`let-`in _) e₁→))
   progress (T-Seq unr-T e e′)
     with progress e
   ... | inj₂ (inj₁ e₁↛)       = inj₂ (inj₁ (E-Ctx (□; _) e₁↛))

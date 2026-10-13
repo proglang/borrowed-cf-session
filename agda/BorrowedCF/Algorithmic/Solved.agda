@@ -219,7 +219,6 @@ data SolvedTm {n} : Tm n → Set where
   _·_ : {e₁ e₂ : Tm n} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (e₁ ·⟨ d ⟩ e₂)
   _;_ : {e₁ e₂ : Tm n} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (e₁ ; e₂)
   _⊗_ : {e₁ e₂ : Tm n} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (e₁ ⊗ e₂)
-  `let_`in_ : {e₁ : Tm n} {e₂ : Tm (1 + n)} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (`let e₁ `in e₂)
   `let⊗_`in_ : {e₁ : Tm n} {e₂ : Tm (2 + n)} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (`let⊗ e₁ `in e₂)
   `inj : {i : Side} {e : Tm n} → SolvedTm e → SolvedTm (`inj i e)
   `case_`of⟨_;_⟩ : {e : Tm n} {e₁ e₂ : Tm (1 + n)} → SolvedTm e → SolvedTm e₁ → SolvedTm e₂ → SolvedTm `case e `of⟨ e₁ ; e₂ ⟩
@@ -299,7 +298,6 @@ subTm (μ e) σ = μ (subTm e σ)
 subTm (e ·⟨ d ⟩ e₁) σ = subTm e σ ·⟨ d ⟩ subTm e₁ σ
 subTm (e ; e₁) σ = subTm e σ ; subTm e₁ σ
 subTm (e ⊗ e₁) σ = subTm e σ ⊗ subTm e₁ σ
-subTm (`let e `in e₁) σ = `let subTm e σ `in subTm e₁ σ
 subTm (`let⊗ e `in e₁) σ = `let⊗ subTm e σ `in subTm e₁ σ
 subTm (`inj i e) σ = `inj i (subTm e σ)
 subTm `case e `of⟨ e₁ ; e₂ ⟩ σ = `case subTm e σ `of⟨ subTm e₁ σ ; subTm e₂ σ ⟩
@@ -313,7 +311,6 @@ subTm-solved (μ e) = μ (subTm-solved e)
 subTm-solved (e · e₁) = subTm-solved e · subTm-solved e₁
 subTm-solved (e ; e₁) = subTm-solved e ; subTm-solved e₁
 subTm-solved (e ⊗ e₁) = subTm-solved e ⊗ subTm-solved e₁
-subTm-solved (`let e `in e₁) = `let subTm-solved e `in subTm-solved e₁
 subTm-solved (`let⊗ e `in e₁) = `let⊗ subTm-solved e `in subTm-solved e₁
 subTm-solved (`inj e) = `inj (subTm-solved e)
 subTm-solved `case e `of⟨ e₁ ; e₂ ⟩ = `case subTm-solved e `of⟨ subTm-solved e₁ ; subTm-solved e₂ ⟩
@@ -327,7 +324,6 @@ subTm-id (μ e) = cong μ (subTm-id e)
 subTm-id (e · e₁) = cong₂ _·⟨ _ ⟩_ (subTm-id e) (subTm-id e₁)
 subTm-id (e ; e₁) = cong₂ _;_ (subTm-id e) (subTm-id e₁)
 subTm-id (e ⊗ e₁) = cong₂ _⊗_ (subTm-id e) (subTm-id e₁)
-subTm-id (`let e `in e₁) = cong₂ `let_`in_ (subTm-id e) (subTm-id e₁)
 subTm-id (`let⊗ e `in e₁) = cong₂ `let⊗_`in_ (subTm-id e) (subTm-id e₁)
 subTm-id (`inj e) = cong (`inj _) (subTm-id e)
 subTm-id {σ = σ} `case e `of⟨ e₁ ; e₂ ⟩ rewrite subTm-id {σ = σ} e = cong₂ `case _ `of⟨_;_⟩ (subTm-id e₁) (subTm-id e₂)

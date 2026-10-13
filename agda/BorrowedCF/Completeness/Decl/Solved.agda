@@ -46,9 +46,6 @@ solvedTm-case : {e : Tm n} {e₁ e₂ : Tm (suc n)} →
   SolvedTm `case e `of⟨ e₁ ; e₂ ⟩ → SolvedTm e × SolvedTm e₁ × SolvedTm e₂
 solvedTm-case `case s `of⟨ s₁ ; s₂ ⟩ = s , s₁ , s₂
 
-solvedTm-let : {e₁ : Tm n} {e₂ : Tm (suc n)} →
-  SolvedTm (`let e₁ `in e₂) → SolvedTm e₁ × SolvedTm e₂
-solvedTm-let (`let s₁ `in s₂) = s₁ , s₂
 
 solvedTm-⦂ : {e : Tm n} {T : 𝕋} → SolvedTm (e ⦂ T) → SolvedTm e × SolvedTy T
 solvedTm-⦂ (s ⦂ t) = s , t

@@ -78,11 +78,6 @@ Tᶠ-plug-ren-coh (V SourceReduction.⊗□) θ σ₁ σ₂ Vσ₁ Vσ₂ coh t 
     (T-ren-coh (SourceReduction.vTm V) θ σ₁ σ₂ coh)
 Tᶠ-plug-ren-coh (SourceReduction.□; e) θ σ₁ σ₂ Vσ₁ Vσ₂ coh t =
   cong (λ z → t SoupTerm.; z) (T-ren-coh e θ σ₁ σ₂ coh)
-Tᶠ-plug-ren-coh (SourceReduction.`let-`in e) θ σ₁ σ₂ Vσ₁ Vσ₂ coh t =
-  cong (λ z → SoupTerm.`let t `in z)
-    (T-ren-coh e (θ Source.↑ᵣ)
-      (Translation.liftEnv σ₁) (Translation.liftEnv σ₂)
-      (lift-ren-coh θ σ₁ σ₂ coh))
 Tᶠ-plug-ren-coh (SourceReduction.`let⊗-`in e) θ σ₁ σ₂ Vσ₁ Vσ₂ coh t =
   cong (λ z → SoupTerm.`let⊗ t `in z)
     (T-ren-coh e ((θ Source.↑ᵣ) Source.↑ᵣ)
@@ -191,8 +186,6 @@ Tᶠ-plug-renEnv (V SourceReduction.⊗□) {σ = σ} Vσ ρ t =
     (T[_]-renEnv (SourceReduction.vTm V) σ ρ)
 Tᶠ-plug-renEnv (SourceReduction.□; e) {σ = σ} Vσ ρ t =
   cong (λ z → t SoupTerm.; z) (T[_]-renEnv e σ ρ)
-Tᶠ-plug-renEnv (SourceReduction.`let-`in e) {σ = σ} Vσ ρ t =
-  cong (λ z → SoupTerm.`let t `in z) (T-renEnv-lift e σ ρ)
 Tᶠ-plug-renEnv (SourceReduction.`let⊗-`in e) {σ = σ} Vσ ρ t =
   cong (λ z → SoupTerm.`let⊗ t `in z) (T-renEnv-lift₂ e σ ρ)
 Tᶠ-plug-renEnv (SourceReduction.`inj□ i) Vσ ρ t = refl

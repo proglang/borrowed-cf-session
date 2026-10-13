@@ -160,11 +160,6 @@ insertPhi-ren inj x k (t₁ SoupTerm.; t₂) =
 insertPhi-ren inj x k (t₁ SoupTerm.⊗ t₂) =
   cong₂ SoupTerm._⊗_
     (insertPhi-ren inj x k t₁) (insertPhi-ren inj x k t₂)
-insertPhi-ren {ρ = ρ} inj x k (SoupTerm.`let t₁ `in t₂) =
-  cong₂ SoupTerm.`let_`in_
-    (insertPhi-ren inj x k t₁)
-    (insertPhi-ren {ρ = SoupTerm.liftRen ρ} (liftRen-injective inj)
-      (suc x) k t₂)
 insertPhi-ren {ρ = ρ} inj x k (SoupTerm.`let⊗ t₁ `in t₂) =
   cong₂ SoupTerm.`let⊗_`in_
     (insertPhi-ren inj x k t₁)
@@ -234,12 +229,6 @@ insertPhi-T x k (e₁ Source.; e₂) sigma =
 insertPhi-T x k (e₁ Source.⊗ e₂) sigma =
   cong₂ SoupTerm._⊗_
     (insertPhi-T x k e₁ sigma) (insertPhi-T x k e₂ sigma)
-insertPhi-T x k (Source.`let e₁ `in e₂) sigma =
-  cong₂ SoupTerm.`let_`in_
-    (insertPhi-T x k e₁ sigma)
-    ( insertPhi-T (suc x) k e₂ (Translation.liftEnv sigma)
-    ■ T[ e₂ ]-Env-cong (insertPhi-liftEnv x k sigma)
-    )
 insertPhi-T x k (Source.`let⊗ e₁ `in e₂) sigma =
   cong₂ SoupTerm.`let⊗_`in_
     (insertPhi-T x k e₁ sigma)
@@ -400,12 +389,6 @@ Tᶠ-insertPhi-frame (V SourceReduction.⊗□) {sigma = sigma}
 Tᶠ-insertPhi-frame (SourceReduction.□; e) {sigma = sigma}
   Vsigma x k Vinserted t =
   cong (λ z → t SoupTerm.; z) (insertPhi-T x k e sigma)
-Tᶠ-insertPhi-frame (SourceReduction.`let-`in e) {sigma = sigma}
-  Vsigma x k Vinserted t =
-  cong (λ z → SoupTerm.`let t `in z)
-    ( insertPhi-T (suc x) k e (Translation.liftEnv sigma)
-    ■ T[ e ]-Env-cong (insertPhi-liftEnv x k sigma)
-    )
 Tᶠ-insertPhi-frame (SourceReduction.`let⊗-`in e) {sigma = sigma}
   Vsigma x k Vinserted t =
   cong (λ z → SoupTerm.`let⊗ t `in z)
@@ -502,11 +485,6 @@ private
     (t₁ SoupTerm.⊗ t₂) ≡ (u₁ SoupTerm.⊗ u₂) → t₁ ≡ u₁ × t₂ ≡ u₂
   ⊗-inj refl = refl , refl
 
-  let-inj :
-    {t₁ u₁ : SoupTerm.Tm d} {t₂ u₂ : SoupTerm.Tm (suc d)} →
-    (SoupTerm.`let t₁ `in t₂) ≡ (SoupTerm.`let u₁ `in u₂) →
-    t₁ ≡ u₁ × t₂ ≡ u₂
-  let-inj refl = refl , refl
 
   let⊗-inj :
     {t₁ u₁ : SoupTerm.Tm d} {t₂ u₂ : SoupTerm.Tm (suc (suc d))} →
@@ -574,12 +552,6 @@ consumePhi-fixed⇒insertPhi-fixed x (t₁ SoupTerm.⊗ t₂) fixed k =
       (λ l → proj₁ (⊗-inj (fixed l))) k)
     (consumePhi-fixed⇒insertPhi-fixed x t₂
       (λ l → proj₂ (⊗-inj (fixed l))) k)
-consumePhi-fixed⇒insertPhi-fixed x (SoupTerm.`let t₁ `in t₂) fixed k =
-  cong₂ SoupTerm.`let_`in_
-    (consumePhi-fixed⇒insertPhi-fixed x t₁
-      (λ l → proj₁ (let-inj (fixed l))) k)
-    (consumePhi-fixed⇒insertPhi-fixed (suc x) t₂
-      (λ l → proj₂ (let-inj (fixed l))) k)
 consumePhi-fixed⇒insertPhi-fixed x (SoupTerm.`let⊗ t₁ `in t₂) fixed k =
   cong₂ SoupTerm.`let⊗_`in_
     (consumePhi-fixed⇒insertPhi-fixed x t₁

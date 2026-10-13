@@ -60,10 +60,6 @@ swapPhi-insertPhi x k (t₁ SoupTerm.; t₂) =
 swapPhi-insertPhi x k (t₁ SoupTerm.⊗ t₂) =
   cong₂ SoupTerm._⊗_
     (swapPhi-insertPhi x k t₁) (swapPhi-insertPhi x k t₂)
-swapPhi-insertPhi x k (SoupTerm.`let t₁ `in t₂) =
-  cong₂ SoupTerm.`let_`in_
-    (swapPhi-insertPhi x k t₁)
-    (swapPhi-insertPhi (suc x) k t₂)
 swapPhi-insertPhi x k (SoupTerm.`let⊗ t₁ `in t₂) =
   cong₂ SoupTerm.`let⊗_`in_
     (swapPhi-insertPhi x k t₁)
@@ -104,8 +100,6 @@ swapPhi-insertPhi-frame x k (V SoupExpression.⊗□) t =
     (swapPhi-insertPhi x k (SoupExpression.vTm V)) refl
 swapPhi-insertPhi-frame x k (SoupExpression.□; e) t =
   cong₂ SoupTerm._;_ refl (swapPhi-insertPhi x k e)
-swapPhi-insertPhi-frame x k (SoupExpression.`let-`in e) t =
-  cong₂ SoupTerm.`let_`in_ refl (swapPhi-insertPhi (suc x) k e)
 swapPhi-insertPhi-frame x k (SoupExpression.`let⊗-`in e) t =
   cong₂ SoupTerm.`let⊗_`in_ refl
     (swapPhi-insertPhi (suc (suc x)) k e)

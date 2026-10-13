@@ -126,10 +126,6 @@ consumePhi-ren inj x k (t₁ SoupTerm.; t₂) =
 consumePhi-ren inj x k (t₁ SoupTerm.⊗ t₂) =
   cong₂ SoupTerm._⊗_
     (consumePhi-ren inj x k t₁) (consumePhi-ren inj x k t₂)
-consumePhi-ren {ρ = ρ} inj x k (SoupTerm.`let t₁ `in t₂) =
-  cong₂ SoupTerm.`let_`in_
-    (consumePhi-ren inj x k t₁)
-    (consumePhi-ren {ρ = SoupTerm.liftRen ρ} (liftRen-injective inj) (suc x) k t₂)
 consumePhi-ren {ρ = ρ} inj x k (SoupTerm.`let⊗ t₁ `in t₂) =
   cong₂ SoupTerm.`let⊗_`in_
     (consumePhi-ren inj x k t₁)
@@ -195,11 +191,6 @@ consumePhi-T x k (e₁ Source.; e₂) σ =
   cong₂ SoupTerm._;_ (consumePhi-T x k e₁ σ) (consumePhi-T x k e₂ σ)
 consumePhi-T x k (e₁ Source.⊗ e₂) σ =
   cong₂ SoupTerm._⊗_ (consumePhi-T x k e₁ σ) (consumePhi-T x k e₂ σ)
-consumePhi-T x k (Source.`let e₁ `in e₂) σ =
-  cong₂ SoupTerm.`let_`in_
-    (consumePhi-T x k e₁ σ)
-    (consumePhi-T (suc x) k e₂ (Translation.liftEnv σ) ■
-     T[_]-Env-cong e₂ (consumePhi-liftEnv x k σ))
 consumePhi-T x k (Source.`let⊗ e₁ `in e₂) σ =
   cong₂ SoupTerm.`let⊗_`in_
     (consumePhi-T x k e₁ σ)

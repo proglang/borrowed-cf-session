@@ -87,7 +87,9 @@
 
 \Cref{fig:syntax} collects the source-language syntax used throughout
 this paper. The figure is organized into three groups: types, expressions, and
-processes.
+processes. We write $\ELet\EVar{\E[1]}\E[2]$
+as syntactic sugar for $\EApp{(\EAbs\EVar{\E[2]})}{\E[1]}$, where the
+function is linear (unordered or left-ordered) and immobile.
 
 The types group introduces three orthogonal classifiers. Mobilities
 ($\MobStationary$, $\MobMobile$) indicate if values are stationary or 

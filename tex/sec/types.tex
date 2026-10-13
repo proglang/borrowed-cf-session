@@ -179,7 +179,12 @@ The split constants are pure. Local splitting, $\CSplit$, decomposes
 $\SSeq{\S[1]}{\S[2]}$ into an ordered pair containing the borrowed prefix and
 the residual suffix. The ordering enforces that the prefix must be
 consumed before starting with the suffix. Remote splitting, $\CSSplit$, produces an unordered pair
-in which the prefix ends in $\SDrop$ and the residual begins with $\SAcq$. The
+in which the prefix ends in $\SDrop$ and the residual begins with $\SAcq$.
+Both splits require the residual $\S[2]$ to be nontrivial,
+$\neg(\S[2] \SEq \SSkip)$, and \emph{local}, $\SLocal\S[2]$: it must not
+begin with $\SAcq$, looking through leading skips and recursion binders.
+In particular, a remote split never produces a residual that starts with two
+$\SAcq$ markers. The
 constants $\CDrop$ and $\CAcq$ eliminate the 
 corresponding marker types. Forking expects a mobile impure computation from unit to
 unit, and $\CDiscard$ consumes an endpoint whose session is equivalent to
@@ -199,7 +204,6 @@ $\SSkip$.
     \RuleTAppRight \and
     \RuleTPairUnord \and
     \RuleTPairOrd \and
-    \RuleTLet \and
     \RuleTSeq \and
     \RuleTLetUnord \and
     \RuleTLetOrd \and

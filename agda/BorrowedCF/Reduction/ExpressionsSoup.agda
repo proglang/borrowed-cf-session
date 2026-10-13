@@ -54,7 +54,6 @@ data Frame (n : ℕ) : Set where
   □⊗_ : Tm n → Frame n
   _⊗□ : {e : Tm n} → Value e → Frame n
   □;_ : Tm n → Frame n
-  `let-`in_ : Tm (1 + n) → Frame n
   `let⊗-`in_ : Tm (2 + n) → Frame n
   `inj□ : Side → Frame n
   `case□`of⟨_;_⟩ : Tm (1 + n) → Tm (1 + n) → Frame n
@@ -67,7 +66,6 @@ app₂ e d V? [ e₀ ] = e ·⟨ d ⟩ e₀
 (□⊗ e) [ e₀ ] = e₀ ⊗ e
 (V ⊗□) [ e₀ ] = vTm V ⊗ e₀
 (□; e) [ e₀ ] = e₀ ; e
-(`let-`in e) [ e₀ ] = `let e₀ `in e
 (`let⊗-`in e) [ e₀ ] = `let⊗ e₀ `in e
 `inj□ i [ e₀ ] = `inj i e₀
 `case□`of⟨ e₁ ; e₂ ⟩ [ e₀ ] = `case e₀ `of⟨ e₁ ; e₂ ⟩
@@ -80,7 +78,6 @@ frame-rename (app₂ e d V?) ρ =
 frame-rename (□⊗ e) ρ = □⊗ (e ⋯ᵣ ρ)
 frame-rename (V ⊗□) ρ = value-rename V ρ ⊗□
 frame-rename (□; e) ρ = □; (e ⋯ᵣ ρ)
-frame-rename (`let-`in e) ρ = `let-`in (e ⋯ᵣ liftRen ρ)
 frame-rename (`let⊗-`in e) ρ = `let⊗-`in (e ⋯ᵣ liftRen (liftRen ρ))
 frame-rename (`inj□ i) ρ = `inj□ i
 frame-rename (`case□`of⟨ e₁ ; e₂ ⟩) ρ =
@@ -104,7 +101,6 @@ infix 4 _─→_ _⋯→_
 data _─→_ {n} : Tm n → Tm n → Set where
   E-App : Value e₂ → (ƛ e₁) ·⟨ d ⟩ e₂ ─→ subst₀ e₂ e₁
   E-Seq : Value e₁ → e₁ ; e₂ ─→ e₂
-  E-Let : Value e₁ → `let e₁ `in e₂ ─→ subst₀ e₁ e₂
   E-PairElim : Value e₁ → Value e₂ →
     `let⊗ (e₁ ⊗ e₂) `in e ─→ subst₀ e₂ (subst₀ (wk e₁) e)
   E-SumElim : ∀ {i} → Value e →

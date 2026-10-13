@@ -76,7 +76,6 @@ swapPhi-frame x k (Expr.app₂ e d V?) =
 swapPhi-frame x k (Expr.□⊗ e) = Expr.□⊗ (swapPhi x k e)
 swapPhi-frame x k (V Expr.⊗□) = swapPhi-Value x k V Expr.⊗□
 swapPhi-frame x k (Expr.□; e) = Expr.□; (swapPhi x k e)
-swapPhi-frame x k (Expr.`let-`in e) = Expr.`let-`in (swapPhi (suc x) k e)
 swapPhi-frame x k (Expr.`let⊗-`in e) =
   Expr.`let⊗-`in (swapPhi (suc (suc x)) k e)
 swapPhi-frame x k (Expr.`inj□ i) = Expr.`inj□ i
@@ -95,7 +94,6 @@ swapPhi-plug x k (Expr.app₂ e d V?) t = refl
 swapPhi-plug x k (Expr.□⊗ e) t = refl
 swapPhi-plug x k (V Expr.⊗□) t = refl
 swapPhi-plug x k (Expr.□; e) t = refl
-swapPhi-plug x k (Expr.`let-`in e) t = refl
 swapPhi-plug x k (Expr.`let⊗-`in e) t = refl
 swapPhi-plug x k (Expr.`inj□ i) t = refl
 swapPhi-plug x k (Expr.`case□`of⟨ e₁ ; e₂ ⟩) t = refl
@@ -139,10 +137,6 @@ swapPhi-ren inj x k (t₁ Term.; t₂) =
   cong₂ Term._;_ (swapPhi-ren inj x k t₁) (swapPhi-ren inj x k t₂)
 swapPhi-ren inj x k (t₁ Term.⊗ t₂) =
   cong₂ Term._⊗_ (swapPhi-ren inj x k t₁) (swapPhi-ren inj x k t₂)
-swapPhi-ren {ρ = ρ} inj x k (Term.`let t₁ `in t₂) =
-  cong₂ Term.`let_`in_
-    (swapPhi-ren inj x k t₁)
-    (swapPhi-ren {ρ = Term.liftRen ρ} (liftRen-injective inj) (suc x) k t₂)
 swapPhi-ren {ρ = ρ} inj x k (Term.`let⊗ t₁ `in t₂) =
   cong₂ Term.`let⊗_`in_
     (swapPhi-ren inj x k t₁)
@@ -233,11 +227,6 @@ swapPhi-as-sub x k (t₁ Term.; t₂) =
   cong₂ Term._;_ (swapPhi-as-sub x k t₁) (swapPhi-as-sub x k t₂)
 swapPhi-as-sub x k (t₁ Term.⊗ t₂) =
   cong₂ Term._⊗_ (swapPhi-as-sub x k t₁) (swapPhi-as-sub x k t₂)
-swapPhi-as-sub x k (Term.`let t₁ `in t₂) =
-  cong₂ Term.`let_`in_
-    (swapPhi-as-sub x k t₁)
-    (swapPhi-as-sub (suc x) k t₂ ■
-     sym (sub-cong t₂ (slotSub-liftEq x k)))
 swapPhi-as-sub x k (Term.`let⊗ t₁ `in t₂) =
   cong₂ Term.`let⊗_`in_
     (swapPhi-as-sub x k t₁)
@@ -312,11 +301,6 @@ sub-sub (t₁ Term.; t₂) σ τ =
   cong₂ Term._;_ (sub-sub t₁ σ τ) (sub-sub t₂ σ τ)
 sub-sub (t₁ Term.⊗ t₂) σ τ =
   cong₂ Term._⊗_ (sub-sub t₁ σ τ) (sub-sub t₂ σ τ)
-sub-sub (Term.`let t₁ `in t₂) σ τ =
-  cong₂ Term.`let_`in_
-    (sub-sub t₁ σ τ)
-    (sub-sub t₂ (Term.liftSub σ) (Term.liftSub τ) ■
-     sub-cong t₂ (compSub-liftEq σ τ))
 sub-sub (Term.`let⊗ t₁ `in t₂) σ τ =
   cong₂ Term.`let⊗_`in_
     (sub-sub t₁ σ τ)
@@ -402,12 +386,6 @@ swapPhi-─→ x k {Term.ƛ e₁ Term.·⟨ d ⟩ e₂}
     (Expr.E-App (swapPhi-Value x k V))
 swapPhi-─→ x k {_ Term.; _} {._} (Expr.E-Seq V) =
   Expr.E-Seq (swapPhi-Value x k V)
-swapPhi-─→ x k {Term.`let e₁ `in e₂}
-  {.(Expr.subst₀ e₁ e₂)} (Expr.E-Let V) =
-  subst
-    (Term.`let swapPhi x k e₁ `in swapPhi (suc x) k e₂ Expr.─→_)
-    (sym (swapPhi-subst₀ x k e₁ e₂))
-    (Expr.E-Let (swapPhi-Value x k V))
 swapPhi-─→ x k {Term.`let⊗ (e₁ Term.⊗ e₂) `in e}
   {.(Expr.subst₀ e₂ (Expr.subst₀ (Term.wk e₁) e))}
   (Expr.E-PairElim V₁ V₂) =
@@ -613,9 +591,6 @@ swapPhi-frame-rename-plug inj x h (V Expr.⊗□) t =
   cong₂ Term._⊗_ (swapPhi-ren inj x h (Expr.vTm V)) refl
 swapPhi-frame-rename-plug inj x h (Expr.□; e) t =
   cong₂ Term._;_ refl (swapPhi-ren inj x h e)
-swapPhi-frame-rename-plug {ρ = ρ} inj x h (Expr.`let-`in e) t =
-  cong (Term.`let swapPhi (ρ x) h t `in_)
-    (swapPhi-ren {ρ = Term.liftRen ρ} (liftRen-injective inj) (suc x) h e)
 swapPhi-frame-rename-plug {ρ = ρ} inj x h (Expr.`let⊗-`in e) t =
   cong (Term.`let⊗ swapPhi (ρ x) h t `in_)
     (swapPhi-ren {ρ = Term.liftRen (Term.liftRen ρ)}
@@ -1172,23 +1147,6 @@ consumePhi-swapPhi x h k (t₁ Term.⊗ t₂) with residualSwap h k in resEq
     ■ cong (λ res → applyResidualPhi x res (RUS.consumePhi x k t₁)) resEq)
     (consumePhi-swapPhi x h k t₂
     ■ cong (λ res → applyResidualPhi x res (RUS.consumePhi x k t₂)) resEq)
-consumePhi-swapPhi x h k (Term.`let t₁ `in t₂) with residualSwap h k in resEq
-... | none =
-  cong₂ Term.`let_`in_
-    (consumePhi-swapPhi x h k t₁
-    ■ cong (λ res → applyResidualPhi x res (RUS.consumePhi x k t₁)) resEq)
-    (consumePhi-swapPhi (suc x) h k t₂
-    ■ cong
-        (λ res → applyResidualPhi (suc x) res (RUS.consumePhi (suc x) k t₂))
-        resEq)
-... | some q =
-  cong₂ Term.`let_`in_
-    (consumePhi-swapPhi x h k t₁
-    ■ cong (λ res → applyResidualPhi x res (RUS.consumePhi x k t₁)) resEq)
-    (consumePhi-swapPhi (suc x) h k t₂
-    ■ cong
-        (λ res → applyResidualPhi (suc x) res (RUS.consumePhi (suc x) k t₂))
-        resEq)
 consumePhi-swapPhi x h k (Term.`let⊗ t₁ `in t₂) with residualSwap h k in resEq
 ... | none =
   cong₂ Term.`let⊗_`in_
@@ -1292,10 +1250,6 @@ swapPhi-consumePhi-miss apart h k (t₁ Term.⊗ t₂) =
   cong₂ Term._⊗_
     (swapPhi-consumePhi-miss apart h k t₁)
     (swapPhi-consumePhi-miss apart h k t₂)
-swapPhi-consumePhi-miss {x = x} {y = y} apart h k (Term.`let t₁ `in t₂) =
-  cong₂ Term.`let_`in_
-    (swapPhi-consumePhi-miss apart h k t₁)
-    (swapPhi-consumePhi-miss (apart ∘ Fin.suc-injective) h k t₂)
 swapPhi-consumePhi-miss {x = x} {y = y} apart h k (Term.`let⊗ t₁ `in t₂) =
   cong₂ Term.`let⊗_`in_
     (swapPhi-consumePhi-miss apart h k t₁)
@@ -1490,10 +1444,6 @@ swapPhi-insertPhi-miss apart h k (t₁ Term.⊗ t₂) =
   cong₂ Term._⊗_
     (swapPhi-insertPhi-miss apart h k t₁)
     (swapPhi-insertPhi-miss apart h k t₂)
-swapPhi-insertPhi-miss {x = x} {y = y} apart h k (Term.`let t₁ `in t₂) =
-  cong₂ Term.`let_`in_
-    (swapPhi-insertPhi-miss apart h k t₁)
-    (swapPhi-insertPhi-miss (apart ∘ Fin.suc-injective) h k t₂)
 swapPhi-insertPhi-miss {x = x} {y = y} apart h k (Term.`let⊗ t₁ `in t₂) =
   cong₂ Term.`let⊗_`in_
     (swapPhi-insertPhi-miss apart h k t₁)
@@ -1528,10 +1478,6 @@ swapPhi-insertPhi-miss-frame apart h k (V Expr.⊗□) t =
     (swapPhi-insertPhi-miss apart h k (Expr.vTm V)) refl
 swapPhi-insertPhi-miss-frame apart h k (Expr.□; e) t =
   cong₂ Term._;_ refl (swapPhi-insertPhi-miss apart h k e)
-swapPhi-insertPhi-miss-frame {x = x} {y = y} apart h k
-  (Expr.`let-`in e) t =
-  cong₂ Term.`let_`in_ refl
-    (swapPhi-insertPhi-miss (apart ∘ Fin.suc-injective) h k e)
 swapPhi-insertPhi-miss-frame {x = x} {y = y} apart h k
   (Expr.`let⊗-`in e) t =
   cong₂ Term.`let⊗_`in_ refl
@@ -1618,10 +1564,6 @@ swapPhi-insertPhi-past x h k (t₁ Term.⊗ t₂) lt =
   cong₂ Term._⊗_
     (swapPhi-insertPhi-past x h k t₁ lt)
     (swapPhi-insertPhi-past x h k t₂ lt)
-swapPhi-insertPhi-past x h k (Term.`let t₁ `in t₂) lt =
-  cong₂ Term.`let_`in_
-    (swapPhi-insertPhi-past x h k t₁ lt)
-    (swapPhi-insertPhi-past (suc x) h k t₂ lt)
 swapPhi-insertPhi-past x h k (Term.`let⊗ t₁ `in t₂) lt =
   cong₂ Term.`let⊗_`in_
     (swapPhi-insertPhi-past x h k t₁ lt)
@@ -1651,8 +1593,6 @@ swapPhi-insertPhi-past-frame x h k (V Expr.⊗□) t lt =
   cong₂ Term._⊗_ (swapPhi-insertPhi-past x h k (Expr.vTm V) lt) refl
 swapPhi-insertPhi-past-frame x h k (Expr.□; e) t lt =
   cong₂ Term._;_ refl (swapPhi-insertPhi-past x h k e lt)
-swapPhi-insertPhi-past-frame x h k (Expr.`let-`in e) t lt =
-  cong₂ Term.`let_`in_ refl (swapPhi-insertPhi-past (suc x) h k e lt)
 swapPhi-insertPhi-past-frame x h k (Expr.`let⊗-`in e) t lt =
   cong₂ Term.`let⊗_`in_ refl
     (swapPhi-insertPhi-past (suc (suc x)) h k e lt)

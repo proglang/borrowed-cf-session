@@ -28,7 +28,6 @@ data Tm (n : ℕ) : Set where
   _·⟨_⟩_ : (e₁ : Tm n) (d : Dir) (e₂ : Tm n) → Tm n
   _;_ : (e₁ e₂ : Tm n) → Tm n
   _⊗_ : (e₁ : Tm n) (e₂ : Tm n) → Tm n
-  `let_`in_ : (e₁ : Tm n) (e₂ : Tm (1 + n)) → Tm n
   `let⊗_`in_ : (e₁ : Tm n) (e₂ : Tm (2 + n)) → Tm n
   `inj : (i : Side) (e : Tm n) → Tm n
   `case_`of⟨_;_⟩ : (e : Tm n) (e₁ e₂ : Tm (1 + n)) → Tm n
@@ -64,7 +63,6 @@ K c ⋯ ϕ = K c
 (e ·⟨ d ⟩ e₁) ⋯ ϕ = (e ⋯ ϕ) ·⟨ d ⟩ (e₁ ⋯ ϕ)
 (e ; e₁) ⋯ ϕ =  (e ⋯ ϕ) ; (e₁ ⋯ ϕ)
 (e ⊗ e₁) ⋯ ϕ =  (e ⋯ ϕ) ⊗ (e₁ ⋯ ϕ)
-(`let e `in e₁) ⋯ ϕ = `let (e ⋯ ϕ) `in (e₁ ⋯ ϕ ↑)
 (`let⊗ e `in e₁) ⋯ ϕ = `let⊗ (e ⋯ ϕ) `in (e₁ ⋯ ϕ ↑ ↑)
 `inj i e ⋯ ϕ = `inj i (e ⋯ ϕ)
 `case e `of⟨ e₁ ; e₂ ⟩ ⋯ ϕ = `case (e ⋯ ϕ) `of⟨ (e₁ ⋯ ϕ ↑) ; (e₂ ⋯ ϕ ↑) ⟩
@@ -78,7 +76,6 @@ K c ⋯ ϕ = K c
 ⋯-id (e ·⟨ d ⟩ e₁) eq = cong₂ _·⟨ d ⟩_ (⋯-id e eq) (⋯-id e₁ eq)
 ⋯-id (e ; e₁) eq = cong₂ _;_ (⋯-id e eq) (⋯-id e₁ eq)
 ⋯-id (e ⊗ e₁) eq = cong₂ _⊗_ (⋯-id e eq) (⋯-id e₁ eq)
-⋯-id (`let e `in e₁) eq = cong₂ `let_`in_ (⋯-id e eq) (⋯-id e₁ (id↑ eq))
 ⋯-id (`let⊗ e `in e₁) eq = cong₂ `let⊗_`in_ (⋯-id e eq) (⋯-id e₁ (id↑* 2 eq))
 ⋯-id (`inj i e) eq = cong (`inj i) (⋯-id e eq)
 ⋯-id (`case e `of⟨ e₁ ; e₂ ⟩) eq
@@ -94,7 +91,6 @@ K c ⋯ ϕ = K c
 ⋯-cong (e ·⟨ d ⟩ e₁) eq = cong₂ _·⟨ d ⟩_ (⋯-cong e eq) (⋯-cong e₁ eq)
 ⋯-cong (e ; e₁) eq = cong₂ _;_ (⋯-cong e eq) (⋯-cong e₁ eq)
 ⋯-cong (e ⊗ e₁) eq = cong₂ _⊗_ (⋯-cong e eq) (⋯-cong e₁ eq)
-⋯-cong (`let e `in e₁) eq = cong₂ `let_`in_ (⋯-cong e eq) (⋯-cong e₁ (eq ~↑))
 ⋯-cong (`let⊗ e `in e₁) eq = cong₂ `let⊗_`in_ (⋯-cong e eq) (⋯-cong e₁ (eq ~↑* 2))
 ⋯-cong (`inj i e) eq = cong (`inj i) (⋯-cong e eq)
 ⋯-cong (`case e `of⟨ e₁ ; e₂ ⟩) eq
@@ -123,8 +119,6 @@ fusion (μ e) ϕ₁ ϕ₂ = cong μ $
   fusion e (ϕ₁ ↑) (ϕ₂ ↑) ■ ⋯-cong e (sym ∘ dist-↑-· ϕ₁ ϕ₂)
 fusion (e₁ ·⟨ d ⟩ e₂) ϕ₁ ϕ₂ = cong₂ _·⟨ d ⟩_ (fusion e₁ ϕ₁ ϕ₂) (fusion e₂ ϕ₁ ϕ₂)
 fusion (e₁ ⊗ e₂) ϕ₁ ϕ₂ = cong₂ _⊗_ (fusion e₁ ϕ₁ ϕ₂) (fusion e₂ ϕ₁ ϕ₂)
-fusion (`let e₁ `in e₂) ϕ₁ ϕ₂ = cong₂ `let_`in_ (fusion e₁ ϕ₁ ϕ₂) $
-  fusion e₂ (ϕ₁ ↑) (ϕ₂ ↑) ■ ⋯-cong e₂ (sym ∘ dist-↑-· ϕ₁ ϕ₂)
 fusion (`let⊗ e₁ `in e₂) ϕ₁ ϕ₂ = cong₂ `let⊗_`in_ (fusion e₁ ϕ₁ ϕ₂) $
   fusion e₂ (ϕ₁ ↑* 2) (ϕ₂ ↑* 2) ■ ⋯-cong e₂ (sym ∘ dist-↑*-· 2 ϕ₁ ϕ₂)
 fusion (`inj i e) ϕ₁ ϕ₂ = cong (`inj i) (fusion e ϕ₁ ϕ₂)
@@ -147,7 +141,6 @@ strip (μ e) = μ (strip e)
 strip (e₁ ·⟨ d ⟩ e₂) = strip e₁ ·⟨ d ⟩ strip e₂
 strip (e₁ ; e₂) = strip e₁ ; strip e₂
 strip (e₁ ⊗ e₂) = strip e₁ ⊗ strip e₂
-strip (`let e₁ `in e₂) = `let strip e₁ `in strip e₂
 strip (`let⊗ e₁ `in e₂) = `let⊗ strip e₁ `in strip e₂
 strip (`inj i e) = `inj i (strip e)
 strip (`case e `of⟨ e₁ ; e₂ ⟩) = `case strip e `of⟨ strip e₁ ; strip e₂ ⟩
@@ -271,11 +264,6 @@ data _;_⊢_∶_∣_ (Γ : Ctx n) : Struct n → Tm n → 𝕋 → Eff → Set 
     --------------------------------------------
     Γ ; join d γ₁ γ₂ ⊢ e₁ ⊗ e₂ ∶ T ⊗⟨ d ⟩ U ∣ ϵ₁
 
-  T-Let : (p/s : ParSeq) {γ₁ γ₂ : Struct n} →
-    Γ ; γ₁ ⊢ e₁ ∶ T ∣ ϵ →
-    T ⸴ Γ ; join p/s (` zero) (𝐂.wk γ₂) ⊢ e₂ ∶ U ∣ ϵ →
-    --------------------------------------------------
-    Γ ; join p/s γ₁ γ₂ ⊢ `let e₁ `in e₂ ∶ U ∣ ϵ
 
   T-Seq : {γ₁ γ₂ : Struct n} →
     Unr T →
@@ -425,13 +413,6 @@ T-AppRight a-R   ≤ₐ x₁ x₂ ⊢⋯ ⊢ϕ = T-AppRight a-R   ≤ₐ (x₁ �
 T-Pair p/s {γ₁} {γ₂}  seq→ℙ x₁ x₂ ⊢⋯ ⊢ϕ =
   subst-γ (sym (join-⋯ p/s γ₁ γ₂)) $
     T-Pair p/s seq→ℙ (x₁ ⊢⋯ ⊢ϕ) (x₂ ⊢⋯ ⊢ϕ)
-_⊢⋯_ {σ = σ} (T-Let p/s {γ₁} {γ₂} x₁ x₂) ⊢ϕ =
-  let open Fin.Patterns in
-  let eq = join-⋯ p/s (` 0F) (𝐂.wk γ₂) ■ cong (join p/s (` 0F)) (sym (𝐂.⋯-↑-wk γ₂ σ)) in
-  subst-γ (sym (join-⋯ p/s γ₁ γ₂))
-    $ T-Let p/s (x₁ ⊢⋯ ⊢ϕ)
-    $ subst-γ eq
-    $ x₂ ⊢⋯ ⊢↑ ⊢ϕ
 T-Seq unr-T x y ⊢⋯ ⊢ϕ = T-Seq unr-T (x ⊢⋯ ⊢ϕ) (y ⊢⋯ ⊢ϕ)
 _⊢⋯_ {σ = σ} (T-LetPair {d = d} p/s {γ₁} {γ₂} x x₁) ⊢ϕ  =
   let open Fin.Patterns in
@@ -646,18 +627,6 @@ inv-; (T-Weaken γ≤ x) =
   let _ , _ , _ , uT , ≤γ , x₁ , x₂ = inv-; x in
   _ , _ , _ , uT , ≼-trans ≤γ γ≤ , x₁ , x₂
 
-inv-`let : {Γ : Ctx n} → Γ ; γ ⊢ `let e₁ `in e₂ ∶ U ∣ ϵ →
-  Σ[ p/s ∈ ParSeq ] ∃[ α ] ∃[ β ] ∃[ T ]
-    Γ ∶ join p/s α β ≼ γ
-      × Γ ; α ⊢ e₁ ∶ T ∣ ϵ
-      × T ⸴ Γ ; join p/s (` zero) (𝐂.wk β) ⊢ e₂ ∶ U ∣ ϵ
-inv-`let (T-Let p/s x x₁) = p/s , _ , _ , _ , ≼-refl refl , x , x₁
-inv-`let (T-Conv T≃ ϵ≤ x) =
-  let p/s , _ , _ , _ , ≤γ , x₁ , x₂ = inv-`let x in
-  p/s , _ , _ , _ , ≤γ , T-Conv ≃-refl ϵ≤ x₁ , T-Conv T≃ ϵ≤ x₂
-inv-`let (T-Weaken γ≤ x) =
-  let p/s , _ , _ , _ , ≤γ , x₁ , x₂ = inv-`let x in
-    p/s , _ , _ , _ , ≼-trans ≤γ γ≤ , x₁ , x₂
 
 inv-`let⊗ : {Γ : Ctx n} → Γ ; γ ⊢ `let⊗ e₁ `in e₂ ∶ U ∣ ϵ →
   let open Fin.Patterns in

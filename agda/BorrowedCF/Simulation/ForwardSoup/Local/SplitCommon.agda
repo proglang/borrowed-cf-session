@@ -1037,12 +1037,6 @@ Tᶠ-plug-ren-ren-coh (V SourceReduction.⊗□)
 Tᶠ-plug-ren-ren-coh (SourceReduction.□; e)
   θ κ sigma₁ sigma₂ Vsigma₁ Vsigma₂ coh t =
   cong (λ z → t SoupTerm.; z) (T-ren-ren-coh e θ κ sigma₁ sigma₂ coh)
-Tᶠ-plug-ren-ren-coh (SourceReduction.`let-`in e)
-  θ κ sigma₁ sigma₂ Vsigma₁ Vsigma₂ coh t =
-  cong (λ z → SoupTerm.`let t `in z)
-    (T-ren-ren-coh e (θ Source.↑ᵣ) (κ Source.↑ᵣ)
-      (Translation.liftEnv sigma₁) (Translation.liftEnv sigma₂)
-      (lift-ren-ren-coh θ κ sigma₁ sigma₂ coh))
 Tᶠ-plug-ren-ren-coh (SourceReduction.`let⊗-`in e)
   θ κ sigma₁ sigma₂ Vsigma₁ Vsigma₂ coh t =
   cong (λ z → SoupTerm.`let⊗ t `in z)

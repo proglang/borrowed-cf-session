@@ -14,7 +14,6 @@ frame-plug₁ (app₂ e d V?)  ϕ Vϕ = refl
 frame-plug₁ (□⊗ e₂)       ϕ Vϕ = refl
 frame-plug₁ (V₁ ⊗□)       ϕ Vϕ = refl
 frame-plug₁ (□; e₂)       ϕ Vϕ = refl
-frame-plug₁ (`let-`in e′)  ϕ Vϕ = refl
 frame-plug₁ (`let⊗-`in e′) ϕ Vϕ = refl
 frame-plug₁ (`inj□ i)      ϕ Vϕ = refl
 frame-plug₁ (`case□`of⟨ e₁ ; e₂ ⟩) ϕ Vϕ = refl
@@ -25,8 +24,6 @@ frame-plug₁ (`case□`of⟨ e₁ ; e₂ ⟩) ϕ Vϕ = refl
 ─→-⋯ₛ σ Vσ (E-App {b} {a} V) =
   subst₂ _─→_ refl (sym (dist-↑-⦅⦆-⋯ a b σ)) (E-App (value-⋯ V σ Vσ))
 ─→-⋯ₛ σ Vσ (E-Seq V) = E-Seq (value-⋯ V σ Vσ)
-─→-⋯ₛ σ Vσ (E-Let {e₁} {e₂} V) =
-  subst₂ _─→_ refl (sym (dist-↑-⦅⦆-⋯ e₂ e₁ σ)) (E-Let (value-⋯ V σ Vσ))
 ─→-⋯ₛ σ Vσ (E-PairElim {e₁} {e₂} {e} V₁ V₂) =
   subst₂ _─→_ refl eq (E-PairElim (value-⋯ V₁ σ Vσ) (value-⋯ V₂ σ Vσ))
   where

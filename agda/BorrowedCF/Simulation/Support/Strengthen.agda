@@ -136,11 +136,6 @@ strengthen-Tm-gen (T-Pair p/s {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂)
       e₁₀ , eq₁ = strengthen-Tm-gen ⊢e₁ ρ h inv x₁
       e₂₀ , eq₂ = strengthen-Tm-gen ⊢e₂ ρ h inv x₂
   in e₁₀ ⊗ e₂₀ , cong₂ _⊗_ eq₁ eq₂
-strengthen-Tm-gen (T-Let p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e₁ ⊢e₂) ρ h inv h∉ =
-  let x₁ , x₂ = ∉-join-PS⁻ p/s γ₁ γ₂ h∉
-      e₁₀ , eq₁ = strengthen-Tm-gen ⊢e₁ ρ h inv x₁
-      e₂₀ , eq₂ = strengthen-Tm-gen ⊢e₂ (ρ ↑) (suc h) (inv↑ inv) (∉-abs-ctx-PS p/s γ₂ x₂)
-  in `let e₁₀ `in e₂₀ , cong₂ `let_`in_ eq₁ eq₂
 strengthen-Tm-gen (T-Seq {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂) ρ h inv h∉ =
   let x₁ , x₂ = ∉∪⁻ h∉
       e₁₀ , eq₁ = strengthen-Tm-gen ⊢e₁ ρ h inv x₁
@@ -201,11 +196,6 @@ strengthen-Tm (T-Pair p/s {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂) x x
       e₁₀ , eq₁ = strengthen-Tm ⊢e₁ x x₁
       e₂₀ , eq₂ = strengthen-Tm ⊢e₂ x x₂
   in e₁₀ ⊗ e₂₀ , cong₂ _⊗_ eq₁ eq₂
-strengthen-Tm (T-Let p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e₁ ⊢e₂) x x∉ =
-  let x₁ , x₂ = ∉-join-PS⁻ p/s γ₁ γ₂ x∉
-      e₁₀ , eq₁ = strengthen-Tm ⊢e₁ x x₁
-      e₂₀ , eq₂ = strengthen-Tm ⊢e₂ (suc x) (∉-abs-ctx-PS p/s γ₂ x₂)
-  in `let e₁₀ `in e₂₀ , cong₂ `let_`in_ eq₁ (eq₂ ■ ⋯-cong e₂₀ (pin x))
 strengthen-Tm (T-Seq {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂) x x∉ =
   let x₁ , x₂ = ∉∪⁻ x∉
       e₁₀ , eq₁ = strengthen-Tm ⊢e₁ x x₁
@@ -338,11 +328,6 @@ strengthen-Tm-gen* (T-Pair p/s {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂
   let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz → let a , _ = ∉-join-biased⁻ p/s γ₁ γ₂ (H∉ z hz) in a)
       e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz → let _ , b = ∉-join-biased⁻ p/s γ₁ γ₂ (H∉ z hz) in b)
   in e₁₀ ⊗ e₂₀ , cong₂ _⊗_ eq₁ eq₂
-strengthen-Tm-gen* (T-Let p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e₁ ⊢e₂) ρ H inv H∉ =
-  let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz → let a , _ = ∉-join-PS⁻ p/s γ₁ γ₂ (H∉ z hz) in a)
-      e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ (ρ ↑) (H↑ H) (invH↑ inv)
-                    (λ { (suc z) hz → ∉-abs-ctx-PS p/s γ₂ (let _ , b = ∉-join-PS⁻ p/s γ₁ γ₂ (H∉ z hz) in b) })
-  in `let e₁₀ `in e₂₀ , cong₂ `let_`in_ eq₁ eq₂
 strengthen-Tm-gen* (T-Seq {γ₁ = γ₁} {γ₂ = γ₂} _ ⊢e₁ ⊢e₂) ρ H inv H∉ =
   let e₁₀ , eq₁ = strengthen-Tm-gen* ⊢e₁ ρ H inv (λ z hz → let a , _ = ∉∪⁻ (H∉ z hz) in a)
       e₂₀ , eq₂ = strengthen-Tm-gen* ⊢e₂ ρ H inv (λ z hz → let _ , b = ∉∪⁻ (H∉ z hz) in b)

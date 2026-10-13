@@ -161,9 +161,6 @@ ren-id (t₁ SoupTerm.; t₂) eq =
   cong₂ SoupTerm._;_ (ren-id t₁ eq) (ren-id t₂ eq)
 ren-id (t₁ SoupTerm.⊗ t₂) eq =
   cong₂ SoupTerm._⊗_ (ren-id t₁ eq) (ren-id t₂ eq)
-ren-id (SoupTerm.`let t₁ `in t₂) eq =
-  cong₂ SoupTerm.`let_`in_ (ren-id t₁ eq)
-    (ren-id t₂ λ where zero → refl; (suc x) → cong suc (eq x))
 ren-id (SoupTerm.`let⊗ t₁ `in t₂) eq =
   cong₂ SoupTerm.`let⊗_`in_ (ren-id t₁ eq)
     (ren-id t₂ λ where
@@ -392,7 +389,6 @@ frame-not-K (SoupExpression.app₂ _ _ _) ()
 frame-not-K (SoupExpression.□⊗ _) ()
 frame-not-K (_ SoupExpression.⊗□) ()
 frame-not-K (SoupExpression.□; _) ()
-frame-not-K (SoupExpression.`let-`in _) ()
 frame-not-K (SoupExpression.`let⊗-`in _) ()
 frame-not-K (SoupExpression.`inj□ _) ()
 frame-not-K SoupExpression.`case□`of⟨ _ ; _ ⟩ ()

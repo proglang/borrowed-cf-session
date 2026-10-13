@@ -150,11 +150,6 @@ Tm-re Rt x∉ y∉ (T-Pair p/s {γ₁ = γ₁} {γ₂ = γ₂} seq⇒p ⊢e₁ �
   let x₁ , x₂ = ∉-join-biased⁻ p/s γ₁ γ₂ x∉
       y₁ , y₂ = ∉-join-biased⁻ p/s γ₁ γ₂ y∉
   in T-Pair p/s seq⇒p (Tm-re Rt x₁ y₁ ⊢e₁) (Tm-re Rt x₂ y₂ ⊢e₂)
-Tm-re Rt x∉ y∉ (T-Let p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e₁ ⊢e₂) =
-  let x₁ , x₂ = ∉-join-PS⁻ p/s γ₁ γ₂ x∉
-      y₁ , y₂ = ∉-join-PS⁻ p/s γ₁ γ₂ y∉
-  in T-Let p/s (Tm-re Rt x₁ y₁ ⊢e₁)
-       (Tm-re (↑Rt Rt) (∉-abs-ctx-PS p/s γ₂ x₂) (∉-abs-ctx-PS p/s γ₂ y₂) ⊢e₂)
 Tm-re Rt x∉ y∉ (T-Seq uT ⊢e₁ ⊢e₂) =
   let x₁ , x₂ = ∉∪⁻ x∉
       y₁ , y₂ = ∉∪⁻ y∉
@@ -202,10 +197,6 @@ F-re Rt x∉ y∉ (TF-⊗□ {γ = γ} p/s seq⇒p ⊢e) =
               (∉-join-Dir⁻ (biasedDir p/s) γ [] y∉ .proj₁) ⊢e)
 F-re Rt x∉ y∉ (TF-; {γ = γ} uT ⊢e) =
   TF-; uT (Tm-re Rt (∉-join-Dir⁻ R γ [] x∉ .proj₁) (∉-join-Dir⁻ R γ [] y∉ .proj₁) ⊢e)
-F-re Rt x∉ y∉ (TF-`let γ p/s ⊢e) =
-  TF-`let γ p/s
-    (Tm-re (↑Rt Rt) (∉-abs-ctx-PS p/s γ (∉-join-Dir⁻ (flipDir (biasedDir p/s)) γ [] x∉ .proj₁))
-                    (∉-abs-ctx-PS p/s γ (∉-join-Dir⁻ (flipDir (biasedDir p/s)) γ [] y∉ .proj₁)) ⊢e)
 F-re Rt x∉ y∉ (TF-`let⊗ {d = d} γ p/s ⊢e) =
   TF-`let⊗ γ p/s
     (Tm-re (↑Rt (↑Rt Rt))

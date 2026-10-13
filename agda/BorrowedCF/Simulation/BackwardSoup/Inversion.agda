@@ -56,7 +56,7 @@ open import BorrowedCF.Simulation.ForwardSoup.Expressions
 
 open Source
   using ( `_; K; ƛ; μ; _·⟨_⟩_; _;_; _⊗_
-        ; `let_`in_; `let⊗_`in_; `inj; `case_`of⟨_;_⟩
+        ; `let⊗_`in_; `inj; `case_`of⟨_;_⟩
         )
 
 open Nat.Variables
@@ -77,7 +77,6 @@ frame-value-inv (SoupRed.app₂ _ _ _) ()
 frame-value-inv (SoupRed.□⊗ _) (SoupRed.V-⊗ V₁ V₂) = V₁
 frame-value-inv (_ SoupRed.⊗□) (SoupRed.V-⊗ V₁ V₂) = V₂
 frame-value-inv (SoupRed.□; _) ()
-frame-value-inv (SoupRed.`let-`in _) ()
 frame-value-inv (SoupRed.`let⊗-`in _) ()
 frame-value-inv (SoupRed.`inj□ _) (SoupRed.V-⊕ V) = V
 frame-value-inv SoupRed.`case□`of⟨ _ ; _ ⟩ ()
@@ -105,7 +104,6 @@ step-not-value :
   t SoupRed.⋯→ t′ → ¬ SoupRed.Value t
 step-not-value (SoupRed.E-□ (SoupRed.E-App _)) ()
 step-not-value (SoupRed.E-□ (SoupRed.E-Seq _)) ()
-step-not-value (SoupRed.E-□ (SoupRed.E-Let _)) ()
 step-not-value (SoupRed.E-□ (SoupRed.E-PairElim _ _)) ()
 step-not-value (SoupRed.E-□ (SoupRed.E-SumElim _)) ()
 step-not-value (SoupRed.E-□ SoupRed.E-Unfold) ()
@@ -116,7 +114,6 @@ step-not-value (SoupRed.E-Ctx (SoupRed.□⊗ _) red) (SoupRed.V-⊗ V₁ V₂) 
 step-not-value (SoupRed.E-Ctx (_ SoupRed.⊗□) red) (SoupRed.V-⊗ V₁ V₂) =
   step-not-value red V₂
 step-not-value (SoupRed.E-Ctx (SoupRed.□; _) red) ()
-step-not-value (SoupRed.E-Ctx (SoupRed.`let-`in _) red) ()
 step-not-value (SoupRed.E-Ctx (SoupRed.`let⊗-`in _) red) ()
 step-not-value (SoupRed.E-Ctx (SoupRed.`inj□ _) red) (SoupRed.V-⊕ V) =
   step-not-value red V
@@ -154,7 +151,6 @@ T-value-inv (w₁ ·⟨ d ⟩ w₂) σ Vσ ()
 T-value-inv (w₁ ; w₂) σ Vσ ()
 T-value-inv (w₁ ⊗ w₂) σ Vσ (SoupRed.V-⊗ V₁ V₂) =
   SourceBase.V-⊗ (T-value-inv w₁ σ Vσ V₁) (T-value-inv w₂ σ Vσ V₂)
-T-value-inv (`let w₁ `in w₂) σ Vσ ()
 T-value-inv (`let⊗ w₁ `in w₂) σ Vσ ()
 T-value-inv (`inj j w) σ Vσ (SoupRed.V-⊕ V) =
   SourceBase.V-⊕ (T-value-inv w σ Vσ V)
@@ -174,7 +170,6 @@ T-app-inv (μ e) σ Vσ ()
 T-app-inv (e₁ ·⟨ d ⟩ e₂) σ Vσ refl = e₁ , e₂ , refl , refl , refl
 T-app-inv (e₁ ; e₂) σ Vσ ()
 T-app-inv (e₁ ⊗ e₂) σ Vσ ()
-T-app-inv (`let e₁ `in e₂) σ Vσ ()
 T-app-inv (`let⊗ e₁ `in e₂) σ Vσ ()
 T-app-inv (`inj j e) σ Vσ ()
 T-app-inv (`case e `of⟨ e₁ ; e₂ ⟩) σ Vσ ()
@@ -195,32 +190,10 @@ T-seq-inv (μ e) σ Vσ ()
 T-seq-inv (e₁ ·⟨ d ⟩ e₂) σ Vσ ()
 T-seq-inv (e₁ ; e₂) σ Vσ refl = e₁ , e₂ , refl , refl , refl
 T-seq-inv (e₁ ⊗ e₂) σ Vσ ()
-T-seq-inv (`let e₁ `in e₂) σ Vσ ()
 T-seq-inv (`let⊗ e₁ `in e₂) σ Vσ ()
 T-seq-inv (`inj j e) σ Vσ ()
 T-seq-inv (`case e `of⟨ e₁ ; e₂ ⟩) σ Vσ ()
 
-T-let-inv :
-  {n n′ : ℕ} (e : Source.Tm n) (σ : Translation.Env n n′) → ValueEnv σ →
-  {u₁ : SoupTerm.Tm n′} {u₂ : SoupTerm.Tm (1 + n′)} →
-  Translation.T[ e ] σ ≡ SoupTerm.`let u₁ `in u₂ →
-  Σ[ e₁ ∈ Source.Tm n ] Σ[ e₂ ∈ Source.Tm (1 + n) ]
-    (e ≡ `let e₁ `in e₂) ×
-    (Translation.T[ e₁ ] σ ≡ u₁) ×
-    (Translation.T[ e₂ ] (Translation.liftEnv σ) ≡ u₂)
-T-let-inv (` x) σ Vσ equal
-  with subst SoupRed.Value equal (Vσ x)
-... | ()
-T-let-inv (K c) σ Vσ ()
-T-let-inv (ƛ e) σ Vσ ()
-T-let-inv (μ e) σ Vσ ()
-T-let-inv (e₁ ·⟨ d ⟩ e₂) σ Vσ ()
-T-let-inv (e₁ ; e₂) σ Vσ ()
-T-let-inv (e₁ ⊗ e₂) σ Vσ ()
-T-let-inv (`let e₁ `in e₂) σ Vσ refl = e₁ , e₂ , refl , refl , refl
-T-let-inv (`let⊗ e₁ `in e₂) σ Vσ ()
-T-let-inv (`inj j e) σ Vσ ()
-T-let-inv (`case e `of⟨ e₁ ; e₂ ⟩) σ Vσ ()
 
 T-letpair-inv :
   {n n′ : ℕ} (e : Source.Tm n) (σ : Translation.Env n n′) → ValueEnv σ →
@@ -240,7 +213,6 @@ T-letpair-inv (μ e) σ Vσ ()
 T-letpair-inv (e₁ ·⟨ d ⟩ e₂) σ Vσ ()
 T-letpair-inv (e₁ ; e₂) σ Vσ ()
 T-letpair-inv (e₁ ⊗ e₂) σ Vσ ()
-T-letpair-inv (`let e₁ `in e₂) σ Vσ ()
 T-letpair-inv (`let⊗ e₁ `in e₂) σ Vσ refl = e₁ , e₂ , refl , refl , refl
 T-letpair-inv (`inj j e) σ Vσ ()
 T-letpair-inv (`case e `of⟨ e₁ ; e₂ ⟩) σ Vσ ()
@@ -264,7 +236,6 @@ T-case-inv (μ e) σ Vσ ()
 T-case-inv (e₁ ·⟨ d ⟩ e₂) σ Vσ ()
 T-case-inv (e₁ ; e₂) σ Vσ ()
 T-case-inv (e₁ ⊗ e₂) σ Vσ ()
-T-case-inv (`let e₁ `in e₂) σ Vσ ()
 T-case-inv (`let⊗ e₁ `in e₂) σ Vσ ()
 T-case-inv (`inj j e) σ Vσ ()
 T-case-inv (`case e₀ `of⟨ e₁ ; e₂ ⟩) σ Vσ refl =
@@ -285,7 +256,6 @@ T-mu-inv (μ b) σ Vσ refl = b , refl , refl
 T-mu-inv (e₁ ·⟨ d ⟩ e₂) σ Vσ ()
 T-mu-inv (e₁ ; e₂) σ Vσ ()
 T-mu-inv (e₁ ⊗ e₂) σ Vσ ()
-T-mu-inv (`let e₁ `in e₂) σ Vσ ()
 T-mu-inv (`let⊗ e₁ `in e₂) σ Vσ ()
 T-mu-inv (`inj j e) σ Vσ ()
 T-mu-inv (`case e `of⟨ e₁ ; e₂ ⟩) σ Vσ ()
@@ -318,7 +288,6 @@ T-const-inv (μ e) σ ()
 T-const-inv (e₁ ·⟨ d ⟩ e₂) σ ()
 T-const-inv (e₁ ; e₂) σ ()
 T-const-inv (e₁ ⊗ e₂) σ ()
-T-const-inv (`let e₁ `in e₂) σ ()
 T-const-inv (`let⊗ e₁ `in e₂) σ ()
 T-const-inv (`inj j e) σ ()
 T-const-inv (`case e `of⟨ e₁ ; e₂ ⟩) σ ()
@@ -337,7 +306,6 @@ T-lam-inv (μ e) σ ()
 T-lam-inv (e₁ ·⟨ d ⟩ e₂) σ ()
 T-lam-inv (e₁ ; e₂) σ ()
 T-lam-inv (e₁ ⊗ e₂) σ ()
-T-lam-inv (`let e₁ `in e₂) σ ()
 T-lam-inv (`let⊗ e₁ `in e₂) σ ()
 T-lam-inv (`inj j e) σ ()
 T-lam-inv (`case e `of⟨ e₁ ; e₂ ⟩) σ ()
@@ -356,7 +324,6 @@ T-inj-inv (μ e) σ ()
 T-inj-inv (e₁ ·⟨ d ⟩ e₂) σ ()
 T-inj-inv (e₁ ; e₂) σ ()
 T-inj-inv (e₁ ⊗ e₂) σ ()
-T-inj-inv (`let e₁ `in e₂) σ ()
 T-inj-inv (`let⊗ e₁ `in e₂) σ ()
 T-inj-inv (`inj j e₀) σ refl = inj₁ (e₀ , refl , refl)
 T-inj-inv (`case e `of⟨ e₁ ; e₂ ⟩) σ ()
@@ -376,7 +343,6 @@ T-pair-inv (μ e) σ ()
 T-pair-inv (e₁ ·⟨ d ⟩ e₂) σ ()
 T-pair-inv (e₁ ; e₂) σ ()
 T-pair-inv (e₁ ⊗ e₂) σ refl = inj₁ (e₁ , e₂ , refl , refl , refl)
-T-pair-inv (`let e₁ `in e₂) σ ()
 T-pair-inv (`let⊗ e₁ `in e₂) σ ()
 T-pair-inv (`inj j e) σ ()
 T-pair-inv (`case e `of⟨ e₁ ; e₂ ⟩) σ ()
@@ -517,12 +483,6 @@ frame-inversion e σ Vσ (SoupRed.□; t) u equal notV
 ... | e₁ , e₂ , eEq , eq₁ , eq₂ =
   ( SourceBase.□; e₂ , e₁ , eEq
   , (λ t₀ → cong (λ z → t₀ SoupTerm.; z) eq₂)
-  , eq₁ )
-frame-inversion e σ Vσ (SoupRed.`let-`in t) u equal notV
-  with T-let-inv e σ Vσ equal
-... | e₁ , e₂ , eEq , eq₁ , eq₂ =
-  ( SourceBase.`let-`in e₂ , e₁ , eEq
-  , (λ t₀ → cong (λ z → SoupTerm.`let t₀ `in z) eq₂)
   , eq₁ )
 frame-inversion e σ Vσ (SoupRed.`let⊗-`in t) u equal notV
   with T-letpair-inv e σ Vσ equal
@@ -682,16 +642,6 @@ head-inversion e σ Vσ Pσ equal (SoupRed.E-Seq V₁)
         (SourceRed.E-□ (SourceRed.E-Seq
           (T-value-inv e₁ σ Vσ (subst SoupRed.Value (sym eq₁) V₁))))
     , eq₂ )
-head-inversion e σ Vσ Pσ equal (SoupRed.E-Let V₁)
-  with T-let-inv e σ Vσ equal
-... | e₁ , e₂ , eEq , eq₁ , eq₂ =
-  inj₁
-    ( Source._⋯_ e₂ (Source.⦅ e₁ ⦆)
-    , subst (λ z → z SourceRed.⋯→ Source._⋯_ e₂ (Source.⦅ e₁ ⦆))
-        (sym eEq)
-        (SourceRed.E-□ (SourceRed.E-Let
-          (T-value-inv e₁ σ Vσ (subst SoupRed.Value (sym eq₁) V₁))))
-    , ( T[_]-⦅⦆ e₂ e₁ σ ■ cong₂ SoupRed.subst₀ eq₁ eq₂ ) )
 head-inversion e σ Vσ Pσ equal (SoupRed.E-PairElim V₁ V₂)
   with T-letpair-inv e σ Vσ equal
 ... | a , body , eEq , aEq , bodyEq with T-pair-inv a σ aEq

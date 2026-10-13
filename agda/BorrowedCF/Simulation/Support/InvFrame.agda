@@ -78,19 +78,6 @@ inv-seq (T-Weaken γ≤ d) =
   let α₁ , α₂ , p , q , cle = inv-seq d
   in α₁ , α₂ , p , q , λ h ¬u → ≤-trans (cle h ¬u) (≼⇒count≤ ¬u γ≤)
 
-inv-let : ∀ {N} {Γ : Ctx N} {α : Struct N} {e₁ : Tm N} {e₂ : Tm (suc N)} {T ϵ}
-  → Γ ; α ⊢ `let e₁ `in e₂ ∶ T ∣ ϵ
-  → Σ[ γ₁ ∈ Struct N ] Σ[ γ₂ ∈ Struct N ] Σ[ p/s ∈ ParSeq ]
-      (∃[ T₁ ] ∃[ ϵ₁ ] Γ ; γ₁ ⊢ e₁ ∶ T₁ ∣ ϵ₁)
-      × (∃[ T₁ ] ∃[ U ] ∃[ ϵ' ] (T₁ ⸴ Γ) ; join p/s (` zero) (𝐂S.wk γ₂) ⊢ e₂ ∶ U ∣ ϵ')
-      × ((h : 𝔽 N) → ¬ Unr (lookup Γ h) → count h γ₁ + count h γ₂ ≤ count h α)
-inv-let (T-Let p/s {γ₁ = γ₁} {γ₂ = γ₂} ⊢e₁ ⊢e₂) =
-  γ₁ , γ₂ , p/s , (_ , _ , ⊢e₁) , (_ , _ , _ , ⊢e₂) ,
-    λ h _ → ≤-reflexive (sym (count-join-PS p/s h γ₁ γ₂))
-inv-let (T-Conv _ _ d) = inv-let d
-inv-let (T-Weaken γ≤ d) =
-  let γ₁ , γ₂ , p/s , p , q , cle = inv-let d
-  in γ₁ , γ₂ , p/s , p , q , λ h ¬u → ≤-trans (cle h ¬u) (≼⇒count≤ ¬u γ≤)
 
 inv-letpair : ∀ {N} {Γ : Ctx N} {α : Struct N} {e₁ : Tm N} {e₂ : Tm (suc (suc N))} {T ϵ}
   → Γ ; α ⊢ `let⊗ e₁ `in e₂ ∶ T ∣ ϵ
@@ -215,19 +202,6 @@ strengthen-frame (L._∷_ (□; e₂) E') ⊢E =
             E₀' , E'eq = factor' h ¬u cα₁≤β ρ inv
             e₂₀ , e₂eq = strengthen-Tm-gen ⊢e₂ ρ h inv (count0⇒∉dom α₂ cα₂0)
         in (L._∷_ (□; e₂₀) E₀') , cong₂ L._∷_ (cong □;_ e₂eq) E'eq)
-strengthen-frame (L._∷_ (`let-`in e') E') ⊢E =
-  let γ₁ , γ₂ , p/s , (_ , _ , ⊢e₁) , (_ , _ , _ , ⊢e₂) , cle = inv-let ⊢E
-      β , pt , support' , factor' = strengthen-frame E' ⊢e₁
-  in β , pt ,
-     (λ h ¬u → ≤-trans (support' h ¬u) (≤-trans (m≤m+n (count h γ₁) (count h γ₂)) (cle h ¬u))) ,
-     (λ h ¬u cα≤β ρ inv →
-        let cγ₂0 = +≤ˡ⇒0 (count h γ₁) (≤-trans (≤-trans (cle h ¬u) cα≤β) (support' h ¬u))
-            cγ₁≤β = ≤-trans (≤-trans (m≤m+n (count h γ₁) (count h γ₂)) (cle h ¬u)) cα≤β
-            E₀' , E'eq = factor' h ¬u cγ₁≤β ρ inv
-            COUNT0 = count-join-PS p/s (suc h) (` zero) (𝐂S.wk γ₂) ■ count-wk-suc γ₂ h ■ cγ₂0
-            e₂₀ , e₂eq = strengthen-Tm-gen ⊢e₂ (ρ ↑) (suc h) (inv↑ inv)
-                           (count0⇒∉dom (join p/s (` zero) (𝐂S.wk γ₂)) COUNT0)
-        in (L._∷_ (`let-`in e₂₀) E₀') , cong₂ L._∷_ (cong `let-`in_ e₂eq) E'eq)
 strengthen-frame (L._∷_ (`let⊗-`in e') E') ⊢E =
   let γ₁ , γ₂ , p/s , d , (_ , _ , ⊢e₁) , (_ , _ , _ , _ , ⊢e₂) , cle = inv-letpair ⊢E
       β , pt , support' , factor' = strengthen-frame E' ⊢e₁

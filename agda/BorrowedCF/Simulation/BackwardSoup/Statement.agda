@@ -50,7 +50,7 @@ open SoupReduction using (endpointFlags; setEndpointFlags)
 open SoupTerm
   using ( Tm; PhiRef
         ; `_; `phi; K; ƛ; μ; _·⟨_⟩_; _;_; _⊗_
-        ; `let_`in_; `let⊗_`in_; `inj; `case_`of⟨_;_⟩; _⦂_
+        ; `let⊗_`in_; `inj; `case_`of⟨_;_⟩; _⦂_
         )
 
 open Nat using (_<_; z≤n; s≤s)
@@ -101,8 +101,6 @@ swapPhi x k (μ e) = μ (swapPhi (suc x) k e)
 swapPhi x k (e₁ ·⟨ d ⟩ e₂) = swapPhi x k e₁ ·⟨ d ⟩ swapPhi x k e₂
 swapPhi x k (e₁ ; e₂) = swapPhi x k e₁ ; swapPhi x k e₂
 swapPhi x k (e₁ ⊗ e₂) = swapPhi x k e₁ ⊗ swapPhi x k e₂
-swapPhi x k (`let e₁ `in e₂) =
-  `let swapPhi x k e₁ `in swapPhi (suc x) k e₂
 swapPhi x k (`let⊗ e₁ `in e₂) =
   `let⊗ swapPhi x k e₁ `in swapPhi (suc (suc x)) k e₂
 swapPhi x k (`inj i e) = `inj i (swapPhi x k e)
@@ -142,8 +140,6 @@ swapPhi-involutive x k (e₁ ; e₂) =
   cong₂ _;_ (swapPhi-involutive x k e₁) (swapPhi-involutive x k e₂)
 swapPhi-involutive x k (e₁ ⊗ e₂) =
   cong₂ _⊗_ (swapPhi-involutive x k e₁) (swapPhi-involutive x k e₂)
-swapPhi-involutive x k (`let e₁ `in e₂) =
-  cong₂ `let_`in_ (swapPhi-involutive x k e₁) (swapPhi-involutive (suc x) k e₂)
 swapPhi-involutive x k (`let⊗ e₁ `in e₂) =
   cong₂ `let⊗_`in_
     (swapPhi-involutive x k e₁) (swapPhi-involutive (suc (suc x)) k e₂)

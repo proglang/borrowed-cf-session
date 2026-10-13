@@ -99,9 +99,6 @@ plug-det (e₁ ⊗ e₂) (pairʳ _ p) (pairʳ _ q) = plug-det e₂ p q
 plug-det (e₁ ; e₂) (here ()) q
 plug-det (e₁ ; e₂) (seqˡ p) (here ())
 plug-det (e₁ ; e₂) (seqˡ p) (seqˡ q) = plug-det e₁ p q
-plug-det (`let e₁ `in e₂) (here ()) q
-plug-det (`let e₁ `in e₂) (letˡ p) (here ())
-plug-det (`let e₁ `in e₂) (letˡ p) (letˡ q) = plug-det e₁ p q
 plug-det (`let⊗ e₁ `in e₂) (here ()) q
 plug-det (`let⊗ e₁ `in e₂) (let⊗ˡ p) (here ())
 plug-det (`let⊗ e₁ `in e₂) (let⊗ˡ p) (let⊗ˡ q) = plug-det e₁ p q

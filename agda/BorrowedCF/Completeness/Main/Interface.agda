@@ -118,13 +118,6 @@ AppCase = ∀ {n} {e₁ e₂ : Tm n} → IHAt e₁ → IHAt e₂ →
   Γ ; γ ⊢ e₁ ·⟨ d ⟩ e₂ ∶ T ∣ ϵ →
   Conclusion Γ̂ γ (e₁ ·⟨ d ⟩ e₂) T ϵ m σ₀
 
-LetCase : Set
-LetCase = ∀ {n} {e₁ : Tm n} {e₂ : Tm (suc n)} → IHAt e₁ → IHAt e₂ →
-  ∀ {Γ Γ̂ : Ctx n} {γ : Struct n} {T : 𝕋} {ϵ : Eff} {m : ℕ} {σ₀ : UV.Sub} →
-  Solving σ₀ → UVarsInΓ 0 m Γ̂ → Approx Γ̂ Γ σ₀ →
-  SolvedTm e₁ → SolvedTm e₂ → SolvedTy T → LinStruct Γ γ →
-  Γ ; γ ⊢ `let e₁ `in e₂ ∶ T ∣ ϵ →
-  Conclusion Γ̂ γ (`let e₁ `in e₂) T ϵ m σ₀
 
 LetPairCase : Set
 LetPairCase = ∀ {n} {e₁ : Tm n} {e₂ : Tm (suc (suc n))} → IHAt e₁ → IHAt e₂ →

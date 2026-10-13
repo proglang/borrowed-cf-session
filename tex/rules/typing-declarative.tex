@@ -210,23 +210,6 @@
     {\TU}
 }
 
-% T-Let
-\DefRule {Let} {
-  \HasType
-    {\Ctx[1]}
-    {\E[1]}
-    {\T[1]} \\
-  \HasType
-    {\CtxVar x {{\T[1]}} \CtxPatOp \Ctx[2]}
-    {\E[2]}
-    {\T[2]}
-}{
-  \HasType
-    {\CtxPat 1 2}
-    {\ELet x{\E[1]}{\E[2]}}
-    {\T[2]}
-}
-
 % T-LetUnord
 \DefRule {LetUnord} {
   \HasType

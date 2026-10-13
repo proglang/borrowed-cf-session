@@ -26,7 +26,6 @@ data Tm (n : ℕ) : Set where
   _·⟨_⟩_ : (e₁ : Tm n) (d : Dir) (e₂ : Tm n) → Tm n
   _;_ : (e₁ e₂ : Tm n) → Tm n
   _⊗_ : (e₁ e₂ : Tm n) → Tm n
-  `let_`in_ : (e₁ : Tm n) (e₂ : Tm (1 + n)) → Tm n
   `let⊗_`in_ : (e₁ : Tm n) (e₂ : Tm (2 + n)) → Tm n
   `inj : (i : Side) (e : Tm n) → Tm n
   `case_`of⟨_;_⟩ :
@@ -61,7 +60,6 @@ K c ⋯ᵣ ρ = K c
 (e₁ ·⟨ d ⟩ e₂) ⋯ᵣ ρ = (e₁ ⋯ᵣ ρ) ·⟨ d ⟩ (e₂ ⋯ᵣ ρ)
 (e₁ ; e₂) ⋯ᵣ ρ = (e₁ ⋯ᵣ ρ) ; (e₂ ⋯ᵣ ρ)
 (e₁ ⊗ e₂) ⋯ᵣ ρ = (e₁ ⋯ᵣ ρ) ⊗ (e₂ ⋯ᵣ ρ)
-(`let e₁ `in e₂) ⋯ᵣ ρ = `let (e₁ ⋯ᵣ ρ) `in (e₂ ⋯ᵣ liftRen ρ)
 (`let⊗ e₁ `in e₂) ⋯ᵣ ρ =
   `let⊗ (e₁ ⋯ᵣ ρ) `in (e₂ ⋯ᵣ liftRen (liftRen ρ))
 (`inj i e) ⋯ᵣ ρ = `inj i (e ⋯ᵣ ρ)
@@ -104,8 +102,6 @@ K c ⋯ₛ σ = K c
 (e₁ ·⟨ d ⟩ e₂) ⋯ₛ σ = (e₁ ⋯ₛ σ) ·⟨ d ⟩ (e₂ ⋯ₛ σ)
 (e₁ ; e₂) ⋯ₛ σ = (e₁ ⋯ₛ σ) ; (e₂ ⋯ₛ σ)
 (e₁ ⊗ e₂) ⋯ₛ σ = (e₁ ⋯ₛ σ) ⊗ (e₂ ⋯ₛ σ)
-(`let e₁ `in e₂) ⋯ₛ σ =
-  `let (e₁ ⋯ₛ σ) `in (e₂ ⋯ₛ liftSub σ)
 (`let⊗ e₁ `in e₂) ⋯ₛ σ =
   `let⊗ (e₁ ⋯ₛ σ) `in (e₂ ⋯ₛ liftSub (liftSub σ))
 (`inj i e) ⋯ₛ σ = `inj i (e ⋯ₛ σ)
@@ -134,8 +130,6 @@ phiRefsFrom d (e₁ ·⟨ dir ⟩ e₂) =
   phiRefsFrom d e₁ ++ phiRefsFrom d e₂
 phiRefsFrom d (e₁ ; e₂) = phiRefsFrom d e₁ ++ phiRefsFrom d e₂
 phiRefsFrom d (e₁ ⊗ e₂) = phiRefsFrom d e₁ ++ phiRefsFrom d e₂
-phiRefsFrom d (`let e₁ `in e₂) =
-  phiRefsFrom d e₁ ++ phiRefsFrom (suc d) e₂
 phiRefsFrom d (`let⊗ e₁ `in e₂) =
   phiRefsFrom d e₁ ++ phiRefsFrom (suc (suc d)) e₂
 phiRefsFrom d (`inj i e) = phiRefsFrom d e

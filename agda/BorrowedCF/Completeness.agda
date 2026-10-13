@@ -13,9 +13,9 @@ open import BorrowedCF.Completeness.Base
 module BorrowedCF.Completeness where
 
 open import BorrowedCF.Completeness.Main.App using (app-case)
-open import BorrowedCF.Completeness.Main.Bind using (let-case; letpair-case; case-case)
+open import BorrowedCF.Completeness.Main.Bind using (letpair-case; case-case)
 
-open import BorrowedCF.Completeness.Main app-case let-case letpair-case case-case public
+open import BorrowedCF.Completeness.Main app-case letpair-case case-case public
   using (complete⇒ᵍ; complete⇒; complete⇐)
 
 -- The statements, spelled out (they are the ones of `Completeness/Base.agda`).

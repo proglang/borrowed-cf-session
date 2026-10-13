@@ -135,7 +135,6 @@ GuessIn {m = m} k (A-RSplit {s = s} ≤γ) = UVarsIn k m s
 GuessIn k (A-App ec ≤γ d₁ d₂) = GuessIn k d₁ × GuessIn k d₂
 GuessIn k (A-Seq unrT ≤γ d₁ d₂) = GuessIn k d₁ × GuessIn k d₂
 GuessIn k (A-LetPair p/s ≤γ d₁ d₂) = GuessIn k d₁ × GuessIn k d₂
-GuessIn k (A-Let p/s ≤γ d₁ d₂) = GuessIn k d₁ × GuessIn k d₂
 GuessIn k (A-Case p/s ≤γ d d₁ d₂) = GuessIn k d × GuessIn k d₁ × GuessIn k d₂
 GuessIn k (A-Abs unrΓ ϵ≤ d eq) = GuessIn k d
 GuessIn k (A-AbsRec unrΓ ωa ϵ≤ d) = GuessIn k d
@@ -198,14 +197,6 @@ scope-gen (A-LetPair p/s ≤γ d₁ d₂) (g₁ , g₂) uΓ k≤m sI =
       m′≤n , uU , uΔ₂ = scope-gen d₂ g₂
                           (uvarsInΓ-⸴ (uvarsIn-⊗₁ uT₁₂) (uvarsInΓ-⸴ (uvarsIn-⊗₂ uT₁₂) uΓ′))
                           (Nat.≤-trans k≤m m≤m′) tt
-      m≤n = Nat.≤-trans m≤m′ m′≤n
-  in m≤n , uU
-   , uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl m≤n (uvarsInΔ-≼↑ uΓ ≤γ))
-       (uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl m′≤n uΔ₁) uΔ₂)
-scope-gen (A-Let p/s ≤γ d₁ d₂) (g₁ , g₂) uΓ k≤m sI =
-  let m≤m′ , uT , uΔ₁ = scope-gen d₁ g₁ uΓ k≤m tt
-      uΓ′ = uvarsInΓ-mono Nat.≤-refl m≤m′ uΓ
-      m′≤n , uU , uΔ₂ = scope-gen d₂ g₂ (uvarsInΓ-⸴ uT uΓ′) (Nat.≤-trans k≤m m≤m′) tt
       m≤n = Nat.≤-trans m≤m′ m′≤n
   in m≤n , uU
    , uvarsInΔ-++ (uvarsInΔ-mono Nat.≤-refl m≤n (uvarsInΔ-≼↑ uΓ ≤γ))

@@ -51,7 +51,6 @@ fv (μ e) = fvClose (fv e)
 fv (e₁ ·⟨ _ ⟩ e₂) = fv e₁ ∪ fv e₂
 fv (e₁ ; e₂) = fv e₁ ∪ fv e₂
 fv (e₁ ⊗ e₂) = fv e₁ ∪ fv e₂
-fv (`let e₁ `in e₂) = fv e₁ ∪ fvClose (fv e₂)
 fv (`let⊗ e₁ `in e₂) = fv e₁ ∪ fvClose* 2 (fv e₂)
 fv (`inj i e) = fv e
 fv (`case e `of⟨ e₁ ; e₂ ⟩) = fv e ∪ fvClose (fv e₁) ∪ fvClose (fv e₂)
@@ -68,7 +67,6 @@ fv-subTm (μ e) = cong fvClose (fv-subTm e)
 fv-subTm (e ·⟨ _ ⟩ e₁) = cong₂ _∪_ (fv-subTm e) (fv-subTm e₁)
 fv-subTm (e ; e₁) = cong₂ _∪_ (fv-subTm e) (fv-subTm e₁)
 fv-subTm (e ⊗ e₁) = cong₂ _∪_ (fv-subTm e) (fv-subTm e₁)
-fv-subTm (`let e `in e₁) = cong₂ _∪_ (fv-subTm e) (cong fvClose (fv-subTm e₁))
 fv-subTm (`let⊗ e `in e₁) = cong₂ _∪_ (fv-subTm e) (cong (fvClose* 2) (fv-subTm e₁))
 fv-subTm (`inj i e) = fv-subTm e
 fv-subTm `case e `of⟨ e₁ ; e₂ ⟩ = cong₂ _∪_ (fv-subTm e) (cong₂ _∪_ (cong fvClose (fv-subTm e₁)) (cong fvClose (fv-subTm e₂)))
@@ -191,15 +189,6 @@ data _;_/_⊢[_]_∶_∣_↑_/_ Γ γ m where
     -----------------------------------------------------------------------------------
     Γ ; γ / m ⊢ `let⊗ e₁ `in e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₀ ++ Δ₁ ++ Δ₂ / n
 
-  A-Let : (p/s : ParSeq) →
-    let open Fin.Patterns in
-    let γ₁ = γ ∣fv[ e₁ ] in
-    let γ₂ = γ ↓ fvClose (fv e₂) in
-    (≤γ : Γ ∶ join p/s γ₁ γ₂ ≼ γ ↑ Δ₀) →
-    Γ ; γ₁ / m ⊢ e₁ ⇒ T ∣ ϵ₁ ↑ Δ₁ / m′ →
-    T ⸴ Γ ; join p/s (` 0F) (𝐂.wk γ₂) / m′ ⊢ e₂ ⇒ U ∣ ϵ₂ ↑ Δ₂ / n →
-    -----------------------------------------------------------
-    Γ ; γ / m ⊢ `let e₁ `in e₂ ⇒ U ∣ ϵ₁ ⊔ϵ ϵ₂ ↑ Δ₀ ++ Δ₁ ++ Δ₂ / n
 
   A-Case : (p/s : ParSeq) →
     let γ₂ = γ ↓ (fvClose (fv e₁) ∪ fvClose (fv e₂)) in
@@ -316,12 +305,6 @@ module _ {σ : UV.Sub} (Sσ : Solving σ) where
                             (T-Conv ≃-refl (x≤y⊔x _ _)
                               (sound y (solved-⸴ (subTy-solved T₁ Sσ) (solved-⸴ (subTy-solved T₂ Sσ) SΓ)) (All.++⁻ʳ Δ₁ (All.++⁻ʳ Δ₀ SΔ))
                                 ⊢≗ λ _ → refl)))
-  sound (A-Let {Δ₀ = Δ₀} {T = T} {Δ₁ = Δ₁} p/s ≤γ x y) SΓ SΔ =
-    T-Weaken (≼↑-sound Sσ (All.++⁻ˡ Δ₀ SΔ) ≤γ)
-             (T-Let p/s (T-Conv ≃-refl (x≤x⊔y _ _) (sound x SΓ (All.++⁻ˡ Δ₁ (All.++⁻ʳ Δ₀ SΔ))))
-                        (T-Conv ≃-refl (x≤y⊔x _ _)
-                          (sound y (solved-⸴ (subTy-solved T Sσ) SΓ) (All.++⁻ʳ Δ₁ (All.++⁻ʳ Δ₀ SΔ))
-                            ⊢≗ λ _ → refl)))
   sound {Γ = Γ} {γ} (A-Case {Δ₀ = Δ₀} p/s ≤γ {ϵ} {ϵ₁} {ϵ₂} {T₁} {T₂} {Δ} {Δ₁} {Δ₂} x y₁ y₂) SΓ (U≃ ∷ SΔ′)
     using SΔ ← All.++⁻ʳ Δ₀ SΔ′
     using SΔ₁ , SΔ₂ ← All.++⁻ Δ₁ (All.++⁻ʳ Δ SΔ)
@@ -393,7 +376,6 @@ someSub-solving = subAll-solving (λ ()) (λ ()) end
 ⊢-sub σ (T-AppLeft aL ≤ₐ d₁ d₂) = T-AppLeft aL ≤ₐ (⊢-sub σ d₁) (⊢-sub σ d₂)
 ⊢-sub σ (T-AppRight aR ≤ₐ d₁ d₂) = T-AppRight aR ≤ₐ (⊢-sub σ d₁) (⊢-sub σ d₂)
 ⊢-sub σ (T-Pair p/s seq⇒p d₁ d₂) = T-Pair p/s seq⇒p (⊢-sub σ d₁) (⊢-sub σ d₂)
-⊢-sub σ (T-Let p/s d₁ d₂) = T-Let p/s (⊢-sub σ d₁) (⊢-sub σ d₂ ⊢≗ λ _ → refl)
 ⊢-sub σ (T-Seq unr-T d₁ d₂) = T-Seq (subTy-unr unr-T) (⊢-sub σ d₁) (⊢-sub σ d₂)
 ⊢-sub σ (T-LetPair p/s d₁ d₂) =
   T-LetPair p/s (⊢-sub σ d₁)

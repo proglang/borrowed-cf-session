@@ -67,12 +67,6 @@ private
     (e₁ ≡ e₁′) × (e₂ ≡ e₂′)
   seq-injective refl = refl , refl
 
-  let-injective :
-    {n : ℕ} {e₁ e₁′ : SoupTerm.Tm n}
-    {e₂ e₂′ : SoupTerm.Tm (1 + n)} →
-    SoupTerm.`let e₁ `in e₂ ≡ SoupTerm.`let e₁′ `in e₂′ →
-    (e₁ ≡ e₁′) × (e₂ ≡ e₂′)
-  let-injective refl = refl , refl
 
   letpair-injective :
     {n : ℕ} {e₁ e₁′ : SoupTerm.Tm n}
@@ -150,8 +144,6 @@ private
   renamed-redex-unique {F = []}
     {F′ = SoupExpression.□; e ∷ F′} V V′ ()
   renamed-redex-unique {F = []}
-    {F′ = SoupExpression.`let-`in e ∷ F′} V V′ ()
-  renamed-redex-unique {F = []}
     {F′ = SoupExpression.`let⊗-`in e ∷ F′} V V′ ()
   renamed-redex-unique {F = []}
     {F′ = SoupExpression.`inj□ i ∷ F′} V V′ ()
@@ -181,8 +173,6 @@ private
   renamed-redex-unique {F = V₀ SoupExpression.⊗□ ∷ F}
     {F′ = []} V V′ ()
   renamed-redex-unique {F = SoupExpression.□; e ∷ F}
-    {F′ = []} V V′ ()
-  renamed-redex-unique {F = SoupExpression.`let-`in e ∷ F}
     {F′ = []} V V′ ()
   renamed-redex-unique {F = SoupExpression.`let⊗-`in e ∷ F}
     {F′ = []} V V′ ()
@@ -304,8 +294,6 @@ private
   renamed-redex-unique {F = SoupExpression.app₁ e d V? ∷ F}
     {F′ = SoupExpression.□; e′ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.app₁ e d V? ∷ F}
-    {F′ = SoupExpression.`let-`in e′ ∷ F′} V V′ ()
-  renamed-redex-unique {F = SoupExpression.app₁ e d V? ∷ F}
     {F′ = SoupExpression.`let⊗-`in e′ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.app₁ e d V? ∷ F}
     {F′ = SoupExpression.`inj□ i ∷ F′} V V′ ()
@@ -352,8 +340,6 @@ private
   renamed-redex-unique {F = SoupExpression.app₂ e d V? ∷ F}
     {F′ = SoupExpression.□; e′ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.app₂ e d V? ∷ F}
-    {F′ = SoupExpression.`let-`in e′ ∷ F′} V V′ ()
-  renamed-redex-unique {F = SoupExpression.app₂ e d V? ∷ F}
     {F′ = SoupExpression.`let⊗-`in e′ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.app₂ e d V? ∷ F}
     {F′ = SoupExpression.`inj□ i ∷ F′} V V′ ()
@@ -374,8 +360,6 @@ private
   renamed-redex-unique {F = SoupExpression.□⊗ e ∷ F}
     {F′ = SoupExpression.□; e′ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.□⊗ e ∷ F}
-    {F′ = SoupExpression.`let-`in e′ ∷ F′} V V′ ()
-  renamed-redex-unique {F = SoupExpression.□⊗ e ∷ F}
     {F′ = SoupExpression.`let⊗-`in e′ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.□⊗ e ∷ F}
     {F′ = SoupExpression.`inj□ i ∷ F′} V V′ ()
@@ -395,8 +379,6 @@ private
       (renamed-redex-unique {F = F} {F′ = F′} V V′ inner≡ ρ t)
   renamed-redex-unique {F = V₀ SoupExpression.⊗□ ∷ F}
     {F′ = SoupExpression.□; e′ ∷ F′} V V′ ()
-  renamed-redex-unique {F = V₀ SoupExpression.⊗□ ∷ F}
-    {F′ = SoupExpression.`let-`in e′ ∷ F′} V V′ ()
   renamed-redex-unique {F = V₀ SoupExpression.⊗□ ∷ F}
     {F′ = SoupExpression.`let⊗-`in e′ ∷ F′} V V′ ()
   renamed-redex-unique {F = V₀ SoupExpression.⊗□ ∷ F}
@@ -420,37 +402,12 @@ private
       (renamed-redex-unique {F = F} {F′ = F′} V V′ inner≡ ρ t)
       (cong (SoupTerm._⋯ᵣ ρ) e≡)
   renamed-redex-unique {F = SoupExpression.□; e ∷ F}
-    {F′ = SoupExpression.`let-`in e′ ∷ F′} V V′ ()
-  renamed-redex-unique {F = SoupExpression.□; e ∷ F}
     {F′ = SoupExpression.`let⊗-`in e′ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.□; e ∷ F}
     {F′ = SoupExpression.`inj□ i ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.□; e ∷ F}
     {F′ = SoupExpression.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F′} V V′ ()
 
-  renamed-redex-unique {F = SoupExpression.`let-`in e ∷ F}
-    {F′ = SoupExpression.app₁ e′ d V?′ ∷ F′} V V′ ()
-  renamed-redex-unique {F = SoupExpression.`let-`in e ∷ F}
-    {F′ = SoupExpression.app₂ e′ d V?′ ∷ F′} V V′ ()
-  renamed-redex-unique {F = SoupExpression.`let-`in e ∷ F}
-    {F′ = SoupExpression.□⊗ e′ ∷ F′} V V′ ()
-  renamed-redex-unique {F = SoupExpression.`let-`in e ∷ F}
-    {F′ = V₀ SoupExpression.⊗□ ∷ F′} V V′ ()
-  renamed-redex-unique {F = SoupExpression.`let-`in e ∷ F}
-    {F′ = SoupExpression.□; e′ ∷ F′} V V′ ()
-  renamed-redex-unique {F = SoupExpression.`let-`in e ∷ F}
-    {F′ = SoupExpression.`let-`in e′ ∷ F′} V V′ eq ρ t
-    with let-injective eq
-  ... | inner≡ , e≡ =
-    cong₂ SoupTerm.`let_`in_
-      (renamed-redex-unique {F = F} {F′ = F′} V V′ inner≡ ρ t)
-      (cong (SoupTerm._⋯ᵣ SoupTerm.liftRen ρ) e≡)
-  renamed-redex-unique {F = SoupExpression.`let-`in e ∷ F}
-    {F′ = SoupExpression.`let⊗-`in e′ ∷ F′} V V′ ()
-  renamed-redex-unique {F = SoupExpression.`let-`in e ∷ F}
-    {F′ = SoupExpression.`inj□ i ∷ F′} V V′ ()
-  renamed-redex-unique {F = SoupExpression.`let-`in e ∷ F}
-    {F′ = SoupExpression.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F′} V V′ ()
 
   renamed-redex-unique {F = SoupExpression.`let⊗-`in e ∷ F}
     {F′ = SoupExpression.app₁ e′ d V?′ ∷ F′} V V′ ()
@@ -462,8 +419,6 @@ private
     {F′ = V₀ SoupExpression.⊗□ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.`let⊗-`in e ∷ F}
     {F′ = SoupExpression.□; e′ ∷ F′} V V′ ()
-  renamed-redex-unique {F = SoupExpression.`let⊗-`in e ∷ F}
-    {F′ = SoupExpression.`let-`in e′ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.`let⊗-`in e ∷ F}
     {F′ = SoupExpression.`let⊗-`in e′ ∷ F′} V V′ eq ρ t
     with letpair-injective eq
@@ -486,8 +441,6 @@ private
     {F′ = V₀ SoupExpression.⊗□ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.`inj□ i ∷ F}
     {F′ = SoupExpression.□; e′ ∷ F′} V V′ ()
-  renamed-redex-unique {F = SoupExpression.`inj□ i ∷ F}
-    {F′ = SoupExpression.`let-`in e′ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.`inj□ i ∷ F}
     {F′ = SoupExpression.`let⊗-`in e′ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.`inj□ true ∷ F}
@@ -519,8 +472,6 @@ private
     {F′ = V₀ SoupExpression.⊗□ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F}
     {F′ = SoupExpression.□; e′ ∷ F′} V V′ ()
-  renamed-redex-unique {F = SoupExpression.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F}
-    {F′ = SoupExpression.`let-`in e′ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F}
     {F′ = SoupExpression.`let⊗-`in e′ ∷ F′} V V′ ()
   renamed-redex-unique {F = SoupExpression.`case□`of⟨ e₁ ; e₂ ⟩ ∷ F}

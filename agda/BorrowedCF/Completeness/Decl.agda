@@ -61,11 +61,6 @@ fv⊆dom (T-AppRight aR ≤ₐ d₁ d₂) y∈ =
   x∈p∪q⁺ (Sum.map (fv⊆dom d₁) (fv⊆dom d₂) (x∈p∪q⁻ _ _ y∈))
 fv⊆dom (T-Pair p/s {γ₁} {γ₂} seq⇒p d₁ d₂) y∈ =
   ∈-join⁺ (biasedDir p/s) γ₁ γ₂ (Sum.map (fv⊆dom d₁) (fv⊆dom d₂) (x∈p∪q⁻ _ _ y∈))
-fv⊆dom (T-Let p/s {γ₁} {γ₂} d₁ d₂) y∈ =
-  ∈-join⁺ p/s γ₁ γ₂
-    (Sum.map (fv⊆dom d₁)
-             (λ p → ∈-bind⁻ p/s γ₂ (fv⊆dom d₂ (∈tail⁻ p)))
-             (x∈p∪q⁻ _ _ y∈))
 fv⊆dom (T-Seq unr-T d₁ d₂) y∈ =
   x∈p∪q⁺ (Sum.map (fv⊆dom d₁) (fv⊆dom d₂) (x∈p∪q⁻ _ _ y∈))
 fv⊆dom (T-LetPair {d = d} p/s {γ₁} {γ₂} d₁ d₂) y∈ =
@@ -112,10 +107,6 @@ fv-cover′ (T-Pair p/s {γ₁} {γ₂} seq⇒p d₁ d₂) y∈ y∉ =
   [ (λ p → fv-cover′ d₁ p (λ q → y∉ (x∈p∪q⁺ (inj₁ q))))
   , (λ p → fv-cover′ d₂ p (λ q → y∉ (x∈p∪q⁺ (inj₂ q)))) ]′
     (∈-join⁻ (biasedDir p/s) γ₁ γ₂ y∈)
-fv-cover′ (T-Let p/s {γ₁} {γ₂} d₁ d₂) y∈ y∉ =
-  [ (λ p → fv-cover′ d₁ p (λ q → y∉ (x∈p∪q⁺ (inj₁ q))))
-  , (λ p → fv-cover′ d₂ (∈-bind⁺ p/s γ₂ p) (λ q → y∉ (x∈p∪q⁺ (inj₂ (∈tail⁺ q))))) ]′
-    (∈-join⁻ p/s γ₁ γ₂ y∈)
 fv-cover′ (T-Seq unr-T d₁ d₂) y∈ y∉ =
   [ (λ p → fv-cover′ d₁ p (λ q → y∉ (x∈p∪q⁺ (inj₁ q))))
   , (λ p → fv-cover′ d₂ p (λ q → y∉ (x∈p∪q⁺ (inj₂ q)))) ]′ (x∈p∪q⁻ _ _ y∈)
@@ -186,13 +177,6 @@ restrict (T-Pair p/s {γ₁} {γ₂} seq⇒p d₁ d₂) =
   subst-γ (sym (join-↓ (biasedDir p/s) γ₁ γ₂))
     (T-Pair p/s seq⇒p (T-Weaken (∪ˡ γ₁ (fv-cover′ d₁)) (restrict d₁))
                       (T-Weaken (∪ʳ γ₂ (fv-cover′ d₂)) (restrict d₂)))
-restrict (T-Let {e₁ = e₁} {e₂ = e₂} p/s {γ₁} {γ₂} d₁ d₂) =
-  subst-γ (sym (join-↓ p/s γ₁ γ₂))
-    (T-Let p/s (T-Weaken (∪ˡ γ₁ (fv-cover′ d₁)) (restrict d₁))
-               (subst-γ (↓-bind p/s γ₂ (fv e₁ ∪ fvClose (fv e₂)))
-                 (T-Weaken (↓-≼-↓ (join p/s (` zero) (𝐂.wk γ₂))
-                                  (⊆-inside∷ (q⊆p∪q _ _)) (fv-cover′ d₂))
-                           (restrict d₂))))
 restrict (T-Seq {γ₁ = γ₁} {γ₂ = γ₂} unr-T d₁ d₂) =
   T-Weaken (≼-cong-; (∪ˡ γ₁ (fv-cover′ d₁)) (∪ʳ γ₂ (fv-cover′ d₂)))
            (T-Seq unr-T (restrict d₁) (restrict d₂))

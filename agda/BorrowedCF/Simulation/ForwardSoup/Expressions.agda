@@ -43,8 +43,6 @@ sub-cong (e₁ Soup.·⟨ d ⟩ e₂) eq =
   cong₂ (Soup._·⟨ d ⟩_) (sub-cong e₁ eq) (sub-cong e₂ eq)
 sub-cong (e₁ Soup.; e₂) eq = cong₂ Soup._;_ (sub-cong e₁ eq) (sub-cong e₂ eq)
 sub-cong (e₁ Soup.⊗ e₂) eq = cong₂ Soup._⊗_ (sub-cong e₁ eq) (sub-cong e₂ eq)
-sub-cong (Soup.`let e₁ `in e₂) eq =
-  cong₂ Soup.`let_`in_ (sub-cong e₁ eq) (sub-cong e₂ (liftSubEq eq))
 sub-cong (Soup.`let⊗ e₁ `in e₂) eq =
   cong₂ Soup.`let⊗_`in_ (sub-cong e₁ eq) (sub-cong e₂ (liftSubEq (liftSubEq eq)))
 sub-cong (Soup.`inj i e) eq = cong (Soup.`inj i) (sub-cong e eq)
@@ -73,12 +71,6 @@ sub-id (Soup.μ e) = cong Soup.μ (sub-cong e liftId ■ sub-id e)
 sub-id (e₁ Soup.·⟨ d ⟩ e₂) = cong₂ (Soup._·⟨ d ⟩_) (sub-id e₁) (sub-id e₂)
 sub-id (e₁ Soup.; e₂) = cong₂ Soup._;_ (sub-id e₁) (sub-id e₂)
 sub-id (e₁ Soup.⊗ e₂) = cong₂ Soup._⊗_ (sub-id e₁) (sub-id e₂)
-sub-id (Soup.`let e₁ `in e₂) =
-  cong₂ Soup.`let_`in_ (sub-id e₁) (sub-cong e₂ liftId ■ sub-id e₂)
-  where
-  liftId : SubEq (Soup.liftSub idSub) idSub
-  liftId = (λ where zero → refl; (suc x) → refl)
-         , (λ where (zero , k) → refl; (suc x , k) → refl)
 sub-id (Soup.`let⊗ e₁ `in e₂) =
   cong₂ Soup.`let⊗_`in_ (sub-id e₁) (sub-cong e₂ liftId₂ ■ sub-id e₂)
   where
@@ -111,8 +103,6 @@ ren-cong (e₁ Soup.·⟨ d ⟩ e₂) eq =
   cong₂ (Soup._·⟨ d ⟩_) (ren-cong e₁ eq) (ren-cong e₂ eq)
 ren-cong (e₁ Soup.; e₂) eq = cong₂ Soup._;_ (ren-cong e₁ eq) (ren-cong e₂ eq)
 ren-cong (e₁ Soup.⊗ e₂) eq = cong₂ Soup._⊗_ (ren-cong e₁ eq) (ren-cong e₂ eq)
-ren-cong (Soup.`let e₁ `in e₂) eq =
-  cong₂ Soup.`let_`in_ (ren-cong e₁ eq) (ren-cong e₂ λ where zero → refl; (suc x) → cong suc (eq x))
 ren-cong (Soup.`let⊗ e₁ `in e₂) eq =
   cong₂ Soup.`let⊗_`in_ (ren-cong e₁ eq)
     (ren-cong e₂ λ where
@@ -145,10 +135,6 @@ ren-ren (e₁ Soup.·⟨ d ⟩ e₂) ρ₁ ρ₂ =
   cong₂ (Soup._·⟨ d ⟩_) (ren-ren e₁ ρ₁ ρ₂) (ren-ren e₂ ρ₁ ρ₂)
 ren-ren (e₁ Soup.; e₂) ρ₁ ρ₂ = cong₂ Soup._;_ (ren-ren e₁ ρ₁ ρ₂) (ren-ren e₂ ρ₁ ρ₂)
 ren-ren (e₁ Soup.⊗ e₂) ρ₁ ρ₂ = cong₂ Soup._⊗_ (ren-ren e₁ ρ₁ ρ₂) (ren-ren e₂ ρ₁ ρ₂)
-ren-ren (Soup.`let e₁ `in e₂) ρ₁ ρ₂ =
-  cong₂ Soup.`let_`in_ (ren-ren e₁ ρ₁ ρ₂)
-    (ren-ren e₂ (Soup.liftRen ρ₁) (Soup.liftRen ρ₂)
-     ■ ren-cong e₂ λ where zero → refl; (suc x) → refl)
 ren-ren (Soup.`let⊗ e₁ `in e₂) ρ₁ ρ₂ =
   cong₂ Soup.`let⊗_`in_ (ren-ren e₁ ρ₁ ρ₂)
     (ren-ren e₂ (Soup.liftRen (Soup.liftRen ρ₁)) (Soup.liftRen (Soup.liftRen ρ₂))
@@ -228,9 +214,6 @@ ren-sub (e₁ Soup.·⟨ d ⟩ e₂) ρ σ =
   cong₂ (Soup._·⟨ d ⟩_) (ren-sub e₁ ρ σ) (ren-sub e₂ ρ σ)
 ren-sub (e₁ Soup.; e₂) ρ σ = cong₂ Soup._;_ (ren-sub e₁ ρ σ) (ren-sub e₂ ρ σ)
 ren-sub (e₁ Soup.⊗ e₂) ρ σ = cong₂ Soup._⊗_ (ren-sub e₁ ρ σ) (ren-sub e₂ ρ σ)
-ren-sub (Soup.`let e₁ `in e₂) ρ σ =
-  cong₂ Soup.`let_`in_ (ren-sub e₁ ρ σ)
-    (ren-sub e₂ (Soup.liftRen ρ) (Soup.liftSub σ) ■ sub-cong e₂ (renComp-liftEq ρ σ))
 ren-sub (Soup.`let⊗ e₁ `in e₂) ρ σ =
   cong₂ Soup.`let⊗_`in_ (ren-sub e₁ ρ σ)
     (ren-sub e₂ (Soup.liftRen (Soup.liftRen ρ)) (Soup.liftSub (Soup.liftSub σ))
@@ -302,9 +285,6 @@ sub-ren (e₁ Soup.·⟨ d ⟩ e₂) σ ρ =
   cong₂ (Soup._·⟨ d ⟩_) (sub-ren e₁ σ ρ) (sub-ren e₂ σ ρ)
 sub-ren (e₁ Soup.; e₂) σ ρ = cong₂ Soup._;_ (sub-ren e₁ σ ρ) (sub-ren e₂ σ ρ)
 sub-ren (e₁ Soup.⊗ e₂) σ ρ = cong₂ Soup._⊗_ (sub-ren e₁ σ ρ) (sub-ren e₂ σ ρ)
-sub-ren (Soup.`let e₁ `in e₂) σ ρ =
-  cong₂ Soup.`let_`in_ (sub-ren e₁ σ ρ)
-    (sub-ren e₂ (Soup.liftSub σ) (Soup.liftRen ρ) ■ sub-cong e₂ (mapSub-liftEq ρ σ))
 sub-ren (Soup.`let⊗ e₁ `in e₂) σ ρ =
   cong₂ Soup.`let⊗_`in_ (sub-ren e₁ σ ρ)
     (sub-ren e₂ (Soup.liftSub (Soup.liftSub σ)) (Soup.liftRen (Soup.liftRen ρ))
@@ -401,8 +381,6 @@ T[_]-Env-cong (e₁ Src.·⟨ d ⟩ e₂) eq =
   cong₂ (Soup._·⟨ d ⟩_) (T[_]-Env-cong e₁ eq) (T[_]-Env-cong e₂ eq)
 T[_]-Env-cong (e₁ Src.; e₂) eq = cong₂ Soup._;_ (T[_]-Env-cong e₁ eq) (T[_]-Env-cong e₂ eq)
 T[_]-Env-cong (e₁ Src.⊗ e₂) eq = cong₂ Soup._⊗_ (T[_]-Env-cong e₁ eq) (T[_]-Env-cong e₂ eq)
-T[_]-Env-cong (Src.`let e₁ `in e₂) eq =
-  cong₂ Soup.`let_`in_ (T[_]-Env-cong e₁ eq) (T[_]-Env-cong e₂ (liftEnvEq eq))
 T[_]-Env-cong (Src.`let⊗ e₁ `in e₂) eq =
   cong₂ Soup.`let⊗_`in_ (T[_]-Env-cong e₁ eq) (T[_]-Env-cong e₂ (liftEnvEq (liftEnvEq eq)))
 T[_]-Env-cong (Src.`inj i e) eq = cong (Soup.`inj i) (T[_]-Env-cong e eq)
@@ -436,13 +414,6 @@ T[_]-renEnv (e₁ Src.·⟨ d ⟩ e₂) σ ρ =
   cong₂ (Soup._·⟨ d ⟩_) (T[_]-renEnv e₁ σ ρ) (T[_]-renEnv e₂ σ ρ)
 T[_]-renEnv (e₁ Src.; e₂) σ ρ = cong₂ Soup._;_ (T[_]-renEnv e₁ σ ρ) (T[_]-renEnv e₂ σ ρ)
 T[_]-renEnv (e₁ Src.⊗ e₂) σ ρ = cong₂ Soup._⊗_ (T[_]-renEnv e₁ σ ρ) (T[_]-renEnv e₂ σ ρ)
-T[_]-renEnv (Src.`let e₁ `in e₂) σ ρ =
-  cong₂ Soup.`let_`in_ (T[_]-renEnv e₁ σ ρ)
-    (T[_]-Env-cong e₂ liftEq ■ (T[_]-renEnv e₂ (TS.liftEnv σ) (Soup.liftRen ρ)))
-  where
-  liftEq : ∀ x → TS.liftEnv (λ y → Soup._⋯ᵣ_ (σ y) ρ) x ≡ Soup._⋯ᵣ_ (TS.liftEnv σ x) (Soup.liftRen ρ)
-  liftEq zero = refl
-  liftEq (suc x) = sym (wk-⋯ᵣ (σ x) ρ)
 T[_]-renEnv (Src.`let⊗ e₁ `in e₂) σ ρ =
   cong₂ Soup.`let⊗_`in_ (T[_]-renEnv e₁ σ ρ)
     (T[_]-Env-cong e₂ liftEq₂
@@ -484,9 +455,6 @@ T[_]-⋯ᵣ (e₁ Src.·⟨ d ⟩ e₂) ρ σ =
   cong₂ (Soup._·⟨ d ⟩_) (T[_]-⋯ᵣ e₁ ρ σ) (T[_]-⋯ᵣ e₂ ρ σ)
 T[_]-⋯ᵣ (e₁ Src.; e₂) ρ σ = cong₂ Soup._;_ (T[_]-⋯ᵣ e₁ ρ σ) (T[_]-⋯ᵣ e₂ ρ σ)
 T[_]-⋯ᵣ (e₁ Src.⊗ e₂) ρ σ = cong₂ Soup._⊗_ (T[_]-⋯ᵣ e₁ ρ σ) (T[_]-⋯ᵣ e₂ ρ σ)
-T[_]-⋯ᵣ (Src.`let e₁ `in e₂) ρ σ =
-  cong₂ Soup.`let_`in_ (T[_]-⋯ᵣ e₁ ρ σ)
-    (T[_]-⋯ᵣ e₂ (ρ Src.↑ᵣ) (TS.liftEnv σ) ■ (T[_]-Env-cong e₂ (λ where zero → refl; (suc x) → refl)))
 T[_]-⋯ᵣ (Src.`let⊗ e₁ `in e₂) ρ σ =
   cong₂ Soup.`let⊗_`in_ (T[_]-⋯ᵣ e₁ ρ σ)
     (T[_]-⋯ᵣ e₂ ((ρ Src.↑ᵣ) Src.↑ᵣ) (TS.liftEnv (TS.liftEnv σ))
@@ -517,9 +485,6 @@ T[_]-envAt k (e₁ Src.·⟨ d ⟩ e₂) t σ =
   cong₂ (Soup._·⟨ d ⟩_) (T[_]-envAt k e₁ t σ) (T[_]-envAt k e₂ t σ)
 T[_]-envAt k (e₁ Src.; e₂) t σ = cong₂ Soup._;_ (T[_]-envAt k e₁ t σ) (T[_]-envAt k e₂ t σ)
 T[_]-envAt k (e₁ Src.⊗ e₂) t σ = cong₂ Soup._⊗_ (T[_]-envAt k e₁ t σ) (T[_]-envAt k e₂ t σ)
-T[_]-envAt k (Src.`let e₁ `in e₂) t σ =
-  cong₂ Soup.`let_`in_ (T[_]-envAt k e₁ t σ)
-    (T[_]-Env-cong e₂ (envAt-liftEq k t σ) ■ T[_]-envAt (suc k) e₂ t σ)
 T[_]-envAt k (Src.`let⊗ e₁ `in e₂) t σ =
   cong₂ Soup.`let⊗_`in_ (T[_]-envAt k e₁ t σ)
     (T[_]-Env-cong e₂ (envAt-liftEq₂ k t σ) ■ T[_]-envAt (suc (suc k)) e₂ t σ)
@@ -548,10 +513,6 @@ T[_]-⋯ₛ (e₁ Src.·⟨ d ⟩ e₂) τ σ =
   cong₂ (Soup._·⟨ d ⟩_) (T[_]-⋯ₛ e₁ τ σ) (T[_]-⋯ₛ e₂ τ σ)
 T[_]-⋯ₛ (e₁ Src.; e₂) τ σ = cong₂ Soup._;_ (T[_]-⋯ₛ e₁ τ σ) (T[_]-⋯ₛ e₂ τ σ)
 T[_]-⋯ₛ (e₁ Src.⊗ e₂) τ σ = cong₂ Soup._⊗_ (T[_]-⋯ₛ e₁ τ σ) (T[_]-⋯ₛ e₂ τ σ)
-T[_]-⋯ₛ (Src.`let e₁ `in e₂) τ σ =
-  cong₂ Soup.`let_`in_ (T[_]-⋯ₛ e₁ τ σ)
-    (T[_]-⋯ₛ e₂ (τ Src.↑ₛ) (TS.liftEnv σ)
-     ■ (T[_]-Env-cong e₂ (λ where zero → refl; (suc x) → T[_]-wk (τ x) σ)))
 T[_]-⋯ₛ (Src.`let⊗ e₁ `in e₂) τ σ =
   cong₂ Soup.`let⊗_`in_ (T[_]-⋯ₛ e₁ τ σ)
     (T[_]-⋯ₛ e₂ ((τ Src.↑ₛ) Src.↑ₛ) (TS.liftEnv (TS.liftEnv σ))
@@ -595,7 +556,6 @@ Tᶠ[ SrcBase.app₂ e d V? ] {σ = σ} Vσ = SoupRed.app₂ (TS.T[ e ] σ) d λ
 Tᶠ[ SrcBase.□⊗ e ] {σ = σ} Vσ = SoupRed.□⊗ (TS.T[ e ] σ)
 Tᶠ[ V SrcBase.⊗□ ] Vσ = T[_]-Value V Vσ SoupRed.⊗□
 Tᶠ[ SrcBase.□; e ] {σ = σ} Vσ = SoupRed.□; (TS.T[ e ] σ)
-Tᶠ[ SrcBase.`let-`in e ] {σ = σ} Vσ = SoupRed.`let-`in (TS.T[ e ] (TS.liftEnv σ))
 Tᶠ[ SrcBase.`let⊗-`in e ] {σ = σ} Vσ = SoupRed.`let⊗-`in (TS.T[ e ] (TS.liftEnv (TS.liftEnv σ)))
 Tᶠ[ SrcBase.`inj□ i ] Vσ = SoupRed.`inj□ i
 Tᶠ[ SrcBase.`case□`of⟨ e₁ ; e₂ ⟩ ] {σ = σ} Vσ =
@@ -612,7 +572,6 @@ T[_]-plugᶠ (SrcBase.app₂ e d V?) Vσ = refl
 T[_]-plugᶠ (SrcBase.□⊗ e) Vσ = refl
 T[_]-plugᶠ (V SrcBase.⊗□) Vσ = refl
 T[_]-plugᶠ (SrcBase.□; e) Vσ = refl
-T[_]-plugᶠ (SrcBase.`let-`in e) Vσ = refl
 T[_]-plugᶠ (SrcBase.`let⊗-`in e) Vσ = refl
 T[_]-plugᶠ (SrcBase.`inj□ i) Vσ = refl
 T[_]-plugᶠ (SrcBase.`case□`of⟨ e₁ ; e₂ ⟩) Vσ = refl
@@ -633,38 +592,6 @@ T[_]-─→ {σ = σ} {e = e} Vσ red with e | red
     (SoupRed.E-App (T[_]-Value V Vσ))
 ... | e₁ Src.; e₂ | SrcRed.E-Seq V =
   SoupRed.E-Seq (T[_]-Value V Vσ)
-... | Src.`let e₁ `in e₂ | SrcRed.E-Let V =
-  subst (λ rhs → TS.T[ Src.`let e₁ `in e₂ ] σ SoupRed.─→ rhs)
-    (sym (T[_]-⦅⦆ e₂ e₁ σ))
-    (SoupRed.E-Let (T[_]-Value V Vσ))
-... | Src.`let⊗ (e₁ Src.⊗ e₂) `in e | SrcRed.E-PairElim V₁ V₂ =
-  subst (λ rhs → TS.T[ Src.`let⊗ (e₁ Src.⊗ e₂) `in e ] σ SoupRed.─→ rhs)
-    pairEq
-    (SoupRed.E-PairElim (T[_]-Value V₁ Vσ) (T[_]-Value V₂ Vσ))
-  where
-  pairEq :
-    SoupRed.subst₀ (TS.T[ e₂ ] σ)
-      (SoupRed.subst₀ (Soup.wk (TS.T[ e₁ ] σ))
-        (TS.T[ e ] (TS.liftEnv (TS.liftEnv σ))))
-    ≡ TS.T[ Src._⋯_ (Src._⋯_ e (Src.⦅ Src.wk e₁ ⦆)) (Src.⦅ e₂ ⦆) ] σ
-  pairEq =
-    cong (λ b → SoupRed.subst₀ (TS.T[ e₂ ] σ) b)
-      (cong (λ t → SoupRed.subst₀ t (TS.T[ e ] (TS.liftEnv (TS.liftEnv σ)))) (sym (T[_]-wk e₁ σ))
-       ■ sym (T[_]-⦅⦆ e (Src.wk e₁) (TS.liftEnv σ)))
-    ■ sym (T[_]-⦅⦆ (Src._⋯_ e (Src.⦅ Src.wk e₁ ⦆)) e₂ σ)
-... | Src.`case Src.`inj true e `of⟨ e₁ ; e₂ ⟩ | SrcRed.E-SumElim {i = true} V =
-  subst (λ rhs → TS.T[ Src.`case Src.`inj true e `of⟨ e₁ ; e₂ ⟩ ] σ SoupRed.─→ rhs)
-    (sym (T[_]-⦅⦆ e₁ e σ))
-    (SoupRed.E-SumElim (T[_]-Value V Vσ))
-... | Src.`case Src.`inj false e `of⟨ e₁ ; e₂ ⟩ | SrcRed.E-SumElim {i = false} V =
-  subst (λ rhs → TS.T[ Src.`case Src.`inj false e `of⟨ e₁ ; e₂ ⟩ ] σ SoupRed.─→ rhs)
-    (sym (T[_]-⦅⦆ e₂ e σ))
-    (SoupRed.E-SumElim (T[_]-Value V Vσ))
-... | Src.μ e | SrcRed.E-Unfold =
-  subst (λ rhs → TS.T[ Src.μ e ] σ SoupRed.─→ rhs)
-    (sym (T[_]-⦅⦆ e (Src.μ e) σ))
-    SoupRed.E-Unfold
-... | e₁ Src.⦂ T | SrcRed.E-Ann = SoupRed.E-Ann
 
 T[_]-⋯→ : ∀ {n n′} {σ : TS.Env n n′} {e e′ : Src.Tm n} →
   ValueEnv σ → e SrcRed.⋯→ e′ → TS.T[ e ] σ SoupRed.⋯→ TS.T[ e′ ] σ

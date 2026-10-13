@@ -160,12 +160,14 @@
 }
 \NewDocumentCommand\CtxJoin{s O{\Dir}}{\stackrel{\IfBooleanT{#1}{\smash}{#2}}{\metacolor{\bowtie}}}
 \newcommand*\CtxAlgJoinCheck[3][]{
-  \CtxRestrict[#1]{#2} \CtxJoin \CtxRestrict[#1]{#3} \SubCtx \Ctx[#1]
+  \CtxRestrict[#1]{#2} \CtxJoin \CtxRestrict[#1]{#3} \SubCtx \Ctx[#1] \uparrow \CSet[0]
 }
 \newcommand*\CtxAlgSeqCheck[3][]{
-  \CtxRestrict[#1]{#2} \CtxSeq \CtxRestrict[#1]{#3} \SubCtx \Ctx[#1]
+  \CtxRestrict[#1]{#2} \CtxSeq \CtxRestrict[#1]{#3} \SubCtx \Ctx[#1] \uparrow \CSet[0]
 }
-\newcommand*\CaseJoinDir{\operatorname{joinDir}}
+\newcommand*\CtxAlgPatCheck[3][]{
+  \CtxRestrict[#1]{#2} \CtxPatOp \CtxRestrict[#1]{#3} \SubCtx \Ctx[#1] \uparrow \CSet[0]
+}
 
 % Constraint sets
 \NewMetaVar \CSet \Delta
@@ -370,6 +372,9 @@
 
 % New Types
 \NewDocumentCommand \SNew {s} {\operatorname{\mathsf{new}\IfBooleanT{#1}{'}}}
+
+% Local Types
+\newcommand*\SLocal{\operatorname{\mathsf{local}}}
 
 % Terminated Session Types
 \newcommand*\Bounded{\operatorname{\mathsf{bnd}}}

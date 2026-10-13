@@ -51,7 +51,6 @@ data _⊑_ {n : ℕ} : Tm n → Tm n → Set where
   ⊑-app  : ∀ {e₁ ê₁ e₂ ê₂} d → e₁ ⊑ ê₁ → e₂ ⊑ ê₂ → e₁ ·⟨ d ⟩ e₂ ⊑ ê₁ ·⟨ d ⟩ ê₂
   ⊑-seq  : ∀ {e₁ ê₁ e₂ ê₂} → e₁ ⊑ ê₁ → e₂ ⊑ ê₂ → (e₁ ; e₂) ⊑ (ê₁ ; ê₂)
   ⊑-⊗    : ∀ {e₁ ê₁ e₂ ê₂} → e₁ ⊑ ê₁ → e₂ ⊑ ê₂ → e₁ ⊗ e₂ ⊑ ê₁ ⊗ ê₂
-  ⊑-let  : ∀ {e₁ ê₁ e₂ ê₂} → e₁ ⊑ ê₁ → e₂ ⊑ ê₂ → `let e₁ `in e₂ ⊑ `let ê₁ `in ê₂
   ⊑-let⊗ : ∀ {e₁ ê₁ e₂ ê₂} → e₁ ⊑ ê₁ → e₂ ⊑ ê₂ → `let⊗ e₁ `in e₂ ⊑ `let⊗ ê₁ `in ê₂
   ⊑-inj  : ∀ {e ê} i → e ⊑ ê → `inj i e ⊑ `inj i ê
   ⊑-case : ∀ {e ê e₁ ê₁ e₂ ê₂} → e ⊑ ê → e₁ ⊑ ê₁ → e₂ ⊑ ê₂ →
@@ -67,7 +66,6 @@ data _⊑_ {n : ℕ} : Tm n → Tm n → Set where
 ⊑-refl {e = e₁ ·⟨ d ⟩ e₂} = ⊑-app d ⊑-refl ⊑-refl
 ⊑-refl {e = e₁ ; e₂} = ⊑-seq ⊑-refl ⊑-refl
 ⊑-refl {e = e₁ ⊗ e₂} = ⊑-⊗ ⊑-refl ⊑-refl
-⊑-refl {e = `let e₁ `in e₂} = ⊑-let ⊑-refl ⊑-refl
 ⊑-refl {e = `let⊗ e₁ `in e₂} = ⊑-let⊗ ⊑-refl ⊑-refl
 ⊑-refl {e = `inj i e} = ⊑-inj i ⊑-refl
 ⊑-refl {e = `case e `of⟨ e₁ ; e₂ ⟩} = ⊑-case ⊑-refl ⊑-refl ⊑-refl
@@ -83,7 +81,6 @@ fv-⊑ (⊑-μ p) = cong fvClose (fv-⊑ p)
 fv-⊑ (⊑-app d p₁ p₂) = cong₂ _∪_ (fv-⊑ p₁) (fv-⊑ p₂)
 fv-⊑ (⊑-seq p₁ p₂) = cong₂ _∪_ (fv-⊑ p₁) (fv-⊑ p₂)
 fv-⊑ (⊑-⊗ p₁ p₂) = cong₂ _∪_ (fv-⊑ p₁) (fv-⊑ p₂)
-fv-⊑ (⊑-let p₁ p₂) = cong₂ _∪_ (fv-⊑ p₁) (cong fvClose (fv-⊑ p₂))
 fv-⊑ (⊑-let⊗ p₁ p₂) = cong₂ _∪_ (fv-⊑ p₁) (cong (fvClose* 2) (fv-⊑ p₂))
 fv-⊑ (⊑-inj i p) = fv-⊑ p
 fv-⊑ (⊑-case p p₁ p₂) =

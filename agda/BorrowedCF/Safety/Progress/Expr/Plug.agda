@@ -37,7 +37,6 @@ value? (μ e)                    = no λ()
 value? (e ⦂ T)                  = no λ()
 value? (e₁ ·⟨ d ⟩ e₂)           = no λ()
 value? (e₁ ; e₂)                = no λ()
-value? (`let e₁ `in e₂)         = no λ()
 value? (`let⊗ e₁ `in e₂)        = no λ()
 value? (`case e `of⟨ e₁ ; e₂ ⟩) = no λ()
 value? (e₁ ⊗ e₂) with value? e₁ ×? value? e₂
@@ -79,7 +78,6 @@ data Plug {n} (Red : Tm n → Set) : Tm n → Set where
   pairˡ : ∀ {e₁ e₂ : Tm n} → Plug Red e₁ → Plug Red (e₁ ⊗ e₂)
   pairʳ : ∀ {e₁ e₂ : Tm n} → Value e₁ → Plug Red e₂ → Plug Red (e₁ ⊗ e₂)
   seqˡ  : ∀ {e₁ e₂ : Tm n} → Plug Red e₁ → Plug Red (e₁ ; e₂)
-  letˡ  : ∀ {e₁ : Tm n} {e₂ : Tm (suc n)} → Plug Red e₁ → Plug Red (`let e₁ `in e₂)
   let⊗ˡ : ∀ {e₁ : Tm n} {e₂ : Tm (suc (suc n))} → Plug Red e₁ → Plug Red (`let⊗ e₁ `in e₂)
   injˡ  : ∀ {i} {e : Tm n} → Plug Red e → Plug Red (`inj i e)
   caseˡ : ∀ {e : Tm n} {e₁ e₂ : Tm (suc n)} → Plug Red e → Plug Red (`case e `of⟨ e₁ ; e₂ ⟩)
@@ -93,7 +91,6 @@ plug-frame (app₂ e d V?)           p = appʳ V? p
 plug-frame (□⊗ e₂)                 p = pairˡ p
 plug-frame (V₁ ⊗□)                 p = pairʳ V₁ p
 plug-frame (□; e₂)                 p = seqˡ p
-plug-frame (`let-`in e′)           p = letˡ p
 plug-frame (`let⊗-`in e′)          p = let⊗ˡ p
 plug-frame (`inj□ i)               p = injˡ p
 plug-frame `case□`of⟨ e₁ ; e₂ ⟩    p = caseˡ p
@@ -115,8 +112,6 @@ plug⇒ctx (pairʳ V₁ p)
   with E , r , Rr , refl ← plug⇒ctx p = (V₁ ⊗□) ∷ E , r , Rr , refl
 plug⇒ctx (seqˡ {e₂ = e₂} p)
   with E , r , Rr , refl ← plug⇒ctx p = (□; e₂) ∷ E , r , Rr , refl
-plug⇒ctx (letˡ {e₂ = e₂} p)
-  with E , r , Rr , refl ← plug⇒ctx p = (`let-`in e₂) ∷ E , r , Rr , refl
 plug⇒ctx (let⊗ˡ {e₂ = e₂} p)
   with E , r , Rr , refl ← plug⇒ctx p = (`let⊗-`in e₂) ∷ E , r , Rr , refl
 plug⇒ctx (injˡ {i = i} p)
@@ -167,10 +162,6 @@ plug? R? (e₁ ; e₂) with R? (e₁ ; e₂) | plug? R? e₁
 ... | yes r | _     = yes (here r)
 ... | no ¬r | yes p = yes (seqˡ p)
 ... | no ¬r | no ¬p = no λ{ (here r) → ¬r r ; (seqˡ p) → ¬p p }
-plug? R? (`let e₁ `in e₂) with R? (`let e₁ `in e₂) | plug? R? e₁
-... | yes r | _     = yes (here r)
-... | no ¬r | yes p = yes (letˡ p)
-... | no ¬r | no ¬p = no λ{ (here r) → ¬r r ; (letˡ p) → ¬p p }
 plug? R? (`let⊗ e₁ `in e₂) with R? (`let⊗ e₁ `in e₂) | plug? R? e₁
 ... | yes r | _     = yes (here r)
 ... | no ¬r | yes p = yes (let⊗ˡ p)
@@ -202,7 +193,6 @@ value-⋯ᵣ⁻¹ (`inj i e) ρ (V-⊕ V)     = V-⊕ (value-⋯ᵣ⁻¹ e ρ V)
 ⋯ᶠ-[] (□⊗ e₂)               e ρ = refl
 ⋯ᶠ-[] (V₁ ⊗□)               e ρ = refl
 ⋯ᶠ-[] (□; e₂)               e ρ = refl
-⋯ᶠ-[] (`let-`in e′)         e ρ = refl
 ⋯ᶠ-[] (`let⊗-`in e′)        e ρ = refl
 ⋯ᶠ-[] (`inj□ i)             e ρ = refl
 ⋯ᶠ-[] `case□`of⟨ e₁ ; e₂ ⟩  e ρ = refl
@@ -220,7 +210,6 @@ plug-⋯ᵣ ρ f (e₁ ·⟨ d ⟩ e₂) (appʳ V? p)  = appʳ (λ eq → V? eq 
 plug-⋯ᵣ ρ f (e₁ ⊗ e₂)      (pairˡ p)    = pairˡ (plug-⋯ᵣ ρ f e₁ p)
 plug-⋯ᵣ ρ f (e₁ ⊗ e₂)      (pairʳ V p)  = pairʳ (V ⋯ᵛ ρ) (plug-⋯ᵣ ρ f e₂ p)
 plug-⋯ᵣ ρ f (e₁ ; e₂)      (seqˡ p)     = seqˡ (plug-⋯ᵣ ρ f e₁ p)
-plug-⋯ᵣ ρ f (`let e₁ `in e₂)  (letˡ p)  = letˡ (plug-⋯ᵣ ρ f e₁ p)
 plug-⋯ᵣ ρ f (`let⊗ e₁ `in e₂) (let⊗ˡ p) = let⊗ˡ (plug-⋯ᵣ ρ f e₁ p)
 plug-⋯ᵣ ρ f (`inj i e)     (injˡ p)     = injˡ (plug-⋯ᵣ ρ f e p)
 plug-⋯ᵣ ρ f (`case e `of⟨ e₁ ; e₂ ⟩) (caseˡ p) = caseˡ (plug-⋯ᵣ ρ f e p)
@@ -243,8 +232,6 @@ plug-⋯ᵣ⁻¹ ρ f (e₁ ⊗ e₂) (pairˡ p)   = pairˡ (plug-⋯ᵣ⁻¹ ρ
 plug-⋯ᵣ⁻¹ ρ f (e₁ ⊗ e₂) (pairʳ V p) = pairʳ (value-⋯ᵣ⁻¹ e₁ ρ V) (plug-⋯ᵣ⁻¹ ρ f e₂ p)
 plug-⋯ᵣ⁻¹ ρ f (e₁ ; e₂) (here r) = here (f _ r)
 plug-⋯ᵣ⁻¹ ρ f (e₁ ; e₂) (seqˡ p) = seqˡ (plug-⋯ᵣ⁻¹ ρ f e₁ p)
-plug-⋯ᵣ⁻¹ ρ f (`let e₁ `in e₂) (here r) = here (f _ r)
-plug-⋯ᵣ⁻¹ ρ f (`let e₁ `in e₂) (letˡ p) = letˡ (plug-⋯ᵣ⁻¹ ρ f e₁ p)
 plug-⋯ᵣ⁻¹ ρ f (`let⊗ e₁ `in e₂) (here r)  = here (f _ r)
 plug-⋯ᵣ⁻¹ ρ f (`let⊗ e₁ `in e₂) (let⊗ˡ p) = let⊗ˡ (plug-⋯ᵣ⁻¹ ρ f e₁ p)
 plug-⋯ᵣ⁻¹ ρ f (`inj i e) (here r) = here (f _ r)

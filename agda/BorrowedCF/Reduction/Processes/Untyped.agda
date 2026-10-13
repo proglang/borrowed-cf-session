@@ -12,30 +12,6 @@ open Fin.Patterns
 
 pattern 𝓒[_×_×_] e₁ x e₂ = (e₁ ⊗ (` x)) ⊗ e₂
 
-------------------------------------------------------------------------
--- φ-telescopes: the sync-cells that sit between a ν and its redex threads.
---
---   With the linked-φ design a cell cannot commute out of the ν that binds its
---   channel, so a channel operation must fire UNDER the φ-nest rather than
---   after floating it out.  Each channel rule below is quantified over an
---   arbitrary telescope `Φ`, and the ν-bound pair's channel indices are shifted
---   into the body scope by `wkΦ`.
-------------------------------------------------------------------------
-
-data Φ* : ℕ → ℕ → Set where
-  []φ  : Φ* n n
-  _◂_  : (Flag × Tm n) → Φ* (1 + n) k → Φ* n k
-
-infixr 6 _◂_
-
-plugΦ : Φ* n k → Proc k → Proc n
-plugΦ []φ            P = P
-plugΦ ((f , c) ◂ Φ) P = φ f c (plugΦ Φ P)
-
-wkΦ : Φ* n k → n →ᵣ k
-wkΦ []φ            = idₖ ⦃ Kᵣ ⦄
-wkΦ ((f , c) ◂ Φ)  = weakenᵣ ·ₖ wkΦ Φ
-
 infix 4 _─→ₚ_
 
 data _─→ₚ_ {n} : Proc n → Proc n → Set where
@@ -49,72 +25,66 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
   RU-New : (F : Frame* n) →
     ⟪ F [ K (`new s) ·¹ * ]* ⟫
       ─→ₚ
-    ν (φ acq (` 0F) (φ acq (` 2F) ⟪
+    ν (φ acq (φ acq ⟪
       (F ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 4) [
          𝓒[ ` 1F × 2F × * ] ⊗ 𝓒[ ` 0F × 3F × * ]
       ]*
     ⟫ ))
 
-  RU-LSplit : ∀ {k} (Φ : Φ* (2 + n) k) (F : Frame* k) {e₁ e₂ : Tm k} {P : Proc k} →
-    ν ( plugΦ Φ ( ⟪ F [ K (`lsplit s) ·¹ 𝓒[ e₁ × wkΦ Φ 0F × e₂ ] ]* ⟫ ∥ P ) )
+  RU-LSplit : (F : Frame* (2 + n)) →
+    ν ( ⟪ F [ K (`lsplit s) ·¹ 𝓒[ e₁ × 0F × e₂ ] ]* ⟫ ∥ P )
       ─→ₚ
-    ν ( plugΦ Φ ( ⟪ F [ 𝓒[ e₁ × wkΦ Φ 0F × * ] ⊗ 𝓒[ * × wkΦ Φ 0F × e₂ ] ]* ⟫ ∥ P ) )
+    ν ( ⟪ F [ 𝓒[ e₁ × 0F × * ] ⊗ 𝓒[ * × 0F × e₂ ] ]* ⟫ ∥ P )
 
-  RU-RSplit : ∀ {k} (Φ : Φ* (2 + n) k) (F : Frame* k) {e₁ e₂ : Tm k} {P : Proc k} →
-    ν ( plugΦ Φ ( ⟪ F [ K (`rsplit s) ·¹ 𝓒[ e₁ × wkΦ Φ 0F × e₂ ] ]* ⟫ ∥ P ) )
+  RU-RSplit : (F : Frame* (2 + n)) →
+    ν (⟪ F [ K (`rsplit s) ·¹ 𝓒[ e₁ × 0F × e₂ ] ]* ⟫ ∥ P)
       ─→ₚ
-    ν ( plugΦ Φ ( φ drop (` wkΦ Φ 0F) (
+    ν (φ drop (
       ⟪ (F ⋯ᶠ* weakenᵣ) [
-           𝓒[ wk e₁ × weakenᵣ (wkΦ Φ 0F) × ` 0F ]
+           𝓒[ wk e₁ × 1F × ` 0F ]
              ⊗
-           𝓒[ ` 0F × weakenᵣ (wkΦ Φ 0F) × wk e₂ ]
+           𝓒[ ` 0F × 1F × wk e₂ ]
         ]*
-      ⟫ ∥ (P ⋯ₚ weakenᵣ) ) ) )
+      ⟫ ∥ (P ⋯ₚ weakenᵣ)
+    ))
 
-  RU-Drop : ∀ {k} (Φ : Φ* (1 + n) k) (F : Frame* k) {x : 𝔽 n} {c : Tm n} {P : Proc k} →
-    φ drop c ( plugΦ Φ ( ⟪ F [ K `drop ·¹ 𝓒[ * × wkΦ Φ (suc x) × ` wkΦ Φ 0F ] ]* ⟫ ∥ P ) )
+  RU-Drop : (F : Frame* (1 + n)) {x : 𝔽 n} →
+    φ drop (⟪ F [ K `drop ·¹ 𝓒[ * × suc x × ` 0F ] ]* ⟫ ∥ P)
       ─→ₚ
-    φ acq c ( plugΦ Φ ( ⟪ F [ * ]* ⟫ ∥ P ) )
+    φ acq (⟪ F [ * ]* ⟫ ∥ P)
 
   RU-Discard : (F : Frame* n) (V : Value e) →
     ⟪ F [ K `discard ·¹ e ]* ⟫ ─→ₚ ⟪ F [ * ]* ⟫
 
-  RU-Acquire : ∀ {k} (Φ : Φ* (2 + n) k) (F : Frame* k) {c : Tm k} {e : Tm k} {P : Proc k} →
-    ν ( plugΦ Φ ( φ acq c (
-      ⟪ (F ⋯ᶠ* weakenᵣ) [ K `acq ·¹ 𝓒[ ` 0F × weakenᵣ (wkΦ Φ 0F) × wk e ] ]* ⟫ ∥ (P ⋯ₚ weakenᵣ)
-    ) ) )
+  RU-Acquire : (F : Frame* (2 + n)) →
+    ν (φ acq (
+      ⟪ (F ⋯ᶠ* weakenᵣ) [ K `acq ·¹ 𝓒[ ` 0F × 1F × wk e ] ]* ⟫ ∥ (P ⋯ₚ weakenᵣ)
+    ))
       ─→ₚ
-    ν ( plugΦ Φ ( ⟪ F [ 𝓒[ * × wkΦ Φ 0F × e ] ]* ⟫ ∥ P ) )
+    ν (⟪ F [ 𝓒[ * × 0F × e ] ]* ⟫ ∥ P)
 
-  -- TIGHTENED (design decision, 2026-08): close fires ONLY at the empty
-  -- φ-telescope ([]φ), matching R-Close's `ν [1][1]`.  A close under an
-  -- outstanding φ-nest (unresolved borrows) is NOT a redex — mirroring that a
-  -- typed close cannot fire with outstanding borrows.  This restores the
-  -- bisimulation: a multi-block close (syncs > 0) is stuck on BOTH sides.
-  RU-Close : (F₁ F₂ : Frame* n) {e₁ e₁′ e₂ e₂′ : Tm (2 + n)} →
+  RU-Close : ∀ (F₁ F₂ : Frame* n) {e₁ e₁′ e₂ e₂′} →
     ν ( ⟪ (F₁ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ‼) ·¹ 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
       ∥ ⟪ (F₂ ⋯ᶠ* weaken* ⦃ Kᵣ ⦄ 2) [ K (`end ⁇) ·¹ 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫ )
       ─→ₚ
     ⟪ F₁ [ * ]* ⟫ ∥ ⟪ F₂ [ * ]* ⟫
 
-  RU-Com : ∀ {k} (Φ : Φ* (2 + n) k) (F₁ F₂ : Frame* k) {e : Tm k} (V : Value e)
-             {e₁ e₁′ e₂ e₂′ : Tm k} {P : Proc k} →
-    ν ( plugΦ Φ ( ⟪ F₁ [ K `send ·¹ (e ⊗ 𝓒[ e₁ × wkΦ Φ 0F × e₁′ ]) ]* ⟫
-      ∥ ( ⟪ F₂ [ K `recv ·¹ 𝓒[ e₂ × wkΦ Φ 1F × e₂′ ] ]* ⟫ ∥ P ) ) )
+  RU-Com : ∀ (F₁ F₂ : Frame* (2 + n)) (V : Value e) {e₁ e₁′ e₂ e₂′} →
+    ν (⟪ F₁ [ K `send ·¹ (e ⊗ 𝓒[ e₁ × 0F × e₁′ ]) ]* ⟫
+      ∥ ( ⟪ F₂ [ K `recv ·¹ 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫ ∥ P ) )
       ─→ₚ
-    ν ( plugΦ Φ ( ⟪ F₁ [ * ]* ⟫ ∥ ( ⟪ F₂ [ e ]* ⟫ ∥ P ) ) )
+    ν ( ⟪ F₁ [ * ]* ⟫ ∥ ( ⟪ F₂ [ e ]* ⟫ ∥ P ) )
 
-  RU-Choice : ∀ {k′} (Φ : Φ* (2 + n) k′) (F₁ F₂ : Frame* k′) k
-                {e₁ e₁′ e₂ e₂′ : Tm k′} {P : Proc k′} →
-    ν ( plugΦ Φ ( ⟪ F₁ [ K (`select k) ·¹ 𝓒[ e₁ × wkΦ Φ 0F × e₁′ ] ]* ⟫
-      ∥ ( ⟪ F₂ [ K `branch ·¹ 𝓒[ e₂ × wkΦ Φ 1F × e₂′ ] ]* ⟫
+  RU-Choice : ∀ (F₁ F₂ : Frame* (2 + n)) k {e₁ e₁′ e₂ e₂′} →
+    ν ( ⟪ F₁ [ K (`select k) ·¹ 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
+      ∥ ( ⟪ F₂ [ K `branch ·¹ 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫
       ∥ P
-    ) ) )
+    ))
       ─→ₚ
-    ν ( plugΦ Φ ( ⟪ F₁ [ 𝓒[ e₁ × wkΦ Φ 0F × e₁′ ] ]* ⟫
-      ∥ ( ⟪ F₂ [ `inj k 𝓒[ e₂ × wkΦ Φ 1F × e₂′ ] ]* ⟫
+    ν ( ⟪ F₁ [ 𝓒[ e₁ × 0F × e₁′ ] ]* ⟫
+      ∥ ( ⟪ F₂ [ `inj k 𝓒[ e₂ × 1F × e₂′ ] ]* ⟫
       ∥ P
-    ) ) )
+    ))
 
   RU-Par :
     P ─→ₚ P′ →
@@ -128,9 +98,9 @@ data _─→ₚ_ {n} : Proc n → Proc n → Set where
     P ─→ₚ Q →
     ν P ─→ₚ ν Q
 
-  RU-Sync : ∀ {x c} →
+  RU-Sync : ∀ {x} →
     P ─→ₚ Q →
-    φ x c P ─→ₚ φ x c Q
+    φ x P ─→ₚ φ x Q
 
   RU-Struct :
     P ≋ P′ →

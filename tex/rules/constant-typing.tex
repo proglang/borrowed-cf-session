@@ -46,7 +46,8 @@
 
 % CT-LSplit
 \DefRule {LSplit} {
-  \neg (\S[2] \SEq \SSkip)
+  \neg (\S[2] \SEq \SSkip) \\
+  \SLocal\S[2]
 } {
   \HasCType
     {\CSplit_{\S[1],\S[2]}}
@@ -55,7 +56,8 @@
 
 % CT-RSplit
 \DefRule {RSplit} {
-  \neg (\S[2] \SEq \SSkip)
+  \neg (\S[2] \SEq \SSkip) \\
+  \SLocal\S[2]
 } {
   \HasCType
   {\CSSplit_{\S[1],\S[2]}}

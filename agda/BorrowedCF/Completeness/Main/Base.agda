@@ -277,5 +277,3 @@ allMobile-approx Γ̂ Γ (α ; β) ap (M₁ ; M₂) =
 -- Projections that turn the cases missing from `SolvedTm` / `SolvedC` on as soon as
 -- `Algorithmic/Solved.agda` gains the constructors (Main-STATUS.md, FINDING 3).
 
-sTm-let : SolvedTm {n} (`let e₁ `in e₂) → SolvedTm e₁ × SolvedTm e₂
-sTm-let (`let s₁ `in s₂) = s₁ , s₂
