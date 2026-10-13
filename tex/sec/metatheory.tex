@@ -49,28 +49,23 @@ remain possible.
 \subsection{Simulation for the Translation}
 
 We relate source and target reduction through the image relation
-$\Proc \ImageRel \TProcQ$, which holds when the configuration $\TProcQ$
-represents the closed, well-typed process $\Proc$ up to the renaming of
-primitive channels and the ordering of threads. The translation produces an
-image, $\Proc \ImageRel \TransP\Proc$. Both simulations match one source
-step with one target step.
+$\Proc \ImageRel X$, where $X$ is a target configuration representing the
+closed, well-typed process $\Proc$.  The relation allows fresh-name choices,
+permutation of concurrent expressions, and reordering of an endpoint's flags
+provided their references are updated consistently. The translation of a closed process
+produces an image, $\Proc \ImageRel \TransP[\emptyset]{\Proc}$. Both
+simulations match one source step with one target step.
 
 \begin{theorem}[Forward simulation\;\AgdaBird]
-  If\/ $\ProcHasType \CtxEmpty \Proc$, $\Proc \ImageRel \TProcQ$, and
-  $\Proc \PReduce \Proc*$, then there exists $\TProcQ*$ such that
-  $\TProcQ \TPReduce \TProcQ*$ and $\Proc* \ImageRel \TProcQ*$.
+  If\/ $\ProcHasType \CtxEmpty \Proc$, $\Proc \ImageRel X$, and
+  $\Proc \PReduce \Proc*$, then there exists $X'$ such that
+  $X \TPReduce X'$ and $\Proc* \ImageRel X'$.
 \end{theorem}
 
-The converse direction holds up to the equivalence $\Bisim$ that identifies
-configurations differing only in the numbering of the synchronization slots of
-one endpoint. The target rule for a right split may place its new slot at any
-position, whereas the source rule \textsc{R-RSplit} fixes that position.
-
 \begin{theorem}[Backward simulation\;\AgdaBird]
-  If\/ $\ProcHasType \CtxEmpty \Proc$, $\Proc \ImageRel \TProcQ$,
-  $\TProcQ \Bisim \TProcR$, and $\TProcR \TPReduce \TProcR*$, then there
-  exist $\Proc*$ and $\TProcQ*$ such that $\Proc \PReduce \Proc*$,
-  $\Proc* \ImageRel \TProcQ*$, and $\TProcQ* \Bisim \TProcR*$.
+  If\/ $\ProcHasType \CtxEmpty \Proc$, $\Proc \ImageRel X$,
+  and $X \TPReduce X'$, then there exists $\Proc*$ such that
+  $\Proc \PReduce \Proc*$ and $\Proc* \ImageRel X'$.
 \end{theorem}
 
 

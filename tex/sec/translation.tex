@@ -14,117 +14,110 @@ semantics of \cref{sec:semantics}.
   \setlength{\abovedisplayskip}{0pt}%
   \setlength{\belowdisplayskip}{0pt}%
   \begin{align*}
-    \TProc \grmeq
-        & \TPExp\E
-          \grmor \TPPar\TProc\TProc
-          \grmor \TPNew[xy] \TProc
-          \grmor \TPSync[\TEVarz]\Flag\TProc
-      \tag{Configurations}
-    \\
-    \TCC
-      \grmeq& \TCCEmpty
-      \grmor \TPPar \TCC \TProc
-      \grmor \TPNew[xy] \TCC
-      \grmor \TPSync[\TEVarz]\Flag\TCC
-      \tag{Configuration contexts}
-    \\
-    \Flag \grmeq & \FlagInit \grmor \FlagDropped %\grmor \FlagAcquired
-      \tag{Synchronization flags}
+    \mathsf{Flag} &\grmeq \FlagInit \grmor \FlagDropped \\
+    \mathsf{Channel} &\grmeq
+      \{\mathsf{open},\mathsf{closed}\}
+      \times \mathsf{Flag}^{*} \times \mathsf{Flag}^{*} \\
+    \mathsf{Config} &\grmeq (C,S,E)
   \end{align*}
   \caption{Untyped run-time syntax}
   \label{fig:unr-syntax}
 \end{figure}
 
-The syntax of constants, values, and expressions remains unchanged.
-\Cref{fig:unr-syntax} defines target
-configurations $\TProc$ and contexts $\TCC$.  The form $\TPNew[xy]\TProc$ is a
-primitive-channel restriction with endpoints $\TEVar$ and $\TEVary$ scoped over $\TProc$; this is the
-standard restriction construct of session calculi
-\cite{Gay_Vasconcelos_2025}.  The form
-$\TPSync[\TEVarz]\Flag\TProc$ introduces a synchronization cell $\TEVarz$ with state
-$\Flag$ scoped over $\TProc$.  These cells are asynchronous
-variables, similar to MVars
-\cite{DBLP:journals/toplas/ArvindNP89,DBLP:conf/popl/JonesGF96}.  A
-cell in state $\FlagInit$ records that the corresponding $\CDrop$ must happen next; a cell
-in state $\FlagDropped$ records that the $\CDrop$ has happened and an $\CAcq$ may
-proceed.
+\Cref{fig:unr-syntax} defines an untyped run-time configuration $(C,S,E)$.
+Here $C$ is a finite set of primitive channel names, $S:C\to\mathsf{Channel}$
+maps each channel to its current state, and $E$ is a finite multiset of untyped
+expressions executing concurrently.  A channel state records whether the
+channel is open and a sequence of synchronization flags for each of its two
+endpoints.  A flag in state $\FlagInit$ records that the corresponding $\CDrop$
+is still pending; after the drop, its state is $\FlagDropped$ and an $\CAcq$
+may proceed.  The term forms for constants and ordinary expressions are as
+before; the multiset $E$ represents parallel execution.
 
 We call the channels of the target calculus \emph{primitive channels} to
 distinguish them from (translated) source channels.  A
 translated source channel is represented by a value
-$\targettermcolor{c}=\TEChan[\V[1]]\TEVary[\V[2]]$, a triple consisting of an
-optional pre-synchronization cell $\V[1]$, a primitive data channel
-$\TEVary$, and an optional post-synchronization cell $\V[2]$.  The default
-optional component is $\CUnit$.  A nontrivial pre-cell is consumed by
-$\CAcq$ before the endpoint is used.  A nontrivial post-cell is signaled by
-$\CDrop$ when ownership of the endpoint prefix is released.  Communication,
-choice, and close operate on the primitive data channel; the extra cells encode
+$\targettermcolor{c}=\USHandle{\TV[1]}{\TEVary}{\TV[2]}$, a triple consisting of an
+optional pre-synchronization reference $\TV[1]$, a primitive channel endpoint
+$\TEVary$, and an optional post-synchronization reference $\TV[2]$.  The default
+optional component is $\USUnit$.  A nontrivial reference identifies a flag in
+the list belonging to $\TEVary$.  Its pre-flag is consumed by
+$\USConst{acquire}$ before the endpoint is used; its post-flag is signaled by
+$\USConst{drop}$ when ownership of
+the endpoint prefix is released.  Communication, choice, and close operate on
+the primitive channel; the flags encode
 the ordering constraints on remote borrows that source binder groups
 enforce directly. Local borrows do not use this machinery.
 
-Target processes are quotiented by the congruence in
-\cref{fig:translated-congruence}.  Its parallel and restriction laws are the
-usual ones.  The additional laws commute independent synchronization binders
-with each other and with channel binders, and extend synchronization scope
-across parallel composition when the cell is fresh for the other component.
-These laws let the reduction rules expose the primitive channel or
-synchronization cell needed by a redex.
+Permuting concurrent expressions or channel entries does not change a
+configuration: $E$ is a multiset, $C$ is a set, and $S$ is keyed by channel
+name.  There are no channel or synchronization binders whose scopes need to
+be rearranged.  Up to consistent renaming of fresh names, structural
+congruence boils down to equality of configurations, and reduction needs no
+separate congruence rule.
+
+For $S(c)=(b,F_0,F_1)$, define $\operatorname{live}(S,c)=b$ and
+$\operatorname{flags}(S,c,s)=F_s$, where $s\in\{0,1\}$ selects one of the two
+endpoints $c^s$ and $\bar s=1-s$ selects the other.  The notation
+$S[c,s\mapsto F]$ updates only that endpoint's flag sequence.  For the rules,
+we give each occurrence in a flag sequence a distinct name.  In a well-formed
+handle, its post-component $v$ is
+either $\USUnit$ or a reference to a flag on the same endpoint.  We write
+$\operatorname{ins}(F,v,z\!:\!\FlagInit)$ for insertion immediately before
+the flag named by $v$, or at the end of $F$ when $v=\USUnit$.  Thus the
+displayed remote-split rule has a determined insertion point.
 
 \begin{figure}
+  \small
   \begin{mathpar}
-    \RuleUProcRedExp      \and
-    \RuleUProcRedDiscard  \and
-    \RuleUProcRedFork     \and
-    \RuleUProcRedNew      \and
-    \RuleUProcRedLSplit   \and
-    \RuleUProcRedRSplit   \and
-    \RuleUProcRedDrop     \and
-    \RuleUProcRedAcquire  \and
-    %\RuleUProcRedCleanup  \and
-    {\RuleUProcRedCom   \quad %\and
-    \RuleUProcRedChoice}   \\
-    \RuleUProcRedClose    \and
-    \RuleUProcRedStruct   \and
-    \RuleUProcRedPar      \and
-    \RuleUProcRedBind     \and
-    \RuleUProcRedSync
+    \RuleSoupRedExp \and
+    \RuleSoupRedFork \and
+    \RuleSoupRedDiscard \and
+    \RuleSoupRedNew \and
+    \RuleSoupRedLSplit \and
+    \RuleSoupRedRSplit \and
+    \RuleSoupRedDrop \and
+    \RuleSoupRedAcquire \and
+    \RuleSoupRedClose \and
+    \RuleSoupRedCom \and
+    \RuleSoupRedChoice
   \end{mathpar}
-  \caption{Reduction of translated processes ($P' \TPReduce Q'$)}
+  \caption{Reduction of translated configurations
+    ($(C,S,E) \TPReduce (C',S',E')$)}
   \label{fig:unr-process-reduction}
 \end{figure}
 
-The reduction behavior of translated expressions is the same as in the source
-calculus (\cref{fig:expression-reduction}).  \Cref{fig:unr-process-reduction}
-defines the target process reduction relation and uses $\ChanPat\E$ as an
-abbreviation for triples $\TEChan[\U]\E[\V]$ when $\U$ and
-$\V$ do not matter.
+\Cref{fig:unr-process-reduction} gives the reduction relation on configurations.
+The pattern $E\uplus\USMulti{\TE}$ selects one occurrence of $\TE$ from the multiset;
+the communication, choice, and close rules select two distinct occurrences.
+We write $\mathcal F[e]$ for an expression in an evaluation context.  The
+metavariable $v$ ranges over syntactic values, so no separate value premise is
+needed.  In the drop and acquire rules, the name $z$ in the selected handle
+identifies a unique cell in $\operatorname{flags}(S,c,s)$; the displayed
+sequence decomposition therefore fixes the cell to update or remove.
 
-The target rules mirror the source process rules of
-\cref{fig:process-reduction}, but make synchronization explicit.  Rule
-\textsc{RU-New} introduces one primitive-channel restriction and two already-dropped
-synchronization cells, corresponding to the leading acquire markers resulting
-from source channel restriction.  Rule \textsc{RU-LSplit} performs a local split by
-sharing the same primitive data channel between the two returned triples and
-distributing the existing pre- and post-cells.  Rule \textsc{RU-RSplit}
-allocates a fresh synchronization cell in state $\FlagInit$: the left channel receives it as a
-post-cell, and the right channel receives it as a pre-cell.  Consequently
-\textsc{RU-Drop} can signal the cell without blocking, while
-\textsc{RU-Acquire} can proceed only after the signal is present.  The
-communication, choice, and close rules synchronize on the primitive channel
-component.  Remaining rules close reduction under parallel composition,
-channel restriction, synchronization-cell restriction, and structural
-congruence.
+The expression step and discard leave the channel state unchanged; fork adds
+one expression to the soup.  New adds an open channel with an already-acquired
+flag on each endpoint.  A local split shares its endpoint between the two
+resulting handles, whereas a remote split inserts a fresh $\FlagInit$ flag
+between them.  Drop changes that flag to $\FlagDropped$; acquire removes it
+once it is ready.  Communication and choice act on opposite endpoints of an
+open channel.  Close requires both flag sequences to be empty and marks the
+channel closed.  These steps operate directly on the selected expressions and
+channel state, so no parallel or binder closure rules are needed.
 
 \begin{figure}
+  \small
   \begin{mathpar}
-    \RuleTransProcExp   \and
-    \RuleTransProcPar   \and
-    \RuleTransProcBind  \\
-    \RuleTransBindSep   \and
-    \RuleTransBindSeq   \and
-    \raisebox{1.4\baselineskip}{%
-      $\vcenter{\hbox{$\RuleTransBindVar$}\kern.8\baselineskip\hbox{$\RuleTransBindNil$}}$%
-    }
+    \RuleSoupTransExp \and
+    \RuleSoupTransPar \and
+    \RuleSoupTransNew \\
+    \RuleSoupTransSeqNil \and
+    \RuleSoupTransSeqOne \and
+    \RuleSoupTransSeqMore \\
+    \RuleSoupTransBindNil \and
+    \RuleSoupTransBindOne \and
+    \RuleSoupTransBindSep
   \end{mathpar}
   \smallskip
   \[
@@ -132,33 +125,43 @@ congruence.
     \quad \BindFlag{\Bind} = \FlagInit \text{ otherwise.}
   \]
   \caption{Translation of
-    processes ($\Proc \TransProc \TProc*$)
-    and binder groups ($\BindGroup \TransBind \TCC [\Sub]$). Function $\BindFlag{}$
-    maps the segment immediately to the left of a separator to the initial
-    state of its synchronization flag $\Flag$.}
+    processes ($\USTransProc{\Proc}=(C,S,E)$), binder groups
+    ($\USTransBind{\BindGroup}{c^s}{u}{v}=(\Sub,F)$), and sequential
+    segments ($\USTransSeq{\Bind}{c^s}{u}{v}=\Sub$).}
   \label{fig:translation}
 \end{figure}
 
-\Cref{fig:translation} defines the translation relation.  It is parameterized
-by a substitution $\Sub$ that maps source endpoint variables to translated
-channel triples.  Rule \textsc{Tr-Exp} embeds a source process after applying
-this accumulated substitution to its expression.  Parallel composition is
-homomorphic.  A source restriction is translated by translating each binder
-group against one endpoint of a fresh primitive-channel restriction, collecting the
-substitutions produced by those binder groups, translating the body under the
-extended substitution, and wrapping the resulting process in the
-synchronization contexts produced by the binder-group translations.
+\Cref{fig:translation} defines the translation as a configuration-valued
+function $\USTransProc{\Proc}$.  The substitution $\Sub$ maps free source
+variables to target expressions; entries for endpoint variables are channel
+triples.  The expression translation $\USTransExpr{\E}$ replaces free
+variables according to $\Sub$ and preserves the other expression forms.  An
+expression process contributes this translated expression to the multiset.
+Parallel composition combines channel sets and maps and takes the multiset
+union of expressions.  The channel names chosen for the two components are
+disjoint.  A restriction chooses a fresh primitive channel $c$, translates
+its two binder groups for endpoints $c^0$ and $c^1$, then translates the body
+under the substitutions they produce.  It adds $c$ to $C$ and records the
+two resulting flag sequences in $S(c)$; it adds no expression of its own.
 
-The binder-group translation is the bridge between the direct semantics and
-the target implementation.  Translating a variable records that the variable
-denotes the current channel triple.  Translating a sequential group splits the
-current triple locally: the first endpoint keeps the pre-cell, and the
-remaining group keeps the post-cell.  Translating across a separator allocates
-a synchronization cell.  The segment to the left receives the cell as a
-post-cell, and the segment to the right receives it as a pre-cell.  The helper
-$\BindFlag{\Bind}$ initializes the cell to $\FlagDropped$ when there is no
-left segment, because no drop is pending; otherwise it initializes the cell to
-$\FlagInit$.
+The binder-group function $\mathcal B$ returns a finite substitution
+$\Sub_B$ whose domain is exactly the variables bound by $\BindGroup$, together
+with an ordered flag sequence.  Each binding maps a source variable to the
+target expression for its share of endpoint $c^s$.  Its helper $\mathcal L$
+distributes a channel triple
+across the variables in one sequential segment.  A sole variable receives
+the full triple.  With several variables, the first receives the pre-reference,
+the last receives the post-reference, and intermediate variables receive neither;
+their unused components are $\USUnit$.  Each separator introduces a fresh flag name $z$.
+The segment on its left uses $z$ as its post-reference, and the remaining
+binder group uses $z$ as its pre-reference.  The flags appear in separator
+order.  The function $\BindFlag{\Bind}$ initializes the flag to
+$\FlagDropped$ when the left segment is empty, since no drop is pending, and
+to $\FlagInit$ otherwise.  The unions in the figure are unions of
+substitutions with disjoint domains: the two endpoint groups bind different
+variables, and restriction extends the incoming $\Sub$ with their bindings
+before translating its body.  Thus the translated channel state records
+exactly the remote-borrow ordering imposed by the source binder groups.
 
 The simulation result for this translation is stated in
 \cref{sec:metatheory}.

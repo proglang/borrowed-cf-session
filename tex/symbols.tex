@@ -279,6 +279,7 @@
 
 
 % target expressions
+\NewMetaVar[\targettermcolor] \TE e
 \NewMetaVar[\targettermcolor] \TEVar  x
 \NewMetaVar[\targettermcolor] \TEVary y
 \NewMetaVar[\targettermcolor] \TEVarz z
@@ -495,11 +496,6 @@
 
 % Congruence
 \newcommand{\Congruent}{\equiv}
-
-% Weak bisimilarity used for the operational correspondence: it quotients the
-% administrative drop/acquire steps and the structural symmetries under which
-% the process translation is not a homomorphism.
-\newcommand*\Bisim{\mathrel{\metacolor{\approx}}}
 
 % Translations
 \newcommand*\TrCmd[2]{\metacolor{\mathcal{T}_{#1}(#2)}}

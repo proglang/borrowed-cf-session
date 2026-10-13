@@ -1,71 +1,73 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Translation of processes
+% Translation into the untyped soup. The bracket notation translates processes,
+% B translates binder groups, and L distributes one sequential segment.
 
-\def\RuleCmdPrefix{RuleTransProc}
+\newcommand*\USTransProc[2][\Sub]{\TransP[#1]{#2}}
+\newcommand*\USTransBind[4]{\mathcal B(#1;#2,#3,#4)}
+\newcommand*\USTransSeq[4]{\mathcal L(#1;#2,#3,#4)}
+\newcommand*\USTransExpr[2][\Sub]{\mathcal T_{#1}(#2)}
+
+\def\RuleCmdPrefix{RuleSoupTrans}
 \def\RuleNamePrefix{Tr-}
 
-% Tr-Exp
 \DefRule {Exp} {} {
-  \PExp{\E}
-  \TransProc
-  \TPExp{\metacolor{\Sub{[\E*]}}}
+  \USTransProc{\PExp{\E}}
+  = \USCfg{\emptyset}{\emptyset}{\USMulti{\USTransExpr{\E}}}
 }
 
-% Tr-Par
 \DefRule {Par} {
-  \Proc[1] \TransProc \TProc*[1] \\\\
-  \Proc[2] \TransProc \TProc*[2]
+  \USTransProc{\Proc[1]}=(C_1,S_1,E_1) \\
+  \USTransProc{\Proc[2]}=(C_2,S_2,E_2) \\
+  C_1\cap C_2=\emptyset
 } {
-  \PPar {\Proc[1]} {\Proc[2]}
-  \TransProc
-  \TPPar {\TProc*[1]} {\TProc*[2]}
+  \USTransProc{\PPar{\Proc[1]}{\Proc[2]}}
+  = \USCfg{C_1\cup C_2}{S_1\cup S_2}{E_1\uplus E_2}
 }
 
-% Tr-Bind
-\DefRule {Bind} {
-  \BindGroup[1] \TransBind[\TEChan \TEVar] {\TCC[1]}  [\Sub[1]] \\
-  \BindGroup[2] \TransBind[\TEChan \TEVary] {\TCC[2]} [\Sub[2]] \\\\
-  \Proc \TransProc[{\Sub \cup \Sub[1] \cup \Sub[2]}] \TProc*
+\DefRule {New} {
+  c\text{ fresh} \\
+  \USTransBind{\BindGroup[1]}{c^0}{\USUnit}{\USUnit}
+    =(\Sub[1],F_0) \\
+  \USTransBind{\BindGroup[2]}{c^1}{\USUnit}{\USUnit}
+    =(\Sub[2],F_1) \\
+  \USTransProc[{\Sub\cup\sigma_1\cup\sigma_2}]{\Proc}
+    =(C,S,E)
 } {
-  \PNew {\BindGroup[1]}{\BindGroup[2]} \Proc
-  \TransProc
-  \TPNew {\TCC[1][\TCC[2][\TProc*]]}
+  \USTransProc{\PNew{\BindGroup[1]}{\BindGroup[2]}{\Proc}}
+  = \USCfg{C\cup\{c\}}{\USUpdate{c}{(\mathsf{open},F_0,F_1)}}{E}
 }
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Translation of binder groups
-
-\def\RuleCmdPrefix{RuleTransBind}
-\def\RuleNamePrefix{Tr-Bind}
-
-% Tr-BindSep
-\DefRule {Sep} {
-  \Bind[1] \TransBind[{\TEChan[\E[1]] \TEVar [\TEVarz]}] \TCCEmpty [\Sub[1]] \\
-  \BindGroup[2] \TransBind[{\TEChan[\TEVarz] \TEVar [\E[2]]}] {\TCC[2]} [\Sub[2]] \\\\
-  \BindFlag{\Bind[1]} = \Flag
-}{
-  \BWithSep{\Bind[1]}{\BindGroup[2]} \TransBind[{\TEChan[\E[1]] \TEVar [\E[2]]}]
-    {\TPSync \Flag \TCC[2]}
-    [\Sub[1] \cup \Sub[2]]
+\DefRule {SeqNil} {} {
+  \USTransSeq{\BEmp}{c^s}{u}{v}=\emptyset
 }
 
-% Tr-BindSeq
-\DefRule {Seq} {
-  \EVary \TransBind[\TEChan[\E[1]]{\TEVar}] \TCCEmpty [\Sub[1]] \\\\
-  \Bind \TransBind[\TEChan{\TEVar}[\E[2]]] \TCCEmpty [\Sub[2]] \\\\
-  \Bind \ne \BEmp
-}{
-  \BSeq{\EVary}{\Bind} \TransBind[\TEChan[\E[1]]{\TEVar}[\E[2]]]
-    \TCCEmpty
-    [\Sub[1] \cup \Sub[2]]
+\DefRule {SeqOne} {} {
+  \USTransSeq{\EVar}{c^s}{u}{v}
+  =\SubSingle{\EVar}{\USHandle{u}{c^s}{v}}
 }
 
-% Tr-BindVar
-\DefRule {Var} {} {
-  \EVar \TransBind \TCCEmpty [\{ \EVar\mapsto\E \}]
+\DefRule {SeqMore} {
+  \Bind\ne\BEmp
+} {
+  \USTransSeq{\BSeq{\EVar}{\Bind}}{c^s}{u}{v}
+  =\SubSingle{\EVar}{\USHandle{u}{c^s}{\USUnit}}
+   \cup\USTransSeq{\Bind}{c^s}{\USUnit}{v}
 }
 
-% Tr-BindNil
-\DefRule {Nil} {} {
-  \BEmp \TransBind \TCCEmpty [\emptyset]
+\DefRule {BindNil} {} {
+  \USTransBind{[]}{c^s}{u}{v}=(\emptyset,[])
+}
+
+\DefRule {BindOne} {} {
+  \USTransBind{[\Bind]}{c^s}{u}{v}
+  =(\USTransSeq{\Bind}{c^s}{u}{v},[])
+}
+
+\DefRule {BindSep} {
+  \BindGroup\ne[] \\
+  z\text{ fresh} \\
+  \USTransBind{\BindGroup}{c^s}{z}{v}=(\Sub[2],F)
+} {
+  \USTransBind{\BWithSep{\Bind}{\BindGroup}}{c^s}{u}{v}
+  =\bigl(\USTransSeq{\Bind}{c^s}{u}{z}\cup\Sub[2],
+    (\USCell{z}{\BindFlag{\Bind}})\cdot F\bigr)
 }

@@ -1,0 +1,138 @@
+% Reduction of untyped target configurations.  Flag names stand for
+% occurrences in an endpoint's flag sequence; the presentation elides
+% their positional representation in the mechanization.
+
+\def\RuleCmdPrefix{RuleSoupRed}
+\def\RuleNamePrefix{RU-}
+
+\newcommand*\USCfg[3]{(#1,#2,#3)}
+\newcommand*\USMulti[1]{\lbag #1\rbag}
+\newcommand*\USBag[1]{E\mathbin{\uplus}\USMulti{#1}}
+\newcommand*\USBagTwo[2]{E\mathbin{\uplus}\USMulti{#1,#2}}
+\newcommand*\USFrame[2][{}]{\targettermcolor{\mathcal F_{#1}[#2]}}
+\newcommand*\USConst[1]{\TargetTermKeyword{#1}}
+\newcommand*\USUnit{\USConst{*}}
+\newcommand*\USApp[2]{\targettermcolor{#1\,#2}}
+\newcommand*\USCall[2]{\targettermcolor{#1(#2)}}
+\newcommand*\USHandle[3]{\targettermcolor{#1\otimes #2\otimes #3}}
+\newcommand*\USPair[2]{\targettermcolor{(#1)\otimes(#2)}}
+\newcommand*\USCell[2]{#1\!:\!#2}
+\newcommand*\USUpdate[2]{S[#1\mapsto #2]}
+\newcommand*\USSideUpdate[3]{S[#1,#2\mapsto #3]}
+\newcommand*\USOpen[1]{\operatorname{live}(S,#1)=\mathsf{open}}
+\newcommand*\USFlags[2]{\operatorname{flags}(S,#1,#2)}
+\newcommand*\USRed[2]{\begin{gathered}#1\\[-.4ex]\TPReduce\;#2\end{gathered}}
+
+\DefRule {Exp} {
+  \TE \EReduce \TE*
+} {
+  \USRed
+    {\USCfg{C}{S}{\USBag{\TE}}}
+    {\USCfg{C}{S}{\USBag{\TE*}}}
+}
+
+\DefRule {Fork} {} {
+  \USRed
+    {\USCfg{C}{S}{\USBag{\USFrame{\USApp{\USConst{fork}}{v}}}}}
+    {\USCfg{C}{S}{\USBagTwo{\USFrame{\USUnit}}{\USApp{v}{\USUnit}}}}
+}
+
+\DefRule {Discard} {} {
+  \USRed
+    {\USCfg{C}{S}{\USBag{\USFrame{\USApp{\USConst{discard}}{v}}}}}
+    {\USCfg{C}{S}{\USBag{\USFrame{\USUnit}}}}
+}
+
+\DefRule {New} {
+  c,z_0,z_1\text{ fresh} \\
+  S'=\USUpdate{c}{(\mathsf{open},[\USCell{z_0}{\FlagDropped}],
+                             [\USCell{z_1}{\FlagDropped}])} \\
+  h=\USPair
+    {\USHandle{z_0}{c^0}{\USUnit}}
+    {\USHandle{z_1}{c^1}{\USUnit}}
+} {
+  \USRed
+    {\USCfg{C}{S}{\USBag{\USFrame{\USApp{\USConst{new}}{\USUnit}}}}}
+    {\USCfg{C\cup\{c\}}{S'}{\USBag{\USFrame{h}}}}
+}
+
+\DefRule {LSplit} {
+  \USOpen{c}
+} {
+  \USRed
+    {\USCfg{C}{S}{\USBag{\USFrame{\USCall{\USConst{lsplit}}{\USHandle{u}{c^s}{v}}}}}}
+    {\USCfg{C}{S}{\USBag{\USFrame{\USPair
+      {\USHandle{u}{c^s}{\USUnit}}
+      {\USHandle{\USUnit}{c^s}{v}}}}}}
+}
+
+\DefRule {RSplit} {
+  \USOpen{c} \\
+  z\text{ fresh},\quad F=\USFlags{c}{s} \\
+  S'=\USSideUpdate{c}{s}{\operatorname{ins}(F,v,\USCell{z}{\FlagInit})}
+} {
+  \USRed
+    {\USCfg{C}{S}{\USBag{\USFrame{\USCall{\USConst{rsplit}}{\USHandle{u}{c^s}{v}}}}}}
+    {\USCfg{C}{S'}{\USBag{\USFrame{\USPair
+      {\USHandle{u}{c^s}{z}}
+      {\USHandle{z}{c^s}{v}}}}}}
+}
+
+\DefRule {Drop} {
+  \USOpen{c} \\
+  \USFlags{c}{s}=A\cdot(\USCell{z}{\FlagInit})\cdot B,\quad
+  S'=\USSideUpdate{c}{s}{A\cdot(\USCell{z}{\FlagDropped})\cdot B}
+} {
+  \USRed
+    {\USCfg{C}{S}{\USBag{\USFrame{\USCall{\USConst{drop}}{
+      \USHandle{\USUnit}{c^s}{z}}}}}}
+    {\USCfg{C}{S'}{\USBag{\USFrame{\USUnit}}}}
+}
+
+\DefRule {Acquire} {
+  \USOpen{c} \\
+  \USFlags{c}{s}=A\cdot(\USCell{z}{\FlagDropped})\cdot B,\quad
+  S'=\USSideUpdate{c}{s}{A\cdot B}
+} {
+  \USRed
+    {\USCfg{C}{S}{\USBag{\USFrame{\USCall{\USConst{acquire}}{
+      \USHandle{z}{c^s}{v}}}}}}
+    {\USCfg{C}{S'}{\USBag{\USFrame{\USHandle{\USUnit}{c^s}{v}}}}}
+}
+
+\DefRule {Close} {
+  \USOpen{c},\quad \USFlags{c}{0}=\USFlags{c}{1}=[]
+} {
+  \USRed
+    {\USCfg{C}{S}{\USBagTwo
+      {\USFrame[1]{\USCall{\USConst{close}}{\USHandle{\USUnit}{c^s}{\USUnit}}}}
+      {\USFrame[2]{\USCall{\USConst{wait}}{\USHandle{\USUnit}{c^{\bar s}}{\USUnit}}}}}}
+    {\USCfg{C}{\USUpdate{c}{(\mathsf{closed},[],[])}}{\USBagTwo
+      {\USFrame[1]{\USUnit}}{\USFrame[2]{\USUnit}}}}
+}
+
+\DefRule {Com} {
+  \USOpen{c}
+} {
+  \USRed
+    {\USCfg{C}{S}{\USBagTwo
+      {\USFrame[1]{\USApp{\USConst{send}}{\USPair
+        {v}{\USHandle{\USUnit}{c^s}{u}}}}}
+      {\USFrame[2]{\USCall{\USConst{recv}}{
+        \USHandle{\USUnit}{c^{\bar s}}{w}}}}}}
+    {\USCfg{C}{S}{\USBagTwo{\USFrame[1]{\USUnit}}{\USFrame[2]{v}}}}
+}
+
+\DefRule {Choice} {
+  \USOpen{c}
+} {
+  \USRed
+    {\USCfg{C}{S}{\USBagTwo
+      {\USFrame[1]{\USCall{\USConst{select}_k}{\USHandle{\USUnit}{c^s}{u}}}}
+      {\USFrame[2]{\USCall{\USConst{branch}}{
+        \USHandle{\USUnit}{c^{\bar s}}{w}}}}}}
+    {\USCfg{C}{S}{\USBagTwo
+      {\USFrame[1]{\USHandle{\USUnit}{c^s}{u}}}
+      {\USFrame[2]{\targettermcolor{\mathsf{inj}_k
+        (\USHandle{\USUnit}{c^{\bar s}}{w})}}}}}
+}
