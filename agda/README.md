@@ -35,12 +35,6 @@ Due to the amount of proof code checking the full supplement, as well as select
 modules (ie. safety and simulation results) can take significant time (30-40
 min) and memory (20-25GB), especially for a clean build.
 
-The full Agda supplement can be checked by running the below command.
-
-```sh
-agda --build-library
-```
-
 Selected modules can be checked by, e.g.,
 
 ```sh
