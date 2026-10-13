@@ -156,9 +156,7 @@ data ⊢_∶_ : Const → 𝕋 → Set where
 
   `new  : New s → ⊢ `new s ∶ `⊤ →*M ⟨ acq ; (s ; end ⁇) ⟩ ⊗¹ ⟨ acq ; (dual s ; end ‼) ⟩ ∣ ℙ
 
-  -- Don't let the user introduce `skip` sessions. The `Wf` requirement
-  -- guarantees that there are no `acq` somewhere other than the head of the
-  -- session.
+  -- Don't let the user introduce `skip` sessions.
   `lsplit : (s s′ : 𝕊 0) → ¬ Skips s → Local s′ → ¬ Skips s′ →
     ⊢ `lsplit s ∶ ⟨ s ; s′ ⟩ →*M ⟨ s ⟩ ⊗ᴸ ⟨ s′ ⟩ ∣ ℙ
 
