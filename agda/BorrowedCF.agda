@@ -22,12 +22,6 @@ import BorrowedCF.Reduction.Processes.Typed
 import BorrowedCF.Safety.Preservation
 import BorrowedCF.Safety.Progress
 
--- Low-level processes
-import BorrowedCF.Processes.Untyped
-import BorrowedCF.Reduction.Processes.Untyped
--- Translation
-import BorrowedCF.Processes.Translation
-
 -- Low-level processes (soup representation)
 import BorrowedCF.Processes.UntypedSoup
 import BorrowedCF.Reduction.Processes.UntypedSoup

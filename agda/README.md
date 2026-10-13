@@ -2,95 +2,161 @@
 
 This directory contains the Agda formalization accompanying the paper. It
 defines the CSTB calculus, its declarative and algorithmic type systems, typed
-source processes, two presentations of the untyped run-time calculus, and the
-main metatheoretic results.
+high-level processes, untyped low-level processes and the metatheoretic results.
 
-The current development includes process preservation and progress,
-soundness and completeness of algorithmic typing, and forward and backward
-simulation for the strict soup run time. See [CHANGES.md](CHANGES.md) for the
-detailed theorem statements and the changes made while completing these
-proofs.
-
-## Requirements
+## Software requirements
 
 - [Agda 2.8.0](https://agda.readthedocs.io/en/v2.8.0/getting-started/installation.html)
-- [Agda standard library 2.4](https://agda.readthedocs.io/en/v2.8.0/tools/package-system.html#example-using-the-standard-library)
+- [Agda standard library 2.4](https://wiki.portal.chalmers.se/agda/Libraries/StandardLibrary)
 
-Register `borrowed-cf.agda-lib` and `standard-library` with Agda. Run checks
-from this `agda/` directory, for example:
+We provide a Dockerfile that builds an image with the required versions of Agda
+and the standard library. From inside the directory containing this README.md run
 
-```console
-agda BorrowedCF/Algorithmic.agda
-agda BorrowedCF/Completeness.agda
-agda BorrowedCF/Safety/Preservation.agda
-agda BorrowedCF/Safety/Progress.agda
-agda BorrowedCF/Simulation/ForwardSoup/Local.agda
-agda BorrowedCF/Simulation/BackwardSoup/Simulation.agda
+```sh
+docker build . -t borrowed-cf/agda
 ```
 
-The larger safety and simulation entry points have substantial dependency
-graphs, so a clean build can take significant time and memory.
+To enter a shell in an ephemeral container run
 
-## Main results
+```sh
+docker run --rm -it borrowed-cf/agda
+```
 
-| Result | Entry point |
-|---|---|
-| Algorithmic soundness (`sound`) | [`BorrowedCF/Algorithmic.agda`](BorrowedCF/Algorithmic.agda) |
-| Algorithmic completeness, inference and checking (`complete⇒`, `complete⇐`) | [`BorrowedCF/Completeness.agda`](BorrowedCF/Completeness.agda) |
-| Process preservation (`preservationₚ`) | [`BorrowedCF/Safety/Preservation.agda`](BorrowedCF/Safety/Preservation.agda) |
-| Process progress (`progressₚ`) and strengthened progress (`progress⁺ₚ`) | [`BorrowedCF/Safety/Progress.agda`](BorrowedCF/Safety/Progress.agda) |
-| Forward simulation into the strict soup run time (`sim-global`) | [`BorrowedCF/Simulation/ForwardSoup/Local.agda`](BorrowedCF/Simulation/ForwardSoup/Local.agda) |
-| Backward simulation from the strict soup run time (`backward-sim`) | [`BorrowedCF/Simulation/BackwardSoup/Simulation.agda`](BorrowedCF/Simulation/BackwardSoup/Simulation.agda) |
 
-The completeness theorems reconstruct bidirectional algorithmic derivations
-from declarative derivations for solved contexts, terms, and result types. They
-assume `LinStruct Γ γ`: a linear variable occurs at most once in the
-structural context. This condition is necessary; a mechanized counterexample
-is in
-[`BorrowedCF/Completeness/Probe/LinNeeded.agda`](BorrowedCF/Completeness/Probe/LinNeeded.agda).
-The full statement is documented in
-[`BorrowedCF/Completeness/Base.agda`](BorrowedCF/Completeness/Base.agda).
+## System requirements
 
-The strict-soup backward theorem is stated up to a local renumbering of an
-endpoint's φ slots, the equivalence required by right split. Its statement is in
-[`BorrowedCF/Simulation/BackwardSoup/Statement.agda`](BorrowedCF/Simulation/BackwardSoup/Statement.agda).
+Checking the supplement can require significant amounts of memory. For a clean
+build we observed memory usage up to 20-25GB. When using Docker, ensure that the
+VM has sufficient memory available.
 
-`BorrowedCF/Simulation/Forward.agda` is the retained forward proof for the
-older tree-shaped run time. Its incomplete backward counterpart has been
-removed. The maintained, bidirectional operational-correspondence development
-is the `ForwardSoup/` and `BackwardSoup/` pair above.
+## Building
+
+Due to the amount of proof code checking the full supplement, as well as select
+modules (ie. safety and simulation results) can take significant time (30-40
+min) and memory (20-25GB), especially for a clean build.
+
+The full Agda supplement can be checked by running the below command.
+
+```sh
+agda --build-library
+```
+
+Selected modules can be checked by, e.g.,
+
+```sh
+agda BorrowedCF/Algorithmic.agda
+```
 
 ## Structure
 
-```text
+```
 BorrowedCF/
+│
 ├── Prelude.agda, FinKits.agda, Kits.agda
 │   Shared notation and generic de Bruijn renaming/substitution machinery.
+│
 ├── Types/ and Types.agda
-│   Session-type syntax, substitution, equivalence, predicates, and unification.
+│   Type syntax, equivalence, the various type predicates, and
+│   substitutions for the algorithmic system.
+│
 ├── Terms/ and Terms.agda
 │   Expression syntax, declarative typing, and substitution support.
+│
 ├── Context/ and Context.agda
 │   Structural contexts, joins, equivalence, subcontexts, and constraints.
+│
 ├── Processes/
 │   Typed processes, tree and soup run times, and both translations.
+│
 ├── Reduction/
 │   Expression and process reductions for the typed and untyped calculi.
-├── Algorithmic.agda and Algorithmic/Solved.agda
-│   Bidirectional typing, generated constraints, closing substitutions, and soundness.
+│
+├── Algorithmic.agda and Algorithmic/
+│   Algorithmic type system, soundness proof.
+│
 ├── Completeness/
-│   Algorithmic completeness, including splitting, weakening, scope, and restriction.
+│   Completeness proof of the algorithmic system.
+│
 ├── Safety/
-│   Process preservation, blocked configurations, and progress.
+│   Progress and preservation for high-level processes.
+│
 └── Simulation/
-    Forward and backward operational correspondence; the strict soup proofs
-    are under ForwardSoup/ and BackwardSoup/.
+    Forward and backward operational correspondence
+	between high- and low-level processes.
+```
+
+## Main results
+
+### Definitions
+
+For the definitions in the paper and the appendix we list the corresponding Agda definitions.
+
+| Definition       | Location in the paper | Agda definition |
+|------------------|-----------------------|-----------------|
+| Type syntax               | Fig. 4    | `BorrowedCF.Types.Syntax.⊢_` |
+| Expression syntax         | Fig. 4    | `BorrowedCF.Terms.Base.Tm` |
+| Typed process syntax      | Fig. 4    | `BorrowedCF.Processes.Typed.Proc` |
+| `bnd`                     | Fig. 5    | `BorrowedCF.Typed.Predicates.Bounded` |
+| `mbl`                     | Fig. 5    | `BorrowedCF.Typed.Predicates.Mobile` |
+| `unr`                     | Fig. S-1  | `BorrowedCF.Typed.Predicates.Unr` |
+| `new`                     | Fig. S-1  | `BorrowedCF.Typed.Predicates.New` |
+| Context equivalence       | Fig. 6    | `BorrowedCF.Context.Equivalence._∶_≈_` |
+| Subcontext relation       | Fig. 6    | `BorrowedCF.Context.Subcontext._∶_≼_` |
+| Constant typing           | Fig. 7    | `BorrowedCF.Terms.Base.⊢_∶_` |
+| Expression typing         | Fig. 8    | `BorrowedCF.Terms.Base._;_⊢_∶_∣_` |
+| Process typing            | Fig. 9    | `BorrowedCF.Processes.Typed._;_⊢ₚ_` |
+| Expression reduction      | Fig. S-4  | `BorrowedCF.Reduction.Expressions._─→_` |
+| Typed process congruence  | Fig. S-5  | `BorrowedCF.Processes.Typed._≋_` |
+| Typed process reduction   | Fig. 10   | `BorrowedCF.Reduction.Processes.Typed._─→ₚ_` |
+| Untyped process syntax    | Fig. 11   | `BorrowedCF.Processes.UntypedSoup.Config` |
+| Untyped process reduction | Fig. 12   | `BorrowedCF.Reduction.Processes.UntypedSoup._─→ₚ_` |
+| Process Translation       | Fig. 13   | `BorrowedCF.Process.TranslationSoup.U[_]` |
+| Closing substitutions     | Def. 7.1  | `BorrowedCF.Algorithmic.Solved.Solving` |
+| Algorithmic typing        | Fig. 14   | `BorrowedCF.Algorithmic._;_/_⊢[_]_∶_∣_↑_/_` |
+| Blocked processes         | Fig. S-11 | `BorrowedCF.Safety.Blocked.Blocked` |
+
+### Theorems
+
+| Theorem                          | Agda symbol |
+|----------------------------------|-------------|
+| 8.1 Expression preservation      | `BorrowedCF.Reduction.Expressions.preservation` |
+| 8.2 Process preservation         | `BorrowedCF.Safety.Preservation.preservationₚ` |
+| 8.3 Expression progress          | `BorrowedCF.Reduction.Expressions.progress` |
+| 8.4 Process progress             | `BorrowedCF.Safety.Progress.progressₚ` |
+| 8.5 Forward simulation           | `BorrowedCF.ForwardSoup.Local.sim-global` |
+| 8.6 Backward simulation          | `BorrowedCF.BackwardSoup.backward-sim` |
+| 8.7 Algorithmic typing soundness | `BorrowedCF.Algorithmic.sound` |
+| 8.8 Checking completeness        | `BorrowedCF.Completeness.Main.complete⇐` |
+| 8.9 Inference completeness       | `BorrowedCF.Completeness.Main.complete⇒` |
+
+### Postulates
+
+Our mechanization postulates three theorems:
+
+```agda
+-- (1) BorrowedCF/Kits.agda
+∼-ext : ∀ {ϕ₁ ϕ₂ : S₁ →ₖ S₂} → ϕ₁ ∼ ϕ₂ → ϕ₁ ≡ ϕ₂
+
+-- (2) BorrowedCF/Simulation/Support/Base.agda
+funext : {A : Set} {B : A → Set} {f g : (x : A) → B x} → (∀ x → f x ≡ g x) → f ≡ g
+
+-- (3) BorrowedCF/Context/Subcontext.agda
+_∶_≼?_ : (Γ : Ctx n) → Bin.Decidable (Γ ∶_≼_)
+```
+
+Postulates (1) and (2) are functional extensionality. Postulate (3) says that
+the subcontext relation is decidable [Saffrich et al. 2024].
+
+No further postulates are reported by
+
+```sh
+grep -r '^[[:space:]]*postulate\>' .
 ```
 
 ## Use of generative artificial intelligence
 
-Generative AI assisted with the developments under `Simulation/`, `Safety/`,
-and `Completeness/`, and with selected supporting modules: `TypedEq.agda`,
-`Terms/DescendAbs.agda`, `Terms/DescendK.agda`, `Types/AtomSnoc.agda`, and
-`Types/AtomUnsnoc.agda`. The core calculus definitions and declarative rules
-precede that work.
+Generative AI assisted with the developments under `Simulation/`, `Safety/`, and
+`Completeness/`, and with selected supporting modules: `Terms/DescendAbs.agda`,
+`Terms/DescendK.agda`, `Terms/SubstitutionInversion.agda`,
+`Types/AtomSnoc.agda`, and `Types/AtomUnsnoc.agda`. The core calculus
+definitions and declarative rules precede that work.
