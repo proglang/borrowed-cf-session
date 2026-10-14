@@ -1,6 +1,7 @@
 module BorrowedCF.Types.Unification where
 
 open import BorrowedCF.Prelude
+open import BorrowedCF.Types.Predicates
 
 import BorrowedCF.Types.Syntax as Syn
 
@@ -25,10 +26,19 @@ module UV where
   skips-dual/id⁻ record { pol = ‼ } = id
   skips-dual/id⁻ record { pol = ⁇ } = skips-dual⁻
 
+  local-dual/id⁺ : (α : UVar) → Local s → Local (dual/id α s)
+  local-dual/id⁺ (uvar ‼ _) Ls = Ls
+  local-dual/id⁺ (uvar ⁇ _) Ls = Ls ∘ nonLocal-dual⁻
+
+  wf-dual/id⁺ : (α : UVar) → Wf s → Wf (dual/id α s)
+  wf-dual/id⁺ (uvar ‼ _) wf = wf
+  wf-dual/id⁺ (uvar ⁇ _) wf = wf-dual⁺ wf
+
   record Sub : Set where
     field
       ap : UVar → 𝕊 0
       ap-¬skips : ∀ α → ¬ Skips (ap α)
+      ap-local  : ∀ α → Local (ap α)
       ap-dual/dual : ∀ α → Syn.dual (ap α) ≡ ap (dual α)
 
   open Sub public
@@ -40,20 +50,22 @@ module UV where
   weaken n = record
     { ap = λ α → `` uvar (pol α) (n + var α)
     ; ap-¬skips = λ α ()
+    ; ap-local  = λ α ()
     ; ap-dual/dual = λ α → refl
     }
 
-  subAll : ¬ Skips {0} s → Sub
-  subAll {s = s} ¬Ss = record
+  subAll : {s : 𝕊 0} → Local s → ¬ Skips s → Sub
+  subAll {s = s} Ls ¬Ss = record
     { ap = λ α → dual/id α s
     ; ap-¬skips = λ α → ¬Ss ∘ skips-dual/id⁻ α
+    ; ap-local  = λ α → local-dual/id⁺ α Ls
     ; ap-dual/dual = λ where
         record { pol = ‼ } → refl
         record { pol = ⁇ } → dual-involutive s
     }
 
   someSub : Sub
-  someSub = subAll {s = end ‼} λ()
+  someSub = subAll {s = end ‼} (λ()) (λ())
 
 data Constraint : Set where
   C-Eq : 𝕋 → 𝕋 → Constraint

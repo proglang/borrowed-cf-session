@@ -16,46 +16,6 @@ private variable
   w z z₁ z₂ z′ : 𝕊 n
 
 ------------------------------------------------------------------------
--- Congruences that are not yet in Equivalence.agda
-------------------------------------------------------------------------
-
-≃-brn₁ : s₁ ≃ s₂ → brn p s₁ s ≃ brn p s₂ s
-≃-brn₁ = Eq*.gmap _ ≃𝕊-brn₁
-
-≃-brn₂ : s₁ ≃ s₂ → brn p s s₁ ≃ brn p s s₂
-≃-brn₂ = Eq*.gmap _ ≃𝕊-brn₂
-
-≃-brn : s₁ ≃ s₁′ → s₂ ≃ s₂′ → brn p s₁ s₂ ≃ brn p s₁′ s₂′
-≃-brn e₁ e₂ = ≃-brn₁ e₁ ◅◅ ≃-brn₂ e₂
-
-≃-distr : brn p s₁ s₂ ; s ≃ brn p (s₁ ; s) (s₂ ; s)
-≃-distr = Eq*.return ≃𝕊-distr
-
-------------------------------------------------------------------------
--- ≃ respects substitution
-------------------------------------------------------------------------
-
-≃-⋯ : {ϕ : m →ₛ n} → s₁ ≃ s₂ → s₁ ⋯ ϕ ≃ s₂ ⋯ ϕ
-≃-⋯ {ϕ = ϕ} = go′ where
-  go : {ϕ : m →ₛ n} → s₁ ≃𝕊 s₂ → s₁ ⋯ ϕ ≃ s₂ ⋯ ϕ
-  go (≃𝕊-;₁ x) = ≃-; (go x) ≃-refl
-  go (≃𝕊-;₂ x) = ≃-; ≃-refl (go x)
-  go ≃𝕊-skipˡ = ≃-skipˡ
-  go ≃𝕊-skipʳ = ≃-skipʳ
-  go {ϕ = ϕ} (≃𝕊-μ {s = s}) =
-    subst (λ w → mu (s ⋯ ϕ ↑) ≃ w) (sym (dist-↑-⦅⦆-⋯ s (mu s) ϕ)) ≃-μ
-  go ≃𝕊-assoc = ≃-assoc-;
-  go ≃𝕊-distr = ≃-distr
-  go (≃𝕊-msg x) = Eq*.return (≃𝕊-msg x)
-  go (≃𝕊-brn₁ x) = ≃-brn₁ (go x)
-  go (≃𝕊-brn₂ x) = ≃-brn₂ (go x)
-
-  go′ : {ϕ : m →ₛ n} → s₁ ≃ s₂ → s₁ ⋯ ϕ ≃ s₂ ⋯ ϕ
-  go′ refl = refl
-  go′ (fwd x ◅ xs) = go x ◅◅ go′ xs
-  go′ (bwd x ◅ xs) = ≃-sym (go x) ◅◅ go′ xs
-
-------------------------------------------------------------------------
 -- Snoc a w z  :  structural witness that  w ≃ z ; a  (w "ends in" atom a)
 ------------------------------------------------------------------------
 
@@ -103,14 +63,6 @@ snoc-unfold A here = case A of λ ()
 EndsIn-` : 𝔽 n → 𝕊 n → Set
 EndsIn-` x = EndsIn one {` x} `-
 
-¬skips-atom : {a : 𝕊 n} → Atom a → ¬ Skips a
-¬skips-atom `- ()
-¬skips-atom end ()
-¬skips-atom msg ()
-¬skips-atom ret ()
-¬skips-atom acq ()
-¬skips-atom ``- ()
-
 skips⊥snoc : {a : 𝕊 n} → Atom a → Skips w → Snoc a w z → ⊥
 skips⊥snoc A Sk here = ¬skips-atom A Sk
 skips⊥snoc A (Sk₁ ; Sk₂) (sn ;₁ _) = skips⊥snoc A Sk₁ sn
@@ -124,40 +76,10 @@ skips⊥snoc A (mu Sk) (mu sn) = skips⊥snoc (atom-⋯ᵣ A) Sk sn
 snoc-⋯ᵣ⁻¹ : {α : 𝕊 n} {a′ : 𝕊 m} {ρ : m →ᵣ n} → (∀ {x y} → ρ x ≡ ρ y → x ≡ y) →
   Atom a′ → α ≡ a′ ⋯ ρ → Snoc α (s ⋯ ρ) z → ∃[ z₀ ] Snoc a′ s z₀
 snoc-⋯ᵣ⁻¹ {s = ` x} inj (`- {x = x′}) eq here = _ , subst (λ w → Snoc (` x′) w skip) (cong `_ (sym (inj (`-injective eq)))) here
-snoc-⋯ᵣ⁻¹ {s = ` x} inj end eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = ` x} inj msg eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = ` x} inj ret eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = ` x} inj acq eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = ` x} inj ``- eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = end p} inj `- eq here = case eq of λ ()
 snoc-⋯ᵣ⁻¹ {s = end p} inj end refl here = _ , here
-snoc-⋯ᵣ⁻¹ {s = end p} inj msg eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = end p} inj ret eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = end p} inj acq eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = end p} inj ``- eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = msg p t} inj `- eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = msg p t} inj end eq here = case eq of λ ()
 snoc-⋯ᵣ⁻¹ {s = msg p t} inj msg refl here = _ , here
-snoc-⋯ᵣ⁻¹ {s = msg p t} inj ret eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = msg p t} inj acq eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = msg p t} inj ``- eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = ret} inj `- eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = ret} inj end eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = ret} inj msg eq here = case eq of λ ()
 snoc-⋯ᵣ⁻¹ {s = ret} inj ret refl here = _ , here
-snoc-⋯ᵣ⁻¹ {s = ret} inj acq eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = ret} inj ``- eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = acq} inj `- eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = acq} inj end eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = acq} inj msg eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = acq} inj ret eq here = case eq of λ ()
 snoc-⋯ᵣ⁻¹ {s = acq} inj acq refl here = _ , here
-snoc-⋯ᵣ⁻¹ {s = acq} inj ``- eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = `` β} inj `- eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = `` β} inj end eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = `` β} inj msg eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = `` β} inj ret eq here = case eq of λ ()
-snoc-⋯ᵣ⁻¹ {s = `` β} inj acq eq here = case eq of λ ()
 snoc-⋯ᵣ⁻¹ {s = `` β} inj ``- refl here = _ , here
 snoc-⋯ᵣ⁻¹ {s = skip} inj A eq here = ⊥-elim (case subst Atom (sym eq) (atom-⋯ᵣ A) of λ ())
 snoc-⋯ᵣ⁻¹ {s = s₁ ; s₂} inj A eq here = ⊥-elim (case subst Atom (sym eq) (atom-⋯ᵣ A) of λ ())

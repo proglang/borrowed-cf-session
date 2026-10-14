@@ -96,17 +96,6 @@ module Fin where
       ≡⟨ join-splitAt m n x ⟩
     x ∎
 
-{-
-  assocˡ : ∀ n₁ n₂ {n₃} → Fin (n₁ +ℕ (n₂ +ℕ n₃)) → Fin ((n₁ +ℕ n₂) +ℕ n₃)
-  assocˡ n₁ n₂ = [ {!!} ∘ {!!} , join (n₁ +ℕ n₂) _ ∘ Sum.map₁ (n₁ ↑ʳ_) ∘ splitAt n₂ ]′ ∘ splitAt n₁
-
-  assocʳ : ∀ n₁ n₂ {n₃} → Fin ((n₁ +ℕ n₂) +ℕ n₃) → Fin (n₁ +ℕ (n₂ +ℕ n₃))
-  assocʳ = {!!}
-
-  assocˡʳ-id : ∀ n₁ n₂ {n₃} → assocˡ n₁ n₂ {n₃} ∘ assocʳ n₁ n₂ ≗ id
-  assocˡʳ-id = {!!}
--}
-
 open Fin
   using ( zero; suc; _↑ˡ_; _↑ʳ_; ↑ˡ≢↑ʳ
         ; ↑ˡ-injective; ↑ʳ-injective
@@ -133,13 +122,13 @@ module V where
   open import Data.Vec public
   open import Data.Vec.Properties public
 
-open V using (Vec; []; _∷_; lookup; lookup-map; ∷-injective) public
+open V using (Vec; []; _∷_; _[_]=_; here; there; lookup; lookup-map) public
 
 module Π where
   open import Data.Product public
   open import Data.Product.Properties public
 
-open Π using (_×_; _,_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∄; ∃-syntax; curry; uncurry) public
+open Π using (_×_; _,_; -,_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∄; ∃-syntax; curry; uncurry) public
 
 import Relation.Binary
 import Relation.Unary

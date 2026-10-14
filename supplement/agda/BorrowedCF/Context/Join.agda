@@ -1,8 +1,12 @@
 module BorrowedCF.Context.Join where
 
+import Data.Fin.Subset as S
+import Data.Fin.Subset.Properties as S
+
 open import BorrowedCF.Prelude
 open import BorrowedCF.Types
 open import BorrowedCF.Context.Base
+open import BorrowedCF.Context.Domain
 open import BorrowedCF.Context.Equivalence
 open import BorrowedCF.Context.Subcontext
 open import BorrowedCF.Context.Substitution
@@ -48,14 +52,6 @@ record Join (A : Set) : Set where
   ... | L = ≼-wk
   ... | R = ≼-wk
 
-{-
-  join-dist-; : ∀ a α₁ α₂ β → Γ ∶ join a α₁ (join a α₂ β) ≼ join a (join a α₁ α₂) β
-  join-dist-; a α₁ α₂ β with joinDir a
-  ... | 𝟙 = {!!}
-  ... | L = ≼-refl {!!} --(≈-sym ;-assoc)
-  ... | R = ≼-refl {!!}
--}
-
   join-[]₁ : ∀ a → Γ ∶ join a [] β ≈ β
   join-[]₁ a with joinDir a
   ... | 𝟙 = ∥-unit₁
@@ -86,40 +82,17 @@ record Join (A : Set) : Set where
   ... | R = Π.swap ∘ allCx-;⁻¹
   ... | 𝟙 = allCx-∥⁻¹
 
-{-
-  module _ where
-    open import Data.Fin.Subset.Properties
+  join-↓ : ∀ a (α β : Struct n) {X} → join a α β ↓ X ≡ join a (α ↓ X) (β ↓ X)
+  join-↓ a α β with joinDir a
+  ... | 𝟙 = refl
+  ... | L = refl
+  ... | R = refl
 
-    unjoin : ∀ a (γ : Struct n) {𝓧 : Subset n} → 𝓧 ⊆ dom γ → ∃[ α ] ∃[ β ] dom α ≡ 𝓧 × Empty (dom α ∩ dom β) × Γ ∶ join a α β ≼ γ
-    unjoin a (` x) {X} X⊆ with x ∈? X
-    ... | yes x∈ = (` x) , [] , sym (⊆⁅x⁆×y∈⇒≡⁅x⁆ X⊆ x∈) , Empty-∩₂ ⁅ x ⁆ Empty-⁅⁆ , ≼-refl (join-[]₂ a)
-    ... | no  x∉ = [] , (` x) , sym (Empty-unique (⊆⁅x⁆×x∉⇒Empty X⊆ x∉)) , Empty-∩₁ Empty-⁅⁆ _ , ≼-refl (join-[]₁ a)
-    unjoin a [] X⊆ = [] , [] , sym (⊆⁅⁆⇒≡⁅⁆ X⊆) , Empty-∩₁ Empty-⁅⁆ _ , ≼-refl (join-[]₁ a)
-    unjoin a (α ∥ β) {X} X⊆ =
-      let α₁ , α₂ , dom-α₁ , disj-α , α₁₂ = unjoin a α (p∩q⊆q X (dom α)) in
-      let β₁ , β₂ , dom-β₁ , disj-β , β₁₂ = unjoin a β (p∩q⊆q X (dom β)) in
-      (α₁ ∥ β₁) , (α₂ ∥ β₂)
-        , ( let open ≡-Reasoning in
-            dom (α₁ ∥ β₁)              ≡⟨⟩
-            dom α₁ ∪ dom β₁            ≡⟨ cong₂ _∪_ dom-α₁ dom-β₁ ⟩
-            (X ∩ dom α) ∪ (X ∩ dom β)  ≡⟨ ∩-distribˡ-∪ X (dom α) (dom β) ⟨
-            X ∩ (dom α ∪ dom β)        ≡⟨ ∩-identityʳ-⊆ X X⊆ ⟩
-            X ∎
-          )
-        , (λ (x , x∈) → disj-α (x , x∈p∩q⁺ {!x∈p∪q⁻ _ _ (x∈p∩q⁻ _ _ x∈ .proj₁)!})) -- requires unique variables
-        , ≼-trans (join-distr-∥ a _ _ _ _) (≼-cong-∥ α₁₂ β₁₂)
-    unjoin a (α ; β) {X} X⊆ with nonempty? (dom β ∩ X)
-    ... | yes dom[β]∩X≢∅ = {!!}
-    ... | no dom[β]∩X≡∅ =
-      let α₁ , α₂ , dom-α₁ , disj-α , α₁₂ = unjoin a α (p∩q⊆q X (dom α)) in
-      α₁ , α₂ ; β
-        , ( let open ≡-Reasoning in
-            dom α₁     ≡⟨ dom-α₁ ⟩
-            X ∩ dom α  ≡⟨ ∩-identityʳ-⊆ X {!!} ⟩ -- ((Sum.fromInj₁ λ x∈ → ⊥-elim (dom[β]∩X≡∅ ?)) ∘ x∈p∪q⁻ _ _ ∘ X⊆)
-            X ∎)
-        , (λ (x , x∈) → {!!}) -- requires unique vars
-        , {!!} --≼-trans {!!} (≼-cong-; α₁₂ (≼-refl refl))
--}
+  dom-join : ∀ a (α β : Struct n) → dom (join a α β) ≡ dom α S.∪ dom β
+  dom-join a α β with joinDir a
+  ... | 𝟙 = refl
+  ... | L = refl
+  ... | R = S.∪-comm _ _
 
 open Join ⦃ ... ⦄ public
 
@@ -143,4 +116,5 @@ join-≼-∥ : (p/s : ParSeq) → Γ ∶ join p/s α β ≼ α ∥ β
 join-≼-∥ par = ≼-refl refl
 join-≼-∥ seq = ;-≼-∥
 
-postulate parOrSeq? : Γ ∶ α ; β ≼ γ → Σ[ p/s ∈ ParSeq ] Γ ∶ join p/s α β ≼ γ
+parOrSeq? : Γ ∶ α ; β ≼ γ → Σ[ p/s ∈ ParSeq ] Γ ∶ join p/s α β ≼ γ
+parOrSeq? ≤γ = seq , ≤γ

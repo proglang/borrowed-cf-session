@@ -157,12 +157,6 @@ subTy-skips⁻¹ {s = s₁ ; s₂} (x₁ ; x₂) = subTy-skips⁻¹ x₁ ; su
 subTy-skips⁻¹ {s = skip} x = x
 subTy-skips⁻¹ {s = `` α} {σ = σ} x = contradiction (skips-⋯ᵣ⁻¹ x) (UV.ap-¬skips σ α)
 
-subTy-unr : Unr T → Unr (subTy T σ)
-subTy-unr `⊤ = `⊤
-subTy-unr (U ⊗ U₁) = subTy-unr U ⊗ subTy-unr U₁
-subTy-unr (U ⊕ U₁) = subTy-unr U ⊕ subTy-unr U₁
-subTy-unr (arr x) = arr x
-
 subTy-bounded : Bounded s → Bounded (subTy s σ)
 subTy-bounded end = end
 subTy-bounded ret = ret
@@ -171,12 +165,19 @@ subTy-bounded (-;₂ b) = -;₂ subTy-bounded b
 subTy-bounded (mu x) = mu (subTy-bounded x)
 subTy-bounded (brn x x₁) = brn (subTy-bounded x) (subTy-bounded x₁)
 
+module _ {PA : Arr → Set} {PS : 𝕊 0 → Set} where
+  subTy-tpred : (∀ {s} → PS s → PS (subTy s σ)) → TPred PA PS T → TPred PA PS (subTy T σ)
+  subTy-tpred ps `⊤ = `⊤
+  subTy-tpred ps (arr x) = arr x
+  subTy-tpred ps (x ⊗ x₁) = subTy-tpred ps x ⊗ subTy-tpred ps x₁
+  subTy-tpred ps (x ⊕ x₁) = subTy-tpred ps x ⊕ subTy-tpred ps x₁
+  subTy-tpred ps ⟨ x ⟩ = ⟨ ps x ⟩
+
+subTy-unr : Unr T → Unr (subTy T σ)
+subTy-unr = subTy-tpred id
+
 subTy-mobile : Mobile T → Mobile (subTy T σ)
-subTy-mobile `⊤ = `⊤
-subTy-mobile (arr x) = arr x
-subTy-mobile (m₁ ⊗ m₂) = subTy-mobile m₁ ⊗ subTy-mobile m₂
-subTy-mobile (m₁ ⊕ m₂) = subTy-mobile m₁ ⊕ subTy-mobile m₂
-subTy-mobile ⟨ (s , Bs , eq) ⟩ = ⟨ (_ , subTy-bounded Bs , subTy-≃ eq) ⟩
+subTy-mobile = subTy-tpred λ (s , Bs , eq) → (_ , subTy-bounded Bs , subTy-≃ eq)
 
 subTy-new : New s → New (subTy s σ)
 subTy-new `- = `-
@@ -185,6 +186,13 @@ subTy-new (brn x x₁) = brn (subTy-new x) (subTy-new x₁)
 subTy-new (mu x) = mu (subTy-new x)
 subTy-new (x ; x₁) = subTy-new x ; subTy-new x₁
 subTy-new skip = skip
+
+subTy-local : Local s → Local (subTy s σ)
+subTy-local {s = acq}      Ls = Ls
+subTy-local {s = `` α} {σ} Ls = local-⋯ᵣ (UV.ap-local σ α)
+subTy-local {s = _ ; _}    Ls (¬Lσs ;₁-) = subTy-local (λ x → Ls (x ;₁-)) ¬Lσs
+subTy-local {s = _ ; _}    Ls (Ss ;₂ ¬Lσs) = subTy-local (λ x → Ls (subTy-skips⁻¹ Ss ;₂ x)) ¬Lσs
+subTy-local {s = mu _}    Ls (mu ¬Lσs) = subTy-local (λ x → Ls (mu x)) ¬Lσs
 
 open import BorrowedCF.Terms
 
@@ -199,6 +207,9 @@ data SolvedC : Const → Set where
   `new  : SolvedTy s → SolvedC (`new s)
   `lsplit : SolvedTy s → SolvedC (`lsplit s)
   `rsplit : SolvedTy s → SolvedC (`rsplit s)
+  `discard : SolvedC `discard
+  `select : ∀ {k} → SolvedC (`select k)
+  `branch : SolvedC `branch
 
 data SolvedTm {n} : Tm n → Set where
   `_ : (x : 𝔽 n) → SolvedTm (` x)
@@ -211,7 +222,9 @@ data SolvedTm {n} : Tm n → Set where
   `let⊗_`in_ : {e₁ : Tm n} {e₂ : Tm (2 + n)} → SolvedTm e₁ → SolvedTm e₂ → SolvedTm (`let⊗ e₁ `in e₂)
   `inj : {i : Side} {e : Tm n} → SolvedTm e → SolvedTm (`inj i e)
   `case_`of⟨_;_⟩ : {e : Tm n} {e₁ e₂ : Tm (1 + n)} → SolvedTm e → SolvedTm e₁ → SolvedTm e₂ → SolvedTm `case e `of⟨ e₁ ; e₂ ⟩
-  -- `let_`in_ : (e₁ : Tm n) (e₂ : Tm (1 + n)) → Tm n
+  _⦂_ : {e : Tm n} {T : 𝕋} → SolvedTm e → SolvedTy T → SolvedTm (e ⦂ T)
+
+infixl 5 _⦂_
 
 subConst : Const → UV.Sub → Const
 subConst `unit σ = `unit
@@ -239,6 +252,9 @@ subConst-solved `end = `end
 subConst-solved {σ} (`new s) rewrite subTy-id s {σ} = `new s
 subConst-solved {σ} (`lsplit s) rewrite subTy-id s {σ} = `lsplit s
 subConst-solved {σ} (`rsplit s) rewrite subTy-id s {σ} = `rsplit s
+subConst-solved `discard = `discard
+subConst-solved `select = `select
+subConst-solved `branch = `branch
 
 subConst-id : {c : Const} → SolvedC c → subConst c σ ≡ c
 subConst-id `unit = refl
@@ -251,6 +267,9 @@ subConst-id `end = refl
 subConst-id (`new s) = cong `new (subTy-id s)
 subConst-id (`lsplit s) = cong `lsplit (subTy-id s)
 subConst-id (`rsplit s) = cong `rsplit (subTy-id s)
+subConst-id `discard = refl
+subConst-id `select = refl
+subConst-id `branch = refl
 
 subConst-⊢ : ∀ {c} → ⊢ c ∶ T → ⊢ subConst c σ ∶ subTy T σ
 subConst-⊢ `unit = `unit
@@ -258,10 +277,8 @@ subConst-⊢ `fork = `fork
 subConst-⊢ {σ = σ} (`new {s = s} N)
   rewrite sym (subTy-dual {σ = σ} s)
   = `new (subTy-new N)
-subConst-⊢ (`lsplit s s′ ¬s′) = `lsplit (subTy s _) (subTy s′ _) (¬s′ ∘ subTy-skips⁻¹)
-subConst-⊢ (`rsplit s s′ ¬s′) = `rsplit (subTy s _) (subTy s′ _) (¬s′ ∘ subTy-skips⁻¹)
--- subConst-⊢ (`lsplit ¬skipₛ s′) = `lsplit (¬skipₛ ∘ subTy-skips⁻¹) (subTy s′ _)
--- subConst-⊢ (`rsplit ¬skipₛ s′) = `rsplit (¬skipₛ ∘ subTy-skips⁻¹) (subTy s′ _)
+subConst-⊢ (`lsplit _ _ ¬S₁ L₂ ¬S₂) = `lsplit _ _ (¬S₁ ∘ subTy-skips⁻¹) (subTy-local L₂) (¬S₂ ∘ subTy-skips⁻¹)
+subConst-⊢ (`rsplit _ _ L₂ ¬S₂) = `rsplit _ _ (subTy-local L₂) (¬S₂ ∘ subTy-skips⁻¹)
 subConst-⊢ `drop = `drop
 subConst-⊢ `acq = `acq
 subConst-⊢ (`send m) = `send (subTy-mobile m)
@@ -281,10 +298,10 @@ subTm (μ e) σ = μ (subTm e σ)
 subTm (e ·⟨ d ⟩ e₁) σ = subTm e σ ·⟨ d ⟩ subTm e₁ σ
 subTm (e ; e₁) σ = subTm e σ ; subTm e₁ σ
 subTm (e ⊗ e₁) σ = subTm e σ ⊗ subTm e₁ σ
-subTm (`let e `in e₁) σ = `let subTm e σ `in subTm e₁ σ
 subTm (`let⊗ e `in e₁) σ = `let⊗ subTm e σ `in subTm e₁ σ
 subTm (`inj i e) σ = `inj i (subTm e σ)
 subTm `case e `of⟨ e₁ ; e₂ ⟩ σ = `case subTm e σ `of⟨ subTm e₁ σ ; subTm e₂ σ ⟩
+subTm (e ⦂ T) σ = subTm e σ ⦂ subTy T σ
 
 subTm-solved : {e : Tm n} → SolvedTm e → SolvedTm (subTm e σ)
 subTm-solved (` x) = ` x
@@ -297,6 +314,7 @@ subTm-solved (e ⊗ e₁) = subTm-solved e ⊗ subTm-solved e₁
 subTm-solved (`let⊗ e `in e₁) = `let⊗ subTm-solved e `in subTm-solved e₁
 subTm-solved (`inj e) = `inj (subTm-solved e)
 subTm-solved `case e `of⟨ e₁ ; e₂ ⟩ = `case subTm-solved e `of⟨ subTm-solved e₁ ; subTm-solved e₂ ⟩
+subTm-solved {σ = σ} (e ⦂ T) = subTm-solved e ⦂ subst SolvedTy (sym (subTy-id T {σ})) T
 
 subTm-id : {e : Tm n} → SolvedTm e → subTm e σ ≡ e
 subTm-id (` x) = refl
@@ -309,9 +327,10 @@ subTm-id (e ⊗ e₁) = cong₂ _⊗_ (subTm-id e) (subTm-id e₁)
 subTm-id (`let⊗ e `in e₁) = cong₂ `let⊗_`in_ (subTm-id e) (subTm-id e₁)
 subTm-id (`inj e) = cong (`inj _) (subTm-id e)
 subTm-id {σ = σ} `case e `of⟨ e₁ ; e₂ ⟩ rewrite subTm-id {σ = σ} e = cong₂ `case _ `of⟨_;_⟩ (subTm-id e₁) (subTm-id e₂)
+subTm-id (e ⦂ T) = cong₂ _⦂_ (subTm-id e) (subTy-id T)
 
 subCtx : Ctx n → UV.Sub → Ctx n
-subCtx Γ σ k = subTy (Γ k) σ
+subCtx Γ σ = V.map (λ t → subTy t σ) Γ
 
 SolvedCst : Constraint → UV.Sub → Set
 SolvedCst (C-Eq t u) σ = subTy t σ ≃ subTy u σ
@@ -322,7 +341,7 @@ SolvedΔ Δ σ = flip All Δ (λ C → SolvedCst C σ)
 
 SolvedΓ : Ctx n → UV.Sub → Set
 SolvedΓ Γ σ = ∀ x →
-  SolvedTy (subTy (Γ x) σ)
+  SolvedTy (subTy (Γ ﹫ x) σ)
 
 solved-⸴ : SolvedTy (subTy T σ) → SolvedΓ Γ σ → SolvedΓ (T ⸴ Γ) σ
 solved-⸴ ST SΓ zero = ST

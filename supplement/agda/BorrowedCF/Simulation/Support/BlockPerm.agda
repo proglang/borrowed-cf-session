@@ -581,7 +581,7 @@ toℕ-R4 b k {m} i with Nat.<-cmp (Fin.toℕ i) (b + k)
 ------------------------------------------------------------------------
 
 -- toℕ of the local Fin.swap a {b}.
-toℕ-finswap-lt : ∀ a b {-{m}-} (x : 𝔽 (a + b)) → Fin.toℕ x Nat.< a →
+toℕ-finswap-lt : ∀ a b (x : 𝔽 (a + b)) → Fin.toℕ x Nat.< a →
                  Fin.toℕ (Fin.swap a {b} x) ≡ b + Fin.toℕ x
 toℕ-finswap-lt a b x lt =
     cong (λ s → Fin.toℕ (Fin.join b a (Sum.swap s))) (Fin.splitAt-< a x lt)

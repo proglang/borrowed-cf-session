@@ -5,19 +5,18 @@ import Data.List.Relation.Unary.All.Properties as All
 
 open import Data.Nat.ListAction using (sum)
 open import Data.Nat.ListAction.Properties using (sum-++)
-open import Data.Vec.Functional as F using ()
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive as Star using (_◅◅_) renaming (ε to refl)
 
 open import BorrowedCF.Prelude
-open import BorrowedCF.Terms as Terms hiding (wk)
-open import BorrowedCF.TermsInv using (_⊢⋯⁻¹_/_)
-open import BorrowedCF.Processes.Typed
-open import BorrowedCF.Processes.Renamings
-open import BorrowedCF.Types
 open import BorrowedCF.Context as 𝐂
 open import BorrowedCF.Context.Pattern
+open import BorrowedCF.Processes.Congruence
+open import BorrowedCF.Processes.Renamings
+open import BorrowedCF.Processes.Typed
 open import BorrowedCF.Reduction.Base
 open import BorrowedCF.Reduction.Expressions
+open import BorrowedCF.Terms as Terms hiding (wk)
+open import BorrowedCF.Types
 
 import BorrowedCF.Context.Substitution as 𝐂
 

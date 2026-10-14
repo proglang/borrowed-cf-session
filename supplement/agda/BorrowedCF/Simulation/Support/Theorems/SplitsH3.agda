@@ -105,7 +105,7 @@ canonₛ-e₁ b₁ [] {N} a a′ x e₂ i i≢ =
   Ub-e₁ (b₁ + 0) a a′ x e₂ i i≢
 canonₛ-e₁ b₁ (c ∷ B₂′) {N} a a′ x e₂ i i≢
   with Fin.splitAt (suc b₁) i in seq
-... | inj₁ p rewrite seq =
+... | inj₁ p =
       cong (subst Tm (+-suc (syncs (c ∷ B₂′)) N))
         (cong (_⋯ weaken* ⦃ Kᵣ ⦄ (syncs (c ∷ B₂′)))
           (Ub-e₁ b₁ (wk a) (wk a′) (suc x) (` 0F) p p≢))
@@ -114,7 +114,7 @@ canonₛ-e₁ b₁ (c ∷ B₂′) {N} a a′ x e₂ i i≢
     p≢ p≡ = i≢ ( sym (Fin.join-splitAt (suc b₁) (sum (c ∷ B₂′)) i)
                ■ cong (Fin.join (suc b₁) (sum (c ∷ B₂′))) seq
                ■ cong (_↑ˡ sum (c ∷ B₂′)) p≡ )
-... | inj₂ r rewrite seq = refl
+... | inj₂ r = refl
 
 -- canonₛ-rwk, base case (B₁ = []): the fresh `1`-block sync (front of the tail's
 -- syncs) is exactly the slot canonₛ-nat's (weakenᵣ ↑* syncs) inserts; off 0F, e₁
