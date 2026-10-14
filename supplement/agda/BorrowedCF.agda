@@ -34,3 +34,6 @@ import BorrowedCF.Processes.TranslationSoup
 import BorrowedCF.Simulation.ForwardSoup.Local
 -- Backwards
 import BorrowedCF.Simulation.BackwardSoup
+
+-- Unary fixed-front target and its simulations up to flag permutation
+import BorrowedCF.Simulation.FrontSoup
