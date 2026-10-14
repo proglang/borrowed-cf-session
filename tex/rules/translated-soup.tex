@@ -66,13 +66,15 @@
       {\USHandle{\USUnit}{c^s}{v}}}}}}
 }
 
+% Unary remote split allocates its synchronization cell at the front.
 \DefRule {RSplit} {
   \USOpen{c} \\
-  z\text{ fresh},\quad F=\USFlags{c}{s} \\
-  S'=\USSideUpdate{c}{s}{\operatorname{ins}(F,v,\USCell{z}{\FlagInit})}
+  z\text{ fresh},\quad \USFlags{c}{s}=F \\
+  S'=\USSideUpdate{c}{s}{(\USCell{z}{\FlagInit})\cdot F}
 } {
   \USRed
-    {\USCfg{C}{S}{\USBag{\USFrame{\USCall{\USConst{rsplit}}{\USHandle{u}{c^s}{v}}}}}}
+    {\USCfg{C}{S}{\USBag{\USFrame{\USCall{\USConst{rsplit}}{
+      \USHandle{u}{c^s}{v}}}}}}
     {\USCfg{C}{S'}{\USBag{\USFrame{\USPair
       {\USHandle{u}{c^s}{z}}
       {\USHandle{z}{c^s}{v}}}}}}

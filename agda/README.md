@@ -103,11 +103,25 @@ For the definitions in the paper and the appendix we list the corresponding Agda
 | Typed process congruence  | Fig. S-5  | `BorrowedCF.Processes.Typed._≋_` |
 | Typed process reduction   | Fig. 10   | `BorrowedCF.Reduction.Processes.Typed._─→ₚ_` |
 | Untyped process syntax    | Fig. 11   | `BorrowedCF.Processes.UntypedSoup.Config` |
-| Untyped process reduction | Fig. 12   | `BorrowedCF.Reduction.Processes.UntypedSoup._─→ₚ_` |
-| Process Translation       | Fig. 13   | `BorrowedCF.Process.TranslationSoup.U[_]` |
+| Untyped process reduction | Fig. 12   | `BorrowedCF.Simulation.FrontCore.FrontStep` |
+| Process Translation       | Fig. 13   | `BorrowedCF.Processes.TranslationSoup.U[_]` |
 | Closing substitutions     | Def. 7.1  | `BorrowedCF.Algorithmic.Solved.Solving` |
 | Algorithmic typing        | Fig. 14   | `BorrowedCF.Algorithmic._;_/_⊢[_]_∶_∣_↑_/_` |
 | Blocked processes         | Fig. S-11 | `BorrowedCF.Safety.Blocked.Blocked` |
+
+The paper's unary remote split always allocates at the front of the selected
+endpoint's flag list. `FrontStep` restricts the general soup reduction to
+`RUS-RSplit` witnesses with an empty `before` list. The general reduction is
+retained for the canonical-image and slot-bisimulation proofs; it is not the
+paper's executable target relation. `FrontImage` closes `GlobalImage` under
+consistent flag permutations, using `BackwardSoup.Statement._≈ˢ_`.
+`Simulation.FrontSoup` re-exports the initial-image, step-normalization,
+slot-bisimulation and forward-simulation lemmas from `FrontCore` and proves
+backward simulation for the same target. Check these modules with:
+
+```sh
+agda BorrowedCF/Simulation/FrontSoup.agda
+```
 
 ### Theorems
 
@@ -117,8 +131,8 @@ For the definitions in the paper and the appendix we list the corresponding Agda
 | 8.2 Process preservation         | `BorrowedCF.Safety.Preservation.preservationₚ` |
 | 8.3 Expression progress          | `BorrowedCF.Reduction.Expressions.progress` |
 | 8.4 Process progress             | `BorrowedCF.Safety.Progress.progressₚ` |
-| 8.5 Forward simulation           | `BorrowedCF.ForwardSoup.Local.sim-global` |
-| 8.6 Backward simulation          | `BorrowedCF.BackwardSoup.backward-sim` |
+| 8.5 Forward simulation           | `BorrowedCF.Simulation.FrontCore.forward-front` |
+| 8.6 Backward simulation          | `BorrowedCF.Simulation.FrontSoup.backward-front` |
 | 8.7 Algorithmic typing soundness | `BorrowedCF.Algorithmic.sound` |
 | 8.8 Checking completeness        | `BorrowedCF.Completeness.Main.complete⇐` |
 | 8.9 Inference completeness       | `BorrowedCF.Completeness.Main.complete⇒` |

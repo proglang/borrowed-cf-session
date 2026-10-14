@@ -593,6 +593,31 @@ T[_]-─→ {σ = σ} {e = e} Vσ red with e | red
 ... | e₁ Src.; e₂ | SrcRed.E-Seq V =
   SoupRed.E-Seq (T[_]-Value V Vσ)
 
+... | Src.`let⊗ (e₁ Src.⊗ e₂) `in e₃ | SrcRed.E-PairElim V₁ V₂ =
+  subst (λ rhs → TS.T[ Src.`let⊗ (e₁ Src.⊗ e₂) `in e₃ ] σ SoupRed.─→ rhs)
+    (sym pairEq)
+    (SoupRed.E-PairElim (T[_]-Value V₁ Vσ) (T[_]-Value V₂ Vσ))
+  where
+  pairEq =
+    T[_]-⦅⦆ (Src._⋯_ e₃ (Src.⦅ Src.wk e₁ ⦆)) e₂ σ
+    ■ cong (SoupRed.subst₀ (TS.T[ e₂ ] σ))
+        (T[_]-⦅⦆ e₃ (Src.wk e₁) (TS.liftEnv σ)
+         ■ cong (λ t → SoupRed.subst₀ t
+             (TS.T[ e₃ ] (TS.liftEnv (TS.liftEnv σ))))
+             (T[_]-wk e₁ σ))
+... | Src.`case Src.`inj true v `of⟨ e₁ ; e₂ ⟩ | SrcRed.E-SumElim V =
+  subst (λ rhs → TS.T[ Src.`case Src.`inj true v `of⟨ e₁ ; e₂ ⟩ ] σ SoupRed.─→ rhs)
+    (sym (T[_]-⦅⦆ e₁ v σ))
+    (SoupRed.E-SumElim (T[_]-Value V Vσ))
+... | Src.`case Src.`inj false v `of⟨ e₁ ; e₂ ⟩ | SrcRed.E-SumElim V =
+  subst (λ rhs → TS.T[ Src.`case Src.`inj false v `of⟨ e₁ ; e₂ ⟩ ] σ SoupRed.─→ rhs)
+    (sym (T[_]-⦅⦆ e₂ v σ))
+    (SoupRed.E-SumElim (T[_]-Value V Vσ))
+... | Src.μ e₁ | SrcRed.E-Unfold =
+  subst (λ rhs → TS.T[ Src.μ e₁ ] σ SoupRed.─→ rhs)
+    (sym (T[_]-⦅⦆ e₁ (Src.μ e₁) σ)) SoupRed.E-Unfold
+... | e₁ Src.⦂ T | SrcRed.E-Ann = SoupRed.E-Ann
+
 T[_]-⋯→ : ∀ {n n′} {σ : TS.Env n n′} {e e′ : Src.Tm n} →
   ValueEnv σ → e SrcRed.⋯→ e′ → TS.T[ e ] σ SoupRed.⋯→ TS.T[ e′ ] σ
 T[_]-⋯→ Vσ (SrcRed.E-□ red) = SoupRed.E-□ (T[_]-─→ Vσ red)
