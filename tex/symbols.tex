@@ -34,6 +34,8 @@
 
 \DeclareMathOperator\dom{\mathsf{dom}}
 
+\newcommand*\Fresh[1]{#1~\mathrm{fresh}}
+
 % Relations 
 \newcommand{\reqDir}[2]{\text{DirCompat} \, #1 \, #2}
 \newcommand{\reqEff}[3]{\text{EffCompat} \, #1 \, #2 \, #3}
@@ -82,9 +84,8 @@
 % \newcommand*\TArr[4]{{#3}\overset{{#1};{#2}}\to{#4}}
 \newcommand*\TExists[3][{}]{\typecolor{\exists #2^{#1}. #3}}
 
-\makeatletter
 \usepackage{keyval}
-
+\makeatletter
 \newcommand\@tarr@flag[3]{
   \@namedef{KV@tarr@#2@default}{\@nameuse{KV@tarr@#1}{#3}}
   \@namedef{KV@tarr@#2}##1{%
@@ -291,7 +292,21 @@
 \NewDocumentCommand \ChanPat {O{} m} {
   \termcolor{\mathcal{C}_{#1}[#2]}
 }
-    
+
+\newcommand*\TFlags[1][]{F_{\targetendpointcolor{#1}}}
+
+% \metacolor or \targettermcolor for the `s' meta variables and 0/1
+% superscripts?
+%\let\targetendpointcolor\targettermcolor
+\newcommand*\targetendpointcolor{\mathcolor{Plum}}
+
+\makeatletter
+\newcommand\TEs@impl[1]{\targetendpointcolor{\IfBooleanT{#1}{\bar}s}}
+\NewDocumentCommand \TEs  {s}   {\TEs@impl{#1}}
+\NewDocumentCommand \TEc  {O{}} {\targettermcolor{c^{\targetendpointcolor{#1}}}}
+\NewDocumentCommand \TEcs {s}   {\TEc[\TEs@impl{#1}]}
+\makeatother
+
 % target contexts
 \NewMetaVar[\targetctxcolor] \TCtx \Gamma
 \newcommand*\TCtxEmpty{\targetctxcolor{\emptyset}}
@@ -359,9 +374,10 @@
 \NewMetaVar[\targetproccolor] \Flag \phi
 \newcommand*\FlagInit{\targetproccolor{\textsf{drop}}}
 \newcommand*\FlagDropped{\targetproccolor{\textsf{acq}}}
-\newcommand*\FlagAcquired{\targetproccolor{\textsf{done}}}
+\newcommand*\StateOpen{\targetproccolor{\mathsf{open}}}
+\newcommand*\StateClosed{\targetproccolor{\mathsf{closed}}}
 
-\newcommand*\BindFlag[1]{\metacolor{\operatorname{flag}\ifstrempty{#1}{}{(#1)}}}
+\newcommand*\BindFlag[1]{\metacolor{\operatorname{\mathsf{flag}}\ifstrempty{#1}{}{(#1)}}}
 
 % Variable Sets ("Dependencies")
 \newcommand*\D{\Delta}
@@ -498,19 +514,39 @@
 \newcommand{\Congruent}{\equiv}
 
 % Translations
-\newcommand*\TrCmd[2]{\metacolor{\mathcal{T}_{#1}(#2)}}
-\newcommand*\TrRel[1]{\leadsto_{#1}}
-\newcommand\TrT{\TrCmd T}
-\newcommand\TrCtx{\TrCmd \Gamma}
-\newcommand\TrBG{\TrCmd B}
-
 \newcommand*\TransProc[1][\Sub]{\stackrel{#1}{\TrRel{}}}
 % Process translation as a function: the run-time configuration of a well-typed
 % source process #2 under the value substitution #1 (default \Sub).
 \newcommand*\TransP[2][\Sub]{\metacolor{\llbracket #2 \rrbracket_{#1}}}
 % Image relation of the metatheory: P \ImageRel Q reads "Q is an image of P".
 \newcommand*\ImageRel{\mathrel{\metacolor{\vartriangleright}}}
-\NewDocumentCommand\TransBind{O{\E} m o}{\stackrel{\targettermcolor{#1}}{\TrRel{}} #2 \IfValueT{#3}{\mid #3}}
+
+\newcommand*\USTransProc[2][\Sub]{\TransP[#1]{#2}}
+\newcommand*\USTransBind[4]{\mathcal B(#1;#2,#3,#4)}
+\newcommand*\USTransSeq[4]{\mathcal L(#1;#2,#3,#4)}
+\newcommand*\USCfg[3]{(#1,#2,#3)}
+\newcommand*\USMulti[1]{\lbag #1\rbag}
+\newcommand*\USBag[1]{E\uplus\USMulti{#1}}
+\let\USUnit\CUnit
+\let\USApp\EApp
+\NewDocumentCommand\USHandle{s O{\CUnit} m O{\CUnit}}{\termcolor{
+  \IfBooleanF{#1}{(}
+  #2 \otimes #3 \otimes #4
+  \IfBooleanF{#1}{)}
+}}
+\let\USPair\EPair
+\NewDocumentCommand\USCell{s m m}{
+  \IfBooleanF{#1}{(}
+  #2 \! : \! #3
+  \IfBooleanF{#1}{)}
+}
+\newcommand*\USUpdate[2]{S[#1\mapsto #2]}
+\newcommand*\USSideUpdate[2][\TEcs]{\USUpdate{#1}{#2}}
+\newcommand*\USLive[1][\TEc]{\mathsf{live}(S,#1)}
+\newcommand*\USOpen[1][\TEc]{\USLive[#1]=\StateOpen}
+\newcommand*\USFlags[1][\TEs]{\mathsf{flags}\!\left(S,\TEc[#1]\right)}
+\newcommand*\USRed[2]{\begin{gathered}#1\\[-.4ex]\TPReduce\;#2\end{gathered}}
+
 
 \newcommand*\TA[2]{\metacolor{\llbracket #1;#2 \rrbracket_{\Gamma}}}
 % \newcommand*\TA[2]{\metacolor{\llbracket #2 \rrbracket_{\Gamma} ({#1})}}

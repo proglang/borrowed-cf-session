@@ -15,7 +15,7 @@
 \DefRule {LSplit} {
   \CtxEmpty \SubCtx \Ctx \uparrow \CSet[0] \\
   \neg (\S \SEq \SSkip) \\
-  \TVar\ \text{fresh}
+  \Fresh\TVar
 }{
   \InferType {\CSplit_{\S}}
   {\TArr{\MobMobile}{\DirUnord,\EffPure} {\SSeq\S\TVar} {\TPairOrd{\S}{\TVar}}}
@@ -26,7 +26,7 @@
 % A-RSplit
 \DefRule {RSplit} {
   \CtxEmpty \SubCtx \Ctx \uparrow \CSet[0] \\
-  \TVar\ \text{fresh}
+  \Fresh\TVar
 }{
   \InferType {\CSSplit_{\S}}
   {\TArr{\MobMobile}{\DirUnord,\EffPure} {\SSeq\S\TVar} {\TPairUnord{\SSeq{\S}{\SDrop}}{\SSeq\SAcq\TVar}}}

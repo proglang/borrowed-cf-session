@@ -1,17 +1,9 @@
-% Translation into the untyped soup. The bracket notation translates processes,
-% B translates binder groups, and L distributes one sequential segment.
-
-\newcommand*\USTransProc[2][\Sub]{\TransP[#1]{#2}}
-\newcommand*\USTransBind[4]{\mathcal B(#1;#2,#3,#4)}
-\newcommand*\USTransSeq[4]{\mathcal L(#1;#2,#3,#4)}
-\newcommand*\USTransExpr[2][\Sub]{\mathcal T(#2;#1)}
-
 \def\RuleCmdPrefix{RuleSoupTrans}
 \def\RuleNamePrefix{Tr-}
 
 \DefRule {Exp} {} {
   \USTransProc{\PExp{\E}}
-  = \USCfg{\emptyset}{\emptyset}{\USMulti{\USTransExpr{\E}}}
+  = \USCfg{\emptyset}{\emptyset}{\USMulti{\Sub{[\E]}}}
 }
 
 \DefRule {Par} {
@@ -24,50 +16,57 @@
 }
 
 \DefRule {New} {
-  c\text{ fresh} \\
-  \USTransBind{\BindGroup[1]}{c^0}{\USUnit}{\USUnit}
-    =(\Sub[1],F_0) \\
-  \USTransBind{\BindGroup[2]}{c^1}{\USUnit}{\USUnit}
-    =(\Sub[2],F_1) \\
+  \Fresh{\TEc} \\
+  \USTransBind{\BindGroup[1]}{\TEc[0]}{\USUnit}{\USUnit}
+    =(\Sub[1],\TFlags[0]) \\
+  \USTransBind{\BindGroup[2]}{\TEc[1]}{\USUnit}{\USUnit}
+    =(\Sub[2],\TFlags[1]) \\
   \USTransProc[{\Sub\cup\sigma_1\cup\sigma_2}]{\Proc}
     =(C,S,E)
 } {
   \USTransProc{\PNew{\BindGroup[1]}{\BindGroup[2]}{\Proc}}
-  = \USCfg{C\cup\{c\}}{\USUpdate{c}{(\mathsf{open},F_0,F_1)}}{E}
+  = \USCfg{C\cup\{\TEc\}}{\USUpdate{\TEc}{(\StateOpen,\TFlags[0],\TFlags[1])}}{E}
 }
 
 \DefRule {SeqNil} {} {
-  \USTransSeq{\BEmp}{c^s}{u}{v}=\emptyset
+  \USTransSeq{\BEmp}{\TEcs}{\U}{\V}=\emptyset
 }
 
 \DefRule {SeqOne} {} {
-  \USTransSeq{\EVar}{c^s}{u}{v}
-  =\SubSingle{\EVar}{\USHandle{u}{c^s}{v}}
+  \USTransSeq{\EVar}{\TEcs}{\U}{\V}
+  =\SubSingle{\EVar}{\USHandle[\U]{\TEcs}[\V]}
 }
 
-\DefRule {SeqMore} {
+\DefRule*[lab=Tr-SeqMore] {SeqMore} {
   \Bind\ne\BEmp
 } {
-  \USTransSeq{\BSeq{\EVar}{\Bind}}{c^s}{u}{v}
-  =\SubSingle{\EVar}{\USHandle{u}{c^s}{\USUnit}}
-   \cup\USTransSeq{\Bind}{c^s}{\USUnit}{v}
+  \USTransSeq{\BSeq{\EVar}{\Bind}}{\TEcs}{\U}{\V} =
+    \SubSingle{\EVar}{\USHandle[\U]{\TEcs}}
+      \cup \USTransSeq{\Bind}{\TEcs}{\USUnit}{\V}
 }
 
 \DefRule {BindNil} {} {
-  \USTransBind{[]}{c^s}{u}{v}=(\emptyset,[])
+  \USTransBind{[]}{\TEcs}{\U}{\V}=(\emptyset,[])
 }
 
 \DefRule {BindOne} {} {
-  \USTransBind{[\Bind]}{c^s}{u}{v}
-  =(\USTransSeq{\Bind}{c^s}{u}{v},[])
+  \USTransBind{[\Bind]}{\TEcs}{\U}{\V}
+  =
+  (\USTransSeq{\Bind}{\TEcs}{\U}{\V},[])
 }
 
-\DefRule {BindSep} {
+\DefRule*[lab=Tr-BindSep] {BindSep} {
   \BindGroup\ne[] \\
-  z\text{ fresh} \\
-  \USTransBind{\BindGroup}{c^s}{z}{v}=(\Sub[2],F)
+  \Fresh\TEVarz \\
+  \USTransBind{\BindGroup}{\TEcs}{\TEVarz}{\V}=(\Sub[2],\TFlags)
 } {
-  \USTransBind{\BWithSep{\Bind}{\BindGroup}}{c^s}{u}{v}
-  =\bigl(\USTransSeq{\Bind}{c^s}{u}{z}\cup\Sub[2],
-    (\USCell{z}{\BindFlag{\Bind}})\cdot F\bigr)
+  \USTransBind{\BWithSep{\Bind}{\BindGroup}}{\TEcs}{\U}{\V} = \bigl(
+    \USTransSeq{\Bind}{\TEcs}{\U}{\TEVarz}\cup\Sub[2],
+    \USCell{\TEVarz}{\BindFlag{\Bind}} \cdot \TFlags
+  \bigr)
 }
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "../popl2027"
+%%% End:

@@ -16,7 +16,7 @@ semantics of \cref{sec:semantics}.
   \begin{align*}
     \mathsf{Flag} &\grmeq \FlagInit \grmor \FlagDropped \\
     \mathsf{Channel} &\grmeq
-      \{\mathsf{open},\mathsf{closed}\}
+      \{\StateOpen,\StateClosed\}
       \times \mathsf{Flag}^{*} \times \mathsf{Flag}^{*} \\
     \mathsf{Config} &\grmeq (C,S,E)
   \end{align*}
@@ -37,19 +37,17 @@ allocates its fresh flag at the front of the endpoint's list.
 The multiset $E$ represents parallel execution.
 
 We call the channels of the target calculus \emph{primitive channels} to
-distinguish them from (translated) source channels.  A
-translated source channel is represented by a value
-$\targettermcolor{c}=\USHandle{\TV[1]}{\TEVary}{\TV[2]}$, a triple consisting of an
-optional pre-synchronization reference $\TV[1]$, a primitive channel endpoint
-$\TEVary$, and an optional post-synchronization reference $\TV[2]$.  The default
-optional component is $\USUnit$.  A nontrivial reference identifies a flag in
-the list belonging to $\TEVary$.  Its pre-flag is consumed by
-$\USConst{acquire}$ before the endpoint is used; its post-flag is signaled by
-$\USConst{drop}$ when ownership of
-the endpoint prefix is released.  Communication, choice, and close operate on
-the primitive channel; the flag references encode
-the ordering constraints on remote borrows that source binder groups
-enforce directly. Local borrows do not use this machinery.
+distinguish them from (translated) source channels.  A translated source channel
+is represented by a value $\targettermcolor{c}=\USHandle[\U]{\TEVary}[\V]$, a
+triple consisting of an optional pre-synchronization reference $\U$, a primitive
+channel endpoint $\TEVary$, and an optional post-synchronization reference $\V$.
+The default optional component is $\USUnit$.  A nontrivial reference identifies
+a flag in the list belonging to $\TEVary$.  Its pre-flag is consumed by $\CAcq$
+before the endpoint is used; its post-flag is signaled by $\CDrop$ when
+ownership of the endpoint prefix is released.  Communication, choice, and close
+operate on the primitive channel; the flag references encode the ordering
+constraints on remote borrows that source binder groups enforce directly. Local
+borrows do not use this machinery.
 
 Permuting concurrent expressions or channel entries does not change a
 configuration: $E$ is a multiset, $C$ is a set, and $S$ is keyed by channel
@@ -58,18 +56,20 @@ be rearranged.  Up to consistent renaming of fresh names, structural
 congruence boils down to equality of configurations, and reduction needs no
 separate congruence rule.
 
-For $S(c)=(b,F_0,F_1)$, define $\operatorname{live}(S,c)=b$ and
-$\operatorname{flags}(S,c,s)=F_s$, where $s\in\{0,1\}$ selects one of the two
-endpoints $c^s$ and $\bar s=1-s$ selects the other.  The notation
-$S[c,s\mapsto F]$ updates only that endpoint's flag sequence.  For the rules,
-we give each occurrence in a flag sequence a distinct name.  In a well-formed
-handle, its post-component $v$ is either $\USUnit$ or a reference to a flag on
-the same endpoint.  Remote split allocates a fresh flag at the front of that endpoint's list.
-The pre- and post-references in the resulting handles encode the dependency;
-physical flag-list order is an addressing convention, rather than source
-session order.  In the positional Agda representation, all existing
-references on the endpoint are shifted consistently when its front cell is
-inserted.  The instruction itself has no position argument.
+For $S(\TEc)=(b,\TFlags[0],\TFlags[1])$, define $\USLive=b$
+and $\USFlags=\TFlags[\TEs]$, where
+$\TEs\in\{\targetendpointcolor{0},\targetendpointcolor{1}\}$ selects one of the
+two endpoints $\TEcs$ and $\TEs*=1-\TEs$ selects the other.  The notation
+$\USSideUpdate{\TFlags}$ updates only that endpoint's flag sequence.  For
+the rules, we give each occurrence in a flag sequence a distinct name.  In a
+well-formed handle, its post-component $\V$ is either $\USUnit$ or a reference
+to a flag on the same endpoint.  Remote split allocates a fresh flag at the
+front of that endpoint's list.  The pre- and post-references in the resulting
+handles encode the dependency; physical flag-list order is an addressing
+convention, rather than source session order.  In the positional Agda
+representation, all existing references on the endpoint are shifted consistently
+when its front cell is inserted.  The instruction itself has no position
+argument.
 
 \begin{figure}
   \small
@@ -92,15 +92,15 @@ inserted.  The instruction itself has no position argument.
 \end{figure}
 
 \Cref{fig:unr-process-reduction} gives the reduction relation on configurations.
-The pattern $E\uplus\USMulti{\TE}$ selects one occurrence of $\TE$ from the multiset;
-the communication, choice, and close rules select two distinct occurrences.
-We write $\mathcal F[e]$ for an expression in an evaluation context.  The
-metavariable $v$ ranges over syntactic values, so no separate value premise is
-needed.  The remote-split rule allocates its new cell at the front of
-the selected endpoint's flag list.
-In the drop and acquire rules, the name $z$ in the selected handle identifies
-a unique cell in $\operatorname{flags}(S,c,s)$; the displayed sequence
-decomposition therefore fixes the cell to update or remove.
+The pattern $E\uplus\USMulti{\E}$ selects one occurrence of $\E$ from the
+multiset; the communication, choice, and close rules select two distinct
+occurrences.  We write $\ECapp\E$ for expression $\E$ in evaluation context
+$\EC$.  {\color{red}The meta variable $\V$ ranges over syntactic values, so no separate
+value premise is needed.}  The remote-split rule allocates its new cell at the
+front of the selected endpoint's flag list.  In the drop and acquire rules, the
+name $\TEVarz$ in the selected handle identifies a unique cell in $\USFlags$;
+the displayed sequence decomposition therefore fixes the cell to update or
+remove.
 
 The expression step and discard leave the channel state unchanged; fork adds
 one expression to the soup.  New adds an open channel with an already-acquired
@@ -119,57 +119,51 @@ binder closure rules are needed.
     \RuleSoupTransExp \and
     \RuleSoupTransPar \and
     \RuleSoupTransNew \\
-    \RuleSoupTransSeqNil \and
-    \RuleSoupTransSeqOne \and
-    \RuleSoupTransSeqMore \\
-    \RuleSoupTransBindNil \and
-    \RuleSoupTransBindOne \and
-    \RuleSoupTransBindSep
+    \begin{array}{c}
+      \RuleSoupTransBindNil \\[.8em]
+      \RuleSoupTransBindOne \\[.8em]
+      \RuleSoupTransSeqNil  \\[.8em]
+      \RuleSoupTransSeqOne
+    \end{array}\and
+    \begin{array}{c}
+      \RuleSoupTransBindSep \\[1.5em]
+      \RuleSoupTransSeqMore \\[1em]
+    \end{array}
   \end{mathpar}
   \smallskip
   \[
     \BindFlag{\Bind} = \FlagDropped \text{ if } \Bind = \BEmp;
     \quad \BindFlag{\Bind} = \FlagInit \text{ otherwise.}
   \]
-  \caption{Translation of
-    processes ($\USTransProc{\Proc}=(C,S,E)$), binder groups
-    ($\USTransBind{\BindGroup}{c^s}{u}{v}=(\Sub,F)$), and sequential
-    segments ($\USTransSeq{\Bind}{c^s}{u}{v}=\Sub$).}
+  \caption{Translation of processes ($\USTransProc{\Proc}=(C,S,E)$), binder
+    groups ($\USTransBind{\BindGroup}{\TEcs}{\U}{\V}=(\Sub,\TFlags)$), and
+    sequential segments ($\USTransSeq{\Bind}{\TEcs}{\U}{\V}=\Sub$).}
   \label{fig:translation}
 \end{figure}
 
 \Cref{fig:translation} defines a configuration-valued translation
 $\USTransProc{\Proc}$.  Its environment $\Sub$ maps free source variables to
-target expressions, with plain channel triples for endpoint variables.
-An expression process contributes $\USTransExpr{\E}$ to the multiset.
-Parallel composition combines disjoint channel sets and maps and takes the
-multiset union of expressions.  A restriction chooses a fresh primitive
-channel $c$, translates its two binder groups for endpoints $c^0$ and $c^1$,
-and translates the body under the substitutions they produce.  It records
-the resulting flag sequences in $S(c)$ and adds no expression of its own.
+target expressions, with plain channel triples for endpoint variables. An
+expression process contributes an to the multiset. Other than applying the
+substitution $\Sub$ to it, no translation of expressions occurs. Parallel
+composition combines disjoint channel sets and maps and takes the multiset union
+of expressions.  A restriction chooses a fresh primitive channel $\TEc$,
+translates its two binder groups for endpoints $\TEc[0]$ and $\TEc[1]$, and
+translates the body under the substitutions they produce.  It records the
+resulting flag sequences in $S(\TEc)$ and adds no expression of its own.
 
-The binder-group function $\mathcal B$ returns a substitution whose domain
-is exactly the bound variables, together with an ordered flag sequence.
-Its helper $\mathcal L$ distributes a plain channel triple across one
-sequential segment: the first variable receives the pre-reference, the last
-the post-reference, and intermediate variables receive neither.  A sole
-variable receives both.  Each separator introduces a fresh flag name $z$;
-the left segment uses $z$ as its post-reference and the remaining group uses
-it as its pre-reference.  The flags initially occur in separator order.
-$\BindFlag{\Bind}$ initializes a flag to $\FlagDropped$ when its left segment
-is empty, and to $\FlagInit$ otherwise.  Substitution unions have disjoint
-domains: restriction extends the incoming substitution with the bindings
-for its two endpoints before translating the body.
-
-The expression translation $\USTransExpr{\E}$ in \textsc{Tr-Exp} takes
-only the expression $\E$ and the substitution $\Sub$.  It replaces free
-variables according to $\Sub$ and preserves constants and expression
-constructors, including application directions and type annotations.
-Under an expression binder the substitution is lifted to map the bound
-variable to itself, avoiding capture: once for abstraction, recursion, and
-each case branch, and twice for a pair-elimination body.  In particular,
-$\CSSplit$ translates directly to the unary target constant
-$\USConst{rsplit}$, also in first-class uses.
+The binder-group function $\mathcal B$ returns a substitution whose domain is
+exactly the bound variables, together with an ordered flag sequence.  Its helper
+$\mathcal L$ distributes a plain channel triple across one sequential segment:
+the first variable receives the pre-reference, the last the post-reference, and
+intermediate variables receive neither.  A sole variable receives both.  Each
+separator introduces a fresh flag name $\TEVarz$; the left segment uses
+$\TEVarz$ as its post-reference and the remaining group uses it as its
+pre-reference.  The flags initially occur in separator order.
+$\BindFlag{\Bind}$ initializes a flag to $\FlagDropped$ when its left segment is
+empty, and to $\FlagInit$ otherwise.  Substitution unions have disjoint domains:
+restriction extends the incoming substitution with the bindings for its two
+endpoints before translating the body.
 
 The initial flag lists follow source separator order, whereas remote split
 allocates each new cell at the front.  Synchronization depends on the
