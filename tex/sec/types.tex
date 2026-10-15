@@ -118,9 +118,9 @@ The exchange axiom in the subcontext
 relation  $\Ctx[1]\SubCtx\Ctx[2]$ is the concurrent-Kleene-algebra law that embeds two independent
 ordered computations into one ordered computation over parallel
 components \cite{DBLP:journals/jlp/HoareMSW11}.
-The second subcontext rule admits unused unrestricted assumptions. By
-\RuleName{T-Weaken}, a derivation obtained in a smaller context can be used in
-any larger context related by $\SubCtx$.
+The second axiom admits unused unrestricted assumptions. By
+\RuleName{T-Weaken}, a derivation obtained in some context can be used in
+any larger context related by~$\SubCtx$.
 
 Session types themselves are quotiented by a standard equational theory used by
 type conversion: sequential composition is associative with $\SSkip$ as neutral
@@ -168,12 +168,14 @@ advance through $\SSend\T$ and $\SRecv\T$, selection advances an internal
 choice, and branching returns a variant over external branches. These
 constants are impure because they communicate.
 
+{\color{red}
 The argument to $\CFork$ in $\FnRenderUser$
 (\cref{lst:rendering-example,lst:rendering-example-elab/remote}) is mobile
 because the two captured variables $\Varid{user}$ and $\Varid{c}_1$ have mobile
 types.
 
 The argument to $\CFork$ in $\FnRenderUser$ must be a mobile function.
+}
 
 The split constants are pure. Local splitting, $\CSplit$, decomposes
 $\SSeq{\S[1]}{\S[2]}$ into an ordered pair containing the borrowed prefix and
