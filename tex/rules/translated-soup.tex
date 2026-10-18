@@ -32,7 +32,7 @@
     {\USHandle[\TEVarz[0]]{\TEc[0]}}
     {\USHandle[\TEVarz[1]]{\TEc[1]}}
 } {
-  \USRed
+  \USRedOne
     {\USCfg{C}{S}{\USBag{\ECapp{\USApp{\CNew}{\USUnit}}}}}
     {\USCfg{C\cup\{c\}}{S'}{\USBag{\ECapp{h}}}}
 }
@@ -40,7 +40,7 @@
 \DefRule {LSplit} {
   \USOpen
 } {
-  \USRed
+  \USRedOne
     {\USCfg{C}{S}{\USBag{\ECapp{\EApp{\CSplit}{\USHandle[u]{\TEcs}[\V]}}}}}
     {\USCfg{C}{S}{\USBag{\ECapp{\USPair
       {\USHandle[u]{\TEcs}}
@@ -54,7 +54,7 @@
   \USFlags=F \\
   S'=\USSideUpdate{\USCell{\TEVarz}{\FlagInit} \cdot F}
 } {
-  \USRed
+  \USRedOne
     {\USCfg{C}{S}{\USBag{\ECapp{\EApp{\CSSplit}{
       \USHandle[u]{\TEcs}[\V]}}}}}
     {\USCfg{C}{S'}{\USBag{\ECapp{\USPair
@@ -67,7 +67,7 @@
   \USFlags=A\cdot \USCell{\TEVarz}{\FlagInit} \cdot B \\
   S'=\USSideUpdate{A \cdot \USCell{\TEVarz}{\FlagDropped} \cdot B}
 } {
-  \USRed
+  \USRedOne
     {\USCfg{C}{S}{\USBag{\ECapp{\EApp{\CDrop}{
       \USHandle{\TEcs}[\TEVarz]}}}}}
     {\USCfg{C}{S'}{\USBag{\ECapp{\USUnit}}}}
@@ -78,7 +78,7 @@
   \USFlags=A \cdot \USCell{\TEVarz}{\FlagDropped} \cdot B \\
   S'=\USSideUpdate{A\cdot B}
 } {
-  \USRed
+  \USRedOne
     {\USCfg{C}{S}{\USBag{\ECapp{\EApp{\CAcq}{
       \USHandle[\TEVarz]{\TEcs}[\V]}}}}}
     {\USCfg{C}{S'}{\USBag{\ECapp{\USHandle*{\TEcs}[\V]}}}}

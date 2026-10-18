@@ -543,9 +543,11 @@
 \newcommand*\USUpdate[2]{S[#1\mapsto #2]}
 \newcommand*\USSideUpdate[2][\TEcs]{\USUpdate{#1}{#2}}
 \newcommand*\USLive[1][\TEc]{\mathsf{live}(S,#1)}
-\newcommand*\USOpen[1][\TEc]{\USLive[#1]=\StateOpen}
+% \newcommand*\USOpen[1][\TEc]{\USLive[#1]=\StateOpen}
+\newcommand*\USOpen[1][\TEc]{\mathsf{open}(S,#1)}
 \newcommand*\USFlags[1][\TEs]{\mathsf{flags}\!\left(S,\TEc[#1]\right)}
 \newcommand*\USRed[2]{\begin{gathered}#1\\[-.4ex]\TPReduce\;#2\end{gathered}}
+\newcommand*\USRedOne[2]{#1\;\TPReduce\;#2}
 
 
 \newcommand*\TA[2]{\metacolor{\llbracket #1;#2 \rrbracket_{\Gamma}}}

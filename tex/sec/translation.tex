@@ -55,7 +55,7 @@ name.  There are no channel binders whose scopes need to be rearranged.
 Structural congruence reduces to equality of configurations, and reduction needs
 no separate congruence rule.
 
-For $S(\TEc)=(b,\TFlags[0],\TFlags[1])$, define $\USLive=b$
+For $S(\TEc)=(b,\TFlags[0],\TFlags[1])$, define $\USOpen \Leftrightarrow b = \StateOpen$
 and $\USFlags=\TFlags[\TEs]$, where
 $\TEs\in\{\targetendpointcolor{0},\targetendpointcolor{1}\}$ selects one of the
 two endpoints $\TEcs$ and $\TEs*=1-\TEs$ selects the other.  The notation
@@ -83,7 +83,7 @@ handles encode the dependency.
     \RuleSoupRedCom \and
     \RuleSoupRedChoice
   \end{mathpar}
-  \caption{Reduction of translated configurations
+  \caption{Reduction of run-time configurations
     ($(C,S,E) \TPReduce (C',S',E')$)}
   \label{fig:unr-process-reduction}
 \end{figure}
