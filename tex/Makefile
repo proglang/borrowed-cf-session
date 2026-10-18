@@ -1,3 +1,4 @@
+LHS2TEX= lhs2TeX
 .PHONY: build
 build: lhs2tex
 	latexmk -pdf popl2027-supplement.tex
@@ -14,7 +15,7 @@ lhs2tex-watch:
 	@printf '%s\n' $(FMT_FILES) $(LHS_FILES) | entr $(MAKE) lhs2tex
 
 %.tex: %.lhs.tex $(FMT_FILES)
-	lhs2TeX -P :lhs2tex $< -o $@
+	$(LHS2TEX) -P :lhs2tex $< -o $@
 
 .PHONY: clean
 clean:

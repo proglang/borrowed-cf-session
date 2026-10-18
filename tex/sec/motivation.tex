@@ -418,9 +418,9 @@ serialization function:
 %
 \NumberedCode\CodeSendTree
 %
-\noindent However, there are several catches. First, the channel \ensuremath{\Varid{c}} is passed
+\noindent Two remarks are in order. First, the channel \ensuremath{\Varid{c}} is passed
 explicitly throughout the code; a pattern we call \emph{resource-passing
-  style}. This style forces the programmer to make the function polymorphic on
+  style}. Modularity requires the programmer to make the function polymorphic on
 the continuation type of the channel, which is \ensuremath{\sigma } in this example. Second,
 the \ensuremath{\CodeLbl{\Conid{Node}}} branch of \ensuremath{\Varid{sendTree}} relies on polymorphic recursion. To see
 this, consider the type of \ensuremath{\Varid{c}_{2}} in
@@ -431,7 +431,8 @@ recursion.
 
 \BorrowCodeStyle
 
-Our new language {\thecalculus} amends these problems. The type definitions
+Our new language {\thecalculus} can make continuation sessions implicit by
+using borrowing. The type definitions 
 remain unchanged, but the implementation of \ensuremath{\Varid{sendTreeB}} relies on the session
 API with borrowing shown in \cref{lst:bcfst-api}: the operations \ensuremath{\CodeOp{send}} and
 \ensuremath{\CodeOp{recv}} adopt the borrowing style, but \ensuremath{\CodeOp{select}} and \ensuremath{\CodeOp{branch}} remain in
@@ -458,7 +459,7 @@ borrowed type \ensuremath{\mathord{!}\Conid{Int}}---the argument type of \ensure
 type shown in line \ref*{ln:sendTreeB/send-x}. As the type of \ensuremath{\Varid{c}} is itself a
 borrowed type, one could speak of a \emph{reborrow.}
 
-Third, as there is no polymorphism, there is no polymorphic recursion, either.
+% Third, as there is no polymorphism, there is no polymorphic recursion, either.
 
 Finally, the channel variable \ensuremath{\Varid{c}} can be used in a non-linear way, as long as
 its uses are under borrows, as in \ensuremath{\mathord{\&\mkern-1mu}\Varid{c}}. The understanding is that the borrows
@@ -479,10 +480,10 @@ for the surrounding computation. No other process can race with the
 continuation, so the evaluation order of the program and the left-to-right order
 enforced by typing already provide the required sequencing.
 
-However, in some situations we want to send a borrow to
+However, some situations require that we send a borrow to
 another process. As an example, suppose a server-side renderer streams
 HTML nodes to a client instead of constructing a DOM tree in
-memory first. Here is a protocol for such a renderer.
+memory first. Here is an excerpt of a protocol for such a renderer.
 %
 {\TightCode[\smallskipamount]\HtmlProtocolDefn}
 %
@@ -515,7 +516,7 @@ stream. It passes a borrow of the first child position to a new process, which
 renders the user's profile.  The continuation renders the remaining children,
 here a messaging area, and then closes the child stream.
 
-In this case, the borrow under the \ensuremath{\CodeOp{fork}} is a \emph{remote borrow}. Such a
+In this example, the borrow under the \ensuremath{\CodeOp{fork}} is a \emph{remote borrow}. Such a
 borrow must be handled differently as operations on the borrow are no longer
 necessarily ordered: the continuation must not start emitting the second child
 before the forked renderer has finished the first child. This synchronization is
@@ -599,7 +600,7 @@ to handle in a correctness proof. The specification works on an elaborated core
 language, \thecalculus. Elaboration replaces borrowing with explicit functional
 splitting operators. This translation is analogous to a translation in previous
 work \citep{DBLP:journals/pacmpl/SaffrichS0V25}, which gives a formal
-presentation along with a correctness proof. The novelty in our work is the
+presentation along with a correctness proof. The novelty of our work is the
 presence of \emph{two} operators, \ensuremath{\CodeOp{lsplit}} for local borrows and \ensuremath{\CodeOp{rsplit}} for
 remote borrows. Borrows used in the same process elaborate to \ensuremath{\CodeOp{lsplit}} while
 borrows used across a \ensuremath{\CodeOp{fork}} or sent to another process elaborate to \ensuremath{\CodeOp{rsplit}}.
@@ -608,14 +609,18 @@ borrows used across a \ensuremath{\CodeOp{fork}} or sent to another process elab
 The former is translated to local splits while the latter is using remote
 splits. Our discussion starts with the local variant.
 
-Execution proceeds by repeatedly exposing the next local prefix of the channel
-sequence. \Cref{fig:local-split-trace} shows a suffix of \ensuremath{\Varid{renderRest}}'s
-reduction sequence. The \mbox{\ensuremath{\boldsymbol{\nu[}\mkern1mu\relax \Varid{b}_{1}\mkern1mu\boldsymbol{][}\mkern1mu\relax \Varid{b}_{2}\mkern1mu\boldsymbol{]}\;\CodeKw{in}\;\dots}} operator is a channel
-restriction as known from session calculi \citep{Gay_Vasconcelos_2025}. It
-introduces a communication channel but with each compartment \ensuremath{[\mkern1mu\relax \Varid{b}_i\mkern1mu]}
-containing a \emph{binder group:} a list of channel names and separator markers.
+% Execution proceeds by repeatedly exposing the next local prefix of the channel
+% sequence.
+\Cref{fig:local-split-trace} shows part of \ensuremath{\Varid{renderRest}}'s
+reduction sequence. The process starts with a \mbox{\ensuremath{\boldsymbol{\nu[}\mkern1mu\relax \Varid{b}_{1}\mkern1mu\boldsymbol{][}\mkern1mu\relax \Varid{b}_{2}\mkern1mu\boldsymbol{]}\;\CodeKw{in}\;\dots}}
+operator, which generalizes channel restriction \citep{Gay_Vasconcelos_2025}. It
+introduces a communication channel with two endpoints, but each endpoint is
+described by a \emph{binder group} \ensuremath{[\mkern1mu\relax \Varid{b}_i\mkern1mu]}: a list of channel names and separator markers.
 The names bound by \ensuremath{\Varid{b}_{1}} refer to one channel endpoint, the names in \ensuremath{\Varid{b}_{2}} to the
-other. Its working is best illustrated with the example trace.
+other. The binder groups are processed independently and each name stands for
+one borrow. Its working is best illustrated with the example trace.
+As the treatment of the endpoints is symmetric, we concentrate on the first
+binder group.
 
 To keep the trace short (\cref{fig:local-split-trace}), the reduction starts at
 the local suffix in \ensuremath{\Varid{renderRest}}. Step~\stepref{2}, the split on \ensuremath{\Varid{c}} following
@@ -655,7 +660,8 @@ two fresh names separated by ``\ensuremath{\mathop{\|}}'' marking a remote split
 Step~\stepref{2} reduces the \ensuremath{\CodeOp{fork}} and the body of \ensuremath{\Varid{renderProfile}} until only
 \ensuremath{\CodeOp{drop}\;\Varid{c}_{1}} remains. In the next step, \ensuremath{\CodeOp{drop}\;\Varid{c}_{1}} reduces to \ensuremath{\mathord{*}} and \ensuremath{\Varid{c}_{1}} is
 removed from the binder group which leaves ``\ensuremath{\mathop{\|}}'' as the first item in the
-compartment. Now, in step~\stepref{4}, the reduction of \ensuremath{\CodeOp{acquire}\;\Varid{c}_{2}} drops the
+compartment. Now, in step~\stepref{4}, the reduction of \ensuremath{\CodeOp{acquire}\;\Varid{c}_{2}} succeeds
+and drops the
 leading separator. In summary, \ensuremath{\CodeOp{rsplit}} replaces one channel name by two fresh
 names separated by ``\ensuremath{\mathop{\|}}'', the marker for a remote split.  \ensuremath{\CodeOp{drop}} is only
 enabled if its argument name comes last before a ``\ensuremath{\mathop{\|}}''. \ensuremath{\CodeOp{acquire}} is only
@@ -672,7 +678,7 @@ asynchronous signaling primitives for implementing \ensuremath{\CodeOp{drop}}/\e
 semantics from~\cref{sec:direct-semant-chann} records ordering constraints in
 binding groups. The run-time translation realizes the same constraints with
 ordinary channel names and optional synchronization flags that implement passing
-of ownership.
+of ownership. 
 
 \Cref{fig:borrow-lifecycle-msc} summarizes the difference between local
 and remote borrowing in the implementation.
@@ -691,16 +697,22 @@ and remote borrowing in the implementation.
 
 Specifically, a channel is represented by a triple \ensuremath{\Varid{in}\otimes \Varid{c}\otimes \Varid{out}}, where \ensuremath{\Varid{c}}
 is a primitive channel name and \ensuremath{\Varid{in}} and \ensuremath{\Varid{out}} are optional names of
-synchronization flags. The incoming flag \ensuremath{\Varid{in}} records whether the channel must
-be acquired before it can be used. The outgoing flag \ensuremath{\Varid{out}} records whether the
-channel must be dropped after use. A synchronization binder
+synchronization flags (i.e., they are
+either \ensuremath{\mathord{*}} or a flag name \ensuremath{\Varid{z}}). If the incoming flag \ensuremath{\Varid{in}\mathrel{=}\Varid{z}}, then the channel
+\ensuremath{\Varid{c}} must be acquired before it can be used; if \ensuremath{\Varid{in}\mathrel{=}\mathord{*}}, then \ensuremath{\Varid{c}} can just be
+used. Analogously, if the outgoing flag is \ensuremath{\Varid{out}\mathrel{=}\Varid{z}}, then the 
+channel \ensuremath{\Varid{c}} must be dropped after use. The target calculus associates each
+channel end with a list of (named) flags, which assume values \ensuremath{\CodeFlag{drop}} or
+\ensuremath{\CodeFlag{acq}}. 
+
+A synchronization binder
 $(\varphi z \mapsto \phi)P$ binds a flag name \ensuremath{\Varid{z}} in \ensuremath{\Conid{P}} and stores one of two
 states in $\phi$: \ensuremath{\CodeFlag{drop}} or \ensuremath{\CodeFlag{acq}}.  This flag \ensuremath{\Varid{z}} implements the separator in
 \ensuremath{\boldsymbol{\nu[}\mkern1mu\relax \Varid{c}_{1}\mathop{\|}\Varid{c}_{2}\mkern1mu\boldsymbol{][}\mkern1mu\relax \dots\mkern1mu\boldsymbol{]}}. It is the outgoing flag of the borrowed prefix and the
 incoming flag of the suffix.
 
-An \ensuremath{\CodeOp{rsplit}} creates a flag in state \ensuremath{\CodeOp{drop}} and a freshly restricted channel sets
-its flag to \ensuremath{\Varid{acq}}. Intuitively, \ensuremath{\CodeFlag{drop}} means that the left, borrowed part of a
+An \ensuremath{\CodeOp{rsplit}} on \ensuremath{\Varid{c}} creates a flag in state \ensuremath{\CodeOp{drop}} while a freshly restricted channel sets
+its flags to \ensuremath{\CodeFlag{acq}}. Intuitively, \ensuremath{\CodeFlag{drop}} means that the left, borrowed part of a
 remote split is still active, \ensuremath{\CodeFlag{acq}} means that it has been dropped and the
 right, suffix part may acquire. This mechanism implements an ownership transfer
 of the primitive channel from the borrowed part to the suffix.
@@ -736,6 +748,7 @@ sharing the channel representation.
 
 % End local formatting of "in" as an identifier.
 %
+% }
 
 %%% Local Variables:
 %%% mode: latex

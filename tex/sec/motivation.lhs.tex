@@ -88,9 +88,9 @@ serialization function:
 %
 \NumberedCode\CodeSendTree
 %
-\noindent However, there are several catches. First, the channel |c| is passed
+\noindent Two remarks are in order. First, the channel |c| is passed
 explicitly throughout the code; a pattern we call \emph{resource-passing
-  style}. This style forces the programmer to make the function polymorphic on
+  style}. Modularity requires the programmer to make the function polymorphic on
 the continuation type of the channel, which is |sigma| in this example. Second,
 the |lab Node| branch of |sendTree| relies on polymorphic recursion. To see
 this, consider the type of |c2| in
@@ -101,7 +101,8 @@ recursion.
 
 \BorrowCodeStyle
 
-Our new language {\thecalculus} amends these problems. The type definitions
+Our new language {\thecalculus} can make continuation sessions implicit by
+using borrowing. The type definitions 
 remain unchanged, but the implementation of |sendTreeB| relies on the session
 API with borrowing shown in \cref{lst:bcfst-api}: the operations |send| and
 |recv| adopt the borrowing style, but |select| and |branch| remain in
@@ -128,7 +129,7 @@ borrowed type |!Int|---the argument type of |send x|---and updates |c| to the
 type shown in line \ref*{ln:sendTreeB/send-x}. As the type of |c| is itself a
 borrowed type, one could speak of a \emph{reborrow.}
 
-Third, as there is no polymorphism, there is no polymorphic recursion, either.
+% Third, as there is no polymorphism, there is no polymorphic recursion, either.
 
 Finally, the channel variable |c| can be used in a non-linear way, as long as
 its uses are under borrows, as in |ref c|. The understanding is that the borrows
@@ -149,10 +150,10 @@ for the surrounding computation. No other process can race with the
 continuation, so the evaluation order of the program and the left-to-right order
 enforced by typing already provide the required sequencing.
 
-However, in some situations we want to send a borrow to
+However, some situations require that we send a borrow to
 another process. As an example, suppose a server-side renderer streams
 HTML nodes to a client instead of constructing a DOM tree in
-memory first. Here is a protocol for such a renderer.
+memory first. Here is an excerpt of a protocol for such a renderer.
 %
 {\TightCode[\smallskipamount]\HtmlProtocolDefn}
 %
@@ -185,7 +186,7 @@ stream. It passes a borrow of the first child position to a new process, which
 renders the user's profile.  The continuation renders the remaining children,
 here a messaging area, and then closes the child stream.
 
-In this case, the borrow under the |fork| is a \emph{remote borrow}. Such a
+In this example, the borrow under the |fork| is a \emph{remote borrow}. Such a
 borrow must be handled differently as operations on the borrow are no longer
 necessarily ordered: the continuation must not start emitting the second child
 before the forked renderer has finished the first child. This synchronization is
@@ -269,7 +270,7 @@ to handle in a correctness proof. The specification works on an elaborated core
 language, \thecalculus. Elaboration replaces borrowing with explicit functional
 splitting operators. This translation is analogous to a translation in previous
 work \citep{DBLP:journals/pacmpl/SaffrichS0V25}, which gives a formal
-presentation along with a correctness proof. The novelty in our work is the
+presentation along with a correctness proof. The novelty of our work is the
 presence of \emph{two} operators, |lsplit| for local borrows and |rsplit| for
 remote borrows. Borrows used in the same process elaborate to |lsplit| while
 borrows used across a |fork| or sent to another process elaborate to |rsplit|.
@@ -278,14 +279,18 @@ borrows used across a |fork| or sent to another process elaborate to |rsplit|.
 The former is translated to local splits while the latter is using remote
 splits. Our discussion starts with the local variant.
 
-Execution proceeds by repeatedly exposing the next local prefix of the channel
-sequence. \Cref{fig:local-split-trace} shows a suffix of |renderRest|'s
-reduction sequence. The \mbox{|nu b1 b2 in ^^ ...|} operator is a channel
-restriction as known from session calculi \citep{Gay_Vasconcelos_2025}. It
-introduces a communication channel but with each compartment |bgroup bi|
-containing a \emph{binder group:} a list of channel names and separator markers.
+% Execution proceeds by repeatedly exposing the next local prefix of the channel
+% sequence.
+\Cref{fig:local-split-trace} shows part of |renderRest|'s
+reduction sequence. The process starts with a \mbox{|nu b1 b2 in ^^ ...|}
+operator, which generalizes channel restriction \citep{Gay_Vasconcelos_2025}. It
+introduces a communication channel with two endpoints, but each endpoint is
+described by a \emph{binder group} |bgroup bi|: a list of channel names and separator markers.
 The names bound by |b1| refer to one channel endpoint, the names in |b2| to the
-other. Its working is best illustrated with the example trace.
+other. The binder groups are processed independently and each name stands for
+one borrow. Its working is best illustrated with the example trace.
+As the treatment of the endpoints is symmetric, we concentrate on the first
+binder group.
 
 To keep the trace short (\cref{fig:local-split-trace}), the reduction starts at
 the local suffix in |renderRest|. Step~\stepref{2}, the split on |c| following
@@ -325,7 +330,8 @@ two fresh names separated by ``| |||| |'' marking a remote split.
 Step~\stepref{2} reduces the |fork| and the body of |renderProfile| until only
 |drop c1| remains. In the next step, |drop c1| reduces to |*| and |c1| is
 removed from the binder group which leaves ``| |||| |'' as the first item in the
-compartment. Now, in step~\stepref{4}, the reduction of |acquire c2| drops the
+compartment. Now, in step~\stepref{4}, the reduction of |acquire c2| succeeds
+and drops the
 leading separator. In summary, |rsplit| replaces one channel name by two fresh
 names separated by ``| |||| |'', the marker for a remote split.  |drop| is only
 enabled if its argument name comes last before a ``| |||| |''. |acquire| is only
@@ -343,7 +349,7 @@ asynchronous signaling primitives for implementing |drop|/|acquire|.  The direct
 semantics from~\cref{sec:direct-semant-chann} records ordering constraints in
 binding groups. The run-time translation realizes the same constraints with
 ordinary channel names and optional synchronization flags that implement passing
-of ownership.
+of ownership. 
 
 \Cref{fig:borrow-lifecycle-msc} summarizes the difference between local
 and remote borrowing in the implementation.
@@ -364,16 +370,22 @@ and remote borrowing in the implementation.
 
 Specifically, a channel is represented by a triple |in *. c *. out|, where |c|
 is a primitive channel name and |in| and |out| are optional names of
-synchronization flags. The incoming flag |in| records whether the channel must
-be acquired before it can be used. The outgoing flag |out| records whether the
-channel must be dropped after use. A synchronization binder
+synchronization flags (i.e., they are
+either |*| or a flag name |z|). If the incoming flag |in = z|, then the channel
+|c| must be acquired before it can be used; if |in = *|, then |c| can just be
+used. Analogously, if the outgoing flag is |out = z|, then the 
+channel |c| must be dropped after use. The target calculus associates each
+channel end with a list of (named) flags, which assume values |fdrop| or
+|facq|. 
+
+A synchronization binder
 $(\varphi z \mapsto \phi)P$ binds a flag name |z| in |P| and stores one of two
 states in $\phi$: |fdrop| or |facq|.  This flag |z| implements the separator in
 |nu (c1||||c2) (...)|. It is the outgoing flag of the borrowed prefix and the
 incoming flag of the suffix.
 
-An |rsplit| creates a flag in state |drop| and a freshly restricted channel sets
-its flag to |acq|. Intuitively, |fdrop| means that the left, borrowed part of a
+An |rsplit| on |c| creates a flag in state |drop| while a freshly restricted channel sets
+its flags to |facq|. Intuitively, |fdrop| means that the left, borrowed part of a
 remote split is still active, |facq| means that it has been dropped and the
 right, suffix part may acquire. This mechanism implements an ownership transfer
 of the primitive channel from the borrowed part to the suffix.
@@ -410,7 +422,7 @@ sharing the channel representation.
 
 % End local formatting of "in" as an identifier.
 %
-%}
+% }
 
 %%% Local Variables:
 %%% mode: latex

@@ -31,6 +31,13 @@ including stronger inference for split constraints, richer programming
 interfaces that avoid undecidable subtyping, and integration with
 larger CFST implementations.
 
+While the calculus RTSB is geared at a shared-memory target, the high-level
+calculus and its technical results transfer to a distributed target. In
+this case, the synchronization variables would be replaced by asynchronous,
+one-shot communication channels, exactly as shown in the translation of
+\citet{DBLP:journals/pacmpl/SaffrichS0V25}. This change would require
+reestablishment of the simulation results.
+
 
 %%% Local Variables:
 %%% mode: latex
