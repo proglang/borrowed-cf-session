@@ -40,21 +40,19 @@
 \DefRule {LSplit} {
   \USOpen
 } {
-  \USRedOne
+  \USRed
     {\USCfg{C}{S}{\USBag{\ECapp{\EApp{\CSplit}{\USHandle[u]{\TEcs}[\V]}}}}}
-    {\USCfg{C}{S}{\USBag{\ECapp{\USPair
-      {\USHandle[u]{\TEcs}}
-      {\USHandle   {\TEcs}[\V]}}}}}
+    {\USCfg{C}{S}{\USBag{\ECapp{\USPair {\USHandle[u]{\TEcs}} {\USHandle{\TEcs}[\V]}}}}}
 }
 
 % Unary remote split allocates its synchronization cell at the front.
 \DefRule {RSplit} {
-  \USOpen \\
   \Fresh\TEVarz \\
-  \USFlags=F \\
-  S'=\USSideUpdate{\USCell{\TEVarz}{\FlagInit} \cdot F}
+  S'=\USSideUpdate{\USCell{\TEVarz}{\FlagInit} \cdot F} \\\\
+  \USOpen \\
+  \USFlags=F
 } {
-  \USRedOne
+  \USRed
     {\USCfg{C}{S}{\USBag{\ECapp{\EApp{\CSSplit}{
       \USHandle[u]{\TEcs}[\V]}}}}}
     {\USCfg{C}{S'}{\USBag{\ECapp{\USPair
@@ -64,10 +62,10 @@
 
 \DefRule {Drop} {
   \USOpen \\
-  \USFlags=A\cdot \USCell{\TEVarz}{\FlagInit} \cdot B \\
-  S'=\USSideUpdate{A \cdot \USCell{\TEVarz}{\FlagDropped} \cdot B}
+  S'=\USSideUpdate{A \cdot \USCell{\TEVarz}{\FlagDropped} \cdot B} \\\\
+  \USFlags=A\cdot \USCell{\TEVarz}{\FlagInit} \cdot B
 } {
-  \USRedOne
+  \USRed
     {\USCfg{C}{S}{\USBag{\ECapp{\EApp{\CDrop}{
       \USHandle{\TEcs}[\TEVarz]}}}}}
     {\USCfg{C}{S'}{\USBag{\ECapp{\USUnit}}}}
@@ -75,10 +73,10 @@
 
 \DefRule {Acquire} {
   \USOpen \\
-  \USFlags=A \cdot \USCell{\TEVarz}{\FlagDropped} \cdot B \\
-  S'=\USSideUpdate{A\cdot B}
+  S'=\USSideUpdate{A\cdot B} \\\\
+  \USFlags=A \cdot \USCell{\TEVarz}{\FlagDropped} \cdot B
 } {
-  \USRedOne
+  \USRed
     {\USCfg{C}{S}{\USBag{\ECapp{\EApp{\CAcq}{
       \USHandle[\TEVarz]{\TEcs}[\V]}}}}}
     {\USCfg{C}{S'}{\USBag{\ECapp{\USHandle*{\TEcs}[\V]}}}}
@@ -102,7 +100,7 @@
 \DefRule {Com} {
   \USOpen
 } {
-  \USRed
+  \USRedOne
     {\USCfg{C}{S}{\USBag{
       \ECapp[1]{\EApp{\CSend}{(\USPair{\V}{\USHandle{\TEcs}[u]})}},
       \ECapp[2]{\EApp{\CRecv}{\USHandle{\TEcs*}[w]}}
