@@ -674,8 +674,8 @@ concurrent lambda calculus with the usual session-style communication
 primitives. However, \thertcalculus is untyped and it comes equipped with
 asynchronous signaling primitives for implementing \ensuremath{\CodeOp{drop}}/\ensuremath{\CodeOp{acquire}}.  The direct
 semantics from~\cref{sec:direct-semant-chann} records ordering constraints in
-binding groups. The run-time translation realizes the same constraints with
-ordinary channel names and optional synchronization flags that implement passing
+binding groups, while the run-time calculus realizes these constraints by associating
+channel names with synchronization flags that implement passing
 of ownership. 
 
 \Cref{fig:borrow-lifecycle-msc} summarizes the difference between local
@@ -697,19 +697,21 @@ Specifically, a channel is represented by a triple \ensuremath{\Varid{in}\otimes
 is a primitive channel name and \ensuremath{\Varid{in}} and \ensuremath{\Varid{out}} are optional names of
 synchronization flags (i.e., they are
 either \ensuremath{\mathord{*}} or a flag name \ensuremath{\Varid{z}}). If the incoming flag \ensuremath{\Varid{in}\mathrel{=}\Varid{z}}, then the channel
-\ensuremath{\Varid{c}} must be acquired before it can be used; if \ensuremath{\Varid{in}\mathrel{=}\mathord{*}}, then \ensuremath{\Varid{c}} can just be
+\ensuremath{\Varid{c}} must be acquired via \ensuremath{\Varid{z}} before it can be used; if \ensuremath{\Varid{in}\mathrel{=}\mathord{*}}, then \ensuremath{\Varid{c}} can just be
 used. Analogously, if the outgoing flag is \ensuremath{\Varid{out}\mathrel{=}\Varid{z}}, then the 
-channel \ensuremath{\Varid{c}} must be dropped after use. The target calculus associates each
+channel \ensuremath{\Varid{c}} must be handed off to \ensuremath{\Varid{z}} after use; no hand off if \ensuremath{\Varid{out}\mathrel{=}\mathord{*}}. The
+target calculus associates each 
 channel end with a list of (named) flags, which assume values \ensuremath{\CodeFlag{drop}} or
 \ensuremath{\CodeFlag{acq}}. 
 
-A synchronization binder
-$(\varphi z \mapsto \phi)P$ binds a flag name \ensuremath{\Varid{z}} in \ensuremath{\Conid{P}} and stores one of two
-states in $\phi$: \ensuremath{\CodeFlag{drop}} or \ensuremath{\CodeFlag{acq}}.  This flag \ensuremath{\Varid{z}} implements the separator in
-\ensuremath{\boldsymbol{\nu[}\mkern1mu\relax \Varid{c}_{1}\mathop{\|}\Varid{c}_{2}\mkern1mu\boldsymbol{][}\mkern1mu\relax \dots\mkern1mu\boldsymbol{]}}. It is the outgoing flag of the borrowed prefix and the
-incoming flag of the suffix.
+% A synchronization binder
+% $(\varphi z \mapsto \phi)P$ binds a flag name |z| in |P| and stores one of two
+% states in $\phi$: |fdrop| or |facq|.  This flag |z| implements the separator in
+% |nu (c1||||c2) (...)|. It is the outgoing flag of the borrowed prefix and the
+% incoming flag of the suffix.
 
-An \ensuremath{\CodeOp{rsplit}} on \ensuremath{\Varid{c}} creates a flag in state \ensuremath{\CodeOp{drop}} while a freshly restricted channel sets
+An \ensuremath{\CodeOp{rsplit}} on \ensuremath{\Varid{c}} creates a flag in state \ensuremath{\CodeFlag{drop}}, which implements the
+separator of the high-level calculus, while a freshly restricted channel sets
 its flags to \ensuremath{\CodeFlag{acq}}. Intuitively, \ensuremath{\CodeFlag{drop}} means that the left, borrowed part of a
 remote split is still active, \ensuremath{\CodeFlag{acq}} means that it has been dropped and the
 right, suffix part may acquire. This mechanism implements an ownership transfer
