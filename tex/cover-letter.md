@@ -79,8 +79,6 @@ See artifact submission and supplement.
 > 
 > ### Why synchronization variables?
 
-[Peter]
-
 In the introduction, we (briefly) clarify the intended shared-memory
 target.
 In the conclusion, we sketch the distributed variant as future work.
@@ -102,9 +100,25 @@ In the conclusion, we sketch the distributed variant as future work.
 > 
 > ### New insights over BGV
 
-[Peter]
+> First, a CFST residual cannot be found by syntactic prefix removal:
+> splitting must be solved modulo associativity, `Skip`, choice
+> distributivity, and recursion.
 
-> First, a CFST residual cannot be found by syntactic prefix removal: splitting must be solved modulo associativity, `Skip`, choice distributivity, and recursion. Second, separating local and remote borrows shows that synchronization is not intrinsic to borrowing: ordered typing and evaluation make local splitting synchronization-free, while cross-process borrowing requires handoff. The direct semantics specifies this distinction independently of implementation, and the simulations validate the optimized target realization.
+introduction 68-74. contribution (2).
+
+> Second, separating local and remote borrows shows that
+> synchronization is not intrinsic to borrowing: ordered typing and
+> evaluation make local splitting synchronization-free, while
+> cross-process borrowing requires handoff.
+
+introduction 55-58. contribution (3)
+
+>  The direct semantics specifies this distinction independently of
+>  implementation, and the simulations validate the optimized target
+>  realization. 
+
+contribution (4) and technical contributions.
+
 > 
 > ### Formalization
 
@@ -113,14 +127,16 @@ See above.
 > 
 > ## Review C: specific questions
 
-[Peter]
+> Omitting polymorphism is
+> deliberate: borrowing removes continuation polymorphism from our
+> examples, not the general need for data or protocol polymorphism;
+> quantified session variables interact nontrivially with residual
+> inference, mobility, and CFST equivalence.
 
-> Backward simulation is addressed by the process-soup reformulation above; we will not claim the new theorem literally for the submitted syntax. Constraint-generation completeness is now mechanized, while solver heuristic completeness remains open. Omitting polymorphism is deliberate: borrowing removes continuation polymorphism from our examples, not the general need for data or protocol polymorphism; quantified session variables interact nontrivially with residual inference, mobility, and CFST equivalence. Local borrows cannot leak into a fork: capture or transmission requires mobility, which locally borrowed endpoints lack; cross-process use must elaborate to `rsplit`. Finally, CSTB follows the original CFST calculus in providing equivalence but not subtyping. Subtyping would accept additional programs, but CFST subtyping is undecidable and would require an incomplete procedure or explicit coercions; we will qualify our expressiveness claim accordingly.
-> 
-> ---
-> 
-> # END OF 750-WORD CORE RESPONSE
-> 
+(Remark: meanwhile, we sketched a verson of CSTB with System-F
+polymorphism. Promising, but the details and metatheory remain to be
+worked out.)
+
 > # Responses to remaining comments (included in full)
 > 
 > ## Review A: detailed comments
@@ -136,7 +152,6 @@ See update of section 2.3 / 2.4.
 > ### Figure 2c
 
 Revamped.
-
 
 > ### The passage from lines 376–391
 

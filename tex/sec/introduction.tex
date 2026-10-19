@@ -388,7 +388,7 @@ session types \cite{DBLP:conf/esop/LindleyM15} and its semantics is
 given by a translation to a calculus from the literature
 \cite{DBLP:journals/lmcs/KokkeD23}. However, the approach of the BGV paper has a number of
 drawbacks. As the source calculus has no direct semantics, it is
-difficult to perform optimizations at the source level. Moreover, the
+difficult to perform optimizations and reasoning at the source level. Moreover, the
 translation is uniform in the sense that it does not distinguish
 between local borrows that remain in the same process and remote
 borrows that are passed to other processes. This uniformity leads to
@@ -426,7 +426,7 @@ prefix is a significant task.
 \medskip%\subsection*{Contributions}
 
 The \textbf{core conceptual contributions} of this paper are as follows.
-\begin{itemize}
+\begin{enumerate}
 \item We extend borrowing from regular session types to context-free
   session types. The resulting calculus, \thecalculus, keeps the
   expressiveness of CFSTs while removing much of the
@@ -443,7 +443,7 @@ The \textbf{core conceptual contributions} of this paper are as follows.
 \item We give \thecalculus a direct operational semantics. This
   semantics serves as an abstract specification of borrowing, rather
   than defining the source language only by translation.
-\end{itemize}
+\end{enumerate}
 
 The remaining contributions are mainly technical.
 \begin{itemize}
