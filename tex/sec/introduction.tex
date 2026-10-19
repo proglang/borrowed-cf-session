@@ -388,21 +388,22 @@ session types \cite{DBLP:conf/esop/LindleyM15} and its semantics is
 given by a translation to a calculus from the literature
 \cite{DBLP:journals/lmcs/KokkeD23}. However, the approach of the BGV paper has a number of
 drawbacks. As the source calculus has no direct semantics, it is
-difficult to perform optimizations or to reason at the source level. Moreover, the
-translation is uniform in the sense that it always synchronizes across
-borrows. This uniformity leads to inefficiency: while remote borrows are passed
-to other processes and require synchronization, this machinery can be elided for
-local, process-internal borrows.
+difficult to perform optimizations at the source level. Moreover, the
+translation is uniform in the sense that it does not distinguish
+between local borrows that remain in the same process and remote
+borrows that are passed to other processes. This uniformity leads to
+inefficiency because local borrows can elide the synchronization
+machinery needed for remote borrows. 
 
-The present work advances the ideas of borrowing for regular session types
+This work promotes the ideas of borrowing for regular session types
 \cite{DBLP:journals/pacmpl/SaffrichS0V25} to context-free session
 types with borrowing, a calculus we call \thecalculus, both
-simplifying and improving on that work. While
-symmetric composition in CFSTs enables expressive protocols, it does not
+simplifying and improving on that work. While CFSTs'
+symmetric composition enables expressive protocols, it does not
 liberate functional session type programming from resource-passing
 style. \Cref{sec:borr-from-cont} develops this point using tree
 serialization as an example: the plain CFST program
-threads the channel explicitly,
+threads the channel explicitly and relies on polymorphic recursion,
 whereas the \thecalculus version uses local borrowing to consume one
 prefix of the channel after another. \Cref{sec:local-remote-borr} then
 uses a streaming HTML renderer to show why remote borrowing is
@@ -422,9 +423,9 @@ a CFST must be defined modulo the equational theory of CFSTs and
 computing the residual suffix from the original type and the borrowed
 prefix is a significant task.
 
-\subsection*{Contributions}
+\medskip%\subsection*{Contributions}
 
-The core conceptual contributions of this paper are as follows.
+The \textbf{core conceptual contributions} of this paper are as follows.
 \begin{itemize}
 \item We extend borrowing from regular session types to context-free
   session types. The resulting calculus, \thecalculus, keeps the
@@ -437,7 +438,7 @@ The core conceptual contributions of this paper are as follows.
   theory of CFSTs.
 \item We distinguish local borrowing from remote borrowing. Local
   borrows remain in one process and can be ordered by evaluation and
-  typing alone; only remote borrows cross process boundaries and therefore
+  typing alone; remote borrows cross process boundaries and therefore
   require explicit synchronization.
 \item We give \thecalculus a direct operational semantics. This
   semantics serves as an abstract specification of borrowing, rather
@@ -446,13 +447,13 @@ The core conceptual contributions of this paper are as follows.
 
 The remaining contributions are mainly technical.
 \begin{itemize}
-\item We define a declarative type system with ordered contexts inspired by
+\item We define a declarative type system with tree-shaed contexts inspired by
   Bunched Implications \cite{DBLP:journals/bsl/OHearnP99}, effects, mobility, and
   boundedness.
 \item We present a constraint-based algorithmic typing judgment and prove it
   sound and complete with respect to the declarative system.
-\item We define a low-level run-time calculus with explicit channel
-  representations and synchronization flags, and translate typed
+\item We define a low-level run-time calculus with synchronization flags for a
+  shared-memory target and translate typed
   \thecalculus processes to this calculus.
 \item We prove type soundness for the direct semantics and forward and
   backward simulation for the translation. All results of the paper are

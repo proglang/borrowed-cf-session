@@ -265,19 +265,19 @@ before we move on to a low level implementation of the two concepts in
 \end{figure}
 
 \Cref{sec:borr-from-cont} already suggests an implementation strategy for local
-borrowing. However, we start with an abstract specification because it is easier
+borrowing. Here we start with an abstract specification, which it is easier
 to handle in a correctness proof. The specification works on an elaborated core
 language, \thecalculus. Elaboration replaces borrowing with explicit functional
-splitting operators. This translation is analogous to a translation in previous
-work \citep{DBLP:journals/pacmpl/SaffrichS0V25}, which gives a formal
-presentation along with a correctness proof. The novelty of our work is the
+splitting operators. This translation is analogous to a translation formally
+presented and proved correct by \citet{DBLP:journals/pacmpl/SaffrichS0V25}. The
+novelty of our work is the 
 presence of \emph{two} operators, |lsplit| for local borrows and |rsplit| for
 remote borrows. Borrows used in the same process elaborate to |lsplit| while
 borrows used across a |fork| or sent to another process elaborate to |rsplit|.
 \Cref{fig:rendering-example-elab} shows the (partial) elaboration of
 |renderRest| and |renderUser| from the example in \cref{lst:rendering-example}.
-The former is translated to local splits while the latter is using remote
-splits. Our discussion starts with the local variant.
+The former translates to local splits while the latter uses remote
+splits. We discuss the local variant first.
 
 % Execution proceeds by repeatedly exposing the next local prefix of the channel
 % sequence.
@@ -292,11 +292,11 @@ one borrow. Its working is best illustrated with the example trace.
 As the treatment of the endpoints is symmetric, we concentrate on the first
 binder group.
 
-To keep the trace short (\cref{fig:local-split-trace}), the reduction starts at
+The reduction in~\cref{fig:local-split-trace} starts at
 the local suffix in |renderRest|. Step~\stepref{2}, the split on |c| following
 the |select|, \emph{replaces} the binder for |c| with two fresh channel names,
 |c1| and |c2|. Step~\stepref{3} consumes |c1| leaving only |c2|. The binder
-group |c1 ^ c2| is a flat list of channel names, and all operations work on
+group |c1 ^ c2| is a list of channel names. All operations work on
 these channel names from left to right. To ensure the correct sequencing, the
 semantics does not allow any action on |c2| before |c1| has been consumed. This
 restriction is supported by typing: the |lsplit| operation returns an
@@ -307,19 +307,18 @@ left-to-right order.
 % discards |c| if it is the first channel name in the compartment.
 
 On the client side, the processes |Pi| match the communication operations
-performed by |renderRest|. The bind groups |bi| can be evolved through splitting
-independently of the splitting on |c|. The only constraint is that, in the end,
-when |close| and |wait| calls match, only one channel name is left in each
-compartment. If so, |close| and |wait| reduce, and the channel is closed and
+performed by |renderRest|. Splitting in |Pi| can evolve bind group |bi|
+independently of the splitting on |c|. The only constraint is that, in the end
+only one channel name is left in each 
+compartment. In this case, matching |close| and |wait| calls reduce; the channel is closed and
 eliminated.
 
-For remote borrowing, we incorporate the |acquire| primitive and indicate a
-remote split with the symbol ``| |||| |'' in the compartment. As an example, we
+Remote borrowing requires the |acquire| primitive and
+remote split indicated with the symbol ``| |||| |'' in the compartment. As an example, we
 consider the translation of lines
 \ref*{ln:renderExample/transBegin}--\ref*{ln:renderExample/transEnd} from
 \cref{lst:rendering-example}. Their elaboration is shown in
-\cref{fig:rendering-example-elab/remote}.
-
+\cref{fig:rendering-example-elab/remote}. 
 The translation inserts an |rsplit| because |c1| and |c2| are used in different
 processes. The |rsplit| returns an ordinary (linear) pair of channels because
 synchronization is made explicit using the |Acq| and |Drop| types.
@@ -328,11 +327,10 @@ Executing this code takes the steps shown in
 \cref{fig:remote-split-trace}. First, the |rsplit| replaces one channel name by
 two fresh names separated by ``| |||| |'' marking a remote split.
 Step~\stepref{2} reduces the |fork| and the body of |renderProfile| until only
-|drop c1| remains. In the next step, |drop c1| reduces to |*| and |c1| is
-removed from the binder group which leaves ``| |||| |'' as the first item in the
-compartment. Now, in step~\stepref{4}, the reduction of |acquire c2| succeeds
-and drops the
-leading separator. In summary, |rsplit| replaces one channel name by two fresh
+|drop c1| remains. In the next step, |drop c1| reduces to |*|, which removes
+|c1| from the binder group and leaves ``| |||| |'' as the first item in the 
+compartment. In step~\stepref{4}, the reduction of |acquire c2| requires the
+leading separator and drops it. In summary, |rsplit| replaces one channel name by two fresh
 names separated by ``| |||| |'', the marker for a remote split.  |drop| is only
 enabled if its argument name comes last before a ``| |||| |''. |acquire| is only
 enabled if the preceding list segment has been processed as in |bgroup

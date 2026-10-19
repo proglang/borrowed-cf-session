@@ -4,6 +4,8 @@ Thanks to the reviewers for conditionally accepting our paper.
 We detail the changes of the revision by commenting on our author response below.
 Please review the changes in the accompanying latex diff.
 
+We applied minor rewordings, error corrections, and tightened the
+prose (to conserve space) throughout.
 
 > ## Proposed revisions
 > 
@@ -15,7 +17,11 @@ Minor rewordings in the introduction.
 
 [Janek]
 
-> clarify the scope of the shared-memory target, simplify the synchronization notation,
+> clarify the scope of the shared-memory target,
+
+Introduction (rewording); conclusion (new paragraph)
+
+> simplify the synchronization notation,
 
 Section 2.4 has been rewritten.
 
