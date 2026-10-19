@@ -93,9 +93,9 @@ a CFST must be defined modulo the equational theory of CFSTs and
 computing the residual suffix from the original type and the borrowed
 prefix is a significant task.
 
-\subsection*{Contributions}
+\medskip%\subsection*{Contributions}
 
-The core conceptual contributions of this paper are as follows.
+The \textbf{core conceptual contributions} of this paper are as follows.
 \begin{itemize}
 \item We extend borrowing from regular session types to context-free
   session types. The resulting calculus, \thecalculus, keeps the
@@ -117,13 +117,13 @@ The core conceptual contributions of this paper are as follows.
 
 The remaining contributions are mainly technical.
 \begin{itemize}
-\item We define a declarative type system with ordered contexts inspired by
+\item We define a declarative type system with tree-shaed contexts inspired by
   Bunched Implications \cite{DBLP:journals/bsl/OHearnP99}, effects, mobility, and
   boundedness.
 \item We present a constraint-based algorithmic typing judgment and prove it
   sound and complete with respect to the declarative system.
-\item We define a low-level run-time calculus with explicit channel
-  representations and synchronization flags, and translate typed
+\item We define a low-level run-time calculus with synchronization flags for a
+  shared-memory target and translate typed
   \thecalculus processes to this calculus.
 \item We prove type soundness for the direct semantics and forward and
   backward simulation for the translation. All results of the paper are
