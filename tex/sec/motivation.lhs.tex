@@ -205,9 +205,7 @@ the type of |c| starts with |Acq|. The types |Acq| and |Drop| only arise from
 remote borrows. The \emph{only} operation on a channel of type |Acq; ...| is
 |acquire| and, similarly, |drop| only applies to channels of type |Drop|.
 
-Next, we discuss a direct operational semantics of local and remote borrowing
-before we move on to a low level implementation of the two concepts in
-\cref{sec:impl-local-remote}.
+Next, we discuss a high-level, direct operational semantics of local and remote borrowing.
 
 
 \subsection{A Direct Semantics for Channel Borrowing}
