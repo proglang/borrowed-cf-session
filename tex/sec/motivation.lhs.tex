@@ -364,16 +364,42 @@ and remote borrowing in the implementation.
 %
 %format in = "\Varid{in}"
 
-Specifically, a channel is represented by a triple |in *. c *. out|, where |c|
+Specifically, a translated channel is represented by a triple |in *. c *. out|, where |c|
 is a primitive channel name and |in| and |out| are optional names of
 synchronization flags (i.e., they are
-either |*| or a flag name |z|). If the incoming flag |in = z|, then the channel
+either |*| or a flag name |z|). If the incoming flag is |in = z|, then channel
 |c| must be acquired via |z| before it can be used; if |in = *|, then |c| can just be
-used. Analogously, if the outgoing flag is |out = z|, then the 
-channel |c| must be handed off to |z| after use; no hand off if |out = *|. The
-target calculus associates each 
-channel end with a list of (named) flags, which assume values |fdrop| or
-|facq|. 
+used. Analogously, if the outgoing flag is |out = z|, then 
+channel |c| must be handed off to |z| after use; no hand off,
+if |out = *|. \thertcalculus associates each  
+channel end with a list of (named) flags, ranging over |fdrop| and
+|facq|.
+
+We first consider taking a local borrow (cf.~\cref{fig:borrow-lifecycle-msc-local}). In
+this case, 
+|lsplit| applied to |in *. c *. out| duplicates the primitive channel |c| and
+returns the borrow $c_1=$ |in *. c *. *| followed by the residual $c_2=$ |* *. c
+*. out|. 
+No new synchronization flag; no explicit handover from
+|c1| to |c2|, because |c1.out = c2.in = *|. This simple
+approach has no overhead and is sound because the ordered pair in the source
+type system has already established the left-to-right use (``followed-by'') of
+the two pieces. Both pieces refer to the same underlying
+channel object |c|; typing ensures that using the first piece advances |c| to
+the state where the second piece starts.
+
+Remote splitting relies on the new synchronization machinery
+(\cref{fig:borrow-lifecycle-msc-remote}). Splitting a channel
+|in *. c *. out| remotely creates a fresh flag |z| in state |fdrop| and returns two
+channel triples: |in *. c *. z| for the borrowed prefix, and |z *. c *. out| for
+the suffix. Hence, the prefix carries an outgoing obligation to call |drop| and
+the suffix carries a matching incoming obligation to call |acquire|. Calling
+|drop| changes the flag from |fdrop| to |facq| and returns immediately, so the
+notification is asynchronous. An |acquire| on the suffix remains blocked until
+the flag becomes |facq| and then it removes the synchronization flag. Thus a remote
+split pays for exactly for the handover needed to coordinate the two
+processes operating on the channel, whereas a local split has no overhead.
+
 
 % A synchronization binder
 % $(\varphi z \mapsto \phi)P$ binds a flag name |z| in |P| and stores one of two
@@ -381,42 +407,23 @@ channel end with a list of (named) flags, which assume values |fdrop| or
 % |nu (c1||||c2) (...)|. It is the outgoing flag of the borrowed prefix and the
 % incoming flag of the suffix.
 
-An |rsplit| on |c| creates a flag in state |fdrop|, which implements the
-separator of the high-level calculus, while a freshly restricted channel sets
-its flags to |facq|. Intuitively, |fdrop| means that the left, borrowed part of a
-remote split is still active, |facq| means that it has been dropped and the
-right, suffix part may acquire. This mechanism implements an ownership transfer
-of the primitive channel from the borrowed part to the suffix.
+% An |rsplit| on |c| creates a flag in state |fdrop|, which implements the
+% separator of the high-level calculus, while a freshly restricted channel sets
+% its flags to |facq|. Intuitively, |fdrop| means that the left, borrowed part of a
+% remote split is still active, |facq| means that it has been dropped and the
+% right, suffix part may acquire. This mechanism implements an ownership transfer
+% of the primitive channel from the borrowed part to the suffix.
 
-Allocation creates a primitive channel pair and one synchronization flag for
-each endpoint. The fresh endpoints carry incoming flags that are already in the
-|facq| state. Thus, an initial |acquire| is required to reduce each channel to
-normal operation, removing the flag from the channel triple by replacing it with
-|*|. Once these optional flag components are absent, communication is just
-ordinary session communication: |send|/|recv|, |select|/|branch|, and
-|close|/|wait| all operate directly on the primitive channel name |c|.
+Allocation (not shown in \cref{fig:borrow-lifecycle-msc}) creates a primitive
+channel pair and one synchronization flag in state |facq| for each endpoint
+obtaining the pair |z1 *. c1 *. *| and |z2 *. c2 *. *|.
+Thus, the first operation on each channel end must be |acquire| to start normal
+operation, replacing the flag |zi| from the channel 
+triple to obtain |* *. ci *. *|. From then onwards,
+communication is just ordinary session communication: |send|/|recv|,
+|select|/|branch|, and |close|/|wait| all operate directly on the primitive
+channel name |ci|.
 
-\Cref{fig:borrow-lifecycle-msc-local} shows the lifecycle of a local borrow. The
-rule for |lsplit| returns two copies of the same run-time channel triple. No new
-channel is allocated and no synchronization flag is introduced. This simple
-approach has no overhead and is sound because the source type system has already
-established the left-to-right use of the two pieces. The run-time representation
-can therefore be imperative: the two pieces are aliases for the same underlying
-channel object, and using the first piece advances that object to the state
-where the second piece starts.
-
-Remote splitting is the only place where new synchronization machinery is
-introduced (\cref{fig:borrow-lifecycle-msc-remote}). Splitting a channel |in *.
-c *. out| remotely creates a fresh flag |z| in state |fdrop| and returns two
-channel triples: |in *. c *. z| for the borrowed prefix, and |z *. c *. out| for
-the suffix. The prefix therefore carries an outgoing obligation to call |drop|;
-the suffix carries a matching incoming obligation to call |acquire|. Calling
-|drop| changes the flag from |fdrop| to |facq| and returns immediately, so the
-notification is asynchronous. A later |acquire| on the suffix can fire only
-after this state change and removes the synchronization flag. Thus a remote
-split pays for exactly the synchronization needed to coordinate the two
-processes operating on the channel, whereas a local split pays nothing beyond
-sharing the channel representation.
 
 % End local formatting of "in" as an identifier.
 %
