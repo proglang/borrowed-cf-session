@@ -9,7 +9,6 @@
     \tag{Mobilities}                                                                           \\
     \Dir \grmeq
               & \DirLeft \grmor \DirRight \grmor \DirUnord \grmor \DirNone
-    % \grmor \DirNone
     \tag{Directions}                                                                           \\
     \Eff \grmeq
               & \EffPure \grmor \EffImpure
@@ -25,12 +24,8 @@
                  \grmor \SSend\T \grmor \SRecv\T
                 \grmor \SChoice{\ell:\S[\ell]}{\ell\in L}
                 \grmor \SBranch{\ell:\S[\ell]}{\ell\in L}
-    \\
-              &
-                \grmor \STerm \grmor \SWait
-    \grmor \SDrop \grmor \SAcq
-    \grmor
-    \SRec\SVar\S \grmor \SVar % no rec yet
+    \\ \grmor & \STerm \grmor \SWait \grmor \SDrop \grmor \SAcq \grmor
+                              \SRec\SVar\S \grmor \SVar
     \tag{Session types}
     \\
     \Ctx \grmeq
@@ -59,11 +54,8 @@
     \grmor \EPair\E\E
     \grmor \ELetPair{\EVar}{\EVar}{\E}{\E}                                                     \\
     \grmor    & \EInj i \E
-    %\grmor \ECase\E{\EVar}{\E}{\EVar}{\E}
     \grmor \ECase \E {\ECaseBranch* i \EVar \E}
     \grmor \EMu[\EVar] \E
-    % & \grmor \EMatch{\E}{\ell:\E_\ell}{\ell\in L}
-    % \grmor \EFork\E \grmor \ELet\EVar\E\E
     \tag{Expressions}
     \\[\medskipamount]
     \shortintertext{\textbf{Processes}}
