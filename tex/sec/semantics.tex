@@ -4,15 +4,13 @@
 This section presents a small-step operational semantics for the core language of
 \cref{fig:syntax}.  
 
-%\Cref{fig:values-evaluation-contexts} contains the
-% basic definitions.
-We classify values $\U, \V$ as expressions that are the usual weak-head normal forms: constants, variables
-acting as channel names,
-abstractions, injections of values, and pairs of values. Evaluation
-contexts $\EC$ are standard except for the cases for directed application where the direction changes the evaluation order.  A process-local context $\FC$ embeds an evaluation context in a
-single running process and process contexts $\CC$ close under parallel
-composition and restriction.
-Formal specifications for all four categories are shown in \cref{fig:values-evaluation-contexts}.
+We classify values $\U, \V$ as expressions that are the usual weak-head normal
+forms: constants, variables acting as channel names, abstractions, injections
+of values, and pairs of values. Evaluation contexts $\EC$ are standard except
+for the cases for directed application where the direction changes the
+evaluation order. A process-local context $\FC$ embeds an evaluation context in
+a single running process. Formal specifications of all three categories are
+given in \cref{fig:values-evaluation-contexts}.
 
 We omit the presentation of call-by-value expression reduction
 $\E[1]\EReduce\E[2]$, found in the supplement in
