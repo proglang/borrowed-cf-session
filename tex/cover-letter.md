@@ -72,7 +72,7 @@ intrinsic in the soup-of-processes representation.
 
 > The artifact will include the Agda development, Rust typechecker, and examples.
 
-Cf. artifact submission and supplement.
+See artifact submission and supplement.
 
 > 
 > ## Review A: specific questions
@@ -81,8 +81,11 @@ Cf. artifact submission and supplement.
 
 [Peter]
 
-> We chose synchronization cells because RTSB is intended as a low-level **shared-memory** target: a remote borrow needs a one-shot handoff, and a two-state cell directly represents the runtime flag that `drop` sets and `acquire` waits for, without introducing target-level message passing solely to encode that flag. We did not intend to claim that cells are intrinsic to borrowing or suitable for every session runtime. The reviewer is right that a one-shot asynchronous channel is the natural realization in a distributed setting; replacing cells with such channels would preserve CSTB, its direct semantics, and the local/remote distinction, but require a different target translation and simulation proof. We will make this design rationale and scope explicit, present channels as the distributed alternative, and rewrite Section 2.4's currently opaque presentation.
-> 
+In the introduction, we (briefly) clarify the intended shared-memory
+target.
+In the conclusion, we sketch the distributed variant as future work.
+
+
 > ### Why the purity constraints?
 
 [Janek]

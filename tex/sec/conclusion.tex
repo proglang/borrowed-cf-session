@@ -18,25 +18,25 @@ evaluation alone; remote borrows may cross process boundaries and
 therefore require an explicit handoff between the borrowed prefix and
 the residual suffix.  This distinction is reflected throughout: in the declarative type system, in the direct operational 
 semantics based on binder groups, and in the translation to a lower
-level calculus with primitive channels and synchronization cells.  The
-algorithmic type system reduces the splitting obligations to
-constraints over CFST equivalence, for which our implementation
-reuses the FreeST solver.
+level calculus \thertcalculus with primitive channels and synchronization cells.  
+Algorithmic typing reduces the splitting obligations to
+constraints over CFST equivalence, which our implementation
+refers to the FreeST solver.
 
-The resulting picture is that borrowing is not merely syntactic
-sugar for passing endpoints around.  In the presence of context-free
-session types, it is a disciplined way to compute and schedule pieces
+In the presence of context-free
+session types,  borrowing is a disciplined way to compute and schedule pieces
 of a communication protocol.  Several directions remain open,
 including stronger inference for split constraints, richer programming
-interfaces that avoid undecidable subtyping, and integration with
-larger CFST implementations.
+interfaces that avoid undecidable subtyping, integration with
+larger CFST implementations, and retargeting \thertcalculus to a distributed setting.
 
-While the calculus RTSB is geared at a shared-memory target, the high-level
-calculus and its technical results transfer to a distributed target. In
-this case, the synchronization variables would be replaced by asynchronous,
-one-shot communication channels, exactly as shown in the translation of
+Presently, \thertcalculus is geared towards a shared-memory target, but the high-level
+calculus and its technical results transfer to a distributed target. When
+retargeting, synchronization variables would be replaced by asynchronous, 
+one-shot communication channels, as shown in the translation of
 \citet{DBLP:journals/pacmpl/SaffrichS0V25}. This change would require
-reestablishment of the simulation results.
+reestablishment of the simulation results, but we are confident that they would
+work out.
 
 
 %%% Local Variables:
