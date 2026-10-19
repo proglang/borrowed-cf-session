@@ -37,8 +37,8 @@
   lifeline/.style={dashed, black!55},
   activation/.style={draw, fill=black!8},
   msg/.style={->},
-  create/.style={->, dashed},
-  return/.style={->, dashed},
+  create/.style={->},
+  return/.style={->},
   lab/.style={font=\scriptsize},
   lab above/.style={lab,above,anchor=base,yshift=2.4pt},
   lab right/.style={lab,right,anchor=west,yshift=-.8pt},
@@ -91,7 +91,7 @@
 
 \saveframedtikz\SplitDrawingRemote{
   \node[head] (p) {$P$};
-  \node[head, flag, below right=0.37cm and 2.5cm of p] (z) {$\varphi\,z$};
+  \node[head, flag, below right=0.37cm and 2.5cm of p] (z) {fresh $z:= \texttt{drop}$};
   \node[head,       below right=0.61cm and 2.5cm of z] (q) {$Q$};
 
   % Coordinates for the upper edge of p's first activation.
@@ -147,8 +147,8 @@
     ($(z ur)!(drop origin)!(z er)$) coordinate (drop target);
 
   % States for the synchronization flag.
-  \path (z ur) ++(0, -\firstStateOffset)
-    node[state, flag, anchor = north west] {$z\mapsto\texttt{drop}$};
+  % \path (z ur) ++(0, -\firstStateOffset)
+  %   node[state, flag, anchor = north west] {$z\mapsto\texttt{drop}$};
   \path (drop target) ++(0, -\msgSelfOffset)
     node[state, flag, anchor = north west] (z acq) {$z\mapsto\texttt{acq}$};
 
@@ -225,5 +225,5 @@
 
 %%% Local Variables:
 %%% mode: LaTeX
-%%% TeX-master: "popl2027"
+%%% TeX-master: "../popl2027"
 %%% End:
