@@ -107,9 +107,10 @@ types which makes it unrestricted and mobile itself. Applying the channel
 argument $\SSeq \TyHtmlChan \STerm$ evaluates the function body, resulting in
 communication operations. As such, the second arrow is impure ($\EffImpure$).
 
-Typing environments $\Ctx$ combine variable bindings using ordered ($\Ctx\CtxSeq\Ctx$) and
-unordered ($\Ctx\CtxPar\Ctx$) composition in the style of BI-contexts
-\cite{DBLP:journals/bsl/OHearnP99}, but with different semantics.
+Typing environments $\Ctx$ are tree-shaped and combine variable bindings using
+ordered ($\Ctx\CtxSeq\Ctx$) and unordered ($\Ctx\CtxPar\Ctx$) composition. This
+structure is inspired by 
+\citet{DBLP:journals/bsl/OHearnP99}, but with different semantics.
 
 The expression group separates constants $\C$ from compound expressions $\E$.
 Constants cover unit, channel creation, process creation, communication primitives,

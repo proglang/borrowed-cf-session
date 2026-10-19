@@ -174,10 +174,8 @@ Revamped.
 > 
 > ### Tree-shaped contexts and BI
 
-[Peter]
+Adopted with reference *inspired by BI*.
 
-> We agree. Our contexts are tree-shaped like BI contexts, but their two connectives distinguish ordered from unordered multiplicative composition rather than additive from multiplicative composition. We will use “tree-shaped context” throughout and mention BI only as a structural analogy, with this distinction stated explicitly.
-> 
 > ### Running examples
 
 [Janek]
@@ -192,10 +190,12 @@ All addressed.
 > 
 > ## Review C: remaining comments
 
-[Peter]
+> We thank the reviewer for pointing us to Mordido and Perez's work on
+> deadlock-free CFSTs. We will discuss its relationship to CSTB in the
+> Related Work section.
 
-> We thank the reviewer for pointing us to Mordido and Perez's work on deadlock-free CFSTs. We will discuss its relationship to CSTB in the Related Work section. 
-
+Cited. This work is complementary as CSTB does not address
+deadlock freedom.
 
 ## References
 

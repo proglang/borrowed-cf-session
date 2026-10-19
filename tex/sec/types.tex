@@ -12,7 +12,8 @@ controlled by a subcontext preorder. Third, the typing judgments for constants,
 expressions, and processes use these classifications to enforce protocol
 fidelity and ownership transfer.
 
-Typing contexts combine assumptions with two constructors. The ordered product
+Typing contexts combine assumptions with two constructors\footnote{Inspired by
+  the tree-shaped contexts of \citet{DBLP:journals/bsl/OHearnP99}.}. The ordered product
 $\Ctx[1]\CtxSeq\Ctx[2]$ records that the resources in $\Ctx[1]$ must be used
 before the resources in $\Ctx[2]$. The unordered product
 $\Ctx[1]\CtxPar\Ctx[2]$ records independent resources. When a rule is

@@ -16,7 +16,9 @@ quotiented over the monoid laws and distributivity of composition over
 choice. This complication makes type equivalence a decidable, but
 difficult problem \cite{DBLP:conf/tacas/AlmeidaMV20} and subtyping an
 undecidable problem
-\cite{DBLP:journals/toplas/Padovani19,DBLP:journals/tcs/SilvaMV26}.
+\cite{DBLP:journals/toplas/Padovani19,DBLP:journals/tcs/SilvaMV26}. Recent work
+investigates a priority-based type system to guarantee deadlock-freedom
+\cite{DBLP:conf/forte/MordidoP26}. 
 
 CFSTs are one starting point of our investigation. Symmetric
 composition makes them well-suited to expressing the split for local
@@ -31,7 +33,7 @@ constraints.
 The most closely related work is ``Borrowing from Session Types'' (BST) \cite{DBLP:journals/pacmpl/SaffrichS0V25}.
 They present a similar approach to borrowing, but for regular session types, rather than CFST.
 Our type system is heavily inspired by theirs, as it also relies on
-BI-contexts that enable checking the correct run-time ordering of session operations.
+tree-shaped that enable checking the correct run-time ordering of session operations.
 We build on their translation from borrowing notation to explicit
 splits, but adapt it to account for the distinction between local and
 remote splits. The main technical differences are fourfold. First, BST
@@ -99,7 +101,7 @@ than used in their pure proof-theoretic form. Each calculus picks up
 the ordered structure, but adds substantial domain-specific elements,
 to the extent that even basic elimination principles change.
 \citet{DBLP:conf/tldi/AhmedW03} share with our work the use of
-BI-contexts to distinguish ordered and unordered binding groups.
+tree-shaped contexts to distinguish ordered and unordered binding groups.
 
 Closer to our setting, Law and order
 \cite{DBLP:journals/pacmpl/Saffrich0024} is a precursor of BST. It
