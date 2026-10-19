@@ -55,7 +55,7 @@ It allows fresh-name choices, endpoint orientations, channel and thread
 placement, and unused closed channels and unit threads.  Write $X_0\approx^{s}X$ when the two
 configurations differ by finite permutations of the flag occurrences at
 each endpoint, applied simultaneously to their references in every
-expression.  In positional notation, a permutation $\pi_{c,s}$ acts by
+expression.  A permutation $\pi_{c,s}$ acts by
 \[
   F'_{c,s}[\pi_{c,s}(i)]=F_{c,s}[i],\qquad
   (c^s,i)\longmapsto(c^s,\pi_{c,s}(i)).
@@ -69,9 +69,9 @@ Define the image relation by
   \exists X_0.\ \mathsf{Image}_0(\Proc,X_0)\land X_0\approx^{s}X.
 \]
 The translation of a closed process produces an image,
-$\Proc\ImageRel\TransP[\emptyset]{\Proc}$, using the identity permutations.
-The equivalence is a proof relation; it introduces no execution steps.
-Both simulations match one source step with one target step.
+$\Proc\ImageRel\TransP[\emptyset]{\Proc}$, using the identity permutation.
+Steps are invariant under equivalence.
+Simulations match one source step with one target step.
 
 \begin{theorem}[Forward simulation\;\AgdaBird]
   If\/ $\ProcHasType \CtxEmpty \Proc$, $\Proc \ImageRel X$, and
@@ -93,10 +93,10 @@ steps commute with the reference action.  Moreover, each auxiliary step has
 an equivalent result obtained by a step of the fixed-front target.
 Only remote split needs a change.  If canonical insertion occurs at slot
 $k$, extend the old canonical-to-physical permutation $\pi$ by
-\[
+\quad\(
   \pi^+(k)=0,\qquad
   \pi^+(\operatorname{ins}_k(i))=\pi(i)+1,
-\]
+\)\quad
 where $\operatorname{ins}_k(i)=i$ for $i<k$ and $i+1$ otherwise.
 The new canonical cell maps to the physical front cell; old cells map to
 their shifted physical positions.  Applying this permutation to the whole
