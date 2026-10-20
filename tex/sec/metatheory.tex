@@ -3,21 +3,19 @@
 
 This section states the main metatheoretical results for \thecalculus. All
 definitions from the previous sections and all theorems of this section are
-formalized and proved in Agda. We mark each mechanized theorem with a little
-Agda bird after the theorem name. The supplement names the Agda module of each
-theorem.
+formalized and proved in Agda. \js{cite the artifact here?}
 
 \subsection{Type Safety for Declarative Typing}
 
 Preservation
 yields the usual safety invariant across reduction steps.
 
-\begin{theorem}[Expression preservation\;\AgdaBird]
+\begin{theorem}[Expression preservation]
   If\/ $\HasType \SessCtx \E \T$ and $\E \EReduce \E*$, then
   $\HasType \SessCtx {\E*} \T$.
 \end{theorem}
 
-\begin{theorem}[Process preservation\;\AgdaBird]
+\begin{theorem}[Process preservation]
   If\/ $\ProcHasType \SessCtx \Proc$ and $\Proc \PReduce \Proc*$, then
   $\ProcHasType \SessCtx {\Proc*}$.
 \end{theorem}
@@ -26,7 +24,7 @@ We complement preservation with progress. Expressions are not guaranteed to
 reduce to values but may be blocked on a constant applied to a value. The
 reduction of constants is part of the process semantics.
 
-\begin{theorem}[Expression progress\;\AgdaBird]
+\begin{theorem}[Expression progress]
   \label{thm:expression-progress}
   If\/ $\HasType \SessCtx \E \T$, then either $\E$ is a value, or there exist
   an evaluation context $\EC$, constant $\C$ and value $\V$ such that
@@ -39,7 +37,7 @@ channel rule. The blocked-process predicate $\Blocked\Proc$ is defined in
 guarantees reduction only for processes that are not blocked. Thus, deadlocks
 remain possible.
 
-\begin{theorem}[Process progress\;\AgdaBird]
+\begin{theorem}[Process progress]
   \label{thm:process-progress}
   If\/ $\ProcHasType \CtxEmpty \Proc$, then $\Proc \Congruent \PExp{\CUnit}$,
   or $\Blocked\Proc$, or there exists a $\Proc*$ such that
@@ -73,13 +71,13 @@ $\Proc\ImageRel\TransP[\emptyset]{\Proc}$, using the identity permutation.
 Steps are invariant under equivalence.
 Simulations match one source step with one target step.
 
-\begin{theorem}[Forward simulation\;\AgdaBird]
+\begin{theorem}[Forward simulation]
   If\/ $\ProcHasType \CtxEmpty \Proc$, $\Proc \ImageRel X$, and
   $\Proc \PReduce \Proc*$, then there exists $X'$ such that
   $X \TPReduce X'$ and $\Proc* \ImageRel X'$.
 \end{theorem}
 
-\begin{theorem}[Backward simulation\;\AgdaBird]
+\begin{theorem}[Backward simulation]
   If\/ $\ProcHasType \CtxEmpty \Proc$, $\Proc \ImageRel X$,
   and $X \TPReduce X'$, then there exists $\Proc*$ such that
   $\Proc \PReduce \Proc*$ and $\Proc* \ImageRel X'$.
@@ -118,7 +116,7 @@ We now connect algorithmic typing with declarative typing. Soundness says
 that any solved algorithmic judgment denotes a valid declarative typing, while
 completeness says that declarative typings can be reconstructed algorithmically.
 
-\begin{theorem}[Algorithmic typing soundness\;\AgdaBird]
+\begin{theorem}[Algorithmic typing soundness]
   If either $\CheckType \E \AT \Eff$ or $\InferType \E \AT \Eff$
   and $\sigma \models \CSet$ is a closing substitution for the unification
   variables of $\Ctx$, $\E$ and $\AT$, then
@@ -135,14 +133,14 @@ variant} $\E*$ of $\E$, which adds type annotations $\E:\T$ to subterms and
 leaves $\E$ otherwise unchanged; the proofs insert them exactly at checking
 forms in inference position, with the declarative type of that subterm.
 
-\begin{theorem}[Checking completeness\;\AgdaBird]
+\begin{theorem}[Checking completeness]
   If\/ $\HasType[\Eff] \Ctx \E \T$, then there is an annotated variant
   $\E*$ of $\E$ with $\CheckType {\E*} \T {\Eff*}$ for some
   constraint set $\CSet$, effect $\Eff* \le \Eff$, and closing substitution
   $\sigma \models \CSet$.
 \end{theorem}
 
-\begin{theorem}[Inference completeness\;\AgdaBird]
+\begin{theorem}[Inference completeness]
   If\/ $\HasType[\Eff] \Ctx \E \T$, then there is an annotated variant
   $\E*$ of $\E$ with $\InferType {\E*} \AT {\Eff*}$ for some type $\AT$,
   constraint set $\CSet$, effect $\Eff* \le \Eff$, and closing substitution
