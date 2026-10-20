@@ -1,0 +1,29 @@
+\def\RuleCmdPrefix{RuleSLocal}
+\def\RuleNamePrefix{TL-}
+
+\DefRule {Local} {
+  \neg \SNonLocal \S
+} {
+  \SLocal \S
+}
+
+\DefRule {Acq} {} {
+  \SNonLocal \SAcq
+}
+
+\DefRule {Seq1} [SeqI] {\SNonLocal \S[1]} {
+  \SNonLocal (\SSeq{\S[1]}{\S[2]})
+}
+
+\DefRule {Seq2} [SeqII] {
+  \S[1] \SEq \SSkip \\
+  \SNonLocal \S[2]
+} {
+  \SNonLocal (\SSeq{\S[1]}{\S[2]})
+}
+
+\DefRule {Rec} {
+  \SNonLocal \S
+} {
+  \SNonLocal \SRec\SVar\S
+}

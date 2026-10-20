@@ -73,8 +73,10 @@ unrestricted context is also mobile. The full definition is shown in
 \cref{fig:omitted-predicates} in the supplement.
 
 \begin{figure}
+{
   Equality of typing contexts is the equivalence closure of the following
-  axioms.\smallskip
+  axioms.
+  \smallskip
   \begin{mathpar}
     \CtxEmpty\CtxPar\Ctx = \Ctx \and
     \Ctx[1] \CtxPar \Ctx[2] = \Ctx[2] \CtxPar \Ctx[1] \and
@@ -86,10 +88,13 @@ unrestricted context is also mobile. The full definition is shown in
     \inferrule{\Mobile\Ctx[2]}{\Ctx[1] \CtxPar \Ctx[2]
       = \Ctx[1] \CtxSeq \Ctx[2]}
   \end{mathpar}
+}
 
   \bigskip
+{
+  \setlength{\belowdisplayskip}{0pt}
   The subcontext relation for weakening is the reflexive, transitive congruence
-  closure\\ of these two axioms.\vspace{-\medskipamount}
+  closure\\ of these two axioms.
   \begin{mathpar}
     (\Ctx[1] \CtxPar \Ctx[3]) \CtxSeq (\Ctx[2] \CtxPar \Ctx[4])
     \SubCtx
@@ -103,6 +108,7 @@ unrestricted context is also mobile. The full definition is shown in
       \Ctx
     }
   \end{mathpar}
+}
   \caption{Equality of contexts and the subcontext relation $\Ctx\SubCtx\Ctx$}
   \label{fig:syntax-types}
 \end{figure}
@@ -156,42 +162,55 @@ collected in \cref{fig:session-laws} in the supplement.
   \label{fig:constant-typing}
 \end{figure}
 
-\Cref{fig:constant-typing} assigns closed types to constants. Channel
-creation produces a pair of dual endpoints, each protected by an initial
-$\SAcq$ marker and closed respectively by $\STerm$ and $\SWait$. The session
-supplied to $\CNew$ must be a source protocol: the side condition $\SNew\S$
-restricts it to skips, sends, receives, choices, branches, sequencing, and
-recursion, excluding the synchronization-like markers $\SAcq$, $\SDrop$,
-$\STerm$, and $\SWait$, which are introduced only by remote splitting and
-closing. Communication
+\Cref{fig:constant-typing} assigns closed types to constants. Channel creation
+produces a pair of dual endpoints, each protected by an initial $\SAcq$ marker
+and closed respectively by $\STerm$ and $\SWait$. The session supplied to
+$\CNew$ must be a source protocol: the side condition $\SNew\S$ restricts it to
+skips, sends, receives, choices, branches, sequencing, and recursion, excluding
+the termination markers $\STerm$, $\SWait$, and the synchronization markers
+$\SAcq$, $\SDrop$, which are introduced only by remote splitting. Communication
 constants consume exactly the session prefix they implement: send and receive
 advance through $\SSend\T$ and $\SRecv\T$, selection advances an internal
-choice, and branching returns a variant over external branches. These
-constants are impure because they communicate.
+choice, and branching returns a variant over external branches. These constants
+are impure because they communicate.
+%
+The split constants are pure as they do not incur any communication by
+themselves. Local splitting, $\CSplit$, decomposes $\SSeq{\S[1]}{\S[2]}$ into
+an ordered pair containing the borrowed prefix and the residual suffix. The
+ordering enforces that the prefix is consumed before communication operations
+on the suffix become possible. Remote splitting, $\CSSplit$, produces an
+unordered pair in which the prefix ends in $\SDrop$ and the residual begins
+with $\SAcq$.
+%
+Both splits require the suffix $\S[2]$ to be nontrivial and local,
+$\SLocal\S[2]$: it must not begin with $\SAcq$, looking through leading skips
+and recursion binders. A formal definition is given in
+\cref{fig:omitted-predicates}. In addition, $\CSplit$ does not allow a trivial
+prefix either.
+%
+The constants $\CDrop$ and $\CAcq$ eliminate the
+corresponding marker types. Forking expects a mobile impure computation from
+unit to unit, and $\CDiscard$ consumes a trivial session.
 
-{\color{red}
-The argument to $\CFork$ in $\FnRenderUser$
-(\cref{lst:rendering-example,lst:rendering-example-elab/remote}) is mobile
-because the two captured variables $\Varid{user}$ and $\Varid{c}_1$ have mobile
-types.
+% Example should be placed after the discussion of constants and their typing.
+Consider $\FnRenderUser$ from \cref{lst:rendering-example}. Its full type is
+$ \typecolor{\TyUser} \TArrx[m,u,p] \SSeq \TyHtmlChan \STerm
+\TArrx[m,u,i] \BUnit $.  The first arrow is mobile ($\MobMobile$) and
+unrestricted ($\DirNone$) because $\FnRenderUser$ is a top-level function,
+which can be shared and duplicated at will. The arrow is also marked pure
+($\EffPure$) because application of the $\TyUser$ argument returns a closure
+without performing any channel communication. The closure contains only
+unrestricted, mobile types which makes it unrestricted and mobile itself and is
+reflected in the $\MobMobile$ and $\DirNone$ annotations on the second arrow.
+The arrow is impure because application of the channel argument evaluates the
+function body that contains calls to impure functions.
 
-The argument to $\CFork$ in $\FnRenderUser$ must be a mobile function.
-}
-
-The split constants are pure. Local splitting, $\CSplit$, decomposes
-$\SSeq{\S[1]}{\S[2]}$ into an ordered pair containing the borrowed prefix and
-the residual suffix. The ordering enforces that the prefix must be
-consumed before starting with the suffix. Remote splitting, $\CSSplit$, produces an unordered pair
-in which the prefix ends in $\SDrop$ and the residual begins with $\SAcq$.
-Both splits require the residual $\S[2]$ to be nontrivial,
-$\neg(\S[2] \SEq \SSkip)$, and \emph{local}, $\SLocal\S[2]$: it must not
-begin with $\SAcq$, looking through leading skips and recursion binders.
-In particular, a remote split never produces a residual that starts with two
-$\SAcq$ markers. The
-constants $\CDrop$ and $\CAcq$ eliminate the 
-corresponding marker types. Forking expects a mobile impure computation from unit to
-unit, and $\CDiscard$ consumes an endpoint whose session is equivalent to
-$\SSkip$.
+The difference in premises between $\CSplit$ and $\CSSplit$ enables the
+latter---in conjunction with $\CDrop$---to transform any local, bounded channel
+into a mobile one. A local channel $\EVarc$ of type $\S$ cannot cross thread
+boundaries. The expression $\EApp {\CSSplit_{\SSeq\SSkip\S}} \EVarc$ gives a
+pair of type $\EPair {\SDrop} {\SSeq\SAcq\S}$. The first component can be
+dropped immediately; the second is the channel $\EVarc$ but mobile. 
 
 \begin{figure}
   \begin{mathpar}
@@ -223,8 +242,8 @@ The expression typing judgment $\HasType[\Eff]\Ctx\E\T$ in
 \cref{fig:typing-declarative} records both resource usage and effects. The
 context $\Ctx$ describes the assumptions consumed by $\E$ to compute a value of
 type $\T$. The effect
-annotation $\Eff$ is an upper bound: pure expressions may be used where impure
-expressions are expected.
+annotation $\Eff$ is an upper bound, allowing pure expressions where impure
+ones are expected.
 
 Constants and variables are pure and use exactly the resources shown in their
 types. Function introduction records how the argument is positioned relative
@@ -249,6 +268,23 @@ to the body using the same ordered or unordered structure as the eliminated
 type. Case analysis requires all branches to produce the same result type
 under the same surrounding context shape. The final rules close the judgment
 under weakening, type conversion, and effect subsumption.
+
+Usage of a variable is different from consumption of the underlying channel
+itself. A channel is consumed, for example, by passing it to $\CRecv$. One the
+other hand, applying the identity function $\termcolor{\Varid{id}}$ to a
+variable already counts this as a usage of said variable. The problem is
+demonstrated by the expression
+%
+\(
+  \ELetPair[\DirLeft]{c_1}{c_2}{\EApp{\CSplit_{\SSeq{\S[1]}{\S[2]}}}{c}}
+  \!\termcolor{\EPairOrd {\EApp{\Varid{id}}{c_1}} {\EApp{f}{c_2}}}
+\)
+%
+The effect system ensures that $\EVarf$ does not communicate on $\EVarc[2]$.
+
+% The function $\termcolor{f}$ must not be perform communication operations on
+% $\termcolor{c_2}$ before the communication according to $\S[1]$ has taken place
+% on $\termcolor{c_1}$.
 
 \begin{figure}
   \begin{mathpar}

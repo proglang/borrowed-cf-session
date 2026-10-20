@@ -231,6 +231,8 @@
 \NewMetaVar[\termcolor] \E     e
 \NewMetaVar[\termcolor] \EVar  x
 \NewMetaVar[\termcolor] \EVary y
+\NewMetaVar[\termcolor] \EVarf c
+\NewMetaVar[\termcolor] \EVarc c
 \newcommand*\EBorrow[1]{\termcolor{\&{#1}}}
 \newcommand*\EMu[2][f\!]{\termcolor{\mu {#1}.{#2}}}
 \newcommand*\EAbs[3][{}]{\termcolor{\lambda_{#1}{#2}.{#3}}}
@@ -421,6 +423,7 @@
 
 % Local Types
 \newcommand*\SLocal{\operatorname{\mathsf{local}}}
+\newcommand*\SNonLocal{\operatorname{\mathsf{nonlocal}}}
 
 % Terminated Session Types
 \newcommand*\Bounded{\operatorname{\mathsf{bnd}}}

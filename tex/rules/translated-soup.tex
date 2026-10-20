@@ -23,16 +23,16 @@
 
 \DefRule {New} {
   \Fresh{\TEc,\TEVarz[0],\TEVarz[1]} \\
+  h=\USPair
+    {\USHandle[\TEVarz[0]]{\TEc[0]}}
+    {\USHandle[\TEVarz[1]]{\TEc[1]}} \\\\
   S'=\USUpdate{\TEc}{(
     \StateOpen,
     [\USCell*{\TEVarz[0]}{\FlagDropped}],
     [\USCell*{\TEVarz[1]}{\FlagDropped}]
-  )} \\
-  h=\USPair
-    {\USHandle[\TEVarz[0]]{\TEc[0]}}
-    {\USHandle[\TEVarz[1]]{\TEc[1]}}
+  )}
 } {
-  \USRedOne
+  \USRed
     {\USCfg{C}{S}{\USBag{\ECapp{\USApp{\CNew}{\USUnit}}}}}
     {\USCfg{C\cup\{c\}}{S'}{\USBag{\ECapp{h}}}}
 }

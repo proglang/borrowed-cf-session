@@ -401,10 +401,16 @@ parameters in the actual code to simplify type checking.
     \RuleSNewSeq \and
     \RuleSNewBranch \and
     \RuleSNewChoice \and
-    \RuleSNewRec
+    \RuleSNewRec \\
+    \RuleSLocalAcq \and
+    \RuleSLocalSeqI \and
+    \RuleSLocalSeqII \and
+    \RuleSLocalRec \\
+    {\SLocal\S \Longleftrightarrow \SNonLocal\S \text{~not derivable}}
   \end{mathpar}
   \caption{Unrestricted types and contexts ($\Unr\T$, $\Unr\Ctx$); session
-    types valid for $\CNew$ ($\SNew\S$)}
+    types valid for $\CNew$ ($\SNew\S$); local and non-local session types
+    ($\SLocal\S$, $\SNonLocal\S$)}
   \label{fig:omitted-predicates}
 \end{figure}
 
@@ -444,7 +450,7 @@ parameters in the actual code to simplify type checking.
   \label{fig:session-laws}
 \end{figure}
 
-\vfill\vfill
+\vfill
 \clearpage
 
 \section{Dynamics: Congruence and Reduction Rules}

@@ -23,22 +23,22 @@
 %   \RulePrefixExampleMyRule
 %
 % which produces the \inferrule with the name "PrintedNamePrefixMyRule"
-\NewDocumentCommand \DefRule {s o m m m} {
-  \expandafter \DefRuleHelper \expandafter {\RuleNamePrefix} {#1} {#2} {#3} {#4} {#5}
+\NewDocumentCommand \DefRule {s o m O{#3} m m} {
+  \expandafter \DefRuleHelper \expandafter {\RuleNamePrefix} {#1} {#2} {#3} {#4} {#5} {#6}
 }
 
-\newcommand*\DefRuleHelper[6]{
+\newcommand\DefRuleHelper[7]{
   \IfBooleanTF {#2}
     {
-      \expandafter \newcommand \csname \RuleCmdPrefix #4\endcsname
+      \expandafter \newcommand \csname \RuleCmdPrefix #5\endcsname
         {
-          \inferrule*[#3]{#5}{#6}
+          \inferrule*[#3]{#6}{#7}
         }
     }
     {
-      \expandafter \newcommand \csname \RuleCmdPrefix #4\endcsname
+      \expandafter \newcommand \csname \RuleCmdPrefix #5\endcsname
         {
-          \inferrule[#1#4]{#5}{#6} \IfValueT{#3}{~#3}
+          \inferrule[#1#4]{#6}{#7} \IfValueT{#3}{~#3}
         }
     }
 }
@@ -46,16 +46,18 @@
 % \input{rules/session-type-formation}
 % \input{rules/type-formation}
 
+\input{rules/blocked}
 \input{rules/bounded-session-types}
 \input{rules/congruence}
 \input{rules/constant-typing}
 \input{rules/constraints}
 \input{rules/context-formation}
-\input{rules/new-sessions}
 \input{rules/ord-types}
 \input{rules/process-typing}
 \input{rules/reduction}
 \input{rules/session-subtyping}
+\input{rules/sessions-local}
+\input{rules/sessions-new}
 \input{rules/translated-soup}
 \input{rules/translation}
 \input{rules/type-context-splitting}
@@ -64,4 +66,3 @@
 \input{rules/typing-algorithmic}
 \input{rules/typing-declarative}
 \input{rules/unrestricted-types}
-\input{rules/blocked}
