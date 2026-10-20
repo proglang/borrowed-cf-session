@@ -27,8 +27,8 @@
 \definecolor{lightblue}{rgb}{0.4,0.4,1}
 
 \let\sectionsymbol\S
-\crefname{section}{\sectionsymbol}{\sectionsymbol\sectionsymbol}
-\Crefname{section}{\sectionsymbol}{\sectionsymbol\sectionsymbol}
+\crefformat{section}{\sectionsymbol\,#2#1#3}
+\Crefformat{section}{\sectionsymbol\,#2#1#3}
 
 \input{symbols}
 \input{rules}
