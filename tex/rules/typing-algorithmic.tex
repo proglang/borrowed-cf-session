@@ -34,34 +34,6 @@
     [\CSet[0]]
 }
 
-% A-Select and A-Branch, superseded: select/branch are typed by A-Const.
-%% A-Select
-% \DefRule {Select} {
-%   \InferType
-%     \E
-%     {\SChoice{\ell:\S[\ell]}{\ell\in L}}
-%     \Eff \\
-%   \NormaliseType {\S[k]} {\S}
-% }{
-%   \InferType
-%     {\EApp{\CSelect k}{\E}}
-%     {\S}
-%     {\EffImpure}
-% }
-%
-%% A-Branch
-% \DefRule {Branch} {
-%   \InferType
-%     \E
-%     {\SBranch{\ell:\S[\ell]}{\ell\in L}}
-%     \Eff
-% }{
-%   \InferType
-%     {\EApp{\CBranch}{\E}}
-%     {\SVariant{\ell:\S[\ell]}{\ell\in L}}
-%     {\EffImpure}
-% }
-%
 % A-Var
 \DefRule {Var} {
   \CtxVar \EVar \T \SubCtx \Ctx \uparrow \CSet[0]
@@ -71,13 +43,17 @@
 
 % A-App
 \DefRule {App} {
-  \reqDir \Dir \DirPrime \\
+  \reqDir \Dir \Dir* \\
   \reqEff\Dir{\Eff[1]}{\Eff[2]} \\
   \CtxAlgJoinCheck{\E[1]}{\E[2]} \\\\
   \InferType [\CtxRestrict{\E[1]}] {\E[1]} {\TArr{\Mob}{\Dir,\Eff[3]} \T \TU} {\Eff[1]} [\CSet[1]] \\
   \CheckType [\CtxRestrict{\E[2]}] {\E[2]} {\T} {\Eff[2]} [\CSet[2]]
 }{
-  \InferType {\EAppD{\E[1]}{\E[2]}{\DirPrime}} {\TU} {\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]} [\CSet[0] \CSJoin \CSet[1] \CSJoin \CSet[2]]
+  \InferType
+    {\EAppD[\Dir*]{\E[1]}{\E[2]}}
+    {\TU}
+    {\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]}
+    [\CSet[0] \CSJoin \CSet[1] \CSJoin \CSet[2]]
 }
 
 

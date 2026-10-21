@@ -50,8 +50,7 @@
 \newcommand*\MobStationary{\mobcolor{\textsc s}}
 
 % Directions
-\newcommand*\Dir{\dircolor{d}}
-\newcommand*\DirPrime{\dircolor{d'}}
+\NewMetaVar[\dircolor] \Dir d
 \newcommand*\DirLeft{\dircolor{\textsc l}}
 \newcommand*\DirRight{\dircolor{\textsc r}}
 \newcommand*\DirNone{\dircolor{\upomega}} % {\cdot} % This should be un
@@ -200,8 +199,9 @@
 }
 
 % Constraint sets
-\NewMetaVar \CSet \Delta
-%\NewMetaVar[\csetcolor] \CSet \Delta
+%\NewMetaVar \CSet \Delta
+\NewMetaVar[\csetcolor] \CS   C
+\NewMetaVar[\csetcolor] \CSet \Delta
 %\newcommand*\CSEmpty{\csetcolor{\cdot}}
 %\newcommand*\CSJoin{\csetcolor{,}}
 \newcommand*\CSEmpty{\emptyset}
