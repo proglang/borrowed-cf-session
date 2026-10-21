@@ -330,6 +330,7 @@
 
 
 
+
 \section{Motivation}
 \label{sec:motivation}
 
@@ -742,13 +743,13 @@ processes operating on the channel, whereas a local split has no overhead.
 
 Allocation (not shown in \cref{fig:borrow-lifecycle-msc}) creates a primitive
 channel pair and one synchronization flag in state \ensuremath{\CodeFlag{acq}} for each endpoint
-obtaining the pair \ensuremath{\Varid{z1}\otimes \Varid{c}_{1}\otimes \mathord{*}} and \ensuremath{\Varid{z2}\otimes \Varid{c}_{2}\otimes \mathord{*}}.
+obtaining the pair \ensuremath{\Varid{z}_{1}\otimes \Varid{c}_{1}\otimes \mathord{*}} and \ensuremath{\Varid{z}_{2}\otimes \Varid{c}_{2}\otimes \mathord{*}}.
 Thus, the first operation on each channel end must be \ensuremath{\CodeOp{acquire}} to start normal
-operation, replacing the flag \ensuremath{\Varid{zi}} from the channel 
-triple to obtain \ensuremath{\mathord{*}\otimes \Varid{ci}\otimes \mathord{*}}. From then onwards,
+operation, replacing the flag \ensuremath{\Varid{z}_i} from the channel 
+triple to obtain \ensuremath{\mathord{*}\otimes \Varid{c}_i\otimes \mathord{*}}. From then onwards,
 communication is just ordinary session communication: \ensuremath{\CodeOp{send}}/\ensuremath{\CodeOp{recv}},
 \ensuremath{\CodeOp{select}}/\ensuremath{\CodeOp{branch}}, and \ensuremath{\CodeOp{close}}/\ensuremath{\CodeOp{wait}} all operate directly on the primitive
-channel name \ensuremath{\Varid{ci}}.
+channel name \ensuremath{\Varid{c}_i}.
 
 
 % End local formatting of "in" as an identifier.
