@@ -3,7 +3,7 @@
 
 This section states the main metatheoretical results for \thecalculus. All
 definitions from the previous sections and all theorems of this section are
-formalized and proved in Agda. \js{cite the artifact here?}
+formalized and proved in Agda. \js{cite the artifact?}
 
 \subsection{Type Safety for Declarative Typing}
 
@@ -32,7 +32,8 @@ reduction of constants is part of the process semantics.
 \end{theorem}
 
 A process is blocked if every thread is blocked and no restriction can fire a
-channel rule. The blocked-process predicate $\Blocked\Proc$ is defined in
+channel rule. \js{I don't understand the wording ``no restriction can fire\dots''}
+The blocked-process predicate $\Blocked\Proc$ is defined in
 \cref{fig:blocked-expr-proc}. Progress holds for closed processes and
 guarantees reduction only for processes that are not blocked. Thus, deadlocks
 remain possible.
