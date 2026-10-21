@@ -81,9 +81,10 @@
 
 \Cref{fig:syntax} collects the source-language syntax used throughout
 this paper. The figure is organized into three groups: types, expressions, and
-processes. We write $\ELet\EVar{\E[1]}\E[2]$
-as syntactic sugar for $\EApp{(\EAbs\EVar{\E[2]})}{\E[1]}$, where the
-function is linear (unordered or left-ordered) and immobile.
+processes.
+% We write $\ELet\EVar{\E[1]}\E[2]$
+% as syntactic sugar for $\EApp{(\EAbs\EVar{\E[2]})}{\E[1]}$, where the
+% function is linear (unordered or left-ordered) and immobile.
 
 The types group introduces three orthogonal classifiers. Mobilities
 ($\MobStationary$, $\MobMobile$) indicate if values are stationary or 
@@ -97,25 +98,22 @@ session types $\S$. Session types are either $\SSkip$ or use
 sequential composition $\SSeq\S\S$ as their central
 connective. They include communication, branching/selection,
 closing/waiting, drop/acquire (new to this work), and recursion.
-
-Typing environments $\Ctx$ are tree-shaped and combine variable bindings using
-ordered ($\Ctx\CtxSeq\Ctx$) and unordered ($\Ctx\CtxPar\Ctx$) composition. This
-structure is inspired by 
-\citet{DBLP:journals/bsl/OHearnP99}, but with different semantics.
+Typing environments $\Ctx$ are tree-shaped---inspired by the tree-shaped
+contexts of \citet{DBLP:journals/bsl/OHearnP99}---and combine variable bindings
+using ordered ($\Ctx\CtxSeq\Ctx$) and unordered ($\Ctx\CtxPar\Ctx$)
+composition.
 
 The expression group separates constants $\C$ from compound expressions $\E$.
 Constants cover unit, channel creation, process creation, communication primitives,
-split operations, and synchronization primitives. They are better understood
-together with their type in the next section.
+split operations, and synchronization primitives. They are best understood
+together with their types in the next section.
 
-Expressions add variables, abstraction and application, sequencing,
-products, sums, and recursion. Following our directional presentation,
-application carries an explicit direction annotation. We distinguish left
-($\DirLeft$) and right ($\DirRight$) application syntactically. The
-direction determines both the evaluation order and context position in the body
-of the function. Throughout this paper, omitted
-direction annotations or plain juxtaposition are understood as standard, left-to-right
-CBV-application.
+Expressions add variables, abstraction and application, sequencing, products,
+sums, and recursion. Application carries an explicit direction annotation. We
+distinguish leftward ($\DirLeft$) and rightward ($\DirRight$) application
+syntactically. The direction determines the evaluation order and has to fit the
+function's direction. Throughout this paper, omitted direction annotations or
+plain juxtaposition are understood as standard, rightward application.
 
 A binder group $\BindGroup$ is a list of channel names $\EVar$ and
 separators $\BSep$. The metavariable $\Bind$ ranges over separator-free

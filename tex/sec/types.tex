@@ -12,8 +12,10 @@ controlled by a subcontext preorder. Third, the typing judgments for constants,
 expressions, and processes use these classifications to enforce protocol
 fidelity and ownership transfer.
 
-Typing contexts combine assumptions with two constructors\footnote{Inspired by
-  the tree-shaped contexts of \citet{DBLP:journals/bsl/OHearnP99}.}. The ordered product
+Typing contexts combine assumptions with two constructors.
+% \footnote{Inspired by
+%   the tree-shaped contexts of \citet{DBLP:journals/bsl/OHearnP99}.}.
+The ordered product
 $\Ctx[1]\CtxSeq\Ctx[2]$ records that the resources in $\Ctx[1]$ must be used
 before the resources in $\Ctx[2]$. The unordered product
 $\Ctx[1]\CtxPar\Ctx[2]$ records independent resources. When a rule is
@@ -250,15 +252,11 @@ types. Function introduction records how the argument is positioned relative
 to the captured context. An unordered function places the argument in parallel
 with the captured context, left- and right-ordered functions place it before or
 after the captured context respectively and unrestricted recursive functions use direction
-$\DirNone$ and may only capture an unrestricted context. Application composes
-the contexts of the function and argument according to the arrow direction.
-The ordered application rules enforce the expected purity side condition:
-the expression evaluated outside the function's direction must be
-pure. In particular, the $\DirLeft$-annotated abstraction puts the
-argument left of the captured context. Hence, its application must
-evaluate the argument before the function, which implies that the
-function must be pure. Any other application can be evaluated
-left-to-right as common.
+$\DirNone$ and may only capture an unrestricted context.
+%
+Application composes the contexts of the function and argument according to the
+arrow direction. If the function is either $\DirLeft$- or $\DirRight$-ordered,
+the function term (or correspondingly the argument term) must be pure.
 
 Pair introduction mirrors function application. Unordered pairs combine their
 components in parallel. Ordered pairs use a sequential context and require the
@@ -269,16 +267,17 @@ type. Case analysis requires all branches to produce the same result type
 under the same surrounding context shape. The final rules close the judgment
 under weakening, type conversion, and effect subsumption.
 
-Usage of a variable is different from consumption of the underlying channel
-itself. A channel is consumed, for example, by passing it to $\CRecv$. One the
-other hand, applying the identity function $\termcolor{\Varid{id}}$ to a
-variable already counts this as a usage of said variable. The problem is
-demonstrated by the expression
+The need for the purity constraints in the application of ordered functions and
+the construction of ordered pairs arises from the difference between variable
+usage and consumption of the actual resources. A channel is consumed, for
+example, by passing it to $\CRecv$. One the other hand, applying the identity
+function $\termcolor{\Varid{id}}$ to a variable already counts this as a usage
+of said variable. The problem is demonstrated by the expression
 %
 \(
   \ELetPair[\DirLeft]{c_1}{c_2}{\EApp{\CSplit_{\SSeq{\S[1]}{\S[2]}}}{c}}
   \!\termcolor{\EPairOrd {\EApp{\Varid{id}}{c_1}} {\EApp{f}{c_2}}}
-\)
+\).
 %
 The effect system ensures that $\EVarf$ does not communicate on $\EVarc[2]$.
 
