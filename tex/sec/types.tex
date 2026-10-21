@@ -143,7 +143,7 @@ involution that swaps send with receive and internal with external choice. We le
 occur on a $\SNew$ channel. Both the equational laws and the duality laws are
 collected in \cref{fig:session-laws} in the supplement.
 
-\begin{figure}
+\begin{figure}[t]
   \begin{mathpar}
     \RuleCTUnit \and
     \RuleCTFork \and
@@ -162,6 +162,47 @@ collected in \cref{fig:session-laws} in the supplement.
   \end{mathpar}
   \caption{Constant typing ($\HasCType\C\T$)}
   \label{fig:constant-typing}
+\end{figure}
+
+\begin{figure}[p]
+  \begin{mathpar}
+    \RuleTConst \and
+    \RuleTVar \\
+    \RuleTAbsUnr \and
+    \RuleTAppUnr \and
+    \RuleTAbsLin \and
+    \RuleTAppLin \and
+    \RuleTAbsLeft \and
+    \RuleTAppLeft \and
+    \RuleTAbsRight \and
+    \RuleTAppRight \and
+    \RuleTPairUnord \and
+    \RuleTPairOrd \and
+    \RuleTSeq \and
+    \RuleTLetUnord \and
+    \RuleTLetOrd \and
+    \RuleTInj \and
+    \RuleTCase \and
+    \RuleTWeaken \and
+    \RuleTConv
+  \end{mathpar}
+  \caption{Expression typing ($\HasType[\Eff]\Ctx\E\T$)}
+  \label{fig:typing-declarative}
+\end{figure}
+
+\begin{figure}[t]
+  \begin{mathpar}
+    \RuleTExpr \and
+    \RuleTPar \and
+    \RuleTRes \\
+    \RuleBindEmp \and
+    \RuleBindSeq \and
+    \RuleBindDrop \and
+    \RuleBindAcq
+  \end{mathpar}
+  \caption{Process typing ($\ProcHasType \Ctx {\Proc}$) and binding
+    ($\BindGivesCtx {\S} {\BindGroup} {\Ctx}$)}
+  \label{fig:process-typing}
 \end{figure}
 
 \Cref{fig:constant-typing} assigns closed types to constants. Channel creation
@@ -214,32 +255,6 @@ boundaries. The expression $\EApp {\CSSplit_{\SSeq\SSkip\S}} \EVarc$ gives a
 pair of type $\EPair {\SDrop} {\SSeq\SAcq\S}$. The first component can be
 dropped immediately; the second is the channel $\EVarc$ but mobile. 
 
-\begin{figure}
-  \begin{mathpar}
-    \RuleTConst \and
-    \RuleTVar \\
-    \RuleTAbsUnr \and
-    \RuleTAppUnr \and
-    \RuleTAbsLin \and
-    \RuleTAppLin \and
-    \RuleTAbsLeft \and
-    \RuleTAppLeft \and
-    \RuleTAbsRight \and
-    \RuleTAppRight \and
-    \RuleTPairUnord \and
-    \RuleTPairOrd \and
-    \RuleTSeq \and
-    \RuleTLetUnord \and
-    \RuleTLetOrd \and
-    \RuleTInj \and
-    \RuleTCase \and
-    \RuleTWeaken \and
-    \RuleTConv
-  \end{mathpar}
-  \caption{Expression typing ($\HasType[\Eff]\Ctx\E\T$)}
-  \label{fig:typing-declarative}
-\end{figure}
-
 The expression typing judgment $\HasType[\Eff]\Ctx\E\T$ in
 \cref{fig:typing-declarative} records both resource usage and effects. The
 context $\Ctx$ describes the assumptions consumed by $\E$ to compute a value of
@@ -284,21 +299,6 @@ The effect system ensures that $\EVarf$ does not communicate on $\EVarc[2]$.
 % The function $\termcolor{f}$ must not be perform communication operations on
 % $\termcolor{c_2}$ before the communication according to $\S[1]$ has taken place
 % on $\termcolor{c_1}$.
-
-\begin{figure}
-  \begin{mathpar}
-    \RuleTExpr \and
-    \RuleTPar \and
-    \RuleTRes \\
-    \RuleBindEmp \and
-    \RuleBindSeq \and
-    \RuleBindDrop \and
-    \RuleBindAcq
-  \end{mathpar}
-  \caption{Process typing ($\ProcHasType \Ctx {\Proc}$) and binding
-    ($\BindGivesCtx {\S} {\BindGroup} {\Ctx}$)}
-  \label{fig:process-typing}
-\end{figure}
 
 Processes are typed by $\ProcHasType\Ctx\Proc$ in
 \cref{fig:process-typing}. An expression process may be an impure computation
