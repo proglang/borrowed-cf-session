@@ -43,14 +43,14 @@
 
 % A-App
 \DefRule {App} {
-  \reqDir \Dir \Dir* \\
-  \reqEff\Dir{\Eff[1]}{\Eff[2]} \\
+  \reqDir{\Dir}{\Dir*} \\
+  \reqEff{\Dir*}{\Eff[1]}{\Eff[2]} \\
   \CtxAlgJoinCheck{\E[1]}{\E[2]} \\\\
-  \InferType [\CtxRestrict{\E[1]}] {\E[1]} {\TArr{\Mob}{\Dir,\Eff[3]} \T \TU} {\Eff[1]} [\CSet[1]] \\
+  \InferType [\CtxRestrict{\E[1]}] {\E[1]} {\TArr{\Mob}{\Dir*,\Eff[3]} \T \TU} {\Eff[1]} [\CSet[1]] \\
   \CheckType [\CtxRestrict{\E[2]}] {\E[2]} {\T} {\Eff[2]} [\CSet[2]]
 }{
   \InferType
-    {\EAppD[\Dir*]{\E[1]}{\E[2]}}
+    {\EAppD[\Dir]{\E[1]}{\E[2]}}
     {\TU}
     {\Eff[1] \EffJoin \Eff[2] \EffJoin \Eff[3]}
     [\CSet[0] \CSJoin \CSet[1] \CSJoin \CSet[2]]
@@ -212,6 +212,25 @@
     {\TU[\ell']}
     {\Eff \EffJoin \Eff[1] \EffJoin \Eff[2]}
     [\CSet[0] \CSJoin \CSet \CSJoin \bigcup_{\ell\in L} \CSet[\ell] \CSJoin \left\{\TU[k] \CEq \TU[k'] \mid k,k' \in L \right\}]
+}
+
+\newcommand*\DefinitionsReqDirEff{
+  \begingroup
+  \newcommand\AND{\mathrm{~and~}}
+  \newcommand\OR{\mathrm{~or~}}
+  \begin{array}{r@{\;\Longleftrightarrow\;}c}
+    \reqDir{\Dir}{\Dir*}
+    &
+    (\Dir = \DirLeft \AND \Dir* = \DirLeft)
+    \OR
+    (\Dir = \DirRight \AND \Dir* \ne \DirLeft)
+    \\
+    \reqEff{\Dir}{\Eff[1]}{\Eff[2]}
+    & (\Dir = \DirLeft \Rightarrow \Eff[1] = \EffPure)
+    \AND
+    (\Dir = \DirRight \Rightarrow \Eff[2] = \EffPure)
+  \end{array}
+  \endgroup
 }
 
 % \newcommand*\RuleTMatch{

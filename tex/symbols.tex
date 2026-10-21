@@ -37,8 +37,8 @@
 \newcommand*\Fresh[1]{#1~\mathrm{fresh}}
 
 % Relations 
-\newcommand{\reqDir}[2]{\text{DirCompat} \, #1 \, #2}
-\newcommand{\reqEff}[3]{\text{EffCompat} \, #1 \, #2 \, #3}
+\newcommand{\reqDir}[2]{#1 \sim #2}
+\newcommand{\reqEff}[3]{#2 \sim_{\!#1} #3}
 
 % Grammars
 \NewDocumentCommand\grmeq{s}{\; \Coloneqq \; \IfBooleanF{#1}{\;}}
@@ -188,14 +188,15 @@
   \Ctx[#2]\metacolor{{\mkern1.2mu}|_{\IfBooleanTF{#1}{#3}{\Fv(#3)}}}
 }
 \NewDocumentCommand\CtxJoin{s O{\Dir}}{\stackrel{\IfBooleanT{#1}{\smash}{#2}}{\metacolor{\bowtie}}}
-\newcommand*\CtxAlgJoinCheck[3][]{
-  \CtxRestrict[#1]{#2} \CtxJoin \CtxRestrict[#1]{#3} \SubCtx \Ctx[#1] \uparrow \CSet[0]
+\newcommand*\CtxAlgJoinCheck[2]{
+  \CtxRestrict{#1} \CtxJoin \CtxRestrict{#2} \SubCtx \Ctx \uparrow \CSet[0]
 }
-\newcommand*\CtxAlgSeqCheck[3][]{
-  \CtxRestrict[#1]{#2} \CtxSeq \CtxRestrict[#1]{#3} \SubCtx \Ctx[#1] \uparrow \CSet[0]
+\newcommand*\CtxAlgSeqCheck[2]{
+  \CtxRestrict{#1} \CtxSeq \CtxRestrict{#2} \SubCtx \Ctx \uparrow \CSet[0]
 }
-\newcommand*\CtxAlgPatCheck[3][]{
-  \CtxRestrict[#1]{#2} \CtxPatOp \CtxRestrict[#1]{#3} \SubCtx \Ctx[#1] \uparrow \CSet[0]
+\newcommand*\CtxAlgPatCheck[2]{
+  \CtxRestrict{#1} \CtxPatOp \CtxRestrict{#2}
+    \SubCtx \Ctx \uparrow \CSet[0]
 }
 
 % Constraint sets

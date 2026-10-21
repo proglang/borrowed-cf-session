@@ -2,14 +2,14 @@
 \label{sec:algorithmic-typing}
 
 This section develops an algorithmic version of the type system in
-\cref{sec:types}. The algorithmic system is directly amenable to construct a
-type checking algorithm. It employs a sound heuristic for inferring the
-remainder session types of split operations. First, a set of constraints is
-collected involving fresh unification variables. In a second step, the unification variables
-are solved and validated with respect to the constraints. The constraint
-generation is part of the algorithmic typing judgements
-in \cref{sec:alg-typing-relation}. Constraint solving is described in
-\cref{sec:constraint-solving}.
+\cref{sec:types}. The algorithmic system is directly amenable to the
+construction of a type checking algorithm. It employs a sound heuristic for
+inferring the remainder session types of split operations. Type checking is a
+two step process: first, a set of constraints is collected involving fresh
+unification variables; second, the unification variables are solved and
+validated with respect to the constraints. The constraint generation is part of
+the algorithmic typing judgements in \cref{sec:alg-typing-relation}. Constraint
+solving is described in \cref{sec:constraint-solving}.
 
 
 \subsection{Algorithmic Judgments}
@@ -20,32 +20,24 @@ $\AS$ that includes unification variables $\TVar$ drawn from $\TVAR$. We write
 $\AT$ for types that refer to $\AS$ instead of $\S$. Typing judgements collect
 sets of constraints $\CSet$. Constraints $\CS$ come as either equality
 constraints between two types, or mobility constraints:\quad$ \CS \grmeq* \AT
-\CEq \ATU \grmor\CMobile \AT $.
+\CEq \ATU \grmor\CMobile \AT $
 
-\begin{definition}
-  A substitution $\sigma : \TVAR \to \AS$ is a \emph{closing
-    substitution} for  a set of constraints $\CSet$, written $\sigma
-  \models \CSet$, if for every variable $\TVar$ in $\CSet$, $\sigma (\TVar) \in \S$,
-  $\neg(\sigma(\TVar) \SEq \SSkip)$, and $\SLocal{\sigma(\TVar)}$, and all
-  constraints are respected.
-\end{definition}
-
-The structural premises of the algorithmic rules use a constraint-generating
-variant $\Ctx[1] \SubCtx \Ctx[2] \uparrow \CSet$ of the subcontext relation.
-It is defined by the rules of \cref{fig:syntax-types}, except that the two
-axioms that move a context $\Ctx[i]$ between $\CtxPar$ and $\CtxSeq$ do not
-require $\Mobile{\Ctx[i]}$; instead, they emit the constraints
-$\{\CMobile\AT \mid \CtxVar\EVar\AT \in \Ctx[i]\}$. All other rules emit no
-constraints, and composite derivations collect the constraints of their parts.
+The premises of the algorithmic rules use a constraint-generating variant
+$\Ctx[1] \SubCtx \Ctx[2] \uparrow \CSet$ of the subcontext relation. It is
+defined by the rules of \cref{fig:syntax-types}, except that the two axioms
+that transmute between parallel and sequential composition emit constraints
+$\{\CMobile\AT \mid \CtxVar\EVar\AT \in \Ctx[i]\}$ instead of posing
+$\Mobile{\Ctx[i]}$ as a requirement.
 The variant is needed because algorithmic contexts may contain unification
 variables: \RuleName{A-LetPair} and \RuleName{A-Case} bind variables at
 inferred types. For example, the residual endpoint of a remote split has type
-$\SSeq\SAcq\TVar$, which is mobile exactly if the solution for $\TVar$ is
-bounded. That is unknown when the premise is checked. For every
+$\SSeq\SAcq\TVar$, which is mobile if the solution for $\TVar$ is
+bounded. That is unknown when subcontext relation is checked. For every
 $\sigma \models \CSet$, $\Ctx[1] \SubCtx \Ctx[2] \uparrow \CSet$ implies
 $\Ctx[1][\sigma] \SubCtx \Ctx[2][\sigma]$. For contexts without unification
-variables, the emitted constraints can be decided immediately.
-\begin{figure}
+variables, the constraints can be solved immediately.
+
+\begin{figure}[tp]
   \small
   \hfill \fbox{$\InferType \E \T \Eff$}
   \begin{mathpar}
@@ -54,40 +46,54 @@ variables, the emitted constraints can be decided immediately.
     \RuleAlgAnnot \and
     \RuleAlgLSplit \and
     \RuleAlgRSplit \and
-    \RuleAlgApp \and
-    \RuleAlgSeq \and
-    \RuleAlgLetPair \and
-    \RuleAlgCase
+    \RuleAlgApp
+    % \and \RuleAlgSeq
+    \and \RuleAlgLetPair
+    % \and \RuleAlgCase
   \end{mathpar}
 
-  \vspace{1em}
+  \medskip
+  \setlength{\abovedisplayskip}{0pt}
+  \setlength{\abovedisplayshortskip}{0pt}
+  \setlength{\belowdisplayskip}{0pt}
+  \setlength{\belowdisplayshortskip}{0pt}
   \hfill \fbox{$\CheckType \E \T \Eff$}
   \begin{mathpar}
     \RuleAlgAbs \and
+    \RuleAlgCheck \and
     \RuleAlgAbsRec \and
-    \RuleAlgInj \and
-    \RuleAlgPair \and
-    \RuleAlgCheck
+    \RuleAlgPair
+    %\and\RuleAlgInj 
   \end{mathpar}
-  \caption{Algorithmic typing}
+
+  % Ensures equal space between judgements and definitions below as between
+  % definitions and figure caption.
+  \vspace{\abovecaptionskip}
+  \[ \DefinitionsReqDirEff \]
+
+  \caption{Selection of algorithmic typing rules}
   \label{fig:typing-algorithmic}
 \end{figure}
 
-\Cref{fig:typing-algorithmic} presents the bidirectional algorithmic
-typing judgments~\cite{DBLP:journals/csur/DunfieldK21}. The synthesis
-judgment $\InferType \E \AT \Eff$ takes as input the context $\Ctx$
-and expression $\E$. It computes the expression's type $\AT$, its
-effect $\Eff$, and a set of constraints $\CSet$. The checking judgment
-$\CheckType \E \AT \Eff$ takes as input the context $\Ctx$, expression
-$\E$, and type $\AT$. It returns the expression's effect $\Eff$ as
-well as a set of constraints $\CSet$. Judgements make use of context
-join $\Ctx[1] \CtxJoin* \Ctx[2]$, which joins two contexts according to
-the direction $\Dir$, and context restriction $\CtxRestrict*{X}$,
-which restricts a context to a set of variables $X$; the definitions
-are given in \cref{fig:context-operators}.
+\Cref{fig:typing-algorithmic} presents a selection of the bidirectional
+algorithmic typing judgments~\cite{DBLP:journals/csur/DunfieldK21}. The
+synthesis judgment $\InferType \E \AT \Eff$ takes as input the context $\Ctx$
+and expression $\E$. It computes the expression's type $\AT$, its effect
+$\Eff$, and a set of constraints $\CSet$. The checking judgment $\CheckType \E
+\AT \Eff$ takes as input the context $\Ctx$, expression $\E$, and type $\AT$.
+It returns the expression's effect $\Eff$ as well as a set of constraints
+$\CSet$. Judgements make use of context join
+$\Ctx[1] \CtxJoin*[\raisebox{-.4ex}{\kern1pt\relax$\scriptstyle\Dir$}] \Ctx[2]$, which
+composes two contexts according to the direction $\Dir$, and context restriction
+$\CtxRestrict*{X}$, which restricts a context to a set of variables $X$; the
+definitions are given in \cref{fig:context-operators}. The complete set of
+typing judgements is given in figs.~\ref{fig:appendix-algorithmic-infer}
+(synthesis) and~\ref{fig:appendix-algorithmic-check} (checking).
 
-We have checking rules for function definitions, pairs, sum
-injections, and checking against a synthesized type. For lambdas,
+The checking rules cover lambda abstraction, pair construction, and sum
+injection. For all other constructs \RuleName{A-Check} switches to inference
+mode and emits an equality constraint between the given type $\T$ and the
+inferred type $\TU$. For lambdas,
 \RuleName{A-Abs} enforces the supplied function type, which specifies
 the mobility $\Mob$, the direction $\Dir$, and the effect $\Eff$. If
 $\Mob = \MobMobile$, then all free variables in the lambda's body must
@@ -95,100 +101,80 @@ be mobile. The direction enforces the way the new binding is joined
 to the context. The effect puts an upper bound on the effect of the
 body. The mobility constraints are inserted into the outgoing
 constraint set $\CSet$. \RuleName{A-AbsRec} is similar, but specialized to a recursive
-function, which is unrestricted and hence mobile.
-For pairs, \RuleName{A-Pair} enforces the ordering of the pair; for
-injections, \RuleName{A-Inj} specifies the types of the remaining
-summands. Rule \RuleName{A-Check} switches between checking and
-synthesis as usual, but leaves checking the equality of the inferred
-type $\TU$ against the checked type $\T$ as a constraint.
-The other rules (and most synthesis rules) just gather constraints
-from the subterms and propagate them.
+function, which must be unrestricted and hence mobile. \RuleName{A-Pair} checks
+the components pointwise with $\Ctx$ restricted to the set of variables
+occuring free in the particular subexpression. An additional check verifies
+that joining the partial contexts according to $\Dir$ gives a subcontext of
+$\Ctx$. The premise $\reqEff{\Dir}{\Eff[2]}{\Eff[1]}$ ensures that if the pair
+is ordered, depending on the order, either one or the other subterm is pure.
+Checking of sum injections is standard and omitted here.
 
-In the synthesis rules, the context in the variable rule
-\RuleName{A-Var} must subsume to a single variable binding and it must be
-empty for constants. Rule \RuleName{A-Const} covers every constant except
-the splits, including $\CSelect k$ and $\CBranch$, whose label set and
-continuations are determined by the constraint generated at the application,
-in the same way as the continuation of a split. A type annotation
-$\E:\T$ (\RuleName{A-Annot}) checks $\E$ against $\T$ and synthesizes $\T$.
-Rule
-\RuleName{A-LSplit} asks for $\CSplit$ to be annotated with the
-borrowed type ${\S}$, which must not be equivalent to $\SSkip$. This annotation defines the output type
-$\TArr{\MobMobile}{\DirUnord,\EffPure} {\SSeq\S\TVar}
-{\TPairOrd{\S}{\TVar}}$ up to the continuation, which is supplied by a
-fresh variable $\TVar$. This rule does \emph{not} add an
-equality constraint. The constraint appears due to the interplay of rules
-\RuleName{A-App} and \RuleName{A-Check}: When $\CSplit_{\S}$ is
-applied to an argument, the type of the argument is checked against
-$\SSeq\S\TVar$. Solving the equation generated by this check resolves
-the assignment to $\TVar$.
+In the synthesis rules, for variables the context must subsume to a single
+variable binding (\RuleName{A-Var}) and to an empty context for constants
+(\RuleName{A-Const}). A type annotation $\E:\T$ (\RuleName{A-Annot}) checks
+$\E$ against $\T$ and synthesizes $\T$.
+%
+Function application \RuleName{A-App} infers the type of the function, checks
+the argument against the expected type, verifies that the restrcited contexts
+join to a subcontext of $\Ctx$, and ensures the compatibility between the
+involved directions and effects. Leftward application is compatibility only
+with left-ordered functions; rightward application is compatible with all other
+functions. The function's direction $\Dir*$ also determines which subterm may
+have effects. If the function is $\DirLeft$-orderd the function term itself
+must be pure; in case of a $\DirRight$-ordered function the argument term is
+restricted to pure expressions.
 
-% Rule \RuleName{A-Const} covers all constants except $\CSplit$ and $\CSSplit$,
-% which receive special treatment in the algorithmic system.
+The splitting constants receive special treatment by the algorithmic system.
+Both constants have to be annotated with the borrowed type $\S$, which must not
+be $\SSkip$ for $\CSplit$. \RuleName{A-LSplit} and \RuleName{A-RSplit} express
+their synthesized types in terms of a fresh variable $\TVar$. The $\neg(\S[2]
+\SEq \SSkip)$ and $\SLocal \S[2]$ requirements from the constant typing of
+$\CSplit$ and $\CSSplit$ (see~\cref{fig:constant-typing}) need not be explicit
+here. Only local, non-skip types are valid solutions to $\TVar$. The constants
+themselves do not place any any constraints upon $\TVar$. These are generated
+due to the interplay of \RuleName{A-App} and \RuleName{A-Check}: When
+$\CSplit_{\S}$ is applied to an argument, the type of the argument is checked
+against $\SSeq\S\TVar$.
 
-A type annotation
-$\E:\T$ (\RuleName{A-Annot}) checks $\E$ against $\T$ and synthesizes $\T$.
-Rule
-
-The $\neg(\S[2] \SEq \SSkip)$ and $\SLocal \S[2]$ requirements from the
-constant typing of $\CSplit$ and $\CSSplit$ (see~\cref{fig:constant-typing})
-need not be explicitly in the algorithmic system. Unification variables $\TVar$
-are only ever instantiated to non-skip, local session types.
-
-Rule \RuleName{A-RSplit} is similar.
-Function application
-\RuleName{A-App} has to cater to two
-different styles of function application, which differ in the
-evaluation order of their subterms given by some $\Dir \in \{\DirLeft,
-\DirRight\}$. The inferred function type's direction $\Dir*$ is
-compatible with $\Dir$ if $\reqDir{\Dir*}{\Dir}$ holds: All
-functions, except $\DirRight$ functions are compatible with
-left-to-right evaluation. The function's direction $\Dir*$ also
-determines which subterm can have effects as prescribed by
-$\reqEff{\Dir*}{\Eff[1]}{\Eff[2]}$.
-\begin{align*}
-  \reqDir & = 
-  \{(\DirLeft,\DirLeft),
-    (\DirRight,\DirRight),
-    (\DirUnord,\DirRight),
-    (\DirNone,\DirRight)\}
-  &
-  \reqEff & =
-  \{(\DirLeft,\EffPure,\_),
-    (\DirRight,\_,\EffPure)\}
-\end{align*}
-Apart from that, rule \RuleName{A-App} synthesizes the function type and
-checks the argument against its parameter type. Sequential execution
-requires that the sequence of the required contexts for the
-expressions can be subsumed from the incoming context. Rule
-\RuleName{A-LetPair} mirrors its declarative counterparts: the context of the
-bound expression and the context of the body are joined either in parallel or
-in sequence ($\CtxPatOp$), and the new bindings enter the body's context with
-the same connective. The two bindings are joined according to the order
-$\Dir$ of the pair.
-Elimination of a sum type using \RuleName{A-Case} works similarly. The
-branches are typed in the context restricted to the variables that they use.
-In addition, we have to add equations to $\CSet$ that force all branch
-output types to be equal.
+\js{have to look over this, mention A-Seq} Rule \RuleName{A-LetPair} mirrors
+its declarative counterparts: the context of the bound expression and the
+context of the body are joined either in parallel or in sequence ($\CtxPatOp$),
+and the new bindings enter the body's context with the same connective. The two
+bindings are joined according to the order $\Dir$ of the pair. Elimination of a
+sum type using \RuleName{A-Case} works similarly. The branches are typed in the
+context restricted to the variables that they use. In addition, we have to add
+equations to $\CSet$ that force all branch output types to be equal.
 
 \subsection{Constraint Solving}
 \label{sec:constraint-solving}
+
 An algorithmic typing for an expression $\E$ yields a set of
-constraints $\CSet$. In inference mode, the returned type $\AT$ may
-refer to unsolved unification variables. Solving $\CSet$ boils down to a unification problem, but we are not
-aware of a unification algorithm for the theory of context-free session
-types, which involves associativity, neutral elements, and
-distributivity. Hence, we
-approach constraint solving by constraint simplification followed by a sound heuristic.
+constraints $\CSet$. In inference mode, the returned type $\AT$ may refer to
+unsolved unification variables. The goal of constraint solving is to find
+closing substitution.
+
+\begin{definition}
+  A substitution $\sigma : \TVAR \to \AS$ is a \emph{closing
+  substitution} for  a set of constraints $\CSet$, written $\sigma \models
+  \CSet$, if for every variable $\TVar$ in $\CSet$, $\sigma (\TVar) \in \S$,
+  $\neg(\sigma(\TVar) \SEq \SSkip)$, and $\SLocal{\sigma(\TVar)}$, and all
+  constraints are respected.
+\end{definition}
+
+Finding such a substitution boils down to a unification problem, but we are not
+aware of a unification algorithm for the theory of context-free session types,
+which involves associativity, neutral elements, and distributivity. Hence, we
+approach constraint solving by constraint simplification followed by a sound
+heuristic.
 
 The equivalence constraints in $\CSet$ are simplified by structural
 decomposition: pairs, sums, function types, and contexts are reduced
 componentwise, while unit constraints disappear. The full rule set is given
 in \cref{fig:constraint-simplification}. The rules are applied
-exhaustively. Constraints of the form $\TVar\CEq\AT$ provide a potential 
-solution for unification variable $\TVar$. If we are left with unification
-variables occurring in $\CSet$ or $\AT$ for which no solution candidate
-is found, the heuristic fails and $\E$ is rejected.
+exhaustively. Constraints of the form $\TVar\CEq\AT$ provide a potential
+solution for unification variable $\TVar$. If left with unification variables
+occurring in $\CSet$ or $\AT$ for which no solution candidate is found, the
+heuristic fails and $\E$ is rejected.
 
 Potential solutions have to first be identified and then validated with respect to the set $\CSet$.
 We non-deterministically pick one candidate instantiation per variable, resulting in
@@ -209,6 +195,7 @@ between left and right-ordered function types), we require
 an equivalence respecting encoding from our types to CFSTs.
 \Cref{sec:algorithmic-typing-appendix} describes the
 translation and sketches a correctness proof for the encoding. 
+
 
 
 
