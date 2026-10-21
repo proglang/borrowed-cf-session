@@ -1,0 +1,107 @@
+% Unrestricted Types
+
+\def\RuleNamePrefix{U-}
+\def\RuleCmdPrefix{RuleU}
+
+% U-Base
+\DefRule {Base} {} {
+  \Unr \B
+}
+
+% U-Unit
+\DefRule {Unit} {} {
+  \Unr \BUnit
+}
+
+% U-Prod
+\DefRule {Prod} {
+  \Unr \T[1] \\
+  \Unr \T[2]
+} {
+  \Unr\ (\T[1] \TPair \T[2])
+}
+
+% U-Sum
+\DefRule {Sum} {
+  \Unr \T[1] \\
+  \Unr \T[2]
+} {
+  \Unr\ \TSum{\T[1]}{\T[2]}
+}
+
+% U-Variant
+\DefRule {Variant} {
+  \forall\ell. \Unr \T[\ell] \\
+} {
+  \Unr\ \TVariant{\ell:\T[\ell]}
+}
+
+% U-Arr
+\DefRule {Arr} {} {
+  \Unr{( \TArr{\MobMobile}{\DirNone,\Eff}{\T[1]}{\T[2]})}
+}
+
+% U-Session
+\DefRule {Session} {
+  \S \SEq \SSkip
+}{
+  \Unr \S
+}
+
+% U-Skip
+\DefRule {Skip} {} {
+  \Unr{\SSkip}
+}
+
+% U-Seq
+\DefRule {Seq} {
+  \Unr \S[1] \\
+  \Unr \S[2]
+} {
+  \Unr \SSeq{\S[1]}{\S[2]}
+}
+
+% U-Var
+\DefRule {Var} {} {
+  \Unr{\SVar}
+}
+
+% U-Rec
+\DefRule {Rec} {
+  \Unr{\S}
+} {
+  \Unr{(\SRec\SVar\S)}
+}
+
+% U-CtxEmpty
+\DefRule {CtxEmpty} {} {
+  \Unr \CtxEmpty
+}
+
+% U-CtxVar
+\DefRule {CtxVar} {
+  \Unr \T
+}{
+  \Unr {\CtxVar \EVar \T}
+}
+
+% U-CtxSeq
+\DefRule {CtxSeq} {
+  \Unr \Ctx[1] \\
+  \Unr \Ctx[2]
+}{
+  \Unr {(\Ctx[1] \CtxSeq \Ctx[2])}
+}
+
+% U-CtxPar
+\DefRule {CtxPar} {
+  \Unr \Ctx[1] \\
+  \Unr \Ctx[2]
+}{
+  \Unr {(\Ctx[1] \CtxPar \Ctx[2])}
+}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../main"
+%%% End:
