@@ -116,23 +116,18 @@ backward simulation up to flag permutation applies directly.
 We now connect algorithmic typing with declarative typing. Soundness says
 that any solved algorithmic judgment denotes a valid declarative typing, while
 completeness says that declarative typings can be reconstructed algorithmically.
-
-\begin{theorem}[Algorithmic typing soundness]
-  If either $\CheckType \E \AT \Eff$ or $\InferType \E \AT \Eff$
-  and $\sigma \models \CSet$ is a closing substitution for the unification
-  variables of $\Ctx$, $\E$ and $\AT$, then
-  $\HasType[\Eff] {\Ctx{[\sigma]}} {\E{[\sigma]}} {\AT{[\sigma]}}$.
-\end{theorem}
-
-Completeness starts from a context, an expression and a type without
-unification variables. It requires that every variable of linear type occurs
-at most once in $\Ctx$. This condition is necessary, because the restriction
-of $\Ctx$ to the free variables of a subexpression keeps every occurrence of
-a repeated variable, which no algorithmic rule for variables can consume. The
-supplement gives a counterexample. Both theorems produce an \emph{annotated
+The completeness theorems produce an \emph{annotated
 variant} $\E*$ of $\E$, which adds type annotations $\E:\T$ to subterms and
 leaves $\E$ otherwise unchanged; the proofs insert them exactly at checking
 forms in inference position, with the declarative type of that subterm.
+
+\begin{theorem}[Algorithmic typing soundness]
+  If either $\CheckType \E \AT \Eff$ or $\InferType \E \AT \Eff$
+  for some closing substitution $\sigma \models \CSet$, then
+  $\HasType[\Eff] {\Ctx\metacolor{[\sigma]}} {\E{[\sigma]}} {\AT{[\sigma]}}$.
+\end{theorem}
+
+\js{completeness should not require annotations if the closing substitution is computed by the completeness lemmas}
 
 \begin{theorem}[Checking completeness]
   If\/ $\HasType[\Eff] \Ctx \E \T$, then there is an annotated variant
