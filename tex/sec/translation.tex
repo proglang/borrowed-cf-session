@@ -55,10 +55,9 @@ may proceed.
 
 We call the channels of the target calculus \emph{primitive channels} to
 distinguish them from (translated) source channels.  An optional synchronization
-point $\U ::= \USUnit \mid z$ is either $\USUnit$ denoting absence or $z = (\TEVary, s,
-i)$ identifying  a flag from som
-                           e channel $\TEVary$ by its endpoint $s$ and
-position $i$ in its flag list.   A translated source channel
+point $\U ::= \USUnit \mid \TEVarz$ is either $\USUnit$ denoting absence or
+$\TEVarz = (\TEVary, \TEs, i)$ identifying  a flag from some channel $\TEVary$
+by its endpoint $\TEs$ and position $i$ in its flag list. A translated source channel
 is represented by a value $\targettermcolor{c}=\USHandle[\U]{\TEVary}[\V]$, a
 triple consisting of an optional pre-synchronization point $\U$, a primitive
 channel endpoint $\TEVary$, and an optional post-synchronization point $\V$.
