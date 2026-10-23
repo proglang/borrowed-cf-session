@@ -86,28 +86,7 @@ $\CSet$. Judgements make use of context join
 $\Ctx[1] \CtxJoin*[\raisebox{-.4ex}{\kern1pt\relax$\scriptstyle\Dir$}] \Ctx[2]$, which
 composes two contexts according to the direction $\Dir$, and context restriction
 $\CtxRestrict*{X}$, which restricts a context to a set of variables $X$; the
-definitions are given in \cref{fig:context-operators}. The complete set of
-typing judgements is given in figs.~\ref{fig:appendix-algorithmic-infer}
-(synthesis) and~\ref{fig:appendix-algorithmic-check} (checking).
-
-The checking rules cover lambda abstraction, pair construction, and sum
-injection. For all other constructs \RuleName{A-Check} switches to inference
-mode and emits an equality constraint between the given type $\T$ and the
-inferred type $\TU$. For lambdas,
-\RuleName{A-Abs} enforces the supplied function type, which specifies
-the mobility $\Mob$, the direction $\Dir$, and the effect $\Eff$. If
-$\Mob = \MobMobile$, then all free variables in the lambda's body must
-be mobile. The direction enforces the way the new binding is joined
-to the context. The effect puts an upper bound on the effect of the
-body. The mobility constraints are inserted into the outgoing
-constraint set $\CSet$. \RuleName{A-AbsRec} is similar, but specialized to a recursive
-function, which must be unrestricted and hence mobile. \RuleName{A-Pair} checks
-the components pointwise with $\Ctx$ restricted to the set of variables
-occuring free in the particular subexpression. An additional check verifies
-that joining the partial contexts according to $\Dir$ gives a subcontext of
-$\Ctx$. The premise $\reqEff{\Dir}{\Eff[2]}{\Eff[1]}$ ensures that if the pair
-is ordered, depending on the order, either one or the other subterm is pure.
-Checking of sum injections is standard and omitted here.
+definitions are given in \cref{fig:context-operators}.
 
 In the synthesis rules, for variables the context must subsume to a single
 variable binding (\RuleName{A-Var}) and to an empty context for constants
@@ -115,7 +94,7 @@ variable binding (\RuleName{A-Var}) and to an empty context for constants
 $\E$ against $\T$ and synthesizes $\T$.
 %
 Function application \RuleName{A-App} infers the type of the function, checks
-the argument against the expected type, verifies that the restrcited contexts
+the argument against the expected type, verifies that the restricted contexts
 join to a subcontext of $\Ctx$, and ensures the compatibility between the
 involved directions and effects. Leftward application is compatibility only
 with left-ordered functions; rightward application is compatible with all other
@@ -136,7 +115,17 @@ due to the interplay of \RuleName{A-App} and \RuleName{A-Check}: When
 $\CSplit_{\S}$ is applied to an argument, the type of the argument is checked
 against $\SSeq\S\TVar$.
 
-\js{have to look over this, mention A-Seq} Rule \RuleName{A-LetPair} mirrors
+Pair destructuring (\RuleName{A-LetPair}) in the algorithmic system must be
+annotated with $\Dir\in\{\DirUnord,\DirLeft\}$. The such specified direction
+concerns the ordering (or non-ordering) between the contexts of subexpressions
+$\E[1]$ and $\E[2]$. The inferred type of $\E[1]$ comes with another direction
+$\Dir*$ that indicates the ordering between the newly introduced bindings
+$\EVar$ and $\EVary$. Sum type elimination works with a similar annotation.
+\RuleName{A-Case} and the rule for sequencing (\RuleName{A-Seq}) are included
+in the full set of inference judgements in
+\cref{fig:appendix-algorithmic-infer}.
+
+Rule \RuleName{A-LetPair} mirrors
 its declarative counterparts: the context of the bound expression and the
 context of the body are joined either in parallel or in sequence ($\CtxPatOp$),
 and the new bindings enter the body's context with the same connective. The two
@@ -144,6 +133,26 @@ bindings are joined according to the order $\Dir$ of the pair. Elimination of a
 sum type using \RuleName{A-Case} works similarly. The branches are typed in the
 context restricted to the variables that they use. In addition, we have to add
 equations to $\CSet$ that force all branch output types to be equal.
+
+The checking rules cover lambda abstraction, pair construction, and sum
+injection. For all other constructs \RuleName{A-Check} switches to inference
+mode and emits an equality constraint between the given type $\T$ and the
+inferred type $\TU$. For lambdas, \RuleName{A-Abs} enforces the supplied
+function type, which specifies the mobility $\Mob$, the direction $\Dir$, and
+the effect $\Eff$. If $\Mob = \MobMobile$, then all free variables in the
+lambda's body must be mobile. The direction enforces the way the new binding is
+joined to the context. The effect puts an upper bound on the effect of the
+body. The mobility constraints are inserted into the outgoing constraint set
+$\CSet$. \RuleName{A-AbsRec} is similar, but specialized to a recursive
+function, which must be unrestricted and hence mobile. \RuleName{A-Pair} checks
+the components pointwise with $\Ctx$ restricted to the set of variables
+occuring free in the particular subexpression. An additional check verifies
+that joining the partial contexts according to $\Dir$ gives a subcontext of
+$\Ctx$. The premise $\reqEff{\Dir}{\Eff[2]}{\Eff[1]}$ ensures that if the pair
+is ordered, depending on the order, one particular subterm is pure. Checking of
+sum injections is standard and included in the full set checking judgements
+(\cref{fig:appendix-algorithmic-check}).
+
 
 \subsection{Constraint Solving}
 \label{sec:constraint-solving}

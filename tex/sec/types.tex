@@ -166,12 +166,13 @@ collected in \cref{fig:session-laws} in the supplement.
   \label{fig:constant-typing}
 \end{figure}
 
-\begin{figure}[p]
+\begin{figure}
   \begin{mathpar}
     \RuleTConst \and
-    \RuleTVar \\
-    \RuleTAbsUnr \and
-    \RuleTAppUnr \and
+    \RuleTVar \and
+    \RuleTSeq \\
+    \RuleTAbsUnr \hfill
+    \RuleTAppUnr \\
     \RuleTAbsLin \and
     \RuleTAppLin \and
     \RuleTAbsLeft \and
@@ -180,7 +181,6 @@ collected in \cref{fig:session-laws} in the supplement.
     \RuleTAppRight \and
     \RuleTPairUnord \and
     \RuleTPairOrd \and
-    \RuleTSeq \and
     \RuleTLetUnord \and
     \RuleTLetOrd \and
     \RuleTInj \and
@@ -301,7 +301,7 @@ function $\termcolor{\Varid{id}}$ to a variable already counts this as a usage
 of said variable. The problem is demonstrated by the expression
 %
 \(
-  \ELetPair[\DirLeft]{c_1}{c_2}{\EApp{\CSplit_{\SSeq{\S[1]}{\S[2]}}}{c}}
+  \ELetPair{c_1}{c_2}{\EApp{\CSplit_{\SSeq{\S[1]}{\S[2]}}}{c}}
   \!\termcolor{\EPairOrd {\EApp{\Varid{id}}{c_1}} {\EApp{f}{c_2}}}
 \).
 %

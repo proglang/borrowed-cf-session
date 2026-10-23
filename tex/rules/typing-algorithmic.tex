@@ -156,21 +156,25 @@
 
 % A-LetPair
 \DefRule {LetPair} {
-  \CtxAlgPatCheck{\E[1]}{\E[2]} \\
+  \CtxAlgJoinCheck{\E[1]}{\E[2]} \\
   \InferType[\CtxRestrict{\E[1]}]
     {\E[1]}
-    {\T[1] \TPair \T[2]}
+    {\T[1] \TPair[\Dir*] \T[2]}
     {\Eff[1]}
     [\CSet[1]]
   \\
-  \InferType[(\CtxVar x {\T[1]} \CtxJoin \CtxVar y {\T[2]}) \CtxPatOp \CtxRestrict{\E[2]}]
+  \InferType[
+      \metacolor{(\CtxVar x {\T[1]} \CtxJoin[\hphantom{'}\Dir*] \CtxVar y {\T[2]})}
+      \CtxJoin
+      \CtxRestrict{\E[2]}
+    ]
     {\E[2]}
     {\TU}
     {\Eff[2]}
     [\CSet[2]]
 }{
   \InferType
-     {\ELetPair xy{\E[1]}{\E[2]}}
+     {\ELetPair[\Dir] xy{\E[1]}{\E[2]}}
      {\TU}
      {\Eff[1] \EffJoin \Eff[2]}
      [\CSet[0] \CSJoin \CSet[1] \CSJoin \CSet[2]]
@@ -191,24 +195,22 @@
 
 % A-Case
 \DefRule {Case} {
+  X = \textstyle\bigcup_{\ell\in L} \Fv(\E[\ell]) \\
+  \CtxRestrict{\E} \CtxJoin \CtxRestrict*{X} \SubCtx \Ctx \uparrow \CSet[0] \\
+  \ell' \in L \\\\
   \InferType[\CtxRestrict{\E}]
     {\E}
     {\TVariant{\ell:\T[\ell]}}
     {\Eff}
   \\
-  \InferType[\CtxVar {\EVar[\ell]} {\T[\ell]} \CtxPatOp \CtxRestrict*{X}]
+  \InferType[\CtxVar {\EVar[\ell]} {\T[\ell]} \CtxJoin \CtxRestrict*{X}]
     {\E[\ell]}
     {\TU[\ell]}
     {\Eff[\ell]}
     [\CSet[\ell]]
-  \\
-  X = \textstyle\bigcup_{\ell\in L} \Fv(\E[\ell]) \\
-  \CtxRestrict{\E} \CtxPatOp \CtxRestrict*{X} \SubCtx \Ctx \uparrow \CSet[0]
-  \\
-  \ell' \in L
 }{
   \InferType
-    {\ECase[\ell\in L] \E \ECaseBranchDef}
+    {\ECase[\ell\in L][\Dir] \E \ECaseBranchDef}
     {\TU[\ell']}
     {\Eff \EffJoin \Eff[1] \EffJoin \Eff[2]}
     [\CSet[0] \CSJoin \CSet \CSJoin \bigcup_{\ell\in L} \CSet[\ell] \CSJoin \left\{\TU[k] \CEq \TU[k'] \mid k,k' \in L \right\}]

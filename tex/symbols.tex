@@ -194,10 +194,6 @@
 \newcommand*\CtxAlgSeqCheck[2]{
   \CtxRestrict{#1} \CtxSeq \CtxRestrict{#2} \SubCtx \Ctx \uparrow \CSet[0]
 }
-\newcommand*\CtxAlgPatCheck[2]{
-  \CtxRestrict{#1} \CtxPatOp \CtxRestrict{#2}
-    \SubCtx \Ctx \uparrow \CSet[0]
-}
 
 % Constraint sets
 %\NewMetaVar \CSet \Delta
@@ -242,14 +238,15 @@
 \newcommand*\EInj[2]{\termcolor{\Keyword{inj$_{#1}$}{#2}}}
 \newcommand*\EPair[3][{}]{\termcolor{{#2} \otimes_{#1} {#3}}}
 \newcommand*\EPairOrd[2]{\EPair[\DirLeft]{#1}{#2}} % {\termcolor{{#1} \odot {#2}}}
-\newcommand*\ECase[3][]{\termcolor{\Keyword{case} {#2} \left\{ #3 \right\}_{#1}}}
+\NewDocumentCommand\ECase{O{} O{} m m}{\termcolor{
+  \Keyword{case}_{#2} {#3} \left\{ #4 \right\}_{#1}
+}}
 \NewDocumentCommand\ECaseBranch{s}{\ECaseBranchImpl{#1}}
 \NewDocumentCommand\ECaseBranchDef{s O{\ell}}{\ECaseBranchImpl{#1}{#2}{\EVar[#2]}{\E[#2]}}
 \newcommand*\ECaseBranchImpl[4]{\IfBooleanT{#1}{\overline}{\termcolor{\EInj {#2} {#3} \Rightarrow {#4}}}}
-\newcommand*\ELet[2]{\termcolor{\Keyword{let}\,{#1} \Keyword{=} {#2}\Keyword{in}\,}}
 \newcommand*\ESeq[1]{\termcolor{{#1}\!\Keyword{;}}}
-\newcommand*\ELetPair[4][{}]{\termcolor{\ELet{\EPair[#1]{#2}{#3}}{#4}}}
-\newcommand*\ELetPairOrd[3]{\ELetPair[\DirLeft]{#1}{#2}{#3}} % {\termcolor{\ELet{\EPairOrd{#1}{#2}}{#3}}}
+\newcommand*\ELet[3][]{\termcolor{\Keyword{let}_{#1}\,{#2} \Keyword{=} {#3}\Keyword{in}\,}}
+\newcommand*\ELetPair[3][]{\ELet[#1]{\EPair{#2}{#3}}}
 \newcommand*\EFork[1]{\termcolor{\CFork~{#1}}}
 \newcommand*\EMatch[3]{\termcolor{\Keyword{match}\, {#1}\, \Keyword{with}\, \ERecord{#2}{#3}}}
 \newcommand*\EMatchA[3]{\termcolor{\begin{array}[t]{@{}l@{}l}\Keyword{match}&\, {#1}\, \Keyword{with}\\&\ERecord{#2}{#3}\end{array}}}

@@ -27,7 +27,7 @@
 \DefRule {AbsUnr} {
   \HasType
     {
-        \CtxVar f {\TArr{\MobMobile}{\DirNone,\Eff}{\T}{\TU}}
+        \CtxVar f {\TArr{\MobMobile}{\DirNone,\Eff}{\T}{\!\TU}}
           \CtxPar \CtxVar \EVar{\T}
           \CtxPar \Ctx
     }
@@ -205,7 +205,7 @@
   \Unr \T
 }{
   \HasType
-    {\CtxPat 1 2}
+    {\Ctx[1] \CtxSeq  \Ctx[2]}
     {\ESeq{\E[1]}{\E[2]}}
     {\TU}
 }
