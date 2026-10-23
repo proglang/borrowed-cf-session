@@ -21,6 +21,8 @@ import BorrowedCF.Reduction.Processes.Typed
 -- Safety
 import BorrowedCF.Safety.Preservation
 import BorrowedCF.Safety.Progress
+-- Disjointness between `Blocked⁺` and the process reduction
+import BorrowedCF.Safety.Progress.Exclusive
 
 -- Low-level processes (soup representation)
 import BorrowedCF.Processes.UntypedSoup

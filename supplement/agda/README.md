@@ -41,6 +41,12 @@ Selected modules can be checked by, e.g.,
 agda BorrowedCF/Algorithmic.agda
 ```
 
+Everything alltogether can be checked through
+
+```sh
+agda --build-library
+```
+
 ## Structure
 
 ```
@@ -107,7 +113,7 @@ For the definitions in the paper and the appendix we list the corresponding Agda
 | Process Translation       | Fig. 13   | `BorrowedCF.Processes.TranslationSoup.U[_]` |
 | Closing substitutions     | Def. 7.1  | `BorrowedCF.Algorithmic.Solved.Solving` |
 | Algorithmic typing        | Fig. 14   | `BorrowedCF.Algorithmic._;_/_⊢[_]_∶_∣_↑_/_` |
-| Blocked processes         | Fig. S-11 | `BorrowedCF.Safety.Blocked.Blocked` |
+| Blocked processes         | Fig. S-11 | `BorrowedCF.Safety.Blocked.Blocked⁺` |
 
 The paper's unary remote split always allocates at the front of the selected
 endpoint's flag list. `FrontStep` restricts the general soup reduction to
@@ -134,8 +140,9 @@ agda BorrowedCF/Simulation/FrontSoup.agda
 | 8.5 Forward simulation           | `BorrowedCF.Simulation.FrontCore.forward-front` |
 | 8.6 Backward simulation          | `BorrowedCF.Simulation.FrontSoup.backward-front` |
 | 8.7 Algorithmic typing soundness | `BorrowedCF.Algorithmic.sound` |
-| 8.8 Checking completeness        | `BorrowedCF.Completeness.Main.complete⇐` |
-| 8.9 Inference completeness       | `BorrowedCF.Completeness.Main.complete⇒` |
+| 8.8 Disjointness of reducible and blocked processes | `BorrowedCF.Completeness.Main.blocked⁺⇒¬step`, `BorrowedCF.Completeness.Main.irreducible⇒blocked⁺` |
+| 8.9 Checking completeness        | `BorrowedCF.Completeness.Main.complete⇐` |
+| 8.10 Inference completeness       | `BorrowedCF.Completeness.Main.complete⇒` |
 
 ### Postulates
 

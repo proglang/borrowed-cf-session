@@ -41,6 +41,12 @@ Selected modules can be checked by, e.g.,
 agda BorrowedCF/Algorithmic.agda
 ```
 
+Everything alltogether can be checked through
+
+```sh
+agda --build-library
+```
+
 ## Structure
 
 ```
