@@ -58,11 +58,9 @@ distinguish them from (translated) source channels.  An optional synchronization
 point $\U ::= \USUnit \mid \TEVarz$ is either $\USUnit$ denoting absence or
 a name $\TEVarz$ inside the flag-list of channel endpoint $\TEcs$, where
 $\TEs\in\{\targetendpointcolor{0},\targetendpointcolor{1}\}$ selects one of the
-two endpoints $\TEcs$ and $\TEs*=1-\TEs$ selects the other.
-%identifying  a flag from some channel $\TEVary$
-%by its endpoint $\TEs$ and position $i$ in its flag list.
-A translated source channel
-is represented by a value $\targettermcolor{c}=\USHandle[\U]{\TEcs}[\V]$, a
+two endpoints $\TEcs$ and $\TEs*=1-\TEs$ selects the other. A translated source
+channel is represented by a value $\targettermcolor{c} =
+\USHandle[\U]{\TEcs}[\V]$, a
 triple consisting of an optional pre-synchronization point $\U$, a primitive
 channel endpoint $\TEcs$, and an optional post-synchronization point $\V$.
 The pre-flag is consumed by $\CAcq$
