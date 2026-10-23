@@ -306,7 +306,7 @@
 \makeatletter
 \newcommand\TEs@impl[1]{\targetendpointcolor{\IfBooleanT{#1}{\bar}s}}
 \NewDocumentCommand \TEs  {s}   {\TEs@impl{#1}}
-\NewDocumentCommand \TEc  {O{}} {\targettermcolor{c^{\targetendpointcolor{#1}}}}
+\NewDocumentCommand \TEc  {O{}} {\targettermcolor{p^{\targetendpointcolor{#1}}}}
 \NewDocumentCommand \TEcs {s}   {\TEc[\TEs@impl{#1}]}
 \makeatother
 

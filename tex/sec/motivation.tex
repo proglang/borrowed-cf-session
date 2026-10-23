@@ -331,6 +331,7 @@
 
 
 
+
 \section{Motivation}
 \label{sec:motivation}
 
@@ -692,33 +693,33 @@ and remote borrowing in the implementation.
 % Locally format "in" as a variable name
 %
 
-Specifically, a translated channel is represented by a triple \ensuremath{\Varid{in}\otimes \Varid{c}\otimes \Varid{out}}, where \ensuremath{\Varid{c}}
+Specifically, a translated channel is represented by a triple \ensuremath{\Varid{in}\otimes \Varid{p}\otimes \Varid{out}}, where \ensuremath{\Varid{p}}
 is a primitive channel name and \ensuremath{\Varid{in}} and \ensuremath{\Varid{out}} are optional names of
 synchronization flags (i.e., they are
 either \ensuremath{\mathord{*}} or a flag name \ensuremath{\Varid{z}}). If the incoming flag is \ensuremath{\Varid{in}\mathrel{=}\Varid{z}}, then channel
-\ensuremath{\Varid{c}} must be acquired via \ensuremath{\Varid{z}} before it can be used; if \ensuremath{\Varid{in}\mathrel{=}\mathord{*}}, then \ensuremath{\Varid{c}} can just be
+\ensuremath{\Varid{p}} must be acquired via \ensuremath{\Varid{z}} before it can be used; if \ensuremath{\Varid{in}\mathrel{=}\mathord{*}}, then \ensuremath{\Varid{p}} can just be
 used. Analogously, if the outgoing flag is \ensuremath{\Varid{out}\mathrel{=}\Varid{z}}, then 
-channel \ensuremath{\Varid{c}} must be handed off to \ensuremath{\Varid{z}} after use; no hand off,
+channel \ensuremath{\Varid{p}} must be handed off to \ensuremath{\Varid{z}} after use; no hand off,
 if \ensuremath{\Varid{out}\mathrel{=}\mathord{*}}. \thertcalculus associates each  
 channel end with a list of (named) flags, ranging over \ensuremath{\CodeFlag{drop}} and
 \ensuremath{\CodeFlag{acq}}.
 
 We first consider taking a local borrow (cf.~\cref{fig:borrow-lifecycle-msc-local}). In
 this case, 
-\ensuremath{\CodeOp{lsplit}} applied to \ensuremath{\Varid{in}\otimes \Varid{c}\otimes \Varid{out}} duplicates the primitive channel \ensuremath{\Varid{c}} and
-returns the borrow $c_1=$ \ensuremath{\Varid{in}\otimes \Varid{c}\otimes \mathord{*}} followed by the residual $c_2=$ \ensuremath{\mathord{*}\otimes \Varid{c}\otimes \Varid{out}}. 
+\ensuremath{\CodeOp{lsplit}} applied to \ensuremath{\Varid{in}\otimes \Varid{p}\otimes \Varid{out}} duplicates the primitive channel \ensuremath{\Varid{p}} and
+returns the borrow $c_1=$ \ensuremath{\Varid{in}\otimes \Varid{p}\otimes \mathord{*}} followed by the residual $c_2=$ \ensuremath{\mathord{*}\otimes \Varid{p}\otimes \Varid{out}}. 
 No new synchronization flag; no explicit handover from
 \ensuremath{\Varid{c}_{1}} to \ensuremath{\Varid{c}_{2}}, because \ensuremath{\Varid{c}_{1}.\Varid{out}\mathrel{=}\Varid{c}_{2}.\Varid{in}\mathrel{=}\mathord{*}}. This simple
 approach has no overhead and is sound because the ordered pair in the source
 type system has already established the left-to-right use (``followed-by'') of
 the two pieces. Both pieces refer to the same underlying
-channel object \ensuremath{\Varid{c}}; typing ensures that using the first piece advances \ensuremath{\Varid{c}} to
+channel object \ensuremath{\Varid{p}}; typing ensures that using the first piece advances \ensuremath{\Varid{p}} to
 the state where the second piece starts.
 
 Remote splitting relies on the new synchronization machinery
 (\cref{fig:borrow-lifecycle-msc-remote}). Splitting a channel
-\ensuremath{\Varid{in}\otimes \Varid{c}\otimes \Varid{out}} remotely creates a fresh flag \ensuremath{\Varid{z}} in state \ensuremath{\CodeFlag{drop}} and returns two
-channel triples: \ensuremath{\Varid{in}\otimes \Varid{c}\otimes \Varid{z}} for the borrowed prefix, and \ensuremath{\Varid{z}\otimes \Varid{c}\otimes \Varid{out}} for
+\ensuremath{\Varid{in}\otimes \Varid{p}\otimes \Varid{out}} remotely creates a fresh flag \ensuremath{\Varid{z}} in state \ensuremath{\CodeFlag{drop}} and returns two
+channel triples: \ensuremath{\Varid{in}\otimes \Varid{p}\otimes \Varid{z}} for the borrowed prefix, and \ensuremath{\Varid{z}\otimes \Varid{p}\otimes \Varid{out}} for
 the suffix. Hence, the prefix carries an outgoing obligation to call \ensuremath{\CodeOp{drop}} and
 the suffix carries a matching incoming obligation to call \ensuremath{\CodeOp{acquire}}. Calling
 \ensuremath{\CodeOp{drop}} changes the flag from \ensuremath{\CodeFlag{drop}} to \ensuremath{\CodeFlag{acq}} and returns immediately, so the
@@ -726,7 +727,6 @@ notification is asynchronous. An \ensuremath{\CodeOp{acquire}} on the suffix rem
 the flag becomes \ensuremath{\CodeFlag{acq}} and then it removes the synchronization flag. Thus a remote
 split pays for exactly for the handover needed to coordinate the two
 processes operating on the channel, whereas a local split has no overhead.
-
 
 % A synchronization binder
 % $(\varphi z \mapsto \phi)P$ binds a flag name |z| in |P| and stores one of two
@@ -743,13 +743,13 @@ processes operating on the channel, whereas a local split has no overhead.
 
 Allocation (not shown in \cref{fig:borrow-lifecycle-msc}) creates a primitive
 channel pair and one synchronization flag in state \ensuremath{\CodeFlag{acq}} for each endpoint
-obtaining the pair \ensuremath{\Varid{z}_{1}\otimes \Varid{c}_{1}\otimes \mathord{*}} and \ensuremath{\Varid{z}_{2}\otimes \Varid{c}_{2}\otimes \mathord{*}}.
+obtaining the pair \ensuremath{\Varid{z}_{1}\otimes \Varid{p}_{1}\otimes \mathord{*}} and \ensuremath{\Varid{z}_{2}\otimes \Varid{p}_{2}\otimes \mathord{*}}.
 Thus, the first operation on each channel end must be \ensuremath{\CodeOp{acquire}} to start normal
 operation, replacing the flag \ensuremath{\Varid{z}_i} from the channel 
-triple to obtain \ensuremath{\mathord{*}\otimes \Varid{c}_i\otimes \mathord{*}}. From then onwards,
+triple to obtain \ensuremath{\mathord{*}\otimes \Varid{p}_i\otimes \mathord{*}}. From then onwards,
 communication is just ordinary session communication: \ensuremath{\CodeOp{send}}/\ensuremath{\CodeOp{recv}},
 \ensuremath{\CodeOp{select}}/\ensuremath{\CodeOp{branch}}, and \ensuremath{\CodeOp{close}}/\ensuremath{\CodeOp{wait}} all operate directly on the primitive
-channel name \ensuremath{\Varid{c}_i}.
+channel name \ensuremath{\Varid{p}_i}.
 
 
 % End local formatting of "in" as an identifier.

@@ -32,18 +32,15 @@ reduction of constants is part of the process semantics.
   $\E=\ECapp{\EApp\C\V}$, or there exists an $\E*$ such that $\E \EReduce \E*$.
 \end{theorem}
 
-A process is blocked if every thread is blocked and no restriction can fire a
-channel rule. \js{I don't understand the wording ``no restriction can fire\dots''}
-The blocked-process predicate $\Blocked\Proc$ is defined in
-\cref{fig:blocked-expr-proc}. Progress holds for closed processes and
-guarantees reduction only for processes that are not blocked. Thus, deadlocks
-remain possible.
+A process $\Proc$ is blocked ($\Blocked\Proc$\!, \cref{fig:blocked-expr-proc}) if
+every thread is blocked, and neither communication nor synchronization rules
+can fire. Progress holds for closed processes and guarantees reduction only for
+processes that are not blocked. Thus, deadlocks remain possible.
 
 \begin{theorem}[Process progress]
   \label{thm:process-progress}
-  If\/ $\ProcHasType \CtxEmpty \Proc$, then $\Proc \Congruent \PExp{\CUnit}$,
-  or $\Blocked\Proc$, or there exists a $\Proc*$ such that
-  $\Proc \PReduce \Proc*$.
+  If\/ $\ProcHasType \CtxEmpty \Proc$\!, then $\Blocked\Proc$, or there exists a
+  $\Proc*$ such that $\Proc \PReduce \Proc*$.
 \end{theorem}
 
 \subsection{Simulation for the Translation}

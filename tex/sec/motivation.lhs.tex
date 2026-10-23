@@ -364,34 +364,34 @@ and remote borrowing in the implementation.
 %
 %format in = "\Varid{in}"
 
-Specifically, a translated channel is represented by a triple |in *. c *. out|, where |c|
+Specifically, a translated channel is represented by a triple |in *. p *. out|, where |p|
 is a primitive channel name and |in| and |out| are optional names of
 synchronization flags (i.e., they are
 either |*| or a flag name |z|). If the incoming flag is |in = z|, then channel
-|c| must be acquired via |z| before it can be used; if |in = *|, then |c| can just be
+|p| must be acquired via |z| before it can be used; if |in = *|, then |p| can just be
 used. Analogously, if the outgoing flag is |out = z|, then 
-channel |c| must be handed off to |z| after use; no hand off,
+channel |p| must be handed off to |z| after use; no hand off,
 if |out = *|. \thertcalculus associates each  
 channel end with a list of (named) flags, ranging over |fdrop| and
 |facq|.
 
 We first consider taking a local borrow (cf.~\cref{fig:borrow-lifecycle-msc-local}). In
 this case, 
-|lsplit| applied to |in *. c *. out| duplicates the primitive channel |c| and
-returns the borrow $c_1=$ |in *. c *. *| followed by the residual $c_2=$ |* *. c
+|lsplit| applied to |in *. p *. out| duplicates the primitive channel |p| and
+returns the borrow $c_1=$ |in *. p *. *| followed by the residual $c_2=$ |* *. p
 *. out|. 
 No new synchronization flag; no explicit handover from
 |c1| to |c2|, because |c1.out = c2.in = *|. This simple
 approach has no overhead and is sound because the ordered pair in the source
 type system has already established the left-to-right use (``followed-by'') of
 the two pieces. Both pieces refer to the same underlying
-channel object |c|; typing ensures that using the first piece advances |c| to
+channel object |p|; typing ensures that using the first piece advances |p| to
 the state where the second piece starts.
 
 Remote splitting relies on the new synchronization machinery
 (\cref{fig:borrow-lifecycle-msc-remote}). Splitting a channel
-|in *. c *. out| remotely creates a fresh flag |z| in state |fdrop| and returns two
-channel triples: |in *. c *. z| for the borrowed prefix, and |z *. c *. out| for
+|in *. p *. out| remotely creates a fresh flag |z| in state |fdrop| and returns two
+channel triples: |in *. p *. z| for the borrowed prefix, and |z *. p *. out| for
 the suffix. Hence, the prefix carries an outgoing obligation to call |drop| and
 the suffix carries a matching incoming obligation to call |acquire|. Calling
 |drop| changes the flag from |fdrop| to |facq| and returns immediately, so the
@@ -399,7 +399,6 @@ notification is asynchronous. An |acquire| on the suffix remains blocked until
 the flag becomes |facq| and then it removes the synchronization flag. Thus a remote
 split pays for exactly for the handover needed to coordinate the two
 processes operating on the channel, whereas a local split has no overhead.
-
 
 % A synchronization binder
 % $(\varphi z \mapsto \phi)P$ binds a flag name |z| in |P| and stores one of two
@@ -416,13 +415,13 @@ processes operating on the channel, whereas a local split has no overhead.
 
 Allocation (not shown in \cref{fig:borrow-lifecycle-msc}) creates a primitive
 channel pair and one synchronization flag in state |facq| for each endpoint
-obtaining the pair |z1 *. c1 *. *| and |z2 *. c2 *. *|.
+obtaining the pair |z1 *. p1 *. *| and |z2 *. p2 *. *|.
 Thus, the first operation on each channel end must be |acquire| to start normal
 operation, replacing the flag |zi| from the channel 
-triple to obtain |* *. ci *. *|. From then onwards,
+triple to obtain |* *. pi *. *|. From then onwards,
 communication is just ordinary session communication: |send|/|recv|,
 |select|/|branch|, and |close|/|wait| all operate directly on the primitive
-channel name |ci|.
+channel name |pi|.
 
 
 % End local formatting of "in" as an identifier.

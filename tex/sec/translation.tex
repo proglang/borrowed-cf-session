@@ -48,7 +48,7 @@ semantics of \cref{sec:semantics}.
 Here $C$ is a finite set of primitive channel names, $S:C\to\mathsf{CState}$
 maps each channel to its current state, and $E$ is a finite multiset of untyped
 expressions executing concurrently.  A channel state records whether the
-channel is open and a sequence of synchronization flags for its two
+channel is open and a list of synchronization flags for its two
 endpoints.  A flag in state $\FlagInit$ records that the corresponding $\CDrop$
 is still pending; after the drop, its state is $\FlagDropped$ and an $\CAcq$
 may proceed.                   
@@ -56,11 +56,15 @@ may proceed.
 We call the channels of the target calculus \emph{primitive channels} to
 distinguish them from (translated) source channels.  An optional synchronization
 point $\U ::= \USUnit \mid \TEVarz$ is either $\USUnit$ denoting absence or
-$\TEVarz = (\TEVary, \TEs, i)$ identifying  a flag from some channel $\TEVary$
-by its endpoint $\TEs$ and position $i$ in its flag list. A translated source channel
-is represented by a value $\targettermcolor{c}=\USHandle[\U]{\TEVary}[\V]$, a
+a name $\TEVarz$ inside the flag-list of channel endpoint $\TEcs$, where
+$\TEs\in\{\targetendpointcolor{0},\targetendpointcolor{1}\}$ selects one of the
+two endpoints $\TEcs$ and $\TEs*=1-\TEs$ selects the other.
+%identifying  a flag from some channel $\TEVary$
+%by its endpoint $\TEs$ and position $i$ in its flag list.
+A translated source channel
+is represented by a value $\targettermcolor{c}=\USHandle[\U]{\TEcs}[\V]$, a
 triple consisting of an optional pre-synchronization point $\U$, a primitive
-channel endpoint $\TEVary$, and an optional post-synchronization point $\V$.
+channel endpoint $\TEcs$, and an optional post-synchronization point $\V$.
 The pre-flag is consumed by $\CAcq$
 before the endpoint is used; its post-flag is signaled by $\CDrop$ when
 ownership of the endpoint prefix is released.  Communication, choice, and close
@@ -75,9 +79,7 @@ Structural congruence reduces to equality of configurations, and reduction needs
 no separate congruence rule.
 
 For $S(\TEc)=(b,\TFlags[0],\TFlags[1])$, define $\USOpen \Leftrightarrow b = \StateOpen$
-and $\USFlags=\TFlags[\TEs]$, where
-$\TEs\in\{\targetendpointcolor{0},\targetendpointcolor{1}\}$ selects one of the
-two endpoints $\TEcs$ and $\TEs*=1-\TEs$ selects the other.  The notation
+and $\USFlags=\TFlags[\TEs]$. The notation
 $\USSideUpdate{\TFlags}$ updates only that endpoint's flag sequence.  For
 the rules, we give each occurrence in a flag sequence a distinct name.  In a
 well-formed handle, its post-component $\V$ is either $\USUnit$ or a reference
