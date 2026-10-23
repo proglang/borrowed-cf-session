@@ -15,7 +15,7 @@ Minor rewordings in the introduction.
 
 > We will add running examples, explain purity and boundedness,
 
-[Janek]
+The "Types" section has been enriched with examples.
 
 > clarify the scope of the shared-memory target,
 
@@ -86,10 +86,10 @@ In the conclusion, we sketch the distributed variant as future work.
 
 > ### Why the purity constraints?
 
-[Janek]
-
 > They prevent call-by-value evaluation from violating the temporal use order recorded by an ordered context. If `c1` is a borrowed prefix and `c2` its residual, evaluating `c1 ⊗_l recv c2` evaluates `recv c2` before the packaged `c1` is consumed. Requiring the second component of `T-PairOrd` to be pure prevents this premature residual use. Directed application imposes the analogous condition on the subexpression whose evaluation order conflicts with the arrow's ordering. This conservative restriction could be relaxed by a phase-sensitive effect system.
-> 
+
+An example to this end has been added to the "Types" section.
+
 > ### Is the Section 7.2 heuristic incomplete?
 
 [Janek]
@@ -159,17 +159,18 @@ Revamped.
 
 > ### Boundedness and `Te-Seq2`
 
-[Janek]
-
 > Here “bounded” does not mean that the protocol cannot run forever. It means that every finite completion reaches an explicit boundary—`Close`, `Wait`, or `Drop`—so a movable endpoint cannot finish silently while leaving an inaccessible residual obligation. For `S1;S2`, if `S1` continues forever, control never reaches `S2` and no handoff is stranded; if `S1` finishes, the boundary behavior is determined by `S2`. This is why `Te-Seq2` requires only `bnd S2`. We will revise the terminology and explanation to prevent the natural “finite protocol” reading.
-> 
+
+Rephrased the paragraph introducing the boundedness predicate.
+
 > ### Why can `S2` not be `Skip` in `CT-LSplit`?
 
-[Janek]
-
-> 
 > The restriction excludes a degenerate split. Because `S1;Skip` is equivalent to `S1`, splitting off a `Skip` residual adds no expressive power: the second result can only be discarded. Operationally, however, `R-LSplit` would introduce a fresh binder for that residual, while binder-group typing represents `Skip` by the empty binder group. The side condition preserves this canonical representation and the associated preservation invariant. We will explain this explicitly; programmers lose no useful split because the operation can be elided.
-> 
+
+Extended "Types" with type-level reasoning why the restrictions on
+`lsplit`/`rsplit` lose no expressivity. Also extended "Dynamics" with an
+explanation on the operational level.  
+
 > ## Review B: remaining comments
 > 
 > ### Tree-shaped contexts and BI
@@ -178,10 +179,13 @@ Adopted with reference *inspired by BI*.
 
 > ### Running examples
 
-[Janek]
-
 > We will carry a version of the rendering example into Sections 3 and 4, using it to introduce mobility, direction and effect annotations, ordered versus unordered context composition, and the types of `lsplit` and `rsplit` before presenting the general rules.
-> 
+
+The "Types" section has been extended with examples, also refering back to the
+rendering example from the motivation. No examples have been added to "Syntax"
+since we felt it difficult to talk about examples and their interpretation
+without giving meaning to the syntax through types first.
+
 > ### Minor comments
 > 
 

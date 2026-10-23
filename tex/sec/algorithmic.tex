@@ -150,8 +150,8 @@ equations to $\CSet$ that force all branch output types to be equal.
 
 An algorithmic typing for an expression $\E$ yields a set of
 constraints $\CSet$. In inference mode, the returned type $\AT$ may refer to
-unsolved unification variables. The goal of constraint solving is to find
-closing substitution.
+unsolved unification variables. The goal of constraint solving is to find a
+closing substitution. The typing is invalid if no such substitution exists.
 
 \begin{definition}
   A substitution $\sigma : \TVAR \to \AS$ is a \emph{closing
@@ -190,14 +190,11 @@ Mobility constraints can be
 validated after solving the unification constraints because $\Mobile\T$ is decidable. 
 Equality constraints can be verified because the equivalence of CFSTs is
 decidable~\cite{DBLP:conf/tacas/AlmeidaMV20}. 
-Because our type language is richer than ordinary CFSTs (e.\,g. the distinction
+As our type language is richer than ordinary CFSTs (e.\,g. the distinction
 between left and right-ordered function types), we require
 an equivalence respecting encoding from our types to CFSTs.
 \Cref{sec:algorithmic-typing-appendix} describes the
 translation and sketches a correctness proof for the encoding. 
-
-
-
 
 % In the following we sketch why our heuristic is able to infer useful
 % information. Fresh unification variables are only introduced through

@@ -4,6 +4,27 @@
 This section presents a small-step operational semantics for the core language of
 \cref{fig:syntax}.  
 
+\begin{figure}[t]
+  \begin{mathpar}
+    \RuleProcRedExp \and
+    \RuleProcRedNew \and
+    \RuleProcRedFork \and
+    \RuleProcRedCom \and
+    \RuleProcRedLSplit \and
+    \RuleProcRedChoice \and
+    \RuleProcRedRSplit \and
+    \RuleProcRedDrop \and
+    \RuleProcRedAcquire \and
+    \RuleProcRedClose \and
+    \RuleProcRedDiscard \and
+    \RuleProcRedPar \and
+    \RuleProcRedBind \and
+    \RuleProcRedStruct
+  \end{mathpar}
+  \caption{Process reduction ($\Proc \PReduce \Proc$)}
+  \label{fig:process-reduction}
+\end{figure}
+
 We classify values $\U, \V$ as expressions that are the usual weak-head normal
 forms: constants, variables acting as channel names, abstractions, injections
 of values, and pairs of values. Evaluation contexts $\EC$ are standard except
@@ -29,27 +50,6 @@ configuration so that a redex is exposed.
 There are three groups of rules: ordinary computation inside a process, synchronization
 between the two endpoints of a channel, and structural closure.
 
-\begin{figure}[t!]
-  \begin{mathpar}
-    \RuleProcRedExp \and
-    \RuleProcRedNew \and
-    \RuleProcRedFork \and
-    \RuleProcRedCom \and
-    \RuleProcRedLSplit \and
-    \RuleProcRedChoice \and
-    \RuleProcRedRSplit \and
-    \RuleProcRedDrop \and
-    \RuleProcRedAcquire \and
-    \RuleProcRedClose \and
-    \RuleProcRedDiscard \and
-    \RuleProcRedPar \and
-    \RuleProcRedBind \and
-    \RuleProcRedStruct
-  \end{mathpar}
-  \caption{Process reduction ($\Proc \PReduce \Proc$)}
-  \label{fig:process-reduction}
-\end{figure}
-
 Rule \RuleName{R-Exp} embeds an expression step in the selected process-local context.
 Rule \RuleName{R-New} introduces a fresh channel restriction and returns the two
 endpoints as a pair.  Each endpoint is placed behind an initial separator
@@ -72,7 +72,17 @@ the left component before the right component.  Rule \RuleName{R-RSplit} replace
 one endpoint name by two names separated by a binder-group separator and
 returns them as an unordered pair.  The separator is the runtime marker for the
 remote handoff tracked statically by the $\SDrop$ and $\SAcq$ constructors in
-\cref{fig:process-typing}.
+\cref{fig:process-typing}. In conjunction with \RuleName{R-Close}, the rules
+reveal an operational reason why the splitting primitives are restricted to
+non-trivial suffixes. Splitting a session $\EVar:\STerm$ into
+$\EVar[1]:\STerm$, $\EVar[2]:\SSkip$ with a binder group
+$\procbindcolor{[\EVar[1]\EVar[2]]}$ breaks the invariant that there are no
+further bindings between a boundedness-marker-typed channel name ($\EVar[1]$)
+and the next separator $\BSep$ or the end of the binder group.
+%the reduction scheme would require significant adjustments, which---in
+%turn---increase the complexity of the simulation results from
+%\cref{sec:translation,sec:simulation}. The situation is even more complex with
+%in the case of $\CSSplit$.
 
 Rules \RuleName{R-Drop} and \RuleName{R-Acquire} move across such a separator.
 Dropping removes the endpoint immediately to the left of the separator and
