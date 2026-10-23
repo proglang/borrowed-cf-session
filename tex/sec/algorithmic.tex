@@ -221,13 +221,25 @@ translation and sketches a correctness proof for the encoding.
 
 \subsection{Implementation}
 
-We supplement our theoretical work on the bidirectional type checking algorithm from this section with an implementation written in Rust. 
-It is based on an artifact of prior work \cite{saffrich25:_artif_borrow_from_session_types}
-and uses FreeST 5.0
-\cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22,
-  almeida26:_frees_concur_progr_languag_with} for equivalence checking
-of session types. The FreeST integration is described more closely in \cref{sec:appendix-implementation}.
-The test cases of the Rust implementation include the motivational examples from \cref{sec:motivation}.
+We supplement our theoretical work on the bidirectional type checking algorithm
+from this section with an implementation written in Rust. It is based on an
+artifact of prior work~\cite{saffrich25:_artif_borrow_from_session_types} and
+uses
+FreeST~5.0~\cite{DBLP:journals/corr/abs-1904-01284,DBLP:journals/iandc/AlmeidaMTV22,
+almeida26:_frees_concur_progr_languag_with} for equivalence checking of session
+types. The FreeST integration is described more closely in
+\cref{sec:appendix-implementation}.
+
+%The test cases of the Rust implementation include the motivational examples
+%from \cref{sec:motivation}.
+
+Because of the incompleteness of the heuristic from
+\cref{sec:constraint-solving} the type checker may reject typeable programs.
+The user can guide the constraint solver through additional type annotations.
+Alongside six negative example, we provide 16~positive ones (including those
+from \cref{sec:motivation}) where the heuristic functions to a satisfactory
+level.
+
 
 %%% Local Variables:
 %%% mode: latex

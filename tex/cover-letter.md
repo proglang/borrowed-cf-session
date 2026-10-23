@@ -92,10 +92,15 @@ An example to this end has been added to the "Types" section.
 
 > ### Is the Section 7.2 heuristic incomplete?
 
-[Janek]
-
 > Yes. Constraint generation now has a mechanized completeness theorem for the annotated algorithmic judgment. The implementation's candidate-selection heuristic is separately sound but incomplete: it considers candidates exposed by simplification and validates them using decidable CFST equivalence and mobility, so it may reject a typable program. It succeeds on our current 16 positive and 6 negative examples; we will report this as limited experience, not completeness evidence.
-> 
+
+The completeness results of the algorithmic system are now clearly stated
+alongside a mention that it is independent of the performance of the
+heuristic (§8.3). In the section on the implementation (§7.3) we have stated
+what incompleteness of the heuristic entails, how the user may deal with it,
+and our experience with it.
+
+
 > ## Review B: specific questions
 > 
 > ### New insights over BGV

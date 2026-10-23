@@ -12,13 +12,13 @@ Preservation
 yields the usual safety invariant across reduction steps.
 
 \begin{theorem}[Expression preservation]
-  If\/ $\HasType \SessCtx \E \T$ and $\E \EReduce \E*$, then
+  If\/ $\HasType \SessCtx \E \T$ and $\E \EReduce \E*$\!, then
   $\HasType \SessCtx {\E*} \T$.
 \end{theorem}
 
 \begin{theorem}[Process preservation]
-  If\/ $\ProcHasType \SessCtx \Proc$ and $\Proc \PReduce \Proc*$, then
-  $\ProcHasType \SessCtx {\Proc*}$.
+  If\/ $\ProcHasType \SessCtx \Proc$ and $\Proc \PReduce \Proc*$\!, then
+  $\ProcHasType \SessCtx {\Proc*}$\!.
 \end{theorem}
 
 We complement preservation with progress. Expressions are not guaranteed to
@@ -28,19 +28,26 @@ reduction of constants is part of the process semantics.
 \begin{theorem}[Expression progress]
   \label{thm:expression-progress}
   If\/ $\HasType \SessCtx \E \T$, then either $\E$ is a value, or there exist
-  an evaluation context $\EC$, constant $\C$ and value $\V$ such that
-  $\E=\ECapp{\EApp\C\V}$, or there exists an $\E*$ such that $\E \EReduce \E*$.
+  an evaluation context $\EC$, constant $\C$ and va
+  lue $\V$ such that
+  $\E=\ECapp{\EApp\C\V}$, or there exists an $\E*$ such that $\E \EReduce \E*$\!.
 \end{theorem}
 
-A process $\Proc$ is blocked ($\Blocked\Proc$\!, \cref{fig:blocked-expr-proc}) if
+A process $\Proc$ is blocked ($\Blocked\!\Proc$\!, \cref{fig:blocked-expr-proc}) if
 every thread is blocked, and neither communication nor synchronization rules
 can fire. Progress holds for closed processes and guarantees reduction only for
-processes that are not blocked. Thus, deadlocks remain possible.
+processes that are not blocked. Thus, deadlocks remain possible. A process
+$\Proc$ is called \emph{reducible} if there exists a process $\Proc*$ exists
+such that $\Proc \PReduce \Proc*$\!.
 
 \begin{theorem}[Process progress]
   \label{thm:process-progress}
-  If\/ $\ProcHasType \CtxEmpty \Proc$\!, then $\Blocked\Proc$, or there exists a
-  $\Proc*$ such that $\Proc \PReduce \Proc*$.
+  If\/ $\ProcHasType \CtxEmpty \Proc$\!, then $\Blocked\!\Proc$\!, or there exists a
+  $\Proc*$ such that $\Proc \PReduce \Proc*$\!.
+\end{theorem}
+
+\begin{theorem}
+  The sets of reducible and blocked processes are disjoint.
 \end{theorem}
 
 \subsection{Simulation for the Translation}
@@ -116,17 +123,16 @@ We now connect algorithmic typing with declarative typing. Soundness says
 that any solved algorithmic judgment denotes a valid declarative typing, while
 completeness says that declarative typings can be reconstructed algorithmically.
 The completeness theorems produce an \emph{annotated
-variant} $\E*$ of $\E$, which adds type annotations $\E:\T$ to subterms and
-leaves $\E$ otherwise unchanged; the proofs insert them exactly at checking
-forms in inference position, with the declarative type of that subterm.
+variant} $\E*$ of $\E$, which adds type annotations $\E:\T$ to subterms
+for which the algorithmic system provides only checking-mode rules. Other
+subterms are left unchanged. Our completeness results are independent of our
+incomplete typing heuristic.
 
 \begin{theorem}[Algorithmic typing soundness]
   If either $\CheckType \E \AT \Eff$ or $\InferType \E \AT \Eff$
   for some closing substitution $\sigma \models \CSet$, then
   $\HasType[\Eff] {\Ctx\metacolor{[\sigma]}} {\E{[\sigma]}} {\AT{[\sigma]}}$.
 \end{theorem}
-
-\js{completeness should not require annotations if the closing substitution is computed by the completeness lemmas}
 
 \begin{theorem}[Checking completeness]
   If\/ $\HasType[\Eff] \Ctx \E \T$, then there is an annotated variant
