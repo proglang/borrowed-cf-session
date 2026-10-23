@@ -29,6 +29,10 @@
 \let\sectionsymbol\S
 \crefformat{section}{\sectionsymbol\,#2#1#3}
 \Crefformat{section}{\sectionsymbol\,#2#1#3}
+\crefmultiformat{section}
+  {\sectionsymbol\sectionsymbol\,#2#1#3}{ and~#2#1#3}{, #2#1#3}{ and~#2#1#3}
+\Crefmultiformat{section}
+  {\sectionsymbol\sectionsymbol\,#2#1#3}{ and~#2#1#3}{, #2#1#3}{ and~#2#1#3}
 
 \input{symbols}
 \input{rules}
