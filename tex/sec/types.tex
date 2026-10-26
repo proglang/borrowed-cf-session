@@ -7,7 +7,7 @@ $\Unr$, $\Mobile$, and $\Bounded$ classify the values, contexts, and sessions
 that may be duplicated, transported across processes, or split; an auxiliary
 predicate $\SNew$ restricts the sessions that may be created fresh. Second,
 contexts are quotiented by equations that respect this classification, session
-types are quotiented by a standard equational theory, and weakening is
+types are quotiented by the equational theory of CFSTs, and weakening is
 controlled by a subcontext preorder. Third, the typing judgments for constants,
 expressions, and processes use these classifications to enforce protocol
 fidelity and ownership transfer.
@@ -19,7 +19,7 @@ The ordered product
 $\Ctx[1]\CtxSeq\Ctx[2]$ records that the resources in $\Ctx[1]$ must be used
 before the resources in $\Ctx[2]$. The unordered product
 $\Ctx[1]\CtxPar\Ctx[2]$ records independent resources. When a rule is
-parametric in either constructor, we write $\ctxcolor{\Ctx[1]\CtxPatOp\Ctx[2]}$
+parametric, we write $\ctxcolor{\Ctx[1]\CtxPatOp\Ctx[2]}$
 for either $\Ctx[1]\CtxSeq\Ctx[2]$ or $\Ctx[1]\CtxPar\Ctx[2]$.
 
 \begin{figure}
@@ -61,7 +61,7 @@ T}{\SVar}})}{\SWait}$ (rule \RuleName{Te-Seq2}).
 A mobile session has the form $\SSeq\SAcq\S$ with $\Bounded\S$. The leading
 acquire marks the suffix of a remotely borrowed endpoint, and boundedness ensures that the
 borrowed prefix can be completed without consuming an unbounded residual owned
-elsewhere. This is the essential case: a borrowed endpoint may move across
+elsewhere. This case is essential: a borrowed endpoint may move across
 processes because its protocol is a finite, bounded
 obligation. Mobility extends from sessions to ordinary values: $\BUnit$ is mobile;
 products and variants are mobile pointwise; a function value is mobile if its
@@ -72,7 +72,7 @@ fork or send only closures whose captured assumptions are mobile.
 A companion predicate $\Unr\T$ (and $\Unr\Ctx$ on contexts) identifies the
 duplicable fragment: unit, componentwise-unrestricted products and variants,
 and functions of direction $\DirNone$, lifted pointwise to contexts. It governs
-contraction, weakening, and recursive-function introduction, and every
+contraction, weakening, and recursive-function introduction. Every
 unrestricted context is also mobile. The full definition is shown in
 \cref{fig:omitted-predicates} in the supplement.
 
@@ -133,7 +133,7 @@ The second axiom admits unused unrestricted assumptions. By
 \RuleName{T-Weaken}, a derivation obtained in some context can be used in
 any larger context related by~$\SubCtx$.
 
-Session types themselves are quotiented by a standard equational theory used by
+Session types themselves are quotiented by the equational theory of CFSTs used in
 type conversion: sequential composition is associative with $\SSkip$ as neutral
 element, recursion unfolds equi-recursively, and a continuation distributes
 homomorphically through internal and external choice. The induced congruence is
@@ -207,7 +207,8 @@ collected in \cref{fig:session-laws} in the supplement.
   \label{fig:process-typing}
 \end{figure}
 
-\Cref{fig:constant-typing} assigns closed types to constants. Channel creation
+\Cref{fig:constant-typing} defines a family of rules that assign closed types to
+constants. Channel creation
 produces a pair of dual endpoints, each protected by an initial $\SAcq$ marker
 and closed respectively by $\STerm$ and $\SWait$. The session supplied to
 $\CNew$ must be a source protocol: the side condition $\SNew\S$ forbids
@@ -297,15 +298,16 @@ The need for the purity constraints in the application of ordered functions and
 the construction of ordered pairs arises from the difference between variable
 usage and consumption of the actual resources. A channel is consumed, for
 example, by passing it to $\CRecv$. One the other hand, applying the identity
-function $\termcolor{\Varid{id}}$ to a variable already counts this as a usage
-of said variable. The problem is demonstrated by the expression
+function $\termcolor{\Varid{id}}$ to a variable counts as a usage. The problem
+is demonstrated by the expression
 %
 \(
   \ELetPair{c_1}{c_2}{\EApp{\CSplit_{\SSeq{\S[1]}{\S[2]}}}{c}}
   \!\termcolor{\EPairOrd {\EApp{\Varid{id}}{c_1}} {\EApp{f}{c_2}}}
 \).
 %
-The effect system ensures that $\EVarf$ does not communicate on $\EVarc[2]$.
+The effect system ensures that $\EVarf$ does not communicate on $\EVarc[2]$
+because $\EVarc[1]$ is not consumed.
 
 % The function $\termcolor{f}$ must not be perform communication operations on
 % $\termcolor{c_2}$ before the communication according to $\S[1]$ has taken place

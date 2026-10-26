@@ -5,7 +5,7 @@ The calculus presented in \cref{sec:expr-proc,sec:types,sec:semantics}
 records ownership and ordering in a linear type system and, dynamically, in
 binder groups.  This section defines an untyped run-time calculus that is
 closer to an actual implementation of splitting and borrowing.  The
-run-time calculus provides the tools, ordinary channels
+run-time calculus provides the tools, primitive channels
 and synchronization cells, so that translated well-typed source processes
 preserve the ordering guarantees established by the type system and the direct
 semantics of \cref{sec:semantics}.
@@ -14,10 +14,12 @@ semantics of \cref{sec:semantics}.
   \setlength{\abovedisplayskip}{0pt}%
   \setlength{\belowdisplayskip}{0pt}%
   \begin{align*}
-    \mathsf{Flag} &\grmeq \FlagInit \grmor \FlagDropped &
+    \mathsf{Flag} &\grmeq \FlagInit \grmor \FlagDropped
+    & \mathsf{Flags} &\grmeq \mathsf{FlagName} \to \mathsf{Flag}
+    \\
     \mathsf{CState} &\grmeq
       \{\StateOpen,\StateClosed\}
-      \times \mathsf{Flag}^{*} \times \mathsf{Flag}^{*} \\
+      \times \mathsf{Flags} \times \mathsf{Flags} \\
     \mathsf{Config} &\grmeq (C,S,E) & \text{where } & S:C\to\mathsf{CState}
   \end{align*}
   \caption{Untyped run-time syntax}
@@ -48,7 +50,7 @@ semantics of \cref{sec:semantics}.
 Here $C$ is a finite set of primitive channel names, $S:C\to\mathsf{CState}$
 maps each channel to its current state, and $E$ is a finite multiset of untyped
 expressions executing concurrently.  A channel state records whether the
-channel is open and a list of synchronization flags for its two
+channel is open and a finite map from flag names $z$ to synchronization flags for its two
 endpoints.  A flag in state $\FlagInit$ records that the corresponding $\CDrop$
 is still pending; after the drop, its state is $\FlagDropped$ and an $\CAcq$
 may proceed.                   
@@ -78,8 +80,7 @@ no separate congruence rule.
 
 For $S(\TEc)=(b,\TFlags[0],\TFlags[1])$, define $\USOpen \Leftrightarrow b = \StateOpen$
 and $\USFlags=\TFlags[\TEs]$. The notation
-$\USSideUpdate{\TFlags}$ updates only that endpoint's flag sequence.  For
-the rules, we give each occurrence in a flag sequence a distinct name.  In a
+$\USSideUpdate{\TFlags}$ updates only that endpoint's flag mapping.  In a
 well-formed handle, its post-component $\V$ is either $\USUnit$ or a reference
 to a flag on the same endpoint.  The pre- and post-references in the resulting
 handles encode the dependency.
@@ -91,11 +92,12 @@ handles encode the dependency.
 The pattern $E\uplus\USMulti{\E}$ selects one occurrence of $\E$ from the
 multiset; the communication, choice, and close rules select two distinct
 occurrences.  We write $\ECapp\E$ for expression $\E$ in evaluation context
-$\EC$.  The remote-split rule allocates its new cell at the
-front of the selected endpoint's flag list.  In the drop and acquire rules, the
-name $\TEVarz$ in the selected handle identifies a unique cell in $\USFlags$;
-the displayed sequence decomposition therefore fixes the cell to update or
-remove.
+$\EC$.  The remote-split rule allocates its new cell with a fresh name in the
+selected endpoint's flag mapping.  In the drop and acquire rules, the
+name $\TEVarz$ in the selected handle identifies a unique cell in $\USFlags$.
+% ;
+% the displayed sequence decomposition therefore fixes the cell to update or
+% remove.
 
 The expression step and discard leave the channel state unchanged; fork adds
 one expression to the soup.  New adds an open channel with an already-acquired
@@ -104,7 +106,7 @@ resulting handles, whereas a remote split inserts a fresh $\FlagInit$ flag at
 the front of the endpoint's list.  Drop changes that flag to
 $\FlagDropped$; acquire removes it once it is ready.  Communication and choice
 act on opposite endpoints of an open channel.  Close requires both flag
-sequences to be empty and marks the channel closed.  These steps operate
+mapping to be empty and marks the channel closed.  These steps operate
 directly on the selected expressions and channel state, so no parallel or
 binder closure rules are needed.
 
@@ -146,10 +148,10 @@ composition combines disjoint channel sets and maps and takes the multiset union
 of expressions.  A restriction chooses a fresh primitive channel $\TEc$,
 translates its two binder groups for endpoints $\TEc[0]$ and $\TEc[1]$, and
 translates the body under the substitutions they produce.  It records the
-resulting flag sequences in $S(\TEc)$ and adds no expression of its own.
+resulting flag mappings in $S(\TEc)$ and adds no expression of its own.
 
 The binder-group function $\mathcal B$ returns a substitution whose domain is
-exactly the bound variables, together with an ordered flag sequence.  Its helper
+exactly the bound variables, together with a flag mapping.  Its helper
 $\mathcal L$ distributes a plain channel triple across one sequential segment:
 the first variable receives the pre-reference, the last the post-reference, and
 intermediate variables receive neither.  A sole variable receives both.  Each
@@ -161,7 +163,7 @@ empty, and to $\FlagInit$ otherwise.  Substitution unions have disjoint domains:
 restriction extends the substitution with the bindings for its two
 endpoints before translating the body.
 
-The initial flag lists follow source separator order, whereas remote split
+The initial flag mappings can be arranged in source separator order, whereas remote split
 allocates each new cell at the front.  Synchronization depends on the
 pre- and post-references in the handles, so physical storage order can vary
 while preserving the same dependencies.
@@ -169,11 +171,10 @@ while preserving the same dependencies.
 % used by Agda, front insertion shifts every existing reference on that
 % endpoint by one throughout the expression multiset, including inside
 % closures and evaluation contexts.
-Acquire removes its referenced cell and
-renumbers the surviving references.  With the named references used in
+Acquire removes its referenced cell from the mapping.  With the named references used in
 \cref{fig:unr-process-reduction}, both updates preserve the names of surviving
-cells.  The image relation in \cref{sec:simulation} accounts for these
-storage choices by consistent flag permutations.
+cells.  The image relation in \cref{sec:simulation} accounts for renamings of
+flag names between the translation and the image of a step.
 
 %%% Local Variables:
 %%% mode: latex

@@ -55,16 +55,17 @@ such that $\Proc \PReduce \Proc*$\!.
 
 A canonical image $\mathsf{Image}_0(\Proc,X_0)$ represents the translation of
 a closed source process with each endpoint's flags in binder-group order.
-It allows fresh-name choices, endpoint orientations, channel and thread
-placement, and unused closed channels and unit threads.  Write $X_0\approx^{s}X$ when the two
-configurations differ by finite permutations of the flag occurrences at
+It accommodates fresh-name choices, endpoint orientations, unused closed
+channels, and unit threads.  Write $X_0\approx^{s}X$ when the two 
+configurations differ by renaming of the flag name occurrences at
 each endpoint, applied simultaneously to their references in every
-expression.  A permutation $\pi_{c,s}$ acts by
-\[
-  F'_{c,s}[\pi_{c,s}(i)]=F_{c,s}[i],\qquad
-  (c^s,i)\longmapsto(c^s,\pi_{c,s}(i)).
-\]
-The action reaches references under expression binders and in evaluation
+expression.
+% A permutation $\pi_{c,s}$ acts by
+% \[
+%   F'_{c,s}[\pi_{c,s}(i)]=F_{c,s}[i],\qquad
+%   (c^s,i)\longmapsto(c^s,\pi_{c,s}(i)).
+% \]
+The renaming reaches references under expression binders and in evaluation
 contexts; channel liveness and ordinary endpoint names are unchanged.
 Define the image relation by
 \[
@@ -73,7 +74,7 @@ Define the image relation by
   \exists X_0.\ \mathsf{Image}_0(\Proc,X_0)\land X_0\approx^{s}X.
 \]
 The translation of a closed process produces an image,
-$\Proc\ImageRel\TransP[\emptyset]{\Proc}$, using the identity permutation.
+$\Proc\ImageRel\TransP[\emptyset]{\Proc}$, using the identity renaming.
 Steps are invariant under equivalence.
 Simulations match one source step with one target step.
 
@@ -89,32 +90,32 @@ Simulations match one source step with one target step.
   $\Proc \PReduce \Proc*$ and $\Proc* \ImageRel X'$.
 \end{theorem}
 
-\emph{Proof sketch.}
-Use an auxiliary target reduction that permits remote split to insert at
-any gap.  Consistent flag permutation is a strong bisimulation for this
-relation: drop and acquire address the corresponding cells, and expression
-steps commute with the reference action.  Moreover, each auxiliary step has
-an equivalent result obtained by a step of the fixed-front target.
-Only remote split needs a change.  If canonical insertion occurs at slot
-$k$, extend the old canonical-to-physical permutation $\pi$ by
-\quad\(
-  \pi^+(k)=0,\qquad
-  \pi^+(\operatorname{ins}_k(i))=\pi(i)+1,
-\)\quad
-where $\operatorname{ins}_k(i)=i$ for $i<k$ and $i+1$ otherwise.
-The new canonical cell maps to the physical front cell; old cells map to
-their shifted physical positions.  Applying this permutation to the whole
-result, including both inherited handle components and the evaluation
-context, preserves the synchronization dependencies.
+% \emph{Proof sketch.}
+% Use an auxiliary target reduction that permits remote split to insert at
+% any gap.  Consistent flag permutation is a strong bisimulation for this
+% relation: drop and acquire address the corresponding cells, and expression
+% steps commute with the reference action.  Moreover, each auxiliary step has
+% an equivalent result obtained by a step of the fixed-front target.
+% Only remote split needs a change.  If canonical insertion occurs at slot
+% $k$, extend the old canonical-to-physical permutation $\pi$ by
+% \quad\(
+%   \pi^+(k)=0,\qquad
+%   \pi^+(\operatorname{ins}_k(i))=\pi(i)+1,
+% \)\quad
+% where $\operatorname{ins}_k(i)=i$ for $i<k$ and $i+1$ otherwise.
+% The new canonical cell maps to the physical front cell; old cells map to
+% their shifted physical positions.  Applying this permutation to the whole
+% result, including both inherited handle components and the evaluation
+% context, preserves the synchronization dependencies.
 
-For forward simulation, take the canonical source-step simulation, transport
-its target step along the image permutation using the auxiliary
-bisimulation, and replace the transported step by its fixed-front
-representative.  Composing the resulting permutations gives an image of the
-source reduct.  This last replacement is necessary because transporting a
-front insertion need not preserve its numerical gap.  For backward
-simulation, every fixed-front step is an auxiliary step, so the auxiliary
-backward simulation up to flag permutation applies directly.
+% For forward simulation, take the canonical source-step simulation, transport
+% its target step along the image permutation using the auxiliary
+% bisimulation, and replace the transported step by its fixed-front
+% representative.  Composing the resulting permutations gives an image of the
+% source reduct.  This last replacement is necessary because transporting a
+% front insertion need not preserve its numerical gap.  For backward
+% simulation, every fixed-front step is an auxiliary step, so the auxiliary
+% backward simulation up to flag permutation applies directly.
 
 \subsection{Soundness and Completeness for Algorithmic Typing}
 \label{sec:metatheory/algorithmic}

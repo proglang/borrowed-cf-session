@@ -3,7 +3,7 @@
 
 This section presents a small-step operational semantics for the core language of
 \cref{fig:syntax}.  
-
+%
 \begin{figure}[t]
   \begin{mathpar}
     \RuleProcRedExp \and
@@ -24,18 +24,16 @@ This section presents a small-step operational semantics for the core language o
   \caption{Process reduction ($\Proc \PReduce \Proc$)}
   \label{fig:process-reduction}
 \end{figure}
-
-We classify values $\U, \V$ as expressions that are the usual weak-head normal
-forms: constants, variables acting as channel names, abstractions, injections
+%
+Values $\U, \V$ are expressions in weak-head normal
+form: constants, variables acting as channel names, abstractions, injections
 of values, and pairs of values. Evaluation contexts $\EC$ are standard except
-for the cases for directed application where the direction changes the
+for directed application where the direction changes the
 evaluation order. A process-local context $\FC$ embeds an evaluation context in
-a single running process. Formal specifications of all three categories are
-given in \cref{fig:values-evaluation-contexts}.
+a single running process.  \Cref{fig:values-evaluation-contexts} specifies all three categories.
 
-We omit the presentation of call-by-value expression reduction
-$\E[1]\EReduce\E[2]$, found in the supplement in
-\cref{fig:expression-reduction}. It includes the standard
+We call-by-value expression reduction
+$\E[1]\EReduce\E[2]$ (see \cref{fig:expression-reduction}) with the standard
 computational steps for beta-reduction, sequencing, pair and variant
 elimination, recursive unfolding, and closure under expression contexts.
 
@@ -43,8 +41,8 @@ Process congruence $\Proc\Congruent\ProcQ$ is defined as the standard structural
 configurations: parallel composition is associative and commutative with unit
 $\PExp{\CUnit}$, independent channel restrictions commute, and restrictions may
 move across parallel composition. 
-Its rules, found in the supplement in \cref{fig:configuration-congruence}, are used only to rearrange a
-configuration so that a redex is exposed.
+Its rules, found in the supplement in \cref{fig:configuration-congruence}, are
+used to expose a redex by rearranging a configuration.
 
 \Cref{fig:process-reduction} gives the process reduction relation $\Proc\PReduce\ProcQ$.
 There are three groups of rules: ordinary computation inside a process, synchronization
@@ -54,7 +52,7 @@ Rule \RuleName{R-Exp} embeds an expression step in the selected process-local co
 Rule \RuleName{R-New} introduces a fresh channel restriction and returns the two
 endpoints as a pair.  Each endpoint is placed behind an initial separator
 in its binder group, matching the acquiring session type assigned to the
-restriction introduced by channel creation in \cref{fig:process-typing}.  Rule \RuleName{R-Fork} spawns the
+restriction by channel creation in \cref{fig:process-typing}.  Rule \RuleName{R-Fork} spawns the
 thunked process in parallel and returns unit to the forking process.
 
 Communication rules operate on the heads of dual binder groups.  Rule

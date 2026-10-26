@@ -98,10 +98,10 @@ session types $\S$. Session types are either $\SSkip$ or use
 sequential composition $\SSeq\S\S$ as their central
 connective. They include communication, branching/selection,
 closing/waiting, drop/acquire (new to this work), and recursion.
-Typing environments $\Ctx$ are tree-shaped---inspired by the tree-shaped
-contexts of \citet{DBLP:journals/bsl/OHearnP99}---and combine variable bindings
+Typing environments $\Ctx$ are inspired by the tree-shaped
+contexts of \citet{DBLP:journals/bsl/OHearnP99} and combine variable bindings
 using ordered ($\Ctx\CtxSeq\Ctx$) and unordered ($\Ctx\CtxPar\Ctx$)
-composition.
+composition \cite{DBLP:conf/tldi/AhmedW03}.
 
 The expression group separates constants $\C$ from compound expressions $\E$.
 Constants cover unit, channel creation, process creation, communication primitives,
@@ -111,8 +111,8 @@ together with their types in the next section.
 Expressions add variables, abstraction and application, sequencing, products,
 sums, and recursion. Application carries an explicit direction annotation. We
 distinguish leftward ($\DirLeft$) and rightward ($\DirRight$) application
-syntactically. The direction determines the evaluation order and has to fit the
-function's direction. Throughout this paper, omitted direction annotations or
+syntactically. The function's direction determines the evaluation order of
+its application.  Throughout this paper, omitted direction annotations or
 plain juxtaposition are understood as standard, rightward application.
 
 A binder group $\BindGroup$ is a list of channel names $\EVar$ and
