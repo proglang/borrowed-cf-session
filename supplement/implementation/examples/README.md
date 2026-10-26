@@ -12,23 +12,9 @@ The examples are located in two subdirectories:
 
 ## Running Examples
 
-The examples can be run either manually, e.g.
-
-```bash
-cargo run -- examples/positive/renderUser.bgv
-```
+The examples can be run manually, e.g.
 
 or for an already installed interpreter:
 ```bash
 cstb examples/positive/renderUser.bgv
 ```
-
-The examples can also be run all at once via
-
-```bash
-cargo test
-```
-
-The `cargo test` command runs a unit test that ensures that each `.bgv` file in
-the `positive/` directory typechecks, and that each `.bgv` file in the
-`negative/` directory does not.
