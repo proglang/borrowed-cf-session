@@ -15,11 +15,12 @@ Minor rewordings in the introduction.
 
 > We will add running examples, explain purity and boundedness,
 
-The "Types" section has been enriched with examples.
+In the "Types" section, we continued the example from sec 2, 
+added explanation of purity and boundedness. 
 
 > clarify the scope of the shared-memory target,
 
-Introduction (rewording); conclusion (new paragraph)
+Introduction (slight rewording); conclusion (new paragraph)
 
 > simplify the synchronization notation,
 
@@ -46,16 +47,16 @@ It is also included in the supplement to this revision.
 
 We changed the low-level run-time calculus from process notation (in
 the submission) to a soup-of-processes notation (in the revision).
-In this notation (see ref [1]), a configuration is represented by a
+In this notation (inspired by ref [1]), a configuration is represented by a
 set of channels and a multiset of concurrently executing
 expressions. In our case, channels are extended by machinery to manage
-synchronization flags, a mapping from channel ends to list of flags. 
+synchronization flags, a mapping from channel ends to lists of flags. 
 
 This change elides the need for structural congruence in the run-time
 calculus, while retaining behavior equivalent to the  old run-time
 calculus. (Note, we did not establish this equivalence, which would
 amount to proving a harmony result between the old and the new
-calculus.) 
+target calculus.) 
 
 Regarding the motivation for this change, we mentioned in the rebuttal:
 
@@ -65,10 +66,9 @@ Regarding the motivation for this change, we mentioned in the rebuttal:
 > equivalent forms. A process-soup target gives processes and restricted
 > resources explicit positions, enabling stable inversion.
 
-While reduction in the (new) target calculus is closed under
+In the (new) target calculus reduction is closed under
 permutations of channels and expression processes, this equivalence is
 intrinsic in the soup-of-processes representation. 
-
 
 > The artifact will include the Agda development, Rust typechecker, and examples.
 
@@ -174,13 +174,13 @@ Rephrased the paragraph introducing the boundedness predicate.
 
 Extended "Types" with type-level reasoning why the restrictions on
 `lsplit`/`rsplit` lose no expressivity. Also extended "Dynamics" with an
-explanation on the operational level.  
+explanation on the operational level.
 
 > ## Review B: remaining comments
 > 
 > ### Tree-shaped contexts and BI
 
-Adopted with reference *inspired by BI*.
+Adopted with reference *inspired by BI* + references.
 
 > ### Running examples
 
