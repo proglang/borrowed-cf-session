@@ -12,13 +12,13 @@ Preservation
 yields the usual safety invariant across reduction steps.
 
 \begin{theorem}[Expression preservation]
-  If\/ $\HasType \SessCtx \E \T$ and $\E \EReduce \E*$\!, then
-  $\HasType \SessCtx {\E*} \T$.
+  If\/ $\HasType{\SessCtx}{\E}{\T}$ and $\E \EReduce \E*$\!, then
+  $\HasType{\SessCtx}{\E*}{\T}$.
 \end{theorem}
 
 \begin{theorem}[Process preservation]
-  If\/ $\ProcHasType \SessCtx \Proc$ and $\Proc \PReduce \Proc*$\!, then
-  $\ProcHasType \SessCtx {\Proc*}$\!.
+  If\/ $\ProcHasType{\SessCtx}{\Proc}$ and $\Proc \PReduce \Proc*$\!, then
+  $\ProcHasType{\SessCtx}{\Proc*}$\!.
 \end{theorem}
 
 We complement preservation with progress. Expressions are not guaranteed to
@@ -27,7 +27,7 @@ reduction of constants is part of the process semantics.
 
 \begin{theorem}[Expression progress]
   \label{thm:expression-progress}
-  If\/ $\HasType \SessCtx \E \T$, then either $\E$ is a value, or there exist
+  If\/ $\HasType{\SessCtx}{\E}{\T}$, then either $\E$ is a value, or there exist
   an evaluation context $\EC$, constant $\C$ and va
   lue $\V$ such that
   $\E=\ECapp{\EApp\C\V}$, or there exists an $\E*$ such that $\E \EReduce \E*$\!.
@@ -42,7 +42,7 @@ such that $\Proc \PReduce \Proc*$\!.
 
 \begin{theorem}[Process progress]
   \label{thm:process-progress}
-  If\/ $\ProcHasType \CtxEmpty \Proc$\!, then $\Blocked\!\Proc$\!, or there exists a
+  If\/ $\ProcHasType{\CtxEmpty}{\Proc}$\!, then $\Blocked\!\Proc$\!, or there exists a
   $\Proc*$ such that $\Proc \PReduce \Proc*$\!.
 \end{theorem}
 
@@ -79,13 +79,13 @@ Steps are invariant under equivalence.
 Simulations match one source step with one target step.
 
 \begin{theorem}[Forward simulation]
-  If\/ $\ProcHasType \CtxEmpty \Proc$, $\Proc \ImageRel X$, and
+  If\/ $\ProcHasType{\CtxEmpty}{\Proc}$, $\Proc \ImageRel X$, and
   $\Proc \PReduce \Proc*$, then there exists $X'$ such that
   $X \TPReduce X'$ and $\Proc* \ImageRel X'$.
 \end{theorem}
 
 \begin{theorem}[Backward simulation]
-  If\/ $\ProcHasType \CtxEmpty \Proc$, $\Proc \ImageRel X$,
+  If\/ $\ProcHasType{\CtxEmpty}{\Proc}$, $\Proc \ImageRel X$,
   and $X \TPReduce X'$, then there exists $\Proc*$ such that
   $\Proc \PReduce \Proc*$ and $\Proc* \ImageRel X'$.
 \end{theorem}
@@ -130,21 +130,21 @@ subterms are left unchanged. Our completeness results are independent of our
 incomplete typing heuristic.
 
 \begin{theorem}[Algorithmic typing soundness]
-  If either $\CheckType \E \AT \Eff$ or $\InferType \E \AT \Eff$
+  If either $\CheckType{\E}{\AT}{\Eff}$ or $\InferType{\E}{\AT}{\Eff}$
   for some closing substitution $\sigma \models \CSet$, then
-  $\HasType[\Eff] {\Ctx\metacolor{[\sigma]}} {\E{[\sigma]}} {\AT{[\sigma]}}$.
+  $\HasType[\Eff]{\Ctx\metacolor{[\sigma]}}{\E{[\sigma]}}{\AT{[\sigma]}}$.
 \end{theorem}
 
 \begin{theorem}[Checking completeness]
-  If\/ $\HasType[\Eff] \Ctx \E \T$, then there is an annotated variant
-  $\E*$ of $\E$ with $\CheckType {\E*} \T {\Eff*}$ for some
+  If\/ $\HasType[\Eff]{\Ctx}{\E}{\T}$, then there is an annotated variant
+  $\E*$ of $\E$ with $\CheckType{\E*}{\T}{\Eff*}$ for some
   constraint set $\CSet$, effect $\Eff* \le \Eff$, and closing substitution
   $\sigma \models \CSet$.
 \end{theorem}
 
 \begin{theorem}[Inference completeness]
-  If\/ $\HasType[\Eff] \Ctx \E \T$, then there is an annotated variant
-  $\E*$ of $\E$ with $\InferType {\E*} \AT {\Eff*}$ for some type $\AT$,
+  If\/ $\HasType[\Eff]{\Ctx}{\E}{\T}$, then there is an annotated variant
+  $\E*$ of $\E$ with $\InferType{\E*}{\AT}{\Eff*}$ for some type $\AT$,
   constraint set $\CSet$, effect $\Eff* \le \Eff$, and closing substitution
   $\sigma \models \CSet$ with $\AT{[\sigma]} \simeq \T$.
 \end{theorem}

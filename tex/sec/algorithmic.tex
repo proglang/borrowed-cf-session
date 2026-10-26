@@ -83,7 +83,7 @@ $\Eff$, and a set of constraints $\CSet$. The checking judgment $\CheckType \E
 \AT \Eff$ takes as input the context $\Ctx$, expression $\E$, and type $\AT$.
 It returns the expression's effect $\Eff$ as well as a set of constraints
 $\CSet$. Judgements make use of context join
-$\Ctx[1] \CtxJoin*[\raisebox{-.4ex}{\kern1pt\relax$\scriptstyle\Dir$}] \Ctx[2]$, which
+$\Ctx[1] \CtxJoinText \Ctx[2]$, which
 composes two contexts according to the direction $\Dir$, and context restriction
 $\CtxRestrict*{X}$, which restricts a context to a set of variables $X$; the
 definitions are given in \cref{fig:context-operators}.

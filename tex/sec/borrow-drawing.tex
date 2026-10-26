@@ -7,11 +7,11 @@
 \newlength\activationWidth
 \newlength\firstStateOffset
 
-\msgSelfWidth=0.9cm\relax
-\msgSelfHeight=0.25cm\relax
-\msgSelfOffset=0.15cm\relax
-\activationWidth=0.14cm\relax
-\firstStateOffset=0.08cm\relax
+\setlength{\msgSelfWidth}{0.9cm}
+\setlength{\msgSelfHeight}{0.25cm}
+\setlength{\msgSelfOffset}{0.15cm}
+\setlength{\activationWidth}{0.14cm}
+\setlength{\firstStateOffset}{0.08cm}
 
 \newsavebox\SplitDrawingLocal
 \newsavebox\SplitDrawingRemote
@@ -203,12 +203,12 @@
 
 \begin{figure}[t]
   \begin{subfigure}[t]{\wd\SplitDrawingLocal}
-    \usebox\SplitDrawingLocal
+    \usebox{\SplitDrawingLocal}
     \caption{Local borrow}
     \label{fig:borrow-lifecycle-msc-local}
   \end{subfigure}\hfill
   \begin{subfigure}[t]{\wd\SplitDrawingRemote}
-    \usebox\SplitDrawingRemote
+    \usebox{\SplitDrawingRemote}
     \caption{Remote borrow}
     \label{fig:borrow-lifecycle-msc-remote}
   \end{subfigure}

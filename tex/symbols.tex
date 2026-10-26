@@ -188,6 +188,8 @@
   \Ctx[#2]\metacolor{{\mkern1.2mu}|_{\IfBooleanTF{#1}{#3}{\Fv(#3)}}}
 }
 \NewDocumentCommand\CtxJoin{s O{\Dir}}{\stackrel{\IfBooleanT{#1}{\smash}{#2}}{\metacolor{\bowtie}}}
+% A squashed variant to be used in prose.
+\newcommand\CtxJoinText{\CtxJoin*[\raisebox{-.4ex}{\kern1pt\relax$\scriptstyle\Dir$}]}
 \newcommand*\CtxAlgJoinCheck[2]{
   \CtxRestrict{#1} \CtxJoin \CtxRestrict{#2} \SubCtx \Ctx \uparrow \CSet[0]
 }
