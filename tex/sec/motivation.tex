@@ -403,8 +403,9 @@ type is illegal in regular session type systems (e.g.,
 \citet{DBLP:journals/jfp/GayV10,DBLP:conf/esop/LindleyM15,Gay_Vasconcelos_2025}) because
 they syntactically restrict recursion to tail position. Context-free
 session types lift this restriction as their composition operator $S_1;S_2$ connects
-two sessions sequentially: the composed session comprises the
-actions of $S_1$ followed by the actions of $S_2$.
+two sessions sequentially.
+% : the composed session comprises the
+% actions of $S_1$ followed by the actions of $S_2$.
 % \footnote{One
 %   might argue that CFSTs are close to Honda's original vision for
 %   session types \cite{DBLP:conf/concur/Honda93}, which also features
@@ -426,8 +427,8 @@ explicitly throughout the code; a pattern we call \emph{resource-passing
 the continuation type of the channel, which is \ensuremath{\sigma } in this example. Second,
 the \ensuremath{\CodeLbl{\Conid{Node}}} branch of \ensuremath{\Varid{sendTree}} relies on polymorphic recursion. To see
 this, consider the type of \ensuremath{\Varid{c}_{2}} in
-lines~\ref*{ln:sendTree/c2-def}--\ref*{ln:sendTree/c2-use}. To invoke \ensuremath{\Varid{sendTree}}
-recursively, we need to instantiate the type argument \ensuremath{\sigma } with
+lines~\ref*{ln:sendTree/c2-def}--\ref*{ln:sendTree/c2-use}. The recursive
+invocation of \ensuremath{\Varid{sendTree}} instantiates the type argument \ensuremath{\sigma } with
 \ensuremath{\Conid{TreeChan}\mathop{;}\sigma } rather than just \ensuremath{\sigma }, which is the telltale for polymorphic
 recursion.
 
@@ -474,8 +475,8 @@ session type and leaves the residual type for the next use of \ensuremath{\Varid
 \subsection{Local and Remote Borrowing}
 \label{sec:local-remote-borr}
 
-\Cref{sec:borr-from-cont} demonstrated \emph{local borrowing,} where the borrows
-remain in the same process and are processed sequentially, following the
+\Cref{sec:borr-from-cont} demonstrated \emph{local borrowing,} where borrows
+remain in the same process and are processed sequentially in
 evaluation order.  In this local setting, operations on borrows are cheap:
 borrowing merely names the next prefix of the same channel and leaves the suffix
 for the surrounding computation. No other process can race with the
@@ -483,9 +484,9 @@ continuation, so the evaluation order of the program and the left-to-right order
 enforced by typing already provide the required sequencing.
 
 However, some situations require that we send a borrow to
-another process. As an example, suppose a server-side renderer streams
+another process. As an example, suppose a server-side renderer that streams
 HTML nodes to a client instead of constructing a DOM tree in
-memory first. Here is an excerpt of a protocol for such a renderer.
+memory first. Here is an excerpt of the recursive protocol for such a renderer.
 %
 {\TightCode[\smallskipamount]\HtmlProtocolDefn}
 %
@@ -506,7 +507,7 @@ the \ensuremath{\CodeLbl{\Conid{Node}}} alternative of \ensuremath{\Conid{TreeCh
 Now consider the renderer presented in \cref{lst:rendering-example}. Via a
 channel of type \ensuremath{\Conid{HtmlChan}\mathop{;}\CodeTy{Close}} the function  \ensuremath{\Varid{renderUser}} emits a user panel
 whose first child is computed by another process while the main process loads
-user messages, say, from a database. We assume that \ensuremath{\Varid{renderProf}} and
+user messages, say, from a database. We assume that \ensuremath{\Varid{renderProfile}} and
 \ensuremath{\Varid{renderMsgArea}} render one HTML node on a channel of type \ensuremath{\Conid{HtmlChan}\mathop{;}\CodeTy{Drop}} and
 \ensuremath{\Conid{HtmlChan}}, respectively. The type \ensuremath{\CodeTy{Drop}} is a new session type that comes with
 a companion type \ensuremath{\CodeTy{Acq}}. They indicate the placement of synchronization
@@ -530,7 +531,8 @@ and \ensuremath{\CodeOp{acquire}} form the synchronization point between the two
 underlying run-time mechanism is described in~\cref{sec:impl-local-remote}.
 
 This setup is also reflected in the types that result from a remote borrow. As
-before, comments show the type of \ensuremath{\Varid{c}} after the preceding operation. The type of
+before, comments in~\cref{lst:rendering-example} show the type of \ensuremath{\Varid{c}} after the
+preceding operation. The type of
 the borrowed session passed to \ensuremath{\Varid{renderProfile}} is shown in
 line~\ref*{ln:renderExample/fork}. That session ends in \ensuremath{\CodeTy{Drop}}. After the \ensuremath{\CodeOp{fork}}
 the type of \ensuremath{\Varid{c}} starts with \ensuremath{\CodeTy{Acq}}. The types \ensuremath{\CodeTy{Acq}} and \ensuremath{\CodeTy{Drop}} only arise from
@@ -600,8 +602,8 @@ to handle in a correctness proof. The specification works on an elaborated core
 language, \thecalculus. Elaboration replaces borrowing with explicit functional
 splitting operators. This translation is analogous to a translation formally
 presented and proved correct by \citet{DBLP:journals/pacmpl/SaffrichS0V25}. The
-novelty of our work is the 
-presence of \emph{two} operators, \ensuremath{\CodeOp{lsplit}} for local borrows and \ensuremath{\CodeOp{rsplit}} for
+novelty of our work is to distinguish 
+\emph{two} operators, \ensuremath{\CodeOp{lsplit}} for local borrows and \ensuremath{\CodeOp{rsplit}} for
 remote borrows. Borrows used in the same process elaborate to \ensuremath{\CodeOp{lsplit}} while
 borrows used across a \ensuremath{\CodeOp{fork}} or sent to another process elaborate to \ensuremath{\CodeOp{rsplit}}.
 \Cref{fig:rendering-example-elab} shows the (partial) elaboration of
@@ -618,30 +620,32 @@ introduces a communication channel with two endpoints, but each endpoint is
 described by a \emph{binder group} \ensuremath{[\mkern1mu\relax \Varid{b}_i\mkern1mu]}: a list of channel names and separator markers.
 The names bound by \ensuremath{\Varid{b}_{1}} refer to one channel endpoint, the names in \ensuremath{\Varid{b}_{2}} to the
 other. The binder groups are processed independently and each name stands for
-one borrow. Its working is best illustrated with the example trace.
+one reference to the same channel end. Its working is best illustrated with the example trace.
 As the treatment of the endpoints is symmetric, we concentrate on the first
 binder group.
 
 The reduction in~\cref{fig:local-split-trace} starts at
 the local suffix in \ensuremath{\Varid{renderRest}}. Step~\stepref{2}, the split on \ensuremath{\Varid{c}} following
 the \ensuremath{\CodeOp{select}}, \emph{replaces} the binder for \ensuremath{\Varid{c}} with two fresh channel names,
-\ensuremath{\Varid{c}_{1}} and \ensuremath{\Varid{c}_{2}}. Step~\stepref{3} consumes \ensuremath{\Varid{c}_{1}} leaving only \ensuremath{\Varid{c}_{2}}. The binder
-group \ensuremath{\Varid{c}_{1} \Varid{c}_{2}} is a list of channel names. All operations work on
+\ensuremath{\Varid{c}_{1}} and \ensuremath{\Varid{c}_{2}}, so that  the binder
+group \ensuremath{\Varid{c}_{1} \Varid{c}_{2}} is now a list of channel names. All operations work on 
 these channel names from left to right. To ensure the correct sequencing, the
 semantics does not allow any action on \ensuremath{\Varid{c}_{2}} before \ensuremath{\Varid{c}_{1}} has been consumed. This
 restriction is supported by typing: the \ensuremath{\CodeOp{lsplit}} operation returns an
-\emph{ordered pair,} whose components must be processed and consumed in
-left-to-right order.
+\emph{ordered pair,} whose components must be consumed in
+left-to-right order. Step~\stepref{3} consumes \ensuremath{\Varid{c}_{1}}
+leaving only \ensuremath{\Varid{c}_{2}}.
 
 % The |drop| operation (not used in this example) applied to some |c| just
 % discards |c| if it is the first channel name in the compartment.
 
 On the client side, the processes \ensuremath{\Varid{P}_i} match the communication operations
-performed by \ensuremath{\Varid{renderRest}}. Splitting in \ensuremath{\Varid{P}_i} can evolve bind group \ensuremath{\Varid{b}_i}
-independently of the splitting on \ensuremath{\Varid{c}}. The only constraint is that, in the end
+performed by \ensuremath{\Varid{renderRest}}. Splitting in \ensuremath{\Varid{P}_i} can evolve bind group \ensuremath{\Varid{b}_i} on the
+other channel end
+independently of the splitting on \ensuremath{\Varid{c}}. The only constraint is that, in the end,
 only one channel name is left in each 
-compartment. In this case, matching \ensuremath{\CodeOp{close}} and \ensuremath{\CodeOp{wait}} calls reduce; the channel is closed and
-eliminated.
+compartment. In this case, matching \ensuremath{\CodeOp{close}} and \ensuremath{\CodeOp{wait}} calls reduce
+(Step~\stepref{5}); the channel is closed and eliminated.
 
 Remote borrowing requires the \ensuremath{\CodeOp{acquire}} primitive and
 remote split indicated with the symbol ``\ensuremath{\mathop{\|}}'' in the compartment. As an example, we
@@ -663,7 +667,7 @@ compartment. In step~\stepref{4}, the reduction of \ensuremath{\CodeOp{acquire}\
 leading separator and drops it. In summary, \ensuremath{\CodeOp{rsplit}} replaces one channel name by two fresh
 names separated by ``\ensuremath{\mathop{\|}}'', the marker for a remote split.  \ensuremath{\CodeOp{drop}} is only
 enabled if its argument name comes last before a ``\ensuremath{\mathop{\|}}''. \ensuremath{\CodeOp{acquire}} is only
-enabled if the preceding list segment has been processed as in \ensuremath{[\mkern1mu\relax \mathop{\|}\Varid{c}_{2}\mkern1mu]}.
+enabled if the preceding list segment has been processed as in \ensuremath{[\mkern1mu\relax \mathop{\|}\Varid{c}_{2}\mkern1mu]} and its argument comes first after  ``\ensuremath{\mathop{\|}}''.
 
 \subsection{Implementing Local and Remote Borrowing}
 \label{sec:impl-local-remote}
@@ -671,7 +675,7 @@ enabled if the preceding list segment has been processed as in \ensuremath{[\mke
 We implement the high-level calculus by translation into a low-level run-time
 session calculus with borrowing, \thertcalculus. The run-time calculus is a
 concurrent lambda calculus with the usual session-style communication
-primitives. \thertcalculus is untyped and it comes equipped with
+primitives, modeling a shared-memory target. \thertcalculus is untyped and it comes equipped with
 asynchronous signaling primitives for implementing \ensuremath{\CodeOp{drop}}/\ensuremath{\CodeOp{acquire}}.  The direct
 semantics from~\cref{sec:direct-semant-chann} records ordering constraints in
 binding groups, while the run-time calculus realizes these constraints by associating
@@ -696,12 +700,12 @@ and remote borrowing in the implementation.
 Specifically, a translated channel is represented by a triple \ensuremath{\Varid{in}\otimes \Varid{p}\otimes \Varid{out}}, where \ensuremath{\Varid{p}}
 is a primitive channel name and \ensuremath{\Varid{in}} and \ensuremath{\Varid{out}} are optional names of
 synchronization flags (i.e., they are
-either \ensuremath{\mathord{*}} or a flag name \ensuremath{\Varid{z}}). If the incoming flag is \ensuremath{\Varid{in}\mathrel{=}\Varid{z}}, then channel
+either \ensuremath{\mathord{*}} or a flag name \ensuremath{\Varid{z}}) associated to \ensuremath{\Varid{p}}. If the incoming flag is \ensuremath{\Varid{in}\mathrel{=}\Varid{z}}, then channel
 \ensuremath{\Varid{p}} must be acquired via \ensuremath{\Varid{z}} before it can be used; if \ensuremath{\Varid{in}\mathrel{=}\mathord{*}}, then \ensuremath{\Varid{p}} can just be
 used. Analogously, if the outgoing flag is \ensuremath{\Varid{out}\mathrel{=}\Varid{z}}, then 
 channel \ensuremath{\Varid{p}} must be handed off to \ensuremath{\Varid{z}} after use; no hand off,
 if \ensuremath{\Varid{out}\mathrel{=}\mathord{*}}. \thertcalculus associates each  
-channel end with a list of (named) flags, ranging over \ensuremath{\CodeFlag{drop}} and
+channel end with a list of (named) flags. Their values range over \ensuremath{\CodeFlag{drop}} and
 \ensuremath{\CodeFlag{acq}}.
 
 We first consider taking a local borrow (cf.~\cref{fig:borrow-lifecycle-msc-local}). In
@@ -711,9 +715,9 @@ returns the borrow $c_1=$ \ensuremath{\Varid{in}\otimes \Varid{p}\otimes \mathor
 No new synchronization flag; no explicit handover from
 \ensuremath{\Varid{c}_{1}} to \ensuremath{\Varid{c}_{2}}, because \ensuremath{\Varid{c}_{1}.\Varid{out}\mathrel{=}\Varid{c}_{2}.\Varid{in}\mathrel{=}\mathord{*}}. This simple
 approach has no overhead and is sound because the ordered pair in the source
-type system has already established the left-to-right use (``followed-by'') of
+type system already establishes the left-to-right use (``followed-by'') of
 the two pieces. Both pieces refer to the same underlying
-channel object \ensuremath{\Varid{p}}; typing ensures that using the first piece advances \ensuremath{\Varid{p}} to
+channel \ensuremath{\Varid{p}}; typing ensures that using the first piece advances \ensuremath{\Varid{p}} to
 the state where the second piece starts.
 
 Remote splitting relies on the new synchronization machinery
@@ -725,7 +729,7 @@ the suffix carries a matching incoming obligation to call \ensuremath{\CodeOp{ac
 \ensuremath{\CodeOp{drop}} changes the flag from \ensuremath{\CodeFlag{drop}} to \ensuremath{\CodeFlag{acq}} and returns immediately, so the
 notification is asynchronous. An \ensuremath{\CodeOp{acquire}} on the suffix remains blocked until
 the flag becomes \ensuremath{\CodeFlag{acq}} and then it removes the synchronization flag. Thus a remote
-split pays for exactly for the handover needed to coordinate the two
+split pays exactly for the handover needed to coordinate the two
 processes operating on the channel, whereas a local split has no overhead.
 
 % A synchronization binder
@@ -741,14 +745,14 @@ processes operating on the channel, whereas a local split has no overhead.
 % right, suffix part may acquire. This mechanism implements an ownership transfer
 % of the primitive channel from the borrowed part to the suffix.
 
-Allocation (not shown in \cref{fig:borrow-lifecycle-msc}) creates a primitive
-channel pair and one synchronization flag in state \ensuremath{\CodeFlag{acq}} for each endpoint
+Allocation creates a primitive
+channel pair \ensuremath{\Varid{p}_{1}\otimes \Varid{p}_{2}} and one synchronization flag \ensuremath{\Varid{z}_i} in state \ensuremath{\CodeFlag{acq}} for each endpoint
 obtaining the pair \ensuremath{\Varid{z}_{1}\otimes \Varid{p}_{1}\otimes \mathord{*}} and \ensuremath{\Varid{z}_{2}\otimes \Varid{p}_{2}\otimes \mathord{*}}.
 Thus, the first operation on each channel end must be \ensuremath{\CodeOp{acquire}} to start normal
 operation, replacing the flag \ensuremath{\Varid{z}_i} from the channel 
-triple to obtain \ensuremath{\mathord{*}\otimes \Varid{p}_i\otimes \mathord{*}}. From then onwards,
-communication is just ordinary session communication: \ensuremath{\CodeOp{send}}/\ensuremath{\CodeOp{recv}},
-\ensuremath{\CodeOp{select}}/\ensuremath{\CodeOp{branch}}, and \ensuremath{\CodeOp{close}}/\ensuremath{\CodeOp{wait}} all operate directly on the primitive
+triple to obtain local channels \ensuremath{\mathord{*}\otimes \Varid{p}_i\otimes \mathord{*}}. From then on,
+communication is ordinary session communication: \ensuremath{\CodeOp{send}}/\ensuremath{\CodeOp{recv}},
+\ensuremath{\CodeOp{select}}/\ensuremath{\CodeOp{branch}}, and \ensuremath{\CodeOp{close}}/\ensuremath{\CodeOp{wait}} operate directly on the primitive
 channel name \ensuremath{\Varid{p}_i}.
 
 

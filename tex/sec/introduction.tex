@@ -358,19 +358,20 @@ survey articles and books
   Gay_Vasconcelos_2025}.
 While much recent work concentrates on multi-party session types
 \cite{DBLP:journals/jacm/HondaYC16}, this work is solely concerned
-with binary session types, which govern two-party protocols.
+with binary session types, which govern communication between the two endpoints
+of a channel.
 
 Session types support infinite and unbounded behaviors through
 recursive types almost from the beginning \cite{HondaVK98}. Since
 then, most work has concentrated on \emph{regular} recursive session
-types, where recursion is restricted to tail positions in the
-type. For example, here is the type
+types, which restrict recursion to tail positions in the
+type. For example, the type
 \ensuremath{\mu  \alpha .\&\{\mkern1mu\relax \CodeLbl{\Conid{Next}}\mathbin{:}\mathord{?}\Conid{Int}.\alpha ,\CodeLbl{\Conid{Quit}}\mathbin{:}\CodeTy{Close}\mkern1mu\}}
-of a server that receives a list of integers. The occurrence of
+describes a server that receives a list of integers. The occurrence of
 the recursive \ensuremath{\alpha } is syntactically restricted to tail
 position because regular session types are built by composing prefixes
 using syntax constructors like \ensuremath{\mathord{?}\Conid{Int}.\anonymous }. Context-free session types
-\cite{DBLP:conf/icfp/ThiemannV16,DBLP:journals/iandc/AlmeidaMTV22} (CFSTs)
+\cite{DBLP:conf/icfp/ThiemannV16,DBLP:journals/iandc/AlmeidaMTV22,DBLP:journals/toplas/Padovani19} (CFSTs)
 have lifted this restriction by adopting a symmetric composition
 operator \ensuremath{\anonymous \mathop{;}\anonymous } instead. This operator
 enables tree- and stack-shaped communication protocols, but it also
