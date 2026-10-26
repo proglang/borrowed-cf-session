@@ -8,15 +8,15 @@ We applied minor rewordings, error corrections, and tightened the
 prose (to conserve space) throughout.
 
 > ## Proposed revisions
-> 
+>
 > We will sharpen the paper's central contribution: CFST borrowing requires residual inference modulo type equivalence, while distinguishing local from remote borrowing reveals that synchronization is needed only across process boundaries.
 
 Minor rewordings in the introduction.
 
 > We will add running examples, explain purity and boundedness,
 
-In the "Types" section, we continued the example from sec 2, 
-added explanation of purity and boundedness. 
+In the "Types" section, we continued the example from sec 2,
+added explanation of purity and boundedness.
 
 > clarify the scope of the shared-memory target,
 
@@ -33,7 +33,7 @@ Elaboration examples now in Listing 2.
 
 Figure 3 has been redrawn and updated to the new target calculus.
 
-> and correct the reported omissions and errors. 
+> and correct the reported omissions and errors.
 
 All reported problems corrected; see below for comments on specific reviewer questions.
 
@@ -42,7 +42,7 @@ All reported problems corrected; see below for comments on specific reviewer que
 See updates in section 8. We submitted the mechanization for artifact evaluation.
 It is also included in the supplement to this revision.
 
-> for a revised process-soup target. 
+> for a revised process-soup target.
 > We will state precisely how that target corresponds to the submitted calculus.
 
 We changed the low-level run-time calculus from process notation (in
@@ -50,13 +50,13 @@ the submission) to a soup-of-processes notation (in the revision).
 In this notation (inspired by ref [1]), a configuration is represented by a
 set of channels and a multiset of concurrently executing
 expressions. In our case, channels are extended by machinery to manage
-synchronization flags, a mapping from channel ends to lists of flags. 
+synchronization flags, a mapping from channel ends to lists of flags.
 
 This change elides the need for structural congruence in the run-time
 calculus, while retaining behavior equivalent to the  old run-time
 calculus. (Note, we did not establish this equivalence, which would
 amount to proving a harmony result between the old and the new
-target calculus.) 
+target calculus.)
 
 Regarding the motivation for this change, we mentioned in the rebuttal:
 
@@ -68,15 +68,15 @@ Regarding the motivation for this change, we mentioned in the rebuttal:
 
 In the (new) target calculus reduction is closed under
 permutations of channels and expression processes, this equivalence is
-intrinsic in the soup-of-processes representation. 
+intrinsic in the soup-of-processes representation.
 
 > The artifact will include the Agda development, Rust typechecker, and examples.
 
 See artifact submission and supplement.
 
-> 
+>
 > ## Review A: specific questions
-> 
+>
 > ### Why synchronization variables?
 
 In the introduction, we (briefly) clarify the intended shared-memory
@@ -102,7 +102,7 @@ and our experience with it.
 
 
 > ## Review B: specific questions
-> 
+>
 > ### New insights over BGV
 
 > First, a CFST residual cannot be found by syntactic prefix removal:
@@ -120,16 +120,14 @@ introduction 55-58. contribution (3)
 
 >  The direct semantics specifies this distinction independently of
 >  implementation, and the simulations validate the optimized target
->  realization. 
+>  realization.
 
 contribution (4) and technical contributions.
 
-> 
 > ### Formalization
 
 See above.
 
-> 
 > ## Review C: specific questions
 
 > Omitting polymorphism is
@@ -143,9 +141,9 @@ polymorphism. Promising, but the details and metatheory remain to be
 worked out.)
 
 > # Responses to remaining comments (included in full)
-> 
+>
 > ## Review A: detailed comments
-> 
+>
 > ### Polymorphic recursion
 
 Has been deemphasized. See introduction and motivation.
@@ -177,7 +175,7 @@ Extended "Types" with type-level reasoning why the restrictions on
 explanation on the operational level.
 
 > ## Review B: remaining comments
-> 
+>
 > ### Tree-shaped contexts and BI
 
 Adopted with reference *inspired by BI* + references.
@@ -192,11 +190,9 @@ since we felt it difficult to talk about examples and their interpretation
 without giving meaning to the syntax through types first.
 
 > ### Minor comments
-> 
 
 All addressed.
 
-> 
 > ## Review C: remaining comments
 
 > We thank the reviewer for pointing us to Mordido and Perez's work on
@@ -209,4 +205,3 @@ deadlock freedom.
 ## References
 
 [1] Jules Jacobs, Stephanie Balzer, Robbert Krebbers. “Connectivity graphs: a method for proving deadlock freedom based on separation logic.” *PACMPL* 6 (POPL): 1–33 (2022).
-
