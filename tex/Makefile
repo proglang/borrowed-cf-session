@@ -7,6 +7,12 @@ build: lhs2tex
 FMT_FILES := $(wildcard lhs2tex/*.fmt)
 LHS_FILES := $(wildcard */*.lhs.tex)
 
+.PHONY: diff
+diff: lhs2tex
+	@if [ -z "$(DIFF_DIR)" ]; then echo 'usage: make DIFF_DIR=... diff'; false; fi
+	latexdiff --flatten --append-safecmd=RuleName $(DIFF_DIR)/popl2027.tex popl2027.tex > popl2027-diff.tex
+	latexmk -pdf popl2027-diff
+
 .PHONY: lhs2tex
 lhs2tex: $(LHS_FILES:%.lhs.tex=%.tex)
 
